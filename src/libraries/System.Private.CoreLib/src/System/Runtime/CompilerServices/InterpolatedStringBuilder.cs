@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Runtime.CompilerServices
 {
@@ -56,17 +57,6 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Initializes the builder.</summary>
-        /// <param name="initialCapacity">Approximated capacity required to support the interpolated string.  The final size may be smaller or larger.</param>
-        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
-        private InterpolatedStringBuilder(int initialCapacity, IFormatProvider? provider)
-        {
-            _provider = provider;
-            _chars = _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
-            _pos = 0;
-            _hasCustomFormatter = provider?.GetFormat(typeof(ICustomFormatter)) != null;
-        }
-
-        /// <summary>Initializes the builder.</summary>
         /// <param name="scratchBuffer">A buffer temporarily transferred to the builder for use as part of its formatting.  Contents may be overwritten.</param>
         private InterpolatedStringBuilder(Span<char> scratchBuffer)
         {
@@ -78,6 +68,17 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Initializes the builder.</summary>
+        /// <param name="initialCapacity">Approximated capacity required to support the interpolated string.  The final size may be smaller or larger.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        private InterpolatedStringBuilder(int initialCapacity, IFormatProvider? provider)
+        {
+            _provider = provider;
+            _chars = _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
+            _pos = 0;
+            _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
+        }
+
+        /// <summary>Initializes the builder.</summary>
         /// <param name="scratchBuffer">A buffer temporarily transferred to the builder for use as part of its formatting.  Contents may be overwritten.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         private InterpolatedStringBuilder(Span<char> scratchBuffer, IFormatProvider? provider)
@@ -86,7 +87,7 @@ namespace System.Runtime.CompilerServices
             _arrayToReturnToPool = null;
             _chars = scratchBuffer;
             _pos = 0;
-            _hasCustomFormatter = provider?.GetFormat(typeof(ICustomFormatter)) != null;
+            _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
         }
 
         /// <summary>Creates a builder used to translate an interpolated string into a <see cref="string"/>.</summary>
@@ -124,7 +125,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Derives a default length with which to seed the builder.</summary>
         /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
         /// <param name="formattedCount">The number of holes in the interpolated string.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // becomes a constant when inputs are constant
         private static int GetDefaultLength(int literalLength, int formattedCount) =>
             Math.Max(MinimumArrayPoolLength, literalLength + (formattedCount * GuessedLengthPerHole));
 
@@ -489,6 +490,17 @@ namespace System.Runtime.CompilerServices
             AppendFormatted<object?>(value, alignment, format);
         #endregion
         #endregion
+
+        /// <summary>Gets whether the provider provides a custom formatter.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used in two hot path call sites
+        private static bool HasCustomFormatter(IFormatProvider provider)
+        {
+            Debug.Assert(provider is not null);
+            Debug.Assert(provider is not CultureInfo || provider.GetFormat(typeof(ICustomFormatter)) is null, "Expected CultureInfo to not provide a custom formatter");
+            return
+                provider.GetType() != typeof(CultureInfo) && // optimization to avoid GetFormat in the majority case
+                provider.GetFormat(typeof(ICustomFormatter)) != null;
+        }
 
         /// <summary>Formats the value using the custom formatter from the provider.</summary>
         /// <param name="value">The value to write.</param>
