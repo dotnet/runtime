@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -36,6 +37,7 @@ namespace HttpStress
         public int MaxParameters { get; set; }
         public int[]? OpIndices { get; set; }
         public int[]? ExcludedOpIndices { get; set; }
+        public (string Name, double Probabilty)[]?  OperationProbabilities { get; set; }
         public TimeSpan DisplayInterval { get; set; }
         public TimeSpan DefaultTimeout { get; set; }
         public TimeSpan? ConnectionLifetime { get; set; }
@@ -49,6 +51,24 @@ namespace HttpStress
         public int? ServerMaxFrameSize { get; set; }
         public int? ServerInitialConnectionWindowSize { get; set; }
         public int? ServerMaxRequestHeaderFieldSize { get; set; }
-    }
 
+        internal bool ParseOperationProbabilites(string? probabilitiesString)
+        {
+            if (probabilitiesString == null)
+                return true;
+            try
+            {
+                OperationProbabilities = probabilitiesString
+                    .Split(';')
+                    .Select(assignmentStr => assignmentStr.Split('='))
+                    .Select(s => (s[0], double.Parse(s[1], CultureInfo.InvariantCulture)))
+                    .ToArray();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
 }

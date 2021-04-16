@@ -182,6 +182,8 @@ namespace HttpStress
 
         public string IndexedName { get; }
 
+        public double Probability { get; set; } = 1;
+
         public ClientOperation(string name, Func<RequestContext, Task> operationFunc, int index)
         {
             Name = name;
@@ -191,7 +193,9 @@ namespace HttpStress
             IndexedName = $"{Index.ToString().PadLeft(2)}: {Name}";
         }
 
-        internal bool ShouldRun(Random random) => Name != "GET Aborted" || random.NextDouble() < 0.2;
+        internal bool ShouldRun(Random random) => Probability == 1 || random.NextDouble() < Probability;
+
+        public override string ToString() => IndexedName + (Probability < 1 ? $" (P={Probability})" : "");
     }
 
     public static class ClientOperations

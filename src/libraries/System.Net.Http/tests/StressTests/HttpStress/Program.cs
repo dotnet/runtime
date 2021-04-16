@@ -45,6 +45,7 @@ public static class Program
         cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null) });
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]?>("space-delimited indices", null) });
         cmd.AddOption(new Option("-xops", "Indices of the operations to exclude") { Argument = new Argument<int[]?>("space-delimited indices", null) });
+        cmd.AddOption(new Option("-opRates", "Semicolon separated list of operation probability assignments. See Readme.md for more details.") { Argument = new Argument<string?>("probability map", null) });
         cmd.AddOption(new Option("-trace", "Enable System.Net.Http.InternalDiagnostics (client) and/or ASP.NET dignostics (server) tracing.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
@@ -67,8 +68,7 @@ public static class Program
             {
                 Console.WriteLine(error);
             }
-            Console.WriteLine();
-            new HelpBuilder(new SystemConsole()).Write(cmd);
+            PrintHelp();
             config = null;
             return false;
         }
@@ -104,6 +104,19 @@ public static class Program
             ServerInitialConnectionWindowSize = cmdline.ValueForOption<int?>("-serverInitialConnectionWindowSize"),
             ServerMaxRequestHeaderFieldSize = cmdline.ValueForOption<int?>("-serverMaxRequestHeaderFieldSize"),
         };
+
+        if (!config.ParseOperationProbabilites(cmdline.ValueForOption<string?>("-opRates")))
+        {
+            Console.WriteLine("Failed to parse '-opRates', check Readme.md, for expected syntax!");
+            PrintHelp();
+            return false;
+        }
+
+        void PrintHelp()
+        {
+            Console.WriteLine();
+            new HelpBuilder(new SystemConsole()).Write(cmd);
+        }
 
         return true;
     }
@@ -146,6 +159,17 @@ public static class Program
                 .ToArray(),
         };
 
+        if (config.OperationProbabilities != null)
+        {
+            foreach ((string name, double probabilty) in config.OperationProbabilities)
+            {
+                ClientOperation? op = usedClientOperations.FirstOrDefault(o => o.Name == name);
+                if (op == null)
+                    continue;
+                op.Probability = Math.Min(probabilty, 1);
+            }
+        }
+
         string GetAssemblyInfo(Assembly assembly) => $"{assembly.Location}, modified {new FileInfo(assembly.Location).LastWriteTime}";
 
         Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
@@ -160,13 +184,12 @@ public static class Program
         Console.WriteLine("  Content Length: " + config.MaxContentLength);
         Console.WriteLine("    HTTP Version: " + config.HttpVersion);
         Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
-        Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.IndexedName)));
+        Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.ToString())));
         Console.WriteLine("     Random Seed: " + config.RandomSeed);
         Console.WriteLine("    Cancellation: " + 100 * config.CancellationProbability + "%");
         Console.WriteLine("Max Content Size: " + config.MaxContentLength);
         Console.WriteLine("Query Parameters: " + config.MaxParameters);
         Console.WriteLine();
-
 
         StressServer? server = null;
         if (config.RunMode.HasFlag(RunMode.server))
