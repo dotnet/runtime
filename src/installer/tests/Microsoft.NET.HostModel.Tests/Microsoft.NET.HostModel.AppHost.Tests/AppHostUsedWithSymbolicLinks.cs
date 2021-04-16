@@ -72,10 +72,12 @@ namespace Microsoft.NET.HostModel.Tests
 
             // second symlink -> apphost
             string secondSymbolicLink = Path.Combine(testDir, secondSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(secondSymbolicLink));
             CreateSymbolicLink(secondSymbolicLink, appExe);
 
             // first symlink -> second symlink
             string firstSymbolicLink = Path.Combine(testDir, firstSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(firstSymbolicLink));
             CreateSymbolicLink(firstSymbolicLink, secondSymbolicLink);
 
             Command.Create(firstSymbolicLink)
