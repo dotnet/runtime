@@ -26,8 +26,7 @@ namespace Microsoft.Extensions.Logging.Generators
         [ExcludeFromCodeCoverage]
         public void Execute(GeneratorExecutionContext context)
         {
-            var receiver = context.SyntaxReceiver as SyntaxReceiver;
-            if (receiver == null || receiver.ClassDeclarations.Count == 0)
+            if (context.SyntaxReceiver is not SyntaxReceiver receiver || receiver.ClassDeclarations.Count == 0)
             {
                 // nothing to do yet
                 return;

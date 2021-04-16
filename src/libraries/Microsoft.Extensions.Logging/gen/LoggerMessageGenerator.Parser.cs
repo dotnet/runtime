@@ -139,6 +139,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             // can't have logging method names that start with _ since that can lead to conflicting symbol names
                                             // because the generated symbols start with _
                                             Diag(DiagnosticDescriptors.InvalidLoggingMethodName, method.Identifier.GetLocation());
+                                            keepMethod = false;
                                         }
 
                                         if (sm.GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
