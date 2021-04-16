@@ -61,6 +61,7 @@ namespace System.IO.Strategies
                 else
                 {
                     _handle = memory.Pin();
+                    Debug.Assert(_handle.Pointer != default);
                     _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, null);
                 }
 
@@ -111,7 +112,10 @@ namespace System.IO.Strategies
 
             internal void ReleaseNativeResource()
             {
-                _handle.Dispose();
+                if (_handle.Pointer != default)
+                {
+                    _handle.Dispose();
+                }
 
                 // Ensure that cancellation has been completed and cleaned up.
                 _cancellationRegistration.Dispose();
