@@ -81,6 +81,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetForwardedTypes() { throw NotImplemented.ByDesign; }
 
+        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public virtual string? CodeBase => throw NotImplemented.ByDesign;
         public virtual MethodInfo? EntryPoint => throw NotImplemented.ByDesign;
         public virtual string? FullName => throw NotImplemented.ByDesign;
@@ -115,7 +116,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
-        [RequiresAssemblyFiles(Message = "Calls 'AssemblyName.EscapeCodeBase(string)' which is a dangerous single file pattern")]
+        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public virtual string EscapedCodeBase => AssemblyName.EscapeCodeBase(CodeBase);
 
         [RequiresUnreferencedCode("Assembly.CreateInstance is not supported with trimming. Use Type.GetType instead.")]
@@ -153,7 +154,7 @@ namespace System.Reflection
         public virtual Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) { throw NotImplemented.ByDesign; }
 
         public virtual FileStream? GetFile(string name) { throw NotImplemented.ByDesign; }
-        [RequiresAssemblyFiles(Message = "'System.Reflection.Assembly.GetFiles(bool)' will throw for assemblies embedded in a single-file app", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3001")]
+        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public virtual FileStream[] GetFiles() => GetFiles(getResourceModules: false);
         public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 

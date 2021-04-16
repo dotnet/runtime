@@ -29,7 +29,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         }
 
         [UnconditionalSuppressMessage("Single file", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
-            Justification = "The code has a fallback to use AppDomain.CurrentDomain.BaseDirectory so is not single file dangerous")]
+            Justification = "The code has a fallback to use AppDomain.CurrentDomain.BaseDirectory so it will work correctly in single-file")]
         private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // apply any existing policy

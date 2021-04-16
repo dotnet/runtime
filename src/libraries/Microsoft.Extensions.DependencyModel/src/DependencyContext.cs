@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-        [RequiresAssemblyFiles(Message = "Calls GetDepsJsonPath")]
+        [RequiresAssemblyFiles(Message = "The use of DependencyContextLoader is not supported when publishing as single-file")]
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyModel
             return Load(entryAssembly);
         }
 
-        [RequiresAssemblyFiles(Message = "Calls GetDepsJsonPath")]
+        [RequiresAssemblyFiles(Message = "The use of DependencyContextLoader is not supported when publishing as single-file")]
         public static DependencyContext Load(Assembly assembly)
         {
             return DependencyContextLoader.Default.Load(assembly);

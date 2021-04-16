@@ -208,7 +208,7 @@ namespace Microsoft.XmlSerializer.Generator
         }
 
         [UnconditionalSuppressMessage("Single file", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
-            Justification = "Code has a fallback")]
+            Justification = "Code has a fallback and thus works in single-file")]
         private void GenerateFile(List<string> typeNames, string assemblyName, bool proxyOnly, bool silent, bool warnings, bool force, string outputDirectory, bool parsableerrors)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);

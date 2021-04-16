@@ -64,7 +64,7 @@
     <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertySetter.cs" />
     <Compile Include="System\Reflection\Context\Virtual\VirtualReturnParameter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
   </ItemGroup>
 </Project>
