@@ -760,7 +760,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "The call to MakeGenericMethod is safe due to the fact that XmlObjectSerializerWriteContext.GetDefaultValue is not annotated.")]
         internal static object? GetDefaultValue(Type type)
         {
             return GetDefaultValueMethod.MakeGenericMethod(type).Invoke(null, Array.Empty<object>());

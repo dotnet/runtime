@@ -664,7 +664,7 @@ namespace System.Runtime.Serialization.Json
                 if (isArray)
                 {
                     Debug.Assert(growingCollection != null);
-                    MethodInfo ensureArraySizeMethod = XmlFormatGeneratorStatics.EnsureArraySizeMethod.MakeGenericMethod(itemType);
+                    MethodInfo ensureArraySizeMethod = MakeGenericMethod(XmlFormatGeneratorStatics.EnsureArraySizeMethod, itemType);
                     _ilg.Call(null, ensureArraySizeMethod, growingCollection, i);
                     _ilg.Stloc(growingCollection);
                     _ilg.StoreArrayElement(growingCollection, i, value);
@@ -683,7 +683,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.EndFor();
                 if (isArray)
                 {
-                    MethodInfo trimArraySizeMethod = XmlFormatGeneratorStatics.TrimArraySizeMethod.MakeGenericMethod(itemType);
+                    MethodInfo trimArraySizeMethod = MakeGenericMethod(XmlFormatGeneratorStatics.TrimArraySizeMethod, itemType);
                     _ilg.Call(null, trimArraySizeMethod, growingCollection, i);
                     _ilg.Stloc(_objectLocal);
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.AddNewObjectWithIdMethod, objectId, _objectLocal);
@@ -701,6 +701,10 @@ namespace System.Runtime.Serialization.Json
                     _ilg.EndIf();
                 }
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "The call to MakeGenericMethod is safe due to the fact that EnsureArraySizeMethod and TrimArraySizeMethod are not annotated.")]
+            private MethodInfo MakeGenericMethod(MethodInfo method, Type itemType) => method.MakeGenericMethod(itemType);
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private void ReadSimpleDictionary(CollectionDataContract collectionContract, Type keyValueType)

@@ -29,7 +29,6 @@ namespace System.Runtime.Serialization
 
         private static MethodInfo CollectionSetItemDelegateMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_getCollectionSetItemDelegateMethod == null)
@@ -512,7 +511,6 @@ namespace System.Runtime.Serialization
             return ((KeyValue<K, V>)o).Value;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private CollectionSetItemDelegate GetCollectionSetItemDelegate<T>(CollectionDataContract collectionContract, object resultCollectionObject, bool isReadOnlyCollection)
         {
             if (isReadOnlyCollection && collectionContract.Kind == CollectionKind.Array)
@@ -542,8 +540,8 @@ namespace System.Runtime.Serialization
             {
                 Type keyType = collectionContract.ItemType.GenericTypeArguments[0];
                 Type valueType = collectionContract.ItemType.GenericTypeArguments[1];
-                Func<object, object?> objectToKeyValuePairGetKey = s_objectToKeyValuePairGetKey.MakeGenericMethod(keyType, valueType).CreateDelegate<Func<object, object?>>();
-                Func<object, object?> objectToKeyValuePairGetValue = s_objectToKeyValuePairGetValue.MakeGenericMethod(keyType, valueType).CreateDelegate<Func<object, object?>>();
+                Func<object, object?> objectToKeyValuePairGetKey = MakeGenericMethod(s_objectToKeyValuePairGetKey, keyType, valueType).CreateDelegate<Func<object, object?>>();
+                Func<object, object?> objectToKeyValuePairGetValue = MakeGenericMethod(s_objectToKeyValuePairGetValue, keyType, valueType).CreateDelegate<Func<object, object?>>();
 
                 if (collectionContract.Kind == CollectionKind.GenericDictionary)
                 {
@@ -606,6 +604,10 @@ namespace System.Runtime.Serialization
                 }
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "The call to MakeGenericMethod is safe due to the fact that ObjectToKeyValuePairGetKey and ObjectToKeyValuePairGetValue are not annotated.")]
+        private MethodInfo MakeGenericMethod(MethodInfo method, Type keyType, Type valueType) => method.MakeGenericMethod(keyType, valueType);
 
         [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
