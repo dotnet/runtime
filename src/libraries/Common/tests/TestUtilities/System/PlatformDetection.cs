@@ -134,15 +134,34 @@ namespace System
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
-        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+        // Android - Platform supports alpn from API level 29 and higher
+        private static Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
+        private static bool GetAlpnSupport()
+        {
+            if (IsWindows && !IsWindows7 && !IsNetFramework)
+            {
+                return true;
+            }
 
-        public static bool SupportsAlpn => (IsWindows && !IsWindows7 && !IsNetFramework) ||
-            (IsOpenSslSupported &&
-            (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
+            if (IsOpenSslSupported)
+            {
+                return OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
+            }
 
+            if (IsAndroid)
+            {
+                return Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration();
+            }
+
+            return false;
+        }
+
+        public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
 
         private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
