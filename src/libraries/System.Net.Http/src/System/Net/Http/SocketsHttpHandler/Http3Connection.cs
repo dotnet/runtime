@@ -614,7 +614,7 @@ namespace System.Net.Http
                                 NetEventSource.Info(this, $"Ignoring server-initiated stream of unknown type {unknownStreamType}.");
                             }
 
-                            stream.AbortWrite((long)Http3ErrorCode.StreamCreationError);
+                            stream.Abort((long)Http3ErrorCode.StreamCreationError, QuicAbortDirection.Read);
                             return;
                     }
                 }

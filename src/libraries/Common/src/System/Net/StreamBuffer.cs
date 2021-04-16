@@ -18,6 +18,7 @@ namespace System.IO
         private bool _readAborted;
         private readonly ResettableValueTaskSource _readTaskSource;
         private readonly ResettableValueTaskSource _writeTaskSource;
+        private readonly TaskCompletionSource _shutdownTaskSource;
 
         public const int DefaultInitialBufferSize = 4 * 1024;
         public const int DefaultMaxBufferSize = 32 * 1024;
@@ -28,9 +29,12 @@ namespace System.IO
             _maxBufferSize = maxBufferSize;
             _readTaskSource = new ResettableValueTaskSource();
             _writeTaskSource = new ResettableValueTaskSource();
+            _shutdownTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         private object SyncObject => _readTaskSource;
+
+        public Task Completed => _shutdownTaskSource.Task;
 
         public bool IsComplete
         {
@@ -187,6 +191,11 @@ namespace System.IO
                 _writeEnded = true;
 
                 _readTaskSource.SignalWaiter();
+
+                if (_buffer.IsEmpty)
+                {
+                    _shutdownTaskSource.TrySetResult();
+                }
             }
         }
 
@@ -210,10 +219,16 @@ namespace System.IO
 
                     _writeTaskSource.SignalWaiter();
 
+                    if (_buffer.IsEmpty && _writeEnded)
+                    {
+                        _shutdownTaskSource.TrySetResult();
+                    }
+
                     return (false, bytesRead);
                 }
                 else if (_writeEnded)
                 {
+                    _shutdownTaskSource.TrySetResult();
                     return (false, 0);
                 }
 
@@ -280,6 +295,7 @@ namespace System.IO
 
                 _readTaskSource.SignalWaiter();
                 _writeTaskSource.SignalWaiter();
+                _shutdownTaskSource.TrySetResult();
             }
         }
 

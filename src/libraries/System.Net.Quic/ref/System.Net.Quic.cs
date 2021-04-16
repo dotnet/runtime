@@ -6,6 +6,13 @@
 
 namespace System.Net.Quic
 {
+    [System.FlagsAttribute]
+    public enum QuicAbortDirection
+    {
+        Read = 1,
+        Write = 2,
+        Both = 3,
+    }
     public partial class QuicClientConnectionOptions : System.Net.Quic.QuicOptions
     {
         public QuicClientConnectionOptions() { }
@@ -85,11 +92,13 @@ namespace System.Net.Quic
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public long StreamId { get { throw null; } }
-        public void AbortRead(long errorCode) { }
-        public void AbortWrite(long errorCode) { }
+        public void Abort(long errorCode, System.Net.Quic.QuicAbortDirection abortDirection = System.Net.Quic.QuicAbortDirection.Both) { }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public System.Threading.Tasks.ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public void CompleteWrites() { }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(System.IAsyncResult asyncResult) { }
         public override void Flush() { }
@@ -100,9 +109,6 @@ namespace System.Net.Quic
         public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
-        public void Shutdown() { }
-        public System.Threading.Tasks.ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask ShutdownCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public System.Threading.Tasks.ValueTask WriteAsync(System.Buffers.ReadOnlySequence<byte> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

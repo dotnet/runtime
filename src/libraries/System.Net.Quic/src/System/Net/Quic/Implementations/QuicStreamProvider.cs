@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations
 {
-    internal abstract class QuicStreamProvider : IDisposable, IAsyncDisposable
+    internal abstract class QuicStreamProvider
     {
         internal abstract long StreamId { get; }
 
@@ -17,9 +17,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
 
-        internal abstract void AbortRead(long errorCode);
-
-        internal abstract void AbortWrite(long errorCode);
+        internal abstract void Abort(long errorCode, QuicAbortDirection abortDirection = QuicAbortDirection.Both);
 
         internal abstract bool CanWrite { get; }
 
@@ -37,18 +35,14 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default);
 
-        internal abstract ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default);
-
-        internal abstract ValueTask ShutdownCompleted(CancellationToken cancellationToken = default);
-
-        internal abstract void Shutdown();
-
         internal abstract void Flush();
 
         internal abstract Task FlushAsync(CancellationToken cancellationToken);
 
+        public abstract void CompleteWrites();
+
         public abstract void Dispose();
 
-        public abstract ValueTask DisposeAsync();
+        public abstract ValueTask DisposeAsync(CancellationToken cancellationToken);
     }
 }

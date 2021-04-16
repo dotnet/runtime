@@ -152,7 +152,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        _stream.Shutdown();
+                        _stream.CompleteWrites();
                     }
                 }
 
@@ -263,7 +263,7 @@ namespace System.Net.Http
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream.Abort((long)Http3ErrorCode.RequestCancelled);
                     throw new OperationCanceledException(ex.Message, ex, cancellationToken);
                 }
                 else
@@ -280,7 +280,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                _stream.Abort((long)Http3ErrorCode.InternalError);
                 if (ex is HttpRequestException)
                 {
                     throw;
@@ -372,7 +372,7 @@ namespace System.Net.Http
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
             }
 
-            _stream.Shutdown();
+            _stream.CompleteWrites();
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -777,7 +777,7 @@ namespace System.Net.Http
             // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
             if (headersLength > _headerBudgetRemaining)
             {
-                _stream.AbortWrite((long)Http3ErrorCode.ExcessiveLoad);
+                _stream.Abort((long)Http3ErrorCode.ExcessiveLoad);
                 throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings._maxResponseHeadersLength * 1024L));
             }
 
@@ -1114,11 +1114,11 @@ namespace System.Net.Http
                     _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream.Abort((long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
                 default:
-                    _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                    _stream.Abort((long)Http3ErrorCode.InternalError);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
             }
         }

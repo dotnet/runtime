@@ -63,6 +63,46 @@ namespace System.Net.Quic.Tests
             return new QuicListener(ImplementationProvider, endpoint, GetSslServerAuthenticationOptions());
         }
 
+        internal Task RunUnidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+            => RunClientServerStream(clientFunction, serverFunction, iterations, millisecondsTimeout, bidi: false);
+
+        internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+            => RunClientServerStream(clientFunction, serverFunction, iterations, millisecondsTimeout, bidi: true);
+
+        private async Task RunClientServerStream(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations, int millisecondsTimeout, bool bidi)
+        {
+            const long ClientThrewAbortCode = 1234567890;
+            const long ServerThrewAbortCode = 2345678901;
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await using QuicStream clientStream = bidi ? clientConnection.OpenBidirectionalStream() : clientConnection.OpenUnidirectionalStream();
+                    try
+                    {
+                        await clientFunction(clientStream);
+                    }
+                    catch
+                    {
+                        clientStream.Abort(ClientThrewAbortCode);
+                        throw;
+                    }
+                },
+                async serverConnection =>
+                {
+                    await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    try
+                    {
+                        await serverFunction(serverStream);
+                    }
+                    catch
+                    {
+                        serverStream.Abort(ServerThrewAbortCode);
+                        throw;
+                    }
+                }, iterations, millisecondsTimeout);
+        }
+
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();

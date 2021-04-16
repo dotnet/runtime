@@ -7,6 +7,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         internal static uint Success => OperatingSystem.IsWindows() ? Windows.Success : Posix.Success;
         internal static uint Pending => OperatingSystem.IsWindows() ? Windows.Pending : Posix.Pending;
+        internal static uint Continue => OperatingSystem.IsWindows() ? Windows.Continue : Posix.Continue;
         internal static uint InternalError => OperatingSystem.IsWindows() ? Windows.InternalError : Posix.InternalError;
         internal static uint InvalidState => OperatingSystem.IsWindows() ? Windows.InvalidState : Posix.InvalidState;
         internal static uint HandshakeFailure => OperatingSystem.IsWindows() ? Windows.HandshakeFailure : Posix.HandshakeFailure;

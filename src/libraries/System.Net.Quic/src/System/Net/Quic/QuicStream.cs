@@ -85,9 +85,17 @@ namespace System.Net.Quic
 
         public override Task FlushAsync(CancellationToken cancellationToken) => _provider.FlushAsync(cancellationToken);
 
-        public void AbortRead(long errorCode) => _provider.AbortRead(errorCode);
+        /// <summary>
+        /// Completes the write direction of the stream, notifying the peer of end-of-stream.
+        /// </summary>
+        public void CompleteWrites() => _provider.CompleteWrites();
 
-        public void AbortWrite(long errorCode) => _provider.AbortWrite(errorCode);
+        /// <summary>
+        /// Aborts the <see cref="QuicStream"/>.
+        /// </summary>
+        /// <param name="errorCode">The error code to abort with.</param>
+        /// <param name="abortDirection">The direction of the abort.</param>
+        public void Abort(long errorCode, QuicAbortDirection abortDirection = QuicAbortDirection.Both) => _provider.Abort(errorCode, abortDirection);
 
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, endStream, cancellationToken);
 
@@ -99,12 +107,6 @@ namespace System.Net.Quic
 
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
 
-        public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
-
-        public ValueTask ShutdownCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownCompleted(cancellationToken);
-
-        public void Shutdown() => _provider.Shutdown();
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -112,5 +114,14 @@ namespace System.Net.Quic
                 _provider.Dispose();
             }
         }
+
+        public override ValueTask DisposeAsync() => CloseAsync();
+
+        /// <summary>
+        /// Gracefully shuts down and closes the <see cref="QuicStream"/>, leaving it in a disposed state.
+        /// </summary>
+        /// <param name="cancellationToken">If triggered, an <see cref="OperationCanceledException"/> will be thrown and the stream will be left undisposed.</param>
+        /// <returns>A <see cref="ValueTask"/> representing the asynchronous closure of the <see cref="QuicStream"/>.</returns>
+        public ValueTask CloseAsync(CancellationToken cancellationToken = default) => _provider.DisposeAsync(cancellationToken);
     }
 }

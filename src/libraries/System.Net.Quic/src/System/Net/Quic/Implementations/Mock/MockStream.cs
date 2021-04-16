@@ -151,46 +151,28 @@ namespace System.Net.Quic.Implementations.Mock
             return Task.CompletedTask;
         }
 
-        internal override void AbortRead(long errorCode)
+        internal override void Abort(long errorCode, QuicAbortDirection abortDirection = QuicAbortDirection.Both)
         {
-            throw new NotImplementedException();
-        }
+            // TODO: support abort read direction.
 
-        internal override void AbortWrite(long errorCode)
-        {
-            if (_isInitiator)
+            if (abortDirection.HasFlag(QuicAbortDirection.Write))
             {
-                _streamState._outboundErrorCode = errorCode;
+                if (_isInitiator)
+                {
+                    _streamState._outboundErrorCode = errorCode;
+                }
+                else
+                {
+                    _streamState._inboundErrorCode = errorCode;
+                }
+
+                WriteStreamBuffer?.EndWrite();
             }
-            else
-            {
-                _streamState._inboundErrorCode = errorCode;
-            }
-
-            WriteStreamBuffer?.EndWrite();
         }
 
-
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
+        public override void CompleteWrites()
         {
             CheckDisposed();
-
-            return default;
-        }
-
-
-        internal override ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
-
-            return default;
-        }
-
-        internal override void Shutdown()
-        {
-            CheckDisposed();
-
-            // This seems to mean shutdown send, in particular, not both.
             WriteStreamBuffer?.EndWrite();
         }
 
@@ -206,29 +188,38 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                Shutdown();
+                CompleteWrites();
+
+                _streamState._outboundStreamBuffer.Completed.GetAwaiter().GetResult();
 
                 _disposed = true;
             }
         }
 
-        public override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync(CancellationToken cancellationToken)
         {
             if (!_disposed)
             {
-                Shutdown();
+                CompleteWrites();
+
+                if (ReadStreamBuffer is StreamBuffer readStreamBuffer)
+                {
+                    await ReadStreamBuffer.Completed.WaitAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
 
                 _disposed = true;
             }
-
-            return default;
         }
 
         internal sealed class StreamState
         {
             public readonly long _streamId;
-            public StreamBuffer _outboundStreamBuffer;
-            public StreamBuffer? _inboundStreamBuffer;
+            public readonly StreamBuffer _outboundStreamBuffer;
+            public readonly StreamBuffer? _inboundStreamBuffer;
             public long _outboundErrorCode;
             public long _inboundErrorCode;
 

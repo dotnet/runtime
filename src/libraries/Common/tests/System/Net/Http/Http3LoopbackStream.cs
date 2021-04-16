@@ -118,7 +118,7 @@ namespace System.Net.Test.Common
 
         public async Task ShutdownSendAsync()
         {
-            _stream.Shutdown();
+            await _stream.CompleteWritesAsync().ConfigureAwait(false);
             await _stream.ShutdownWriteCompleted().ConfigureAwait(false);
         }
 
