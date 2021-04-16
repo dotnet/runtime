@@ -5,7 +5,7 @@
 #ifndef _MONO_COMPONENT_COMPONENT_H
 #define _MONO_COMPONENT_COMPONENT_H
 
-#include <stdlib.h>
+#include <stdint.h>
 #ifndef __cplusplus
 #include <stdbool.h>
 #endif  // __cplusplus
