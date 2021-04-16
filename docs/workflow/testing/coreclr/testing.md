@@ -35,8 +35,7 @@ Note:  CoreCLR must be built prior to building an individual test. See the first
   ```
   <runtime-repo-root>/dotnet.sh build <runtime-repo-root>/src/tests/<path-to-project> -c <configuration>
   ```
-  * To build managed test projects with dependencies on native test projects, the native test project must first be built. The managed test should then be built using `dotnet build --no-restore` or `dotnet msbuild` to skip restoring.
-    * Unlike `dotnet build`, `dotnet msbuild` does not respect the `-c` argument - the configuration should be specified by setting the property: `-p:Configuration=<configuration>`
+  * To build managed test projects with dependencies on native test projects, the native test project must first be built. The managed test should then be built using `dotnet build --no-restore` to skip restoring.
 
 ## Additional Documents
 
