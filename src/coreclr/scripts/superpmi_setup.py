@@ -333,7 +333,11 @@ def copy_files(src_path, dst_path, file_names):
         dst_directory = path.dirname(dst_path_of_file)
         if not os.path.exists(dst_directory):
             os.makedirs(dst_directory)
-        shutil.copy2(f, dst_path_of_file)
+        try:
+            shutil.copy2(f, dst_path_of_file)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
+
 
 
 def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
