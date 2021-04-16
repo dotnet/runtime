@@ -107,15 +107,15 @@
     <MicrosoftWin32PrimitivesVersion>4.3.0</MicrosoftWin32PrimitivesVersion>
     <runtimenativeSystemIOPortsVersion>6.0.0-preview.4.21211.7</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.21212.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>6.0.0-beta.21212.1</SystemDrawingCommonTestDataVersion>
-    <SystemIOCompressionTestDataVersion>6.0.0-beta.21212.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>6.0.0-beta.21212.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>6.0.0-beta.21212.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>6.0.0-beta.21212.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>6.0.0-beta.21212.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>6.0.0-beta.21212.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>6.0.0-beta.21212.1</SystemWindowsExtensionsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.21215.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>6.0.0-beta.21215.1</SystemDrawingCommonTestDataVersion>
+    <SystemIOCompressionTestDataVersion>6.0.0-beta.21215.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>6.0.0-beta.21215.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>6.0.0-beta.21215.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>6.0.0-beta.21215.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>6.0.0-beta.21215.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>6.0.0-beta.21215.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>6.0.0-beta.21215.1</SystemWindowsExtensionsTestDataVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>99.99.99-master-20210317.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>99.99.99-master-20210317.2</optimizationwindows_ntx86MIBCRuntimeVersion>
