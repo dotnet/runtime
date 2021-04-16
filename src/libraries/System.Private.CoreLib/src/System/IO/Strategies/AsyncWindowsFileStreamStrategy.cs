@@ -10,7 +10,7 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private ValueTaskSource? _reusableValueTaskSource; // async op currently using the preallocated overlapped
+        private ValueTaskSource? _reusableValueTaskSource; // reusable ValueTaskSource that is currently NOT being used
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -31,7 +31,7 @@ namespace System.IO.Strategies
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
-            _reusableValueTaskSource?._preallocatedOverlapped?.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped?.Dispose();
 
             return result;
         }
@@ -42,7 +42,7 @@ namespace System.IO.Strategies
             // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
-            _reusableValueTaskSource?._preallocatedOverlapped?.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped?.Dispose();
         }
 
         protected override void OnInitFromHandle(SafeFileHandle handle)
@@ -110,7 +110,13 @@ namespace System.IO.Strategies
             _reusableValueTaskSource = new ValueTaskSource(this, buffer);
         }
 
-        private void TryToReuse(ValueTaskSource source) => Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null);
+        private void TryToReuse(ValueTaskSource source)
+        {
+            if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
+            {
+                source._preallocatedOverlapped?.Dispose();
+            }
+        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
