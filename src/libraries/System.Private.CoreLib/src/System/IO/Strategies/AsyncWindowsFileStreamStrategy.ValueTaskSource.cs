@@ -18,9 +18,9 @@ namespace System.IO.Strategies
         private sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
-            private MemoryHandle _handle;
-            private readonly AsyncWindowsFileStreamStrategy _strategy;
             internal readonly PreAllocatedOverlapped? _preallocatedOverlapped;
+            private readonly AsyncWindowsFileStreamStrategy _strategy;
+            private MemoryHandle _handle;
             private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
@@ -29,18 +29,22 @@ namespace System.IO.Strategies
             private bool _cancellationHasBeenRegistered;
 #endif
 
+            internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy)
+            {
+                _strategy = strategy;
+                _result = TaskSourceCodes.NoResult;
+                _source = default;
+                _source.RunContinuationsAsynchronously = true;
+            }
 
-            internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy, byte[]? internalBuffer)
+            internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy, byte[] internalBuffer) : this(strategy)
             {
                 _strategy = strategy;
                 _result = TaskSourceCodes.NoResult;
                 _source = default;
                 _source.RunContinuationsAsynchronously = true;
 
-                if (internalBuffer != null)
-                {
-                    _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, internalBuffer);
-                }
+                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, internalBuffer);
             }
 
             internal void Configure(ReadOnlyMemory<byte> memory)
@@ -123,7 +127,7 @@ namespace System.IO.Strategies
 
                 // Ensure we're no longer set as the current ValueTaskSource (we may not have been to begin with).
                 // Only one operation at a time is eligible to use the preallocated overlapped
-                _strategy.CompareExchangeCurrentOverlappedOwner(null, this);
+                _strategy.TryToReuse(this);
             }
 
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
@@ -133,8 +137,7 @@ namespace System.IO.Strategies
                 // in which case the operation being completed is its _currentOverlappedOwner, or it'll
                 // be directly the ValueTaskSource that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
-                ValueTaskSource valueTaskSource = (ValueTaskSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(valueTaskSource != null);
+                ValueTaskSource valueTaskSource = (ValueTaskSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
                 Debug.Assert(valueTaskSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure

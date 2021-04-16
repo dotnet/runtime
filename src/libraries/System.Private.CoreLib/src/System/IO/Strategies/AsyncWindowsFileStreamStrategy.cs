@@ -10,7 +10,7 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private ValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private ValueTaskSource? _reusableValueTaskSource; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -31,7 +31,7 @@ namespace System.IO.Strategies
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
-            _currentOverlappedOwner?._preallocatedOverlapped?.Dispose();
+            _reusableValueTaskSource?._preallocatedOverlapped?.Dispose();
 
             return result;
         }
@@ -42,7 +42,7 @@ namespace System.IO.Strategies
             // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
-            _currentOverlappedOwner?._preallocatedOverlapped?.Dispose();
+            _reusableValueTaskSource?._preallocatedOverlapped?.Dispose();
         }
 
         protected override void OnInitFromHandle(SafeFileHandle handle)
@@ -105,12 +105,12 @@ namespace System.IO.Strategies
         // called by BufferedFileStreamStrategy
         internal override void OnBufferAllocated(byte[] buffer)
         {
-            Debug.Assert(_currentOverlappedOwner == null);
-            _currentOverlappedOwner = new ValueTaskSource(this, buffer);
+            Debug.Assert(_reusableValueTaskSource == null);
+
+            _reusableValueTaskSource = new ValueTaskSource(this, buffer);
         }
 
-        private ValueTaskSource? CompareExchangeCurrentOverlappedOwner(ValueTaskSource? newSource, ValueTaskSource? existingSource)
-            => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
+        private void TryToReuse(ValueTaskSource source) => Interlocked.CompareExchange(ref _reusableValueTaskSource, null, source);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -139,12 +139,12 @@ namespace System.IO.Strategies
             // - First time calling ReadAsync in buffered mode
             // - Second+ time calling ReadAsync, both buffered or unbuffered
             // - On buffered flush, when source memory is also the internal buffer
-            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _currentOverlappedOwner, null);
+            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null);
             // valueTaskSource is null when:
             // - First time calling ReadAsync in unbuffered mode
             if (valueTaskSource == null)
             {
-                valueTaskSource = new ValueTaskSource(this, null);
+                valueTaskSource = new ValueTaskSource(this);
             }
             valueTaskSource.Configure(destination);
             NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
@@ -265,12 +265,12 @@ namespace System.IO.Strategies
             // - First time calling WriteAsync in buffered mode
             // - Second+ time calling WriteAsync, both buffered or unbuffered
             // - On buffered flush, when source memory is also the internal buffer
-            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _currentOverlappedOwner, null);
+            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null);
             // valueTaskSource is null when:
             // - First time calling WriteAsync in unbuffered mode
             if (valueTaskSource == null)
             {
-                valueTaskSource = new ValueTaskSource(this, null);
+                valueTaskSource = new ValueTaskSource(this);
             }
             valueTaskSource.Configure(source);
             NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
