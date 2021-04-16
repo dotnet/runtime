@@ -3376,11 +3376,17 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     unsigned estDupCostSz = 0;
     for (Statement* stmt : bDest->Statements())
     {
+        // We want to compute the costs of the statement. Unfortunately, gtPrepareCost() / gtSetStmtInfo()
+        // call gtSetEvalOrder(), which can reorder nodes. If it does so, we need to re-thread the gtNext/gtPrev
+        // links. We don't know if it does or doesn't reorder nodes, so we end up always re-threading the links.
+
+        gtSetStmtInfo(stmt);
+        if (fgStmtListThreaded)
+        {
+            fgSetStmtSeq(stmt);
+        }
+
         GenTree* expr = stmt->GetRootNode();
-
-        /* We call gtPrepareCost to measure the cost of duplicating this tree */
-        gtPrepareCost(expr);
-
         estDupCostSz += expr->GetCostSz();
     }
 
