@@ -85,7 +85,7 @@ namespace System
 
             }
         }
-        
+
         public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
@@ -293,6 +293,13 @@ namespace System
             return ret == 1;
         }
 
+        private static readonly Lazy<SslProtocols> s_androidSupportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
+        private static bool AndroidGetSslProtocolSupport(SslProtocols protocol)
+        {
+            Debug.Assert(IsAndroid);
+            return (protocol & s_androidSupportedSslProtocols.Value) == protocol;
+        }
+
         private static bool GetTls10Support()
         {
             // on Windows, macOS, and Android TLS1.0/1.1 are supported.
@@ -358,6 +365,14 @@ namespace System
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
+            }
+            else if (IsAndroid)
+            {
+#if NETFRAMEWORK
+                return false;
+#else
+                return AndroidGetSslProtocolSupport(SslProtocols.Tls13);
+#endif
             }
             else if (IsOpenSslSupported)
             {

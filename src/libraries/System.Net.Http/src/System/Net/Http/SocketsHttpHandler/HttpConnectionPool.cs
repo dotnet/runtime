@@ -14,6 +14,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading;
@@ -105,13 +106,12 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, int maxConnections)
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
         {
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
-            _maxConnections = maxConnections;
+            _maxConnections = Settings._maxConnectionsPerServer;
 
             if (host != null)
             {
@@ -119,7 +119,11 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            {
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+            }
 
             switch (kind)
             {
@@ -173,6 +177,11 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    // Don't enforce the max connections limit on proxy tunnels; this would mean that connections to different origin servers
+                    // would compete for the same limited number of connections.
+                    // We will still enforce this limit on the user of the tunnel (i.e. ProxyTunnel or SslProxyTunnel).
+                    _maxConnections = int.MaxValue;
 
                     _http2Enabled = false;
                     _http3Enabled = false;
@@ -240,10 +249,14 @@ namespace System.Net.Http
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
 
-                if (_http3Enabled)
+                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+                if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                 {
-                    _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
-                    _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                    if (_http3Enabled)
+                    {
+                        _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
+                        _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                    }
                 }
             }
 
@@ -256,9 +269,21 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
+
+        private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
+        {
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            {
+                // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.
+                return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+            }
+
+            return null!;
+        }
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -290,7 +315,6 @@ namespace System.Net.Http
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
-        public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderValueBytes => _hostHeaderValueBytes;
@@ -352,24 +376,28 @@ namespace System.Net.Http
                 }
             }
 
-            // Either H3 explicitly requested or secured upgraded allowed.
-            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
             {
-                HttpAuthority? authority = _http3Authority;
-                // H3 is explicitly requested, assume prenegotiated H3.
-                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                // Either H3 explicitly requested or secured upgraded allowed.
+                if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                 {
-                    authority = authority ?? _originAuthority;
-                }
-                if (authority != null)
-                {
-                    if (IsAltSvcBlocked(authority))
+                    HttpAuthority? authority = _http3Authority;
+                    // H3 is explicitly requested, assume prenegotiated H3.
+                    if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
-                            new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                        authority = authority ?? _originAuthority;
                     }
+                    if (authority != null)
+                    {
+                        if (IsAltSvcBlocked(authority))
+                        {
+                            return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                                new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                        }
 
-                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                        return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                    }
                 }
             }
 
@@ -719,6 +747,10 @@ namespace System.Net.Http
             }
         }
 
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
         private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
             GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
@@ -891,14 +923,18 @@ namespace System.Net.Http
                     HandleAltSvc(altSvcHeaderValues, response.Headers.Age);
                 }
 
-                // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                // In this case, we blocklist the authority and retry the request at the origin.
-                if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
+                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+                if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                 {
-                    response.Dispose();
-                    BlocklistAuthority(h3Connection.Authority);
-                    continue;
+                    // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                    // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                    // In this case, we blocklist the authority and retry the request at the origin.
+                    if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
+                    {
+                        response.Dispose();
+                        BlocklistAuthority(h3Connection.Authority);
+                        continue;
+                    }
                 }
 
                 return response;
@@ -1149,9 +1185,11 @@ namespace System.Net.Http
             }
         }
 
+        private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
+
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (AnyProxyKind && ProxyCredentials != null)
+            if (DoProxyAuth && ProxyCredentials is not null)
             {
                 return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
             }
@@ -1159,13 +1197,11 @@ namespace System.Net.Http
             return connection.SendAsync(request, async, cancellationToken);
         }
 
-
         public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            if ((_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect) &&
-                _poolManager.ProxyCredentials != null)
+            if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, _poolManager.ProxyCredentials, doRequestAuth, this, cancellationToken);
+                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
             }
 
             return SendWithRetryAsync(request, async, doRequestAuth, cancellationToken);

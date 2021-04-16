@@ -414,8 +414,6 @@ struct GenTree
     genTreeOps gtOperSave; // Only used to save gtOper when we destroy a node, to aid debugging.
 #endif
 
-#if FEATURE_ANYCSE
-
 #define NO_CSE (0)
 
 #define IS_CSE_INDEX(x) ((x) != 0)
@@ -426,8 +424,6 @@ struct GenTree
 
     signed char gtCSEnum; // 0 or the CSE index (negated if def)
                           // valid only for CSE expressions
-
-#endif // FEATURE_ANYCSE
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
@@ -1449,6 +1445,16 @@ public:
         return OperIsSimple(gtOper);
     }
 
+    static bool OperIsRelop(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsRelop() const
+    {
+        return OperIsRelop(gtOper);
+    }
+
 #ifdef FEATURE_SIMD
     bool isCommutativeSIMDIntrinsic();
 #else  // !
@@ -1848,7 +1854,7 @@ public:
 
 //---------------------------------------------------------------------
 
-#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
+#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
     static const char* OpName(genTreeOps op);
 #endif
 
@@ -4427,6 +4433,7 @@ struct GenTreeCall final : public GenTree
     {
         return false;
     }
+
     bool IsTailCallConvertibleToLoop() const
     {
         return false;
@@ -4437,10 +4444,22 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0;
     }
+
     bool IsDelegateInvoke() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0;
     }
+
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
+
+    void SetIsSpecialIntrinsic()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+    }
+
     bool IsVirtualStubRelativeIndir() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;

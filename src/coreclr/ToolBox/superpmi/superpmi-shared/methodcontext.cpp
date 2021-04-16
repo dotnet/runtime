@@ -771,6 +771,28 @@ DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
     return value;
 }
 
+void MethodContext::recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
+{
+    if (IsJitIntrinsic == nullptr)
+        IsJitIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
+
+    IsJitIntrinsic->Add(CastHandle(ftn), (DWORD)result);
+    DEBUG_REC(dmpIsJitIntrinsic(CastHandle(ftn), (DWORD)result));
+}
+void MethodContext::dmpIsJitIntrinsic(DWORDLONG key, DWORD value)
+{
+    printf("IsJitIntrinsic key ftn-%016llX, value res-%u", key, value);
+}
+bool MethodContext::repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    AssertCodeMsg((IsJitIntrinsic != nullptr) && (IsJitIntrinsic->GetIndex(CastHandle(ftn)) != -1), EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(ftn));
+
+    bool result = (BOOL)IsJitIntrinsic->Get(CastHandle(ftn));
+    DEBUG_REP(dmpIsJitIntrinsic(CastHandle(ftn), (DWORD)result));
+    return result;
+}
+
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
 {
     if (GetMethodAttribs == nullptr)

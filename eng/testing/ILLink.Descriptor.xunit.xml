@@ -9,7 +9,9 @@
     </type>
     <type fullname="Xunit.Sdk.FactDiscoverer" />
   </assembly>
+  <assembly fullname="Microsoft.DotNet.XUnitExtensions" />
   <assembly fullname="xunit.core">
     <namespace fullname="Xunit" />
   </assembly>
+  <assembly fullname="xunit.runner.utility.netcoreapp10" /> 
 </linker>

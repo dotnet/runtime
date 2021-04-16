@@ -602,7 +602,7 @@ namespace System.IO.Strategies
                 ClearReadBufferBeforeWrite();
                 EnsureBufferAllocated();
             }
-            else if (_writePos == _bufferSize - 1)
+            else
             {
                 FlushWrite();
             }

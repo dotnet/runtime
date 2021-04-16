@@ -54,6 +54,12 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
+bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    return info.compCompHnd->isJitIntrinsic(ftn);
+}
+
+FORCEINLINE
 void Compiler::eeGetSig(unsigned               sigTok,
                         CORINFO_MODULE_HANDLE  scope,
                         CORINFO_CONTEXT_HANDLE context,

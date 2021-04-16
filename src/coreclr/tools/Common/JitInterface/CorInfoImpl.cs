@@ -654,6 +654,7 @@ namespace Internal.JitInterface
             if (memberFunctionVariant)
             {
                 callConv = GetMemberFunctionCallingConventionVariant(found ? callConv : (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention());
+                found = true;
             }
 
             return found;
@@ -855,6 +856,12 @@ namespace Internal.JitInterface
             }
 
             return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+        }
+
+        private bool isJitIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            return method.IsIntrinsic;
         }
 
         private uint getMethodAttribsInternal(MethodDesc method)
@@ -1579,8 +1586,7 @@ namespace Internal.JitInterface
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
-            TypeDesc type = HandleToObject(cls);
-            return type.IsValueType || type.IsPointer || type.IsFunctionPointer;
+            return HandleToObject(cls).IsValueType;
         }
 
         private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
@@ -1601,10 +1607,6 @@ namespace Internal.JitInterface
             // TODO: Support for verification (CORINFO_FLG_GENERIC_TYPE_VARIABLE)
 
             CorInfoFlag result = (CorInfoFlag)0;
-
-            // CoreCLR uses UIntPtr in place of pointers here
-            if (type.IsPointer || type.IsFunctionPointer)
-                type = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.UIntPtr);
 
             var metadataType = type as MetadataType;
 

@@ -5,19 +5,19 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.ReflectionEmitMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo,System.Type,System.Type,System.Type,System.Type)</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionEmitMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo,System.Type,System.Type,System.Type,System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.ReflectionEmitMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo)</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionEmitMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2090</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo)</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo)</property>
     </attribute>
   </assembly>
 </linker>

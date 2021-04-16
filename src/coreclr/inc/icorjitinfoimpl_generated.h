@@ -21,6 +21,9 @@
 
 public:
 
+bool isJitIntrinsic(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 uint32_t getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn) override;
 

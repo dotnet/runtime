@@ -912,7 +912,7 @@ namespace System.Net.Sockets
         public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>>? buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             bool successfulSend = false;
-            long start = socket.IsUnderlyingBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
+            long start = socket.IsUnderlyingHandleBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
 
             while (true)
             {
@@ -965,7 +965,7 @@ namespace System.Net.Sockets
                     return true;
                 }
 
-                if (socket.IsUnderlyingBlocking && socket.SendTimeout > 0 && (Environment.TickCount64 - start) >= socket.SendTimeout)
+                if (socket.IsUnderlyingHandleBlocking && socket.SendTimeout > 0 && (Environment.TickCount64 - start) >= socket.SendTimeout)
                 {
                     // When socket is truly in blocking mode, we depend on OS to enforce send timeout.
                     // When we are here we had partial send when we neither completed or failed.

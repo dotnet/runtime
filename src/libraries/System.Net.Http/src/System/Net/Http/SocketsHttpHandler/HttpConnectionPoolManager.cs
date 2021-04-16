@@ -39,9 +39,7 @@ namespace System.Net.Http
         private readonly Timer? _cleaningTimer;
         /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
         private readonly Timer? _heartBeatTimer;
-        /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
-        private readonly int _maxConnectionsPerServer;
-        // Temporary
+
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
@@ -60,7 +58,6 @@ namespace System.Net.Http
         public HttpConnectionPoolManager(HttpConnectionSettings settings)
         {
             _settings = settings;
-            _maxConnectionsPerServer = settings._maxConnectionsPerServer;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
 
             // As an optimization, we can sometimes avoid the overheads associated with
@@ -166,17 +163,20 @@ namespace System.Net.Http
 
             // Monitor network changes to invalidate Alt-Svc headers.
             // A weak reference is used to avoid NetworkChange.NetworkAddressChanged keeping a non-disposed connection pool alive.
-            var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
-            NetworkAddressChangedEventHandler networkChangedDelegate = delegate
-            {
-                if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? pools))
+            NetworkAddressChangedEventHandler networkChangedDelegate;
+            { // scope to avoid closure if _networkChangeCleanup != null
+                var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
+                networkChangedDelegate = delegate
                 {
-                    foreach (HttpConnectionPool pool in pools.Values)
+                    if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? pools))
                     {
-                        pool.OnNetworkChanged();
+                        foreach (HttpConnectionPool pool in pools.Values)
+                        {
+                            pool.OnNetworkChanged();
+                        }
                     }
-                }
-            };
+                };
+            }
 
             var cleanup = new NetworkChangeCleanup(networkChangedDelegate);
 
@@ -321,7 +321,7 @@ namespace System.Net.Http
             HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri);
 
                 if (_cleaningTimer == null)
                 {

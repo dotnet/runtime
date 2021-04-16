@@ -419,6 +419,8 @@ extern jmethodID g_SSLEngineWrap;
 extern jmethodID g_SSLEngineUnwrap;
 extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
+extern jmethodID g_SSLEngineGetSupportedProtocols;
+extern jmethodID g_SSLEngineSetEnabledProtocols;
 extern jmethodID g_SSLEngineSetSSLParameters;
 
 // java/nio/ByteBuffer

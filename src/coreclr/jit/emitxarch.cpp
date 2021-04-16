@@ -5163,7 +5163,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -5222,7 +5222,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -6788,7 +6788,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(dst->bbFlags & BBF_HAS_LABEL);
         assert(instrCount == 0);
     }
     else
@@ -14906,16 +14906,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_sqrtsd:
         case INS_sqrtpd:
-        case INS_rcpps:
-        case INS_rcpss:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency += PERFSCORE_LATENCY_13C;
             break;
 
+        case INS_rcpps:
+        case INS_rcpss:
         case INS_rsqrtss:
         case INS_rsqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_12C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_roundpd:

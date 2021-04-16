@@ -260,7 +260,7 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.packages+'))">
+  <ItemGroup Condition="$(_subset.Contains('+libs.packages+')) and '$(PgoInstrument)' != 'true'">
     <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 
