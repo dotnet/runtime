@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
     // Provides the underlying stream of data for network access.
-    public class NetworkStream : Stream
+    public class NetworkStream : DuplexStream
     {
         // Used by the class to hold the underlying socket the stream uses.
         private readonly Socket _streamSocket;
@@ -505,8 +506,7 @@ namespace System.Net.Sockets
 
         // ReadAsync - provide async read functionality.
         //
-        // This method provides async read functionality. All we do is
-        // call through to the Begin/EndRead methods.
+        // This method provides async read functionality.
         //
         // Input:
         //
@@ -566,8 +566,7 @@ namespace System.Net.Sockets
 
         // WriteAsync - provide async write functionality.
         //
-        // This method provides async write functionality. All we do is
-        // call through to the Begin/EndWrite methods.
+        // This method provides async write functionality.
         //
         // Input:
         //
@@ -631,6 +630,34 @@ namespace System.Net.Sockets
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
+        }
+
+        public override void CompleteWrites()
+        {
+            try
+            {
+                Flush();
+                _streamSocket.Shutdown(SocketShutdown.Send);
+                _writeable = false;
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                throw WrapException(SR.net_io_shutdownfailure, exception);
+            }
+        }
+
+        public override async ValueTask CompleteWritesAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await FlushAsync(cancellationToken).ConfigureAwait(false);
+                _streamSocket.Shutdown(SocketShutdown.Send);
+                _writeable = false;
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                throw WrapException(SR.net_io_shutdownfailure, exception);
+            }
         }
 
         // Sets the length of the stream. Always throws NotSupportedException

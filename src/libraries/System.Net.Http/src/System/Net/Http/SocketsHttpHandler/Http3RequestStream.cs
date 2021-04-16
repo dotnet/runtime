@@ -152,7 +152,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        _stream.Shutdown();
+                        await _stream.CompleteWritesAsync(cancellationToken).ConfigureAwait(false);
                     }
                 }
 
@@ -372,7 +372,7 @@ namespace System.Net.Http
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
             }
 
-            _stream.Shutdown();
+            await _stream.CompleteWritesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

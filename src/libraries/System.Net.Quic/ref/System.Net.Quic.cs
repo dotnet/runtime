@@ -78,7 +78,7 @@ namespace System.Net.Quic
         public long MaxBidirectionalStreams { get { throw null; } set { } }
         public long MaxUnidirectionalStreams { get { throw null; } set { } }
     }
-    public sealed partial class QuicStream : System.IO.Stream
+    public sealed partial class QuicStream : System.IO.DuplexStream
     {
         internal QuicStream() { }
         public override bool CanRead { get { throw null; } }
@@ -91,6 +91,8 @@ namespace System.Net.Quic
         public void AbortWrite(long errorCode) { }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override void CompleteWrites() { }
+        public override System.Threading.Tasks.ValueTask CompleteWritesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(System.IAsyncResult asyncResult) { }
@@ -102,7 +104,6 @@ namespace System.Net.Quic
         public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
-        public void Shutdown() { }
         public System.Threading.Tasks.ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }

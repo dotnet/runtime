@@ -114,7 +114,7 @@ namespace System.Net.Sockets
         public int InterfaceIndex { get { throw null; } set { } }
         public System.Net.IPAddress? LocalAddress { get { throw null; } set { } }
     }
-    public partial class NetworkStream : System.IO.Stream
+    public partial class NetworkStream : System.IO.DuplexStream
     {
         public NetworkStream(System.Net.Sockets.Socket socket) { }
         public NetworkStream(System.Net.Sockets.Socket socket, bool ownsSocket) { }
@@ -135,6 +135,8 @@ namespace System.Net.Sockets
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public void Close(int timeout) { }
+        public override void CompleteWrites() { }
+        public override System.Threading.Tasks.ValueTask CompleteWritesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(System.IAsyncResult asyncResult) { }

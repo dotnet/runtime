@@ -450,7 +450,7 @@ namespace System.Net.Quic.Tests
                         sendBuffer = sendBuffer.Slice(chunk.Length);
                     }
 
-                    clientStream.Shutdown();
+                    await clientStream.CompleteWritesAsync();
                     await clientStream.ShutdownWriteCompleted();
                 },
                 async serverConnection =>

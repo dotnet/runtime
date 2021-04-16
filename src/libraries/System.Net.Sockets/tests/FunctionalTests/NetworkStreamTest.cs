@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class NetworkStreamTest : ConnectedStreamConformanceTests
+    public class NetworkStreamTest : DuplexConnectedStreamConformanceTests
     {
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool CanTimeout => true;
@@ -547,7 +547,7 @@ namespace System.Net.Sockets.Tests
                     await Task.WhenAll(remoteTask, clientConnectTask);
 
                     using (TcpClient remote = remoteTask.Result)
-                    using (NetworkStream serverStream = new NetworkStream(remote.Client, serverAccess, ownsSocket:true))
+                    using (NetworkStream serverStream = new NetworkStream(remote.Client, serverAccess, ownsSocket: true))
                     using (NetworkStream clientStream = new NetworkStream(client.Client, clientAccess, ownsSocket: true))
                     {
                         await func(serverStream, clientStream);

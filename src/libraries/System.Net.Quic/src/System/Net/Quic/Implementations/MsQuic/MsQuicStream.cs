@@ -4,7 +4,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -396,10 +398,37 @@ namespace System.Net.Quic.Implementations.MsQuic
             await _state.ShutdownWriteCompletionSource.Task.ConfigureAwait(false);
         }
 
-        internal override void Shutdown()
+        public override void CompleteWrites()
         {
             ThrowIfDisposed();
-            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+            try
+            {
+                StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                throw new IOException("Unable to complete writes: " + ex.Message, ex);
+            }
+        }
+
+        // We don't wait for QUIC_STREAM_EVENT_SEND_SHUTDOWN_COMPLETE event here,
+        // because it is only sent to us once the peer has acknowledged the shutdown.
+        // Instead, this method acts more like shutdown(SD_SEND) in that it only "queues"
+        // the shutdown packet to be sent without any waiting for completion.
+        public override ValueTask CompleteWritesAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            if (cancellationToken.IsCancellationRequested) return ValueTask.FromCanceled(cancellationToken);
+
+            try
+            {
+                StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+                return default;
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException("Unable to complete writes: " + ex.Message, ex)));
+            }
         }
 
         // TODO consider removing sync-over-async with blocking calls.

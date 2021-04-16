@@ -14,7 +14,7 @@ namespace System.IO.Tests
             Task.FromResult<StreamPair>(ConnectedStreams.CreateUnidirectional());
     }
 
-    public class BidirectionalConnectedStreamsTests : ConnectedStreamConformanceTests
+    public class BidirectionalConnectedStreamsTests : DuplexConnectedStreamConformanceTests
     {
         protected override int BufferedSize => StreamBuffer.DefaultMaxBufferSize;
         protected override bool FlushRequiredToWriteData => false;

@@ -46,13 +46,13 @@ namespace System.IO
 
         /// <summary>Creates a pair of streams that are connected for bidirectional communication.</summary>
         /// <remarks>Writing to one stream produces data readable by the either, and vice versa.</remarks>
-        public static (Stream Stream1, Stream Stream2) CreateBidirectional() =>
+        public static (DuplexStream Stream1, DuplexStream Stream2) CreateBidirectional() =>
             CreateBidirectional(StreamBuffer.DefaultInitialBufferSize, StreamBuffer.DefaultMaxBufferSize);
 
         /// <summary>Creates a pair of streams that are connected for bidirectional communication.</summary>
         /// <param name="initialBufferSize">The initial buffer size to use when storing data in the connection.</param>
         /// <remarks>Writing to one stream produces data readable by the either, and vice versa.</remarks>
-        public static (Stream Stream1, Stream Stream2) CreateBidirectional(int initialBufferSize) =>
+        public static (DuplexStream Stream1, DuplexStream Stream2) CreateBidirectional(int initialBufferSize) =>
             CreateBidirectional(initialBufferSize, StreamBuffer.DefaultMaxBufferSize);
 
         /// <summary>Creates a pair of streams that are connected for bidirectional communication.</summary>
@@ -62,7 +62,7 @@ namespace System.IO
         /// writes will block until additional space becomes available.
         /// </param>
         /// <remarks>Writing to one stream produces data readable by the either, and vice versa.</remarks>
-        public static (Stream Stream1, Stream Stream2) CreateBidirectional(int initialBufferSize, int maxBufferSize)
+        public static (DuplexStream Stream1, DuplexStream Stream2) CreateBidirectional(int initialBufferSize, int maxBufferSize)
         {
             // Each direction needs a buffer; one stream will use b1 for reading and b2 for writing,
             // and the other stream will do the inverse.
@@ -275,7 +275,7 @@ namespace System.IO
                 throw new NotSupportedException();
         }
 
-        private sealed class BidirectionalStreamBufferStream : Stream
+        private sealed class BidirectionalStreamBufferStream : DuplexStream
         {
             private readonly StreamBuffer _readBuffer;
             private readonly StreamBuffer _writeBuffer;
@@ -309,7 +309,7 @@ namespace System.IO
             }
 
             public override bool CanRead => !_disposed;
-            public override bool CanWrite => !_disposed;
+            public override bool CanWrite => !_disposed && !_writeBuffer.IsComplete;
             public override bool CanSeek => false;
 
             public override void Flush() => ThrowIfDisposed();
@@ -323,6 +323,20 @@ namespace System.IO
                 }
 
                 return Task.CompletedTask;
+            }
+
+            public override void CompleteWrites()
+            {
+                ThrowIfDisposed();
+                _writeBuffer.EndWrite();
+            }
+
+            public override ValueTask CompleteWritesAsync(CancellationToken cancellationToken = default)
+            {
+                ThrowIfDisposed();
+                if (cancellationToken.IsCancellationRequested) return ValueTask.FromCanceled(cancellationToken);
+                _writeBuffer.EndWrite();
+                return default;
             }
 
             public override int Read(byte[] buffer, int offset, int count)

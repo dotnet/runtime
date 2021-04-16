@@ -2938,6 +2938,72 @@ namespace System.IO.Tests
         }
     }
 
+    /// <summary>Base class for a connected stream that can have writes completed.</summary>
+    public abstract class DuplexConnectedStreamConformanceTests : ConnectedStreamConformanceTests
+    {
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public virtual async Task CompleteWrites_EndsReads(bool isAsync)
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            byte[] buffer = new byte[8];
+
+            foreach ((Stream writable, Stream readable) in GetReadWritePairs(streams))
+            {
+                await writable.WriteAsync(buffer);
+                await writable.FlushAsync();
+
+                int received = 0;
+                while (received != buffer.Length)
+                {
+                    int len = await readable.ReadAsync(buffer.AsMemory(0, buffer.Length - received));
+                    received += len;
+                }
+
+                ValueTask<int> readTask = readable.ReadAsync(buffer);
+
+                Assert.False(readTask.IsCompleted);
+                Assert.True(writable.CanWrite);
+
+                DuplexStream writableDuplexStream = Assert.IsAssignableFrom<DuplexStream>(writable);
+                if (isAsync) await writableDuplexStream.CompleteWritesAsync();
+                else writableDuplexStream.CompleteWrites();
+
+                Assert.Equal(0, await readTask);
+                Assert.False(writable.CanWrite);
+
+                await Assert.ThrowsAnyAsync<Exception>(async () => await writable.WriteAsync(buffer));
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public virtual async Task CompleteWrites_CalledTwice_Success(bool isAsync)
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            byte[] buffer = new byte[8];
+
+            foreach ((Stream writable, Stream readable) in GetReadWritePairs(streams))
+            {
+                DuplexStream writableDuplexStream = Assert.IsAssignableFrom<DuplexStream>(writable);
+
+                Assert.True(writable.CanWrite);
+
+                if (isAsync) await writableDuplexStream.CompleteWritesAsync();
+                else writableDuplexStream.CompleteWrites();
+
+                Assert.False(writable.CanWrite);
+
+                if (isAsync) await writableDuplexStream.CompleteWritesAsync();
+                else writableDuplexStream.CompleteWrites();
+
+                Assert.False(writable.CanWrite);
+            }
+        }
+    }
+
     /// <summary>Provides a disposable, enumerable tuple of two streams.</summary>
     public class StreamPair : IDisposable, IEnumerable<Stream>
     {

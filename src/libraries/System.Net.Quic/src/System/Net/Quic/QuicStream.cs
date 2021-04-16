@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    public sealed class QuicStream : Stream
+    public sealed class QuicStream : DuplexStream
     {
         private readonly QuicStreamProvider _provider;
 
@@ -101,7 +101,9 @@ namespace System.Net.Quic
 
         public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
 
-        public void Shutdown() => _provider.Shutdown();
+        public override void CompleteWrites() => _provider.CompleteWrites();
+
+        public override ValueTask CompleteWritesAsync(CancellationToken cancellationToken = default) => _provider.CompleteWritesAsync(cancellationToken);
 
         protected override void Dispose(bool disposing)
         {

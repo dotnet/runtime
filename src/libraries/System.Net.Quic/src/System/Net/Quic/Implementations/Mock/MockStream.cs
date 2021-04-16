@@ -178,12 +178,19 @@ namespace System.Net.Quic.Implementations.Mock
             return default;
         }
 
-        internal override void Shutdown()
+        public override void CompleteWrites()
         {
             CheckDisposed();
-
-            // This seems to mean shutdown send, in particular, not both.
             WriteStreamBuffer?.EndWrite();
+        }
+
+        public override ValueTask CompleteWritesAsync(CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+            if (cancellationToken.IsCancellationRequested) return ValueTask.FromCanceled(cancellationToken);
+
+            WriteStreamBuffer?.EndWrite();
+            return default;
         }
 
         private void CheckDisposed()
@@ -198,7 +205,7 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                Shutdown();
+                CompleteWrites();
 
                 _disposed = true;
             }
@@ -208,7 +215,7 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                Shutdown();
+                CompleteWrites();
 
                 _disposed = true;
             }

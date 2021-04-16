@@ -7194,6 +7194,12 @@ namespace System.IO
         public DirectoryNotFoundException(string? message) { }
         public DirectoryNotFoundException(string? message, System.Exception? innerException) { }
     }
+    public abstract partial class DuplexStream : System.IO.Stream
+    {
+        public System.IO.Stream GetWriteOnlyStream() { throw null; }
+        public abstract void CompleteWrites();
+        public abstract System.Threading.Tasks.ValueTask CompleteWritesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+    }
     public partial class EndOfStreamException : System.IO.IOException
     {
         public EndOfStreamException() { }

@@ -81,7 +81,7 @@ namespace System.Net.Quic.Tests
 
     }
 
-    public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests
+    public abstract class QuicStreamConformanceTests : DuplexConnectedStreamConformanceTests
     {
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
