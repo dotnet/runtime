@@ -298,7 +298,6 @@ namespace System.Net.Http
                 // +----+----+----+----+----+----+----+----+
                 //    1    1      2              4
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async).ConfigureAwait(false);
-                VerifyProtocolVersion(ProtocolVersion4, buffer[0]);
 
                 switch (buffer[1])
                 {
