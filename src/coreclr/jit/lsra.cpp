@@ -1299,10 +1299,6 @@ void LinearScan::doLinearScan()
     {
         dumpLsraStats(jitstdout);
     }
-    else if ((JitConfig.DisplayLsraStats() == 2))
-    {
-        dumpLsraStatsCsv(jitstdout);
-    }
 #endif // TRACK_LSRA_STATS
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
@@ -3392,10 +3388,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         // We must have at least one with the lowest spill cost.
         assert(lowestCostSpillSet != RBM_NONE);
         found = selector.applySelection(SPILL_COST, lowestCostSpillSet);
-        if (found)
-        {
-            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
     }
 
     // Apply the FAR_NEXT_REF heuristic.
@@ -3426,10 +3419,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         // We must have at least one with the lowest spill cost.
         assert(farthestSet != RBM_NONE);
         found = selector.applySelection(FAR_NEXT_REF, farthestSet);
-        if (found)
-        {
-            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
     }
 
     // Apply the PREV_REG_OPT heuristic.

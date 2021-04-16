@@ -5181,7 +5181,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
 #if TRACK_LSRA_STATS
-    if ((JitConfig.DisplayLsraStats() == 2))
+    if (JitConfig.DisplayLsraStats() == 2)
     {
         m_pLinearScan->dumpLsraStatsCsv(jitstdout);
     }
