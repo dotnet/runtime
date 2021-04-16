@@ -126,10 +126,8 @@ struct _MonoAssemblyLoadContext {
 };
 
 struct _MonoMemoryManager {
-	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
+	// Whether the MemoryManager can be unloaded; should only be set at creation
 	gboolean collectible;
-	// Whether this is a singleton or generic MemoryManager
-	gboolean is_generic;
 	// Whether the MemoryManager is in the process of being freed
 	gboolean freeing;
 

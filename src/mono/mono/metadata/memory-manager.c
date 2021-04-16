@@ -127,6 +127,13 @@ mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collec
 		memory_manager->type_init_exception_hash = mono_g_hash_table_new_type_internal (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
 	}
 
+	/* Register it into its ALCs */
+	for (int i = 0; i < nalcs; ++i) {
+		mono_alc_memory_managers_lock (alcs [i]);
+		g_ptr_array_add (alcs [i]->generic_memory_managers, memory_manager);
+		mono_alc_memory_managers_unlock (alcs [i]);
+	}
+
 	if (mono_get_runtime_callbacks ()->init_mem_manager)
 		mono_get_runtime_callbacks ()->init_mem_manager (memory_manager);
 
@@ -177,6 +184,14 @@ memory_manager_delete_objects (MonoMemoryManager *memory_manager)
 	}
 }
 
+static void
+free_hash (GHashTable **hash)
+{
+	if (*hash)
+		g_hash_table_destroy (*hash);
+	*hash = NULL;
+}
+
 // Full deletion
 static void
 memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
@@ -194,6 +209,27 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 	if (!memory_manager->freeing)
 		memory_manager_delete_objects (memory_manager);
 
+	/*
+	 * Most memory held by these hashes is allocated from the
+	 * mempool, but there might some extra logic needed
+	 * like freeing interface ids.
+	 * The free functions of the hashes are in metadata.c.
+	 */
+	MonoMemoryManager *mm = memory_manager;
+	if (mm->gclass_cache)
+		mono_conc_hashtable_destroy (mm->gclass_cache);
+	free_hash (&mm->ginst_cache);
+	free_hash (&mm->gmethod_cache);
+	free_hash (&mm->gsignature_cache);
+	free_hash (&mm->szarray_cache);
+	free_hash (&mm->array_cache);
+	free_hash (&mm->ptr_cache);
+	free_hash (&mm->aggregate_modifiers_cache);
+	mono_wrapper_caches_free (&mm->wrapper_caches);
+	for (int i = 0; i < mm->gshared_types_len; ++i)
+		free_hash (&mm->gshared_types [i]);
+	g_free (mm->gshared_types);
+
 	mono_coop_mutex_destroy (&memory_manager->lock);
 
 	// FIXME: Free generics caches
@@ -201,6 +237,7 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 	if (debug_unload) {
 		mono_mempool_invalidate (memory_manager->_mp);
 		mono_code_manager_invalidate (memory_manager->code_mp);
+		memset (memory_manager, 0x42, sizeof (MonoMemoryManager));
 	} else {
 		mono_mempool_destroy (memory_manager->_mp);
 		memory_manager->_mp = NULL;
@@ -220,8 +257,6 @@ mono_mem_manager_free_objects (MonoMemoryManager *memory_manager)
 void
 mono_mem_manager_free (MonoMemoryManager *memory_manager, gboolean debug_unload)
 {
-	g_assert (!memory_manager->is_generic);
-
 	memory_manager_delete (memory_manager, debug_unload);
 	g_free (memory_manager);
 }
@@ -483,17 +518,8 @@ get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 
 	/* Create new mem manager */
 	res = mono_mem_manager_new (alcs, nalcs, collectible);
-	res->is_generic = TRUE;
 
 	/* The hashes are lazily inited in metadata.c */
-
-	/* Register it into its ALCs */
-	for (int i = 0; i < nalcs; ++i) {
-		mono_alc_memory_managers_lock (alcs [i]);
-		g_ptr_array_add (alcs [i]->generic_memory_managers, res);
-		mono_alc_memory_managers_unlock (alcs [i]);
-	}
-
 	mono_memory_barrier ();
 
 	mem_manager_cache_add (res);
