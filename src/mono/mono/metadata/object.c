@@ -322,13 +322,18 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	if (!vtable->init_failed)
 		g_error ("Trying to get the init exception for a non-failed vtable of class %s", mono_type_get_full_name (klass));
 
-	/*
+	mono_mem_manager_init_reflection_hashes (mem_manager);
+
+	/* 
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
 	 */
 	ex = NULL;
 	mono_mem_manager_lock (mem_manager);
-	ex = (MonoException *)mono_g_hash_table_lookup (mem_manager->type_init_exception_hash, klass);
+	if (mem_manager->collectible)
+		ex = (MonoException *)mono_weak_hash_table_lookup (mem_manager->weak_type_init_exception_hash, klass);
+	else
+		ex = (MonoException *)mono_g_hash_table_lookup (mem_manager->type_init_exception_hash, klass);
 	mono_mem_manager_unlock (mem_manager);
 
 	if (!ex) {
@@ -570,8 +575,12 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
 			 */
+			mono_mem_manager_init_reflection_hashes (mem_manager);
 			mono_mem_manager_lock (mem_manager);
-			mono_g_hash_table_insert_internal (mem_manager->type_init_exception_hash, klass, exc_to_throw);
+			if (mem_manager->collectible)
+				mono_weak_hash_table_insert (mem_manager->weak_type_init_exception_hash, klass, exc_to_throw);
+			else
+				mono_g_hash_table_insert_internal (mem_manager->type_init_exception_hash, klass, exc_to_throw);
 			mono_mem_manager_unlock (mem_manager);
 		}
 
@@ -2034,6 +2043,8 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		interface_offsets = (gpointer*)((char*)interface_offsets + imt_table_bytes / 2);
 	g_assert (!((gsize)vt & 7));
 
+	mem_manager = m_class_get_mem_manager (klass);
+
 	vt->klass = klass;
 	vt->rank = m_class_get_rank (klass);
 	vt->domain = domain;
@@ -2078,8 +2089,6 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		vt->has_static_fields = TRUE;
 		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
 	}
-
-	mem_manager = m_class_get_mem_manager (klass);
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {

@@ -11,6 +11,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-conc-hash.h>
 #include <mono/metadata/mono-hash.h>
+#include <mono/metadata/weak-hash.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-coop-mutex.h>
@@ -167,6 +168,11 @@ struct _MonoMemoryManager {
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
+
+	/* Same hashes for collectible mem managers */
+	MonoWeakHashTable *weak_type_hash;
+	MonoWeakHashTable *weak_refobject_hash;
+	MonoWeakHashTable *weak_type_init_exception_hash;
 
 	/*
 	 * Generic instances and aggregated custom modifiers depend on many alcs, and they need to be deleted if one
@@ -374,6 +380,9 @@ g_slist_prepend_mem_manager (MonoMemoryManager *memory_manager, GSList *list, gp
 
 MonoGCHandle
 mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager);
 
 G_END_DECLS
 

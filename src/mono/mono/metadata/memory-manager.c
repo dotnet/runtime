@@ -121,9 +121,11 @@ mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collec
 	memory_manager->class_vtable_array = g_ptr_array_new ();
 
 	// TODO: make these not linked to the domain for debugging
-	memory_manager->type_hash = mono_g_hash_table_new_type_internal ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Type Table");
-	memory_manager->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
-	memory_manager->type_init_exception_hash = mono_g_hash_table_new_type_internal (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
+	if (!collectible) {
+		memory_manager->type_hash = mono_g_hash_table_new_type_internal ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Type Table");
+		memory_manager->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
+		memory_manager->type_init_exception_hash = mono_g_hash_table_new_type_internal (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
+	}
 
 	if (mono_get_runtime_callbacks ()->init_mem_manager)
 		mono_get_runtime_callbacks ()->init_mem_manager (memory_manager);
@@ -153,18 +155,26 @@ memory_manager_delete_objects (MonoMemoryManager *memory_manager)
 	memory_manager->freeing = TRUE;
 
 	// Must be done before type_hash is freed
-	for (guint i = 0; i < memory_manager->class_vtable_array->len; i++)
-		unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
+	if (!memory_manager->collectible) {
+		// FIXME:
+		for (guint i = 0; i < memory_manager->class_vtable_array->len; i++)
+			unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
+	}
 
 	g_ptr_array_free (memory_manager->class_vtable_array, TRUE);
 	memory_manager->class_vtable_array = NULL;
-	mono_g_hash_table_destroy (memory_manager->type_hash);
-	memory_manager->type_hash = NULL;
-	mono_conc_g_hash_table_foreach (memory_manager->refobject_hash, cleanup_refobject_hash, NULL);
-	mono_conc_g_hash_table_destroy (memory_manager->refobject_hash);
-	memory_manager->refobject_hash = NULL;
-	mono_g_hash_table_destroy (memory_manager->type_init_exception_hash);
-	memory_manager->type_init_exception_hash = NULL;
+
+	if (!memory_manager->collectible) {
+		mono_g_hash_table_destroy (memory_manager->type_hash);
+		memory_manager->type_hash = NULL;
+		mono_conc_g_hash_table_foreach (memory_manager->refobject_hash, cleanup_refobject_hash, NULL);
+		mono_conc_g_hash_table_destroy (memory_manager->refobject_hash);
+		memory_manager->refobject_hash = NULL;
+		mono_g_hash_table_destroy (memory_manager->type_init_exception_hash);
+		memory_manager->type_init_exception_hash = NULL;
+	} else {
+		// FIXME: Free weak hashes
+	}
 }
 
 // Full deletion
@@ -604,4 +614,58 @@ mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager)
 	mono_mem_manager_unlock (mem_manager);
 
 	return res;
+}
+
+/*
+ * Initialize reflection hashes in MEM_MANAGER.
+ * This is done on demand, see get_loader_alloc ().
+ */
+void
+mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager)
+{
+	ERROR_DECL (error);
+
+	if (!mem_manager->collectible)
+		return;
+	if (mem_manager->weak_refobject_hash)
+		return;
+
+	MonoGCHandle loader_alloc_handle = mono_mem_manager_get_loader_alloc (mem_manager);
+	MonoManagedLoaderAllocator *loader_alloc = (MonoManagedLoaderAllocator*)mono_gchandle_get_target_internal (loader_alloc_handle);
+
+	const int nhashes = 3;
+
+	/* Create a set of object[2] arrays to hold arrays of keys/values, store them into LoaderAllocator.m_hashes */
+	/* Create these outside the lock */
+
+	MonoArray *holders_arr = mono_array_new_checked (mono_get_object_class (), nhashes, error);
+	mono_error_assert_ok (error);
+
+	// FIXME: GC safety
+
+	MonoArray *holders [nhashes];
+	MonoGCHandle holder_handles [nhashes];
+	for (int i = 0; i < nhashes; ++i) {
+		holders [i] = mono_array_new_checked (mono_get_object_class (), 2, error);
+		mono_error_assert_ok (error);
+		mono_array_setref_fast (holders_arr, i, holders [i]);
+		holder_handles [i] = mono_gchandle_new_weakref_internal ((MonoObject*)holders [i], FALSE);
+	}
+
+	mono_mem_manager_lock (mem_manager);
+	if (!mem_manager->weak_refobject_hash) {
+		MONO_OBJECT_SETREF_INTERNAL (loader_alloc, m_hashes, holders_arr);
+
+		mem_manager->weak_type_hash = mono_weak_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, holder_handles [0]);
+		mem_manager->weak_type_init_exception_hash = mono_weak_hash_table_new (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, holder_handles [1]);
+	    MonoWeakHashTable *hash = mono_weak_hash_table_new (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, holder_handles [2]);
+		mono_memory_barrier ();
+
+		/* Set this last because of the double checked locking above */
+		mem_manager->weak_refobject_hash = hash;
+	} else {
+		for (int i = 0; i < nhashes; ++i)
+			mono_gchandle_free_internal (holder_handles [i]);
+	}
+	mono_mem_manager_unlock (mem_manager);
 }

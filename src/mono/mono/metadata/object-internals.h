@@ -440,6 +440,7 @@ TYPED_HANDLE_DECL (MonoSafeHandle);
 struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
+	MonoObject *m_keepalive;
 };
 
 /* Safely access System.Type from native code */
@@ -906,10 +907,11 @@ struct _MonoReflectionMethodBody {
 /* Safely access System.Reflection.MethodBody from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
-/* System.RuntimeAssembly */
+/* System.Reflection.RuntimeAssembly */
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
+	MonoObject *m_keepalive;
 };
 
 typedef struct {
@@ -1426,6 +1428,7 @@ typedef enum {
 typedef struct {
 	MonoObject object;
 	MonoObject *m_scout;
+	MonoArray *m_hashes;
 } MonoManagedLoaderAllocator;
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
