@@ -7,6 +7,9 @@ using System.Buffers.Binary;
 
 namespace Microsoft.NET.HostModel.ComHost
 {
+    /// <summary>
+    /// Reads data from a COM Type Library file based on the official implementation.
+    /// </summary>
     internal class TypeLibReader
     {
         private byte[] tlbBytes;
