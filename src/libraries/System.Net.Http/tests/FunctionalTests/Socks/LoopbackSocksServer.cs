@@ -145,18 +145,6 @@ namespace System.Net.Http.Functional.Tests.Socks
                 usernameBuffer[usernameBytes++] = (byte)usernameByte;
             }
 
-            if (_username != null)
-            {
-                string username = Encoding.UTF8.GetString(usernameBuffer.AsSpan(0, usernameBytes));
-                if (username != _username)
-                {
-                    ns.WriteByte(4);
-                    buffer[0] = 93;
-                    await ns.WriteAsync(buffer).ConfigureAwait(false);
-                    throw new Exception("Bad username.");
-                }
-            }
-
             if (remoteHost.StartsWith("0.0.0") && remoteHost != "0.0.0.0")
             {
                 byte[] hostBuffer = new byte[1024];
@@ -174,6 +162,18 @@ namespace System.Net.Http.Functional.Tests.Socks
                 }
 
                 remoteHost = Encoding.UTF8.GetString(hostBuffer.AsSpan(0, hostnameBytes));
+            }
+
+            if (_username != null)
+            {
+                string username = Encoding.UTF8.GetString(usernameBuffer.AsSpan(0, usernameBytes));
+                if (username != _username)
+                {
+                    ns.WriteByte(4);
+                    buffer[0] = 93;
+                    await ns.WriteAsync(buffer).ConfigureAwait(false);
+                    return;
+                }
             }
 
             ns.WriteByte(4);
