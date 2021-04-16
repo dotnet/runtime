@@ -420,6 +420,7 @@ namespace System
             set { ConsolePal.CursorVisible = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static int CursorLeft
         {
@@ -427,6 +428,7 @@ namespace System
             set { SetCursorPosition(value, CursorTop); }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static int CursorTop
         {
@@ -552,6 +554,7 @@ namespace System
             return ConsolePal.OpenStandardInput();
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static Stream OpenStandardInput(int bufferSize)
         {
