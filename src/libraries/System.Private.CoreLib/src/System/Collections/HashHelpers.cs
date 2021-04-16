@@ -11,7 +11,7 @@ namespace System.Collections
         public const uint HashCollisionThreshold = 100;
 
         // This is the maximum prime smaller than Array.MaxLength.
-        public const int MaxPrimeArrayLength = 0x7FEFFFFD;
+        public const int MaxPrimeArrayLength = 0x7FFFFFC3;
 
         public const int HashPrime = 101;
 

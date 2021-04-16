@@ -49,7 +49,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(EnsureCapacity_LargeCapacity_Throws_MemberData))]
-        [SkipOnMono("mono forces no restrictions on array size.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void EnsureCapacity_LargeCapacity_Throws(int count, int requestCapacity)
         {
             List<T> list = GenericListFactory(count);
