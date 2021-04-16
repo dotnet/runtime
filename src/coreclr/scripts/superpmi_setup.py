@@ -304,13 +304,17 @@ def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda pa
         if os.path.isdir(src_item):
             copy_directory(src_item, dst_item, verbose_output, match_func)
         else:
-            if match_func(src_item):
+            try:
+                if match_func(src_item):
+                    if verbose_output:
+                        print("> copy {0} => {1}".format(src_item, dst_item))
+                    shutil.copy2(src_item, dst_item)
+                else:
+                    if verbose_output:
+                        print("> skipping {0}".format(src_item))
+            except UnicodeEncodeError:
                 if verbose_output:
-                    print("> copy {0} => {1}".format(src_item, dst_item))
-                shutil.copy2(src_item, dst_item)
-            else:
-                if verbose_output:
-                    print("> skipping {0}".format(src_item))
+                    print("> Got UnicodeEncodeError")
 
 
 def copy_files(src_path, dst_path, file_names):
