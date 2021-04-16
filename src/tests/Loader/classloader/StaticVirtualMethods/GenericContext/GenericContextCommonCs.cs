@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 
-static class Statics
+public static class Statics
 {
     public static string String;
     public static int Failures;
