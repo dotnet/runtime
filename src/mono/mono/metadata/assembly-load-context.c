@@ -49,6 +49,10 @@ mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 	alc->pinvoke_scopes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	mono_coop_mutex_init (&alc->assemblies_lock);
 	mono_coop_mutex_init (&alc->pinvoke_lock);
+
+	if (collectible)
+		/* Eagerly create the loader alloc object for the main memory manager */
+		mono_mem_manager_get_loader_alloc (alc->memory_manager);
 }
 
 static MonoAssemblyLoadContext *

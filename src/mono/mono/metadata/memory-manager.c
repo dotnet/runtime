@@ -3,7 +3,10 @@
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/debug-internals.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/utils/unlocked.h>
+
+static GENERATE_GET_CLASS_WITH_CACHE (loader_allocator, "System.Reflection", "LoaderAllocator");
 
 static LockFreeMempool*
 lock_free_mempool_new (void)
@@ -548,4 +551,57 @@ mono_mem_manager_merge (MonoMemoryManager *mm1, MonoMemoryManager *mm2)
 			alcs [nalcs ++] = mm2->alcs [i];
 	}
 	return get_mem_manager_for_alcs (alcs, nalcs);
+}
+
+/*
+ * Return a GC handle for the LoaderAllocator object
+ * which corresponds to the mem manager.
+ * Return NULL if the mem manager is not collectible.
+ * This is done lazily since mem managers can be created from metadata code.
+ */
+MonoGCHandle
+mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager)
+{
+	ERROR_DECL (error);
+	MonoGCHandle res;
+
+	if (!mem_manager->collectible)
+		return NULL;
+
+	if (mem_manager->loader_allocator_weak_handle)
+		return mem_manager->loader_allocator_weak_handle;
+
+	/*
+	 * Create the LoaderAllocator object which is used to detect whenever there are managed
+	 * references to this memory manager.
+	 */
+
+	/* Try to do most of the construction outside the lock */
+	MonoObject *loader_alloc = mono_object_new_pinned (mono_class_get_loader_allocator_class (), error);
+	mono_error_assert_ok (error);
+
+	/* This will keep the object alive until unload has started */
+	mem_manager->loader_allocator_handle = mono_gchandle_new_internal (loader_alloc, TRUE);
+
+	MonoMethod *method = mono_class_get_method_from_name_checked (mono_class_get_loader_allocator_class (), ".ctor", 1, 0, error);
+	mono_error_assert_ok (error);
+	g_assert (method);
+
+	/* loader_alloc is pinned */
+	gpointer params [1] = { &mem_manager };
+	mono_runtime_invoke_checked (method, loader_alloc, params, error);
+	mono_error_assert_ok (error);
+
+	mono_mem_manager_lock (mem_manager);
+	res = mem_manager->loader_allocator_weak_handle;
+	if (!res) {
+		res = mono_gchandle_new_weakref_internal (loader_alloc, TRUE);
+		mono_memory_barrier ();
+		mem_manager->loader_allocator_weak_handle = res;
+	} else {
+		/* FIXME: The LoaderAllocator object has a finalizer, which shouldn't execute */
+	}
+	mono_mem_manager_unlock (mem_manager);
+
+	return res;
 }
