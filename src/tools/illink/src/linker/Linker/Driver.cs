@@ -335,6 +335,12 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--disable-serialization-discovery":
+						if (!GetBoolParam (token, l => context.DisableSerializationDiscovery = l))
+							return -1;
+
+						continue;
+
 					case "--ignore-descriptors":
 						if (!GetBoolParam (token, l => context.IgnoreDescriptors = l))
 							return -1;
@@ -708,6 +714,9 @@ namespace Mono.Linker
 			// RegenerateGuidStep [optional]
 			// SealerStep
 			// OutputStep
+
+			if (!context.DisableSerializationDiscovery)
+				p.MarkHandlers.Add (new DiscoverSerializationHandler ());
 
 			foreach (string custom_step in custom_steps) {
 				if (!AddCustomStep (p, custom_step))

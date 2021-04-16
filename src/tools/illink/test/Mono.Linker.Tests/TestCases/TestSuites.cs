@@ -217,6 +217,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SerializationTests))]
+		public void SerializationTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.ExtensibilityTests))]
 		public void ExtensibilityTests (TestCase testCase)

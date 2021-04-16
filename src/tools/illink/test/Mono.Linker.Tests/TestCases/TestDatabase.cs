@@ -166,6 +166,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Sealer");
 		}
 
+		public static IEnumerable<TestCaseData> SerializationTests ()
+		{
+			return NUnitCasesBySuiteName ("Serialization");
+		}
+
 		public static IEnumerable<TestCaseData> SubstitutionsTests ()
 		{
 			return NUnitCasesBySuiteName ("Substitutions");
