@@ -361,11 +361,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             QUIC_CONNECTION_SHUTDOWN_FLAGS Flags,
             long ErrorCode)
         {
-            if (_state.ShutdownTcs.Task.IsCompleted)
-            {
-                return ValueTask.CompletedTask;
-            }
-
             // Store the connection into the GCHandle'd state to prevent GC if user calls ShutdownAsync and gets rid of all references to the MsQuicConnection.
             Debug.Assert(_state.Connection == null);
             _state.Connection = this;
