@@ -31,7 +31,7 @@ namespace System.IO.Strategies
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped?.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped.Dispose();
 
             return result;
         }
@@ -42,7 +42,7 @@ namespace System.IO.Strategies
             // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped?.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped.Dispose();
         }
 
         protected override void OnInitFromHandle(SafeFileHandle handle)
@@ -102,19 +102,11 @@ namespace System.IO.Strategies
             }
         }
 
-        // called by BufferedFileStreamStrategy
-        internal override void OnBufferAllocated(byte[] buffer)
-        {
-            Debug.Assert(_reusableValueTaskSource == null);
-
-            _reusableValueTaskSource = new ValueTaskSource(this, buffer);
-        }
-
         private void TryToReuse(ValueTaskSource source)
         {
             if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
             {
-                source._preallocatedOverlapped?.Dispose();
+                source._preallocatedOverlapped.Dispose();
             }
         }
 

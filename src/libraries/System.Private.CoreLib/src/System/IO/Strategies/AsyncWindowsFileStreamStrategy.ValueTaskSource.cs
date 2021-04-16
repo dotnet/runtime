@@ -18,7 +18,7 @@ namespace System.IO.Strategies
         private sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
-            internal readonly PreAllocatedOverlapped? _preallocatedOverlapped;
+            internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
             private readonly AsyncWindowsFileStreamStrategy _strategy;
             private MemoryHandle _handle;
             private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
@@ -30,10 +30,10 @@ namespace System.IO.Strategies
 #endif
 
             internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy)
-                => _strategy = strategy;
-
-            internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy, byte[] internalBuffer) : this(strategy)
-                => _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, internalBuffer);
+            {
+                _strategy = strategy;
+                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
+            }
 
             internal NativeOverlapped* Configure(ReadOnlyMemory<byte> memory)
             {
@@ -41,21 +41,8 @@ namespace System.IO.Strategies
                 _source = default;
                 _source.RunContinuationsAsynchronously = true;
 
-                // The array of preallocatedOverlapped is the same as the memory array when flushing in buffered mode,
-                // because the ReadOnlyMemory object passed to WriteAsync/ReadAsync is the internal buffer that we need
-                // to write to disk at the end
-                if (_preallocatedOverlapped != null &&
-                   MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> arrSegment) &&
-                   _preallocatedOverlapped.IsUserObject(arrSegment.Array))
-                {
-                    _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
-                }
-                else
-                {
-                    _handle = memory.Pin();
-                    Debug.Assert(_handle.Pointer != default);
-                    _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, null);
-                }
+                _handle = memory.Pin();
+                _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
 
                 return _overlapped;
             }
@@ -103,10 +90,7 @@ namespace System.IO.Strategies
 
             internal void ReleaseNativeResource()
             {
-                if (_handle.Pointer != default)
-                {
-                    _handle.Dispose();
-                }
+                _handle.Dispose();
 
                 // Ensure that cancellation has been completed and cleaned up.
                 _cancellationRegistration.Dispose();
