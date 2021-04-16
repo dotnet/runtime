@@ -68,19 +68,19 @@
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.android-arm": {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.android-arm64": {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.android-x64": {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.android-x86": {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86": {
@@ -124,49 +124,49 @@
       }
     },
     "Microsoft.NETCore.App.Runtime.ios-arm" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.ios-arm64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.ios-arm" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.iossimulator-arm64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
         "osx-arm64": "Microsoft.NETCore.App.Runtime.iossimulator-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.iossimulator-x64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.iossimulator-x86" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.tvos-arm64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.tvos-x64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.tvossimulator-arm64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
         "osx-arm64": "Microsoft.NETCore.App.Runtime.tvossimulator-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.tvossimulator-x64" : {
-      "kind": "Sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64": {
@@ -221,7 +221,7 @@
       }
     },
     "Microsoft.NETCore.App.Runtime.browser-wasm" : {
-      "kind": "sdk",
+      "kind": "framework",
       "version": "${PackageVersion}"
     },
     "Microsoft.NET.Runtime.Emscripten.Node" : {
