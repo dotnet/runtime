@@ -8,21 +8,12 @@
 
 #ifdef FEATURE_PGO
 
-#define DEFAULT_UNKNOWN_TYPEHANDLE 1
-#define UNKNOWN_TYPEHANDLE_MIN 1
-#define UNKNOWN_TYPEHANDLE_MAX 32
-
 inline bool AddTypeHandleToUnknownTypeHandleMask(INT_PTR typeHandle, uint32_t *unknownTypeHandleMask)
 {
     uint32_t bitMask = (uint32_t)(1 << (typeHandle - UNKNOWN_TYPEHANDLE_MIN));
     bool result = (bitMask & *unknownTypeHandleMask) == 0;
     *unknownTypeHandleMask |= bitMask;
     return result;
-}
-
-inline bool IsUnknownTypeHandle(INT_PTR typeHandle)
-{
-    return ((typeHandle >= UNKNOWN_TYPEHANDLE_MIN) && (typeHandle <= UNKNOWN_TYPEHANDLE_MAX));
 }
 
 inline INT_PTR HashToPgoUnknownTypeHandle(uint32_t hash)
