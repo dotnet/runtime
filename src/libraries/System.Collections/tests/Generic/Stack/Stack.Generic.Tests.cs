@@ -322,7 +322,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData))]
-        [SkipOnMono("mono forces no restrictions on array size.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
         {
             var stack = GenericStackFactory();
