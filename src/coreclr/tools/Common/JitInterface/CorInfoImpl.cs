@@ -171,7 +171,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                int currentObjectIndex = 0x1000000;
+                int currentObjectIndex = 0x1000000; // This needs to be a somewhat large non-zero number, so that the jit does not confuse it with NULL, or any other special value.
                 Dictionary<object, IntPtr> objectToHandle = new Dictionary<object, IntPtr>();
                 Dictionary<IntPtr, object> handleToObject = new Dictionary<IntPtr, object>();
 
