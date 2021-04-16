@@ -41,9 +41,7 @@ internal static partial class Interop
             }
             else
             {
-                // We allow "t" here to check that a tag value at the end of stream does not produce an error.
-                // The actual tag value that affects the next element is passed with the next element using the tag argument.
-                Debug.Assert(format == "n" || format == "t");
+                Debug.Assert(format == "n");
                 return ber_put_null(berElement, tag);
             }
         }
