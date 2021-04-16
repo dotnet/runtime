@@ -59,7 +59,7 @@
     <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21212.6</MicrosoftDotNetBuildTasksArchivesVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21212.6</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21212.6</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21212.6</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21216.2</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21212.6</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageValidationVersion>6.0.0-beta.21212.6</MicrosoftDotNetPackageValidationVersion>
     <!-- NuGet dependencies -->
