@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 using static System.TestHelpers;
@@ -145,6 +148,54 @@ namespace System.SpanTests
             finally
             {
                 Marshal.FreeHGlobal(new IntPtr(ptr));
+            }
+        }
+
+        public static IEnumerable<object[]> FillData
+        {
+            get
+            {
+                yield return new object[] { typeof(sbyte), (sbyte)0x20 };
+                yield return new object[] { typeof(byte), (byte)0x20 };
+                yield return new object[] { typeof(bool), true };
+                yield return new object[] { typeof(short), (short)0x1234 };
+                yield return new object[] { typeof(ushort), (ushort)0x1234 };
+                yield return new object[] { typeof(char), 'x' };
+                yield return new object[] { typeof(int), (int)0x12345678 };
+                yield return new object[] { typeof(uint), (uint)0x12345678 };
+                yield return new object[] { typeof(long), (long)0x0123456789abcdef };
+                yield return new object[] { typeof(ulong), (ulong)0x0123456789abcdef };
+                yield return new object[] { typeof(nint), unchecked((nint)0x0123456789abcdef) };
+                yield return new object[] { typeof(nuint), unchecked((nuint)0x0123456789abcdef) };
+                yield return new object[] { typeof(float), 1.0f };
+                yield return new object[] { typeof(double), 1.0d };
+                yield return new object[] { typeof(string), "Hello world!" }; // shouldn't go down SIMD path
+                yield return new object[] { typeof(decimal), 1.0m }; // shouldn't go down SIMD path
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FillData))]
+        public static void FillWithRecognizedType(Type expectedType, object value)
+        {
+            Assert.IsType(expectedType, value);
+            typeof(SpanTests).GetMethod(nameof(FillWithRecognizedType_RunTest), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(expectedType)
+                .Invoke(null, BindingFlags.DoNotWrapExceptions, null, new object[] { value }, null);
+        }
+
+        private static void FillWithRecognizedType_RunTest<T>(T value)
+        {
+            T[] arr = new T[128];
+
+            // Run tests for lengths := 0 to 64, ensuring we don't overrun our buffer
+
+            for (int i = 0; i <= 64; i++)
+            {
+                arr.AsSpan(0, i).Fill(value);
+                Assert.Equal(Enumerable.Repeat(value, i), arr.Take(i)); // first i entries should've been populated with 'value'
+                Assert.Equal(Enumerable.Repeat(default(T), arr.Length - i), arr.Skip(i)); // remaining entries should contain default(T)
+                Array.Clear(arr, 0, arr.Length);
             }
         }
     }

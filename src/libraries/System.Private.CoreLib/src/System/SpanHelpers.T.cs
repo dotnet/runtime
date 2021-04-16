@@ -2,13 +2,160 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        public static void Fill<T>(ref T refData, uint numElements, T value)
+        {
+            // n.b. If Fill is ever adapted to work for lengths beyond uint.MaxValue, double-check
+            // where it's used in the arithmetic operations below to ensure no integer overflow is possible.
+
+            if (numElements == 0)
+            {
+                return; // nothing to do
+            }
+
+            if (typeof(T) != typeof(float) && typeof(T) != typeof(double) && !RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                goto CannotVectorize; // it might not be valid to SIMD-spray this value into the backing span
+            }
+
+            if (Vector.IsHardwareAccelerated)
+            {
+                if (numElements < (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
+                {
+                    goto CannotVectorize; // not enough data for even a single run through the vectorized loop
+                }
+
+                Vector<byte> vector;
+
+                if (typeof(T) == typeof(float))
+                {
+                    vector = (Vector<byte>)(new Vector<float>((float)(object)value!));
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    vector = (Vector<byte>)(new Vector<double>((double)(object)value!));
+                }
+                else
+                {
+                    T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loops below.
+                    if (Unsafe.SizeOf<T>() == 1)
+                    {
+                        vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
+                    }
+                    else if (Unsafe.SizeOf<T>() == 2)
+                    {
+                        vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
+                    }
+                    else if (Unsafe.SizeOf<T>() == 4)
+                    {
+                        vector = (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
+                    }
+                    else if (Unsafe.SizeOf<T>() == 8)
+                    {
+                        vector = (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
+                    }
+                    else
+                    {
+                        Debug.Fail("This should never happen. Did we miss special-casing a bitwise equatable type?");
+                        goto CannotVectorize;
+                    }
+                }
+
+                nuint totalByteLength = numElements * (nuint)Unsafe.SizeOf<T>(); // get this calculation ready ahead of time
+                nuint stopLoopAtOffset = totalByteLength & (nuint)(-Vector<byte>.Count * 2);
+                nuint offset = 0;
+
+                // Loop, writing 2 vectors at a time.
+
+                if (numElements >= 2 * (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
+                {
+                    do
+                    {
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref Unsafe.As<T, byte>(ref refData), offset), vector);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref Unsafe.As<T, byte>(ref refData), offset + (uint)Vector<byte>.Count), vector);
+                        offset += 2 * (uint)Vector<byte>.Count;
+                    } while (offset < stopLoopAtOffset);
+                }
+
+                // There are [ 0, 2 * sizeof(Vector) ) bytes remaining.
+                // If there are >= sizeof(Vector) bytes remaining, write one vector now.
+
+                if ((totalByteLength & (nuint)Vector<byte>.Count) != 0)
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref Unsafe.As<T, byte>(ref refData), offset), vector);
+                }
+
+                // If there's any remaining space that won't fill a full vector, write a vector at
+                // the very end of the destination buffer. This will result in overwriting a previous
+                // entry, but that's ok since we're splatting the same value for all entries, so this
+                // won't result in data corruption.
+
+                if ((totalByteLength & (nuint)(Vector<byte>.Count - 1)) != 0)
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref Unsafe.As<T, byte>(ref refData), totalByteLength - (uint)Vector<byte>.Count), vector);
+                }
+
+                // And we're done!
+
+                return;
+            }
+
+        CannotVectorize:
+
+            {
+                nuint i = 0;
+                nuint stopLoopAtOffset = numElements & ~(uint)7;
+
+                // Write 8 elements at a time
+
+                for (; i < stopLoopAtOffset; i += 8)
+                {
+                    Unsafe.Add(ref refData, (nint)i + 0) = value;
+                    Unsafe.Add(ref refData, (nint)i + 1) = value;
+                    Unsafe.Add(ref refData, (nint)i + 2) = value;
+                    Unsafe.Add(ref refData, (nint)i + 3) = value;
+                    Unsafe.Add(ref refData, (nint)i + 4) = value;
+                    Unsafe.Add(ref refData, (nint)i + 5) = value;
+                    Unsafe.Add(ref refData, (nint)i + 6) = value;
+                    Unsafe.Add(ref refData, (nint)i + 7) = value;
+                }
+
+                // Write next 4 elements if needed
+
+                if ((numElements & 4) != 0)
+                {
+                    Unsafe.Add(ref refData, (nint)i + 0) = value;
+                    Unsafe.Add(ref refData, (nint)i + 1) = value;
+                    Unsafe.Add(ref refData, (nint)i + 2) = value;
+                    Unsafe.Add(ref refData, (nint)i + 3) = value;
+                    i += 4;
+                }
+
+                // Write next 2 elements if needed
+
+                if ((numElements & 2) != 0)
+                {
+                    Unsafe.Add(ref refData, (nint)i + 0) = value;
+                    Unsafe.Add(ref refData, (nint)i + 1) = value;
+                    i += 2;
+                }
+
+                // Write final element if needed
+
+                if ((numElements & 1) != 0)
+                {
+                    Unsafe.Add(ref refData, (nint)i) = value;
+                }
+            }
+        }
+
         public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
