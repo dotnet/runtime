@@ -23,6 +23,7 @@ namespace System.IO.Compression
             NoFlush = 0,
             SyncFlush = 2,
             Finish = 4,
+            Block = 5
         }
 
         public enum ErrorCode : int
