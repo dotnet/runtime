@@ -154,11 +154,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
-#if BUILDING_INBOX_LIBRARY
-            if (length > Array.MaxLength)
-#else
             if (length > 0X7FEFFFFF) // prior to .NET 6, max array length for sizeof(T) != 1 (size == 1 is larger)
-#endif
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }

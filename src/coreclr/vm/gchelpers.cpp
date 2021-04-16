@@ -344,9 +344,7 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 
 inline SIZE_T MaxArrayLength()
 {
-    // Impose limits on maximum array length in each dimension to allow efficient
-    // implementation of advanced range check elimination in future. We have to allow
-    // higher limit for array of bytes (or one byte structs) for backward compatibility.
+    // Impose limits on maximum array length to prevent corner case integer overflow bugs
     // Keep in sync with Array.MaxLength in BCL.
     return 0X7FFFFFC7;
 }
