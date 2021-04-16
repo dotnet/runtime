@@ -26,7 +26,9 @@ CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)          // Make the disas
 CONFIG_INTEGER(JitDasmWithAddress, W("JitDasmWithAddress"), 0) // Print the process address next to each instruction of
                                                                // the disassembly
 CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
-CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)       // Display JIT Linear Scan Register Allocator statistics
+CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0) // Display JIT Linear Scan Register Allocator statistics
+                                                       // if set to 1. If set to "2", display the stats in csv format.
+                                                       // Recommended to use with JitStdOutFile flag.
 CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0) // Prints all jitted methods to the console
 CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1)  // Whether absolute addr be encoded as PC-rel offset by
                                                              // RyuJIT where possible
