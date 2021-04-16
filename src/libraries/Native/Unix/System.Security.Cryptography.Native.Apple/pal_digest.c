@@ -209,7 +209,7 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
     }
 }
 
-int32_t AppleCryptoNative_DigestReset(const DigestCtx* ctx)
+int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx)
 {
     if (ctx == NULL)
         return -1;
