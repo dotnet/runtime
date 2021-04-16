@@ -3,6 +3,7 @@
 
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -376,7 +377,24 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate([NotNull] ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
-        // CAUTION! No bounds checking!
+        private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
+        {
+            // Checked by the caller
+            Debug.Assert(indices.Length == Rank);
+
+            nint flattenedIndex = 0;
+            for (int i = 0; i < indices.Length; i++)
+            {
+                int index = indices[i] - GetLowerBound(i);
+                int length = GetLength(i);
+                if ((uint)index >= (uint)length)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                flattenedIndex = (length * flattenedIndex) + index;
+            }
+            Debug.Assert((nuint)flattenedIndex < (nuint)LongLength);
+            return flattenedIndex;
+        }
+
         internal object? InternalGetValue(nint index)
         {
             if (GetType().GetElementType()!.IsPointer)
@@ -385,37 +403,12 @@ namespace System
             return GetValueImpl((int)index);
         }
 
-        public object GetValue(int index)
+        internal void InternalSetValue(object? value, nint index)
         {
-            if (Rank != 1)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-
-            int lb = GetLowerBound(0);
-            if (index < lb || index > GetUpperBound(0))
-                throw new IndexOutOfRangeException(SR.Argument_IndexOutOfArrayBounds);
-
             if (GetType().GetElementType()!.IsPointer)
                 throw new NotSupportedException(SR.NotSupported_Type);
 
-            return GetValueImpl(index - lb);
-        }
-
-        public object GetValue(int index1, int index2)
-        {
-            if (Rank != 2)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
-
-            int[] ind = { index1, index2 };
-            return GetValue(ind);
-        }
-
-        public object GetValue(int index1, int index2, int index3)
-        {
-            if (Rank != 3)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
-
-            int[] ind = { index1, index2, index3 };
-            return GetValue(ind);
+            SetValueImpl(value, (int)index);
         }
 
         public void Initialize()
@@ -430,39 +423,6 @@ namespace System
         private static int LastIndexOfImpl<T>(T[] array, T value, int startIndex, int count)
         {
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
-        }
-
-        public void SetValue(object? value, int index)
-        {
-            if (Rank != 1)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-
-            int lb = GetLowerBound(0);
-            if (index < lb || index > GetUpperBound(0))
-                throw new IndexOutOfRangeException(SR.Argument_IndexOutOfArrayBounds);
-
-            if (GetType().GetElementType()!.IsPointer)
-                throw new NotSupportedException(SR.NotSupported_Type);
-
-            SetValueImpl(value, index - lb);
-        }
-
-        public void SetValue(object? value, int index1, int index2)
-        {
-            if (Rank != 2)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
-
-            int[] ind = { index1, index2 };
-            SetValue(value, ind);
-        }
-
-        public void SetValue(object? value, int index1, int index2, int index3)
-        {
-            if (Rank != 3)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
-
-            int[] ind = { index1, index2, index3 };
-            SetValue(value, ind);
         }
 
         public int GetUpperBound(int dimension)
@@ -511,12 +471,6 @@ namespace System
         [Intrinsic] // when dimension is `0` constant
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int GetLowerBound(int dimension);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern object GetValue(params int[] indices);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern void SetValue(object? value, params int[] indices);
 
         // CAUTION! No bounds checking!
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

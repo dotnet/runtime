@@ -124,7 +124,6 @@ namespace System
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
-#if !MONO
         // The various Get values...
         public object? GetValue(params int[] indices)
         {
@@ -193,7 +192,6 @@ namespace System
 
             InternalSetValue(value, GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
         }
-#endif
 
         public object? GetValue(long index)
         {
