@@ -8189,6 +8189,7 @@ interp_cprop (TransformData *td)
 
 	td->local_ref_count = local_ref_count;
 retry:
+	needs_retry = FALSE;
 	memset (local_ref_count, 0, td->locals_size * sizeof (int));
 
 	if (td->verbose_level)
@@ -8357,13 +8358,20 @@ retry:
 						g_print ("Replace ldloca/ldfld pair :\n\t");
 						dump_interp_inst (ins);
 					}
+					needs_retry = TRUE;
 				}
 			} else if (opcode == MINT_INITOBJ) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int size = ins->data [0];
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + INITOBJ with INITLOCAL
-					ins->opcode = MINT_INITLOCAL;
+					// Replace LDLOCA + INITOBJ with or LDC
+					if (size <= 4)
+						ins->opcode = MINT_LDC_I4_0;
+					else if (size <= 8)
+						ins->opcode = MINT_LDC_I8_0;
+					else
+						ins->opcode = MINT_INITLOCAL;
 					local_ref_count [sregs [0]]--;
 					ins->dreg = local;
 
@@ -8371,6 +8379,7 @@ retry:
 						g_print ("Replace ldloca/initobj pair :\n\t");
 						dump_interp_inst (ins);
 					}
+					needs_retry = TRUE;
 				}
 			} else if (opcode == MINT_LDOBJ_VT) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
@@ -8385,6 +8394,7 @@ retry:
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins);
 					}
+					needs_retry = TRUE;
 				}
 			} else if (MINT_IS_STFLD (opcode) && ins->data [0] == 0) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
@@ -8403,13 +8413,14 @@ retry:
 						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", ldloca->il_offset);
 						dump_interp_inst (ins);
 					}
+					needs_retry = TRUE;
 				}
 			}
 			ins_index++;
 		}
 	}
 
-	needs_retry = interp_local_deadce (td);
+	needs_retry |= interp_local_deadce (td);
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		needs_retry |= interp_optimize_bblocks (td);
 
