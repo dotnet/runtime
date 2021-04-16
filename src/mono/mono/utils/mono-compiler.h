@@ -85,7 +85,7 @@ typedef ptrdiff_t ssize_t;
 
 /* Mono components */
 
-/* User to mark internal functions used by dynamically linked runtime components */
+/* Used to mark internal functions used by dynamically linked runtime components */
 #define MONO_COMPONENT_API MONO_API
 
 #ifdef COMPILING_COMPONENT_DYNAMIC

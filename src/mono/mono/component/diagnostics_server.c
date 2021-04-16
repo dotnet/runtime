@@ -14,21 +14,21 @@ MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void);
 #endif
 
-static void
-diagnostics_server_cleanup (MonoComponent *self);
+static bool
+diagnostics_server_available (void);
 
 static MonoComponentDiagnosticsServer fn_table = {
-	{ &diagnostics_server_cleanup },
+	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_available },
 	&ds_server_init,
 	&ds_server_shutdown,
 	&ds_server_pause_for_diagnostics_monitor,
 	&ds_server_disable
 };
 
-static void
-diagnostics_server_cleanup (MonoComponent *self)
+static bool
+diagnostics_server_available (void)
 {
-	return;
+	return true;
 }
 
 MonoComponentDiagnosticsServer *

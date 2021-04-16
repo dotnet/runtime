@@ -14,8 +14,8 @@ static uint8_t _max_event_pipe_type_size [256];
  * Forward declares of all static functions.
  */
 
-static void
-event_pipe_stub_cleanup (MonoComponent *self);
+static bool
+event_pipe_stub_available (void);
 
 static void
 event_pipe_stub_init (void);
@@ -100,7 +100,7 @@ event_pipe_stub_write_event_ee_startup_start (void);
 
 
 static MonoComponentEventPipe fn_table = {
-	{ &event_pipe_stub_cleanup },
+	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_stub_available },
 	&event_pipe_stub_init,
 	&event_pipe_stub_finish_init,
 	&event_pipe_stub_shutdown,
@@ -119,9 +119,10 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_write_event_ee_startup_start
 };
 
-static void
-event_pipe_stub_cleanup (MonoComponent *self)
+static bool
+event_pipe_stub_available (void)
 {
+	return false;
 }
 
 static void

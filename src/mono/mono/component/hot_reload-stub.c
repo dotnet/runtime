@@ -10,14 +10,14 @@
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error-internals.h"
 
-static void
-hot_reload_stub_cleanup (MonoComponent *self);
+static bool
+hot_reload_stub_available (void);
 
 static void
 hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 
 static MonoComponentHotReload fn_table = {
-	{ &hot_reload_stub_cleanup },
+	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_apply_changes,
 };
 
@@ -36,9 +36,10 @@ mono_component_hot_reload_stub_init (void)
 	return &fn_table;
 }
 
-void
-hot_reload_stub_cleanup (MonoComponent *self)
+bool
+hot_reload_stub_available (void)
 {
+	return false;
 }
 
 void

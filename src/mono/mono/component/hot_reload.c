@@ -15,14 +15,14 @@ MonoComponentHotReload *
 mono_component_hot_reload_init (void);
 #endif
 
-static void
-hot_reload_cleanup (MonoComponent *self);
+static bool
+hot_reload_available (void);
 
 static void
 hot_reload_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 
 static MonoComponentHotReload fn_table = {
-	{ &hot_reload_cleanup },
+	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_apply_changes,
 };
 
@@ -33,15 +33,10 @@ mono_component_hot_reload_init (void)
 	return &fn_table;
 }
 
-static void
-hot_reload_cleanup (MonoComponent *self)
+static bool
+hot_reload_available (void)
 {
-	static gboolean cleaned = FALSE;
-	if (cleaned)
-		return;
-
-	/* TODO: implement me */
-	cleaned = TRUE;
+	return true;
 }
 
 static void

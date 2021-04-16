@@ -85,17 +85,10 @@ mono_components_init (void)
 			*components [i].component = components [i].init ();
 	}
 #endif
-}
-
-void
-mono_components_cleanup (void)
-{
-	/* call each components cleanup fn */
+	/* validate components interface version */
 	for (int i = 0; i < G_N_ELEMENTS (components); ++i) {
-		if (*components [i].component)
-			(*components [i].component)->cleanup (*components [i].component);
-		if (components [i].lib)
-			mono_dl_close (components [i].lib);
+		guint64 version = (guint64)(*components [i].component)->itf_version;
+		g_assertf (version == MONO_COMPONENT_ITF_VERSION, "%s component returned unexpected interface version (expected %" PRIu64 " got %" PRIu64 ")", components [i].name, (guint64)MONO_COMPONENT_ITF_VERSION, version);
 	}
 }
 

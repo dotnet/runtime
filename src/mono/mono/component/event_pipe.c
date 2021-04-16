@@ -39,8 +39,8 @@ struct _EventPipeEventInstanceData {
  * Forward declares of all static functions.
  */
 
-static void
-event_pipe_cleanup (MonoComponent *self);
+static bool
+event_pipe_available (void);
 
 static EventPipeSessionID
 event_pipe_enable (
@@ -71,7 +71,7 @@ event_pipe_thread_ctrl_activity_id(
 	uint32_t activity_id_len);
 
 static MonoComponentEventPipe fn_table = {
-	{ &event_pipe_cleanup },
+	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
 	&ep_init,
 	&ep_finish_init,
 	&ep_shutdown,
@@ -90,10 +90,10 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_mono_write_event_ee_startup_start
 };
 
-static void
-event_pipe_cleanup (MonoComponent *self)
+static bool
+event_pipe_available (void)
 {
-	return;
+	return true;
 }
 
 static EventPipeSessionID

@@ -10,8 +10,8 @@
  * Forward declares of all static functions.
  */
 
-static void
-diagnostics_server_stub_cleanup (MonoComponent *self);
+static bool
+diagnostics_server_stub_available (void);
 
 static bool
 diagnostics_server_stub_init (void);
@@ -26,16 +26,17 @@ static void
 diagnostics_server_stub_disable (void);
 
 static MonoComponentDiagnosticsServer fn_table = {
-	{ &diagnostics_server_stub_cleanup },
+	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_stub_available },
 	&diagnostics_server_stub_init,
 	&diagnostics_server_stub_shutdown,
 	&diagnostics_server_stub_pause_for_diagnostics_monitor,
 	&diagnostics_server_stub_disable
 };
 
-static void
-diagnostics_server_stub_cleanup (MonoComponent *self)
+static bool
+diagnostics_server_stub_available (void)
 {
+	return false;
 }
 
 static bool

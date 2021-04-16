@@ -13,9 +13,6 @@
 void
 mono_components_init (void);
 
-void
-mono_components_cleanup (void);
-
 /* Declare each component's getter function here */
 static inline
 MonoComponentHotReload *
