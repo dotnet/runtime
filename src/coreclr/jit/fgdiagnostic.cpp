@@ -579,11 +579,11 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 // Notes:
 //    The xml dumps are the historical mechanism for dumping the flowgraph.
 //    The dot format can be viewed by:
+//    - https://sketchviz.com/
 //    - Graphviz (http://www.graphviz.org/)
 //      - The command:
 //           "C:\Program Files (x86)\Graphviz2.38\bin\dot.exe" -Tsvg -oFoo.svg -Kdot Foo.dot
 //        will produce a Foo.svg file that can be opened with any svg-capable browser.
-//    - https://sketchviz.com/
 //    - http://rise4fun.com/Agl/
 //      - Cut and paste the graph from your .dot file, replacing the digraph on the page, and then click the play
 //        button.
@@ -591,29 +591,41 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.
 //
 //    Here are the config values that control it:
-//      COMPlus_JitDumpFg       A string (ala the COMPlus_JitDump string) indicating what methods to dump flowgraphs
-//                              for.
-//      COMPlus_JitDumpFgDir    A path to a directory into which the flowgraphs will be dumped.
-//      COMPlus_JitDumpFgFile   The filename to use. The default is "default.[xml|dot]".
-//                              Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_NgenDumpFg      Same as COMPlus_JitDumpFg, but for ngen compiles.
-//      COMPlus_NgenDumpFgDir   Same as COMPlus_JitDumpFgDir, but for ngen compiles.
-//      COMPlus_NgenDumpFgFile  Same as COMPlus_JitDumpFgFile, but for ngen compiles.
-//      COMPlus_JitDumpFgPhase  Phase(s) after which to dump the flowgraph.
-//                              Set to the short name of a phase to see the flowgraph after that phase.
-//                              Leave unset to dump after COLD-BLK (determine first cold block) or set to * for all
-//                              phases.
-//      COMPlus_JitDumpFgDot    0 for xml format, non-zero for dot format. (Default is dot format.)
-
+//      COMPlus_JitDumpFg              A string (ala the COMPlus_JitDump string) indicating what methods to dump
+//                                     flowgraphs for.
+//      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
+//      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
+//                                     Note that the new graphs will be appended to this file if it already exists.
+//      COMPlus_NgenDumpFg             Same as COMPlus_JitDumpFg, but for ngen compiles.
+//      COMPlus_NgenDumpFgDir          Same as COMPlus_JitDumpFgDir, but for ngen compiles.
+//      COMPlus_NgenDumpFgFile         Same as COMPlus_JitDumpFgFile, but for ngen compiles.
+//      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
+//                                     Set to the short name of a phase to see the flowgraph after that phase.
+//                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
+//                                     for all phases.
+//      COMPlus_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
+//      COMPlus_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
+//                                     exception-handling regions.
+//      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
+//      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
+//                                     mostly lexical block linear layout.
+//
 bool Compiler::fgDumpFlowGraph(Phases phase)
 {
-    bool result        = false;
-    bool dontClose     = false;
-    bool createDotFile = true;
+    bool result    = false;
+    bool dontClose = false;
 
 #ifdef DEBUG
-    createDotFile = JitConfig.JitDumpFgDot() != 0;
-#endif // DEBUG
+    const bool createDotFile = JitConfig.JitDumpFgDot() != 0;
+    const bool includeEH     = JitConfig.JitDumpFgEH() != 0;
+    const bool includeLoops  = JitConfig.JitDumpFgLoops() != 0;
+    const bool constrained   = JitConfig.JitDumpFgConstrained() != 0;
+#else  // !DEBUG
+    const bool createDotFile = true;
+    const bool includeEH     = false;
+    const bool includeLoops  = false;
+    const bool constrained   = true;
+#endif // !DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
     if (fgxFile == nullptr)
@@ -704,12 +716,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB "\\n\\n", block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB, block->bbNum, block->bbNum);
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())
             {
-                fprintf(fgxFile, "%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
+                fprintf(fgxFile, "\\n\\n%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }
 
             // end of block label
@@ -909,17 +921,21 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     }
 
     // For dot, show edges w/o pred lists, and add invisible bbNext links.
+    // Also, add EH and/or loop regions as "cluster" subgraphs, if requested.
     //
     if (createDotFile)
     {
         for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
         {
-            // Invisible edge for bbNext chain
-            //
-            if (bSource->bbNext != nullptr)
+            if (constrained)
             {
-                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [style=\"invis\", weight=25];\n", bSource->bbNum,
-                        bSource->bbNext->bbNum);
+                // Invisible edge for bbNext chain
+                //
+                if (bSource->bbNext != nullptr)
+                {
+                    fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [style=\"invis\", weight=25];\n", bSource->bbNum,
+                            bSource->bbNext->bbNum);
+                }
             }
 
             if (fgComputePredsDone)
@@ -952,6 +968,451 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     fprintf(fgxFile, ";\n");
                 }
             }
+        }
+
+        if ((includeEH && (compHndBBtabCount > 0)) || (includeLoops && (optLoopCount > 0)))
+        {
+            // Generate something like:
+            //    subgraph cluster_0 {
+            //      label = "xxx";
+            //      color = yyy;
+            //      bb; bb;
+            //      subgraph {
+            //        label = "aaa";
+            //        color = bbb;
+            //        bb; bb...
+            //      }
+            //      ...
+            //    }
+            //
+            // Thus, the subgraphs need to be nested to show the region nesting.
+            //
+            // The EH table is in order, top-to-bottom, most nested to least nested where
+            // there is a parent/child relationship. The loop table the opposite: it is
+            // in order from the least nested to most nested.
+            //
+            // Build a region tree, collecting all the regions we want to display,
+            // and then walk it to emit the regions.
+
+            // RegionGraph: represent non-overlapping, possibly nested, block ranges in the flow graph.
+            class RegionGraph
+            {
+            public:
+                enum class RegionType
+                {
+                    Root,
+                    EH,
+                    Loop
+                };
+
+            private:
+                struct Region
+                {
+                    Region(RegionType rgnType, const char* rgnName, BasicBlock* bbStart, BasicBlock* bbEnd)
+                        : m_rgnNext(nullptr)
+                        , m_rgnChild(nullptr)
+                        , m_rgnType(rgnType)
+                        , m_bbStart(bbStart)
+                        , m_bbEnd(bbEnd)
+                    {
+                        strcpy_s(m_rgnName, sizeof(m_rgnName), rgnName);
+                    }
+
+                    Region*     m_rgnNext;
+                    Region*     m_rgnChild;
+                    RegionType  m_rgnType;
+                    char        m_rgnName[30];
+                    BasicBlock* m_bbStart;
+                    BasicBlock* m_bbEnd;
+                };
+
+            public:
+                RegionGraph(Compiler* comp) : m_comp(comp), m_rgnRoot(nullptr)
+                {
+                    // Create a root region that encompasses the whole function.
+                    // We don't want to renumber the blocks, but it's useful to have a sequential number
+                    // representing the lexical block order so we know where to insert a block range
+                    // in the region tree. To do this, create a mapping of bbNum to ordinal, and compare
+                    // block order by comparing the mapped ordinals.
+
+                    m_rgnRoot =
+                        new (m_comp, CMK_DebugOnly) Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
+
+                    unsigned bbOrdinal = 0;
+                    m_blkMap           = new (m_comp, CMK_DebugOnly) unsigned[comp->fgBBNumMax + 1];
+                    memset(m_blkMap, 0, sizeof(unsigned) * (comp->fgBBNumMax + 1));
+                    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+                    {
+                        m_blkMap[block->bbNum] = bbOrdinal++;
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // Insert: Insert a region [start..end] (inclusive) into the graph.
+                //
+                // Arguments:
+                //    name    - the textual label to use for the region
+                //    rgnType - the region type
+                //    start   - start block of the region
+                //    end     - last block of the region
+                //
+                void Insert(const char* name, RegionType rgnType, BasicBlock* start, BasicBlock* end)
+                {
+                    JITDUMP("Insert region: %s, type: %s, start: " FMT_BB ", end: " FMT_BB "\n", name,
+                            GetRegionType(rgnType), start->bbNum, end->bbNum);
+
+                    assert(start != nullptr);
+                    assert(end != nullptr);
+
+                    Region*  newRgn          = new (m_comp, CMK_DebugOnly) Region(rgnType, name, start, end);
+                    unsigned newStartOrdinal = m_blkMap[start->bbNum];
+                    unsigned newEndOrdinal   = m_blkMap[end->bbNum];
+
+                    Region*  curRgn          = m_rgnRoot;
+                    unsigned curStartOrdinal = m_blkMap[curRgn->m_bbStart->bbNum];
+                    unsigned curEndOrdinal   = m_blkMap[curRgn->m_bbEnd->bbNum];
+
+                    // A range can be a single block, but there can be no overlap between ranges.
+                    assert(newStartOrdinal <= newEndOrdinal);
+                    assert(curStartOrdinal <= curEndOrdinal);
+                    assert(newStartOrdinal >= curStartOrdinal);
+                    assert(newEndOrdinal <= curEndOrdinal);
+
+                    // We know the new region will be part of the current region. Should it be a direct
+                    // child, or put within one of the existing children?
+                    Region** lastChildPtr = &curRgn->m_rgnChild;
+                    Region*  child        = curRgn->m_rgnChild;
+                    while (child != nullptr)
+                    {
+                        unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                        unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+
+                        // Assert the child is properly nested within the parent.
+                        // Note that if regions have the same start and end, you can't tell which is nested within the
+                        // other, though it shouldn't matter.
+                        assert(childStartOrdinal <= childEndOrdinal);
+                        assert(curStartOrdinal <= childStartOrdinal);
+                        assert(childEndOrdinal <= curEndOrdinal);
+
+                        // Should the new region be before this child?
+                        if (newEndOrdinal < childStartOrdinal)
+                        {
+                            // Insert before this child.
+                            newRgn->m_rgnNext = child;
+                            *lastChildPtr     = newRgn;
+                            break;
+                        }
+                        else if (newEndOrdinal <= childEndOrdinal)
+                        {
+                            // Insert as a child of this child.
+                            // Need to recurse to walk the child's children list to see where
+                            // it belongs.
+
+                            // It better be properly nested.
+                            assert(newStartOrdinal >= childStartOrdinal);
+
+                            curStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                            curEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+
+                            lastChildPtr = &child->m_rgnChild;
+                            child        = child->m_rgnChild;
+
+                            continue;
+                        }
+                        else if (newStartOrdinal <= childStartOrdinal)
+                        {
+                            // The new region is a parent of one or more of the existing children.
+                            // Find all the children it encompasses.
+                            Region** lastEndChildPtr = &child->m_rgnNext;
+                            Region*  endChild        = child->m_rgnNext;
+                            while (endChild != nullptr)
+                            {
+                                unsigned endChildStartOrdinal = m_blkMap[endChild->m_bbStart->bbNum];
+                                unsigned endChildEndOrdinal   = m_blkMap[endChild->m_bbEnd->bbNum];
+                                assert(endChildStartOrdinal <= endChildEndOrdinal);
+
+                                if (newEndOrdinal < endChildStartOrdinal)
+                                {
+                                    // Found the range
+                                    break;
+                                }
+
+                                lastEndChildPtr = &endChild->m_rgnNext;
+                                endChild        = endChild->m_rgnNext;
+                            }
+
+                            // The range is [child..endChild previous]. If endChild is nullptr, then
+                            // the range is to the end of the parent. Move these all to be
+                            // children of newRgn, and put newRgn in where `child` is.
+                            newRgn->m_rgnNext = endChild;
+                            *lastChildPtr     = newRgn;
+
+                            newRgn->m_rgnChild = child;
+                            *lastEndChildPtr   = nullptr;
+
+                            break;
+                        }
+
+                        // Else, look for next child.
+
+                        lastChildPtr = &child->m_rgnNext;
+                        child        = child->m_rgnNext;
+                    }
+
+                    if (child == nullptr)
+                    {
+                        // Insert as the last child (could be the only child).
+                        *lastChildPtr = newRgn;
+                    }
+                }
+
+#ifdef DEBUG
+
+                const unsigned dumpIndentIncrement = 2; // How much to indent each nested level.
+
+                //------------------------------------------------------------------------
+                // GetRegionType: get a textual name for the region type, to be used in dumps.
+                //
+                // Arguments:
+                //    rgnType - the region type
+                //
+                static const char* GetRegionType(RegionType rgnType)
+                {
+                    switch (rgnType)
+                    {
+                        case RegionType::Root:
+                            return "Root";
+                        case RegionType::EH:
+                            return "EH";
+                        case RegionType::Loop:
+                            return "Loop";
+                        default:
+                            return "UNKNOWN";
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // DumpRegionNode: Region graph dump helper to dump a region node at the given indent,
+                // and recursive dump its children.
+                //
+                // Arguments:
+                //    rgn    - the region to dump
+                //    indent - number of leading characters to indent all output
+                //
+                void DumpRegionNode(Region* rgn, unsigned indent) const
+                {
+                    printf("%*s======\n", indent, "");
+                    printf("%*sType: %s\n", indent, "", GetRegionType(rgn->m_rgnType));
+                    printf("%*sName: %s\n", indent, "", rgn->m_rgnName);
+                    printf("%*sRange: " FMT_BB ".." FMT_BB "\n", indent, "", rgn->m_bbStart->bbNum,
+                           rgn->m_bbEnd->bbNum);
+
+                    for (Region* child = rgn->m_rgnChild; child != nullptr; child = child->m_rgnNext)
+                    {
+                        DumpRegionNode(child, indent + dumpIndentIncrement);
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // Dump: dump the entire region graph
+                //
+                // Arguments:
+                //    stmt  - the statement to dump;
+                //    bbNum - the basic block number to dump.
+                //
+                void Dump()
+                {
+                    printf("Region graph:\n");
+                    DumpRegionNode(m_rgnRoot, 0);
+                    printf("\n");
+                }
+
+#endif // DEBUG
+
+                //------------------------------------------------------------------------
+                // Output: output the region graph to the .dot file
+                //
+                // Arguments:
+                //    file - the file to write output to.
+                //
+                void Output(FILE* file)
+                {
+                    unsigned clusterNum = 0;
+
+                    // Output the regions; don't output the top (root) region that represents the whole function.
+                    for (Region* child = m_rgnRoot->m_rgnChild; child != nullptr; child = child->m_rgnNext)
+                    {
+                        OutputRegion(file, clusterNum, child, 4);
+                    }
+                    fprintf(file, "\n");
+                }
+
+            private:
+                //------------------------------------------------------------------------
+                // GetColorForRegion: get a color name to use for a region
+                //
+                // Arguments:
+                //    rgn - the region for which we need a color
+                //
+                static const char* GetColorForRegion(Region* rgn)
+                {
+                    RegionType rgnType = rgn->m_rgnType;
+                    switch (rgnType)
+                    {
+                        case RegionType::EH:
+                            return "red";
+                        case RegionType::Loop:
+                            return "blue";
+                        default:
+                            return "black";
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // OutputRegion: helper function to output a region and its nested children
+                // to the .dot file.
+                //
+                // Arguments:
+                //    file       - the file to write output to.
+                //    clusterNum - the number of this dot "cluster". This is updated as we
+                //                 create new clusters.
+                //    rgn        - the region to output.
+                //    indent     - the current indent level, in characters.
+                //
+                void OutputRegion(FILE* file, unsigned& clusterNum, Region* rgn, unsigned indent)
+                {
+                    fprintf(file, "%*ssubgraph cluster_%u {\n", indent, "", clusterNum);
+                    indent += 4;
+                    fprintf(file, "%*slabel = \"%s\";\n", indent, "", rgn->m_rgnName);
+                    fprintf(file, "%*scolor = %s;\n", indent, "", GetColorForRegion(rgn));
+                    clusterNum++;
+
+                    bool        needIndent = true;
+                    BasicBlock* bbCur      = rgn->m_bbStart;
+                    BasicBlock* bbEnd      = rgn->m_bbEnd->bbNext;
+                    Region*     child      = rgn->m_rgnChild;
+                    BasicBlock* childCurBB = (child == nullptr) ? nullptr : child->m_bbStart;
+
+                    // Count the children and assert we output all of them.
+                    unsigned totalChildren = 0;
+                    unsigned childCount    = 0;
+                    for (Region* tmpChild = child; tmpChild != nullptr; tmpChild = tmpChild->m_rgnNext)
+                    {
+                        totalChildren++;
+                    }
+
+                    while (bbCur != bbEnd)
+                    {
+                        // Output from bbCur to current child first block.
+                        while ((bbCur != childCurBB) && (bbCur != bbEnd))
+                        {
+                            fprintf(file, "%*s" FMT_BB ";", needIndent ? indent : 0, "", bbCur->bbNum);
+                            needIndent = false;
+                            bbCur      = bbCur->bbNext;
+                        }
+
+                        if (bbCur == bbEnd)
+                        {
+                            // We're done at this level.
+                            break;
+                        }
+                        else
+                        {
+                            assert(bbCur != nullptr); // Or else we should also have `bbCur == bbEnd`
+                            assert(child != nullptr);
+
+                            // If there is a child, output that child.
+                            if (!needIndent)
+                            {
+                                // We've printed some basic blocks, so put the subgraph on a new line.
+                                fprintf(file, "\n");
+                            }
+                            OutputRegion(file, clusterNum, child, indent);
+                            needIndent = true;
+
+                            childCount++;
+
+                            bbCur      = child->m_bbEnd->bbNext; // Next, output blocks after this child.
+                            child      = child->m_rgnNext;       // Move to the next child, if any.
+                            childCurBB = (child == nullptr) ? nullptr : child->m_bbStart;
+                        }
+                    }
+
+                    // Put the end brace on its own line and leave the cursor at the beginning of the line for the
+                    // parent.
+                    indent -= 4;
+                    fprintf(file, "\n%*s}\n", indent, "");
+
+                    assert(childCount == totalChildren);
+                }
+
+                Compiler* m_comp;
+                Region*   m_rgnRoot;
+                unsigned* m_blkMap;
+            };
+
+            // Define the region graph object. We'll add regions to this, then output the graph.
+
+            RegionGraph rgnGraph(this);
+
+            // Add the EH regions to the region graph. An EH region consists of a region for the
+            // `try`, a region for the handler, and, for filter/filter-handlers, a region for the
+            // `filter` as well.
+
+            if (includeEH)
+            {
+                char      name[30];
+                unsigned  XTnum;
+                EHblkDsc* ehDsc;
+                for (XTnum = 0, ehDsc = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, ehDsc++)
+                {
+                    sprintf_s(name, sizeof(name), "EH#%u try", XTnum);
+                    rgnGraph.Insert(name, RegionGraph::RegionType::EH, ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
+                    const char* handlerType = "";
+                    switch (ehDsc->ebdHandlerType)
+                    {
+                        case EH_HANDLER_CATCH:
+                            handlerType = "catch";
+                            break;
+                        case EH_HANDLER_FILTER:
+                            handlerType = "filter-hnd";
+                            break;
+                        case EH_HANDLER_FAULT:
+                            handlerType = "fault";
+                            break;
+                        case EH_HANDLER_FINALLY:
+                            handlerType = "finally";
+                            break;
+                        case EH_HANDLER_FAULT_WAS_FINALLY:
+                            handlerType = "fault-was-finally";
+                            break;
+                    }
+                    sprintf_s(name, sizeof(name), "EH#%u %s", XTnum, handlerType);
+                    rgnGraph.Insert(name, RegionGraph::RegionType::EH, ehDsc->ebdHndBeg, ehDsc->ebdHndLast);
+                    if (ehDsc->HasFilter())
+                    {
+                        sprintf_s(name, sizeof(name), "EH#%u filter", XTnum);
+                        rgnGraph.Insert(name, RegionGraph::RegionType::EH, ehDsc->ebdFilter, ehDsc->ebdHndBeg->bbPrev);
+                    }
+                }
+            }
+
+            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpFirst` to `lpBottom`.
+
+            if (includeLoops)
+            {
+                char name[30];
+                for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
+                {
+                    const LoopDsc& loop = optLoopTable[loopNum];
+                    sprintf_s(name, sizeof(name), FMT_LP, loopNum);
+                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpFirst, loop.lpBottom);
+                }
+            }
+
+            // All the regions have been added. Now, output them.
+            DBEXEC(verbose, rgnGraph.Dump());
+            rgnGraph.Output(fgxFile);
         }
     }
 
@@ -2061,7 +2522,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt = FALSE;
+    copiedForGenericsCtxt    = FALSE;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
