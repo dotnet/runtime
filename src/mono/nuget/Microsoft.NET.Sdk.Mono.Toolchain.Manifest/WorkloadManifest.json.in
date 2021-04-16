@@ -4,6 +4,7 @@
     "microsoft-net-runtime-mono-browser-build": {
       "description": "Browser Mono Runtime Build Workload",
       "packs": [
+        "Microsoft.NETCore.App.Runtime.browser-wasm",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm",
@@ -143,6 +144,10 @@
         "linux-x64": "microsoft.netcore.app.runtime.aot.linux-x64.cross.browser-wasm",
         "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.browser-wasm"
       }
+    },
+    "Microsoft.NETCore.App.Runtime.browser-wasm" : {
+      "kind": "sdk",
+      "version": "${PackageVersion}"
     },
     "Microsoft.NET.Runtime.Emscripten.Node" : {
       "kind": "Sdk",
