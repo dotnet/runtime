@@ -19,7 +19,7 @@ namespace System.ComponentModel
     /// to the test string itself, since mask literals cannot be modified (i.e: replacing on a literal position
     /// will actually replace on the nearest edit position forward).
     /// </summary>
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] // needed by Clone() to preserve derived ctors
     public class MaskedTextProvider : ICloneable
     {
         ///
