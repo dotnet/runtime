@@ -6,10 +6,10 @@
     <Import Condition="'%(RunAOTCompilation)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'android' and '$(RunAOTCompilation)' == 'true'">
-        <Import Project="Sdk.props" Sdk="Microsoft.NetCore.App.Runtime.AOT.Cross.android-x86" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NetCore.App.Runtime.AOT.Cross.android-x64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NetCore.App.Runtime.AOT.Cross.android-arm" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NetCore.App.Runtime.AOT.Cross.android-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
@@ -31,9 +31,9 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator" />
     </ImportGroup>
 
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)'=='browser' AND '$(RunAOTCompilation)' == 'true'">
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' AND '$(RunAOTCompilation)' == 'true'">
       <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
-      <Import Project="Sdk.props" Sdk="Microsoft.Netcore.App.Runtime.Aot.Cross.browser-wasm" />
+      <Import Project="Sdk.props" Sdk="Microsoft.NETcore.App.Runtime.AOT.Cross.browser-wasm" />
       <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Python" Condition="!$([MSBuild]::IsOsPlatform('Linux'))" />
       <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Node" />
       <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.Emscripten.Sdk" />
