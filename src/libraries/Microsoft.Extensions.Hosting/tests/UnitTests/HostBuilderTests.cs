@@ -257,8 +257,8 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var parameters = new Dictionary<string, string>()
             {
-                { "applicationName", "MyProjectReference"},
-                { "environment", Environments.Development},
+                { "applicationName", "MyProjectReference" },
+                { "environment", Environments.Development },
                 { "contentRoot", Path.GetFullPath(".") }
             };
 
@@ -330,6 +330,66 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 Assert.NotNull(host.Services.GetService<ILoggerFactory>());
             }
+        }
+
+        public static IEnumerable<object[]> ConfigureHostOptionsTestInput = new[]
+        {
+            new object[] { BackgroundServiceExceptionBehavior.Ignore, TimeSpan.FromDays(3) },
+            new object[] { BackgroundServiceExceptionBehavior.StopHost, TimeSpan.FromTicks(long.MaxValue) },
+        };
+
+        [Theory]
+        [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        public void CanConfigureHostOptionsWithOptionsOverload(
+            BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
+        {
+            using var host = new HostBuilder()
+                .ConfigureDefaults(Array.Empty<string>())
+                .ConfigureHostOptions(
+                    options =>
+                    {
+                        options.BackgroundServiceExceptionBehavior = testBehavior;
+                        options.ShutdownTimeout = testShutdown;
+                    })
+                .Build();
+
+            var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.NotNull(options.Value);
+
+            var hostOptions = options.Value;
+            Assert.Equal(testBehavior, hostOptions.BackgroundServiceExceptionBehavior);
+            Assert.Equal(testShutdown, hostOptions.ShutdownTimeout);
+        }
+
+        [Theory]
+        [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        public void CanConfigureHostOptionsWithContenxtAndOptionsOverload(
+            BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
+        {
+            using var host = new HostBuilder()
+                .ConfigureDefaults(Array.Empty<string>())
+                .ConfigureHostOptions(
+                    (context, options) =>
+                    {
+                        context.HostingEnvironment.ApplicationName = "TestApp";
+                        context.HostingEnvironment.EnvironmentName = Environments.Staging;
+
+                        options.BackgroundServiceExceptionBehavior = testBehavior;
+                        options.ShutdownTimeout = testShutdown;
+                    })
+                .Build();
+
+            var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.NotNull(options.Value);
+
+            var hostOptions = options.Value;
+            Assert.Equal(testBehavior, hostOptions.BackgroundServiceExceptionBehavior);
+            Assert.Equal(testShutdown, hostOptions.ShutdownTimeout);
+
+            var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+            Assert.Equal("TestApp", env.ApplicationName);
+            Assert.Equal(Environments.Staging, env.EnvironmentName);
         }
 
         [Fact]
@@ -552,7 +612,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var hostBuilder = Host.CreateDefaultBuilder();
             var host = hostBuilder.Build();
-            
+
             var type = hostBuilder.GetType();
             var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
