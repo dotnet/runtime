@@ -128,7 +128,7 @@ public static class Program
         {
             for (int i = 0; i < clientOperations.Length; i++)
             {
-                Console.WriteLine(clientOperations[i].Name);
+                Console.WriteLine(clientOperations[i].IndexedName);
             }
             return ExitCode.Success;
         }
@@ -160,7 +160,7 @@ public static class Program
         Console.WriteLine("  Content Length: " + config.MaxContentLength);
         Console.WriteLine("    HTTP Version: " + config.HttpVersion);
         Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
-        Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.Name)));
+        Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.IndexedName)));
         Console.WriteLine("     Random Seed: " + config.RandomSeed);
         Console.WriteLine("    Cancellation: " + 100 * config.CancellationProbability + "%");
         Console.WriteLine("Max Content Size: " + config.MaxContentLength);

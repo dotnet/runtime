@@ -176,19 +176,19 @@ namespace HttpStress
 
     public class ClientOperation
     {
-        public string ShortName { get; }
+        public string Name { get; }
         public Func<RequestContext, Task> OperationFunc { get; }
         public int Index { get; }
 
-        public string Name { get; }
+        public string IndexedName { get; }
 
         public ClientOperation(string name, Func<RequestContext, Task> operationFunc, int index)
         {
-            ShortName = name;
+            Name = name;
             OperationFunc = operationFunc;
             Index = index;
             // annotate the operation name with its index
-            Name = $"{Index.ToString().PadLeft(2)}: {ShortName}";
+            IndexedName = $"{Index.ToString().PadLeft(2)}: {Name}";
         }
 
         internal bool ShouldRun(Random random) => Name != "GET Aborted" || random.NextDouble() < 0.2;

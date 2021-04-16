@@ -260,7 +260,7 @@ namespace HttpStress
 
             public StressResultAggregator(ClientOperation[] operations)
             {
-                _operationNames = operations.Select(x => x.Name).ToArray();
+                _operationNames = operations.Select(x => x.IndexedName).ToArray();
                 _successes = new long[operations.Length];
                 _cancellations = new long[operations.Length];
                 _failures = new long[operations.Length];
