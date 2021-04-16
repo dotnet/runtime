@@ -9,6 +9,8 @@
              Exclude="@(ProjectExclusions)" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"
+                          Exclude="@(ProjectExclusions)" />
     <NetCoreAppProject Include="$(CoreLibProject);
                                 @(_allSrc);
                                 $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;

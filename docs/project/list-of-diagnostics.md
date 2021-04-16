@@ -27,3 +27,31 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
 |  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |
 |  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications. |
+
+### Analyzer warnings (`SYSLIB1001` - `SYSLIB1999`)
+| Diagnostic ID     | Description |
+| :---------------- | :---------- |
+|  __`SYSLIB1001`__ | Logging method names cannot start with _ |
+|  __`SYSLIB1002`__ | Don't include log level parameters as templates in the logging message |
+|  __`SYSLIB1003`__ | InvalidLoggingMethodParameterNameTitle |
+|  __`SYSLIB1004`__ | Logging class cannot be in nested types |
+|  __`SYSLIB1005`__ | Could not find a required type definition |
+|  __`SYSLIB1006`__ | Multiple logging methods cannot use the same event id within a class |
+|  __`SYSLIB1007`__ | Logging methods must return void |
+|  __`SYSLIB1008`__ | One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface |
+|  __`SYSLIB1009`__ | Logging methods must be static |
+|  __`SYSLIB1010`__ | Logging methods must be partial |
+|  __`SYSLIB1011`__ | Logging methods cannot be generic |
+|  __`SYSLIB1012`__ | Redundant qualifier in logging message |
+|  __`SYSLIB1013`__ | Don't include exception parameters as templates in the logging message |
+|  __`SYSLIB1014`__ | Logging template has no corresponding method argument |
+|  __`SYSLIB1015`__ | Argument is not referenced from the logging message |
+|  __`SYSLIB1016`__ | Logging methods cannot have a body |
+|  __`SYSLIB1017`__ | A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method |
+|  __`SYSLIB1018`__ | Don't include logger parameters as templates in the logging message |
+|  __`SYSLIB1019`__ | Couldn't find a field of type Microsoft.Extensions.Logging.ILogger |
+|  __`SYSLIB1020`__ | Found multiple fields of type Microsoft.Extensions.Logging.ILogger |
+|  __`SYSLIB1021`__ | Can't have the same template with different casing |
+|  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
+|  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
+|  __`SYSLIB1029`__ | *_Blocked range `SYSLIB1024`-`SYSLIB1029` for logging._* |
