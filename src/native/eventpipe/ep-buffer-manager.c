@@ -889,7 +889,6 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
 
-	// TODO: Don't we need to free the thread_session_state_list and sequence_point_list too?
 	ep_rt_buffer_array_free (&buffer_manager->used_buffer_array);
 
 	ep_rt_object_free (buffer_manager);
