@@ -227,7 +227,7 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(2), (ushort)port);
 
                 IPAddress? ipv4Address = null;
-                if (IPAddress.TryParse(host, out var hostIP))
+                if (IPAddress.TryParse(host, out IPAddress? hostIP))
                 {
                     if (hostIP.AddressFamily == AddressFamily.InterNetwork)
                     {
@@ -245,9 +245,17 @@ namespace System.Net.Http
                 else if (!isVersion4a)
                 {
                     // Socks4 does not support domain names - try to resolve it here
-                    var addresses = async
-                        ? await Dns.GetHostAddressesAsync(host, AddressFamily.InterNetwork, cancellationToken).ConfigureAwait(false)
-                        : Dns.GetHostAddresses(host, AddressFamily.InterNetwork);
+                    IPAddress[] addresses;
+                    try
+                    {
+                        addresses = async
+                            ? await Dns.GetHostAddressesAsync(host, AddressFamily.InterNetwork, cancellationToken).ConfigureAwait(false)
+                            : Dns.GetHostAddresses(host, AddressFamily.InterNetwork);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new SocksException(SR.net_socks_no_ipv4_address, ex);
+                    }
 
                     if (addresses.Length == 0)
                     {

@@ -76,6 +76,8 @@ namespace System.Net.Http.Functional.Tests.Socks
                 yield return new object[] { scheme, "localhost", true, new NetworkCredential(new string('a', 256), "foo"), "Encoding the UserName took more than the maximum of 255 bytes." };
             }
 
+            yield return new object[] { "socks4", new string('a', 256), false, null, "Failed to resolve the destination host to an IPv4 address." };
+
             foreach (string scheme in new[] { "socks4a", "socks5" })
             {
                 yield return new object[] { scheme, new string('a', 256), false, null, "Encoding the host took more than the maximum of 255 bytes." };
