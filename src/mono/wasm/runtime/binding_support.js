@@ -1099,7 +1099,7 @@ var BindingSupportLib = {
 				var fullName = this.mono_wasm_get_type_name (typePtr);
 				var marshalerFullName = MONO._custom_marshaler_name_table[fullName];
 				if (!marshalerFullName) {
-					console.log (`No custom marshaler configured for ${fullName}`);
+					// console.log (`No custom marshaler configured for ${fullName}`);
 					this._custom_marshaler_info_cache[typePtr] = null;
 					return null;
 				}
