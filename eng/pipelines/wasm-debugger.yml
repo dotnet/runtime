@@ -7,7 +7,7 @@ steps:
   - script: $(Build.SourcesDirectory)/dotnet.sh
             test
             $(Build.SourcesDirectory)/src/mono/wasm/debugger/DebuggerTestSuite
-            /p:Configuration=${{ parameters.buildConfig }}
+            /p:WasmBuildNative=false
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/WasmDebuggerTests.binlog
     displayName: Run debugger tests
     condition: and(succeeded(), ${{ parameters.condition }})

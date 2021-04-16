@@ -135,16 +135,16 @@ jobs:
             #eq(variables['monoContainsChange'], true),
             #eq(variables['isFullMatrix'], true))
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: Release
-    platforms:
-    - Android_arm
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Build_Subset_Mono
-      buildArgs: -subset mono+libs
+#- template: /eng/pipelines/common/platform-matrix.yml
+  #parameters:
+    #jobTemplate: /eng/pipelines/common/global-build-job.yml
+    #buildConfig: Release
+    #platforms:
+    #- Android_arm
+    #jobParameters:
+      #testGroup: innerloop
+      #nameSuffix: Build_Subset_Mono
+      #buildArgs: -subset mono+libs
 
 #
 # Build the whole product using Mono and run libraries tests
@@ -310,18 +310,18 @@ jobs:
       enablePublisTestResults: true
       testResultsFormat: xunit
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - Browser_wasm_win
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Browser_wasm_Windows
-      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig)
-      timeoutInMinutes: 120
+#- template: /eng/pipelines/common/platform-matrix.yml
+  #parameters:
+    #jobTemplate: /eng/pipelines/common/global-build-job.yml
+    #buildConfig: release
+    #runtimeFlavor: mono
+    #platforms:
+    #- Browser_wasm_win
+    #jobParameters:
+      #testGroup: innerloop
+      #nameSuffix: Browser_wasm_Windows
+      #buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig)
+      #timeoutInMinutes: 120
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop
