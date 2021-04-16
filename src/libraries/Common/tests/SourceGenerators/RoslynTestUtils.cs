@@ -76,6 +76,25 @@ namespace SourceGenerators.Tests
             }
         }
 
+        private static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
+        {
+            int count = 0;
+            Project result = project;
+            if (sourceNames != null)
+            {
+                List<string> names = sourceNames.ToList();
+                foreach (string s in sources)
+                    result = result.WithDocument(names[count++], s);
+            }
+            else
+            {
+                foreach (string s in sources)
+                    result = result.WithDocument($"src-{count++}.cs", s);
+            }
+
+            return result;
+        }
+
         public static Project WithDocument(this Project proj, string name, string text)
         {
             return proj.AddDocument(name, text).Project;
@@ -131,11 +150,7 @@ namespace SourceGenerators.Tests
         {
             Project proj = CreateTestProject(references, includeBaseReferences);
 
-            int count = 0;
-            foreach (string s in sources)
-            {
-                proj = proj.WithDocument($"src-{count++}.cs", s);
-            }
+            proj = proj.WithDocuments(sources);
 
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
@@ -158,11 +173,7 @@ namespace SourceGenerators.Tests
         {
             Project proj = CreateTestProject(references);
 
-            int count = 0;
-            foreach (string s in sources)
-            {
-                proj = proj.WithDocument($"src-{count++}.cs", s);
-            }
+            proj = proj.WithDocuments(sources);
 
             await proj.CommitChanges().ConfigureAwait(false);
 
@@ -186,22 +197,8 @@ namespace SourceGenerators.Tests
         {
             Project proj = CreateTestProject(references);
 
-            int count = 0;
-            if (sourceNames != null)
-            {
-                List<string> l = sourceNames.ToList();
-                foreach (string s in sources)
-                {
-                    proj = proj.WithDocument(l[count++], s);
-                }
-            }
-            else
-            {
-                foreach (string s in sources)
-                {
-                    proj = proj.WithDocument($"src-{count++}.cs", s);
-                }
-            }
+            int count = sources.Count();
+            proj = proj.WithDocuments(sources, sourceNames);
 
             if (defaultNamespace != null)
             {

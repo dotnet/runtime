@@ -37,56 +37,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 return _builder.ToString();
             }
 
-            private static string ConvertEndOfLineAndQutationCharactersToEscapeForm(string s)
-            {
-                int index = 0;
-                while (index < s.Length)
-                {
-                    if (s[index] == '\n' || s[index] == '\r' || s[index] == '"')
-                    {
-                        break;
-                    }
-                    index++;
-                }
-    
-                if (index >= s.Length)
-                {
-                    return s;
-                }
-    
-                StringBuilder sb = new StringBuilder(s.Length);
-                sb.Append(s, 0, index);
-    
-                while (index < s.Length)
-                {
-                    switch (s[index])
-                    {
-                        case '\n':
-                            sb.Append('\\');
-                            sb.Append('n');
-                            break;
-    
-                        case '\r':
-                            sb.Append('\\');
-                            sb.Append('r');
-                            break;
-    
-                        case '"':
-                            sb.Append('\\');
-                            sb.Append('"');
-                            break;
-    
-                        default:
-                            sb.Append(s[index]);
-                            break;
-                    }
-    
-                    index++;
-                }
-    
-                return sb.ToString();
-            }
-
             private static bool UseLoggerMessageDefine(LoggerMethod lm)
             {
                 bool result =
@@ -268,7 +218,7 @@ namespace {lc.Namespace}
                     _builder.AppendLine($"                    {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this._{p.Name}),");
                 }
 
-                _builder.AppendLine($"                    {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQutationCharactersToEscapeForm(lm.Message)}\"),");
+                _builder.AppendLine($"                    {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
             }
 
             private void GenCallbackArguments(LoggerMethod lm)
@@ -390,7 +340,7 @@ namespace {lc.Namespace}
 
                     GenDefineTypes(lm, brackets: true);
 
-                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQutationCharactersToEscapeForm(lm.Message)}"", true); 
+                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"", true); 
 ");
                 }
 
@@ -553,36 +503,52 @@ namespace {lc.Namespace}
                 }
             }
         }
-    }
 
-    internal static class StringHelper
-    {
-        // Replace operations need to be done with StringComparison.Ordinal
-        // (Adding code snippet below, since the API taking StringComparison is not available in netstandard2.0)
-        internal static string ReplaceOrdinal(this string s, string oldValue, string newValue)
+        private static string ConvertEndOfLineAndQuotationCharactersToEscapeForm(string s)
         {
-            int index = s.IndexOf(oldValue, StringComparison.Ordinal);
-            if (index < 0)
+            int index = 0;
+            while (index < s.Length)
+            {
+                if (s[index] == '\n' || s[index] == '\r' || s[index] == '"')
+                {
+                    break;
+                }
+                index++;
+            }
+
+            if (index >= s.Length)
             {
                 return s;
             }
 
             StringBuilder sb = new StringBuilder(s.Length);
             sb.Append(s, 0, index);
-            sb.Append(newValue);
-            index += oldValue.Length;
-            int newIndex;
 
-            while (index < s.Length && (newIndex = s.IndexOf(oldValue, index, StringComparison.Ordinal)) > 0)
+            while (index < s.Length)
             {
-                sb.Append(s, index, newIndex - index);
-                sb.Append(newValue);
-                index = newIndex + oldValue.Length;
-            }
+                switch (s[index])
+                {
+                    case '\n':
+                        sb.Append('\\');
+                        sb.Append('n');
+                        break;
 
-            if (index < s.Length)
-            {
-                sb.Append(s, index, s.Length - index);
+                    case '\r':
+                        sb.Append('\\');
+                        sb.Append('r');
+                        break;
+
+                    case '"':
+                        sb.Append('\\');
+                        sb.Append('"');
+                        break;
+
+                    default:
+                        sb.Append(s[index]);
+                        break;
+                }
+
+                index++;
             }
 
             return sb.ToString();
