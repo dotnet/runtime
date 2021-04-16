@@ -41,11 +41,11 @@ namespace System.Net.Http
                     }
                     else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EstablishSocks4TunnelAsync(stream, true, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
+                        await EstablishSocks4TunnelAsync(stream, isVersion4a: true, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
                     }
                     else if (string.Equals(proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EstablishSocks4TunnelAsync(stream, false, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
+                        await EstablishSocks4TunnelAsync(stream, isVersion4a: false, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
