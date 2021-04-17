@@ -5390,7 +5390,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                         // In the join free case, we also need to move bDest right after bNext
                         // to create same flow as in the isJumpAroundEmpty case.
                         //
-                        if (!fgEhAllowsMoveBlock(bNext, bDest))
+                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallAlwaysPair())
                         {
                             optimizeJump = false;
                         }
@@ -5425,7 +5425,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                             // Add fall through fixup block, if needed.
                             //
-                            if (bDest->bbFallsThrough())
+                            if ((bDest->bbJumpKind == BBJ_NONE) || (bDest->bbJumpKind == BBJ_COND))
                             {
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bFixup->inheritWeight(bDestNext);
