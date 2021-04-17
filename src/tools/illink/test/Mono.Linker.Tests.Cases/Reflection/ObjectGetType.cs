@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
@@ -43,6 +44,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			DiamondShapeWithUnannotatedInterface.Test ();
 			DiamondShapeWithAnnotatedInterface.Test ();
+
+			ApplyingAnnotationIntroducesTypesToApplyAnnotationTo.Test ();
+			ApplyingAnnotationIntroducesTypesToApplyAnnotationToViaInterfaces.Test ();
+			ApplyingAnnotationIntroducesTypesToApplyAnnotationToMultipleAnnotations.Test ();
+			ApplyingAnnotationIntroducesTypesToApplyAnnotationToEntireType.Test ();
 		}
 
 		[Kept]
@@ -942,6 +948,281 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void Test ()
 			{
 				GetInstance ().GetType ().GetMethod ("InterfaceMethod");
+			}
+		}
+
+		[Kept]
+		class ApplyingAnnotationIntroducesTypesToApplyAnnotationTo
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+			class AnnotatedBase
+			{
+			}
+
+			[Kept]
+			interface IUnannotatedInterface
+			{
+			}
+
+			interface IUnusedInterface
+			{
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			[KeptMember (".ctor()")]
+			class Derived : AnnotatedBase
+			{
+				[Kept]
+				[KeptBaseType (typeof (AnnotatedBase))]
+				public class NestedDerived : AnnotatedBase
+				{
+					[Kept]
+					[KeptBaseType (typeof (NestedDerived))]
+					public class DeepNestedDerived : NestedDerived
+					{
+						[Kept] // Marked due to the annotation
+						public class DeepNestedChild
+						{
+						}
+
+						private class DeepNestedPrivateChild
+						{
+						}
+					}
+
+					[Kept] // Marked due to the annotation
+					[KeptInterface (typeof (IUnannotatedInterface))]
+					public class NestedChild : IUnannotatedInterface
+					{
+					}
+				}
+
+				// Not used - not marked
+				private class PrivateNested : IUnusedInterface
+				{
+				}
+			}
+
+			[Kept]
+			static AnnotatedBase GetInstance () => new Derived ();
+
+			[Kept]
+			public static void Test ()
+			{
+				var t = typeof (IUnannotatedInterface);
+				GetInstance ().GetType ().GetNestedTypes ();
+			}
+		}
+
+		[Kept]
+		class ApplyingAnnotationIntroducesTypesToApplyAnnotationToViaInterfaces
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			interface IAnnotatedInterface
+			{
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptInterface (typeof (IAnnotatedInterface))]
+			class ImplementsInterface : IAnnotatedInterface
+			{
+				[Kept]
+				public FieldTypeAlsoImplementsInterface _publicFieldWithInterface;
+
+				UnusedFieldTypeImplementsInterface _privateFieldWithInterface;
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptInterface (typeof (IAnnotatedInterface))]
+			class FieldTypeAlsoImplementsInterface : IAnnotatedInterface
+			{
+				[Kept]
+				public FieldTypeAlsoImplementsInterface _selfReference;
+
+				[Kept]
+				public NestedFieldType _nestedField;
+
+				[Kept]
+				public class NestedFieldType
+				{
+				}
+			}
+
+			class UnusedFieldTypeImplementsInterface : IAnnotatedInterface
+			{
+			}
+
+			[Kept]
+			static IAnnotatedInterface GetInstance () => new ImplementsInterface ();
+
+			[Kept]
+			public static void Test ()
+			{
+				var t = new FieldTypeAlsoImplementsInterface (); // Instantiate the type so that it gets interfaces
+				GetInstance ().GetType ().GetFields ();
+			}
+		}
+
+		[Kept]
+		class ApplyingAnnotationIntroducesTypesToApplyAnnotationToMultipleAnnotations
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class MethodAnnotatedBase
+			{
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (MethodAnnotatedBase))]
+			class DerivedFromMethodsBase : MethodAnnotatedBase
+			{
+				[Kept]
+				public AnotherMethodsDerived PublicMethod () { return null; }
+
+				void PrivateMethod () { }
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (MethodAnnotatedBase))]
+			class AnotherMethodsDerived : MethodAnnotatedBase
+			{
+				[Kept]
+				public static void PublicStaticMethod (DerivedFromPropertiesBase p) { }
+
+				static void PrivateStaticMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+			class PropertiesAnnotatedBase
+			{
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (PropertiesAnnotatedBase))]
+			class DerivedFromPropertiesBase : PropertiesAnnotatedBase
+			{
+				[Kept]
+				public static AnotherPropertiesDerived PublicProperty { [Kept] get => null; }
+
+				private static UnusedType PrivateProperty { get => null; }
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (PropertiesAnnotatedBase))]
+			class AnotherPropertiesDerived : PropertiesAnnotatedBase
+			{
+				[Kept]
+				public static UsedType PublicProperty { [Kept] get => null; }
+
+				private static UnusedType PrivateProperty { get => null; }
+			}
+
+			[Kept]
+			class UsedType { }
+
+			class UnusedType { }
+
+			[Kept]
+			static MethodAnnotatedBase GetMethodsInstance () => new DerivedFromMethodsBase ();
+
+			[Kept]
+			static PropertiesAnnotatedBase GetPropertiesInstance () => new PropertiesAnnotatedBase ();
+
+			[Kept]
+			public static void Test ()
+			{
+				GetMethodsInstance ().GetType ().GetMethods ();
+
+				// Note that the DerivedFromPropertiesBase type is not referenced any other way then through
+				// the PublicStaticMethod parameter which is only kept due to the hierarchy walk of the MethodAnnotatedBase.
+				// This is to test that hierarchy walking of one annotation type tree will correctly mark/cache things
+				// for a different annotatin tree.
+				GetPropertiesInstance ().GetType ().GetProperties ();
+			}
+		}
+
+		[Kept]
+		class ApplyingAnnotationIntroducesTypesToApplyAnnotationToEntireType
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			class AnnotatedBase
+			{
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			[KeptMember (".ctor()")]
+			class Derived : AnnotatedBase
+			{
+				[Kept]
+				public void Method () { }
+
+				[Kept]
+				[KeptMember (".ctor()")]
+				[KeptInterface (typeof (INestedInterface))]
+				class Nested : INestedInterface
+				{
+					[Kept]
+					public void InterfaceMethod () { }
+				}
+
+				[Kept]
+				public AnotherAnnotatedType PublicProperty { [Kept] get => null; }
+
+				[Kept]
+				[KeptMember (".ctor()")]
+				[KeptBaseType (typeof (AnnotatedBase))]
+				class NestedAnnotatedType : AnnotatedBase
+				{
+					[Kept]
+					int _field;
+				}
+
+				[Kept]
+				int _field;
+			}
+
+			[Kept]
+			interface INestedInterface
+			{
+				[Kept]
+				void InterfaceMethod ();
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			class AnotherAnnotatedType : AnnotatedBase
+			{
+				[Kept]
+				int _field;
+			}
+
+			[Kept]
+			static AnnotatedBase GetInstance () => new Derived ();
+
+			[Kept]
+			public static void Test ()
+			{
+				Type t = GetInstance ().GetType ();
+				t.RequiresAll ();
 			}
 		}
 	}
