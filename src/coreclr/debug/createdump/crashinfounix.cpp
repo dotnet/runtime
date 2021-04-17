@@ -265,7 +265,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     }
     if (m_coreclrPath.empty())
     {
-        size_t last = moduleName.rfind(MAKEDLLNAME_A("coreclr"));
+        size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
             m_coreclrPath = moduleName.substr(0, last);
 

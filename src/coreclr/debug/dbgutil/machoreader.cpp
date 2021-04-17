@@ -128,13 +128,13 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
 
         for (int i = 0; i < m_dysymtabCommand->nextdefsym; i++)
         {
-            const char* name = GetSymbolName(i).c_str();
-            // Skip the leading underscores to work like Linux
-            if (*name == '_')
+            std::string name = GetSymbolName(i);
+            // Skip the leading underscores to match Linux externs
+            if (name[0] == '_')
             {
-                name++;
+                name.erase(0, 1);
             }
-            if (strcmp(name, symbolName) == 0)
+            if (strcmp(name.c_str(), symbolName) == 0)
             {
                 *symbolValue = m_loadBias + m_nlists[i].n_value;
                 return true;
@@ -271,7 +271,7 @@ MachOModule::ReadSymbolTable()
             m_dysymtabCommand->nextdefsym);
 
         // Read the external symbol part of symbol table. An array of "nlist" structs.
-        void* symtabAddress = (void*)(GetAddressFromFileOffset(m_symtabCommand->symoff) + (m_dysymtabCommand->iextdefsym * sizeof(nlist_64)));
+        void* extSymbolTableAddress = (void*)(GetAddressFromFileOffset(m_symtabCommand->symoff) + (m_dysymtabCommand->iextdefsym * sizeof(nlist_64)));
         size_t symtabSize = sizeof(nlist_64) * m_dysymtabCommand->nextdefsym;
         m_nlists = (nlist_64*)malloc(symtabSize);
         if (m_nlists == nullptr)
@@ -279,9 +279,9 @@ MachOModule::ReadSymbolTable()
             m_reader.Trace("ERROR: Failed to allocate %zu byte external symbol table\n", symtabSize);
             return false;
         }
-        if (!m_reader.ReadMemory(symtabAddress, m_nlists, symtabSize))
+        if (!m_reader.ReadMemory(extSymbolTableAddress, m_nlists, symtabSize))
         {
-            m_reader.Trace("ERROR: Failed to read symtab at %p of %zu\n", symtabAddress, symtabSize);
+            m_reader.Trace("ERROR: Failed to read external symtab at %p of %zu\n", extSymbolTableAddress, symtabSize);
             return false;
         }
 
@@ -308,14 +308,14 @@ MachOModule::GetAddressFromFileOffset(uint32_t offset)
 std::string
 MachOModule::GetSymbolName(int index)
 {
-    uint64_t strtabAddress = m_strtabAddress + m_nlists[index].n_un.n_strx;
+    uint64_t symbolNameAddress = m_strtabAddress + m_nlists[index].n_un.n_strx;
     std::string result;
     while (true)
     {
         char c = 0;
-        if (!m_reader.ReadMemory((void*)strtabAddress, &c, sizeof(char)))
+        if (!m_reader.ReadMemory((void*)symbolNameAddress, &c, sizeof(char)))
         {
-            m_reader.Trace("ERROR: Failed to read string table at %p\n", (void*)strtabAddress);
+            m_reader.Trace("ERROR: Failed to read string table at %p\n", (void*)symbolNameAddress);
             break;
         }
         if (c == '\0')
@@ -323,7 +323,7 @@ MachOModule::GetSymbolName(int index)
             break;
         }
         result.append(1, c);
-        strtabAddress++;
+        symbolNameAddress++;
     }
     return result;
 }
