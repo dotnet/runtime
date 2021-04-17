@@ -1266,5 +1266,10 @@ namespace System.Runtime.InteropServices
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
             safeHandle.SetHandle(handle);
         }
+
+        public static int GetLastWin32Error()
+        {
+            return GetLastPInvokeError();
+        }
     }
 }

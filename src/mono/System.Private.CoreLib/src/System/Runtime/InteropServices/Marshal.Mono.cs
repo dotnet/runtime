@@ -11,8 +11,43 @@ namespace System.Runtime.InteropServices
 {
     public partial class Marshal
     {
+        /// <summary>
+        /// Get the last platform invoke error on the current thread
+        /// </summary>
+        /// <returns>The last platform invoke error</returns>
+        /// <remarks>
+        /// The last platform invoke error corresponds to the error set by either the most recent platform
+        /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
+        /// </remarks>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetLastWin32Error();
+        public static extern int GetLastPInvokeError();
+
+        /// <summary>
+        /// Set the last platform invoke error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void SetLastPInvokeError(int error);
+
+        /// <summary>
+        /// Get the last system error on the current thread
+        /// </summary>
+        /// <returns>The last system error</returns>
+        /// <remarks>
+        /// The error is that for the current operating system (e.g. errno on Unix, GetLastError on Windows)
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetLastSystemError();
+
+        /// <summary>
+        /// Set the last system error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
+        /// <remarks>
+        /// The error is that for the current operating system (e.g. errno on Unix, SetLastError on Windows)
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void SetLastSystemError(int error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
@@ -34,9 +69,6 @@ namespace System.Runtime.InteropServices
             //Type type = obj.GetType ();
             //return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastWin32Error(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {
