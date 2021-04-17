@@ -459,20 +459,13 @@ def main(main_args):
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
-    # Copy common test files to CORE_ROOT
+    # Copy all the test files to CORE_ROOT
+    # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
+    # Reflection errors, just copy everything to CORE_ROOT so for all individual partitions, the
+    # references will be present in CORE_ROOT.
     if coreclr_args.collection_name == "tests_libraries":
-
-        def common_libs_tests_files_copy(path):
-            if not acceptable_copy(path):
-                return False
-
-            if path.endswith(".Tests.dll") and not path.endswith("Common.Tests.dll"):
-                return False
-
-            return True
-
-        print('Copying filtered {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
-        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=common_libs_tests_files_copy)
+        print('Copying {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
+        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
