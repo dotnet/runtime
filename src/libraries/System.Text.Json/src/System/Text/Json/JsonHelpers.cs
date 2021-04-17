@@ -12,9 +12,6 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
-        private const int MaxArrayLength = 0X7FEFFFFF;
-
         // Members accessed by the serializer when deserializing.
         public const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
             DynamicallyAccessedMemberTypes.PublicConstructors |
@@ -157,7 +154,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
-            if (length > MaxArrayLength)
+            if (length > 0X7FEFFFFF) // prior to .NET 6, max array length for sizeof(T) != 1 (size == 1 is larger)
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
