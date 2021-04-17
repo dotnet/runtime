@@ -5508,7 +5508,7 @@ namespace
         LIMITED_METHOD_CONTRACT;
 
         // Check if the type is a base calling convention.
-        for (int i = 0; i < BASECOUNT; ++i)
+        for (size_t i = 0; i < BASECOUNT; ++i)
         {
             if (!BeginsWith(typeLength, typeName, baseTypes[i].NameLength, baseTypes[i].Name))
                 continue;
@@ -5522,7 +5522,7 @@ namespace
         }
 
         // Check if the type is a modifier calling convention.
-        for (int i = 0; i < MODCOUNT; ++i)
+        for (size_t i = 0; i < MODCOUNT; ++i)
         {
             if (!BeginsWith(typeLength, typeName, modTypes[i].NameLength, modTypes[i].Name))
                 continue;
