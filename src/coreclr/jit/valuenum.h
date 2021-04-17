@@ -251,6 +251,9 @@ public:
     // VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF.
     static bool VNFuncIsOverflowArithmetic(VNFunc vnf);
 
+    // Returns "true" iff "vnf" is VNF_Cast or VNF_CastOvf.
+    static bool VNFuncIsNumericCast(VNFunc vnf);
+
     // Returns the arity of "vnf".
     static unsigned VNFuncArity(VNFunc vnf);
 
@@ -286,7 +289,12 @@ public:
     }
 #endif
 
-    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false);
+    // Packs information about the cast into an integer constant represented by the returned value number,
+    // to be used as the second operand of VNF_Cast & VNF_CastOvf.
+    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false DEBUGARG(bool printResult = true));
+
+    // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
+    void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
 
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
