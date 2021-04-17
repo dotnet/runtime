@@ -626,37 +626,29 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
     }
     else
     {
-        // Set WinAPI as the default
-        callConvLocal = CorInfoCallConvExtension::Managed;
-
-        MetaSig::CallingConventionModifiers modifiers = MetaSig::CALL_CONV_MOD_NONE;
-
-        bool foundBaseCallConv = false;
-        bool useMemberFunctionVariant = false;
+        CallConvBuilder callConvBuilder;
 
         CaValue* arrayOfTypes = &namedArgs[0].val;
         for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
         {
             CaValue& typeNameValue = arrayOfTypes->arr[i];
 
-            if (!MetaSig::TryApplyModOptToCallingConvention(
-                typeNameValue.str.pStr,
-                typeNameValue.str.cbStr,
-                MetaSig::CallConvModOptNameType::FullyQualifiedName,
-                &callConvLocal,
-                &modifiers))
+            if (!callConvBuilder.AddFullyQualifiedTypeName(typeNameValue.str.cbStr, typeNameValue.str.pStr))
             {
                 // We found a second base calling convention.
                 return false;
             }
         }
 
-        if (callConvLocal == CorInfoCallConvExtension::Managed)
+        CallConvBuilder::CallConvModifiers modifiers;
+        callConvBuilder.GetCurrentCallConv(callConvLocal, modifiers);
+
+        if (callConvLocal == CallConvBuilder::DefaultValue)
         {
             callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
         }
 
-        if (modifiers & MetaSig::CALL_CONV_MOD_MEMBERFUNCTION)
+        if (modifiers & CallConvBuilder::CALL_CONV_MOD_MEMBERFUNCTION)
         {
             callConvLocal = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(callConvLocal);
         }

@@ -798,30 +798,6 @@ class MetaSig
             _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
-        enum CallingConventionModifiers
-        {
-            CALL_CONV_MOD_NONE = 0,
-            CALL_CONV_MOD_SUPPRESSGCTRANSITION = 0x1,
-            CALL_CONV_MOD_MEMBERFUNCTION = 0x2
-        };
-
-        enum class CallConvModOptNameType
-        {
-            TypeName,
-            FullyQualifiedName
-        };
-
-        // Attempt to parse the provided calling convention name and add it to the collected modifiers and calling convention
-        // Returns false if the modopt is known and cannot be applied.
-        // This occurs when the modopt is a base calling convention and a base calling convention has already been supplied.
-        // Otherwise, returns true.
-        static bool TryApplyModOptToCallingConvention(
-            _In_z_ LPCSTR callConvModOptName,
-            _In_ size_t callConvModOptNameLength,
-            _In_ CallConvModOptNameType nameType,
-            _Inout_ CorInfoCallConvExtension* pBaseCallConv,
-            _Inout_ CallingConventionModifiers* pCallConvModifiers);
-
         static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
         {
 #ifdef TARGET_UNIX
@@ -1208,6 +1184,51 @@ public:
         BYTE            m_CallConv;
 };  // class MetaSig
 
+// Attempts to parse the provided calling convention names to construct a
+// calling convention with known modifiers.
+//
+// The Add* functions return false if the type is known but cannot be applied.
+// Otherwise, they return true.
+class CallConvBuilder final
+{
+public:
+    enum CallConvModifiers
+    {
+        CALL_CONV_MOD_NONE = 0,
+        CALL_CONV_MOD_SUPPRESSGCTRANSITION = 0x1,
+        CALL_CONV_MOD_MEMBERFUNCTION = 0x2
+    };
+
+    struct State
+    {
+        CorInfoCallConvExtension CallConvBase;
+        CallConvModifiers CallConvModifiers;
+    };
+
+private:
+    State _state;
+
+public:
+    // The initial "unset" base calling convention.
+    static const CorInfoCallConvExtension DefaultValue;
+
+    CallConvBuilder();
+
+    // Add a fully qualified type name to the calling convention computation.
+    bool AddFullyQualifiedTypeName(
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName);
+
+    // Add a simple type name to the calling convention computation.
+    bool AddTypeName(
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName);
+
+    // Get the currently computed calling convention values.
+    void GetCurrentCallConv(
+        _Out_ CorInfoCallConvExtension &baseCallConv,
+        _Out_ CallConvModifiers &modsCallConv);
+};
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);
 
