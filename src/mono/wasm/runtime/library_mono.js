@@ -2268,7 +2268,7 @@ var MonoSupportLib = {
 
 			var manifest;
 			try {
-				manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+				var manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
 				manifest = JSON.parse(manifestContent);
 				if (!(manifest instanceof Array))
 					return false;
@@ -2295,7 +2295,7 @@ var MonoSupportLib = {
 				Module['FS_createPath'](prefix, folder, true, true);
 			});
 
-			for (row of manifest) {
+			for (var row of manifest) {
 				var name = row[0];
 				var length = row[1];
 				var bytes = data.slice(0, length);
