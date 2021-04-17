@@ -16,12 +16,13 @@ namespace System
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
             // - T cannot contain references (GC can't track references in vectors)
             // - Vectorization must be hardware-accelerated
-            // - T's size must not exceed the vector's size and must be a whole power of 2
+            // - T's size must not exceed the vector's size
+            // - T's size must be a whole power of 2
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) { goto CannotVectorize; }
             if (!Vector.IsHardwareAccelerated) { goto CannotVectorize; }
             if (Unsafe.SizeOf<T>() > Vector<byte>.Count) { goto CannotVectorize; }
-            if ((Unsafe.SizeOf<T>() & (Unsafe.SizeOf<T>() - 1)) != 0) { goto CannotVectorize; } // power of 2 check
+            if (!BitOperations.IsPow2(Unsafe.SizeOf<T>())) { goto CannotVectorize; }
 
             if (numElements >= (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
             {
@@ -71,7 +72,15 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == 32)
                 {
-                    vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                    if (Vector<byte>.Count == 32)
+                    {
+                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> isn't 256 bits in size?");
+                        goto CannotVectorize;
+                    }
                 }
                 else
                 {
