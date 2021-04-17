@@ -89,15 +89,6 @@ namespace Mono.Linker.Dataflow
 
 			Debug.Assert (!apply || annotation != DynamicallyAccessedMemberTypes.None);
 
-			if (apply) {
-				// One of the base/interface types is already marked as having the annotation applied
-				// so we need to apply the annotation to this type as well
-				var reflectionMethodBodyScanner = new ReflectionMethodBodyScanner (_context, _markStep);
-				var reflectionPatternContext = new ReflectionPatternContext (_context, true, type, type);
-				reflectionMethodBodyScanner.ApplyDynamicallyAccessedMembersToType (ref reflectionPatternContext, type, annotation);
-				reflectionPatternContext.Dispose ();
-			}
-
 			// Store the results in the cache
 			// Don't store empty annotations for non-interface types - we can use the presence of the row
 			// in the cache as indication of it instead.
@@ -105,6 +96,20 @@ namespace Mono.Linker.Dataflow
 			// already filled), so we need to always store the row (even if empty) for interfaces.
 			if (annotation != DynamicallyAccessedMemberTypes.None || type.IsInterface) {
 				_typesInDynamicallyAccessedMembersHierarchy[type] = (annotation, apply);
+			}
+
+			// It's important to first store the annotation in the cache and only then apply the annotation.
+			// Applying the annotation will lead to marking additional types which in turn calls back into this
+			// method to look for annotations. If the newly marked type derives from the one we're processing
+			// it will rely on the cache to know if it's annotated - so the record must be in the cache
+			// before it happens.
+			if (apply) {
+				// One of the base/interface types is already marked as having the annotation applied
+				// so we need to apply the annotation to this type as well
+				var reflectionMethodBodyScanner = new ReflectionMethodBodyScanner (_context, _markStep);
+				var reflectionPatternContext = new ReflectionPatternContext (_context, true, type, type);
+				reflectionMethodBodyScanner.ApplyDynamicallyAccessedMembersToType (ref reflectionPatternContext, type, annotation);
+				reflectionPatternContext.Dispose ();
 			}
 
 			return (annotation, apply);
@@ -134,11 +139,32 @@ namespace Mono.Linker.Dataflow
 			// Propagate the newly applied annotation to all derived/implementation types
 			// Since we don't have a data structure which would allow us to enumerate all derived/implementation types
 			// walk all of the types in the cache. These are good candidates as types not in the cache don't apply.
-			foreach (var candidate in _typesInDynamicallyAccessedMembersHierarchy) {
-				if (candidate.Value.annotation == DynamicallyAccessedMemberTypes.None)
-					continue;
+			//
+			// Applying annotations can lead to marking additional types which can lead to adding new records
+			// to the cache. So we can't simply iterate over the cache. We also can't rely on the auto-applying annotations
+			// which is triggered from marking via ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy as that will
+			// only reliably work once the annotations are applied to all types in the cache first. Partially
+			// applied annotations to the cache are not enough. So we have to apply the annotations to any types
+			// added to the cache during the application as well.
+			//
+			HashSet<TypeDefinition> typesProcessed = new HashSet<TypeDefinition> ();
+			List<TypeDefinition> candidateTypes = new List<TypeDefinition> ();
+			while (true) {
+				candidateTypes.Clear ();
+				foreach (var candidate in _typesInDynamicallyAccessedMembersHierarchy) {
+					if (candidate.Value.annotation == DynamicallyAccessedMemberTypes.None || candidate.Value.applied)
+						continue;
 
-				ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, ref reflectionPatternContext, candidate.Key);
+					if (typesProcessed.Add (candidate.Key))
+						candidateTypes.Add (candidate.Key);
+				}
+
+				if (candidateTypes.Count == 0)
+					break;
+
+				foreach (var candidateType in candidateTypes) {
+					ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, ref reflectionPatternContext, candidateType);
+				}
 			}
 
 			return annotation;
