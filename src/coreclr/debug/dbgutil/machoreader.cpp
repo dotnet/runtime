@@ -128,7 +128,7 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
 
         for (int i = 0; i < m_dysymtabCommand->nextdefsym; i++)
         {
-            const char* name = GetSymbolName(i);
+            const char* name = GetSymbolName(i).c_str();
             // Skip the leading underscores to work like Linux
             if (*name == '_')
             {
@@ -305,7 +305,7 @@ MachOModule::GetAddressFromFileOffset(uint32_t offset)
     return m_loadBias + offset;
 }
 
-const char*
+std::string
 MachOModule::GetSymbolName(int index)
 {
     uint64_t strtabAddress = m_strtabAddress + m_nlists[index].n_un.n_strx;
@@ -325,7 +325,7 @@ MachOModule::GetSymbolName(int index)
         result.append(1, c);
         strtabAddress++;
     }
-    return result.c_str();
+    return result;
 }
 
 //--------------------------------------------------------------------

@@ -45,7 +45,7 @@ private:
     bool ReadLoadCommands();
     bool ReadSymbolTable();
     uint64_t GetAddressFromFileOffset(uint32_t offset);
-    const char* GetSymbolName(int index);
+    std::string GetSymbolName(int index);
 };
 
 class MachOReader
