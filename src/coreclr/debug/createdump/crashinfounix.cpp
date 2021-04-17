@@ -267,7 +267,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     {
         size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = moduleName.substr(0, last);
+            m_coreclrPath = moduleName.substr(0, last + 1);
 
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory

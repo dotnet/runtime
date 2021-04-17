@@ -254,7 +254,7 @@ void CrashInfo::VisitModule(MachOModule& module)
     {
         size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = module.Name().substr(0, last);
+            m_coreclrPath = module.Name().substr(0, last + 1);
 
             uint64_t symbolOffset;
             if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
