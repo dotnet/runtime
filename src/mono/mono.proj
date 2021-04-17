@@ -249,7 +249,6 @@
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
@@ -264,7 +263,6 @@
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
@@ -378,15 +376,6 @@
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DSK_RELEASE" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DNDEBUG" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-UDEBUG" />
-
-      <_MonoLDFLAGS Include="-z now" />
-      <_MonoLDFLAGS Include="-z relro" />
-      <_MonoLDFLAGS Include="-z noexecstack" />
-      <_MonoLDFLAGS Include="-ldl" />
-      <_MonoLDFLAGS Include="-lm" />
-      <_MonoLDFLAGS Include="-llog" />
-      <_MonoLDFLAGS Include="-lc" />
-      <_MonoLDFLAGS Include="-lgcc" />
     </ItemGroup>
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">
