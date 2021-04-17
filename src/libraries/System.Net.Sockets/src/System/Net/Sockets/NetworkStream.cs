@@ -506,8 +506,6 @@ namespace System.Net.Sockets
 
         // ReadAsync - provide async read functionality.
         //
-        // This method provides async read functionality.
-        //
         // Input:
         //
         //     buffer            - Buffer to read into.
@@ -565,8 +563,6 @@ namespace System.Net.Sockets
         }
 
         // WriteAsync - provide async write functionality.
-        //
-        // This method provides async write functionality.
         //
         // Input:
         //
