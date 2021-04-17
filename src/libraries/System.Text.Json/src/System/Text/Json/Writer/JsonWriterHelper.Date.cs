@@ -42,72 +42,65 @@ namespace System.Text.Json
         //   2017-06-12T05:30:45                  (interpreted as local time wrt to current time zone)
         public static void TrimDateTimeOffset(Span<byte> buffer, out int bytesWritten)
         {
-            const int maxLenNoOffset = JsonConstants.MaximumFormatDateTimeLength;
-            const int maxLenWithZ = maxLenNoOffset + 1;
-            const int maxLenWithOffset = JsonConstants.MaximumFormatDateTimeOffsetLength;
+            const int maxDateTimeLength = JsonConstants.MaximumFormatDateTimeLength;
 
             // Assert buffer is the right length for:
             // YYYY-MM-DDThh:mm:ss.fffffff (JsonConstants.MaximumFormatDateTimeLength)
             // YYYY-MM-DDThh:mm:ss.fffffffZ (JsonConstants.MaximumFormatDateTimeLength + 1)
             // YYYY-MM-DDThh:mm:ss.fffffff(+|-)hh:mm (JsonConstants.MaximumFormatDateTimeOffsetLength)
-            Debug.Assert(buffer.Length == maxLenNoOffset ||
-                buffer.Length == maxLenWithZ ||
-                buffer.Length == maxLenWithOffset);
+            Debug.Assert(buffer.Length == maxDateTimeLength ||
+            buffer.Length == maxDateTimeLength + 1 ||
+            buffer.Length == JsonConstants.MaximumFormatDateTimeOffsetLength);
 
-            // Find the position after the last significant digit in seconds fraction.
+            // Find the last significant digit.
             int curIndex;
-            if (buffer[maxLenNoOffset - 1] == '0')
-            if (buffer[maxLenNoOffset - 2] == '0')
-            if (buffer[maxLenNoOffset - 3] == '0')
-            if (buffer[maxLenNoOffset - 4] == '0')
-            if (buffer[maxLenNoOffset - 5] == '0')
-            if (buffer[maxLenNoOffset - 6] == '0')
-            if (buffer[maxLenNoOffset - 7] == '0')
-                // All digits are 0 so we can skip over the period also
-                curIndex = maxLenNoOffset - 7 - 1;
-            else curIndex = maxLenNoOffset - 6;
-            else curIndex = maxLenNoOffset - 5;
-            else curIndex = maxLenNoOffset - 4;
-            else curIndex = maxLenNoOffset - 3;
-            else curIndex = maxLenNoOffset - 2;
-            else curIndex = maxLenNoOffset - 1;
+            if (buffer[maxDateTimeLength - 1] == '0')
+                if (buffer[maxDateTimeLength - 2] == '0')
+                    if (buffer[maxDateTimeLength - 3] == '0')
+                        if (buffer[maxDateTimeLength - 4] == '0')
+                            if (buffer[maxDateTimeLength - 5] == '0')
+                                if (buffer[maxDateTimeLength - 6] == '0')
+                                    if (buffer[maxDateTimeLength - 7] == '0')
+                                        // All decimal places are 0 so we can delete the decimal point too.
+                                        curIndex = maxDateTimeLength - 7 - 1;
+                                    else curIndex = maxDateTimeLength - 6;
+                                else curIndex = maxDateTimeLength - 5;
+                            else curIndex = maxDateTimeLength - 4;
+                        else curIndex = maxDateTimeLength - 3;
+                    else curIndex = maxDateTimeLength - 2;
+                else curIndex = maxDateTimeLength - 1;
             else
             {
-                // When there is nothing to trim we are done.
+                // There is nothing to trim.
                 bytesWritten = buffer.Length;
                 return;
             }
 
             // We are either trimming a DateTimeOffset, or a DateTime with
             // DateTimeKind.Local or DateTimeKind.Utc
-            if (buffer.Length == maxLenNoOffset)
+            if (buffer.Length == maxDateTimeLength)
             {
+                // There is no offset to copy.
                 bytesWritten = curIndex;
+            }
+            else if (buffer.Length == JsonConstants.MaximumFormatDateTimeOffsetLength)
+            {
+                // We have a non-UTC offset (+|-)hh:mm that are 6 characters to copy.
+                buffer[curIndex] = buffer[maxDateTimeLength];
+                buffer[curIndex + 1] = buffer[maxDateTimeLength + 1];
+                buffer[curIndex + 2] = buffer[maxDateTimeLength + 2];
+                buffer[curIndex + 3] = buffer[maxDateTimeLength + 3];
+                buffer[curIndex + 4] = buffer[maxDateTimeLength + 4];
+                buffer[curIndex + 5] = buffer[maxDateTimeLength + 5];
+                bytesWritten = curIndex + 6;
             }
             else
             {
-                // Write offset
+                // There is a single 'Z'. Just write it at the current index.
+                Debug.Assert(buffer[maxDateTimeLength] == 'Z');
 
-                if (buffer.Length == maxLenWithOffset)
-                {
-                    // We have a Non-UTC offset i.e. (+|-)hh:mm
-
-                    // Write offset characters left to right to prevent overwriting owerselfs
-                    buffer[curIndex] = buffer[maxLenNoOffset];
-                    buffer[curIndex + 1] = buffer[maxLenNoOffset + 1];
-                    buffer[curIndex + 2] = buffer[maxLenNoOffset + 2];
-                    buffer[curIndex + 3] = buffer[maxLenNoOffset + 3];
-                    buffer[curIndex + 4] = buffer[maxLenNoOffset + 4];
-                    buffer[curIndex + 5] = buffer[maxLenNoOffset + 5];
-                    bytesWritten = curIndex + 6;
-                }
-                else
-                {
-                    Debug.Assert(buffer[maxLenWithZ - 1] == 'Z');
-
-                    buffer[curIndex] = (byte)'Z';
-                    bytesWritten = curIndex + 1;
-                }
+                buffer[curIndex] = (byte)'Z';
+                bytesWritten = curIndex + 1;
             }
         }
     }
