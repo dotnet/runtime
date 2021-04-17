@@ -35,6 +35,7 @@
 
 import argparse
 import shutil
+import stat
 import subprocess
 import tempfile
 
@@ -465,6 +466,28 @@ def main(main_args):
     # references will be present in CORE_ROOT.
     if coreclr_args.collection_name == "tests_libraries":
         print('Copying {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
+
+        def make_readable(folder_name):
+            """Make file executable by changing the permission
+
+            Args:
+                folder_name (string): folder to mark with 744
+            """
+            if is_windows:
+                return
+
+            print("Inside make_readable")
+            run_command(["ls", "-l", folder_name])
+            os.chmod(folder_name,
+                    # read+write+execute for owner
+                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                    # read for group
+                    (stat.S_IRGRP) |
+                    # read for other
+                    (stat.S_IROTH))
+            run_command(["ls", "-l", folder_name])
+
+        make_readable(coreclr_args.input_directory)
         copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Workitem directories
