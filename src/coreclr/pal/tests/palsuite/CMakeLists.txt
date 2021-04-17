@@ -64,38 +64,16 @@ add_executable_clr(paltests
   #composite/wfmo/main.cpp
   #composite/wfmo/mutex.cpp
   c_runtime/abs/test1/abs.cpp
-  c_runtime/acos/test1/test1.cpp
-  c_runtime/acosf/test1/test1.cpp
-  c_runtime/acosh/test1/test1.cpp
-  c_runtime/acoshf/test1/test1.cpp
-  c_runtime/asin/test1/test1.cpp
-  c_runtime/asinf/test1/test1.cpp
-  c_runtime/asinh/test1/test1.cpp
-  c_runtime/asinhf/test1/test1.cpp
-  c_runtime/atan/test1/test1.cpp
-  c_runtime/atan2/test1/test1.cpp
-  c_runtime/atan2f/test1/test1.cpp
-  c_runtime/atanf/test1/test1.cpp
-  c_runtime/atanh/test1/test1.cpp
-  c_runtime/atanhf/test1/test1.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
   c_runtime/bsearch/test1/test1.cpp
   c_runtime/bsearch/test2/test2.cpp
   c_runtime/cbrt/test1/test1.cpp
   c_runtime/cbrtf/test1/test1.cpp
-  c_runtime/ceil/test1/test1.cpp
-  c_runtime/ceilf/test1/test1.cpp
-  c_runtime/cos/test1/test1.cpp
-  c_runtime/cosf/test1/test1.cpp
-  c_runtime/cosh/test1/test1.cpp
-  c_runtime/coshf/test1/test1.cpp
   c_runtime/errno/test1/test1.cpp
   c_runtime/errno/test2/test2.cpp
   c_runtime/exit/test1/test1.cpp
   c_runtime/exit/test2/test2.cpp
-  c_runtime/exp/test1/test1.cpp
-  c_runtime/expf/test1/test1.cpp
   c_runtime/fabs/test1/test1.cpp
   c_runtime/fabsf/test1/test1.cpp
   c_runtime/fclose/test1/test1.cpp
@@ -106,8 +84,6 @@ add_executable_clr(paltests
   c_runtime/fgets/test1/test1.cpp
   c_runtime/fgets/test2/test2.cpp
   c_runtime/fgets/test3/test3.cpp
-  c_runtime/floor/test1/test1.cpp
-  c_runtime/floorf/test1/test1.cpp
   c_runtime/fma/test1/test1.cpp
   c_runtime/fmaf/test1/test1.cpp
   c_runtime/fmod/test1/test1.cpp
@@ -169,8 +145,6 @@ add_executable_clr(paltests
   c_runtime/getenv/test1/test1.cpp
   c_runtime/getenv/test2/test2.cpp
   c_runtime/getenv/test3/test3.cpp
-  c_runtime/ilogb/test1/test1.cpp
-  c_runtime/ilogbf/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
   c_runtime/isalpha/test1/test1.cpp
   c_runtime/isdigit/test1/test1.cpp
@@ -190,7 +164,6 @@ add_executable_clr(paltests
   c_runtime/log10f/test1/test1.cpp
   c_runtime/log2/test1/test1.cpp
   c_runtime/log2f/test1/test1.cpp
-  c_runtime/logf/test1/test1.cpp
   c_runtime/malloc/test1/test1.cpp
   c_runtime/malloc/test2/test2.cpp
   c_runtime/memchr/test1/test1.cpp
@@ -198,10 +171,6 @@ add_executable_clr(paltests
   c_runtime/memcpy/test1/test1.cpp
   c_runtime/memmove/test1/test1.cpp
   c_runtime/memset/test1/test1.cpp
-  c_runtime/modf/test1/test1.cpp
-  c_runtime/modff/test1/test1.cpp
-  c_runtime/pow/test1/test1.cpp
-  c_runtime/powf/test1/test1.cpp
   c_runtime/printf/test1/test1.cpp
   c_runtime/printf/test10/test10.cpp
   c_runtime/printf/test11/test11.cpp
@@ -225,12 +194,8 @@ add_executable_clr(paltests
   c_runtime/qsort/test2/test2.cpp
   c_runtime/rand_srand/test1/test1.cpp
   c_runtime/realloc/test1/test1.cpp
-  c_runtime/sin/test1/test1.cpp
   c_runtime/sincos/test1/test1.cpp
   c_runtime/sincosf/test1/test1.cpp
-  c_runtime/sinf/test1/test1.cpp
-  c_runtime/sinh/test1/test1.cpp
-  c_runtime/sinhf/test1/test1.cpp
   c_runtime/sprintf_s/test1/test1.cpp
   c_runtime/sprintf_s/test10/test10.cpp
   c_runtime/sprintf_s/test11/test11.cpp
@@ -320,10 +285,6 @@ add_executable_clr(paltests
   c_runtime/swscanf/test7/test7.cpp
   c_runtime/swscanf/test8/test8.cpp
   c_runtime/swscanf/test9/test9.cpp
-  c_runtime/tan/test1/test1.cpp
-  c_runtime/tanf/test1/test1.cpp
-  c_runtime/tanh/test1/test1.cpp
-  c_runtime/tanhf/test1/test1.cpp
   c_runtime/time/test1/test1.cpp
   c_runtime/tolower/test1/test1.cpp
   c_runtime/toupper/test1/test1.cpp

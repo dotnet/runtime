@@ -454,6 +454,7 @@ function_name() to call the system's implementation
 #undef fma
 #undef ilogb
 #undef log
+#undef log1p
 #undef log2
 #undef log10
 #undef modf
@@ -482,6 +483,7 @@ function_name() to call the system's implementation
 #undef fmaf
 #undef ilogbf
 #undef logf
+#undef log1pf
 #undef log2f
 #undef log10f
 #undef modff

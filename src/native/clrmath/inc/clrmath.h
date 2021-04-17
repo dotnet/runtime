@@ -4,6 +4,10 @@
 #ifndef _CLRMATH_H_
 #define _CLRMATH_H_
 
+#include <stdint.h>
+#include <math.h>
+#include <float.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,17 +27,17 @@ extern "C" {
     /* 7.12.4 Trigonometric functions */
     /**********************************/
 
-    #define clrmath_acos  acos
-    #define clrmath_acosf acosf
+    extern double clrmath_acos (double x);
+    extern float  clrmath_acosf(float  x);
 
-    #define clrmath_asin  asin
-    #define clrmath_asinf asinf
+    extern double clrmath_asin (double x);
+    extern float  clrmath_asinf(float  x);
 
-    #define clrmath_atan  atan
-    #define clrmath_atanf atanf
+    extern double clrmath_atan (double x);
+    extern float  clrmath_atanf(float  x);
 
-    #define clrmath_atan2  atan2
-    #define clrmath_atan2f atan2f
+    extern double clrmath_atan2 (double y, double x);
+    extern float  clrmath_atan2f(float  y, float  x);
 
     #define clrmath_cos  cos
     #define clrmath_cosf cosf
@@ -44,34 +48,43 @@ extern "C" {
     #define clrmath_tan  tan
     #define clrmath_tanf tanf
 
+    // extern double clrmath_cos (double x);
+    // extern float  clrmath_cosf(float  x);
+
+    // extern double clrmath_sin (double x);
+    // extern float  clrmath_sinf(float  x);
+
+    // extern double clrmath_tan (double x);
+    // extern float  clrmath_tanf(float  x);
+
     /*******************************/
     /* 7.12.5 Hyperbolic functions */
     /*******************************/
 
-    #define clrmath_acosh  acosh
-    #define clrmath_acoshf acoshf
+    extern double clrmath_acosh (double x);
+    extern float  clrmath_acoshf(float  x);
 
-    #define clrmath_asinh  asinh
-    #define clrmath_asinhf asinhf
+    extern double clrmath_asinh (double x);
+    extern float  clrmath_asinhf(float  x);
 
-    #define clrmath_atanh  atan
-    #define clrmath_atanhf atanhf
+    extern double clrmath_atanh (double x);
+    extern float  clrmath_atanhf(float  x);
 
-    #define clrmath_cosh  cosh
-    #define clrmath_coshf coshf
+    extern double clrmath_cosh (double x);
+    extern float  clrmath_coshf(float  x);
 
-    #define clrmath_sinh  sinh
-    #define clrmath_sinhf sinhf
+    extern double clrmath_sinh (double x);
+    extern float  clrmath_sinhf(float  x);
 
-    #define clrmath_tanh  tanh
-    #define clrmath_tanhf tanhf
+    extern double clrmath_tanh (double x);
+    extern float  clrmath_tanhf(float  x);
 
     /************************************************/
     /* 7.12.6 Exponential and logarithmic functions */
     /************************************************/
 
-    #define clrmath_exp  exp
-    #define clrmath_expf expf
+    extern double clrmath_exp (double x);
+    extern float  clrmath_expf(float  x);
 
     #define clrmath_exp2  exp2
     #define clrmath_exp2f exp2f
@@ -82,14 +95,14 @@ extern "C" {
     #define clrmath_frexp  frexp
     #define clrmath_frexpf frexpf
 
-    #define clrmath_ilogb  ilogb
-    #define clrmath_ilogbf ilogbf
+    extern int clrmath_ilogb (double x);
+    extern int clrmath_ilogbf(float  x);
 
     #define clrmath_ldexp  ldexp
     #define clrmath_ldexpf ldexpf
 
     #define clrmath_log  log
-    #define clrmath_logf logf
+    extern float clrmath_logf(float  x);
 
     #define clrmath_log10  log10
     #define clrmath_log10f log10f
@@ -106,8 +119,8 @@ extern "C" {
     #define clrmath_logb  logb
     #define clrmath_logbf logbf
 
-    #define clrmath_modf  modf
-    #define clrmath_modff modff
+    extern double clrmath_modf (double x, double* iptr);
+    extern float  clrmath_modff(float  x, float*  iptr);
 
     #define clrmath_scalbn  scalbn
     #define clrmath_scalbnf scalbnf
@@ -128,8 +141,8 @@ extern "C" {
     #define clrmath_hypot  hypot
     #define clrmath_hypotf hypot
 
-    #define clrmath_pow  pow
-    #define clrmath_powf powf
+    extern double clrmath_pow (double x, double y);
+    extern float  clrmath_powf(float  x, float  y);
 
     #define clrmath_sqrt  sqrt
     #define clrmath_sqrtf sqrtf
@@ -154,11 +167,11 @@ extern "C" {
     /* 7.12.9 Nearest integer functions */
     /************************************/
 
-    #define clrmath_ceil  ceil
-    #define clrmath_ceilf ceilf
+    extern double clrmath_ceil (double x);
+    extern float  clrmath_ceilf(float  x);
 
-    #define clrmath_floor  floor
-    #define clrmath_floorf floorf
+    extern double clrmath_floor (double x);
+    extern float  clrmath_floorf(float  x);
 
     #define clrmath_nearbyint  nearbyint
     #define clrmath_nearbyintf nearbyintf
@@ -201,8 +214,8 @@ extern "C" {
     /* 7.12.11 Manipulation functions */
     /**********************************/
 
-    #define clrmath_copysign  copysign
-    #define clrmath_copysignf copysignf
+    #define clrmath_copysign  _copysign
+    #define clrmath_copysignf _copysignf
 
     #define clrmath_nan  nan
     #define clrmath_nanf nanf
