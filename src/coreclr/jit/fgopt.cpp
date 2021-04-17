@@ -5320,18 +5320,46 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                     }
                 }
 
-                // Check for a conditional branch that just skips over an empty BBJ_ALWAYS block
-
+                // Check for cases where reversing the branch condition may enable
+                // other flow opts.
+                //
+                // Current block falls through to an empty bNext BBJ_ALWAYS, and
+                // (a) block jump target is bNext's bbNext.
+                // (b) block jump target is elsewhere but join free, and
+                //      bNext's jump target has a join.
+                //
                 if ((block->bbJumpKind == BBJ_COND) &&   // block is a BBJ_COND block
                     (bNext != nullptr) &&                // block is not the last block
                     (bNext->bbRefs == 1) &&              // No other block jumps to bNext
-                    (bNext->bbNext == bDest) &&          // The block after bNext is the BBJ_COND jump dest
                     (bNext->bbJumpKind == BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
                     bNext->isEmpty() &&                  // and it is an an empty block
                     (bNext != bNext->bbJumpDest) &&      // special case for self jumps
                     (bDest != fgFirstColdBlock))
                 {
-                    bool optimizeJump = true;
+                    // case (a)
+                    //
+                    const bool isJumpAroundEmpty = (bNext->bbNext == bDest);
+
+                    // case (b)
+                    //
+                    // Note the asymetric checks for refs == 1 and refs > 1 ensures that we
+                    // differentiate the roles played by bDest and bNextJumpDest. We need some
+                    // sense of which arrangement is preferable to avoid getting stuck in a loop
+                    // reversing and re-reversing.
+                    //
+                    // Other tiebreaking criteria could be considered.
+                    //
+                    // Pragmatic constraints:
+                    //
+                    // * don't consider lexical predecessors, or we may confuse loop recognition
+                    // * don't consider blocks of different rarities
+                    //
+                    BasicBlock* const bNextJumpDest    = bNext->bbJumpDest;
+                    const bool        isJumpToJoinFree = !isJumpAroundEmpty && (bDest->bbRefs == 1) &&
+                                                  (bNextJumpDest->bbRefs > 1) && (bDest->bbNum > block->bbNum) &&
+                                                  (block->isRunRarely() == bDest->isRunRarely());
+
+                    bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
                     // We do not optimize jumps between two different try regions.
                     // However jumping to a block that is not in any try region is OK
@@ -5363,18 +5391,65 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                         }
                     }
 
+                    if (optimizeJump && isJumpToJoinFree)
+                    {
+                        // In the join free case, we also need to move bDest right after bNext
+                        // to create same flow as in the isJumpAroundEmpty case.
+                        //
+                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallAlwaysPair())
+                        {
+                            optimizeJump = false;
+                        }
+                        else
+                        {
+                            // We don't expect bDest to already be right after bNext.
+                            //
+                            assert(bDest != bNext->bbNext);
+
+                            JITDUMP("\nMoving " FMT_BB " after " FMT_BB " to enable reversal\n", bDest->bbNum,
+                                    bNext->bbNum);
+
+                            // If bDest can fall through we'll need to create a jump
+                            // block after it too. Remember where to jump to.
+                            //
+                            BasicBlock* const bDestNext = bDest->bbNext;
+
+                            // Move bDest
+                            //
+                            if (ehIsBlockEHLast(bDest))
+                            {
+                                ehUpdateLastBlocks(bDest, bDest->bbPrev);
+                            }
+
+                            fgUnlinkBlock(bDest);
+                            fgInsertBBafter(bNext, bDest);
+
+                            if (ehIsBlockEHLast(bNext))
+                            {
+                                ehUpdateLastBlocks(bNext, bDest);
+                            }
+
+                            // Add fall through fixup block, if needed.
+                            //
+                            if ((bDest->bbJumpKind == BBJ_NONE) || (bDest->bbJumpKind == BBJ_COND))
+                            {
+                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
+                                bFixup->inheritWeight(bDestNext);
+                                bFixup->bbJumpDest = bDestNext;
+                                fgReplacePred(bDestNext, bDest, bFixup);
+                                fgAddRefPred(bFixup, bDest);
+                            }
+                        }
+                    }
+
                     if (optimizeJump)
                     {
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
-                                   " -> " FMT_BB ")\n",
-                                   block->bbNum, bDest->bbNum, bNext->bbJumpDest->bbNum);
-                        }
-#endif // DEBUG
-                        /* Reverse the jump condition */
+                        JITDUMP("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
+                                " -> " FMT_BB ")\n",
+                                block->bbNum, bDest->bbNum, bNextJumpDest->bbNum);
 
+                        //  Reverse the jump condition
+                        //
                         GenTree* test = block->lastNode();
                         noway_assert(test->OperIsConditionalJump());
 
