@@ -31,11 +31,7 @@ namespace R2RTest
         {
             new FrameworkExclusion(ExclusionType.Ignore, "CommandLine", "Not a framework assembly"),
             new FrameworkExclusion(ExclusionType.Ignore, "R2RDump", "Not a framework assembly"),
-
-            // TODO (DavidWr): IBC-related failures
-            new FrameworkExclusion(ExclusionType.DontCrossgen2, "Microsoft.CodeAnalysis.CSharp", "Ibc TypeToken 6200019a has type token which resolves to a nil token"),
-            new FrameworkExclusion(ExclusionType.DontCrossgen2, "Microsoft.CodeAnalysis", "Ibc TypeToken 620001af unable to find external typedef"),
-            new FrameworkExclusion(ExclusionType.DontCrossgen2, "Microsoft.CodeAnalysis.VisualBasic", "Ibc TypeToken 620002ce unable to find external typedef"),
+            new FrameworkExclusion(ExclusionType.Ignore, "Microsoft.Extensions.Logging.Generators", "Not a framework assembly"),
         };
 
         public readonly ExclusionType ExclusionType;
