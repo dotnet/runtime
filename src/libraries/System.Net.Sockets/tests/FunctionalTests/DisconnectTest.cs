@@ -112,12 +112,33 @@ namespace System.Net.Sockets.Tests
         public Disconnect_Apm(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public void InvalidArguments_Throw()
+        public void EndDisconnect_InvalidArguments_Throws()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => s.EndDisconnect(null));
                 AssertExtensions.Throws<ArgumentException>("asyncResult", () => s.EndDisconnect(Task.CompletedTask));
+            }
+        }
+
+        [Fact]
+        public void BeginDisconnect_NotConnected_ThrowSync()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<SocketException>(() => s.BeginDisconnect(true, null, null));
+                Assert.Throws<SocketException>(() => s.BeginDisconnect(false, null, null));
+            }
+        }
+
+        [Fact]
+        public void BeginDisconnection_ObjectDisposed_ThrowSync()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                s.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(true, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(false, null, null));
             }
         }
     }

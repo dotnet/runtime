@@ -2123,7 +2123,7 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(DisconnectAsync(reuseSocket).AsTask(), callback, state);
+            TaskToApmBeginWithSyncExceptions(DisconnectAsync(reuseSocket).AsTask(), callback, state);
 
         public void Disconnect(bool reuseSocket)
         {
@@ -3827,6 +3827,18 @@ namespace System.Net.Sockets
             };
         }
 
-#endregion
+        #endregion
+
+        // Helper to maintain existing behavior of Socket APM methods to throw synchronously from Begin*.
+        private static IAsyncResult TaskToApmBeginWithSyncExceptions(Task task, AsyncCallback? callback, object? state)
+        {
+            if (task.IsFaulted)
+            {
+                task.GetAwaiter().GetResult();
+                Debug.Fail("Task faulted but GetResult did not throw???");
+            }
+
+            return TaskToApm.Begin(task, callback, state);
+        }
     }
 }
