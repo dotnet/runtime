@@ -746,16 +746,11 @@ namespace System.Net.Http
             }
         }
 
-<<<<<<< HEAD
         // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
-            GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
-=======
         private async ValueTask<HttpConnectionBase> GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
->>>>>>> 6b367ba633a... rework request retry logic to be based off a fixed retry limit (MaxConnectionFailureRetries) instead of isNewConnection logic
         {
             Debug.Assert(_kind == HttpConnectionKind.Https);
             Debug.Assert(_http3Enabled == true);
