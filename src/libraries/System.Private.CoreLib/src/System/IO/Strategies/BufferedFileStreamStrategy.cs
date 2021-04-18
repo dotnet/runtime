@@ -476,7 +476,7 @@ namespace System.IO.Strategies
 
                 // Ok. We can fill the buffer:
                 EnsureBufferAllocated();
-                _readLen = await _strategy.ReadAsync(new Memory<byte>(_buffer), cancellationToken).ConfigureAwait(false);
+                _readLen = await _strategy.ReadAsync(new Memory<byte>(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
 
                 bytesFromBuffer = Math.Min(_readLen, buffer.Length);
                 _buffer.AsSpan(0, bytesFromBuffer).CopyTo(buffer.Span);

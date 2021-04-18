@@ -270,8 +270,11 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowEndOfFileException()
         {
-            throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+            throw CreateEndOfFileException();
         }
+
+        internal static Exception CreateEndOfFileException() =>
+            new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
 
         [DoesNotReturn]
         internal static void ThrowInvalidOperationException()
