@@ -9,6 +9,7 @@
 #if defined(TARGET_XARCH)
     #include <immintrin.h>
 #elif defined(TARGET_ARMARCH)
+    // Intentionally empty
 #else
     #error Unsupported target architecture
 #endif
