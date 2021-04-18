@@ -57,16 +57,6 @@ namespace System.Net.Sockets
         private SocketType _socketType;
         private ProtocolType _protocolType;
 
-        // These caches are one degree off of Socket since they're not used in the sync case/when disabled in config.
-        private CacheSet? _caches;
-
-        private sealed class CacheSet
-        {
-            internal CallbackClosure? AcceptClosureCache;
-            internal CallbackClosure? SendClosureCache;
-            internal CallbackClosure? ReceiveClosureCache;
-        }
-
         // Bool marked true if the native socket option IP_PKTINFO or IPV6_PKTINFO has been set.
         private bool _receivingPacketInformation;
 
@@ -3007,19 +2997,6 @@ namespace System.Net.Sockets
         //
         // Internal and private properties
         //
-
-        private CacheSet Caches
-        {
-            get
-            {
-                if (_caches == null)
-                {
-                    // It's not too bad if extra of these are created and lost.
-                    _caches = new CacheSet();
-                }
-                return _caches;
-            }
-        }
 
         internal bool Disposed => _disposed != 0;
 

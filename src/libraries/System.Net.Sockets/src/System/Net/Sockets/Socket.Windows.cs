@@ -416,7 +416,7 @@ namespace System.Net.Sockets
                 throw new SocketException((int)errorCode);
             }
 
-            asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
+            asyncResult.FinishPostingAsyncOp();
 
             return asyncResult;
         }
