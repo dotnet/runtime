@@ -7,10 +7,12 @@ namespace System.Buffers
 {
     /// <summary>Provides a memory handle for a block of memory.</summary>
     /// <remarks>A <see cref="MemoryHandle" /> instance represents a handle to a pinned block of memory. It is returned by the following methods:
-    /// - <see cref="System.Buffers.IPinnable.Pin" />.
-    /// - <see cref="System.Memory{T}.Pin" />
-    /// - <see cref="System.ReadOnlyMemory{T}.Pin" />.
-    /// - <see cref="System.Buffers.MemoryManager{T}.Pin" /></remarks>
+    /// <list type="bullet">
+    ///   <item><see cref="System.Buffers.IPinnable.Pin" /></item>
+    ///   <item><see cref="System.Memory{T}.Pin" /></item>
+    ///   <item><see cref="System.ReadOnlyMemory{T}.Pin" /></item>
+    ///   <item><see cref="System.Buffers.MemoryManager{T}.Pin" /></item>
+    /// </list></remarks>
     public unsafe struct MemoryHandle : IDisposable
     {
         private void* _pointer;

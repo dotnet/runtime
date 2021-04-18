@@ -3,7 +3,7 @@
 
 namespace System.Buffers
 {
-    /// <summary>Provides a resource pool that enables reusing instances of type T[].</summary>
+    /// <summary>Provides a resource pool that enables reusing array instances of <typeparamref name="T" />.</summary>
     /// <typeparam name="T">The type of the objects that are in the resource pool.</typeparam>
     /// <remarks>Using the <see cref="System.Buffers.ArrayPool{T}" /> class to rent and return buffers (using the <see cref="System.Buffers.ArrayPool{T}.Rent" /> and <see cref="System.Buffers.ArrayPool{T}.Return" /> methods) can improve performance in situations where arrays are created and destroyed frequently, resulting in significant memory pressure on the garbage collector.</remarks>
     public abstract class ArrayPool<T>
@@ -31,7 +31,7 @@ namespace System.Buffers
 
         /// <summary>Retrieves a buffer that is at least the requested length.</summary>
         /// <param name="minimumLength">The minimum length of the array.</param>
-        /// <returns>An array of type T that is at least <paramref name="minimumLength" /> in length.</returns>
+        /// <returns>An array of type <typeparamref name="T" /> that is at least <paramref name="minimumLength" /> in length.</returns>
         /// <remarks>This buffer is loaned to the caller and should be returned to the same pool using the <see cref="System.Buffers.ArrayPool{T}.Return" /> method, so that it can be reused in subsequent calls to the <see cref="System.Buffers.ArrayPool{T}.Rent" /> method. Failure to return a rented buffer is not a fatal error. However, it may lead to decreased application performance, as the pool may need to create a new buffer to replace the lost one.
         /// The array returned by this method may not be zero-initialized.</remarks>
         public abstract T[] Rent(int minimumLength);
