@@ -72,7 +72,7 @@ ifeq ($(ENABLE_METADATA_UPDATE),true)
 endif
 
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2
+EMCC_RELEASE_FLAGS=-O3 --llvm-opts 3 -flto
 
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
@@ -108,13 +108,13 @@ $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
 
 $(BUILDS_OBJ_DIR)/driver.o: runtime/driver.c | $(BUILDS_OBJ_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
+	$(EMCC) $(EMCC_FLAGS) $(1) -O3 -flto -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(BUILDS_OBJ_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) runtime/pinvoke.c -c -o $$@
+	$(EMCC) $(EMCC_FLAGS) $(1) -O3 -flto -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) runtime/pinvoke.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
+	$(EMCC) $(EMCC_FLAGS) $(1) -O3 -flto -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
 $(NATIVE_BIN_DIR)/src/emcc-flags.txt: | $(NATIVE_BIN_DIR)/src Makefile
 	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1)" > $$@

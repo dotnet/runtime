@@ -4,6 +4,7 @@
 using Microsoft.Build.Framework;
 using Microsoft.Build.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -14,6 +15,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         [NotNull]
         [Required]
         public string? EmSdkPath { get; set; }
+
+        public string? ClosureArgs { get; set; }
 
         public override bool Execute()
         {
@@ -35,6 +38,11 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     return false;
 
                 Command = $"bash -c 'source {envScriptPath} > /dev/null 2>&1 && {Command}'";
+            }
+
+            if (ClosureArgs != null)
+            {
+                Environment.SetEnvironmentVariable("EMCC_CLOSURE_ARGS", ClosureArgs);
             }
 
             var workingDir = string.IsNullOrEmpty(WorkingDirectory) ? Directory.GetCurrentDirectory() : WorkingDirectory;
