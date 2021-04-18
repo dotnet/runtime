@@ -2453,7 +2453,15 @@ namespace System.Net.Sockets
             else
             {
                 buffer = new byte[receiveSize];
-                bytesReceived = await s.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                try
+                {
+                    bytesReceived = await s.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                }
+                catch
+                {
+                    s.Dispose();
+                    throw;
+                }
             }
 
             return (s, buffer, bytesReceived);
