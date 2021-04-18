@@ -84,12 +84,9 @@ namespace System.Net
             }
             else if (exception is TaskCanceledException)
             {
-
-                // temp hack to try to diagnose what's going on in CI.
                 return new WebException(
                     SR.net_webstatus_Timeout,
-                    //null,
-                    exception,
+                    null,
                     WebExceptionStatus.Timeout,
                     null);
             }
