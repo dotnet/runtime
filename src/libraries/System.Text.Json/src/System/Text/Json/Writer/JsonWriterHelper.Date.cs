@@ -49,8 +49,8 @@ namespace System.Text.Json
             // YYYY-MM-DDThh:mm:ss.fffffffZ (JsonConstants.MaximumFormatDateTimeLength + 1)
             // YYYY-MM-DDThh:mm:ss.fffffff(+|-)hh:mm (JsonConstants.MaximumFormatDateTimeOffsetLength)
             Debug.Assert(buffer.Length == maxDateTimeLength ||
-            buffer.Length == maxDateTimeLength + 1 ||
-            buffer.Length == JsonConstants.MaximumFormatDateTimeOffsetLength);
+                buffer.Length == maxDateTimeLength + 1 ||
+                buffer.Length == JsonConstants.MaximumFormatDateTimeOffsetLength);
 
             // Find the last significant digit.
             int curIndex;
@@ -61,14 +61,16 @@ namespace System.Text.Json
                             if (buffer[maxDateTimeLength - 5] == '0')
                                 if (buffer[maxDateTimeLength - 6] == '0')
                                     if (buffer[maxDateTimeLength - 7] == '0')
+                                    {
                                         // All decimal places are 0 so we can delete the decimal point too.
                                         curIndex = maxDateTimeLength - 7 - 1;
-                                    else curIndex = maxDateTimeLength - 6;
-                                else curIndex = maxDateTimeLength - 5;
-                            else curIndex = maxDateTimeLength - 4;
-                        else curIndex = maxDateTimeLength - 3;
-                    else curIndex = maxDateTimeLength - 2;
-                else curIndex = maxDateTimeLength - 1;
+                                    }
+                                    else { curIndex = maxDateTimeLength - 6; }
+                                else { curIndex = maxDateTimeLength - 5; }
+                            else { curIndex = maxDateTimeLength - 4; }
+                        else { curIndex = maxDateTimeLength - 3; }
+                    else { curIndex = maxDateTimeLength - 2; }
+                else { curIndex = maxDateTimeLength - 1; }
             else
             {
                 // There is nothing to trim.
