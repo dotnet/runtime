@@ -2422,7 +2422,7 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginAccept(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptAsync(), callback, state);
+            TaskToApmBeginWithSyncExceptions(AcceptAsync(), callback, state);
 
         public Socket EndAccept(IAsyncResult asyncResult)
         {
@@ -2463,7 +2463,7 @@ namespace System.Net.Sockets
             BeginAccept(acceptSocket: null, receiveSize, callback, state);
 
         public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptAndReceiveHelperAsync(acceptSocket, receiveSize), callback, state);
+            TaskToApmBeginWithSyncExceptions(AcceptAndReceiveHelperAsync(acceptSocket, receiveSize), callback, state);
 
         public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
