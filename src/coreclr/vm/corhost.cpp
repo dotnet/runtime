@@ -129,7 +129,7 @@ HRESULT CorHost2::Stop()
     {
         NOTHROW;
         ENTRY_POINT;    // We're bringing the EE down, so no point in probing
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
     if (!g_fEEStarted)
@@ -210,7 +210,7 @@ HRESULT CorHost2::GetCurrentAppDomainId(DWORD *pdwAppDomainId)
     }
     else
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (!pThread)
         {
             hr = E_UNEXPECTED;
@@ -332,7 +332,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         pThread = SetupThreadNoThrow(&hr);
@@ -425,7 +425,7 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         pThread = SetupThreadNoThrow(&hr);
@@ -528,7 +528,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -566,7 +566,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -712,7 +712,7 @@ HRESULT CorHost2::CreateDelegate(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -800,7 +800,7 @@ HRESULT CorHost2::Authenticate(ULONGLONG authKey)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -814,7 +814,7 @@ HRESULT CorHost2::RegisterMacEHPort()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -827,7 +827,7 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -1071,7 +1071,7 @@ HRESULT CorHost2::GetCLRControl(ICLRControl** pCLRControl)
 // Note: Sampling profilers also use this function to initialize TLS for a unmanaged
 // sampling thread so that initialization can be done in advance to avoid deadlocks.
 // See ProfToEEInterfaceImpl::InitializeCurrentThread for more details.
-void SetupTLSForThread(Thread* pThread)
+void SetupTLSForThread()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;

@@ -785,7 +785,7 @@ internal class Program
             Eval(0784, o is SealedClass[], false);
         }
         {
-            EmptyStruct?[] v = new EmptyStruct?[] { default(EmptyStruct) }; ;
+            EmptyStruct?[] v = new EmptyStruct?[] { default(EmptyStruct) };
             object o = v;
             Eval(0785, o is EmptyStruct, false);
             Eval(0786, o is EmptyStruct[], false);
@@ -1748,7 +1748,7 @@ internal class Program
             Eval(1764, o is SealedClass[], false);
         }
         {
-            NotEmptyStruct?[] v = new NotEmptyStruct?[] { default(NotEmptyStruct) }; ;
+            NotEmptyStruct?[] v = new NotEmptyStruct?[] { default(NotEmptyStruct) };
             object o = v;
             Eval(1765, o is EmptyStruct, false);
             Eval(1766, o is EmptyStruct[], false);
@@ -2711,7 +2711,7 @@ internal class Program
             Eval(2744, o is SealedClass[], false);
         }
         {
-            EmptyStructGen<int>?[] v = new EmptyStructGen<int>?[] { default(EmptyStructGen<int>) }; ;
+            EmptyStructGen<int>?[] v = new EmptyStructGen<int>?[] { default(EmptyStructGen<int>) };
             object o = v;
             Eval(2745, o is EmptyStruct, false);
             Eval(2746, o is EmptyStruct[], false);
@@ -3674,7 +3674,7 @@ internal class Program
             Eval(3724, o is SealedClass[], false);
         }
         {
-            NotEmptyStructGen<Guid>?[] v = new NotEmptyStructGen<Guid>?[] { default(NotEmptyStructGen<Guid>) }; ;
+            NotEmptyStructGen<Guid>?[] v = new NotEmptyStructGen<Guid>?[] { default(NotEmptyStructGen<Guid>) };
             object o = v;
             Eval(3725, o is EmptyStruct, false);
             Eval(3726, o is EmptyStruct[], false);
@@ -4637,7 +4637,7 @@ internal class Program
             Eval(4704, o is SealedClass[], false);
         }
         {
-            NotEmptyStructConstrainedGen<IntPtr>?[] v = new NotEmptyStructConstrainedGen<IntPtr>?[] { default(NotEmptyStructConstrainedGen<IntPtr>) }; ;
+            NotEmptyStructConstrainedGen<IntPtr>?[] v = new NotEmptyStructConstrainedGen<IntPtr>?[] { default(NotEmptyStructConstrainedGen<IntPtr>) };
             object o = v;
             Eval(4705, o is EmptyStruct, false);
             Eval(4706, o is EmptyStruct[], false);
@@ -5600,7 +5600,7 @@ internal class Program
             Eval(5684, o is SealedClass[], false);
         }
         {
-            NestedStruct?[] v = new NestedStruct?[] { default(NestedStruct) }; ;
+            NestedStruct?[] v = new NestedStruct?[] { default(NestedStruct) };
             object o = v;
             Eval(5685, o is EmptyStruct, false);
             Eval(5686, o is EmptyStruct[], false);
@@ -6563,7 +6563,7 @@ internal class Program
             Eval(6664, o is SealedClass[], false);
         }
         {
-            NestedStructGen<Decimal>?[] v = new NestedStructGen<Decimal>?[] { default(NestedStructGen<Decimal>) }; ;
+            NestedStructGen<Decimal>?[] v = new NestedStructGen<Decimal>?[] { default(NestedStructGen<Decimal>) };
             object o = v;
             Eval(6665, o is EmptyStruct, false);
             Eval(6666, o is EmptyStruct[], false);
@@ -7526,7 +7526,7 @@ internal class Program
             Eval(7644, o is SealedClass[], false);
         }
         {
-            ExplicitFieldOffsetStruct?[] v = new ExplicitFieldOffsetStruct?[] { default(ExplicitFieldOffsetStruct) }; ;
+            ExplicitFieldOffsetStruct?[] v = new ExplicitFieldOffsetStruct?[] { default(ExplicitFieldOffsetStruct) };
             object o = v;
             Eval(7645, o is EmptyStruct, false);
             Eval(7646, o is EmptyStruct[], false);
@@ -8489,7 +8489,7 @@ internal class Program
             Eval(10584, o is SealedClass[], false);
         }
         {
-            MarshalAsStruct?[] v = new MarshalAsStruct?[] { default(MarshalAsStruct) }; ;
+            MarshalAsStruct?[] v = new MarshalAsStruct?[] { default(MarshalAsStruct) };
             object o = v;
             Eval(10585, o is EmptyStruct, false);
             Eval(10586, o is EmptyStruct[], false);
@@ -9452,7 +9452,7 @@ internal class Program
             Eval(11564, o is SealedClass[], false);
         }
         {
-            ImplementOneInterface?[] v = new ImplementOneInterface?[] { default(ImplementOneInterface) }; ;
+            ImplementOneInterface?[] v = new ImplementOneInterface?[] { default(ImplementOneInterface) };
             object o = v;
             Eval(11565, o is EmptyStruct, false);
             Eval(11566, o is EmptyStruct[], false);
@@ -10415,7 +10415,7 @@ internal class Program
             Eval(12544, o is SealedClass[], false);
         }
         {
-            ImplementTwoInterface?[] v = new ImplementTwoInterface?[] { default(ImplementTwoInterface) }; ;
+            ImplementTwoInterface?[] v = new ImplementTwoInterface?[] { default(ImplementTwoInterface) };
             object o = v;
             Eval(12545, o is EmptyStruct, false);
             Eval(12546, o is EmptyStruct[], false);
@@ -11378,7 +11378,7 @@ internal class Program
             Eval(13524, o is SealedClass[], false);
         }
         {
-            ImplementOneInterfaceGen<EmptyStructGen<int>>?[] v = new ImplementOneInterfaceGen<EmptyStructGen<int>>?[] { default(ImplementOneInterfaceGen<EmptyStructGen<int>>) }; ;
+            ImplementOneInterfaceGen<EmptyStructGen<int>>?[] v = new ImplementOneInterfaceGen<EmptyStructGen<int>>?[] { default(ImplementOneInterfaceGen<EmptyStructGen<int>>) };
             object o = v;
             Eval(13525, o is EmptyStruct, false);
             Eval(13526, o is EmptyStruct[], false);
@@ -12341,7 +12341,7 @@ internal class Program
             Eval(14504, o is SealedClass[], false);
         }
         {
-            ImplementTwoInterfaceGen<int>?[] v = new ImplementTwoInterfaceGen<int>?[] { default(ImplementTwoInterfaceGen<int>) }; ;
+            ImplementTwoInterfaceGen<int>?[] v = new ImplementTwoInterfaceGen<int>?[] { default(ImplementTwoInterfaceGen<int>) };
             object o = v;
             Eval(14505, o is EmptyStruct, false);
             Eval(14506, o is EmptyStruct[], false);
@@ -13304,7 +13304,7 @@ internal class Program
             Eval(15484, o is SealedClass[], false);
         }
         {
-            ImplementAllInterface<int>?[] v = new ImplementAllInterface<int>?[] { default(ImplementAllInterface<int>) }; ;
+            ImplementAllInterface<int>?[] v = new ImplementAllInterface<int>?[] { default(ImplementAllInterface<int>) };
             object o = v;
             Eval(15485, o is EmptyStruct, false);
             Eval(15486, o is EmptyStruct[], false);
@@ -14267,7 +14267,7 @@ internal class Program
             Eval(16464, o is SealedClass[], false);
         }
         {
-            IntE?[] v = new IntE?[] { default(IntE) }; ;
+            IntE?[] v = new IntE?[] { default(IntE) };
             object o = v;
             Eval(16465, o is EmptyStruct, false);
             Eval(16466, o is EmptyStruct[], false);

@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
+    internal sealed class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
         private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
@@ -151,6 +151,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteAttributeString(null, JsonGlobals.serverTypeString, null, typeInformation);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected override void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
             JsonDataContract jsonDataContract = JsonDataContract.GetJsonDataContract(dataContract);

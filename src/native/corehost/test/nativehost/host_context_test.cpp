@@ -171,7 +171,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc  << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -373,7 +373,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -416,7 +416,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -459,7 +459,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
@@ -501,7 +501,7 @@ namespace
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }

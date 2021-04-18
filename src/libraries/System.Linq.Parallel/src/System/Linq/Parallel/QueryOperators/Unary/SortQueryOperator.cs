@@ -124,9 +124,9 @@ namespace System.Linq.Parallel
         }
     }
 
-    internal class SortQueryOperatorResults<TInputOutput, TSortKey> : QueryResults<TInputOutput>
+    internal sealed class SortQueryOperatorResults<TInputOutput, TSortKey> : QueryResults<TInputOutput>
     {
-        protected QueryResults<TInputOutput> _childQueryResults; // Results of the child query
+        private QueryResults<TInputOutput> _childQueryResults; // Results of the child query
         private readonly SortQueryOperator<TInputOutput, TSortKey> _op; // Operator that generated these results
         private QuerySettings _settings; // Settings collected from the query
 
@@ -173,7 +173,7 @@ namespace System.Linq.Parallel
     // This enumerator performs sorting based on a key selection and comparison routine.
     //
 
-    internal class SortQueryOperatorEnumerator<TInputOutput, TKey, TSortKey> : QueryOperatorEnumerator<TInputOutput, TSortKey>
+    internal sealed class SortQueryOperatorEnumerator<TInputOutput, TKey, TSortKey> : QueryOperatorEnumerator<TInputOutput, TSortKey>
     {
         private readonly QueryOperatorEnumerator<TInputOutput, TKey>? _source; // Data source to sort.
         private readonly Func<TInputOutput, TSortKey> _keySelector; // Key selector used when sorting.

@@ -19,6 +19,11 @@ namespace System.Text
     /// </remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct Rune : IComparable, IComparable<Rune>, IEquatable<Rune>
+#if SYSTEM_PRIVATE_CORELIB
+#pragma warning disable SA1001 // Commas should be spaced correctly
+        , ISpanFormattable
+#pragma warning restore SA1001
+#endif
     {
         internal const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
         internal const int MaxUtf8BytesPerRune = 4; // supplementary plane code points are encoded as 4 UTF-8 code units
@@ -910,6 +915,13 @@ namespace System.Text
             }
 #endif
         }
+
+#if SYSTEM_PRIVATE_CORELIB
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryEncodeToUtf16(destination, out charsWritten);
+
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
+#endif
 
         /// <summary>
         /// Attempts to create a <see cref="Rune"/> from the provided input value.

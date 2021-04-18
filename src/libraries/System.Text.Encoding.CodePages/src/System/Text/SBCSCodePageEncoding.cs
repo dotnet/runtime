@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text
 {
-    internal class SBCSCodePageEncoding : BaseCodePageEncoding
+    internal sealed class SBCSCodePageEncoding : BaseCodePageEncoding
     {
         // Pointers to our memory section parts
         private unsafe char* _mapBytesToUnicode = null;      // char 256

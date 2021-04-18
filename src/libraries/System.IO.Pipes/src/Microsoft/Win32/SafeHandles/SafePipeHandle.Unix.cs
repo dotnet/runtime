@@ -100,7 +100,7 @@ namespace Microsoft.Win32.SafeHandles
                     }
                 }
             }
-            return socket ?? throw new ObjectDisposedException(GetType().ToString());;
+            return socket ?? throw new ObjectDisposedException(GetType().ToString());
         }
 
         private Socket SetPipeSocketInterlocked(Socket socket, bool ownsHandle)

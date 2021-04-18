@@ -16,9 +16,7 @@ CrashInfo::CrashInfo(pid_t pid) :
     m_task = 0;
 #else
     m_auxvValues.fill(0);
-#ifndef HAVE_PROCESS_VM_READV
     m_fd = -1;
-#endif
 #endif
 }
 
@@ -124,10 +122,13 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         return false;
     }
 #endif
-    TRACE("Module addresses:\n");
-    for (const MemoryRegion& region : m_moduleAddresses)
+    if (g_diagnosticsVerbose)
     {
-        region.Trace();
+        TRACE_VERBOSE("Module addresses:\n");
+        for (const MemoryRegion& region : m_moduleAddresses)
+        {
+            region.Trace();
+        }
     }
     // If full memory dump, include everything regardless of permissions
     if (minidumpType & MiniDumpWithFullMemory)
@@ -591,7 +592,7 @@ CrashInfo::CombineMemoryRegions()
 
     TRACE("CombineMemoryRegions: FINISHED\n");
 
-    if (g_diagnostics)
+    if (g_diagnosticsVerbose)
     {
         TRACE("Memory Regions:\n");
         for (const MemoryRegion& region : m_memoryRegions)
@@ -621,7 +622,21 @@ CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const Memo
 void
 CrashInfo::Trace(const char* format, ...)
 {
-    if (g_diagnostics) {
+    if (g_diagnostics)
+    {
+        va_list args;
+        va_start(args, format);
+        vfprintf(stdout, format, args);
+        fflush(stdout);
+        va_end(args);
+    }
+}
+
+void
+CrashInfo::TraceVerbose(const char* format, ...)
+{
+    if (g_diagnosticsVerbose)
+    {
         va_list args;
         va_start(args, format);
         vfprintf(stdout, format, args);

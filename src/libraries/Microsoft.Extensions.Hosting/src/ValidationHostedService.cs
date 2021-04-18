@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal class ValidationHostedService : IHostedService
+    internal sealed class ValidationHostedService : IHostedService
     {
         private readonly IDictionary<Type, Action> _validators;
 

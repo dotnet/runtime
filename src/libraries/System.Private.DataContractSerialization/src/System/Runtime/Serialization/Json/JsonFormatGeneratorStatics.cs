@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -127,6 +128,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetJsonDataContractMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_getJsonDataContractMethod == null)
@@ -270,8 +272,10 @@ namespace System.Runtime.Serialization
                 return s_onDeserializationMethod;
             }
         }
+
         public static MethodInfo ReadJsonValueMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_readJsonValueMethod == null)
@@ -415,6 +419,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo WriteJsonValueMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeJsonValueMethod == null)

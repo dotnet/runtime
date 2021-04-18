@@ -15,6 +15,7 @@ int32_t local_DSA_set0_pqg(DSA* dsa, BIGNUM* bnP, BIGNUM* bnQ, BIGNUM* bnG);
 void local_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX* ctx);
 EVP_CIPHER_CTX* local_EVP_CIPHER_CTX_new(void);
 int32_t local_EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx);
+RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey);
 int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey);
 void local_HMAC_CTX_free(HMAC_CTX* ctx);
 HMAC_CTX* local_HMAC_CTX_new(void);

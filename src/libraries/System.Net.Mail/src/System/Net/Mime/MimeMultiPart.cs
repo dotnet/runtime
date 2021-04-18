@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Net.Mime
 {
-    internal class MimeMultiPart : MimeBasePart
+    internal sealed class MimeMultiPart : MimeBasePart
     {
         private Collection<MimeBasePart>? _parts;
         private static int s_boundary;
@@ -213,7 +213,7 @@ namespace System.Net.Mime
             return result;
         }
 
-        internal class MimePartContext
+        internal sealed class MimePartContext
         {
             internal MimePartContext(BaseWriter writer, LazyAsyncResult result, IEnumerator<MimeBasePart> partsEnumerator)
             {

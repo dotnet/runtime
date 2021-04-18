@@ -153,7 +153,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
 -----END CERTIFICATE-----
 ");
 
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test password.")]
         public const string PfxDataPassword = "12345";
 
         public static SecureString CreatePfxDataPasswordSecureString()
@@ -602,7 +602,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
                 ? Dsa1024Pfx_RC2ContentEncryption
                 : Dsa1024Pfx_TripleDESContentEncryption;
 
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test password.")]
         public const string Dsa1024PfxPassword = "1234";
 
         public static byte[] Dsa1024Cert = (

@@ -409,7 +409,7 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static Vector<T> operator *(Vector<T> value, T factor)
         {
             Vector<T> result = default;
@@ -422,11 +422,11 @@ namespace System.Numerics
             return result;
         }
 
-
         /// <summary>Multiplies a vector by the given scalar.</summary>
         /// <param name="factor">The scalar value.</param>
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(T factor, Vector<T> value) => value * factor;
 
@@ -450,6 +450,7 @@ namespace System.Numerics
         /// <summary>Negates a given vector.</summary>
         /// <param name="value">The source vector.</param>
         /// <returns>The negated vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator -(Vector<T> value) => Zero - value;
 
         /// <summary>Returns a new vector by performing a bitwise-and operation on each of the elements in the given vectors.</summary>

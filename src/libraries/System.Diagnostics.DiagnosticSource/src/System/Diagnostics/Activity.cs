@@ -1323,7 +1323,7 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private partial class LinkedListNode<T>
+        private sealed partial class LinkedListNode<T>
         {
             public LinkedListNode(T value) => Value = value;
             public T Value;

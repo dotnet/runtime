@@ -5,6 +5,7 @@
 #include <ComHelpers.h>
 #include <unordered_map>
 #include <list>
+#include <mutex>
 #include <inspectable.h>
 
 namespace API
@@ -315,12 +316,16 @@ namespace
     class TrackerRuntimeManagerImpl : public API::IReferenceTrackerManager
     {
         ComSmartPtr<API::IReferenceTrackerHost> _runtimeServices;
+        std::mutex _objectsLock;
         std::list<ComSmartPtr<TrackerObject>> _objects;
 
     public:
         ITrackerObject* RecordObject(_In_ TrackerObject* obj, _Outptr_ IUnknown** inner)
         {
-            _objects.push_back(ComSmartPtr<TrackerObject>{ obj });
+            {
+                std::lock_guard<std::mutex> guard{ _objectsLock };
+                _objects.push_back(ComSmartPtr<TrackerObject>{ obj });
+            }
 
             if (_runtimeServices != nullptr)
                 _runtimeServices->AddMemoryPressure(sizeof(TrackerObject));
@@ -337,12 +342,17 @@ namespace
 
         void ReleaseObjects()
         {
+            std::list<ComSmartPtr<TrackerObject>> objectsLocal;
+            {
+                std::lock_guard<std::mutex> guard{ _objectsLock };
+                objectsLocal = std::move(_objects);
+            }
+
             // Unpeg all instances
-            for (auto& i : _objects)
+            for (auto& i : objectsLocal)
                 (void)i->DisconnectFromReferenceTrackerRuntime();
 
-            size_t count = _objects.size();
-            _objects.clear();
+            size_t count = objectsLocal.size();
             if (_runtimeServices != nullptr)
                 _runtimeServices->RemoveMemoryPressure(sizeof(TrackerObject) * count);
         }
@@ -358,6 +368,8 @@ namespace
     public: // IReferenceTrackerManager
         STDMETHOD(ReferenceTrackingStarted)()
         {
+            std::lock_guard<std::mutex> guard{ _objectsLock };
+
             // Unpeg all instances
             for (auto& i : _objects)
                 i->TogglePeg(/* should peg */ false);
@@ -367,6 +379,8 @@ namespace
 
         STDMETHOD(FindTrackerTargetsCompleted)(_In_ BOOL bWalkFailed)
         {
+            std::lock_guard<std::mutex> guard{ _objectsLock };
+
             // Verify and ensure all connected types are pegged
             for (auto& i : _objects)
                 i->TogglePeg(/* should peg */ true);

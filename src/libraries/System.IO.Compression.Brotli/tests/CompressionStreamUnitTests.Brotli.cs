@@ -177,7 +177,7 @@ namespace System.IO.Compression
             for (int i = 0; i < totalSize; i += chunkSize)
             {
                 byte[] uncompressed = new byte[chunkSize];
-                new Random().NextBytes(uncompressed);
+                Random.Shared.NextBytes(uncompressed);
                 byte[] compressed = new byte[BrotliEncoder.GetMaxCompressedLength(chunkSize)];
                 byte[] decompressed = new byte[chunkSize];
                 var uncompressedSpan = new ReadOnlySpan<byte>(uncompressed);

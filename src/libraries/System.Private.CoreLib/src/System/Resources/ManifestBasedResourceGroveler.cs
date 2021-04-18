@@ -31,7 +31,7 @@ namespace System.Resources
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
     //
-    internal partial class ManifestBasedResourceGroveler : IResourceGroveler
+    internal sealed partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
 

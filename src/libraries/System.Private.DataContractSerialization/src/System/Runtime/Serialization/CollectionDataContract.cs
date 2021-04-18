@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
 
     //Special Adapter class to serialize KeyValuePair as Dictionary needs it when polymorphism is involved
     [DataContract(Namespace = "http://schemas.datacontract.org/2004/07/System.Collections.Generic")]
-    internal class KeyValuePairAdapter<K, T> : IKeyValuePairAdapter
+    internal sealed class KeyValuePairAdapter<K, T> : IKeyValuePairAdapter
     {
         private K _kvpKey;
         private T _kvpValue;
@@ -1546,7 +1546,7 @@ namespace System.Runtime.Serialization
             return o;
         }
 
-        internal class DictionaryEnumerator : IEnumerator<KeyValue<object, object?>>
+        internal sealed class DictionaryEnumerator : IEnumerator<KeyValue<object, object?>>
         {
             private readonly IDictionaryEnumerator _enumerator;
 
@@ -1581,7 +1581,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal class GenericDictionaryEnumerator<K, V> : IEnumerator<KeyValue<K, V>>
+        internal sealed class GenericDictionaryEnumerator<K, V> : IEnumerator<KeyValue<K, V>>
         {
             private readonly IEnumerator<KeyValuePair<K, V>> _enumerator;
 

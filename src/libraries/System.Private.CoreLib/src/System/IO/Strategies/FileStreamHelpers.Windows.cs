@@ -14,16 +14,24 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        internal const int ERROR_BROKEN_PIPE = 109;
-        internal const int ERROR_NO_DATA = 232;
-        private const int ERROR_HANDLE_EOF = 38;
-        private const int ERROR_IO_PENDING = 997;
+        // Async completion/return codes shared by:
+        // - AsyncWindowsFileStreamStrategy.ValueTaskSource
+        // - Net5CompatFileStreamStrategy.CompletionSource
+        internal static class TaskSourceCodes
+        {
+            internal const long NoResult = 0;
+            internal const long ResultSuccess = (long)1 << 32;
+            internal const long ResultError = (long)2 << 32;
+            internal const long RegisteringCancellation = (long)4 << 32;
+            internal const long CompletedCallback = (long)8 << 32;
+            internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
+        }
 
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
-            if (UseLegacyStrategy)
+            if (UseNet5CompatStrategy)
             {
-                return new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
+                return new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
             }
 
             WindowsFileStreamStrategy strategy = isAsync
@@ -35,9 +43,9 @@ namespace System.IO.Strategies
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            if (UseLegacyStrategy)
+            if (UseNet5CompatStrategy)
             {
-                return new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
+                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
             }
 
             WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
@@ -481,11 +489,11 @@ namespace System.IO.Strategies
                         {
                             switch (errorCode)
                             {
-                                case ERROR_IO_PENDING:
+                                case Interop.Errors.ERROR_IO_PENDING:
                                     // Async operation in progress.
                                     break;
-                                case ERROR_BROKEN_PIPE:
-                                case ERROR_HANDLE_EOF:
+                                case Interop.Errors.ERROR_BROKEN_PIPE:
+                                case Interop.Errors.ERROR_HANDLE_EOF:
                                     // We're at or past the end of the file, and the overlapped callback
                                     // won't be raised in these cases. Mark it as completed so that the await
                                     // below will see it as such.
@@ -503,8 +511,8 @@ namespace System.IO.Strategies
                         {
                             case 0: // success
                                 break;
-                            case ERROR_BROKEN_PIPE: // logically success with 0 bytes read (write end of pipe closed)
-                            case ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
+                            case Interop.Errors.ERROR_BROKEN_PIPE: // logically success with 0 bytes read (write end of pipe closed)
+                            case Interop.Errors.ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
                                 Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
                                 break;
                             case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled
@@ -558,7 +566,7 @@ namespace System.IO.Strategies
             }
         }
 
-        /// <summary>Used by AsyncWindowsFileStreamStrategy and LegacyFileStreamStrategy CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
+        /// <summary>Used by AsyncWindowsFileStreamStrategy and Net5CompatFileStreamStrategy CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
         private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>

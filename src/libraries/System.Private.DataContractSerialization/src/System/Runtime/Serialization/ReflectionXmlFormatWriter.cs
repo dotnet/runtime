@@ -10,7 +10,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-    internal class ReflectionXmlFormatWriter
+    internal sealed class ReflectionXmlFormatWriter
     {
         private readonly ReflectionXmlClassWriter _reflectionClassWriter = new ReflectionXmlClassWriter();
 

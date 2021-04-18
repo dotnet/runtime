@@ -855,7 +855,7 @@ HRESULT GetBucketParametersForCurrentException(
     GenericModeBlock gmb;
 
     // Make sure this is (or at least has been) a managed thread.
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {   // Not the greatest error, but we don't expect to be called on a unmanaged thread.
         return E_UNEXPECTED;

@@ -103,7 +103,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         PRECONDITION(IsProtectedByGCFrame(pComObj));
         PRECONDITION(!m_typeHandle.IsNull());
         PRECONDITION(m_typeHandle.IsComObjectType());
-        PRECONDITION(m_pThread == GetThread());
+        PRECONDITION(m_pThread == GetThreadNULLOk());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }
     CONTRACTL_END;
@@ -306,7 +306,7 @@ OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRefInternal(IUnknown **ppInco
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(m_pThread == GetThread());
+        PRECONDITION(m_pThread == GetThreadNULLOk());
         PRECONDITION(pIncomingItfMT == NULL || pIncomingItfMT->IsInterface());
     }
     CONTRACTL_END;

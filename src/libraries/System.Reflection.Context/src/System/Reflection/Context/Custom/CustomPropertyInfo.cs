@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomPropertyInfo : ProjectingPropertyInfo
+    internal sealed class CustomPropertyInfo : ProjectingPropertyInfo
     {
         public CustomPropertyInfo(PropertyInfo template, CustomReflectionContext context)
             : base(template, context.Projector)

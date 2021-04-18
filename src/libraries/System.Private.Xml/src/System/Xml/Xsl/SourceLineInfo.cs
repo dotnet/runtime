@@ -25,11 +25,11 @@ namespace System.Xml.Xsl
     }
 
     [DebuggerDisplay("{Uri} [{StartLine},{StartPos} -- {EndLine},{EndPos}]")]
-    internal class SourceLineInfo : ISourceLineInfo
+    internal sealed class SourceLineInfo : ISourceLineInfo
     {
-        protected string? uriString;
-        protected Location start;
-        protected Location end;
+        private string? uriString;
+        private Location start;
+        private Location end;
 
         public SourceLineInfo(string? uriString, int startLine, int startPos, int endLine, int endPos)
             : this(uriString, new Location(startLine, startPos), new Location(endLine, endPos))
@@ -53,7 +53,7 @@ namespace System.Xml.Xsl
         /// When VS debugger steps into IL marked with 0xfeefee, it will continue the step until it reaches
         /// some user code.
         /// </summary>
-        protected const int NoSourceMagicNumber = 0xfeefee;
+        private const int NoSourceMagicNumber = 0xfeefee;
 
         public static SourceLineInfo NoSource = new SourceLineInfo(string.Empty, NoSourceMagicNumber, 0, NoSourceMagicNumber, 0);
 

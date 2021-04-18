@@ -181,7 +181,11 @@ typedef PTR_Object OBJECTREF;
 typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
-EXTERN_C Thread* STDCALL GetThread();
+Thread* GetThread();
+Thread* GetThreadNULLOk();
+
+EXTERN_C Thread* STDCALL GetThreadHelper();
+
 void SetThread(Thread*);
 
 // This is a mechanism by which macros can make the Thread pointer available to inner scopes

@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
-    internal partial class CultureData
+    internal sealed partial class CultureData
     {
         // ICU constants
         private const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value

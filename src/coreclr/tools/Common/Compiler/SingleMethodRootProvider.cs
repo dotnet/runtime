@@ -19,7 +19,11 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            rootProvider.AddCompilationRoot(_method, rootMinimalDependencies: false, reason: "Single method root");
+            rootProvider.AddCompilationRoot(_method,
+#if READYTORUN
+                rootMinimalDependencies: false,
+#endif
+                reason: "Single method root");
         }
     }
 }

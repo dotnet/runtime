@@ -864,7 +864,7 @@ public:
     void Activate()
     {
         WRAPPER_NO_CONTRACT;
-        m_previousLimit=GetThread()->GetLoadLevelLimiter();
+        m_previousLimit= GetThread()->GetLoadLevelLimiter();
         if(m_previousLimit)
             m_currentLevel=m_previousLimit->GetLoadLevel();
         GetThread()->SetLoadLevelLimiter(this);

@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
-    internal class StackTraceSymbols : IDisposable
+    internal sealed class StackTraceSymbols : IDisposable
     {
         private readonly ConditionalWeakTable<Assembly, MetadataReaderProvider?> _metadataCache;
 

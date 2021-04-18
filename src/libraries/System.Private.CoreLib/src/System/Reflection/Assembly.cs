@@ -260,7 +260,7 @@ namespace System.Reflection
                 if (s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
 
-                AssemblyLoadContext alc = new IndividualAssemblyLoadContext(string.Format("Assembly.LoadFile({0})", normalizedPath));
+                AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
                 s_loadfile.Add(normalizedPath, result);
             }

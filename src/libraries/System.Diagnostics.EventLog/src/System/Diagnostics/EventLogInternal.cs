@@ -15,7 +15,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
-    internal class EventLogInternal : IDisposable, ISupportInitialize
+    internal sealed class EventLogInternal : IDisposable, ISupportInitialize
     {
         private EventLogEntryCollection entriesCollection;
         internal string logName;

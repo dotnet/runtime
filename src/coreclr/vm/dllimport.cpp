@@ -31,10 +31,10 @@
 #include "typestring.h"
 #include "sigbuilder.h"
 #include "sigformat.h"
-#include "strongnameholders.h"
 #include "ecall.h"
 #include "fieldmarshaler.h"
 #include "pinvokeoverride.h"
+#include "nativelibrary.h"
 
 #include <formattype.h>
 #include "../md/compiler/custattr.h"
@@ -49,57 +49,46 @@
 #endif // FEATURE_PREJIT
 
 #include "eventtrace.h"
-#include "clr/fs/path.h"
-using namespace clr::fs;
 
-// Specifies whether coreclr is embedded or standalone
-extern bool g_coreclr_embedded;
-
-// Specifies whether hostpolicy is embedded in executable or standalone
-extern bool g_hostpolicy_embedded;
-
-// remove when we get an updated SDK
-#define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
-#define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
-
-#ifndef DACCESS_COMPILE
-void AppendEHClause(int nClauses, COR_ILMETHOD_SECT_EH * pEHSect, ILStubEHClause * pClause, int * pCurIdx)
+namespace
 {
-    LIMITED_METHOD_CONTRACT;
-    if (pClause->kind == ILStubEHClause::kNone)
-        return;
-
-    int idx = *pCurIdx;
-    *pCurIdx = idx + 1;
-
-    CorExceptionFlag flags;
-    switch (pClause->kind)
+    void AppendEHClause(int nClauses, COR_ILMETHOD_SECT_EH * pEHSect, ILStubEHClause * pClause, int * pCurIdx)
     {
-    case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
-    case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
-    default:
-        UNREACHABLE_MSG("unexpected ILStubEHClause kind");
+        LIMITED_METHOD_CONTRACT;
+        if (pClause->kind == ILStubEHClause::kNone)
+            return;
+
+        int idx = *pCurIdx;
+        *pCurIdx = idx + 1;
+
+        CorExceptionFlag flags;
+        switch (pClause->kind)
+        {
+        case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
+        case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
+        default:
+            UNREACHABLE_MSG("unexpected ILStubEHClause kind");
+        }
+        _ASSERTE(idx < nClauses);
+        pEHSect->Fat.Clauses[idx].Flags = flags;
+        pEHSect->Fat.Clauses[idx].TryOffset = pClause->dwTryBeginOffset;
+        pEHSect->Fat.Clauses[idx].TryLength = pClause->cbTryLength;
+        pEHSect->Fat.Clauses[idx].HandlerOffset = pClause->dwHandlerBeginOffset;
+        pEHSect->Fat.Clauses[idx].HandlerLength = pClause->cbHandlerLength;
+        pEHSect->Fat.Clauses[idx].ClassToken = pClause->dwTypeToken;
     }
-    _ASSERTE(idx < nClauses);
-    pEHSect->Fat.Clauses[idx].Flags = flags;
-    pEHSect->Fat.Clauses[idx].TryOffset = pClause->dwTryBeginOffset;
-    pEHSect->Fat.Clauses[idx].TryLength = pClause->cbTryLength;
-    pEHSect->Fat.Clauses[idx].HandlerOffset = pClause->dwHandlerBeginOffset;
-    pEHSect->Fat.Clauses[idx].HandlerLength = pClause->cbHandlerLength;
-    pEHSect->Fat.Clauses[idx].ClassToken = pClause->dwTypeToken;
-}
 
-VOID PopulateEHSect(COR_ILMETHOD_SECT_EH * pEHSect, int nClauses, ILStubEHClause * pOne, ILStubEHClause * pTwo)
-{
-    LIMITED_METHOD_CONTRACT;
-    pEHSect->Fat.Kind       = (CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat);
-    pEHSect->Fat.DataSize   = COR_ILMETHOD_SECT_EH_FAT::Size(nClauses);
+    VOID PopulateEHSect(COR_ILMETHOD_SECT_EH * pEHSect, int nClauses, ILStubEHClause * pOne, ILStubEHClause * pTwo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        pEHSect->Fat.Kind       = (CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat);
+        pEHSect->Fat.DataSize   = COR_ILMETHOD_SECT_EH_FAT::Size(nClauses);
 
-    int curIdx = 0;
-    AppendEHClause(nClauses, pEHSect, pOne, &curIdx);
-    AppendEHClause(nClauses, pEHSect, pTwo, &curIdx);
+        int curIdx = 0;
+        AppendEHClause(nClauses, pEHSect, pOne, &curIdx);
+        AppendEHClause(nClauses, pEHSect, pTwo, &curIdx);
+    }
 }
-#endif
 
 StubSigDesc::StubSigDesc(MethodDesc *pMD, PInvokeStaticSigInfo* pSigInfo /*= NULL*/)
 {
@@ -934,6 +923,21 @@ public:
                 );
         }
 
+    }
+
+    //
+    // Truncates a SString by first converting it to unicode and truncate it
+    // if it is larger than size. "..." will be appended if it is truncated.
+    //
+    void TruncateUnicodeString(SString &string, COUNT_T bufSize)
+    {
+        string.Normalize();
+        if ((string.GetCount() + 1) * sizeof(WCHAR) > bufSize)
+        {
+            _ASSERTE(bufSize / sizeof(WCHAR) > 4);
+            string.Truncate(string.Begin() + bufSize / sizeof(WCHAR) - 4);
+            string.Append(W("..."));
+        }
     }
 
     //---------------------------------------------------------------------------------------
@@ -3660,6 +3664,8 @@ static void CreateNDirectStubWorker(StubState*               pss,
         }
 #endif // TARGET_X86
 
+        nativeStackSize = ALIGN_UP(nativeStackSize, TARGET_POINTER_SIZE);
+
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
@@ -3764,255 +3770,300 @@ static void CreateStructStub(ILStubState* pss,
     pss->FinishEmit(pMD);
 }
 
-class NDirectStubHashBlob : public ILStubHashBlobBase
+namespace
 {
-public:
-    Module*     m_pModule;
-    MethodTable* m_pMT;
-
-    WORD        m_unmgdCallConv;
-    BYTE        m_nlType;                   // C_ASSERTS are in NDirect::CreateHashBlob
-    BYTE        m_nlFlags;
-
-    DWORD       m_StubFlags;
-
-    INT32       m_iLCIDArg;
-    INT32       m_nParams;
-    BYTE        m_rgbSigAndParamData[1];
-    // (dwParamAttr, cbNativeType)          // length: number of parameters
-    // NativeTypeBlob                       // length: number of parameters
-    // BYTE     m_rgbSigData[];             // length: determined by sig walk
-};
-
-// For better performance and less memory fragmentation,
-// I'm using structure here to avoid allocating 3 different arrays.
-struct ParamInfo
-{
-    DWORD dwParamAttr;
-    ULONG cbNativeType;
-    PCCOR_SIGNATURE pvNativeType;
-};
-
-ILStubHashBlob* NDirect::CreateHashBlob(NDirectStubParameters* pParams)
-{
-    STANDARD_VM_CONTRACT;
-
-    NDirectStubHashBlob*    pBlob;
-
-    IMDInternalImport* pInternalImport = pParams->m_pModule->GetMDImport();
-
-    CQuickBytes paramInfoBytes;
-    paramInfoBytes.AllocThrows(sizeof(ParamInfo)*pParams->m_nParamTokens);
-    ParamInfo *paramInfos = (ParamInfo *)paramInfoBytes.Ptr();
-    ::ZeroMemory(paramInfos, sizeof(ParamInfo) * pParams->m_nParamTokens);
-
-    size_t cbNativeTypeTotal = 0;
-
-    //
-    // Collect information for function parameters
-    //
-    for (int idx = 0; idx < pParams->m_nParamTokens; idx++)
+    class NDirectStubParameters
     {
-        mdParamDef token = pParams->m_pParamTokenArray[idx];
-        if (TypeFromToken(token) == mdtParamDef && mdParamDefNil != token)
-        {
-            USHORT usSequence_Ignore;       // We don't need usSequence in the hash as the param array is already sorted
-            LPCSTR szParamName_Ignore;
-            IfFailThrow(pInternalImport->GetParamDefProps(token, &usSequence_Ignore, &paramInfos[idx].dwParamAttr, &szParamName_Ignore));
+    public:
 
-            if (paramInfos[idx].dwParamAttr & pdHasFieldMarshal)
+        NDirectStubParameters(Signature                sig,
+                            SigTypeContext*          pTypeContext,
+                            Module*                  pModule,
+                            Module*                  pLoaderModule,
+                            CorNativeLinkType        nlType,
+                            CorNativeLinkFlags       nlFlags,
+                            CorInfoCallConvExtension unmgdCallConv,
+                            DWORD                    dwStubFlags,  // NDirectStubFlags
+                            int                      nParamTokens,
+                            mdParamDef*              pParamTokenArray,
+                            int                      iLCIDArg,
+                            MethodTable*             pMT
+                            ) :
+            m_sig(sig),
+            m_pTypeContext(pTypeContext),
+            m_pModule(pModule),
+            m_pLoaderModule(pLoaderModule),
+            m_pParamTokenArray(pParamTokenArray),
+            m_unmgdCallConv(unmgdCallConv),
+            m_nlType(nlType),
+            m_nlFlags(nlFlags),
+            m_dwStubFlags(dwStubFlags),
+            m_iLCIDArg(iLCIDArg),
+            m_nParamTokens(nParamTokens),
+            m_pMT(pMT)
+        {
+            LIMITED_METHOD_CONTRACT;
+        }
+
+        Signature                m_sig;
+        SigTypeContext*          m_pTypeContext;
+        Module*                  m_pModule;
+        Module*                  m_pLoaderModule;
+        mdParamDef*              m_pParamTokenArray;
+        CorInfoCallConvExtension m_unmgdCallConv;
+        CorNativeLinkType        m_nlType;
+        CorNativeLinkFlags       m_nlFlags;
+        DWORD                    m_dwStubFlags;
+        int                      m_iLCIDArg;
+        int                      m_nParamTokens;
+        MethodTable*             m_pMT;
+    };
+
+    class NDirectStubHashBlob : public ILStubHashBlobBase
+    {
+    public:
+        Module*     m_pModule;
+        MethodTable* m_pMT;
+
+        WORD        m_unmgdCallConv;
+        BYTE        m_nlType;                   // C_ASSERTS are in NDirect::CreateHashBlob
+        BYTE        m_nlFlags;
+
+        DWORD       m_StubFlags;
+
+        INT32       m_iLCIDArg;
+        INT32       m_nParams;
+        BYTE        m_rgbSigAndParamData[1];
+        // (dwParamAttr, cbNativeType)          // length: number of parameters
+        // NativeTypeBlob                       // length: number of parameters
+        // BYTE     m_rgbSigData[];             // length: determined by sig walk
+    };
+
+    // For better performance and less memory fragmentation,
+    // I'm using structure here to avoid allocating 3 different arrays.
+    struct ParamInfo
+    {
+        DWORD dwParamAttr;
+        ULONG cbNativeType;
+        PCCOR_SIGNATURE pvNativeType;
+    };
+
+    ILStubHashBlob* CreateHashBlob(NDirectStubParameters* pParams)
+    {
+        STANDARD_VM_CONTRACT;
+
+        NDirectStubHashBlob*    pBlob;
+
+        IMDInternalImport* pInternalImport = pParams->m_pModule->GetMDImport();
+
+        CQuickBytes paramInfoBytes;
+        paramInfoBytes.AllocThrows(sizeof(ParamInfo)*pParams->m_nParamTokens);
+        ParamInfo *paramInfos = (ParamInfo *)paramInfoBytes.Ptr();
+        ::ZeroMemory(paramInfos, sizeof(ParamInfo) * pParams->m_nParamTokens);
+
+        size_t cbNativeTypeTotal = 0;
+
+        //
+        // Collect information for function parameters
+        //
+        for (int idx = 0; idx < pParams->m_nParamTokens; idx++)
+        {
+            mdParamDef token = pParams->m_pParamTokenArray[idx];
+            if (TypeFromToken(token) == mdtParamDef && mdParamDefNil != token)
             {
-                IfFailThrow(pInternalImport->GetFieldMarshal(token, &paramInfos[idx].pvNativeType, &paramInfos[idx].cbNativeType));
-                cbNativeTypeTotal += paramInfos[idx].cbNativeType;
+                USHORT usSequence_Ignore;       // We don't need usSequence in the hash as the param array is already sorted
+                LPCSTR szParamName_Ignore;
+                IfFailThrow(pInternalImport->GetParamDefProps(token, &usSequence_Ignore, &paramInfos[idx].dwParamAttr, &szParamName_Ignore));
+
+                if (paramInfos[idx].dwParamAttr & pdHasFieldMarshal)
+                {
+                    IfFailThrow(pInternalImport->GetFieldMarshal(token, &paramInfos[idx].pvNativeType, &paramInfos[idx].cbNativeType));
+                    cbNativeTypeTotal += paramInfos[idx].cbNativeType;
+                }
             }
         }
+
+        SigPointer sigPtr = pParams->m_sig.CreateSigPointer();
+
+        // note that ConvertToInternalSignature also resolves generics so different instantiations will get different
+        // hash blobs for methods that have generic parameters in their signature
+        SigBuilder sigBuilder;
+        sigPtr.ConvertToInternalSignature(pParams->m_pModule, pParams->m_pTypeContext, &sigBuilder, /* bSkipCustomModifier = */ FALSE);
+
+        DWORD cbSig;
+        PVOID pSig = sigBuilder.GetSignature(&cbSig);
+
+        //
+        // Build hash blob for IL stub sharing
+        //
+        S_SIZE_T cbSizeOfBlob = S_SIZE_T(offsetof(NDirectStubHashBlob, m_rgbSigAndParamData)) +
+                                S_SIZE_T(sizeof(ULONG)) * S_SIZE_T(pParams->m_nParamTokens) +   // Parameter attributes
+                                S_SIZE_T(sizeof(DWORD)) * S_SIZE_T(pParams->m_nParamTokens) +   // Native type blob size
+                                S_SIZE_T(cbNativeTypeTotal) +                                   // Native type blob data
+                                S_SIZE_T(cbSig);                                                // Signature
+
+        if (cbSizeOfBlob.IsOverflow())
+            COMPlusThrowHR(COR_E_OVERFLOW);
+
+        static_assert_no_msg(nltMaxValue   <= 0xFF);
+        static_assert_no_msg(nlfMaxValue   <= 0xFF);
+        static_assert_no_msg(pmMaxValue    <= 0xFFFF);
+
+        NewArrayHolder<BYTE> pBytes = new BYTE[cbSizeOfBlob.Value()];
+        // zero out the hash bytes to ensure all bit fields are deterministically set
+        ZeroMemory(pBytes, cbSizeOfBlob.Value());
+        pBlob = (NDirectStubHashBlob*)(BYTE*)pBytes;
+
+        pBlob->m_pModule                = NULL;
+
+        if (SF_IsNGENedStub(pParams->m_dwStubFlags))
+        {
+            // don't share across modules if we are ngening the stub
+            pBlob->m_pModule = pParams->m_pModule;
+        }
+
+        pBlob->m_pMT = pParams->m_pMT;
+        pBlob->m_cbSizeOfBlob           = cbSizeOfBlob.Value();
+        pBlob->m_unmgdCallConv          = static_cast<WORD>(pParams->m_unmgdCallConv);
+        pBlob->m_nlType                 = static_cast<BYTE>(pParams->m_nlType);
+        pBlob->m_nlFlags                = static_cast<BYTE>(pParams->m_nlFlags & ~nlfNoMangle); // this flag does not affect the stub
+        pBlob->m_iLCIDArg               = pParams->m_iLCIDArg;
+
+        pBlob->m_StubFlags              = pParams->m_dwStubFlags;
+        pBlob->m_nParams                = pParams->m_nParamTokens;
+
+        BYTE* pBlobParams               = &pBlob->m_rgbSigAndParamData[0];
+
+        //
+        // Write (dwParamAttr, cbNativeType) for parameters
+        //
+        // Note that these need to be aligned and it is why they are written before the byte blobs
+        // I'm putting asserts here so that it will assert even in non-IA64 platforms to catch bugs
+        //
+        _ASSERTE((DWORD_PTR)pBlobParams % sizeof(DWORD) == 0);
+        _ASSERTE(sizeof(DWORD) == sizeof(ULONG));
+
+        for (int i = 0; i < pParams->m_nParamTokens; ++i)
+        {
+            // We only care about In/Out/HasFieldMarshal
+            // Other attr are about optional/default values which are not used in marshalling,
+            // but only used in compilers
+            *((DWORD *)pBlobParams) = paramInfos[i].dwParamAttr & (pdIn | pdOut | pdHasFieldMarshal);
+            pBlobParams += sizeof(DWORD);
+
+            *((ULONG *)pBlobParams) = paramInfos[i].cbNativeType;
+            pBlobParams += sizeof(ULONG);
+        }
+
+        //
+        // Write native type blob for parameters
+        //
+        for (int i = 0; i < pParams->m_nParamTokens; ++i)
+        {
+            memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
+            pBlobParams += paramInfos[i].cbNativeType;
+        }
+
+        //
+        // Copy signature
+        //
+        memcpy(pBlobParams, pSig, cbSig);
+
+        // Verify that we indeed have reached the end
+        _ASSERTE(pBlobParams + cbSig == (BYTE *)pBlob + cbSizeOfBlob.Value());
+
+        pBytes.SuppressRelease();
+        return (ILStubHashBlob*)pBlob;
     }
 
-    SigPointer sigPtr = pParams->m_sig.CreateSigPointer();
-
-    // note that ConvertToInternalSignature also resolves generics so different instantiations will get different
-    // hash blobs for methods that have generic parameters in their signature
-    SigBuilder sigBuilder;
-    sigPtr.ConvertToInternalSignature(pParams->m_pModule, pParams->m_pTypeContext, &sigBuilder, /* bSkipCustomModifier = */ FALSE);
-
-    DWORD cbSig;
-    PVOID pSig = sigBuilder.GetSignature(&cbSig);
-
-    //
-    // Build hash blob for IL stub sharing
-    //
-    S_SIZE_T cbSizeOfBlob = S_SIZE_T(offsetof(NDirectStubHashBlob, m_rgbSigAndParamData)) +
-                            S_SIZE_T(sizeof(ULONG)) * S_SIZE_T(pParams->m_nParamTokens) +   // Parameter attributes
-                            S_SIZE_T(sizeof(DWORD)) * S_SIZE_T(pParams->m_nParamTokens) +   // Native type blob size
-                            S_SIZE_T(cbNativeTypeTotal) +                                   // Native type blob data
-                            S_SIZE_T(cbSig);                                                // Signature
-
-    if (cbSizeOfBlob.IsOverflow())
-        COMPlusThrowHR(COR_E_OVERFLOW);
-
-    static_assert_no_msg(nltMaxValue   <= 0xFF);
-    static_assert_no_msg(nlfMaxValue   <= 0xFF);
-    static_assert_no_msg(pmMaxValue    <= 0xFFFF);
-
-    NewArrayHolder<BYTE> pBytes = new BYTE[cbSizeOfBlob.Value()];
-    // zero out the hash bytes to ensure all bit fields are deterministically set
-    ZeroMemory(pBytes, cbSizeOfBlob.Value());
-    pBlob = (NDirectStubHashBlob*)(BYTE*)pBytes;
-
-    pBlob->m_pModule                = NULL;
-
-    if (SF_IsNGENedStub(pParams->m_dwStubFlags))
+    ILStubCache* GetILStubCache(NDirectStubParameters* pParams)
     {
-        // don't share across modules if we are ngening the stub
-        pBlob->m_pModule = pParams->m_pModule;
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        // Use the m_pLoaderModule instead of m_pModule
+        // They could be different for methods on generic types.
+        return pParams->m_pLoaderModule->GetILStubCache();
     }
 
-    pBlob->m_pMT = pParams->m_pMT;
-    pBlob->m_cbSizeOfBlob           = cbSizeOfBlob.Value();
-    pBlob->m_unmgdCallConv          = static_cast<WORD>(pParams->m_unmgdCallConv);
-    pBlob->m_nlType                 = static_cast<BYTE>(pParams->m_nlType);
-    pBlob->m_nlFlags                = static_cast<BYTE>(pParams->m_nlFlags & ~nlfNoMangle); // this flag does not affect the stub
-    pBlob->m_iLCIDArg               = pParams->m_iLCIDArg;
-
-    pBlob->m_StubFlags              = pParams->m_dwStubFlags;
-    pBlob->m_nParams                = pParams->m_nParamTokens;
-
-    BYTE* pBlobParams               = &pBlob->m_rgbSigAndParamData[0];
-
-    //
-    // Write (dwParamAttr, cbNativeType) for parameters
-    //
-    // Note that these need to be aligned and it is why they are written before the byte blobs
-    // I'm putting asserts here so that it will assert even in non-IA64 platforms to catch bugs
-    //
-    _ASSERTE((DWORD_PTR)pBlobParams % sizeof(DWORD) == 0);
-    _ASSERTE(sizeof(DWORD) == sizeof(ULONG));
-
-    for (int i = 0; i < pParams->m_nParamTokens; ++i)
+    MethodDesc* GetStubMethodDesc(
+        MethodDesc *pTargetMD,
+        NDirectStubParameters* pParams,
+        ILStubHashBlob* pHashParams,
+        AllocMemTracker* pamTracker,
+        bool& bILStubCreator,
+        MethodDesc* pLastMD)
     {
-        // We only care about In/Out/HasFieldMarshal
-        // Other attr are about optional/default values which are not used in marshalling,
-        // but only used in compilers
-        *((DWORD *)pBlobParams) = paramInfos[i].dwParamAttr & (pdIn | pdOut | pdHasFieldMarshal);
-        pBlobParams += sizeof(DWORD);
+        CONTRACT(MethodDesc*)
+        {
+            STANDARD_VM_CHECK;
 
-        *((ULONG *)pBlobParams) = paramInfos[i].cbNativeType;
-        pBlobParams += sizeof(ULONG);
+            PRECONDITION(CheckPointer(pParams));
+            PRECONDITION(!pParams->m_sig.IsEmpty());
+            PRECONDITION(CheckPointer(pParams->m_pModule));
+            PRECONDITION(CheckPointer(pTargetMD, NULL_OK));
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
+
+        MethodDesc*     pMD;
+
+        ILStubCache* pCache = GetILStubCache(pParams);
+
+        pMD = pCache->GetStubMethodDesc(pTargetMD,
+                                        pHashParams,
+                                        pParams->m_dwStubFlags,
+                                        pParams->m_pModule,
+                                        pParams->m_sig.GetRawSig(),
+                                        pParams->m_sig.GetRawSigLen(),
+                                        pamTracker,
+                                        bILStubCreator,
+                                        pLastMD);
+
+        RETURN pMD;
     }
 
-    //
-    // Write native type blob for parameters
-    //
-    for (int i = 0; i < pParams->m_nParamTokens; ++i)
+    void RemoveILStubCacheEntry(NDirectStubParameters* pParams, ILStubHashBlob* pHashParams)
     {
-        memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
-        pBlobParams += paramInfos[i].cbNativeType;
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+
+            PRECONDITION(CheckPointer(pParams));
+            PRECONDITION(CheckPointer(pHashParams));
+            PRECONDITION(!pParams->m_sig.IsEmpty());
+            PRECONDITION(CheckPointer(pParams->m_pModule));
+        }
+        CONTRACTL_END;
+
+        LOG((LF_STUBS, LL_INFO1000, "Exception happened when generating IL of stub clr!CreateInteropILStub StubMD: %p, HashBlob: %p \n", pParams, pHashParams));
+
+        ILStubCache* pCache = GetILStubCache(pParams);
+
+        pCache->DeleteEntry(pHashParams);
     }
 
-    //
-    // Copy signature
-    //
-    memcpy(pBlobParams, pSig, cbSig);
-
-    // Verify that we indeed have reached the end
-    _ASSERTE(pBlobParams + cbSig == (BYTE *)pBlob + cbSizeOfBlob.Value());
-
-    pBytes.SuppressRelease();
-    return (ILStubHashBlob*)pBlob;
-}
-
-// static inline
-ILStubCache* NDirect::GetILStubCache(NDirectStubParameters* pParams)
-{
-    CONTRACTL
+    void AddMethodDescChunkWithLockTaken(NDirectStubParameters* pParams, MethodDesc *pMD)
     {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+
+            PRECONDITION(CheckPointer(pParams));
+            PRECONDITION(!pParams->m_sig.IsEmpty());
+            PRECONDITION(CheckPointer(pParams->m_pModule));
+        }
+        CONTRACTL_END;
+
+        ILStubCache* pCache = GetILStubCache(pParams);
+
+        pCache->AddMethodDescChunkWithLockTaken(pMD);
     }
-    CONTRACTL_END;
-
-    // Use the m_pLoaderModule instead of m_pModule
-    // They could be different for methods on generic types.
-    return pParams->m_pLoaderModule->GetILStubCache();
-}
-
-// static
-MethodDesc* NDirect::GetStubMethodDesc(
-    MethodDesc *pTargetMD,
-    NDirectStubParameters* pParams,
-    ILStubHashBlob* pHashParams,
-    AllocMemTracker* pamTracker,
-    bool& bILStubCreator,
-    MethodDesc* pLastMD)
-{
-    CONTRACT(MethodDesc*)
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(CheckPointer(pParams));
-        PRECONDITION(!pParams->m_sig.IsEmpty());
-        PRECONDITION(CheckPointer(pParams->m_pModule));
-        PRECONDITION(CheckPointer(pTargetMD, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    MethodDesc*     pMD;
-
-    ILStubCache* pCache = NDirect::GetILStubCache(pParams);
-
-    pMD = pCache->GetStubMethodDesc(pTargetMD,
-                                    pHashParams,
-                                    pParams->m_dwStubFlags,
-                                    pParams->m_pModule,
-                                    pParams->m_sig.GetRawSig(),
-                                    pParams->m_sig.GetRawSigLen(),
-                                    pamTracker,
-                                    bILStubCreator,
-                                    pLastMD);
-
-    RETURN pMD;
-}
-
-
-// static
-void NDirect::RemoveILStubCacheEntry(NDirectStubParameters* pParams, ILStubHashBlob* pHashParams)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(CheckPointer(pParams));
-        PRECONDITION(CheckPointer(pHashParams));
-        PRECONDITION(!pParams->m_sig.IsEmpty());
-        PRECONDITION(CheckPointer(pParams->m_pModule));
-    }
-    CONTRACTL_END;
-
-    LOG((LF_STUBS, LL_INFO1000, "Exception happened when generating IL of stub clr!CreateInteropILStub StubMD: %p, HashBlob: %p \n", pParams, pHashParams));
-
-    ILStubCache* pCache = NDirect::GetILStubCache(pParams);
-
-    pCache->DeleteEntry(pHashParams);
-}
-
-// static
-void NDirect::AddMethodDescChunkWithLockTaken(NDirectStubParameters* pParams, MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(CheckPointer(pParams));
-        PRECONDITION(!pParams->m_sig.IsEmpty());
-        PRECONDITION(CheckPointer(pParams->m_pModule));
-    }
-    CONTRACTL_END;
-
-    ILStubCache* pCache = NDirect::GetILStubCache(pParams);
-
-    pCache->AddMethodDescChunkWithLockTaken(pMD);
 }
 
 //
@@ -4037,9 +4088,9 @@ static void CreateNDirectStubAccessMetadata(
     }
     else
     {
-        if (unmgdCallConv != CorInfoCallConvExtension::Stdcall &&
-            unmgdCallConv != CorInfoCallConvExtension::C &&
-            unmgdCallConv != CorInfoCallConvExtension::Thiscall)
+        if (unmgdCallConv == CorInfoCallConvExtension::Managed ||
+            unmgdCallConv == CorInfoCallConvExtension::Fastcall ||
+            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
         {
             COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
@@ -4441,326 +4492,420 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 }
 #endif // FEATURE_COMINTEROP
 
-MethodDesc* CreateInteropILStub(
-                         ILStubState*             pss,
-                         StubSigDesc*             pSigDesc,
-                         CorNativeLinkType        nlType,
-                         CorNativeLinkFlags       nlFlags,
-                         CorInfoCallConvExtension unmgdCallConv,
-                         int                      nParamTokens,
-                         mdParamDef*              pParamTokenArray,
-                         int                      iLCIDArg,
-                         bool*                    pGeneratedNewStub = nullptr
-                           )
+namespace
 {
-    CONTRACT(MethodDesc*)
+    //=======================================================================
+    // ILStubCreatorHelper
+    // The class is used as a helper class in CreateInteropILStub. It mainly
+    // puts two methods NDirect::GetStubMethodDesc and NDirect::RemoveILStubCacheEntry
+    // into a holder. See CreateInteropILStub for more information
+    //=======================================================================
+    class ILStubCreatorHelper
     {
-        STANDARD_VM_CHECK;
+    public:
+        ILStubCreatorHelper(MethodDesc *pTargetMD,
+                            NDirectStubParameters* pParams
+                            ) :
+            m_pTargetMD(pTargetMD),
+            m_pParams(pParams),
+            m_pStubMD(NULL),
+            m_bILStubCreator(false)
+        {
+            STANDARD_VM_CONTRACT;
+            m_pHashParams = CreateHashBlob(m_pParams);
+        }
 
-        PRECONDITION(CheckPointer(pSigDesc));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
+        ~ILStubCreatorHelper()
+        {
+            CONTRACTL
+            {
+                THROWS;
+                GC_TRIGGERS;
+                MODE_ANY;
+            }
+            CONTRACTL_END;
+
+            RemoveILStubCacheEntry();
+        }
+
+        inline void GetStubMethodDesc()
+        {
+            WRAPPER_NO_CONTRACT;
+
+            m_pStubMD = ::GetStubMethodDesc(m_pTargetMD, m_pParams, m_pHashParams, &m_amTracker, m_bILStubCreator, m_pStubMD);
+        }
+
+        inline void RemoveILStubCacheEntry()
+        {
+            WRAPPER_NO_CONTRACT;
+
+            if (m_bILStubCreator)
+            {
+                ::RemoveILStubCacheEntry(m_pParams, m_pHashParams);
+                m_bILStubCreator = false;
+            }
+        }
+
+        inline MethodDesc* GetStubMD()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_pStubMD;
+        }
+
+        inline void SuppressRelease()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_bILStubCreator = false;
+            m_amTracker.SuppressRelease();
+        }
+
+        DEBUG_NOINLINE static void HolderEnter(ILStubCreatorHelper *pThis)
+        {
+            WRAPPER_NO_CONTRACT;
+            ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
+            pThis->GetStubMethodDesc();
+        }
+
+        DEBUG_NOINLINE static void HolderLeave(ILStubCreatorHelper *pThis)
+        {
+            WRAPPER_NO_CONTRACT;
+            ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
+            pThis->RemoveILStubCacheEntry();
+        }
+
+    private:
+        MethodDesc*                      m_pTargetMD;
+        NDirectStubParameters*           m_pParams;
+        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
+        AllocMemTracker*                 m_pAmTracker;
+        MethodDesc*                      m_pStubMD;
+        AllocMemTracker                  m_amTracker;
+        bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
+    };  //ILStubCreatorHelper
+
+    typedef Wrapper<ILStubCreatorHelper*, ILStubCreatorHelper::HolderEnter, ILStubCreatorHelper::HolderLeave> ILStubCreatorHelperHolder;
+
+    MethodDesc* CreateInteropILStub(
+                            ILStubState*             pss,
+                            StubSigDesc*             pSigDesc,
+                            CorNativeLinkType        nlType,
+                            CorNativeLinkFlags       nlFlags,
+                            CorInfoCallConvExtension unmgdCallConv,
+                            int                      nParamTokens,
+                            mdParamDef*              pParamTokenArray,
+                            int                      iLCIDArg,
+                            bool*                    pGeneratedNewStub = nullptr
+                            )
+    {
+        CONTRACT(MethodDesc*)
+        {
+            STANDARD_VM_CHECK;
+
+            PRECONDITION(CheckPointer(pSigDesc));
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
 
 
-    ///////////////////////////////
-    //
-    // MethodDesc creation
-    //
-    ///////////////////////////////
+        ///////////////////////////////
+        //
+        // MethodDesc creation
+        //
+        ///////////////////////////////
 
-    MethodDesc*     pStubMD = NULL;
+        MethodDesc*     pStubMD = NULL;
 
-    Module*         pModule = pSigDesc->m_pModule;
-    Module*         pLoaderModule = pSigDesc->m_pLoaderModule;
-    MethodDesc*     pTargetMD = pSigDesc->m_pMD;
-    MethodTable*    pTargetMT = pSigDesc->m_pMT;
-    //
-    // pTargetMD may be null in the case of calli pinvoke
-    // and vararg pinvoke.
-    //
+        Module*         pModule = pSigDesc->m_pModule;
+        Module*         pLoaderModule = pSigDesc->m_pLoaderModule;
+        MethodDesc*     pTargetMD = pSigDesc->m_pMD;
+        MethodTable*    pTargetMT = pSigDesc->m_pMT;
+        //
+        // pTargetMD may be null in the case of calli pinvoke
+        // and vararg pinvoke.
+        //
 
-    DWORD dwStubFlags = pss->GetFlags();
+        DWORD dwStubFlags = pss->GetFlags();
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Try to locate predefined IL stub either defined in user code or hardcoded in CLR
-    // If there is one, use the pointed method as the stub.
-    // Skip pTargetMD == NULL case for reverse interop calls
-    //
-    if (pTargetMD && SUCCEEDED(FindPredefinedILStubMethod(pTargetMD, dwStubFlags, &pStubMD)))
-    {
+        //
+        // Try to locate predefined IL stub either defined in user code or hardcoded in CLR
+        // If there is one, use the pointed method as the stub.
+        // Skip pTargetMD == NULL case for reverse interop calls
+        //
+        if (pTargetMD && SUCCEEDED(FindPredefinedILStubMethod(pTargetMD, dwStubFlags, &pStubMD)))
+        {
 #ifndef CROSSGEN_COMPILE
-        // We are about to execute method in pStubMD which could be in another module.
-        // Call EnsureActive before make the call
-        // This cannot be done during NGEN/PEVerify (in PASSIVE_DOMAIN) so I've moved it here
-        pStubMD->EnsureActive();
+            // We are about to execute method in pStubMD which could be in another module.
+            // Call EnsureActive before make the call
+            // This cannot be done during NGEN/PEVerify (in PASSIVE_DOMAIN) so I've moved it here
+            pStubMD->EnsureActive();
 
-        if (pStubMD->IsPreImplemented())
-            RestoreNGENedStub(pStubMD);
+            if (pStubMD->IsPreImplemented())
+                RestoreNGENedStub(pStubMD);
 #endif
+
+            RETURN pStubMD;
+        }
+#endif // FEATURE_COMINTEROP
+
+        // Otherwise, fall back to generating IL stub on-the-fly
+        NDirectStubParameters    params(pSigDesc->m_sig,
+                                &pSigDesc->m_typeContext,
+                                pModule,
+                                pLoaderModule,
+                                nlType,
+                                nlFlags,
+                                unmgdCallConv,
+                                dwStubFlags,
+                                nParamTokens,
+                                pParamTokenArray,
+                                iLCIDArg,
+                                pSigDesc->m_pMT
+                                );
+
+        // The following two ILStubCreatorHelperHolder are to recover the status when an
+        // exception happen during the generation of the IL stubs. We need to free the
+        // memory allocated and restore the ILStubCache.
+        //
+        // The following block is logically divided into two phases. The first phase is
+        // CreateOrGet IL Stub phase which we take a domain level lock. The second phase
+        // is IL generation phase which we take a MethodDesc level lock. Taking two locks
+        // is mainly designed for performance.
+        //
+        // ilStubCreatorHelper contains an instance of AllocMemTracker which tracks the
+        // allocated memory during the creation of MethodDesc so that we are able to remove
+        // them when releasing the ILStubCreatorHelperHolder or destructing ILStubCreatorHelper
+
+        // When removing IL Stub from Cache, we have a constraint that only the thread which
+        // creates the stub can remove it. Otherwise, any thread hits cache and gets the stub will
+        // remove it from cache if OOM occurs
+
+        {
+            ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
+
+            // take the domain level lock
+            ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
+
+            {
+                // The holder will free the allocated MethodDesc and restore the ILStubCache
+                // if exception happen.
+                ILStubCreatorHelperHolder pCreateOrGetStubHolder(&ilStubCreatorHelper);
+                pStubMD = pCreateOrGetStubHolder->GetStubMD();
+
+                ///////////////////////////////
+                //
+                // IL generation
+                //
+                ///////////////////////////////
+
+                {
+                    // take the MethodDesc level locker
+                    ListLockEntryHolder pEntry(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
+
+                    ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
+
+                    // We can release the holder for the first phase now
+                    pCreateOrGetStubHolder.SuppressRelease();
+
+                    // We have the entry lock we need to use, so we can release the global lock.
+                    pILStubLock.Release();
+
+                    {
+                        // The holder will free the allocated MethodDesc and restore the ILStubCache
+                        // if exception happen. The reason to get the holder again is to
+                        ILStubCreatorHelperHolder pGenILHolder(&ilStubCreatorHelper);
+
+                        if (!pEntryLock.DeadlockAwareAcquire())
+                        {
+                            // the IL generation is not recursive.
+                            // However, we can encounter a recursive situation when attempting to
+                            // marshal a struct containing a layout class containing another struct.
+                            // Throw an exception here instead of asserting.
+                            if (SF_IsStructMarshalStub(dwStubFlags))
+                            {
+                                _ASSERTE(pSigDesc->m_pMT != nullptr);
+                                StackSString strTypeName;
+                                TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
+                                COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
+                            }
+                            UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
+                        }
+
+                        if (SF_IsSharedStub(params.m_dwStubFlags))
+                        {
+                            // We need to re-acquire the lock in case we need to get a new pStubMD
+                            // in the case that the owner of the shared stub was destroyed.
+                            pILStubLock.Acquire();
+
+                            // Assure that pStubMD we have now has not been destroyed by other threads
+                            pGenILHolder->GetStubMethodDesc();
+
+                            while (pStubMD != pGenILHolder->GetStubMD())
+                            {
+                                pStubMD = pGenILHolder->GetStubMD();
+
+                                pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
+                                pEntryLock.Assign(pEntry, FALSE);
+
+                                // We have the entry lock we need to use, so we can release the global lock.
+                                pILStubLock.Release();
+
+                                if (!pEntryLock.DeadlockAwareAcquire())
+                                {
+                                    // the IL generation is not recursive.
+                                    // However, we can encounter a recursive situation when attempting to
+                                    // marshal a struct containing a layout class containing another struct.
+                                    // Throw an exception here instead of asserting.
+                                    if (SF_IsStructMarshalStub(dwStubFlags))
+                                    {
+                                        _ASSERTE(pSigDesc->m_pMT != nullptr);
+                                        StackSString strTypeName;
+                                        TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
+                                        COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
+                                    }
+                                    UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
+                                }
+
+                                pILStubLock.Acquire();
+
+                                pGenILHolder->GetStubMethodDesc();
+                            }
+                        }
+
+                        for (;;)
+                        {
+                            // We have the entry lock now, we can release the global lock
+                            pILStubLock.Release();
+
+                            _ASSERTE(pEntryLock.GetValue()->HasLock());
+
+                            if (pEntry->m_hrResultCode != S_FALSE)
+                            {
+                                // We came in to generate the IL but someone
+                                // beat us so there's nothing to do
+                                break;
+                            }
+
+                            ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
+
+                            CONSISTENCY_CHECK((NULL == pResolver->GetStubMethodDesc()) || (pStubMD == pResolver->GetStubMethodDesc()));
+
+                            if (pResolver->IsILGenerated())
+                            {
+                                // this stub already has its IL generated
+                                break;
+                            }
+
+                            //
+                            // Check that the stub signature and MethodDesc are compatible.  The JIT
+                            // interface functions depend on this.
+                            //
+
+                            {
+                                SigPointer ptr = pSigDesc->m_sig.CreateSigPointer();
+
+                                uint32_t callConvInfo;
+                                IfFailThrow(ptr.GetCallingConvInfo(&callConvInfo));
+
+                                BOOL fSigIsStatic = !(callConvInfo & IMAGE_CEE_CS_CALLCONV_HASTHIS);
+
+                                // CreateNDirectStubWorker will throw an exception for these cases.
+                                BOOL fCanHaveThis = SF_IsDelegateStub(dwStubFlags) || SF_IsCOMStub(dwStubFlags);
+
+                                if (fSigIsStatic || fCanHaveThis)
+                                {
+                                    CONSISTENCY_CHECK(pStubMD->IsStatic() == (DWORD)fSigIsStatic);
+                                }
+                            }
+
+                            {
+                                ILStubGenHolder sgh(pResolver);
+
+                                pResolver->SetStubMethodDesc(pStubMD);
+                                pResolver->SetStubTargetMethodDesc(pTargetMD);
+
+                                if (SF_IsStructMarshalStub(dwStubFlags))
+                                {
+                                    CreateStructStub(pss, pSigDesc, pTargetMT, dwStubFlags, pStubMD);
+                                }
+                                else
+                                {
+                                    CreateNDirectStubWorker(pss,
+                                                            pSigDesc,
+                                                            nlType,
+                                                            nlFlags,
+                                                            unmgdCallConv,
+                                                            dwStubFlags,
+                                                            pStubMD,
+                                                            pParamTokenArray,
+                                                            iLCIDArg);
+                                }
+
+
+                                pResolver->SetTokenLookupMap(pss->GetTokenLookupMap());
+
+                                pResolver->SetStubTargetMethodSig(
+                                    pss->GetStubTargetMethodSig(),
+                                    pss->GetStubTargetMethodSigLength());
+
+                                // we successfully generated the IL stub
+                                sgh.SuppressRelease();
+                            }
+
+                            if (pGeneratedNewStub)
+                            {
+                                *pGeneratedNewStub = true;
+                            }
+
+                            pEntry->m_hrResultCode = S_OK;
+                            break;
+                        }
+
+                        // Link the MethodDesc onto the method table with the lock taken
+                        AddMethodDescChunkWithLockTaken(&params, pStubMD);
+
+                        pGenILHolder.SuppressRelease();
+                    }
+                }
+            }
+            ilStubCreatorHelper.SuppressRelease();
+        }
+
+#if defined(TARGET_X86)
+        if (SF_IsForwardStub(dwStubFlags) && pTargetMD != NULL && !pTargetMD->IsVarArg())
+        {
+            // copy the stack arg byte count from the stub MD to the target MD - this number is computed
+            // during stub generation and is copied to all target MDs that share the stub
+            // (we don't set it for varargs - the number is call site specific)
+            // also copy the "takes parameters with copy constructors" flag which is needed to generate
+            // appropriate intercept stub
+
+            WORD cbStackArgSize = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
+            if (pTargetMD->IsNDirect())
+            {
+                NDirectMethodDesc *pTargetNMD = (NDirectMethodDesc *)pTargetMD;
+
+                pTargetNMD->SetStackArgumentSize(cbStackArgSize, MetaSig::GetDefaultUnmanagedCallingConvention());
+            }
+#ifdef FEATURE_COMINTEROP
+            else
+            {
+                if (SF_IsCOMStub(dwStubFlags))
+                {
+                    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pTargetMD);
+
+                    if (pComInfo != NULL)
+                    {
+                        pComInfo->SetStackArgumentSize(cbStackArgSize);
+                    }
+                }
+            }
+#endif // FEATURE_COMINTEROP
+        }
+#endif // defined(TARGET_X86)
 
         RETURN pStubMD;
     }
-#endif // FEATURE_COMINTEROP
-
-    // Otherwise, fall back to generating IL stub on-the-fly
-    NDirectStubParameters    params(pSigDesc->m_sig,
-                               &pSigDesc->m_typeContext,
-                               pModule,
-                               pLoaderModule,
-                               nlType,
-                               nlFlags,
-                               unmgdCallConv,
-                               dwStubFlags,
-                               nParamTokens,
-                               pParamTokenArray,
-                               iLCIDArg,
-                               pSigDesc->m_pMT
-                               );
-
-    // The following two ILStubCreatorHelperHolder are to recover the status when an
-    // exception happen during the generation of the IL stubs. We need to free the
-    // memory allocated and restore the ILStubCache.
-    //
-    // The following block is logically divided into two phases. The first phase is
-    // CreateOrGet IL Stub phase which we take a domain level lock. The second phase
-    // is IL generation phase which we take a MethodDesc level lock. Taking two locks
-    // is mainly designed for performance.
-    //
-    // ilStubCreatorHelper contains an instance of AllocMemTracker which tracks the
-    // allocated memory during the creation of MethodDesc so that we are able to remove
-    // them when releasing the ILStubCreatorHelperHolder or destructing ILStubCreatorHelper
-
-    // When removing IL Stub from Cache, we have a constraint that only the thread which
-    // creates the stub can remove it. Otherwise, any thread hits cache and gets the stub will
-    // remove it from cache if OOM occurs
-
-    {
-        ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
-
-        // take the domain level lock
-        ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
-
-        {
-            // The holder will free the allocated MethodDesc and restore the ILStubCache
-            // if exception happen.
-            ILStubCreatorHelperHolder pCreateOrGetStubHolder(&ilStubCreatorHelper);
-            pStubMD = pCreateOrGetStubHolder->GetStubMD();
-
-            ///////////////////////////////
-            //
-            // IL generation
-            //
-            ///////////////////////////////
-
-            {
-                // take the MethodDesc level locker
-                ListLockEntryHolder pEntry(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
-
-                ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
-
-                // We can release the holder for the first phase now
-                pCreateOrGetStubHolder.SuppressRelease();
-
-                // We have the entry lock we need to use, so we can release the global lock.
-                pILStubLock.Release();
-
-                {
-                    // The holder will free the allocated MethodDesc and restore the ILStubCache
-                    // if exception happen. The reason to get the holder again is to
-                    ILStubCreatorHelperHolder pGenILHolder(&ilStubCreatorHelper);
-
-                    if (!pEntryLock.DeadlockAwareAcquire())
-                    {
-                        // the IL generation is not recursive.
-                        // However, we can encounter a recursive situation when attempting to
-                        // marshal a struct containing a layout class containing another struct.
-                        // Throw an exception here instead of asserting.
-                        if (SF_IsStructMarshalStub(dwStubFlags))
-                        {
-                            _ASSERTE(pSigDesc->m_pMT != nullptr);
-                            StackSString strTypeName;
-                            TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                            COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
-                        }
-                        UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
-                    }
-
-                    if (SF_IsSharedStub(params.m_dwStubFlags))
-                    {
-                        // We need to re-acquire the lock in case we need to get a new pStubMD
-                        // in the case that the owner of the shared stub was destroyed.
-                        pILStubLock.Acquire();
-
-                        // Assure that pStubMD we have now has not been destroyed by other threads
-                        pGenILHolder->GetStubMethodDesc();
-
-                        while (pStubMD != pGenILHolder->GetStubMD())
-                        {
-                            pStubMD = pGenILHolder->GetStubMD();
-
-                            pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
-                            pEntryLock.Assign(pEntry, FALSE);
-
-                            // We have the entry lock we need to use, so we can release the global lock.
-                            pILStubLock.Release();
-
-                            if (!pEntryLock.DeadlockAwareAcquire())
-                            {
-                                // the IL generation is not recursive.
-                                // However, we can encounter a recursive situation when attempting to
-                                // marshal a struct containing a layout class containing another struct.
-                                // Throw an exception here instead of asserting.
-                                if (SF_IsStructMarshalStub(dwStubFlags))
-                                {
-                                    _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                    StackSString strTypeName;
-                                    TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                                    COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
-                                }
-                                UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
-                            }
-
-                            pILStubLock.Acquire();
-
-                            pGenILHolder->GetStubMethodDesc();
-                        }
-                    }
-
-                    for (;;)
-                    {
-                        // We have the entry lock now, we can release the global lock
-                        pILStubLock.Release();
-
-                        _ASSERTE(pEntryLock.GetValue()->HasLock());
-
-                        if (pEntry->m_hrResultCode != S_FALSE)
-                        {
-                            // We came in to generate the IL but someone
-                            // beat us so there's nothing to do
-                            break;
-                        }
-
-                        ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
-
-                        CONSISTENCY_CHECK((NULL == pResolver->GetStubMethodDesc()) || (pStubMD == pResolver->GetStubMethodDesc()));
-
-                        if (pResolver->IsILGenerated())
-                        {
-                            // this stub already has its IL generated
-                            break;
-                        }
-
-                        //
-                        // Check that the stub signature and MethodDesc are compatible.  The JIT
-                        // interface functions depend on this.
-                        //
-
-                        {
-                            SigPointer ptr = pSigDesc->m_sig.CreateSigPointer();
-
-                            uint32_t callConvInfo;
-                            IfFailThrow(ptr.GetCallingConvInfo(&callConvInfo));
-
-                            BOOL fSigIsStatic = !(callConvInfo & IMAGE_CEE_CS_CALLCONV_HASTHIS);
-
-                            // CreateNDirectStubWorker will throw an exception for these cases.
-                            BOOL fCanHaveThis = SF_IsDelegateStub(dwStubFlags) || SF_IsCOMStub(dwStubFlags);
-
-                            if (fSigIsStatic || fCanHaveThis)
-                            {
-                                CONSISTENCY_CHECK(pStubMD->IsStatic() == (DWORD)fSigIsStatic);
-                            }
-                        }
-
-                        {
-                            ILStubGenHolder sgh(pResolver);
-
-                            pResolver->SetStubMethodDesc(pStubMD);
-                            pResolver->SetStubTargetMethodDesc(pTargetMD);
-
-                            if (SF_IsStructMarshalStub(dwStubFlags))
-                            {
-                                CreateStructStub(pss, pSigDesc, pTargetMT, dwStubFlags, pStubMD);
-                            }
-                            else
-                            {
-                                CreateNDirectStubWorker(pss,
-                                                        pSigDesc,
-                                                        nlType,
-                                                        nlFlags,
-                                                        unmgdCallConv,
-                                                        dwStubFlags,
-                                                        pStubMD,
-                                                        pParamTokenArray,
-                                                        iLCIDArg);
-                            }
-
-
-                            pResolver->SetTokenLookupMap(pss->GetTokenLookupMap());
-
-                            pResolver->SetStubTargetMethodSig(
-                                pss->GetStubTargetMethodSig(),
-                                pss->GetStubTargetMethodSigLength());
-
-                            // we successfully generated the IL stub
-                            sgh.SuppressRelease();
-                        }
-
-                        if (pGeneratedNewStub)
-                        {
-                            *pGeneratedNewStub = true;
-                        }
-
-                        pEntry->m_hrResultCode = S_OK;
-                        break;
-                    }
-
-                    // Link the MethodDesc onto the method table with the lock taken
-                    NDirect::AddMethodDescChunkWithLockTaken(&params, pStubMD);
-
-                    pGenILHolder.SuppressRelease();
-                }
-            }
-        }
-        ilStubCreatorHelper.SuppressRelease();
-    }
-
-#if defined(TARGET_X86)
-    if (SF_IsForwardStub(dwStubFlags) && pTargetMD != NULL && !pTargetMD->IsVarArg())
-    {
-        // copy the stack arg byte count from the stub MD to the target MD - this number is computed
-        // during stub generation and is copied to all target MDs that share the stub
-        // (we don't set it for varargs - the number is call site specific)
-        // also copy the "takes parameters with copy constructors" flag which is needed to generate
-        // appropriate intercept stub
-
-        WORD cbStackArgSize = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-        if (pTargetMD->IsNDirect())
-        {
-            NDirectMethodDesc *pTargetNMD = (NDirectMethodDesc *)pTargetMD;
-
-            pTargetNMD->SetStackArgumentSize(cbStackArgSize, MetaSig::GetDefaultUnmanagedCallingConvention());
-        }
-#ifdef FEATURE_COMINTEROP
-        else
-        {
-            if (SF_IsCOMStub(dwStubFlags))
-            {
-                ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pTargetMD);
-
-                if (pComInfo != NULL)
-                {
-                    pComInfo->SetStackArgumentSize(cbStackArgSize);
-                }
-            }
-        }
-#endif // FEATURE_COMINTEROP
-    }
-#endif // defined(TARGET_X86)
-
-    RETURN pStubMD;
 }
 
 MethodDesc* NDirect::CreateCLRToNativeILStub(
@@ -5122,6 +5267,102 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 
 #ifndef CROSSGEN_COMPILE
 
+namespace
+{
+    LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
+    {
+        // GetProcAddress cannot be called while preemptive GC is disabled.
+        // It requires the OS to take the loader lock.
+        CONTRACT(LPVOID)
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMD));
+            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+        }
+        CONTRACT_END;
+
+        g_IBCLogger.LogNDirectCodeAccess(pMD);
+
+        RETURN pMD->FindEntryPoint(hMod);
+    }
+
+    //---------------------------------------------------------
+    // Loads the DLL and finds the procaddress for an N/Direct call.
+    //---------------------------------------------------------
+    VOID NDirectLink(NDirectMethodDesc *pMD)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMD));
+        }
+        CONTRACTL_END;
+
+        if (pMD->IsClassConstructorTriggeredAtLinkTime())
+        {
+            pMD->GetMethodTable()->CheckRunClassInitThrowing();
+        }
+
+        if (pMD->IsQCall())
+        {
+            LPVOID pvTarget = pMD->ndirect.m_pNativeNDirectTarget;
+
+            // Do not repeat the lookup if the QCall was hardbound during ngen
+            if (pvTarget == NULL)
+            {
+                pvTarget = ECall::GetQCallImpl(pMD);
+            }
+            else
+            {
+                _ASSERTE(pvTarget == ECall::GetQCallImpl(pMD));
+            }
+
+            pMD->SetNDirectTarget(pvTarget);
+            return;
+        }
+
+        // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
+        pMD->EnsureActive();
+
+        {
+            LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
+            if (pvTarget != NULL)
+            {
+                pMD->SetNDirectTarget(pvTarget);
+                return;
+            }
+        }
+
+        NATIVE_LIBRARY_HANDLE hmod = NativeLibrary::LoadLibraryFromMethodDesc(pMD);
+        _ASSERTE(hmod != NULL);
+
+        BOOL fSuccess = FALSE;
+        LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
+        if (pvTarget)
+        {
+            pMD->SetNDirectTarget(pvTarget);
+            fSuccess = TRUE;
+        }
+
+        if (!fSuccess)
+        {
+            StackSString ssLibName(SString::Utf8, pMD->GetLibName());
+
+            WCHAR wszEPName[50];
+            if (WszMultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
+            {
+                wszEPName[0] = W('?');
+                wszEPName[1] = W('\0');
+            }
+#ifdef TARGET_UNIX
+            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_UNIX, ssLibName.GetUnicode(), wszEPName);
+#else
+            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_WIN, ssLibName.GetUnicode(), wszEPName);
+#endif
+        }
+    }
+}
+
 PCODE NDirect::GetStubForILStub(MethodDesc* pManagedMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
 {
     CONTRACT(PCODE)
@@ -5424,24 +5665,6 @@ void CreateCLRToDispatchCOMStub(
 
 #endif // FEATURE_COMINTEROP
 
-/*static*/
-LPVOID NDirect::NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
-{
-    // GetProcAddress cannot be called while preemptive GC is disabled.
-    // It requires the OS to take the loader lock.
-    CONTRACT(LPVOID)
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMD));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    g_IBCLogger.LogNDirectCodeAccess(pMD);
-
-    RETURN pMD->FindEntryPoint(hMod);
-}
-
 VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
 {
     CONTRACTL
@@ -5458,979 +5681,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     NDirectWriteableData* pWriteableData = GetWriteableData();
     g_IBCLogger.LogNDirectCodeAccess(this);
     pWriteableData->m_pNDirectTarget = pTarget;
-}
-
-
-
-// Preserving good error info from DllImport-driven LoadLibrary is tricky because we keep loading from different places
-// if earlier loads fail and those later loads obliterate error codes.
-//
-// This tracker object will keep track of the error code in accordance to priority:
-//
-//   low-priority:      unknown error code (should never happen)
-//   medium-priority:   dll not found
-//   high-priority:     dll found but error during loading
-//
-// We will overwrite the previous load's error code only if the new error code is higher priority.
-//
-
-class LoadLibErrorTracker
-{
-private:
-    static const DWORD const_priorityNotFound     = 10;
-    static const DWORD const_priorityAccessDenied = 20;
-    static const DWORD const_priorityCouldNotLoad = 99999;
-public:
-    LoadLibErrorTracker()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_hr = E_FAIL;
-        m_priorityOfLastError = 0;
-    }
-
-    VOID TrackErrorCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        DWORD priority;
-
-#ifdef TARGET_UNIX
-
-        SetMessage(PAL_GetLoadLibraryError());
-#else
-
-        DWORD dwLastError = GetLastError();
-
-        switch (dwLastError)
-        {
-            case ERROR_FILE_NOT_FOUND:
-            case ERROR_PATH_NOT_FOUND:
-            case ERROR_MOD_NOT_FOUND:
-            case ERROR_DLL_NOT_FOUND:
-                priority = const_priorityNotFound;
-                break;
-
-            // If we can't access a location, we can't know if the dll's there or if it's good.
-            // Still, this is probably more unusual (and thus of more interest) than a dll-not-found
-            // so give it an intermediate priority.
-            case ERROR_ACCESS_DENIED:
-                priority = const_priorityAccessDenied;
-
-            // Assume all others are "dll found but couldn't load."
-            default:
-                priority = const_priorityCouldNotLoad;
-                break;
-        }
-        UpdateHR(priority, HRESULT_FROM_WIN32(dwLastError));
-#endif
-    }
-
-    // Sets the error code to HRESULT as could not load DLL
-    void TrackHR_CouldNotLoad(HRESULT hr)
-    {
-        UpdateHR(const_priorityCouldNotLoad, hr);
-    }
-
-    HRESULT GetHR()
-    {
-        return m_hr;
-    }
-
-    SString& GetMessage()
-    {
-        return m_message;
-    }
-
-    void DECLSPEC_NORETURN Throw(SString &libraryNameOrPath)
-    {
-        STANDARD_VM_CONTRACT;
-
-#if defined(__APPLE__)
-        COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_MAC, libraryNameOrPath.GetUnicode(), GetMessage());
-#elif defined(TARGET_UNIX)
-        COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_LINUX, libraryNameOrPath.GetUnicode(), GetMessage());
-#else // __APPLE__
-        HRESULT theHRESULT = GetHR();
-        if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))
-        {
-            COMPlusThrow(kBadImageFormatException);
-        }
-        else
-        {
-            SString hrString;
-            GetHRMsg(theHRESULT, hrString);
-            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_WIN, libraryNameOrPath.GetUnicode(), hrString);
-        }
-#endif // TARGET_UNIX
-
-        __UNREACHABLE();
-    }
-
-private:
-    void UpdateHR(DWORD priority, HRESULT hr)
-    {
-        if (priority > m_priorityOfLastError)
-        {
-            m_hr                  = hr;
-            m_priorityOfLastError = priority;
-        }
-    }
-
-    void SetMessage(LPCSTR message)
-    {
-        m_message = SString(SString::Utf8, message);
-    }
-
-    HRESULT m_hr;
-    DWORD   m_priorityOfLastError;
-    SString  m_message;
-};  // class LoadLibErrorTracker
-
-// Load the library directly and return the raw system handle
-static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
-{
-    STANDARD_VM_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-#ifndef TARGET_UNIX
-
-    if ((flags & 0xFFFFFF00) != 0)
-    {
-        hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFFFFFF00);
-        if (hmod != NULL)
-        {
-            return hmod;
-        }
-
-        DWORD dwLastError = GetLastError();
-        if (dwLastError != ERROR_INVALID_PARAMETER)
-        {
-            pErrorTracker->TrackErrorCode();
-            return hmod;
-        }
-    }
-
-    hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFF);
-
-#else // !TARGET_UNIX
-    hmod = PAL_LoadLibraryDirect(name);
-#endif // !TARGET_UNIX
-
-    if (hmod == NULL)
-    {
-        pErrorTracker->TrackErrorCode();
-    }
-
-    return hmod;
-}
-
-#define TOLOWER(a) (((a) >= W('A') && (a) <= W('Z')) ? (W('a') + (a - W('A'))) : (a))
-#define TOHEX(a)   ((a)>=10 ? W('a')+(a)-10 : W('0')+(a))
-
-#ifdef TARGET_UNIX
-#define PLATFORM_SHARED_LIB_SUFFIX_W PAL_SHLIB_SUFFIX_W
-#define PLATFORM_SHARED_LIB_PREFIX_W PAL_SHLIB_PREFIX_W
-#else // !TARGET_UNIX
-#define PLATFORM_SHARED_LIB_SUFFIX_W W(".dll")
-#define PLATFORM_SHARED_LIB_PREFIX_W W("")
-#endif // !TARGET_UNIX
-
-// The Bit 0x2 has different semantics in DllImportSearchPath and LoadLibraryExA flags.
-// In DllImportSearchPath enum, bit 0x2 represents SearchAssemblyDirectory -- which is performed by CLR.
-// Unlike other bits in this enum, this bit shouldn't be directly passed on to LoadLibrary()
-#define DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY 0x2
-
-// DllImportSearchPathFlags is a special enumeration, whose values are tied closely with LoadLibrary flags.
-// There is no "default" value DllImportSearchPathFlags. In the absence of DllImportSearchPath attribute,
-// CoreCLR's LoadLibrary implementation uses the following defaults.
-// Other implementations of LoadLibrary callbacks/events are free to use other default conventions.
-void GetDefaultDllImportSearchPathFlags(DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
-{
-    STANDARD_VM_CONTRACT;
-
-    *searchAssemblyDirectory = TRUE;
-    *dllImportSearchPathFlags = 0;
-}
-
-// If a module has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and return true.
-// Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-BOOL GetDllImportSearchPathFlags(Module *pModule, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (pModule->HasDefaultDllImportSearchPathsAttribute())
-    {
-        *dllImportSearchPathFlags = pModule->DefaultDllImportSearchPathsAttributeCachedValue();
-        *searchAssemblyDirectory = pModule->DllImportSearchAssemblyDirectory();
-        return TRUE;
-    }
-
-    GetDefaultDllImportSearchPathFlags(dllImportSearchPathFlags, searchAssemblyDirectory);
-    return FALSE;
-}
-
-// If a pInvoke has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
-// Otherwise, if the containing assembly has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
-// Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-BOOL GetDllImportSearchPathFlags(NDirectMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (pMD->HasDefaultDllImportSearchPathsAttribute())
-    {
-        *dllImportSearchPathFlags = pMD->DefaultDllImportSearchPathsAttributeCachedValue();
-        *searchAssemblyDirectory = pMD->DllImportSearchAssemblyDirectory();
-        return TRUE;
-    }
-
-    return GetDllImportSearchPathFlags(pMD->GetModule(), dllImportSearchPathFlags, searchAssemblyDirectory);
-}
-
-// static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(libraryPath));
-    }
-    CONTRACTL_END;
-
-    LoadLibErrorTracker errorTracker;
-    const NATIVE_LIBRARY_HANDLE hmod =
-        LocalLoadLibraryHelper(libraryPath, GetLoadWithAlteredSearchPathFlag(), &errorTracker);
-
-    if (throwOnError && (hmod == nullptr))
-    {
-        SString libraryPathSString(libraryPath);
-        errorTracker.Throw(libraryPathSString);
-    }
-    return hmod;
-}
-
-// static
-void NDirect::FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(handle != NULL);
-
-#ifndef TARGET_UNIX
-    BOOL retVal = FreeLibrary(handle);
-#else // !TARGET_UNIX
-    BOOL retVal = PAL_FreeLibraryDirect(handle);
-#endif // !TARGET_UNIX
-
-    if (retVal == 0)
-        COMPlusThrow(kInvalidOperationException, W("Arg_InvalidOperationException"));
-}
-
-//static
-INT_PTR NDirect::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(handle));
-        PRECONDITION(CheckPointer(symbolName));
-    }
-    CONTRACTL_END;
-
-    MAKE_UTF8PTR_FROMWIDE(lpstr, symbolName);
-
-#ifndef TARGET_UNIX
-    INT_PTR address = reinterpret_cast<INT_PTR>(GetProcAddress((HMODULE)handle, lpstr));
-    if ((address == NULL) && throwOnError)
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL, symbolName);
-#else // !TARGET_UNIX
-    INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect(handle, lpstr));
-    if ((address == NULL) && throwOnError)
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO, symbolName);
-#endif // !TARGET_UNIX
-
-    return address;
-}
-
-namespace
-{
-#ifndef TARGET_UNIX
-    BOOL IsWindowsAPISet(PCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-        // This is replicating quick check from the OS implementation of api sets.
-        return SString::_wcsnicmp(wszLibName, W("api-"), 4) == 0 ||
-               SString::_wcsnicmp(wszLibName, W("ext-"), 4) == 0;
-    }
-#endif // !TARGET_UNIX
-
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContext(Assembly * pAssembly, PCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-#ifndef TARGET_UNIX
-        if (IsWindowsAPISet(wszLibName))
-        {
-            // Prevent Overriding of Windows API sets.
-            return NULL;
-        }
-#endif // !TARGET_UNIX
-
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
-        AppDomain* pDomain = GetAppDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-
-        PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
-
-        //Step 0: Check if  the assembly was bound using TPA.
-        //        The Binding Context can be null or an overridden TPA context
-        if (pBindingContext == NULL)
-        {
-            // If we do not have any binder associated, then return to the default resolution mechanism.
-            return NULL;
-        }
-
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
-        if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
-        {
-            return NULL;
-        }
-
-        //Step 1: If the assembly was not bound using TPA,
-        //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
-        //        The custom assembly context a chance to load the unmanaged dll.
-
-        GCX_COOP();
-
-        STRINGREF pUnmanagedDllName;
-        pUnmanagedDllName = StringObject::NewString(wszLibName);
-
-        GCPROTECT_BEGIN(pUnmanagedDllName);
-
-        // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
-
-        // Make the call
-        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
-
-        GCPROTECT_END();
-
-        return hmod;
-    }
-
-    // Return the AssemblyLoadContext for an assembly
-    INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
-    {
-        STANDARD_VM_CONTRACT;
-
-        PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
-        if (pBindingContext == NULL)
-        {
-            // GetBindingContext() returns NULL for System.Private.CoreLib
-            return NULL;
-        }
-
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        AppDomain *pDomain = GetAppDomain();
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // The code here deals with two implementations of ICLRPrivBinder interface:
-        //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and
-        //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
-        // in order obtain the associated ALC handle.
-        INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
-            ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext()
-            : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-        return ptrManagedAssemblyLoadContext;
-    }
-
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-        INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-        if (ptrManagedAssemblyLoadContext == NULL)
-        {
-            return NULL;
-        }
-
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-        GCX_COOP();
-
-        struct {
-            STRINGREF DllName;
-            OBJECTREF AssemblyRef;
-        } gc = { NULL, NULL };
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.DllName = StringObject::NewString(wszLibName);
-        gc.AssemblyRef = pAssembly->GetExposedObject();
-
-        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
-        // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
-        // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
-        // as an additional argument.
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
-
-        // Make the call
-        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
-
-        GCPROTECT_END();
-
-        return hmod;
-    }
-
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-        if (pMD->GetModule()->IsSystem())
-        {
-            // Don't attempt to callback on Corelib itself.
-            // The LoadLibrary callback stub is managed code that requires CoreLib
-            return NULL;
-        }
-
-        DWORD dllImportSearchPathFlags;
-        BOOL searchAssemblyDirectory;
-        BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
-        dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
-
-        Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-        NATIVE_LIBRARY_HANDLE handle = NULL;
-
-        GCX_COOP();
-
-        struct {
-            STRINGREF libNameRef;
-            OBJECTREF assemblyRef;
-        } gc = { NULL, NULL };
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.libNameRef = StringObject::NewString(wszLibName);
-        gc.assemblyRef = pAssembly->GetExposedObject();
-
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.libNameRef);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.assemblyRef);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(hasDllImportSearchPathFlags);
-        args[ARGNUM_3] = DWORD_TO_ARGHOLDER(dllImportSearchPathFlags);
-
-         // Make the call
-        CALL_MANAGED_METHOD(handle, NATIVE_LIBRARY_HANDLE, args);
-        GCPROTECT_END();
-
-        return handle;
-    }
-
-    // Try to load the module alongside the assembly where the PInvoke was declared.
-    NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
-    {
-        STANDARD_VM_CONTRACT;
-
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-        SString path = pAssembly->GetManifestFile()->GetPath();
-
-        SString::Iterator lastPathSeparatorIter = path.End();
-        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
-        {
-            lastPathSeparatorIter++;
-            path.Truncate(lastPathSeparatorIter);
-
-            path.Append(libName);
-            hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
-        }
-
-        return hmod;
-    }
-
-    // Try to load the module from the native DLL search directories
-    NATIVE_LIBRARY_HANDLE LoadFromNativeDllSearchDirectories(LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
-    {
-        STANDARD_VM_CONTRACT;
-
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
-        AppDomain* pDomain = GetAppDomain();
-
-        if (pDomain->HasNativeDllSearchDirectories())
-        {
-            AppDomain::PathIterator pathIter = pDomain->IterateNativeDllSearchDirectories();
-            while (hmod == NULL && pathIter.Next())
-            {
-                SString qualifiedPath(*(pathIter.GetPath()));
-                qualifiedPath.Append(libName);
-                if (!Path::IsRelative(qualifiedPath))
-                {
-                    hmod = LocalLoadLibraryHelper(qualifiedPath, flags, pErrorTracker);
-                }
-            }
-        }
-
-        return hmod;
-    }
-
-#ifdef TARGET_UNIX
-    const int MaxVariationCount = 4;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
-    {
-        // Supported lib name variations
-        static auto NameFmt = W("%.0s%s%.0s");
-        static auto PrefixNameFmt = W("%s%s%.0s");
-        static auto NameSuffixFmt = W("%.0s%s%s");
-        static auto PrefixNameSuffixFmt = W("%s%s%s");
-
-        _ASSERTE(*numberOfVariations >= MaxVariationCount);
-
-        int varCount = 0;
-        if (!libNameIsRelativePath)
-        {
-            libNameVariations[varCount++] = NameFmt;
-        }
-        else
-        {
-            // We check if the suffix is contained in the name, because on Linux it is common to append
-            // a version number to the library name (e.g. 'libicuuc.so.57').
-            bool containsSuffix = false;
-            SString::CIterator it = libName.Begin();
-            if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
-            {
-                it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
-                containsSuffix = it == libName.End() || *it == (WCHAR)'.';
-            }
-
-            // If the path contains a path delimiter, we don't add a prefix
-            it = libName.Begin();
-            bool containsDelim = libName.Find(it, DIRECTORY_SEPARATOR_STR_W);
-
-            if (containsSuffix)
-            {
-                libNameVariations[varCount++] = NameFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameFmt;
-
-                libNameVariations[varCount++] = NameSuffixFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameSuffixFmt;
-            }
-            else
-            {
-                libNameVariations[varCount++] = NameSuffixFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameSuffixFmt;
-
-                libNameVariations[varCount++] = NameFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameFmt;
-            }
-        }
-
-        *numberOfVariations = varCount;
-    }
-#else // TARGET_UNIX
-    const int MaxVariationCount = 2;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
-    {
-        // Supported lib name variations
-        static auto NameFmt = W("%.0s%s%.0s");
-        static auto NameSuffixFmt = W("%.0s%s%s");
-
-        _ASSERTE(*numberOfVariations >= MaxVariationCount);
-
-        int varCount = 0;
-
-        // The purpose of following code is to workaround LoadLibrary limitation:
-        // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
-        // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
-        // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
-        auto it = libName.Begin();
-        if (!libNameIsRelativePath ||
-            !libName.Find(it, W('.')) ||
-            libName.EndsWith(W(".")) ||
-            libName.EndsWithCaseInsensitive(W(".dll")) ||
-            libName.EndsWithCaseInsensitive(W(".exe")))
-        {
-            // Follow LoadLibrary rules in MSDN doc: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx
-            // If the string specifies a full path, the function searches only that path for the module.
-            // If the string specifies a module name without a path and the file name extension is omitted, the function appends the default library extension .dll to the module name.
-            // To prevent the function from appending .dll to the module name, include a trailing point character (.) in the module name string.
-            libNameVariations[varCount++] = NameFmt;
-        }
-        else
-        {
-            libNameVariations[varCount++] = NameFmt;
-            libNameVariations[varCount++] = NameSuffixFmt;
-        }
-
-        *numberOfVariations = varCount;
-    }
-#endif // TARGET_UNIX
-
-    // Search for the library and variants of its name in probing directories.
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly,
-                                                    BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags,
-                                                    LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
-        // Try to go straight to System32 for Windows API sets. This is replicating quick check from
-        // the OS implementation of api sets.
-        if (IsWindowsAPISet(wszLibName))
-        {
-            hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
-            if (hmod != NULL)
-            {
-                return hmod;
-            }
-        }
-#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
-
-        if (g_hostpolicy_embedded)
-        {
-#ifdef TARGET_WINDOWS
-            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
-            {
-                return WszGetModuleHandle(NULL);
-            }
-#else
-            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
-            {
-                return PAL_LoadLibraryDirect(NULL);
-            }
-#endif
-        }
-
-        AppDomain* pDomain = GetAppDomain();
-        DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
-        bool libNameIsRelativePath = Path::IsRelative(wszLibName);
-
-        // P/Invokes are often declared with variations on the actual library name.
-        // For example, it's common to leave off the extension/suffix of the library
-        // even if it has one, or to leave off a prefix like "lib" even if it has one
-        // (both of these are typically done to smooth over cross-platform differences).
-        // We try to dlopen with such variations on the original.
-        const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
-        int numberOfVariations = COUNTOF(prefixSuffixCombinations);
-        DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
-        for (int i = 0; i < numberOfVariations; i++)
-        {
-            SString currLibNameVariation;
-            currLibNameVariation.Printf(prefixSuffixCombinations[i], PLATFORM_SHARED_LIB_PREFIX_W, wszLibName, PLATFORM_SHARED_LIB_SUFFIX_W);
-
-            // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
-            hmod = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);
-            if (hmod != NULL)
-            {
-                return hmod;
-            }
-
-            if (!libNameIsRelativePath)
-            {
-                DWORD flags = loadWithAlteredPathFlags;
-                if ((dllImportSearchPathFlags & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0)
-                {
-                    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is the only flag affecting absolute path. Don't OR the flags
-                    // unconditionally as all absolute path P/Invokes could then lose LOAD_WITH_ALTERED_SEARCH_PATH.
-                    flags |= dllImportSearchPathFlags;
-                }
-
-                hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker);
-                if (hmod != NULL)
-                {
-                    return hmod;
-                }
-            }
-            else if ((callingAssembly != nullptr) && searchAssemblyDirectory)
-            {
-                hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
-                if (hmod != NULL)
-                {
-                    return hmod;
-                }
-            }
-
-            hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
-            if (hmod != NULL)
-            {
-                return hmod;
-            }
-        }
-
-        // This may be an assembly name
-        // Format is "fileName, assemblyDisplayName"
-        MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
-        char *szComma = strchr(szLibName, ',');
-        if (szComma)
-        {
-            *szComma = '\0';
-            // Trim white spaces
-            while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
-
-            AssemblySpec spec;
-            if (SUCCEEDED(spec.Init(szComma)))
-            {
-                // Need to perform case insensitive hashing.
-                SString moduleName(SString::Utf8, szLibName);
-                moduleName.LowerCase();
-
-                StackScratchBuffer buffer;
-                szLibName = (LPSTR)moduleName.GetUTF8(buffer);
-
-                Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
-                Module *pModule = pAssembly->FindModuleByName(szLibName);
-
-                hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
-            }
-        }
-
-        return hmod;
-    }
-
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-        BOOL searchAssemblyDirectory;
-        DWORD dllImportSearchPathFlags;
-
-        GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
-
-        Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
-        return LoadNativeLibraryBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
-    }
-}
-
-// static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *callingAssembly,
-    BOOL hasDllImportSearchFlags, DWORD dllImportSearchFlags,
-    BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(libraryName));
-        PRECONDITION(CheckPointer(callingAssembly));
-    }
-    CONTRACTL_END;
-
-    NATIVE_LIBRARY_HANDLE hmod = nullptr;
-
-    // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
-    hmod = LoadNativeLibraryViaAssemblyLoadContext(callingAssembly, libraryName);
-    if (hmod != nullptr)
-        return hmod;
-
-    // Check if a default dllImportSearchPathFlags was passed in. If so, use that value.
-    // Otherwise, check if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
-    // If so, use that value.
-    BOOL searchAssemblyDirectory;
-    DWORD dllImportSearchPathFlags;
-    if (hasDllImportSearchFlags)
-    {
-        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-        searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-
-    }
-    else
-    {
-        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
-                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
-    }
-
-    LoadLibErrorTracker errorTracker;
-    hmod = LoadNativeLibraryBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
-    if (hmod != nullptr)
-        return hmod;
-
-    // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
-    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(callingAssembly, libraryName);
-    if (hmod != nullptr)
-        return hmod;
-
-    if (throwOnError)
-    {
-        SString libraryPathSString(libraryName);
-        errorTracker.Throw(libraryPathSString);
-    }
-
-    return hmod;
-}
-
-NATIVE_LIBRARY_HANDLE NDirect::LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION( CheckPointer( pMD ) );
-    }
-    CONTRACTL_END;
-
-    LPCUTF8 name = pMD->GetLibName();
-    if ( !name || !*name )
-        return NULL;
-
-    PREFIX_ASSUME( name != NULL );
-    MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
-
-    NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
-    if (hmod != NULL)
-    {
-        return hmod.Extract();
-    }
-
-    AppDomain* pDomain = GetAppDomain();
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-
-    hmod = LoadNativeLibraryViaAssemblyLoadContext(pAssembly, wszLibName);
-    if (hmod != NULL)
-    {
-        return hmod.Extract();
-    }
-
-    hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
-    if (hmod != NULL)
-    {
-       return hmod.Extract();
-    }
-
-    hmod = LoadNativeLibraryBySearch(pMD, pErrorTracker, wszLibName);
-    if (hmod != NULL)
-    {
-        // If we have a handle add it to the cache.
-        pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
-        return hmod.Extract();
-    }
-
-    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(pAssembly, wszLibName);
-    if (hmod != NULL)
-    {
-        return hmod.Extract();
-    }
-
-    return hmod.Extract();
-}
-
-//---------------------------------------------------------
-// Loads the DLL and finds the procaddress for an N/Direct call.
-//---------------------------------------------------------
-/* static */
-VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    //
-    // On the phone, we only allow platform assemblies to define pinvokes
-    // unless the host has asked us otherwise.
-    //
-
-    if (pMD->IsClassConstructorTriggeredAtLinkTime())
-    {
-        pMD->GetMethodTable()->CheckRunClassInitThrowing();
-    }
-
-    if (pMD->IsQCall())
-    {
-        LPVOID pvTarget = pMD->ndirect.m_pNativeNDirectTarget;
-
-        // Do not repeat the lookup if the QCall was hardbound during ngen
-        if (pvTarget == NULL)
-        {
-            pvTarget = ECall::GetQCallImpl(pMD);
-        }
-        else
-        {
-            _ASSERTE(pvTarget == ECall::GetQCallImpl(pMD));
-        }
-
-        pMD->SetNDirectTarget(pvTarget);
-        return;
-    }
-
-    // Loading unmanaged dlls can trigger dllmains which certainly count as code execution!
-    pMD->EnsureActive();
-
-    {
-        LPVOID pvTarget = (LPVOID)PInvokeOverride::GetMethodImpl(pMD->GetLibNameRaw(), pMD->GetEntrypointName());
-        if (pvTarget != NULL)
-        {
-            pMD->SetNDirectTarget(pvTarget);
-            return;
-        }
-    }
-
-    LoadLibErrorTracker errorTracker;
-
-    BOOL fSuccess = FALSE;
-    NATIVE_LIBRARY_HANDLE hmod = LoadNativeLibrary( pMD, &errorTracker );
-    if ( hmod )
-    {
-        LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
-        if (pvTarget)
-        {
-            pMD->SetNDirectTarget(pvTarget);
-            fSuccess = TRUE;
-        }
-    }
-
-    if (!fSuccess)
-    {
-        if (pMD->GetLibName() == NULL)
-            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_NONAME);
-
-        StackSString ssLibName(SString::Utf8, pMD->GetLibName());
-
-        if (!hmod)
-        {
-            errorTracker.Throw(ssLibName);
-        }
-
-        WCHAR wszEPName[50];
-        if (WszMultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
-        {
-            wszEPName[0] = W('?');
-            wszEPName[1] = W('\0');
-        }
-#ifdef TARGET_UNIX
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_UNIX, ssLibName.GetUnicode(), wszEPName);
-#else
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_WIN, ssLibName.GetUnicode(), wszEPName);
-#endif
-    }
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
@@ -6547,7 +5797,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
             pMD->CheckRestore();
 
-            NDirect::NDirectLink(pMD);
+            NDirectLink(pMD);
         }
     }
 
@@ -6761,18 +6011,3 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 #endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
-
-//
-// Truncates a SString by first converting it to unicode and truncate it
-// if it is larger than size. "..." will be appended if it is truncated.
-//
-void TruncateUnicodeString(SString &string, COUNT_T bufSize)
-{
-    string.Normalize();
-    if ((string.GetCount() + 1) * sizeof(WCHAR) > bufSize)
-    {
-        _ASSERTE(bufSize / sizeof(WCHAR) > 4);
-        string.Truncate(string.Begin() + bufSize / sizeof(WCHAR) - 4);
-        string.Append(W("..."));
-    }
-}

@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -266,6 +268,46 @@ namespace System.Collections.Tests
             {
                 Clear(collection);
                 Assert.Equal(0, Count(collection));
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void IGenericSharedAPI_ClearOrRemove_ReferenceRemovedFromCollection(bool useRemove)
+        {
+            if (typeof(T).IsValueType || IsReadOnly)
+            {
+                return;
+            }
+
+            IEnumerable<T> collection = GenericIEnumerableFactory();
+
+            WeakReference<object> wr = PopulateAndRemove(collection, useRemove);
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                GC.Collect();
+                return !wr.TryGetTarget(out _);
+            }, 30_000));
+            GC.KeepAlive(collection);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            WeakReference<object> PopulateAndRemove(IEnumerable<T> collection, bool useRemove)
+            {
+                AddToCollection(collection, 1);
+                T value = collection.First();
+
+                if (useRemove)
+                {
+                    Assert.True(Remove(collection));
+                }
+                else
+                {
+                    Clear(collection);
+                }
+                Assert.Equal(0, Count(collection));
+
+                return new WeakReference<object>(value);
             }
         }
 

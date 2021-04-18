@@ -739,6 +739,39 @@ public:
 
 #define OFFSETOF__PtrArray__m_Array_              ARRAYBASE_SIZE
 
+/* Corresponds to the managed Span<T> and ReadOnlySpan<T> types.
+   This should only ever be passed from the managed to the unmanaged world byref,
+   as any copies of this struct made within the unmanaged world will not observe
+   potential GC relocations of the source data. */
+template < class KIND >
+class Span
+{
+private:
+    /* Keep fields below in sync with managed Span / ReadOnlySpan layout. */
+    KIND* _pointer;
+    unsigned int _length;
+
+public:
+    // !! CAUTION !!
+    // Caller must take care not to reassign returned reference if this span corresponds
+    // to a managed ReadOnlySpan<T>. If KIND is a reference type, caller must use a
+    // helper like SetObjectReference instead of assigning values directly to the
+    // reference location.
+    KIND& GetAt(SIZE_T index)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        _ASSERTE(index < GetLength());
+        return _pointer[index];
+    }
+
+    // Gets the length (in elements) of this span.
+    __inline SIZE_T GetLength() const
+    {
+        return _length;
+    }
+};
+
 /* a TypedByRef is a structure that is used to implement VB's BYREF variants.
    it is basically a tuple of an address of some data along with a TypeHandle
    that indicates the type of the address */

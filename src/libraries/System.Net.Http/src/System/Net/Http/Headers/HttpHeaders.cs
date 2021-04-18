@@ -1317,7 +1317,7 @@ namespace System.Net.Http.Headers
 
         #region Private Classes
 
-        internal class HeaderStoreItemInfo
+        internal sealed class HeaderStoreItemInfo
         {
             internal HeaderStoreItemInfo() { }
 

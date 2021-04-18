@@ -6,7 +6,7 @@ using System.Net.Sockets;
 namespace System.Net.NetworkInformation
 {
     // UDP statistics.
-    internal class SystemUdpStatistics : UdpStatistics
+    internal sealed class SystemUdpStatistics : UdpStatistics
     {
         private readonly Interop.IpHlpApi.MibUdpStats _stats;
 

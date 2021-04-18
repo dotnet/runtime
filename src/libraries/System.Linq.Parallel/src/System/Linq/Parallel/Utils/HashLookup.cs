@@ -17,7 +17,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TKey">The kind of keys contained within.</typeparam>
     /// <typeparam name="TValue">The kind of values contained within.</typeparam>
-    internal class HashLookup<TKey, TValue>
+    internal sealed class HashLookup<TKey, TValue>
     {
         private int[] buckets;
         private Slot[] slots;

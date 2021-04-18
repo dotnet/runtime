@@ -10,7 +10,7 @@ using System.Net;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class NetCred
+    internal sealed class NetCred
     {
         public NetCred(string username, string password)
         {

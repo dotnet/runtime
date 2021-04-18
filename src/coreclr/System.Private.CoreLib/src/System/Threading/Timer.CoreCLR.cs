@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    internal partial class TimerQueue
+    internal sealed partial class TimerQueue
     {
         #region interface to native per-AppDomain timer
 

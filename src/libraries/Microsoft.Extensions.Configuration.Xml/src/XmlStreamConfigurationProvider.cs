@@ -407,7 +407,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// <summary>
     /// Helper class to build the configuration keys in a way that does not require string.Join
     /// </summary>
-    internal class Prefix
+    internal sealed class Prefix
     {
         private readonly StringBuilder _sb;
         private readonly Stack<int> _lengths;

@@ -506,7 +506,7 @@ namespace System.Buffers
                 }
             }
 
-            return string.Format("System.Buffers.ReadOnlySequence<{0}>[{1}]", typeof(T).Name, Length);
+            return $"System.Buffers.ReadOnlySequence<{typeof(T).Name}>[{Length}]";
         }
 
         /// <summary>

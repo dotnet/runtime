@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.Qil
     /// <remarks>
     /// Don't construct QIL nodes directly; instead, use the <see cref="QilFactory">QilFactory</see>.
     /// </remarks>
-    internal class QilChoice : QilBinary
+    internal sealed class QilChoice : QilBinary
     {
         //-----------------------------------------------
         // Constructor

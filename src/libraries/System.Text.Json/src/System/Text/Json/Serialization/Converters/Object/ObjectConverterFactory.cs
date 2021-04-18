@@ -5,13 +5,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
     /// Converter factory for all object-based types (non-enumerable and non-primitive).
     /// </summary>
-    internal class ObjectConverterFactory : JsonConverterFactory
+    internal sealed class ObjectConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {
@@ -44,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
                 {
-                    Type placeHolderType = JsonClassInfo.ObjectType;
+                    Type placeHolderType = JsonTypeInfo.ObjectType;
                     Type[] typeArguments = new Type[JsonConstants.UnboxedParameterCountThreshold + 1];
 
                     typeArguments[0] = typeToConvert;

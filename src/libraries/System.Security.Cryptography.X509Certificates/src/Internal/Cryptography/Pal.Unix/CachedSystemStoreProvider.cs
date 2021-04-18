@@ -20,20 +20,17 @@ namespace Internal.Cryptography.Pal
         // followed by a reboot for a kernel update, etc).
         // Customers requested something more often than "never" and 5 minutes seems like a reasonable
         // balance.
-        //
-        // Note that on Ubuntu the LastWrite test always fails, because the system default for SSL_CERT_DIR
-        // is a symlink, so the LastWrite value is always just when the symlink was created (and Ubuntu does
-        // not provide the single-file version at SSL_CERT_FILE, so the file update does not trigger) --
-        // meaning the "assume invalid" interval is Ubuntu's only refresh.
         private static readonly TimeSpan s_lastWriteRecheckInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan s_assumeInvalidInterval = TimeSpan.FromMinutes(5);
         private static readonly Stopwatch s_recheckStopwatch = new Stopwatch();
         private static readonly DirectoryInfo? s_rootStoreDirectoryInfo = SafeOpenRootDirectoryInfo();
+        private static readonly DirectoryInfo? s_rootLinkedStoreDirectoryInfo = SafeOpenLinkedRootDirectoryInfo();
         private static readonly FileInfo? s_rootStoreFileInfo = SafeOpenRootFileInfo();
 
         // Use non-Value-Tuple so that it's an atomic update.
         private static Tuple<SafeX509StackHandle, SafeX509StackHandle>? s_nativeCollections;
         private static DateTime s_directoryCertsLastWrite;
+        private static DateTime s_linkCertsLastWrite;
         private static DateTime s_fileCertsLastWrite;
 
         private readonly bool _isRoot;
@@ -101,16 +98,19 @@ namespace Internal.Cryptography.Pal
                 {
                     FileInfo? fileInfo = s_rootStoreFileInfo;
                     DirectoryInfo? dirInfo = s_rootStoreDirectoryInfo;
+                    DirectoryInfo? linkInfo = s_rootLinkedStoreDirectoryInfo;
 
                     fileInfo?.Refresh();
                     dirInfo?.Refresh();
+                    linkInfo?.Refresh();
 
                     if (ret == null ||
                         elapsed > s_assumeInvalidInterval ||
                         (fileInfo != null && fileInfo.Exists && fileInfo.LastWriteTimeUtc != s_fileCertsLastWrite) ||
-                        (dirInfo != null && dirInfo.Exists && dirInfo.LastWriteTimeUtc != s_directoryCertsLastWrite))
+                        (dirInfo != null && dirInfo.Exists && dirInfo.LastWriteTimeUtc != s_directoryCertsLastWrite) ||
+                        (linkInfo != null && linkInfo.Exists && linkInfo.LastWriteTimeUtc != s_linkCertsLastWrite))
                     {
-                        ret = LoadMachineStores(dirInfo, fileInfo);
+                        ret = LoadMachineStores(dirInfo, fileInfo, linkInfo);
                     }
                 }
             }
@@ -121,7 +121,8 @@ namespace Internal.Cryptography.Pal
 
         private static Tuple<SafeX509StackHandle, SafeX509StackHandle> LoadMachineStores(
             DirectoryInfo? rootStorePath,
-            FileInfo? rootStoreFile)
+            FileInfo? rootStoreFile,
+            DirectoryInfo? linkedRootPath)
         {
             Debug.Assert(
                 Monitor.IsEntered(s_recheckStopwatch),
@@ -134,6 +135,7 @@ namespace Internal.Cryptography.Pal
 
             DateTime newFileTime = default;
             DateTime newDirTime = default;
+            DateTime newLinkTime = default;
 
             var uniqueRootCerts = new HashSet<X509Certificate2>();
             var uniqueIntermediateCerts = new HashSet<X509Certificate2>();
@@ -151,6 +153,11 @@ namespace Internal.Cryptography.Pal
                 {
                     ProcessFile(file);
                 }
+            }
+
+            if (linkedRootPath != null && linkedRootPath.Exists)
+            {
+                newLinkTime = linkedRootPath.LastWriteTimeUtc;
             }
 
             void ProcessFile(FileInfo file)
@@ -248,6 +255,7 @@ namespace Internal.Cryptography.Pal
             Volatile.Write(ref s_nativeCollections, newCollections);
             s_directoryCertsLastWrite = newDirTime;
             s_fileCertsLastWrite = newFileTime;
+            s_linkCertsLastWrite = newLinkTime;
             s_recheckStopwatch.Restart();
             return newCollections;
         }
@@ -278,6 +286,44 @@ namespace Internal.Cryptography.Pal
 
             if (!string.IsNullOrEmpty(rootDirectory))
             {
+                try
+                {
+                    return new DirectoryInfo(rootDirectory);
+                }
+                catch (ArgumentException)
+                {
+                    // If SSL_CERT_DIR is set to the empty string, or anything else which gives
+                    // "The path is not of a legal form", then the GetX509RootStoreFile value is ignored.
+                }
+            }
+
+            return null;
+        }
+
+        private static DirectoryInfo? SafeOpenLinkedRootDirectoryInfo()
+        {
+            string? rootDirectory = Interop.Crypto.GetX509RootStorePath();
+
+            if (!string.IsNullOrEmpty(rootDirectory))
+            {
+                string? linkedDirectory = Interop.Sys.ReadLink(rootDirectory);
+                if (linkedDirectory == null)
+                {
+                    return null;
+                }
+
+                if (linkedDirectory[0] == '/')
+                {
+                    rootDirectory = linkedDirectory;
+                }
+                else
+                {
+                    // relative link
+                    var root = new DirectoryInfo(rootDirectory);
+                    root  = new DirectoryInfo(Path.Join(root.Parent?.FullName, linkedDirectory));
+                    rootDirectory = root.FullName;
+                }
+
                 try
                 {
                     return new DirectoryInfo(rootDirectory);

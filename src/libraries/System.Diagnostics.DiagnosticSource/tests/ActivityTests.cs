@@ -889,7 +889,7 @@ namespace System.Diagnostics.Tests
 
                 Activity parent = new Activity("parent").Start();
                 Activity activity = new Activity("child").Start();
-                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString()); ;
+                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
             }).Dispose();
         }
 

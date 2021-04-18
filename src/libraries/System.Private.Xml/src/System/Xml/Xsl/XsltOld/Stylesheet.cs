@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class Stylesheet
+    internal sealed class Stylesheet
     {
         private readonly ArrayList _imports = new ArrayList();
         private Hashtable? _modeManagers;

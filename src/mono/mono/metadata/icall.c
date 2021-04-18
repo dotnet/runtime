@@ -7302,13 +7302,6 @@ mono_icall_unlock (void)
 	mono_locks_os_release (&icall_mutex, IcallLock);
 }
 
-void
-mono_icall_cleanup (void)
-{
-	g_hash_table_destroy (icall_hash);
-	mono_os_mutex_destroy (&icall_mutex);
-}
-
 static void
 add_internal_call_with_flags (const char *name, gconstpointer method, guint32 flags)
 {

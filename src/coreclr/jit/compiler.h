@@ -78,9 +78,7 @@ struct InitVarDscInfo;     // defined in register_arg_convention.h
 class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
-#if FEATURE_ANYCSE
-class CSE_DataFlow; // defined in OptCSE.cpp
-#endif
+class CSE_DataFlow;        // defined in OptCSE.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -538,6 +536,10 @@ public:
     unsigned char lvFieldCnt; //  Number of fields in the promoted VarDsc.
     unsigned char lvFldOffset;
     unsigned char lvFldOrdinal;
+
+#ifdef DEBUG
+    unsigned char lvDisqualifyEHVarReason = 'H';
+#endif
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
@@ -1137,6 +1139,9 @@ public:
     virtual void doLinearScan()                                = 0;
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
+#if TRACK_LSRA_STATS
+    virtual void dumpLsraStatsCsv(FILE* file) = 0;
+#endif // TRACK_LSRA_STATS
 };
 
 LinearScanInterface* getLinearScanAllocator(Compiler* comp);
@@ -2738,6 +2743,7 @@ public:
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
 
     GenTree* gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
+    GenTreeIntCon* gtNewStringLiteralLength(GenTreeStrCon* node);
 
     GenTree* gtNewLconNode(__int64 value);
 
@@ -3839,6 +3845,26 @@ public:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
+
+private:
+    // For prefixFlags
+    enum
+    {
+        PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+        PREFIX_TAILCALL_IMPLICIT =
+            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL_STRESS =
+            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+        PREFIX_VOLATILE    = 0x00001000,
+        PREFIX_UNALIGNED   = 0x00010000,
+        PREFIX_CONSTRAINED = 0x00100000,
+        PREFIX_READONLY    = 0x01000000
+    };
+
+    static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
+    static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
 public:
     void impInit();
@@ -5483,7 +5509,6 @@ public:
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
     bool fgDumpFlowGraph(Phases phase);
-
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
@@ -5640,6 +5665,7 @@ protected:
 
 public:
     const char*                            fgPgoFailReason;
+    bool                                   fgPgoDisabled;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -5648,6 +5674,9 @@ public:
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoEdgeCounts;
     UINT32                                 fgPgoClassProfiles;
+    unsigned                               fgPgoInlineePgo;
+    unsigned                               fgPgoInlineeNoPgo;
+    unsigned                               fgPgoInlineeNoPgoSingleBlock;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
@@ -5822,7 +5851,6 @@ private:
                                      unsigned             argIndex,
                                      CORINFO_CLASS_HANDLE copyBlkClass);
 
-    void fgFixupStructReturn(GenTree* call);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 public:
@@ -6407,6 +6435,11 @@ public:
     LoopDsc*      optLoopTable; // loop descriptor table
     unsigned char optLoopCount; // number of tracked loops
 
+#ifdef DEBUG
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    unsigned char loopsAligned;        // number of loops actually aligned
+#endif                                 // DEBUG
+
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
                        BasicBlock*   top,
@@ -6513,6 +6546,15 @@ protected:
         }
     }
 
+    // Struct used in optInvertWhileLoop to count interesting constructs to boost the profitability score.
+    struct OptInvertCountTreeInfoType
+    {
+        int sharedStaticHelperCount;
+        int arrayLengthCount;
+    };
+
+    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+
     void optInvertWhileLoop(BasicBlock* block);
 
     bool optComputeLoopRep(int        constInit,
@@ -6541,12 +6583,7 @@ protected:
      *                       Optimization conditions
      *************************************************************************/
 
-    bool optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight);
-    bool optPentium4(void);
-    bool optAvoidIncDec(BasicBlock::weight_t bbWeight);
     bool optAvoidIntMult(void);
-
-#if FEATURE_ANYCSE
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
@@ -6707,9 +6744,6 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
-#endif // FEATURE_ANYCSE
-
-#if FEATURE_VALNUM_CSE
     /**************************************************************************
      *                   Value Number based CSEs
      *************************************************************************/
@@ -6726,9 +6760,6 @@ protected:
     void     optValnumCSE_Availablity();
     void     optValnumCSE_Heuristic();
 
-#endif // FEATURE_VALNUM_CSE
-
-#if FEATURE_ANYCSE
     bool                 optDoCSE;             // True when we have found a duplicate CSE tree
     bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
     unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
@@ -6758,8 +6789,6 @@ protected:
     bool optConfigDisableCSE2();
 #endif
     void optOptimizeCSEs();
-
-#endif // FEATURE_ANYCSE
 
     struct isVarAssgDsc
     {
@@ -7516,6 +7545,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
@@ -9394,7 +9424,7 @@ public:
     const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
-    codeOptimize compCodeOpt()
+    codeOptimize compCodeOpt() const
     {
 #if 0
         // Switching between size & speed has measurable throughput impact
@@ -9423,12 +9453,12 @@ public:
         BOOL hasCircularClassConstraints;
         BOOL hasCircularMethodConstraints;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
         double      compPerfScore;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         // Method hash is logcally const, but computed
@@ -9588,11 +9618,6 @@ public:
 
         return false;
 #endif // TARGET_AMD64
-    }
-
-    bool compDoOldStructRetyping()
-    {
-        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register

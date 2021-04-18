@@ -590,6 +590,7 @@ namespace System.Text.Json.Serialization.Tests
                     options.ReadCommentHandling = JsonCommentHandling.Disallow;
                     options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                     options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+                    options.UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode;
                 }
                 else
                 {
@@ -640,6 +641,10 @@ namespace System.Text.Json.Serialization.Tests
                     else if (property.Name == "NumberHandling")
                     {
                         Assert.Equal(options.NumberHandling, newOptions.NumberHandling);
+                    }
+                    else if (property.Name == "UnknownTypeHandling")
+                    {
+                        Assert.Equal(options.UnknownTypeHandling, newOptions.UnknownTypeHandling);
                     }
                     else
                     {

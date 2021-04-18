@@ -39,7 +39,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -49,7 +49,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.FreeBSD)]
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "Not supported on FreeBSD.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]

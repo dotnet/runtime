@@ -240,10 +240,12 @@ error:
     ReleaseGRef(env, *seed);
     *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    // Clear local BigInteger instances. On success, these are converted to global
+    // references for the out variables, so the local release is only on error.
     RELEASE_LOCALS_ENV(bn, ReleaseLRef);
 
 exit:
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return rc;
 }
 
@@ -315,7 +317,7 @@ static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
     goto cleanup;
 
 error:
-    if (loc[privateKey])
+    if (loc[privateKey] && (*env)->IsInstanceOf(env, loc[privateKey], g_DestroyableClass))
     {
         // Destroy the private key data.
         (*env)->CallVoidMethod(env, loc[privateKey], g_destroy);
@@ -323,7 +325,7 @@ error:
     }
 
 cleanup:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyPair;
 }
@@ -544,7 +546,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     keyInfo = AndroidCryptoNative_NewEcKey(AddGRef(env, loc[paramSpec]), keyPair);
 
 error:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyInfo;
 }

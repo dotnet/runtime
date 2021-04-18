@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// A QueryOperator that represents the output of the query partitioner.AsParallel().
     /// </summary>
-    internal class PartitionerQueryOperator<TElement> : QueryOperator<TElement>
+    internal sealed class PartitionerQueryOperator<TElement> : QueryOperator<TElement>
     {
         private readonly Partitioner<TElement> _partitioner; // The partitioner to use as data source.
 

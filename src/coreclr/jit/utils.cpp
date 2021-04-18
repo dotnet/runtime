@@ -657,7 +657,7 @@ const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
 
     nump = (nump == num1) ? num2 : num1;
 
-    if (refCntWtd == BB_MAX_WEIGHT)
+    if (refCntWtd >= BB_MAX_WEIGHT)
     {
         sprintf_s(temp, bufSize, "MAX   ");
     }
@@ -1705,6 +1705,11 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
             lastInfo->m_next = newInfo;
             lastInfo         = newInfo;
         }
+    }
+
+    if (fclose(methodSetFile))
+    {
+        JITDUMP("Unable to close %ws\n", filename);
     }
 
     if (m_pInfos == nullptr)

@@ -43,7 +43,7 @@ void ExInfo::CopyAndClearSource(ExInfo *from)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        if (GetThread() != NULL) MODE_COOPERATIVE; else MODE_ANY;
+        if (GetThreadNULLOk() != NULL) MODE_COOPERATIVE; else MODE_ANY;
         FORBID_FAULT;
     }
     CONTRACTL_END;
@@ -165,7 +165,7 @@ void ExInfo::UnwindExInfo(VOID* limit)
     {
         NOTHROW; // This function does not throw.
         GC_NOTRIGGER;
-        if (GetThread() != NULL) MODE_COOPERATIVE; else MODE_ANY;
+        if (GetThreadNULLOk() != NULL) MODE_COOPERATIVE; else MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -173,7 +173,7 @@ void ExInfo::UnwindExInfo(VOID* limit)
 #ifdef DEBUGGING_SUPPORTED
     // The debugger thread will be using this, even though it has no
     // Thread object associated with it.
-    _ASSERTE((GetThread() != NULL && GetThread()->PreemptiveGCDisabled()) ||
+    _ASSERTE((GetThreadNULLOk() != NULL && GetThread()->PreemptiveGCDisabled()) ||
              ((g_pDebugInterface != NULL) && (g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId())));
 #endif // DEBUGGING_SUPPORTED
 

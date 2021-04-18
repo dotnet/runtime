@@ -35,7 +35,7 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 
     if (!sInitializedMRand)
     {
-        srand48(time(NULL));
+        srand48((long int)time(NULL));
         sInitializedMRand = true;
     }
 

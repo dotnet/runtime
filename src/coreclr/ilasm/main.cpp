@@ -105,7 +105,7 @@ WCHAR       wzPdbFilename[MAX_FILENAME_LENGTH];
 extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 {
     int         i, NumFiles = 0, NumDeltaFiles = 0;
-    bool        IsDLL = false, IsOBJ = false;
+    bool        IsDLL = false;
     Assembler   *pAsm;
     MappedFileStream *pIn;
     AsmParse    *pParser;
@@ -281,13 +281,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "DLL"))
                     {
-                      IsDLL = true; IsOBJ = false;
-                    }
-                    else if (!_stricmp(szOpt, "OBJ"))
-                    {
-                      //IsOBJ = true; IsDLL = false;
-                      printf("Option /OBJECT is not supported.\n");
-                      goto ErrorExit;
+                      IsDLL = true;
                     }
                     else if (!_stricmp(szOpt, "ERR"))
                     {
@@ -608,7 +602,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                 }
                 while(j);
-                wcscat_s(wzOutputFilename, MAX_FILENAME_LENGTH,(IsDLL ? W(".dll") : (IsOBJ ? W(".obj") : W(".exe"))));
+                wcscat_s(wzOutputFilename, MAX_FILENAME_LENGTH,(IsDLL ? W(".dll") : W(".exe")));
             }
             if (pAsm->m_fGeneratePDB)
             {
@@ -644,7 +638,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 }
 
                 pAsm->SetDLL(IsDLL);
-                pAsm->SetOBJ(IsOBJ);
                 wcscpy_s(pAsm->m_wzOutputFileName,MAX_FILENAME_LENGTH,wzOutputFilename);
                 strcpy_s(pAsm->m_szSourceFileName,MAX_FILENAME_LENGTH*3+1,szInputFilename);
 
@@ -665,7 +658,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         {
                             pParser->msg("\nAssembling '%s' ", szInputFilename);
                             if(!pAsm->m_fAutoInheritFromObject) pParser->msg(" NOAUTOINHERIT");
-                            pParser->msg(IsDLL ? " to DLL" : (IsOBJ? " to OBJ" : " to EXE"));
+                            pParser->msg(IsDLL ? " to DLL" : " to EXE");
                             //======================================================================
                             if (pAsm->m_fStdMapping == FALSE)
                                 pParser->msg(", with REFERENCE mapping");
@@ -732,7 +725,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                             if(exitval == 0) // Write the output file
                             {
                                 if(bClock) cw.cFilegenEnd = GetTickCount();
-                                if(pAsm->m_fReportProgress) pParser->msg("Writing %s file\n", pAsm->m_fOBJ ? "COFF" : "PE");
+                                if(pAsm->m_fReportProgress) pParser->msg("Writing PE file\n");
                                 // Generate the file
                                 if (FAILED(hr = pAsm->m_pCeeFileGen->GenerateCeeFile(pAsm->m_pCeeFile)))
                                 {

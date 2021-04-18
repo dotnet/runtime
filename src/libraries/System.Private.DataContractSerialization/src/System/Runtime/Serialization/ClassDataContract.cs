@@ -1473,7 +1473,7 @@ namespace System.Runtime.Serialization
                 internal int baseTypeIndex;
             }
 
-            internal class DataMemberConflictComparer : IComparer<Member>
+            internal sealed class DataMemberConflictComparer : IComparer<Member>
             {
                 public int Compare(Member x, Member y)
                 {
@@ -1522,7 +1522,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal class DataMemberComparer : IComparer<DataMember>
+        internal sealed class DataMemberComparer : IComparer<DataMember>
         {
             public int Compare(DataMember? x, DataMember? y)
             {

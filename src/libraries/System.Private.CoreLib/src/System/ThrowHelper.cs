@@ -157,6 +157,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_DayNumber(int dayNumber)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dayNumber), dayNumber, SR.ArgumentOutOfRange_DayNumber);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
         {
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
@@ -639,6 +645,8 @@ namespace System
                     return "start";
                 case ExceptionArgument.format:
                     return "format";
+                case ExceptionArgument.formats:
+                    return "formats";
                 case ExceptionArgument.culture:
                     return "culture";
                 case ExceptionArgument.comparer:
@@ -911,6 +919,8 @@ namespace System
                     return SR.Argument_SpansMustHaveSameLength;
                 case ExceptionResource.Argument_InvalidFlag:
                     return SR.Argument_InvalidFlag;
+                case ExceptionResource.CancellationTokenSource_Disposed:
+                    return SR.CancellationTokenSource_Disposed;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -958,6 +968,7 @@ namespace System
         pointer,
         start,
         format,
+        formats,
         culture,
         comparer,
         comparable,
@@ -1090,5 +1101,6 @@ namespace System
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
+        CancellationTokenSource_Disposed,
     }
 }

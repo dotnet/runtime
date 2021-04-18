@@ -14,7 +14,6 @@ namespace System
     {
         protected Attribute() { }
 
-#if !CORERT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for equality")]
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -83,7 +82,6 @@ namespace System
 
             return type.GetHashCode();
         }
-#endif
 
         // Compares values of custom-attribute fields.
         private static bool AreFieldValuesEqual(object? thisValue, object? thatValue)

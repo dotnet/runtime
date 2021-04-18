@@ -486,7 +486,7 @@ namespace System.Collections
             }
         }
 
-        internal class QueueDebugView
+        internal sealed class QueueDebugView
         {
             private readonly Queue _queue;
 

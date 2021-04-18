@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class NullableConverterFactory : JsonConverterFactory
+    internal sealed class NullableConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {

@@ -318,7 +318,7 @@ class StrSwitchFinalTest
         }
         finish:
 
-        return _trace.Match();;
+        return _trace.Match();
     }
 }
 

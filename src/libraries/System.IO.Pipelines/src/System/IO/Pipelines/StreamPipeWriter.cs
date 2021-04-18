@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
-    internal class StreamPipeWriter : PipeWriter
+    internal sealed class StreamPipeWriter : PipeWriter
     {
         internal const int InitialSegmentPoolSize = 4; // 16K
         internal const int MaxSegmentPoolSize = 256; // 1MB

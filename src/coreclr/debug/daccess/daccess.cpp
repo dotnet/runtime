@@ -28,7 +28,7 @@
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
-extern bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #endif
 #endif
 
@@ -7084,7 +7084,7 @@ HRESULT ClrDataAccess::VerifyDlls()
         // Note that we check this knob every time because it may be handy to turn it on in
         // the environment mid-flight.
         DWORD dwAssertDefault = m_fEnableDllVerificationAsserts ? 1 : 0;
-        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
         {
             // Output a nice error message that contains the timestamps in string format.
             time_t actualTime = timestamp;
@@ -7238,7 +7238,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
     // On MacOS, FreeBSD or NetBSD use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
-    // On Linux try to get the dac table address via the export symbol
+    // On Linux/MacOS try to get the dac table address via the export symbol
     if (!TryGetSymbol(dataTarget, baseAddress, "g_dacTable", dacTableAddress))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;

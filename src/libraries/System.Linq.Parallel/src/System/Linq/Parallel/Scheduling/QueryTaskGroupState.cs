@@ -19,7 +19,7 @@ namespace System.Linq.Parallel
     /// convenient methods for tracing significant ETW events, waiting on tasks, propagating
     /// exceptions, and performing cancellation activities.
     /// </summary>
-    internal class QueryTaskGroupState
+    internal sealed class QueryTaskGroupState
     {
         private Task? _rootTask; // The task under which all query tasks root.
         private int _alreadyEnded; // Whether the tasks have been waited on already.

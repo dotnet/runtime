@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
-    internal class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
+    internal sealed class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
     {
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type AssociatedMetadataType { get; set; }

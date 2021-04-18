@@ -55,14 +55,6 @@ PALEXPORT int32_t
 CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 
 /*
-Shims the RSA_private_decrypt method.
-
-Returns the size of the signature, or -1 on error.
-*/
-PALEXPORT int32_t
-CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
-
-/*
 Shims RSA_private_encrypt with a fixed value of RSA_NO_PADDING.
 
 Requires that the input be the size of the key.

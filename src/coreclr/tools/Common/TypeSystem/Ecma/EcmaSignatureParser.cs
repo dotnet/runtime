@@ -14,40 +14,75 @@ namespace Internal.TypeSystem.Ecma
     public struct EcmaSignatureParser
     {
         private TypeSystemContext _tsc;
-        private Func<EntityHandle, TypeDesc> _typeResolver;
+        private Func<EntityHandle, NotFoundBehavior, TypeDesc> _typeResolver;
+        private NotFoundBehavior _notFoundBehavior;
         private EcmaModule _ecmaModule;
         private BlobReader _reader;
+        private ResolutionFailure _resolutionFailure;
 
         private Stack<int> _indexStack;
         private List<EmbeddedSignatureData> _embeddedSignatureDataList;
 
 
-        public EcmaSignatureParser(TypeSystemContext tsc, Func<EntityHandle, TypeDesc> typeResolver, BlobReader reader)
+        public EcmaSignatureParser(TypeSystemContext tsc, Func<EntityHandle, NotFoundBehavior, TypeDesc> typeResolver, BlobReader reader, NotFoundBehavior notFoundBehavior)
         {
+            _notFoundBehavior = notFoundBehavior;
             _ecmaModule = null;
             _tsc = tsc;
             _typeResolver = typeResolver;
             _reader = reader;
             _indexStack = null;
             _embeddedSignatureDataList = null;
+            _resolutionFailure = null;
         }
 
-        public EcmaSignatureParser(EcmaModule ecmaModule, BlobReader reader)
+        public EcmaSignatureParser(EcmaModule ecmaModule, BlobReader reader, NotFoundBehavior notFoundBehavior)
         {
+            _notFoundBehavior = notFoundBehavior;
             _ecmaModule = ecmaModule;
             _tsc = ecmaModule.Context;
             _typeResolver = null;
             _reader = reader;
             _indexStack = null;
             _embeddedSignatureDataList = null;
+            _resolutionFailure = null;
         }
+
+        void SetResolutionFailure(ResolutionFailure failure)
+        {
+            if (_resolutionFailure == null)
+                _resolutionFailure = failure;
+        }
+
+        public ResolutionFailure ResolutionFailure => _resolutionFailure;
 
         private TypeDesc ResolveHandle(EntityHandle handle)
         {
+            object resolvedValue;
             if (_ecmaModule != null)
-                return _ecmaModule.GetType(handle);
+            {
+                resolvedValue = _ecmaModule.GetObject(handle, _notFoundBehavior);
+            }
             else
-                return _typeResolver(handle);
+            {
+                resolvedValue = _typeResolver(handle, _notFoundBehavior);
+            }
+
+            if (resolvedValue == null)
+                return null;
+            if (resolvedValue is ResolutionFailure failure)
+            {
+                SetResolutionFailure(failure);
+                return null;
+            }
+            if (resolvedValue is TypeDesc type)
+            {
+                return type;
+            }
+            else
+            {
+                throw new BadImageFormatException("Type expected");
+            }
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -57,7 +92,6 @@ namespace Internal.TypeSystem.Ecma
 
         private TypeDesc ParseType(SignatureTypeCode typeCode)
         {
-
             if (_indexStack != null)
             {
                 int was = _indexStack.Pop();
@@ -114,7 +148,12 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.TypeHandle:
                     return ResolveHandle(_reader.ReadTypeHandle());
                 case SignatureTypeCode.SZArray:
-                    return _tsc.GetArrayType(ParseType());
+                    {
+                        var elementType = ParseType();
+                        if (elementType == null)
+                            return null;
+                        return _tsc.GetArrayType(elementType);
+                    }
                 case SignatureTypeCode.Array:
                     {
                         var elementType = ParseType();
@@ -128,12 +167,27 @@ namespace Internal.TypeSystem.Ecma
                         for (int j = 0; j < lowerBoundsCount; j++)
                             _reader.ReadCompressedInteger();
 
-                        return _tsc.GetArrayType(elementType, rank);
+                        if (elementType != null)
+                            return _tsc.GetArrayType(elementType, rank);
+                        else
+                            return null;
                     }
                 case SignatureTypeCode.ByReference:
-                    return ParseType().MakeByRefType();
+                    {
+                        TypeDesc byRefedType = ParseType();
+                        if (byRefedType != null)
+                            return byRefedType.MakeByRefType();
+                        else
+                            return null;
+                    }
                 case SignatureTypeCode.Pointer:
-                    return _tsc.GetPointerType(ParseType());
+                    {
+                        TypeDesc pointedAtType = ParseType();
+                        if (pointedAtType != null)
+                            return _tsc.GetPointerType(pointedAtType);
+                        else
+                            return null;
+                    }
                 case SignatureTypeCode.GenericTypeParameter:
                     return _tsc.GetSignatureVariable(_reader.ReadCompressedInteger(), false);
                 case SignatureTypeCode.GenericMethodParameter:
@@ -141,19 +195,36 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.GenericTypeInstance:
                     {
                         TypeDesc typeDef = ParseType();
-                        MetadataType metadataTypeDef = typeDef as MetadataType;
-                        if (metadataTypeDef == null)
-                            throw new BadImageFormatException();
+                        MetadataType metadataTypeDef = null;
+
+                        if (typeDef != null)
+                        {
+                            metadataTypeDef = typeDef as MetadataType;
+                            if (metadataTypeDef == null)
+                                throw new BadImageFormatException();
+                        }
 
                         TypeDesc[] instance = new TypeDesc[_reader.ReadCompressedInteger()];
                         for (int i = 0; i < instance.Length; i++)
+                        {
                             instance[i] = ParseType();
-                        return _tsc.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
+                            if (instance[i] == null)
+                                metadataTypeDef = null;
+                        }
+
+                        if (metadataTypeDef != null)
+                            return _tsc.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
+                        else
+                            return null;
                     }
                 case SignatureTypeCode.TypedReference:
                     return GetWellKnownType(WellKnownType.TypedReference);
                 case SignatureTypeCode.FunctionPointer:
-                    return _tsc.GetFunctionPointerType(ParseMethodSignatureInternal(skipEmbeddedSignatureData: true));
+                    MethodSignature sig = ParseMethodSignatureInternal(skipEmbeddedSignatureData: true);
+                    if (sig != null)
+                        return _tsc.GetFunctionPointerType(sig);
+                    else
+                        return null;
                 default:
                     throw new BadImageFormatException();
             }
@@ -320,12 +391,19 @@ namespace Internal.TypeSystem.Ecma
 
             EmbeddedSignatureData[] embeddedSignatureDataArray = (_embeddedSignatureDataList == null || _embeddedSignatureDataList.Count == 0 || skipEmbeddedSignatureData) ? null : _embeddedSignatureDataList.ToArray();
 
-            return new MethodSignature(flags, arity, returnType, parameters, embeddedSignatureDataArray);
+            if (_resolutionFailure == null)
+                return new MethodSignature(flags, arity, returnType, parameters, embeddedSignatureDataArray);
+            else
+                return null;
 
         }
 
         public PropertySignature ParsePropertySignature()
         {
+            // As PropertySignature is a struct, we cannot return null
+            if (_notFoundBehavior != NotFoundBehavior.Throw)
+                throw new ArgumentException();
+
             SignatureHeader header = _reader.ReadSignatureHeader();
             if (header.Kind != SignatureKind.Property)
                 throw new BadImageFormatException();
@@ -392,7 +470,10 @@ namespace Internal.TypeSystem.Ecma
             {
                 locals = Array.Empty<LocalVariableDefinition>();
             }
-            return locals;
+            if (_resolutionFailure == null)
+                return locals;
+            else
+                return null;
         }
 
         public TypeDesc[] ParseMethodSpecSignature()
@@ -410,7 +491,10 @@ namespace Internal.TypeSystem.Ecma
             {
                 arguments[i] = ParseType();
             }
-            return arguments;
+            if (_resolutionFailure == null)
+                return arguments;
+            else
+                return null;
         }
 
         public MarshalAsDescriptor ParseMarshalAsDescriptor()

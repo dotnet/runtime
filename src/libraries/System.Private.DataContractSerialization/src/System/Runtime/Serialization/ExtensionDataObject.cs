@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ExtensionDataMember
+    internal sealed class ExtensionDataMember
     {
         private IDataNode? _value;
         private int _memberIndex;
@@ -191,7 +191,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ClassDataNode : DataNode<object>
+    internal sealed class ClassDataNode : DataNode<object>
     {
         private IList<ExtensionDataMember>? _members;
 
@@ -213,7 +213,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class XmlDataNode : DataNode<object>
+    internal sealed class XmlDataNode : DataNode<object>
     {
         private IList<XmlAttribute>? _xmlAttributes;
         private IList<XmlNode>? _xmlChildNodes;
@@ -251,7 +251,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class CollectionDataNode : DataNode<Array>
+    internal sealed class CollectionDataNode : DataNode<Array>
     {
         private IList<IDataNode?>? _items;
         private string? _itemName;
@@ -302,7 +302,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ISerializableDataNode : DataNode<object>
+    internal sealed class ISerializableDataNode : DataNode<object>
     {
         private string? _factoryTypeName;
         private string? _factoryTypeNamespace;
@@ -347,7 +347,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ISerializableDataMember
+    internal sealed class ISerializableDataMember
     {
         private IDataNode? _value;
 

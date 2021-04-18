@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal class ValidatingReaderNodeData
+    internal sealed class ValidatingReaderNodeData
     {
         private string _localName;
         private string _namespaceUri;

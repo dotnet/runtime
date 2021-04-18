@@ -16,7 +16,6 @@ namespace System.Net.Sockets.Tests
     public class UnixDomainSocketTest
     {
         private readonly ITestOutputHelper _log;
-        private static Random _random = new Random();
 
         public UnixDomainSocketTest(ITestOutputHelper output)
         {
@@ -251,7 +250,7 @@ namespace System.Net.Sockets.Tests
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {
             var writeBuffer = new byte[writeBufferSize * iterations];
-            new Random().NextBytes(writeBuffer);
+            Random.Shared.NextBytes(writeBuffer);
             var readData = new MemoryStream();
 
             string path = GetRandomNonExistingFilePath();
@@ -317,7 +316,7 @@ namespace System.Net.Sockets.Tests
                 const int Iters = 25;
                 byte[] sendData = new byte[Iters];
                 byte[] receiveData = new byte[sendData.Length];
-                new Random().NextBytes(sendData);
+                Random.Shared.NextBytes(sendData);
 
                 string path = GetRandomNonExistingFilePath();
 
@@ -359,7 +358,7 @@ namespace System.Net.Sockets.Tests
                 const int Iters = 2048;
                 byte[] sendData = new byte[Iters];
                 byte[] receiveData = new byte[sendData.Length];
-                new Random().NextBytes(sendData);
+                Random.Shared.NextBytes(sendData);
 
                 string path = GetRandomNonExistingFilePath();
 
@@ -498,7 +497,7 @@ namespace System.Net.Sockets.Tests
             do
             {
                 // get random name and append random number of characters to get variable name length.
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', _random.Next(1, 32)));
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', Random.Shared.Next(1, 32)));
             }
             while (File.Exists(result));
 

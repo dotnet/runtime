@@ -247,10 +247,13 @@ void Compiler::lvaInitTypeRef()
             break;
         case CorInfoCallConvExtension::C:
         case CorInfoCallConvExtension::Stdcall:
+        case CorInfoCallConvExtension::CMemberFunction:
+        case CorInfoCallConvExtension::StdcallMemberFunction:
             varDscInfo.Init(lvaTable, hasRetBuffArg, 0, 0);
             break;
         case CorInfoCallConvExtension::Managed:
         case CorInfoCallConvExtension::Fastcall:
+        case CorInfoCallConvExtension::FastcallMemberFunction:
         default:
             varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
             break;
@@ -2099,8 +2102,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             shouldPromote = false;
         }
     }
-    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
-             (structPromotionInfo.fieldCnt > 1))
+    else if ((lclNum == compiler->genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
     {
         // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
         shouldPromote = false;
@@ -3236,6 +3238,7 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //  if we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
 //  otherwise it returns the number of times that profile data says the method was called.
 //
+// static
 BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
 {
     // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
@@ -4099,6 +4102,21 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                 if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
                 {
+#ifdef DEBUG
+                    if (needsExplicitZeroInit)
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'Z';
+                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+                    else
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'M';
+                        JITDUMP("EH Var V%02u has multiple definitions. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+
+#endif // DEBUG
                     varDsc->lvEhWriteThruCandidate     = false;
                     varDsc->lvDisqualifyForEhWriteThru = true;
                 }
@@ -4111,6 +4129,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 #endif
                     {
                         varDsc->lvEhWriteThruCandidate = true;
+                        JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
                     }
                 }
             }
@@ -5466,9 +5485,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // the native return buffer parameter.
     if (callConvIsInstanceMethodCallConv(info.compCallConv))
     {
-        noway_assert(lvaTable[lclNum].lvIsRegArg);
-#ifndef TARGET_X86
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+#ifdef TARGET_X86
+        if (!lvaTable[lclNum].lvIsRegArg)
+        {
+            argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+        }
+#else
+        argOffs              = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;
         userArgsToSkip++;
@@ -6244,19 +6267,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // JIT32_GCENCODER
 
-    // OSR methods use the original method slot for the cached kept alive this,
-    // so don't need to allocate  a slot on the new frame.
-    if (opts.IsOSR())
-    {
-        if (lvaKeepAliveAndReportThis())
-        {
-            PatchpointInfo* ppInfo = info.compPatchpointInfo;
-            assert(ppInfo->HasKeptAliveThis());
-            int originalOffset             = ppInfo->KeptAliveThisOffset();
-            lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
-        }
-    }
-    else if (lvaReportParamTypeArg())
+    // For OSR methods, param type args are always reportable via the root method frame slot.
+    // (see gcInfoBlockHdrSave) and so do not need a new slot on the frame.
+    //
+    // OSR methods may also be able to use the root frame kept alive this, if the root
+    // method needed to report this.
+    //
+    // Inlining done under OSR may introduce new reporting, in which case the OSR frame
+    // must allocate a slot.
+    if (!opts.IsOSR() && lvaReportParamTypeArg())
     {
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed());
@@ -6269,10 +6288,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifndef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis())
     {
-        // When "this" is also used as generic context arg.
-        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-        stkOffs -= TARGET_POINTER_SIZE;
-        lvaCachedGenericContextArgOffs = stkOffs;
+        bool canUseExistingSlot = false;
+        if (opts.IsOSR())
+        {
+            PatchpointInfo* ppInfo = info.compPatchpointInfo;
+            if (ppInfo->HasKeptAliveThis())
+            {
+                int originalOffset             = ppInfo->KeptAliveThisOffset();
+                lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
+                canUseExistingSlot             = true;
+            }
+        }
+
+        if (!canUseExistingSlot)
+        {
+            // When "this" is also used as generic context arg.
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs -= TARGET_POINTER_SIZE;
+            lvaCachedGenericContextArgOffs = stkOffs;
+        }
     }
 #endif
 
@@ -7365,7 +7399,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("H");
+            printf("%c", varDsc->lvDisqualifyEHVarReason);
         }
         if (varDsc->lvLclFieldExpr)
         {

@@ -706,9 +706,6 @@ mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx);
 void
 mono_type_initialization_init (void);
 
-void
-mono_type_initialization_cleanup (void);
-
 int
 mono_thread_kill           (MonoInternalThread *thread, int signal);
 

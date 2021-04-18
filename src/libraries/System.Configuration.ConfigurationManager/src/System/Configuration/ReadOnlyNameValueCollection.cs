@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 
 namespace System.Configuration
 {
-    internal class ReadOnlyNameValueCollection : NameValueCollection
+    internal sealed class ReadOnlyNameValueCollection : NameValueCollection
     {
 
         internal ReadOnlyNameValueCollection(IEqualityComparer equalityComparer) : base(equalityComparer)

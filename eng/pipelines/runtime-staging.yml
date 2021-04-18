@@ -67,6 +67,7 @@ jobs:
     - Android_x86
     - Android_x64
     - iOSSimulator_x64
+    - tvOSSimulator_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -282,13 +283,15 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
+    buildConfig: release
+    runtimeFlavor: mono
     platforms:
     - Browser_wasm_win
     jobParameters:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
-      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig)
+      timeoutInMinutes: 120
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop

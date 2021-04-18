@@ -67,7 +67,7 @@ namespace System.ComponentModel.Composition
 
         private static readonly Lock _lock = new Lock();
         private static readonly Dictionary<Type, MetadataViewFactory> _metadataViewFactories = new Dictionary<Type, MetadataViewFactory>();
-        private static readonly AssemblyName ProxyAssemblyName = new AssemblyName(string.Format(CultureInfo.InvariantCulture, "MetadataViewProxies_{0}", Guid.NewGuid()));
+        private static readonly AssemblyName ProxyAssemblyName = new AssemblyName($"MetadataViewProxies_{Guid.NewGuid()}");
         private static ModuleBuilder? transparentProxyModuleBuilder;
 
         private static readonly Type[] CtorArgumentTypes = new Type[] { typeof(IDictionary<string, object>) };
@@ -193,7 +193,7 @@ namespace System.ComponentModel.Composition
 
             var proxyModuleBuilder = GetProxyModuleBuilder(requiresCritical);
             proxyTypeBuilder = proxyModuleBuilder.DefineType(
-                string.Format(CultureInfo.InvariantCulture, "_proxy_{0}_{1}", viewType.FullName, Guid.NewGuid()),
+                $"_proxy_{viewType.FullName}_{Guid.NewGuid()}",
                 TypeAttributes.Public,
                 typeof(object),
                 interfaces);
@@ -214,7 +214,7 @@ namespace System.ComponentModel.Composition
             // Implement interface properties
             foreach (PropertyInfo propertyInfo in viewType.GetAllProperties())
             {
-                string fieldName = string.Format(CultureInfo.InvariantCulture, "_{0}_{1}", propertyInfo.Name, Guid.NewGuid());
+                string fieldName = $"_{propertyInfo.Name}_{Guid.NewGuid()}";
 
                 // Cache names and type for exception
                 string propertyName = propertyInfo.Name;

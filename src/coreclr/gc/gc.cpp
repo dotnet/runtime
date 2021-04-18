@@ -3493,6 +3493,7 @@ void region_allocator::make_busy_block (uint32_t* index_start, uint32_t num_unit
 #ifdef _DEBUG
     dprintf (REGIONS_LOG, ("MBB[B: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
 #endif //_DEBUG
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     *index_start = num_units;
 }
 
@@ -3501,6 +3502,7 @@ void region_allocator::make_free_block (uint32_t* index_start, uint32_t num_unit
 #ifdef _DEBUG
     dprintf (REGIONS_LOG, ("MFB[F: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
 #endif //_DEBUG
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     *index_start = region_alloc_free_bit | num_units;
 }
 
@@ -3519,6 +3521,7 @@ void region_allocator::adjust_map (uint32_t* current_free_index_start,
 
 void region_allocator::print_map (const char* msg)
 {
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
 #ifdef _DEBUG
     const char* heap_type = "UH";
     dprintf (REGIONS_LOG, ("[%s]-----printing----%s", heap_type, msg));
@@ -3550,6 +3553,8 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
 {
     uint8_t* alloc = NULL;
 
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
+
     if (global_region_used < global_region_end)
     {
         size_t end_remaining = global_region_end - global_region_used;
@@ -3566,8 +3571,35 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
     return alloc;
 }
 
+void region_allocator::enter_spin_lock()
+{
+    while (true)
+    {
+        if (Interlocked::CompareExchange(&region_allocator_lock.lock, 0, -1) < 0)
+            break;
+
+        while (region_allocator_lock.lock >= 0)
+        {
+            YieldProcessor();           // indicate to the processor that we are spinning
+        }
+    }
+#ifdef _DEBUG
+    region_allocator_lock.holding_thread = GCToEEInterface::GetThread();
+#endif //_DEBUG
+}
+
+void region_allocator::leave_spin_lock()
+{
+    region_allocator_lock.lock = -1;
+#ifdef _DEBUG
+    region_allocator_lock.holding_thread = (Thread*)-1;
+#endif //_DEBUG
+}
+
 uint8_t* region_allocator::allocate (uint32_t num_units)
 {
+    enter_spin_lock();
+
     uint32_t* current_index = region_map_start;
     uint32_t* end_index = region_map_end;
 
@@ -3607,6 +3639,9 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
 
                 total_free_units -= num_units;
                 print_map ("alloc: found in free");
+
+                leave_spin_lock();
+
                 return region_address_of (current_free_index_start);
             }
         }
@@ -3647,6 +3682,8 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
         dprintf (REGIONS_LOG, ("couldn't find memory at the end! only %Id bytes left", (global_region_end - global_region_used)));
     }
 
+    leave_spin_lock();
+
     return alloc;
 }
 
@@ -3685,6 +3722,8 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end)
 
 void region_allocator::delete_region (uint8_t* start)
 {
+    enter_spin_lock();
+
     assert (is_region_aligned (start));
 
     print_map ("before delete");
@@ -3710,6 +3749,8 @@ void region_allocator::delete_region (uint8_t* start)
 
     total_free_units += current_val;
     print_map ("after delete");
+
+    leave_spin_lock();
 }
 #endif //USE_REGIONS
 
@@ -4140,7 +4181,7 @@ public:
         _ASSERTE(IsStructAligned((uint8_t *)this, GetMethodTable()->GetBaseAlignment()));
 #endif // FEATURE_STRUCTALIGN
 
-#ifdef FEATURE_64BIT_ALIGNMENT
+#if defined(FEATURE_64BIT_ALIGNMENT) && !defined(FEATURE_REDHAWK)
         if (pMT->RequiresAlign8())
         {
             _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
@@ -4923,6 +4964,16 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         }
     }
 
+    if (reserve_success && separated_poh_p)
+    {
+        for (int heap_no = 0; (reserve_success && (heap_no < num_heaps)); heap_no++)
+        {
+            if (!GCToOSInterface::VirtualCommit(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size))
+            {
+                reserve_success = FALSE;
+            }
+        }
+    }
 
     return reserve_success;
 }
@@ -6540,7 +6591,6 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
 
 void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
 {
-    assert(!heap_hard_limit);
     bool release_succeeded_p = GCToOSInterface::VirtualRelease (add, allocated_size);
     if (release_succeeded_p)
     {
@@ -11698,6 +11748,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, 
                                  use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
+    if (separated_poh_p)
+    {
+        heap_hard_limit_oh[poh] = min_segment_size_hard_limit * number_of_heaps;
+        heap_hard_limit += heap_hard_limit_oh[poh];
+    }
 #endif //USE_REGIONS
 
 #ifdef CARD_BUNDLE
@@ -12491,11 +12546,14 @@ gc_heap::init_gc_heap (int  h_number)
 #endif //BGC_SERVO_TUNING
     freeable_soh_segment = 0;
     gchist_index_per_heap = 0;
-    uint8_t** b_arr = new (nothrow) (uint8_t* [MARK_STACK_INITIAL_LENGTH]);
-    if (!b_arr)
-        return 0;
+    if (gc_can_use_concurrent)
+    {
+        uint8_t** b_arr = new (nothrow) (uint8_t * [MARK_STACK_INITIAL_LENGTH]);
+        if (!b_arr)
+            return 0;
 
-    make_background_mark_stack (b_arr);
+        make_background_mark_stack(b_arr);
+    }
 #endif //BACKGROUND_GC
 
 #ifndef USE_REGIONS
@@ -19018,6 +19076,10 @@ void gc_heap::gc1()
     verify_soh_segment_list();
 
 #ifdef BACKGROUND_GC
+    if (gc_can_use_concurrent)
+    {
+        check_bgc_mark_stack_length();
+    }
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC
 
@@ -22099,6 +22161,46 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
     }
 }
 
+void gc_heap::grow_bgc_mark_stack (size_t new_size)
+{
+    if ((background_mark_stack_array_length < new_size) &&
+        ((new_size - background_mark_stack_array_length) > (background_mark_stack_array_length / 2)))
+    {
+        dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
+
+        uint8_t** tmp = new (nothrow) uint8_t* [new_size];
+        if (tmp)
+        {
+            delete [] background_mark_stack_array;
+            background_mark_stack_array = tmp;
+            background_mark_stack_array_length = new_size;
+            background_mark_stack_tos = background_mark_stack_array;
+        }
+    }
+}
+
+void gc_heap::check_bgc_mark_stack_length()
+{
+    if ((settings.condemned_generation < (max_generation - 1)) || gc_heap::background_running_p())
+        return;
+
+    size_t total_heap_size = get_total_heap_size();
+
+    if (total_heap_size < ((size_t)4*1024*1024*1024))
+        return;
+
+#ifdef MULTIPLE_HEAPS
+    int total_heaps = n_heaps;
+#else
+    int total_heaps = 1;
+#endif //MULTIPLE_HEAPS
+    size_t size_based_on_heap = total_heap_size / (size_t)(100 * 100 * total_heaps * sizeof (uint8_t*)); 
+
+    size_t new_size = max (background_mark_stack_array_length, size_based_on_heap);
+
+    grow_bgc_mark_stack (new_size);
+}
+
 uint8_t* gc_heap::background_seg_end (heap_segment* seg, BOOL concurrent_p)
 {
 #ifndef USE_REGIONS
@@ -22380,20 +22482,7 @@ recheck:
                 new_size = min(new_max_size, new_size);
             }
 
-            if ((background_mark_stack_array_length < new_size) &&
-                ((new_size - background_mark_stack_array_length) > (background_mark_stack_array_length / 2)))
-            {
-                dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
-
-                uint8_t** tmp = new (nothrow) uint8_t* [new_size];
-                if (tmp)
-                {
-                    delete [] background_mark_stack_array;
-                    background_mark_stack_array = tmp;
-                    background_mark_stack_array_length = new_size;
-                    background_mark_stack_tos = background_mark_stack_array;
-                }
-            }
+            grow_bgc_mark_stack (new_size);
         }
         else
         {
@@ -33599,7 +33688,7 @@ bool gc_heap::find_next_chunk(card_marking_enumerator& card_mark_enumerator, hea
             dprintf (3, ("No more chunks on heap %d\n", heap_number));
             return false;
         }
-        card = card_of (chunk_low);
+        card = max(card, card_of(chunk_low));
         card_word_end = (card_of(align_on_card_word(chunk_high)) / card_word_width);
         dprintf (3, ("Moved to next chunk on heap %d: [%Ix,%Ix[", heap_number, (size_t)chunk_low, (size_t)chunk_high));
     }
@@ -40074,15 +40163,17 @@ HRESULT GCHeap::Initialize()
     gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
     gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
+    gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
+
     if (gc_heap::heap_hard_limit_oh[soh] || gc_heap::heap_hard_limit_oh[loh] || gc_heap::heap_hard_limit_oh[poh])
     {
         if (!gc_heap::heap_hard_limit_oh[soh])
         {
-            return E_INVALIDARG;
+            return CLR_E_GC_BAD_HARD_LIMIT;
         }
         if (!gc_heap::heap_hard_limit_oh[loh])
         {
-            return E_INVALIDARG;
+            return CLR_E_GC_BAD_HARD_LIMIT;
         }
         gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + 
             gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
@@ -40096,19 +40187,19 @@ HRESULT GCHeap::Initialize()
         {
             if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             gc_heap::heap_hard_limit_oh[soh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
             gc_heap::heap_hard_limit_oh[loh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
@@ -40116,6 +40207,11 @@ HRESULT GCHeap::Initialize()
             gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + 
                 gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
         }
+    }
+
+    if (gc_heap::heap_hard_limit_oh[soh] && (!gc_heap::heap_hard_limit_oh[poh]) && (!gc_heap::use_large_pages_p))
+    {
+        return CLR_E_GC_BAD_HARD_LIMIT;
     }
 
     if (!(gc_heap::heap_hard_limit))
@@ -40137,6 +40233,12 @@ HRESULT GCHeap::Initialize()
             gc_heap::heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
         }
     }
+
+    if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
+    {
+        return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
+    }
+
 #endif //HOST_64BIT
 
     uint32_t nhp = 1;
@@ -40209,7 +40311,6 @@ HRESULT GCHeap::Initialize()
 #ifndef USE_REGIONS
     if (gc_heap::heap_hard_limit)
     {
-        gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
         if (gc_heap::heap_hard_limit_oh[soh])
         {
 #ifdef MULTIPLE_HEAPS
@@ -40303,7 +40404,12 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
-    gc_heap::min_segment_size_shr = index_of_highest_set_bit (REGION_SIZE);
+    size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
+    {
+        return E_INVALIDARG;
+    }
+    gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //USE_REGIONS

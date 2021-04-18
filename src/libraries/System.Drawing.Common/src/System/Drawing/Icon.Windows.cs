@@ -957,7 +957,7 @@ namespace System.Drawing
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PICTDESC
+        internal sealed class PICTDESC
         {
             internal int cbSizeOfStruct;
             public int picType;
