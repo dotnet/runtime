@@ -269,7 +269,7 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
             catch (Http3ConnectionException ex)
