@@ -294,7 +294,7 @@ namespace System.Net.Sockets.Tests
     {
         public override bool UsesEap => true;
         public override bool ValidatesArrayArguments => false;
-        public override bool SupportsAcceptReceive => true;
+        public override bool SupportsAcceptReceive => PlatformDetection.IsWindows;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
             InvokeAsync(s, e => e.AcceptSocket, e => s.AcceptAsync(e));
