@@ -1976,13 +1976,6 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal static SocketError DisconnectAsync(Socket socket, SafeSocketHandle handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
-        {
-            SocketError socketError = Disconnect(socket, handle, reuseSocket);
-            asyncResult.PostCompletion(socketError);
-            return socketError;
-        }
-
         internal static SocketError Disconnect(Socket socket, SafeSocketHandle handle, bool reuseSocket)
         {
             handle.SetToDisconnected();
