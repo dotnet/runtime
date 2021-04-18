@@ -367,6 +367,7 @@ namespace System.Net.Sockets
         internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             // Note: CancellationToken is ignored for now.
+            // See https://github.com/dotnet/runtime/issues/51452
 
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try

@@ -73,7 +73,6 @@ namespace System.Net.Sockets
         private int _closeTimeout = Socket.DefaultCloseTimeout;
         private int _disposed; // 0 == false, anything else == true
 
-        #region Constructors
         public Socket(SocketType socketType, ProtocolType protocolType)
             : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
@@ -242,9 +241,10 @@ namespace System.Net.Sockets
             handle is null ? throw new ArgumentNullException(nameof(handle)) :
             handle.IsInvalid ? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle)) :
             handle;
-        #endregion
 
-        #region Properties
+        //
+        // Properties
+        //
 
         // The CLR allows configuration of these properties, separately from whether the OS supports IPv4/6.  We
         // do not provide these config options, so SupportsIPvX === OSSupportsIPvX.
@@ -761,9 +761,10 @@ namespace System.Net.Sockets
         {
             return (family == _addressFamily) || (family == AddressFamily.InterNetwork && IsDualMode);
         }
-        #endregion
 
-        #region Public Methods
+        //
+        // Public Methods
+        //
 
         // Associates a socket with an end point.
         public void Bind(EndPoint localEP)
@@ -2604,7 +2605,10 @@ namespace System.Net.Sockets
             InternalSetBlocking(_willBlockInternal);
         }
 
-#region Async methods
+        //
+        // Async methods
+        //
+
         public bool AcceptAsync(SocketAsyncEventArgs e)
         {
             ThrowIfDisposed();
@@ -3093,10 +3097,10 @@ namespace System.Net.Sockets
 
             return socketError == SocketError.IOPending;
         }
-#endregion
-#endregion
 
-#region Internal and private properties
+        //
+        // Internal and private properties
+        //
 
         private CacheSet Caches
         {
@@ -3112,9 +3116,10 @@ namespace System.Net.Sockets
         }
 
         internal bool Disposed => _disposed != 0;
-#endregion
 
-#region Internal and private methods
+        //
+        // Internal and private methods
+        //
 
         internal static void GetIPProtocolInformation(AddressFamily addressFamily, Internals.SocketAddress socketAddress, out bool isIPv4, out bool isIPv6)
         {
@@ -3826,8 +3831,6 @@ namespace System.Net.Sockets
                 _ => SocketError.SocketError
             };
         }
-
-        #endregion
 
         // Helper to maintain existing behavior of Socket APM methods to throw synchronously from Begin*.
         private static IAsyncResult TaskToApmBeginWithSyncExceptions(Task task, AsyncCallback? callback, object? state)
