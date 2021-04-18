@@ -553,7 +553,6 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         (ARG_SLOT) 1, // AssemblyVersionCompatibility.SameMachine
         ObjToArgSlot(gc.CodeBase),
         (ARG_SLOT) m_dwFlags,
-        (ARG_SLOT) NULL // key pair
     };
 
     init.Call(MethodArgs);
