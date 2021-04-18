@@ -222,7 +222,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
-        public void Accept_WithAlreadyBoundTargetSocket_Fails()
+        public async Task Accept_WithAlreadyBoundTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
                 return;
@@ -236,7 +236,7 @@ namespace System.Net.Sockets.Tests
 
                 server.BindToAnonymousPort(IPAddress.Loopback);
 
-                Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptAsync(listener, server));
             }
         }
 
@@ -262,7 +262,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Same(server, accepted);
                 Assert.True(accepted.Connected);
 
-                Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptAsync(listener, server));
             }
         }
 

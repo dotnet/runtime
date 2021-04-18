@@ -2114,7 +2114,7 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state) =>
-            TaskToApmBeginWithSyncExceptions(DisconnectAsync(reuseSocket).AsTask(), callback, state);
+            TaskToApm.Begin(DisconnectAsync(reuseSocket).AsTask(), callback, state);
 
         public void Disconnect(bool reuseSocket)
         {
@@ -2412,7 +2412,7 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginAccept(AsyncCallback? callback, object? state) =>
-            TaskToApmBeginWithSyncExceptions(AcceptAsync(), callback, state);
+            TaskToApm.Begin(AcceptAsync(), callback, state);
 
         public Socket EndAccept(IAsyncResult asyncResult)
         {
@@ -2461,7 +2461,7 @@ namespace System.Net.Sockets
             BeginAccept(acceptSocket: null, receiveSize, callback, state);
 
         public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state) =>
-            TaskToApmBeginWithSyncExceptions(AcceptAndReceiveHelperAsync(acceptSocket, receiveSize), callback, state);
+            TaskToApm.Begin(AcceptAndReceiveHelperAsync(acceptSocket, receiveSize), callback, state);
 
         public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
@@ -3713,18 +3713,6 @@ namespace System.Net.Sockets
                 OperationCanceledException => SocketError.OperationAborted,
                 _ => SocketError.SocketError
             };
-        }
-
-        // Helper to maintain existing behavior of Socket APM methods to throw synchronously from Begin*.
-        private static IAsyncResult TaskToApmBeginWithSyncExceptions(Task task, AsyncCallback? callback, object? state)
-        {
-            if (task.IsFaulted)
-            {
-                task.GetAwaiter().GetResult();
-                Debug.Fail("Task faulted but GetResult did not throw???");
-            }
-
-            return TaskToApm.Begin(task, callback, state);
         }
     }
 }
