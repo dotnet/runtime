@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -158,6 +159,20 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
+        }
+
+        public static JsonTypeInfo GetJsonTypeInfo(JsonSerializerContext context, Type type)
+        {
+            Debug.Assert(context != null);
+            Debug.Assert(type != null);
+
+            JsonTypeInfo? info = context.GetTypeInfo(type);
+            if (info == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type);
+            }
+
+            return info;
         }
     }
 }

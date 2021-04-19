@@ -150,9 +150,22 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="underlyingTypeconverter"></param>
+        /// <param name="underlyingTypeInfo"></param>
         /// <returns></returns>
-        public static JsonConverter<T?> GetNullableConverter<T>(JsonConverter<T> underlyingTypeconverter) where T : struct
-            => new NullableConverter<T>(underlyingTypeconverter ?? throw new ArgumentNullException(nameof(underlyingTypeconverter)));
+        public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
+        {
+            if (underlyingTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(underlyingTypeInfo));
+            }
+
+            JsonConverter<T>? underlyingConverter = underlyingTypeInfo.PropertyInfoForTypeInfo?.ConverterBase as JsonConverter<T>;
+            if (underlyingConverter == null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, underlyingConverter, typeof(T)));
+            }
+
+            return new NullableConverter<T>(underlyingConverter);
+        }
     }
 }

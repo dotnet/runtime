@@ -111,6 +111,8 @@ namespace System.Text.Json
             }
 
             options ??= JsonSerializerOptions.s_defaultOptions;
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 
             static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(
@@ -154,6 +156,8 @@ namespace System.Text.Json
             CancellationToken cancellationToken)
         {
             options ??= JsonSerializerOptions.s_defaultOptions;
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             var asyncState = new ReadAsyncBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
             readStack.Initialize(inputType, options, supportContinuation: true);

@@ -678,5 +678,26 @@ namespace System.Text.Json
         {
             throw new InvalidOperationException(SR.Format(SR.OptionsAlreadyBoundToContext));
         }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_BuiltInConvertersNotRooted(Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.BuiltInConvertersNotRooted, type));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_NoMetadataForType(Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_NoMetadataForType(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForType, type));
+        }
     }
 }
