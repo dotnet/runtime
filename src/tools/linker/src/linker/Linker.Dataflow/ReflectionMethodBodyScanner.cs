@@ -192,7 +192,7 @@ namespace Mono.Linker.Dataflow
 		{
 			switch (field.Name) {
 			case "EmptyTypes" when field.DeclaringType.IsTypeOf ("System", "Type"): {
-					return new ArrayValue (new ConstIntValue (0));
+					return new ArrayValue (new ConstIntValue (0), field.DeclaringType);
 				}
 			case "Empty" when field.DeclaringType.IsTypeOf ("System", "String"): {
 					return new KnownStringValue (string.Empty);
@@ -656,7 +656,7 @@ namespace Mono.Linker.Dataflow
 					break;
 
 				case IntrinsicId.Array_Empty: {
-						methodReturnValue = new ArrayValue (new ConstIntValue (0));
+						methodReturnValue = new ArrayValue (new ConstIntValue (0), ((GenericInstanceMethod) calledMethod).GenericArguments[0]);
 					}
 					break;
 
@@ -702,20 +702,28 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.AnalyzingPattern ();
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue typeValue) {
-								foreach (var genericParameter in typeValue.TypeRepresented.GenericParameters) {
-									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
-										(genericParameter.HasDefaultConstructorConstraint && !typeValue.TypeRepresented.IsTypeOf ("System", "Nullable`1"))) {
-										// There is a generic parameter which has some requirements on the input types.
-										// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
-
-										// Special case: Nullable<T> where T : struct
-										//  The struct constraint in C# implies new() constraints, but Nullable doesn't make a use of that part.
-										//  There are several places even in the framework where typeof(Nullable<>).MakeGenericType would warn
-										//  without any good reason to do so.
+								if (AnalyzeGenericInstatiationTypeArray (methodParams[1], ref reflectionContext, calledMethodDefinition, typeValue.TypeRepresented.GenericParameters)) {
+									reflectionContext.RecordHandledPattern ();
+								} else {
+									bool hasUncheckedAnnotation = false;
+									foreach (var genericParameter in typeValue.TypeRepresented.GenericParameters) {
+										if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
+											(genericParameter.HasDefaultConstructorConstraint && !typeValue.TypeRepresented.IsTypeOf ("System", "Nullable`1"))) {
+											// If we failed to analyze the array, we go through the analyses again
+											// and intentionally ignore one particular annotation:
+											// Special case: Nullable<T> where T : struct
+											//  The struct constraint in C# implies new() constraints, but Nullable doesn't make a use of that part.
+											//  There are several places even in the framework where typeof(Nullable<>).MakeGenericType would warn
+											//  without any good reason to do so.
+											hasUncheckedAnnotation = true;
+											break;
+										}
+									}
+									if (hasUncheckedAnnotation) {
 										reflectionContext.RecordUnrecognizedPattern (
-											2055,
-											$"Call to '{calledMethodDefinition.GetDisplayName ()}' can not be statically analyzed. " +
-											$"It's not possible to guarantee the availability of requirements of the generic type.");
+												2055,
+												$"Call to '{calledMethodDefinition.GetDisplayName ()}' can not be statically analyzed. " +
+												$"It's not possible to guarantee the availability of requirements of the generic type.");
 									}
 								}
 
@@ -811,7 +819,7 @@ namespace Mono.Linker.Dataflow
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
 									if (stringParam is KnownStringValue stringValue) {
 										foreach (var method in systemTypeValue.TypeRepresented.GetMethodsOnTypeHierarchy (m => m.Name == stringValue.Contents, bindingFlags)) {
-											ValidateGenericMethodInstantiation (ref reflectionContext, method, calledMethod);
+											ValidateGenericMethodInstantiation (ref reflectionContext, method, methodParams[2], calledMethod);
 											MarkMethod (ref reflectionContext, method);
 										}
 
@@ -1630,8 +1638,7 @@ namespace Mono.Linker.Dataflow
 
 						foreach (var methodValue in methodParams[0].UniqueValues ()) {
 							if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
-								ValidateGenericMethodInstantiation (ref reflectionContext, methodBaseValue.MethodRepresented, calledMethod);
-								reflectionContext.RecordHandledPattern ();
+								ValidateGenericMethodInstantiation (ref reflectionContext, methodBaseValue.MethodRepresented, methodParams[1], calledMethod);
 							} else if (methodValue == NullValue.Instance) {
 								reflectionContext.RecordHandledPattern ();
 							} else {
@@ -1709,6 +1716,42 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
+			return true;
+		}
+
+		private bool AnalyzeGenericInstatiationTypeArray (ValueNode arrayParam, ref ReflectionPatternContext reflectionContext, MethodReference calledMethod, IList<GenericParameter> genericParameters)
+		{
+			foreach (var typesValue in arrayParam.UniqueValues ()) {
+				if (typesValue.Kind != ValueNodeKind.Array) {
+					return false;
+				}
+				ArrayValue array = (ArrayValue) typesValue;
+				int? size = array.Size.AsConstInt ();
+				if (size == null || size != genericParameters.Count) {
+					return false;
+				}
+				bool allIndicesKnown = true;
+				for (int i = 0; i < size.Value; i++) {
+					if (!array.IndexValues.TryGetValue (i, out ValueBasicBlockPair value) || value.Value is null or { Kind: ValueNodeKind.Unknown }) {
+						allIndicesKnown = false;
+						break;
+					}
+				}
+
+				if (!allIndicesKnown) {
+					return false;
+				}
+
+				for (int i = 0; i < size.Value; i++) {
+					if (array.IndexValues.TryGetValue (i, out ValueBasicBlockPair value)) {
+						RequireDynamicallyAccessedMembers (
+							ref reflectionContext,
+							_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameters[i]),
+							value.Value,
+							calledMethod.Resolve ());
+					}
+				}
+			}
 			return true;
 		}
 
@@ -2176,20 +2219,19 @@ namespace Mono.Linker.Dataflow
 		void ValidateGenericMethodInstantiation (
 			ref ReflectionPatternContext reflectionContext,
 			MethodDefinition genericMethod,
+			ValueNode genericParametersArray,
 			MethodReference reflectionMethod)
 		{
-			if (!genericMethod.HasGenericParameters)
-				return;
+			if (!genericMethod.HasGenericParameters) {
+				reflectionContext.RecordHandledPattern ();
+			}
 
-			foreach (var genericParameter in genericMethod.GenericParameters) {
-				if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
-					genericParameter.HasDefaultConstructorConstraint) {
-					// There is a generic parameter which has some requirements on input types.
-					// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
-					reflectionContext.RecordUnrecognizedPattern (
-						2060, string.Format (Resources.Strings.IL2060,
-							DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod)));
-				}
+			if (!AnalyzeGenericInstatiationTypeArray (genericParametersArray, ref reflectionContext, reflectionMethod, genericMethod.GenericParameters)) {
+				reflectionContext.RecordUnrecognizedPattern (
+					2060,
+					string.Format (Resources.Strings.IL2060, DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod)));
+			} else {
+				reflectionContext.RecordHandledPattern ();
 			}
 		}
 

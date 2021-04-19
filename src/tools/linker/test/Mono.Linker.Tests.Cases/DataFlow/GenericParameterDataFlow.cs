@@ -735,6 +735,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestNullType ();
 				TestUnknownInput (null);
+				TestWithUnknownTypeArray (null);
+				TestWithArrayUnknownIndexSet (0);
+				TestWithArrayUnknownLengthSet (1);
 				TestNoArguments ();
 
 				TestWithRequirements ();
@@ -768,6 +771,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				inputType.MakeGenericType (typeof (TestType));
 			}
 
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithUnknownTypeArray (Type[] types)
+			{
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithArrayUnknownIndexSet (int indexToSet)
+			{
+				Type[] types = new Type[1];
+				types[indexToSet] = typeof (TestType);
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithArrayUnknownLengthSet (int arrayLen)
+			{
+				Type[] types = new Type[arrayLen];
+				types[0] = typeof (TestType);
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
+			}
+
 			[RecognizedReflectionAccessPattern]
 			static void TestNoArguments ()
 			{
@@ -778,8 +806,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirements ()
 			{
 				// Currently this is not analyzable since we don't track array elements.
@@ -787,16 +814,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsFromParam (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 			{
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsFromGenericParam<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
@@ -823,8 +848,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithMultipleArgumentsWithRequirements ()
 			{
 				typeof (GenericWithMultipleArgumentsWithRequirements<,>).MakeGenericType (typeof (TestType), typeof (TestType));
@@ -836,8 +860,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithNewConstraint ()
 			{
 				typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
@@ -847,8 +870,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithStructConstraint ()
 			{
 				typeof (GenericWithStructConstraint<>).MakeGenericType (typeof (TestType));
@@ -858,8 +880,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithUnmanagedConstraint ()
 			{
 				typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (typeof (TestType));
@@ -881,8 +902,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				TestNullMethod ();
-				TestUnknownInput (null);
+				TestUnknownMethod (null);
 				TestUnknownMethodButNoTypeArguments (null);
+				TestWithUnknownTypeArray (null);
+				TestWithArrayUnknownIndexSet (0);
+				TestWithArrayUnknownIndexSetByRef (0);
+				TestWithArrayUnknownLengthSet (1);
+				TestWithArrayPassedToAnotherMethod ();
 				TestWithNoArguments ();
 
 				TestWithRequirements ();
@@ -890,6 +916,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestWithRequirementsFromGenericParam<TestType> ();
 				TestWithRequirementsViaRuntimeMethod ();
 				TestWithRequirementsButNoTypeArguments ();
+
+				TestWithMultipleKnownGenericParameters ();
+				TestWithOneUnknownGenericParameter (null);
+				TestWithPartiallyInitializedGenericTypeArray ();
+				TestWithConditionalGenericTypeSet (true);
 
 				TestWithNoRequirements ();
 				TestWithNoRequirementsFromParam (null);
@@ -911,7 +942,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
 				messageCode: "IL2060")]
-			static void TestUnknownInput (MethodInfo mi)
+			static void TestUnknownMethod (MethodInfo mi)
 			{
 				mi.MakeGenericMethod (typeof (TestType));
 			}
@@ -922,6 +953,61 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
 				mi.MakeGenericMethod (Type.EmptyTypes);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithUnknownTypeArray (Type[] types)
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (types);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithArrayUnknownIndexSet (int indexToSet)
+			{
+				Type[] types = new Type[1];
+				types[indexToSet] = typeof (TestType);
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (types);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
+			{
+				Type[] types = new Type[1];
+				types[0] = typeof (TestType);
+				ref Type t = ref types[indexToSet];
+				t = typeof (TestType);
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (types);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithArrayUnknownLengthSet (int arrayLen)
+			{
+				Type[] types = new Type[arrayLen];
+				types[0] = typeof (TestType);
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (types);
+			}
+
+			static void MethodThatTakesArrayParameter (Type[] types)
+			{
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithArrayPassedToAnotherMethod ()
+			{
+				Type[] types = new Type[1];
+				types[0] = typeof (TestType);
+				MethodThatTakesArrayParameter (types);
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (types);
 			}
 
 			[RecognizedReflectionAccessPattern]
@@ -935,16 +1021,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirements ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
 					.MakeGenericMethod (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsFromParam (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 			{
@@ -959,8 +1043,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (typeof (T));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+
+			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsViaRuntimeMethod ()
 			{
 				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithRequirements), Type.EmptyTypes)
@@ -971,12 +1055,59 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				messageCode: "IL2060")]
 			static void TestWithRequirementsButNoTypeArguments ()
 			{
-				// Linker could figure out that this is not a problem, but it's not worth the complexity, since this will always throw at runtime
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
 					.MakeGenericMethod (Type.EmptyTypes);
 			}
 
 			public static void GenericWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+			{
+			}
+
+			[RecognizedReflectionAccessPattern]
+			static void TestWithMultipleKnownGenericParameters ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
+					.MakeGenericMethod (typeof (TestType), typeof (TestType), typeof (TestType));
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithOneUnknownGenericParameter (Type[] types)
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
+					.MakeGenericMethod (typeof (TestType), typeof (TestStruct), types[0]);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithPartiallyInitializedGenericTypeArray ()
+			{
+				Type[] types = new Type[3];
+				types[0] = typeof (TestType);
+				types[1] = typeof (TestStruct);
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
+					.MakeGenericMethod (types);
+			}
+
+			[RecognizedReflectionAccessPattern]
+			static void TestWithConditionalGenericTypeSet (bool thirdParameterIsStruct)
+			{
+				Type[] types = new Type[3];
+				types[0] = typeof (TestType);
+				types[1] = typeof (TestStruct);
+				if (thirdParameterIsStruct) {
+					types[2] = typeof (TestStruct);
+				} else {
+					types[2] = typeof (TestType);
+				}
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
+					.MakeGenericMethod (types);
+			}
+
+			public static void GenericMultipleParameters<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] U,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] V> ()
 			{
 			}
 
@@ -1005,8 +1136,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+
+			[RecognizedReflectionAccessPattern]
 			static void TestWithMultipleArgumentsWithRequirements ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithMultipleArgumentsWithRequirements), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1019,8 +1150,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithNewConstraint ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1032,8 +1162,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var t = new T ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithStructConstraint ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1045,8 +1174,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var t = new T ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[RecognizedReflectionAccessPattern]
 			static void TestWithUnmanagedConstraint ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)

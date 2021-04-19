@@ -100,7 +100,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			var array = new object[1];
 			array[0] = array.GetType ();
+			MakeArrayValuesUnknown (array);
 			((MethodThisDataFlowTypeTest) array[0]).RequireThisNonPublicMethods ();
+
+			static void MakeArrayValuesUnknown (object[] array)
+			{
+			}
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodThisDataFlowTypeTest), nameof (MethodThisDataFlowTypeTest.RequireThisPublicMethods), new Type[] { },

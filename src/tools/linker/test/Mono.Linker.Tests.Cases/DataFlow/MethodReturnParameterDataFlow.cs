@@ -126,7 +126,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			var array = new object[1];
 			array[0] = this.GetType ();
+			MakeArrayValuesUnknown (array);
 			return (Type) array[0];
+
+			static void MakeArrayValuesUnknown (object[] array)
+			{
+			}
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (RequirePublicConstructors), new Type[] { typeof (Type) }, messageCode: "IL2072")]
