@@ -139,7 +139,7 @@ namespace System.Threading
             }
         }
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo WaitInfo => EnsureWaitInfo();
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo => Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
 #endif
 
         public ThreadPriority Priority
@@ -206,11 +206,6 @@ namespace System.Threading
         }
 
 #if TARGET_UNIX || TARGET_BROWSER
-        private WaitSubsystem.ThreadWaitInfo EnsureWaitInfo()
-        {
-            return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
-        }
-
         private WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
         {
             var value = new WaitSubsystem.ThreadWaitInfo(this);
@@ -323,9 +318,6 @@ namespace System.Threading
         private static Thread InitializeCurrentThread()
         {
             var current = GetCurrentThread();
-#if TARGET_UNIX || TARGET_BROWSER
-            current.EnsureWaitInfo();
-#endif
             t_currentThread = current;
             return t_currentThread;
         }
