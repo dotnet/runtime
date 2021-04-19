@@ -157,6 +157,7 @@
     <Compile Include="Serialization\TestClasses\TestClasses.SimpleTestStructWithFields.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.ValueTypedMember.cs" />
     <Compile Include="Serialization\TestData.cs" />
+    <Compile Include="Serialization\TimeSpanTests.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
     <Compile Include="Serialization\WriteValueTests.cs" />

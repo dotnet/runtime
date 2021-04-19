@@ -71,6 +71,7 @@ namespace System.Text.Json
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
             Add(JsonMetadataServices.StringConverter);
+            Add(JsonMetadataServices.TimeSpanConverter);
             Add(JsonMetadataServices.UInt16Converter);
             Add(JsonMetadataServices.UInt32Converter);
             Add(JsonMetadataServices.UInt64Converter);
