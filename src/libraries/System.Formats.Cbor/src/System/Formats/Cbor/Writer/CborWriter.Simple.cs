@@ -6,17 +6,17 @@ using System.Runtime.CompilerServices;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
+        // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
+
         /// <summary>Writes a half-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
         /// The written data is not accepted under the current conformance mode.</exception>
-        // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteHalf(Half value)
         {
             EnsureWriteCapacity(1 + HalfHelpers.SizeOfHalf);
@@ -28,7 +28,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a single-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -48,7 +48,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a double-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a boolean value (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -104,7 +104,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes a <see langword="null" /> value (major type 7).</summary>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -116,8 +116,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a simple value encoding (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="value" /> parameter is in the invalid 24-31 range.</exception>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="value" /> parameter is in the invalid 24-31 range.</exception>
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-

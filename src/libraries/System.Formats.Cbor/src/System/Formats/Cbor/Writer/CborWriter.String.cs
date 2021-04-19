@@ -7,7 +7,6 @@ using System.Text;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
         // Implements major type 2,3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -17,8 +16,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a buffer as a byte string encoding (major type 2).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -35,7 +34,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a buffer as a byte string encoding (major type 2).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -60,13 +59,16 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the start of an indefinite-length byte string (major type 2).</summary>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
         /// The written data is not accepted under the current conformance mode.</exception>
-        /// <remarks>Pushes a context where definite-length chunks of the same major type can be written.
-        /// In canonical conformance modes, the writer will reject indefinite-length writes unless the <see cref="System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.</remarks>
+        /// <remarks>
+        /// Pushes a context where definite-length chunks of the same major type can be written.
+        /// In canonical conformance modes, the writer will reject indefinite-length writes unless
+        /// the <see cref="ConvertIndefiniteLengthEncodings" /> flag is enabled.
+        /// </remarks>
         public void WriteStartIndefiniteLengthByteString()
         {
             if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
@@ -88,7 +90,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the end of an indefinite-length byte string (major type 2).</summary>
-        /// <exception cref="System.InvalidOperationException">The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException">The written data is not accepted under the current conformance mode.</exception>
         public void WriteEndIndefiniteLengthByteString()
         {
             PopDataItem(CborMajorType.ByteString);
@@ -97,9 +99,9 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a buffer as a UTF-8 string encoding (major type 3).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
-        /// <exception cref="System.ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -116,8 +118,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a buffer as a UTF-8 string encoding (major type 3).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -154,13 +156,16 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the start of an indefinite-length UTF-8 string (major type 3).</summary>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
         /// The written data is not accepted under the current conformance mode.</exception>
-        /// <remarks>Pushes a context where definite-length chunks of the same major type can be written.
-        /// In canonical conformance modes, the writer will reject indefinite-length writes unless the <see cref="System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.</remarks>
+        /// <remarks>
+        /// Pushes a context where definite-length chunks of the same major type can be written.
+        /// In canonical conformance modes, the writer will reject indefinite-length writes unless
+        /// the <see cref="ConvertIndefiniteLengthEncodings" /> flag is enabled.
+        /// </remarks>
         public void WriteStartIndefiniteLengthTextString()
         {
             if (!ConvertIndefiniteLengthEncodings && CborConformanceModeHelpers.RequiresDefiniteLengthItems(ConformanceMode))
@@ -182,7 +187,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the end of an indefinite-length UTF-8 string (major type 3).</summary>
-        /// <exception cref="System.InvalidOperationException">The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException">The written data is not accepted under the current conformance mode.</exception>
         public void WriteEndIndefiniteLengthTextString()
         {
             PopDataItem(CborMajorType.TextString);

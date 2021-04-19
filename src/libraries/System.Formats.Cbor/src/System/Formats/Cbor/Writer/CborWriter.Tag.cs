@@ -6,12 +6,11 @@ using System.Numerics;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
         /// <summary>Assign a semantic tag (major type 6) to the next data item.</summary>
         /// <param name="tag">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -30,7 +29,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes the provided value as a tagged date/time string, as described in RFC7049 section 2.4.1.</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -48,7 +47,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a unix time in seconds as a tagged date/time value, as described in RFC7049 section 2.4.1.</summary>
         /// <param name="seconds">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -61,8 +60,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a unix time in seconds as a tagged date/time value, as described in RFC7049 section 2.4.1.</summary>
         /// <param name="seconds">The value to write.</param>
-        /// <exception cref="System.ArgumentException">The <paramref name="seconds" /> parameter cannot be infinite or NaN</exception>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="ArgumentException">The <paramref name="seconds" /> parameter cannot be infinite or NaN</exception>
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -80,7 +79,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes the provided value as a tagged bignum encoding, as described in RFC7049 section 2.4.2.</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-
@@ -97,7 +96,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes the provided value value as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
         /// -or-
         /// The major type of the encoded value is not permitted in the parent data item.
         /// -or-

@@ -6,13 +6,12 @@ using System.Numerics;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         /// <summary>Reads the next data item as a semantic tag (major type 6).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -29,8 +28,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a semantic tag (major type 6), without advancing the reader.</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -41,10 +40,10 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a tagged date/time string, as described in RFC7049 section 2.4.1.</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next date item does not have the correct semantic tag.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -89,10 +88,10 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a tagged unix time in seconds, as described in RFC7049 section 2.4.1.</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next date item does not have the correct semantic tag.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -141,10 +140,10 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a tagged bignum encoding, as described in RFC7049 section 2.4.2.</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next date item does not have the correct semantic tag.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -188,11 +187,11 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a tagged decimal fraction encoding, as described in RFC7049 section 2.4.3.</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next date item does not have the correct semantic tag.</exception>
-        /// <exception cref="System.OverflowException">Decoded decimal fraction is either too large or too small for a <see cref="decimal" /> value.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="OverflowException">Decoded decimal fraction is either too large or too small for a <see cref="decimal" /> value.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-

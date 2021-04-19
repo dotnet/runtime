@@ -8,7 +8,6 @@ using System.Threading;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         // Implements major type 2,3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -18,8 +17,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a byte string (major type 2).</summary>
         /// <returns>The decoded byte array.</returns>
-        /// <exception cref="System.InvalidOperationException">The next date item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next date item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -53,8 +52,8 @@ namespace System.Formats.Cbor
         /// <param name="destination">The buffer in which to write the read bytes.</param>
         /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the value and the reader advances; otherwise, <see langword="false" />.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -93,11 +92,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the next data item as a definite-length byte string (major type 2).</summary>
-        /// <returns>A <see cref="System.ReadOnlyMemory{T}" /> view of the byte string payload.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <returns>A <see cref="ReadOnlyMemory{T}" /> view of the byte string payload.</returns>
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The data item is an indefinite-length byte string.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -122,10 +121,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the next data item as the start of an indefinite-length byte string (major type 2).</summary>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next data item is a definite-length encoded string.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -149,10 +148,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Ends reading an indefinite-length byte string (major type 2).</summary>
-        /// <exception cref="System.InvalidOperationException">The current context is not an indefinite-length string.
+        /// <exception cref="InvalidOperationException">The current context is not an indefinite-length string.
         /// -or-
         /// The reader is not at the end of the string.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">There was an unexpected end of CBOR encoding data.</exception>
+        /// <exception cref="CborContentException">There was an unexpected end of CBOR encoding data.</exception>
         public void ReadEndIndefiniteLengthByteString()
         {
             ValidateNextByteIsBreakByte();
@@ -163,8 +162,8 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a UTF-8 text string (major type 3).</summary>
         /// <returns>The decoded string.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -209,8 +208,8 @@ namespace System.Formats.Cbor
         /// <param name="destination">The buffer in which to write.</param>
         /// <param name="charsWritten">On success, receives the number of chars written to <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> and advances the reader if <paramref name="destination" /> had sufficient length to receive the value, otherwise <see langword="false" /> and the reader does not advance.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -253,11 +252,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the next data item as a definite-length UTF-8 text string (major type 3).</summary>
-        /// <returns>A <see cref="System.ReadOnlyMemory{T}" /> view of the raw UTF-8 payload.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <returns>A <see cref="ReadOnlyMemory{T}" /> view of the raw UTF-8 payload.</returns>
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The data item is an indefinite-length text string.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -289,10 +288,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the next data item as the start of an indefinite-length UTF-8 text string (major type 3).</summary>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next data item is a definite-length encoded string.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -316,10 +315,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Ends reading an indefinite-length UTF-8 text string (major type 3).</summary>
-        /// <exception cref="System.InvalidOperationException">The current context is not an indefinite-length string.
+        /// <exception cref="InvalidOperationException">The current context is not an indefinite-length string.
         /// -or-
         /// The reader is not at the end of the string.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">There was an unexpected end of CBOR encoding data.</exception>
+        /// <exception cref="CborContentException">There was an unexpected end of CBOR encoding data.</exception>
         public void ReadEndIndefiniteLengthTextString()
         {
             ValidateNextByteIsBreakByte();

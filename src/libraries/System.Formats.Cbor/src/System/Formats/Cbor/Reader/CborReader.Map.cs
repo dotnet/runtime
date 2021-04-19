@@ -6,7 +6,6 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         private KeyEncodingComparer? _keyEncodingComparer;
@@ -14,16 +13,20 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as the start of a map (major type 5).</summary>
         /// <returns>The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
         /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
-        /// <remarks>Map contents are consumed as if they were arrays twice the length of the map's declared size.
-        /// For instance, a map of size `1` containing a key of type `int` with a value of type `string` must be consumed by successive calls to <see cref="System.Formats.Cbor.CborReader.ReadInt32" /> and <see cref="System.Formats.Cbor.CborReader.ReadTextString" />.
+        /// <remarks>
+        /// Map contents are consumed as if they were arrays twice the length of the map's declared size.
+        /// For instance, a map of size `1` containing a key of type `int` with a value of type `string`
+        /// must be consumed by successive calls to <see cref="ReadInt32" /> and <see cref="ReadTextString" />.
         /// It is up to the caller to keep track of whether the next value is a key or a value.
-        /// Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type, for instance a map can contain keys that are maps themselves.</remarks>
+        /// Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+        /// for instance a map can contain keys that are maps themselves.
+        /// </remarks>
         public int? ReadStartMap()
         {
             int? length;
@@ -61,10 +64,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the end of a map (major type 5).</summary>
-        /// <exception cref="System.InvalidOperationException">The current context is not a map.
+        /// <exception cref="InvalidOperationException">The current context is not a map.
         /// -or-
         /// The reader is not at the end of the map.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-

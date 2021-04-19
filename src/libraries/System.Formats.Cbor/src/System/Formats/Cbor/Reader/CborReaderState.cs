@@ -66,7 +66,11 @@ namespace System.Formats.Cbor
         /// <summary>Indicates that the next CBOR data item encodes a <see cref="bool" /> value (major type 7).</summary>
         Boolean,
 
-        /// <summary><para>Indicates that the reader has completed reading a full CBOR document.</para><para>If <see cref="System.Formats.Cbor.CborReader.AllowMultipleRootLevelValues" /> is set to <see langword="false" />, the reader will report this value even if the buffer contains trailing bytes.</para></summary>
+        /// <summary>
+        /// <para>Indicates that the reader has completed reading a full CBOR document.</para>
+        /// <para>If <see cref="CborReader.AllowMultipleRootLevelValues" /> is set to <see langword="false" />,
+        /// the reader will report this value even if the buffer contains trailing bytes.</para>
+        /// </summary>
         Finished,
     }
 }

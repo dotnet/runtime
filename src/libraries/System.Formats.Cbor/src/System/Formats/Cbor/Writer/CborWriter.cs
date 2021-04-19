@@ -54,12 +54,12 @@ namespace System.Formats.Cbor
         /// <value><see langword="true" /> if the writer has completed writing a complete root-level CBOR document, or sequence of root-level CBOR documents; <see langword="false" /> otherwise.</value>
         public bool IsWriteCompleted => _currentMajorType is null && _itemsWritten > 0;
 
-        /// <summary>Initializes a new instance of <see cref="System.Formats.Cbor.CborWriter" /> class using the specified configuration.</summary>
+        /// <summary>Initializes a new instance of <see cref="CborWriter" /> class using the specified configuration.</summary>
         /// <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
-        /// Defaults to <see cref="System.Formats.Cbor.CborConformanceMode.Strict" /> conformance mode.</param>
+        /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
         /// <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" /></param>
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false" />.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not a defined <see cref="System.Formats.Cbor.CborConformanceMode" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not a defined <see cref="CborConformanceMode" />.</exception>
         public CborWriter(CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
@@ -95,7 +95,7 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a single CBOR data item which has already been encoded.</summary>
         /// <param name="encodedValue">The encoded value to write.</param>
-        /// <exception cref="System.ArgumentException"><paramref name="encodedValue" /> is not a well-formed CBOR encoding.
+        /// <exception cref="ArgumentException"><paramref name="encodedValue" /> is not a well-formed CBOR encoding.
         /// -or-
         /// <paramref name="encodedValue" /> is not valid under the current conformance mode.</exception>
         public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue)
@@ -147,14 +147,14 @@ namespace System.Formats.Cbor
 
         /// <summary>Returns a new array containing the encoded value.</summary>
         /// <returns>A precisely-sized array containing the encoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
+        /// <exception cref="InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
         public byte[] Encode() => GetSpanEncoding().ToArray();
 
         /// <summary>Writes the encoded representation of the data to <paramref name="destination" />.</summary>
         /// <param name="destination">The buffer in which to write.</param>
         /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
-        /// <exception cref="System.InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
-        /// <exception cref="System.ArgumentException">The destination buffer is not large enough to hold the encoded value.</exception>
+        /// <exception cref="InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
+        /// <exception cref="ArgumentException">The destination buffer is not large enough to hold the encoded value.</exception>
         public int Encode(Span<byte> destination)
         {
             ReadOnlySpan<byte> encoding = GetSpanEncoding();
@@ -172,7 +172,7 @@ namespace System.Formats.Cbor
         /// <param name="destination">The buffer in which to write.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> if the encode succeeded, <see langword="false" /> if <paramref name="destination" /> is too small.</returns>
-        /// <exception cref="System.InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
+        /// <exception cref="InvalidOperationException">The writer does not contain a complete CBOR value or sequence of root-level values.</exception>
         public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
             ReadOnlySpan<byte> encoding = GetSpanEncoding();

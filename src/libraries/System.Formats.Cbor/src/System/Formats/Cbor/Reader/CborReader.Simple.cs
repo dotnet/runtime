@@ -5,17 +5,16 @@ using System.Buffers.Binary;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         /// <summary>Reads the next data item as a half-precision floating point number (major type 7).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next simple value is not a floating-point number encoding.
         /// -or-
         /// The encoded value is a double-precision float.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -46,12 +45,12 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a single-precision floating point number (major type 7).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next simple value is not a floating-point number encoding.
         /// -or-
         /// The encoded value is a double-precision float</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -89,10 +88,10 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a double-precision floating point number (major type 7).</summary>
         /// <returns>The decoded <see cref="double" /> value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next simple value is not a floating-point number encoding</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -133,10 +132,10 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a boolean value (major type 7).</summary>
         /// <returns>The decoded value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next simple value is not a boolean encoding</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -158,10 +157,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the next data item as a <see langword="null" /> value (major type 7).</summary>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next simple value is not a <see langword="null" /> value encoding.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -183,10 +182,10 @@ namespace System.Formats.Cbor
 
         /// <summary>Reads the next data item as a CBOR simple value (major type 7).</summary>
         /// <returns>The decoded CBOR simple value.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.
         /// -or-
         /// The next simple value is not a simple value encoding.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-

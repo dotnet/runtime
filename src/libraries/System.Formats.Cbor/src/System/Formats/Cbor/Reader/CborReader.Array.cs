@@ -3,13 +3,12 @@
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         /// <summary>Reads the next data item as the start of an array (major type 4).</summary>
         /// <returns>The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.</returns>
-        /// <exception cref="System.InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -41,10 +40,10 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the end of an array (major type 4).</summary>
-        /// <exception cref="System.InvalidOperationException">The current context is not an array.
+        /// <exception cref="InvalidOperationException">The current context is not an array.
         /// -or-
         /// The reader is not at the end of the array.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.</exception>
         public void ReadEndArray()

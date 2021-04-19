@@ -5,13 +5,12 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
         /// <summary>Reads the contents of the next value, discarding the result and advancing the reader.</summary>
-        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="System.Formats.Cbor.CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
-        /// <exception cref="System.InvalidOperationException">The reader is not at the start of new value.</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+        /// <exception cref="InvalidOperationException">The reader is not at the start of new value.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-
@@ -22,9 +21,9 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Reads the remaining contents of the current value context, discarding results and advancing the reader to the next value in the parent context.</summary>
-        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="System.Formats.Cbor.CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
-        /// <exception cref="System.InvalidOperationException">The reader is at the root context</exception>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The next value has an invalid CBOR encoding.
+        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the skipped values, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+        /// <exception cref="InvalidOperationException">The reader is at the root context</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
         /// -or-
         /// There was an unexpected end of CBOR encoding data.
         /// -or-

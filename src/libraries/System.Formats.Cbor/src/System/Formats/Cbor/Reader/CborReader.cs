@@ -47,12 +47,12 @@ namespace System.Formats.Cbor
         /// <value>The total number of unread bytes in the buffer.</value>
         public int BytesRemaining => _data.Length - _offset;
 
-        /// <summary>Initializes a <see cref="System.Formats.Cbor.CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
+        /// <summary>Initializes a <see cref="CborReader" /> instance over the specified <paramref name="data" /> with the given configuration.</summary>
         /// <param name="data">The CBOR encoded data to read.</param>
         /// <param name="conformanceMode">One of the enumeration values to specify a conformance mode guiding the checks performed on the encoded data.
-        /// Defaults to <see cref="System.Formats.Cbor.CborConformanceMode.Strict" /> conformance mode.</param>
+        /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to indicate that multiple root-level values are supported by the reader; otherwise, <see langword="false" />.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not defined.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not defined.</exception>
         public CborReader(ReadOnlyMemory<byte> data, CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool allowMultipleRootLevelValues = false)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
@@ -63,10 +63,10 @@ namespace System.Formats.Cbor
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
         }
 
-        /// <summary>Reads the next CBOR data item, returning a <see cref="System.ReadOnlyMemory{T}" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
-        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the read value, equivalent to using <see cref="System.Formats.Cbor.CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
+        /// <summary>Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
+        /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the read value, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
         /// <returns>A view of the encoded value as a contiguous region of memory.</returns>
-        /// <exception cref="System.Formats.Cbor.CborContentException">The data item is not a valid CBOR data item encoding.
+        /// <exception cref="CborContentException">The data item is not a valid CBOR data item encoding.
         /// -or-
         /// The CBOR encoding is not valid under the current conformance mode.</exception>
         public ReadOnlyMemory<byte> ReadEncodedValue(bool disableConformanceModeChecks = false)
