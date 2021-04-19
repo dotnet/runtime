@@ -14,18 +14,7 @@ namespace System.Runtime.Serialization
 {
     internal abstract class PrimitiveDataContract : DataContract
     {
-        internal static PrimitiveDataContract? s_NullContract;
-        internal static PrimitiveDataContract NullContract
-        {
-            get
-            {
-                if (s_NullContract == null)
-                {
-                    s_NullContract = new NullPrimitiveDataContract();
-                }
-                return s_NullContract;
-            }
-        }
+        internal static readonly PrimitiveDataContract NullContract = new NullPrimitiveDataContract();
 
         private readonly PrimitiveDataContractCriticalHelper _helper;
 
@@ -68,7 +57,6 @@ namespace System.Runtime.Serialization
 
         internal MethodInfo XmlFormatWriterMethod
         {
-
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
