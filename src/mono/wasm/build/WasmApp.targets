@@ -241,6 +241,7 @@
       <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
       <_NodeToolsVersionedPath Condition="Exists($(_NodeToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
       <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
+      <EmscriptenNodeBinPath   Condition="'$(EmscriptenNodeToolsPath)' != ''">$(EmscriptenNodeToolsPath)\bin\</EmscriptenNodeBinPath>
 
       <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
     </PropertyGroup>
@@ -248,6 +249,7 @@
     <PropertyGroup>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeBinPath)' == '' or !Exists('$(EmscriptenNodeBinPath)'))">%24(EmscriptenNodeBinPath)=$(EmscriptenNodeBinPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmSdkUpstreamBinPath)' == '' or !Exists('$(EmSdkUpstreamBinPath)'))">%24(EmSdkUpstreamBinPath)=$(EmSdkUpstreamBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
 
@@ -256,8 +258,10 @@
       <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
       <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
       <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
+      <EmscriptenPythonBinPath   Condition="'$(EmscriptenPythonToolsPath)' != ''">$(EmscriptenPythonToolsPath)\bin\</EmscriptenPythonBinPath>
 
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonBinPath)' == '' or !Exists('$(EmscriptenPythonBinPath)'))">%24(EmscriptenPythonBinPath)=$(EmscriptenPythonBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -273,7 +277,9 @@
     <PropertyGroup>
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+      <EmscriptenNodeBinPath     Condition="'$(EmscriptenNodeBinPath)' != ''"    >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeBinPath)))</EmscriptenNodeBinPath>
       <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
+      <EmscriptenPythonBinPath   Condition="'$(EmscriptenPythonBinPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenPythonBinPath)))</EmscriptenPythonBinPath>
       <EmSdkUpstreamBinPath      Condition="'$(EmSdkUpstreamBinPath)' != ''"     >$([MSBuild]::NormalizeDirectory($(EmSdkUpstreamBinPath)))</EmSdkUpstreamBinPath>
     </PropertyGroup>
 
@@ -285,15 +291,12 @@
     </ItemGroup>
 
     <!-- Paths to be added to environment variable `PATH` -->
-    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' != 'true'">
-      <_EmscriptenAddPATH Condition="'$(EmscriptenPythonToolsPath)' != ''" Include="$(EmscriptenPythonToolsPath)bin" />
-      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)emscripten" />
-    </ItemGroup>
+    <ItemGroup>
+      <_EmscriptenAddPATH Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'" Include="$(EmscriptenSdkToolsPath)" />
 
-    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'">
-      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)" />
-      <_EmscriptenAddPATH Include="$(EmscriptenNodeToolsPath)bin" />
-      <_EmscriptenAddPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
+      <_EmscriptenAddPATH Condition="'$(EmscriptenPythonBinPath)' != ''" Include="$(EmscriptenPythonBinPath)" />
+      <_EmscriptenAddPATH Condition="'$(EmscriptenNodeBinPath)' != ''"   Include="$(EmscriptenNodeBinPath)" />
+      <_EmscriptenAddPATH Condition="'$(EmSdkUpstreamBinPath)' != ''"    Include="$(EmSdkUpstreamBinPath)" />
     </ItemGroup>
 
     <!-- paths with trailing slash, like:
