@@ -90,7 +90,7 @@ namespace System
 
                 ref byte refDataAsBytes = ref Unsafe.As<T, byte>(ref refData);
                 nuint totalByteLength = numElements * (nuint)Unsafe.SizeOf<T>(); // get this calculation ready ahead of time
-                nuint stopLoopAtOffset = totalByteLength & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
+                nuint stopLoopAtOffset = totalByteLength & (nuint)(nint)(2 * -Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 
                 // Loop, writing 2 vectors at a time.
@@ -122,6 +122,7 @@ namespace System
                 // fit an entire vector's worth of data. Instead of falling back to a loop, we'll write
                 // a vector at the very end of the buffer. This may involve overwriting previously
                 // populated data, which is fine since we're splatting the same value for all entries.
+                // (n.b. This statement is no longer valid if we try to ensure these writes are aligned.)
                 // There's no need to perform a length check here because we already performed this
                 // check before entering the vectorized code path.
 

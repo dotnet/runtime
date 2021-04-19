@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 
+using System.Numerics;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -332,77 +333,129 @@ namespace System
 
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
         {
-            Debug.Assert((int)Unsafe.AsPointer(ref ip) % sizeof(IntPtr) == 0, "Should've been aligned on natural word boundary.");
+            Debug.Assert((nint)Unsafe.AsPointer(ref ip) % sizeof(IntPtr) == 0, "Should've been aligned on natural word boundary.");
 
-            // First write backward 8 natural words at a time.
-            // Writing backward allows us to get away with only simple modifications to the
-            // mov instruction's base and index registers between loop iterations.
+            // Since references are always natural word-aligned, our "unaligned" writes below will
+            // always be natural word-aligned as well. Even if the full SIMD write is split across
+            // pages, no core will ever observe any reference as containing a torn address.
 
-            for (; pointerSizeLength >= 8; pointerSizeLength -= 8)
+            if (Vector.IsHardwareAccelerated && pointerSizeLength >= (uint)(Vector<byte>.Count / sizeof(IntPtr)))
             {
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -4) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -5) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -6) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -7) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -8) = default;
-            }
+                // We have enough data for at least one vectorized write.
+                // Perform that write now, potentially unaligned.
 
-            Debug.Assert(pointerSizeLength <= 7);
+                Vector<byte> zero = default;
+                ref byte refDataAsBytes = ref Unsafe.As<IntPtr, byte>(ref ip);
+                Unsafe.WriteUnaligned(ref refDataAsBytes, zero);
 
-            // The logic below works by trying to minimize the number of branches taken for any
-            // given range of lengths. For example, the lengths [ 4 .. 7 ] are handled by a single
-            // branch, [ 2 .. 3 ] are handled by a single branch, and [ 1 ] is handled by a single
-            // branch.
-            //
-            // We can write both forward and backward as a perf improvement. For example,
-            // the lengths [ 4 .. 7 ] can be handled by zeroing out the first four natural
-            // words and the last 3 natural words. In the best case (length = 7), there are
-            // no overlapping writes. In the worst case (length = 4), there are three
-            // overlapping writes near the middle of the buffer. In perf testing, the
-            // penalty for performing duplicate writes is less expensive than the penalty
-            // for complex branching.
+                // Now, attempt to align the rest of the writes.
+                // It's possible that the GC could kick in mid-method and unalign everything, but that should
+                // be rare enough that it's not worth worrying about here. Worst case it slows things down a bit.
 
-            if (pointerSizeLength >= 4)
-            {
-                goto Write4To7;
-            }
-            else if (pointerSizeLength >= 2)
-            {
-                goto Write2To3;
-            }
-            else if (pointerSizeLength > 0)
-            {
-                goto Write1;
+                nint offsetFromAligned = (nint)Unsafe.AsPointer(ref refDataAsBytes) & (Vector<byte>.Count - 1);
+                nuint totalByteLength = pointerSizeLength * (nuint)sizeof(IntPtr) + (nuint)offsetFromAligned - (nuint)Vector<byte>.Count;
+                refDataAsBytes = ref Unsafe.Add(ref refDataAsBytes, Vector<byte>.Count); // legal GC-trackable reference due to earlier length check
+                refDataAsBytes = ref Unsafe.Add(ref refDataAsBytes, -offsetFromAligned); // this subtraction MUST BE AFTER the addition above to avoid creating an intermediate invalid gcref
+                nuint offset = 0;
+
+                // Loop, writing 2 vectors at a time.
+
+                if (totalByteLength >= (uint)(2 * Vector<byte>.Count))
+                {
+                    nuint stopLoopAtOffset = totalByteLength & (nuint)(nint)(2 * -Vector<byte>.Count); // intentional sign extension carries the negative bit
+
+                    do
+                    {
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset), zero);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset + (nuint)Vector<byte>.Count), zero);
+                        offset += (uint)(2 * Vector<byte>.Count);
+                    } while (offset < stopLoopAtOffset);
+                }
+
+                // At this point, if any data remains to be written, it's strictly less than
+                // 2 * sizeof(Vector) bytes. The loop above had us write an even number of vectors.
+                // If the total byte length instead involves us writing an odd number of vectors, write
+                // one additional vector now. The bit check below tells us if we're in an "odd vector
+                // count" situation.
+
+                if ((totalByteLength & (nuint)Vector<byte>.Count) != 0)
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset), zero);
+                }
+
+                // It's possible that some small buffer remains to be populated - something that won't
+                // fit an entire vector's worth of data. Instead of falling back to a loop, we'll write
+                // a vector at the very end of the buffer. This may involve overwriting previously
+                // populated data, which is fine since we're just zeroing everything out anyway.
+                // There's no need to perform a length check here because we already performed this
+                // check before entering the vectorized code path.
+
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, totalByteLength - (nuint)Vector<byte>.Count), zero);
             }
             else
             {
-                return; // nothing to write
+                // If we reached this point, vectorization is disabled, or there are too few
+                // elements for us to vectorize. Fall back to an unrolled loop.
+
+                nuint i = 0;
+
+                // Write 8 elements at a time
+                // Skip this check if "write 8 elements" would've gone down the vectorized code path earlier
+
+                if (!Vector.IsHardwareAccelerated || Vector<byte>.Count / sizeof(IntPtr) > 8) // JIT turns this into constant true or false
+                {
+                    if (pointerSizeLength >= 8)
+                    {
+                        nuint stopLoopAtOffset = pointerSizeLength & ~(nuint)7;
+                        do
+                        {
+                            Unsafe.Add(ref ip, (nint)i + 0) = default;
+                            Unsafe.Add(ref ip, (nint)i + 1) = default;
+                            Unsafe.Add(ref ip, (nint)i + 2) = default;
+                            Unsafe.Add(ref ip, (nint)i + 3) = default;
+                            Unsafe.Add(ref ip, (nint)i + 4) = default;
+                            Unsafe.Add(ref ip, (nint)i + 5) = default;
+                            Unsafe.Add(ref ip, (nint)i + 6) = default;
+                            Unsafe.Add(ref ip, (nint)i + 7) = default;
+                        } while ((i += 8) < stopLoopAtOffset);
+                    }
+                }
+
+                // Write next 4 elements if needed
+                // Skip this check if "write 4 elements" would've gone down the vectorized code path earlier
+
+                if (!Vector.IsHardwareAccelerated || Vector<byte>.Count / sizeof(IntPtr) > 4) // JIT turns this into const true or false
+                {
+                    if ((pointerSizeLength & 4) != 0)
+                    {
+                        Unsafe.Add(ref ip, (nint)i + 0) = default;
+                        Unsafe.Add(ref ip, (nint)i + 1) = default;
+                        Unsafe.Add(ref ip, (nint)i + 2) = default;
+                        Unsafe.Add(ref ip, (nint)i + 3) = default;
+                        i += 4;
+                    }
+                }
+
+                // Write next 2 elements if needed
+                // Skip this check if "write 2 elements" would've gone down the vectorized code path earlier
+
+                if (!Vector.IsHardwareAccelerated || Vector<byte>.Count / sizeof(IntPtr) > 2) // JIT turns this into const true or false
+                {
+                    if ((pointerSizeLength & 2) != 0)
+                    {
+                        Unsafe.Add(ref ip, (nint)i + 0) = default;
+                        Unsafe.Add(ref ip, (nint)i + 1) = default;
+                        i += 2;
+                    }
+                }
+
+                // Write final element if needed
+
+                if ((pointerSizeLength & 1) != 0)
+                {
+                    Unsafe.Add(ref ip, (nint)i) = default;
+                }
             }
-
-        Write4To7:
-            Debug.Assert(pointerSizeLength >= 4);
-
-            // Write first four and last three.
-            Unsafe.Add(ref ip, 2) = default;
-            Unsafe.Add(ref ip, 3) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
-
-        Write2To3:
-            Debug.Assert(pointerSizeLength >= 2);
-
-            // Write first two and last one.
-            Unsafe.Add(ref ip, 1) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
-
-        Write1:
-            Debug.Assert(pointerSizeLength >= 1);
-
-            // Write only element.
-            ip = default;
         }
     }
 }
