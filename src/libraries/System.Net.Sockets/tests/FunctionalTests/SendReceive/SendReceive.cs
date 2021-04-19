@@ -592,10 +592,9 @@ namespace System.Net.Sockets.Tests
                 {
                     for (int i = 0; i < 3; i++)
                     {
-                        // Zero byte send should be a no-op and complete immediately
-                        Task<int> sendTask = SendAsync(client, new ArraySegment<byte>(Array.Empty<byte>()));
-                        Assert.True(sendTask.IsCompleted);
-                        Assert.Equal(0, await sendTask);
+                        // Zero byte send should be a no-op 
+                        int bytesSent = await SendAsync(client, new ArraySegment<byte>(Array.Empty<byte>()));
+                        Assert.Equal(0, bytesSent);
 
                         // Socket should still be usable
                         await SendAsync(client, new byte[] { 99 });
