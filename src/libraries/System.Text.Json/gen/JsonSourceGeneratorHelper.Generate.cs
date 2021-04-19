@@ -220,7 +220,7 @@ namespace System.Text.Json.SourceGeneration
             string typeCompilableName = typeMetadata.CompilableName;
             string typeFriendlyName = typeMetadata.FriendlyName;
 
-            string metadataInitSource = $"_{typeFriendlyName} = {JsonMetadataServicesClassName}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, new EnumConverter<{typeCompilableName}>({OptionsInstanceVariableName}));";
+            string metadataInitSource = $"_{typeFriendlyName} = {JsonMetadataServicesClassName}.{GetCreateValueInfoMethodRef(typeCompilableName)}({OptionsInstanceVariableName}, JsonMetadataServices.GetEnumConverter<{typeCompilableName}>({OptionsInstanceVariableName}));";
 
             return GenerateForType(typeMetadata, metadataInitSource);
         }
