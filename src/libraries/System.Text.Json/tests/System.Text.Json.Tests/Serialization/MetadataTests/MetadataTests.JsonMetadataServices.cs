@@ -10,10 +10,10 @@ using Xunit;
 
 namespace System.Text.Json.Tests.Serialization
 {
-    public static partial class MetadataServicesTests
+    public abstract partial class MetadataTests
     {
         [Fact]
-        public static void CreatePropertyInfo()
+        public void CreatePropertyInfo()
         {
             JsonSerializerOptions options = new();
 
@@ -102,7 +102,7 @@ namespace System.Text.Json.Tests.Serialization
         private class MyDerivedClass : MyClass { }
 
         [Fact]
-        public static void CreateObjectInfo()
+        public void CreateObjectInfo()
         {
             JsonSerializerOptions options = new();
 
@@ -146,7 +146,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void CreateValueInfo()
+        public void CreateValueInfo()
         {
             JsonSerializerOptions options = new();
 
@@ -162,7 +162,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void CreateArrayInfo()
+        public void CreateArrayInfo()
         {
             JsonSerializerOptions options = new();
 
@@ -182,7 +182,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void CreateListInfo()
+        public void CreateListInfo()
         {
             JsonSerializerOptions options = new();
 
@@ -204,7 +204,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void CreateDictionaryInfo()
+        public void CreateDictionaryInfo()
         {
             JsonSerializerOptions options = new();
 
@@ -249,7 +249,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void GetEnumConverter()
+        public void GetEnumConverter()
         {
             JsonConverter<DayOfWeek> converter = JsonMetadataServices.GetEnumConverter<DayOfWeek>(new JsonSerializerOptions());
             Assert.NotNull(converter);
@@ -257,7 +257,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void GetNullableConverter()
+        public void GetNullableConverter()
         {
             JsonSerializerOptions options = new();
             JsonConverter<DayOfWeek> enumConverter = JsonMetadataServices.GetEnumConverter<DayOfWeek>(options);
