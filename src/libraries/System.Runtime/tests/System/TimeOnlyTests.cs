@@ -374,7 +374,7 @@ namespace System.Tests
         [Fact]
         public static void OAndRFormatsTest()
         {
-            TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Today);
+            TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
             string formattedDate = timeOnly.ToString("o");
             Assert.Equal(16, formattedDate.Length);
             Assert.Equal(':', formattedDate[2]);
@@ -389,6 +389,7 @@ namespace System.Tests
             parsedTimeOnly = TimeOnly.ParseExact(formattedDate.AsSpan(), "O".AsSpan());
             Assert.Equal(timeOnly, parsedTimeOnly);
 
+            timeOnly = new TimeOnly(timeOnly.Hour, timeOnly.Minute, timeOnly.Second);
             formattedDate = timeOnly.ToString("r");
             Assert.Equal(8, formattedDate.Length);
             Assert.Equal(':', formattedDate[2]);
@@ -465,15 +466,23 @@ namespace System.Tests
             Span<char> buffer = stackalloc char[100];
             TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
 
+            buffer.Fill(' ');
             Assert.True(timeOnly.TryFormat(buffer, out int charsWritten));
+            Assert.Equal(charsWritten, buffer.TrimEnd().Length);
+
+            buffer.Fill(' ');
             Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "o"));
             Assert.Equal(16, charsWritten);
+            Assert.Equal(16, buffer.TrimEnd().Length);
+
+            buffer.Fill(' ');
             Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "R"));
             Assert.Equal(8, charsWritten);
+            Assert.Equal(8, buffer.TrimEnd().Length);
+
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
         }
-
     }
 }
