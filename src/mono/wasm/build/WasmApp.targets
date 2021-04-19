@@ -292,13 +292,14 @@
 
     <!-- Paths to be added to environment variable `PATH` -->
     <ItemGroup>
-      <_EmscriptenAddPATH Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'" Include="$(EmscriptenSdkToolsPath)" />
-
       <_EmscriptenAddPATH Condition="'$(EmscriptenPythonBinPath)' != ''" Include="$(EmscriptenPythonBinPath)" />
       <_EmscriptenAddPATH Condition="'$(EmscriptenNodeBinPath)' != ''"   Include="$(EmscriptenNodeBinPath)" />
       <_EmscriptenAddPATH Condition="'$(EmSdkUpstreamBinPath)' != ''"    Include="$(EmSdkUpstreamBinPath)" />
+    </ItemGroup>
 
-      <_EmscriptenAddPATH Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'"  Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
+    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'">
+      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)" />
+      <_EmscriptenAddPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
     </ItemGroup>
 
     <!-- paths with trailing slash, like:
