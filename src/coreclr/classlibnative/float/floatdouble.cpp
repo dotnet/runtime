@@ -7,40 +7,7 @@
 #include <common.h>
 
 #include "floatdouble.h"
-
-// The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
-// default compilation mode has previously caused performance regressions in floating-point code.
-// We enable /fp:fast semantics for the majority of the math functions, as it will speed up performance
-// and is really unlikely to cause any other code regressions.
-
-// Sin, Cos, and Tan on AMD64 Windows were previously implemented in vm\amd64\JitHelpers_Fast.asm
-// by calling x87 floating point code (fsin, fcos, fptan) because the CRT helpers were too slow. This
-// is no longer the case and the CRT call is used on all platforms.
-
-// Log, Log10 and Exp were previously slower with /fp:fast on SSE2 enabled hardware (see #500373).
-// This is no longer the case and they now consume use the /fp:fast versions.
-
-// Exp(+/-INFINITY) did not previously return the expected results of +0.0 (for -INFINITY)
-// and +INFINITY (for +INFINITY) so these cases were handled specially. As this is no longer
-// the case and the expected results are now returned, the special handling has been removed.
-
-// Previously there was more special handling for the x86 Windows version of Pow.
-// This additional handling was unnecessary and has since been removed.
-
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-///
-///                         beginning of /fp:fast scope
-///
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef _MSC_VER
-#pragma float_control(push)
-#pragma float_control(precise, off)
-#endif
+#include "clrmath.h"
 
 /*=====================================Abs======================================
 **
@@ -48,7 +15,7 @@
 FCIMPL1_V(double, COMDouble::Abs, double x)
     FCALL_CONTRACT;
 
-    return fabs(x);
+    return clrmath_fabs(x);
 FCIMPLEND
 
 /*=====================================Acos=====================================
@@ -57,7 +24,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Acos, double x)
     FCALL_CONTRACT;
 
-    return acos(x);
+    return clrmath_acos(x);
 FCIMPLEND
 
 /*=====================================Acosh====================================
@@ -66,7 +33,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Acosh, double x)
     FCALL_CONTRACT;
 
-    return acosh(x);
+    return clrmath_acosh(x);
 FCIMPLEND
 
 /*=====================================Asin=====================================
@@ -75,7 +42,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Asin, double x)
     FCALL_CONTRACT;
 
-    return asin(x);
+    return clrmath_asin(x);
 FCIMPLEND
 
 /*=====================================Asinh====================================
@@ -84,7 +51,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Asinh, double x)
     FCALL_CONTRACT;
 
-    return asinh(x);
+    return clrmath_asinh(x);
 FCIMPLEND
 
 /*=====================================Atan=====================================
@@ -93,7 +60,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Atan, double x)
     FCALL_CONTRACT;
 
-    return atan(x);
+    return clrmath_atan(x);
 FCIMPLEND
 
 /*=====================================Atanh====================================
@@ -102,7 +69,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Atanh, double x)
     FCALL_CONTRACT;
 
-    return atanh(x);
+    return clrmath_atanh(x);
 FCIMPLEND
 
 /*=====================================Atan2====================================
@@ -111,7 +78,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Atan2, double y, double x)
     FCALL_CONTRACT;
 
-    return atan2(y, x);
+    return clrmath_atan2(y, x);
 FCIMPLEND
 
 /*====================================Cbrt======================================
@@ -120,15 +87,8 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Cbrt, double x)
     FCALL_CONTRACT;
 
-    return cbrt(x);
+    return clrmath_cbrt(x);
 FCIMPLEND
-
-#if defined(_MSC_VER) && defined(TARGET_AMD64)
-// The /fp:fast form of `ceil` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
-// https://github.com/dotnet/runtime/issues/11003
-#pragma float_control(push)
-#pragma float_control(precise, on)
-#endif
 
 /*====================================Ceil======================================
 **
@@ -136,12 +96,8 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Ceil, double x)
     FCALL_CONTRACT;
 
-    return ceil(x);
+    return clrmath_ceil(x);
 FCIMPLEND
-
-#if defined(_MSC_VER) && defined(TARGET_AMD64)
-#pragma float_control(pop)
-#endif
 
 /*=====================================Cos======================================
 **
@@ -149,7 +105,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Cos, double x)
     FCALL_CONTRACT;
 
-    return cos(x);
+    return clrmath_cos(x);
 FCIMPLEND
 
 /*=====================================Cosh=====================================
@@ -158,7 +114,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Cosh, double x)
     FCALL_CONTRACT;
 
-    return cosh(x);
+    return clrmath_cosh(x);
 FCIMPLEND
 
 /*=====================================Exp======================================
@@ -167,15 +123,8 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Exp, double x)
     FCALL_CONTRACT;
 
-    return exp(x);
+    return clrmath_exp(x);
 FCIMPLEND
-
-#if defined(_MSC_VER) && defined(TARGET_X86)
-// The /fp:fast form of `floor` for x86 does not correctly handle: `-0.0`
-// https://github.com/dotnet/runtime/issues/11003
-#pragma float_control(push)
-#pragma float_control(precise, on)
-#endif
 
 /*====================================Floor=====================================
 **
@@ -183,12 +132,8 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Floor, double x)
     FCALL_CONTRACT;
 
-    return floor(x);
+    return clrmath_floor(x);
 FCIMPLEND
-
-#if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma float_control(pop)
-#endif
 
 /*=====================================FMod=====================================
 **
@@ -196,7 +141,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::FMod, double x, double y)
     FCALL_CONTRACT;
 
-    return fmod(x, y);
+    return clrmath_fmod(x, y);
 FCIMPLEND
 
 /*=====================================FusedMultiplyAdd==========================
@@ -205,7 +150,7 @@ FCIMPLEND
 FCIMPL3_VVV(double, COMDouble::FusedMultiplyAdd, double x, double y, double z)
     FCALL_CONTRACT;
 
-    return fma(x, y, z);
+    return clrmath_fma(x, y, z);
 FCIMPLEND
 
 /*=====================================Ilog2====================================
@@ -214,7 +159,7 @@ FCIMPLEND
 FCIMPL1_V(int, COMDouble::ILogB, double x)
     FCALL_CONTRACT;
 
-    return ilogb(x);
+    return clrmath_ilogb(x);
 FCIMPLEND
 
 /*=====================================Log======================================
@@ -223,7 +168,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log, double x)
     FCALL_CONTRACT;
 
-    return log(x);
+    return clrmath_log(x);
 FCIMPLEND
 
 /*=====================================Log2=====================================
@@ -232,7 +177,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log2, double x)
     FCALL_CONTRACT;
 
-    return log2(x);
+    return clrmath_log2(x);
 FCIMPLEND
 
 /*====================================Log10=====================================
@@ -241,7 +186,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log10, double x)
     FCALL_CONTRACT;
 
-    return log10(x);
+    return clrmath_log10(x);
 FCIMPLEND
 
 /*=====================================ModF=====================================
@@ -250,7 +195,7 @@ FCIMPLEND
 FCIMPL2_VI(double, COMDouble::ModF, double x, double* intptr)
     FCALL_CONTRACT;
 
-    return modf(x, intptr);
+    return clrmath_modf(x, intptr);
 FCIMPLEND
 
 /*=====================================Pow======================================
@@ -259,7 +204,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Pow, double x, double y)
     FCALL_CONTRACT;
 
-    return pow(x, y);
+    return clrmath_pow(x, y);
 FCIMPLEND
 
 /*=====================================Sin======================================
@@ -268,20 +213,20 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Sin, double x)
     FCALL_CONTRACT;
 
-    return sin(x);
+    return clrmath_sin(x);
 FCIMPLEND
 
 /*====================================SinCos====================================
 **
 ==============================================================================*/
-FCIMPL3_VII(void, COMDouble::SinCos, double x, double* pSin, double* pCos)
+FCIMPL3_VII(void, COMDouble::SinCos, double x, double* sinr, double* cosr)
     FCALL_CONTRACT;
 
 #ifdef _MSC_VER
-    *pSin = sin(x);
-    *pCos = cos(x);
+    *sinr = sin(x);
+    *cosr = cos(x);
 #else
-    sincos(x, pSin, pCos);
+    sincos(x, sinr, cosr);
 #endif
 
 FCIMPLEND
@@ -292,7 +237,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Sinh, double x)
     FCALL_CONTRACT;
 
-    return sinh(x);
+    return clrmath_sinh(x);
 FCIMPLEND
 
 /*=====================================Sqrt=====================================
@@ -301,7 +246,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Sqrt, double x)
     FCALL_CONTRACT;
 
-    return sqrt(x);
+    return clrmath_sqrt(x);
 FCIMPLEND
 
 /*=====================================Tan======================================
@@ -310,7 +255,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Tan, double x)
     FCALL_CONTRACT;
 
-    return tan(x);
+    return clrmath_tan(x);
 FCIMPLEND
 
 /*=====================================Tanh=====================================
@@ -319,19 +264,5 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Tanh, double x)
     FCALL_CONTRACT;
 
-    return tanh(x);
+    return clrmath_tanh(x);
 FCIMPLEND
-
-#ifdef _MSC_VER
-#pragma float_control(pop)
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-///
-///                         End of /fp:fast scope
-///
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////

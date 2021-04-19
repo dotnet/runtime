@@ -10,6 +10,7 @@ set(FLOAT_SOURCES
 add_library_clr(comfloat_wks_obj
     OBJECT
     ${FLOAT_SOURCES}
+    ${SHARED_CLRMATH_SOURCES}
 )
 
 add_dependencies(comfloat_wks_obj eventing_headers)

@@ -154,6 +154,8 @@ if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/src/safecrt")
 endif (CLR_CMAKE_HOST_UNIX)
 
+include(${CLR_SRC_NATIVE_DIR}/clrmath/CMakeLists.txt)
+
 #------------------------------
 # Add Product Directories
 #------------------------------

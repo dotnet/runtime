@@ -32,7 +32,7 @@ public:
     FCDECL2_VI(static double, ModF, double x, double* intptr);
     FCDECL2_VV(static double, Pow, double x, double y);
     FCDECL1_V(static double, Sin, double x);
-    FCDECL3_VII(static void, SinCos, double x, double* sin, double* cos);
+    FCDECL3_VII(static void, SinCos, double x, double* sinr, double* cosr);
     FCDECL1_V(static double, Sinh, double x);
     FCDECL1_V(static double, Sqrt, double x);
     FCDECL1_V(static double, Tan, double x);

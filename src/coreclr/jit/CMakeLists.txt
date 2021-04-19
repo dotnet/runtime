@@ -431,6 +431,7 @@ function(add_jit jitName)
         ${JIT_ARCH_SOURCES}
         ${JIT_DEF_FILE}
         ${JIT_DLL_MAIN_FILE}
+        ${SHARED_CLRMATH_SOURCES}
     )
 
     if(CLR_CMAKE_TARGET_WIN32)

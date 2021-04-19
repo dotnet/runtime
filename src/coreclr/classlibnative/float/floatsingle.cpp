@@ -7,38 +7,7 @@
 #include <common.h>
 
 #include "floatsingle.h"
-
-// Windows x86 and Windows ARM/ARM64 may not define _isnanf() or _copysignf() but they do
-// define _isnan() and _copysign(). We will redirect the macros to these other functions if
-// the macro is not defined for the platform. This has the side effect of a possible implicit
-// upcasting for arguments passed in and an explicit downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf   (float)_copysign
-#endif
-
-#endif
-
-// The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
-// default compilation mode has previously caused performance regressions in floating-point code.
-// We enable /fp:fast semantics for the majority of the math functions, as it will speed up performance
-// and is really unlikely to cause any other code regressions.
-
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-///
-///                         beginning of /fp:fast scope
-///
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef _MSC_VER
-#pragma float_control(push)
-#pragma float_control(precise, off)
-#endif
+#include "clrmath.h"
 
 /*=====================================Abs=====================================
 **
@@ -46,7 +15,7 @@
 FCIMPL1_V(float, COMSingle::Abs, float x)
     FCALL_CONTRACT;
 
-    return fabsf(x);
+    return clrmath_fabsf(x);
 FCIMPLEND
 
 /*=====================================Acos=====================================
@@ -55,7 +24,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Acos, float x)
     FCALL_CONTRACT;
 
-    return acosf(x);
+    return clrmath_acosf(x);
 FCIMPLEND
 
 /*=====================================Acosh====================================
@@ -64,7 +33,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Acosh, float x)
     FCALL_CONTRACT;
 
-    return acoshf(x);
+    return clrmath_acoshf(x);
 FCIMPLEND
 
 /*=====================================Asin=====================================
@@ -73,7 +42,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Asin, float x)
     FCALL_CONTRACT;
 
-    return asinf(x);
+    return clrmath_asinf(x);
 FCIMPLEND
 
 /*=====================================Asinh====================================
@@ -82,7 +51,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Asinh, float x)
     FCALL_CONTRACT;
 
-    return asinhf(x);
+    return clrmath_asinhf(x);
 FCIMPLEND
 
 /*=====================================Atan=====================================
@@ -91,7 +60,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Atan, float x)
     FCALL_CONTRACT;
 
-    return atanf(x);
+    return clrmath_atanf(x);
 FCIMPLEND
 
 /*=====================================Atanh====================================
@@ -100,7 +69,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Atanh, float x)
     FCALL_CONTRACT;
 
-    return atanhf(x);
+    return clrmath_atanhf(x);
 FCIMPLEND
 
 /*=====================================Atan2====================================
@@ -109,7 +78,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Atan2, float y, float x)
     FCALL_CONTRACT;
 
-    return atan2f(y, x);
+    return clrmath_atan2f(y, x);
 FCIMPLEND
 
 /*====================================Cbrt======================================
@@ -118,15 +87,8 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Cbrt, float x)
     FCALL_CONTRACT;
 
-    return cbrtf(x);
+    return clrmath_cbrtf(x);
 FCIMPLEND
-
-#if defined(_MSC_VER) && defined(TARGET_AMD64)
-// The /fp:fast form of `ceilf` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
-// https://github.com/dotnet/runtime/issues/11003
-#pragma float_control(push)
-#pragma float_control(precise, on)
-#endif
 
 /*====================================Ceil======================================
 **
@@ -134,12 +96,8 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Ceil, float x)
     FCALL_CONTRACT;
 
-    return ceilf(x);
+    return clrmath_ceilf(x);
 FCIMPLEND
-
-#if defined(_MSC_VER) && defined(TARGET_AMD64)
-#pragma float_control(pop)
-#endif
 
 /*=====================================Cos======================================
 **
@@ -147,7 +105,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Cos, float x)
     FCALL_CONTRACT;
 
-    return cosf(x);
+    return clrmath_cosf(x);
 FCIMPLEND
 
 /*=====================================Cosh=====================================
@@ -156,7 +114,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Cosh, float x)
     FCALL_CONTRACT;
 
-    return coshf(x);
+    return clrmath_coshf(x);
 FCIMPLEND
 
 /*=====================================Exp======================================
@@ -165,7 +123,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Exp, float x)
     FCALL_CONTRACT;
 
-    return expf(x);
+    return clrmath_expf(x);
 FCIMPLEND
 
 /*====================================Floor=====================================
@@ -174,7 +132,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Floor, float x)
     FCALL_CONTRACT;
 
-    return floorf(x);
+    return clrmath_floorf(x);
 FCIMPLEND
 
 /*=====================================FMod=====================================
@@ -183,7 +141,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::FMod, float x, float y)
     FCALL_CONTRACT;
 
-    return fmodf(x, y);
+    return clrmath_fmodf(x, y);
 FCIMPLEND
 
 /*=====================================FusedMultiplyAdd==========================
@@ -192,7 +150,7 @@ FCIMPLEND
 FCIMPL3_VVV(float, COMSingle::FusedMultiplyAdd, float x, float y, float z)
     FCALL_CONTRACT;
 
-    return fmaf(x, y, z);
+    return clrmath_fmaf(x, y, z);
 FCIMPLEND
 
 /*=====================================Ilog2====================================
@@ -201,7 +159,7 @@ FCIMPLEND
 FCIMPL1_V(int, COMSingle::ILogB, float x)
     FCALL_CONTRACT;
 
-    return ilogbf(x);
+    return clrmath_ilogbf(x);
 FCIMPLEND
 
 /*=====================================Log======================================
@@ -210,7 +168,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Log, float x)
     FCALL_CONTRACT;
 
-    return logf(x);
+    return clrmath_logf(x);
 FCIMPLEND
 
 /*=====================================Log2=====================================
@@ -219,7 +177,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Log2, float x)
     FCALL_CONTRACT;
 
-    return log2f(x);
+    return clrmath_log2f(x);
 FCIMPLEND
 
 /*====================================Log10=====================================
@@ -237,7 +195,7 @@ FCIMPLEND
 FCIMPL2_VI(float, COMSingle::ModF, float x, float* intptr)
     FCALL_CONTRACT;
 
-    return modff(x, intptr);
+    return clrmath_modff(x, intptr);
 FCIMPLEND
 
 /*=====================================Pow======================================
@@ -246,7 +204,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
-    return powf(x, y);
+    return clrmath_powf(x, y);
 FCIMPLEND
 
 /*=====================================Sin======================================
@@ -255,20 +213,20 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Sin, float x)
     FCALL_CONTRACT;
 
-    return sinf(x);
+    return clrmath_sinf(x);
 FCIMPLEND
 
 /*====================================SinCos====================================
 **
 ==============================================================================*/
-FCIMPL3_VII(void, COMSingle::SinCos, float x, float* pSin, float* pCos)
+FCIMPL3_VII(void, COMSingle::SinCos, float x, float* sinr, float* cosr)
     FCALL_CONTRACT;
 
 #ifdef _MSC_VER
-    *pSin = sinf(x);
-    *pCos = cosf(x);
+    *sinr = sinf(x);
+    *cosr = cosf(x);
 #else
-    sincosf(x, pSin, pCos);
+    sincosf(x, sinr, cosr);
 #endif
 
 FCIMPLEND
@@ -279,7 +237,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Sinh, float x)
     FCALL_CONTRACT;
 
-    return sinhf(x);
+    return clrmath_sinhf(x);
 FCIMPLEND
 
 /*=====================================Sqrt=====================================
@@ -288,7 +246,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Sqrt, float x)
     FCALL_CONTRACT;
 
-    return sqrtf(x);
+    return clrmath_sqrtf(x);
 FCIMPLEND
 
 /*=====================================Tan======================================
@@ -297,7 +255,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Tan, float x)
     FCALL_CONTRACT;
 
-    return tanf(x);
+    return clrmath_tanf(x);
 FCIMPLEND
 
 /*=====================================Tanh=====================================
@@ -306,19 +264,5 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Tanh, float x)
     FCALL_CONTRACT;
 
-    return tanhf(x);
+    return clrmath_tanhf(x);
 FCIMPLEND
-
-#ifdef _MSC_VER
-#pragma float_control(pop)
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-///
-///                         End of /fp:fast scope
-///
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
