@@ -5529,7 +5529,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
             printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u Data ",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
 
-            switch(pBuf[i].InstrumentationKind)
+            switch((ICorJitInfo::PgoInstrumentationKind)pBuf[i].InstrumentationKind)
             {
                 case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
                     printf("B %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
@@ -5543,13 +5543,13 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
-                        printf("[%u] %016llX ", j, *(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t)));
+                        printf("[%u] %016llX ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                     {
                         // (N)umber, (L)ikelihood, (C)lass
-                        printf("N %u L %u C %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), *(uintptr_t*)(pInstrumentationData + pBuf[i].Offset));
+                        printf("N %u L %u C %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
