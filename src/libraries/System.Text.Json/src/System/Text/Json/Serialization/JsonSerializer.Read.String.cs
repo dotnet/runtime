@@ -325,8 +325,6 @@ namespace System.Text.Json
 
         private static TValue? DeserializeUsingMetadata<TValue>(string json, JsonTypeInfo? jsonTypeInfo)
         {
-            // TODO: this would be when to fallback to regular warm-up code-paths.
-            // For validation during development, we don't expect this to be null.
             if (jsonTypeInfo == null)
             {
                 throw new ArgumentNullException(nameof(jsonTypeInfo));

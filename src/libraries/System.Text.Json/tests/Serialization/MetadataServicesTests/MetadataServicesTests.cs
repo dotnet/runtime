@@ -29,8 +29,7 @@ namespace System.Text.Json.Tests.Serialization
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyInt",
-                jsonPropertyName: null,
-                encodedName: null));
+                jsonPropertyName: null));
             Assert.Contains("options", ane.ToString());
 
             // Null declaring type
@@ -45,8 +44,7 @@ namespace System.Text.Json.Tests.Serialization
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyInt",
-                jsonPropertyName: null,
-                encodedName: null));
+                jsonPropertyName: null));
             Assert.Contains("declaringType", ane.ToString());
 
             // Null property type info
@@ -61,8 +59,7 @@ namespace System.Text.Json.Tests.Serialization
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyInt",
-                jsonPropertyName: null,
-                encodedName: null));
+                jsonPropertyName: null));
             Assert.Contains("propertyTypeInfo", ane.ToString());
 
             // Null property name
@@ -77,8 +74,7 @@ namespace System.Text.Json.Tests.Serialization
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: null,
-                jsonPropertyName: null,
-                encodedName: null));
+                jsonPropertyName: null));
             Assert.Contains("propertyName", ane.ToString());
 
             // Invalid converter
@@ -94,8 +90,7 @@ namespace System.Text.Json.Tests.Serialization
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyProp",
-                jsonPropertyName: null,
-                encodedName: null));
+                jsonPropertyName: null));
             string ioeAsStr = ioe.ToString();
             Assert.Contains("Point.MyProp", ioeAsStr);
             Assert.Contains("MyClass", ioeAsStr);

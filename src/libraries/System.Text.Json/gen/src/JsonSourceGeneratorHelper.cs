@@ -94,7 +94,7 @@ namespace System.Text.Json.SourceGeneration
 
         public void GenerateSerializationMetadata()
         {
-            if (_rootSerializableTypes?.Count < 1)
+            if (_rootSerializableTypes == null || _rootSerializableTypes.Count == 0)
             {
                 return;
             }
@@ -462,6 +462,6 @@ namespace System.Text.Json.SourceGeneration
         private bool IsPrimitive(Type type)
             => _knownTypes.Contains(type) && type != _uriType && type != _versionType;
 
-        public Dictionary<string, Type> GetSerializableTypes() => _rootSerializableTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootSerializableTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.SourceGeneration.Reflection;
@@ -22,7 +21,6 @@ namespace System.Text.Json.SourceGeneration
 
         /// <summary>
         /// Helper for unit tests.
-        /// TODO: refactor this after adopting emitter/parser pattern.
         /// </summary>
         public Dictionary<string, Type>? SerializableTypes => _helper.GetSerializableTypes();
 
@@ -65,7 +63,7 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (AttributeListSyntax attributeListSyntax in compilationUnit.AttributeLists)
                 {
-                    AttributeSyntax attributeSyntax = attributeListSyntax.Attributes.Single();
+                    AttributeSyntax attributeSyntax = attributeListSyntax.Attributes.First();
                     IMethodSymbol attributeSymbol = compilationSemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
 
                     if (attributeSymbol == null || !jsonSerializableAttribute.Equals(attributeSymbol.ContainingType, SymbolEqualityComparer.Default))
@@ -77,32 +75,45 @@ namespace System.Text.Json.SourceGeneration
                     // Get JsonSerializableAttribute arguments.
                     IEnumerable<SyntaxNode> attributeArguments = attributeSyntax.DescendantNodes().Where(node => node is AttributeArgumentSyntax);
 
-                    int argumentCount = attributeArguments.Count();
-
-                    // Compiler shouldn't allow invalid signature for the JsonSerializable attribute.
-                    Debug.Assert(argumentCount == 1 || argumentCount == 2);
-
-                    // Obtain the one `Type` argument that must be present in the constructor of the attribute.
-                    AttributeArgumentSyntax typeArgumentNode = (AttributeArgumentSyntax)attributeArguments.First();
-                    TypeOfExpressionSyntax typeNode = (TypeOfExpressionSyntax)typeArgumentNode.ChildNodes().Single();
-                    ExpressionSyntax typeNameSyntax = (ExpressionSyntax)typeNode.ChildNodes().Single();
-                    ITypeSymbol typeSymbol = compilationSemanticModel.GetTypeInfo(typeNameSyntax).ConvertedType;
-
+                    ITypeSymbol? typeSymbol = null;
                     string? typeInfoPropertyName = null;
-                    // Obtain the optional TypeInfoPropertyName boolean property on the attribute, if present.
-                    if (argumentCount == 2)
+
+                    int i = 0;
+                    foreach (AttributeArgumentSyntax node in attributeArguments)
                     {
-                        AttributeArgumentSyntax stringArgumentNode = (AttributeArgumentSyntax)attributeArguments.ElementAt(1);
-                        IEnumerable<SyntaxNode> childNodes = stringArgumentNode.ChildNodes();
-                        SyntaxNode stringValueNode = childNodes.ElementAt(1);
-                        typeInfoPropertyName = stringValueNode.GetFirstToken().ValueText;
+                        if (i == 0)
+                        {
+                            TypeOfExpressionSyntax? typeNode = node.ChildNodes().Single() as TypeOfExpressionSyntax;
+                            if (typeNode != null)
+                            {
+                                ExpressionSyntax typeNameSyntax = (ExpressionSyntax)typeNode.ChildNodes().Single();
+                                typeSymbol = compilationSemanticModel.GetTypeInfo(typeNameSyntax).ConvertedType;
+                            }
+                        }
+                        else if (i == 1)
+                        {
+                            // Obtain the optional TypeInfoPropertyName string property on the attribute, if present.
+                            SyntaxNode? typeInfoPropertyNameNode = node.ChildNodes().ElementAtOrDefault(1);
+                            if (typeInfoPropertyNameNode != null)
+                            {
+                                typeInfoPropertyName = typeInfoPropertyNameNode.GetFirstToken().ValueText;
+                            }
+                        }
+
+                        i++;
                     }
+
+                    if (typeSymbol == null)
+                    {
+                        continue;
+                    }
+
 
                     Type type = new TypeWrapper(typeSymbol, metadataLoadContext);
                     if (type.Namespace == "<global namespace>")
                     {
                         // typeof() reference where the type's name isn't fully qualified.
-                        // The compilation is not valid and user needs to fix their code.
+                        // The compilation is not valid and the user needs to fix their code.
                         // The compiler will notify the user so we don't have to.
                         return;
                     }

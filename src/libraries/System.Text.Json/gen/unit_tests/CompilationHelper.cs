@@ -4,16 +4,22 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
     public class CompilationHelper
     {
-        public static Compilation CreateCompilation(string source, MetadataReference[] additionalReferences = null)
+        public static Compilation CreateCompilation(
+            string source,
+            MetadataReference[] additionalReferences = null,
+            string assemblyName = "TestAssembly",
+            bool includeSTJ = true)
         {
             // Bypass System.Runtime error.
             Assembly systemRuntimeAssembly = Assembly.Load("System.Runtime, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
@@ -24,13 +30,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             List<MetadataReference> references = new List<MetadataReference> {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(JsonSerializerOptions).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Type).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(KeyValuePair).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ContractNamespaceAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssemblyPath),
                 MetadataReference.CreateFromFile(systemCollectionsAssemblyPath),
             };
+
+            if (includeSTJ)
+            {
+                references.Add(MetadataReference.CreateFromFile(typeof(JsonSerializerOptions).Assembly.Location));
+            }
 
             // Add additional references as needed.
             if (additionalReferences != null)
@@ -42,7 +52,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }
 
             return CSharpCompilation.Create(
-                "TestAssembly",
+                assemblyName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source) },
                 references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
@@ -239,6 +249,17 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }";
 
             return CreateCompilation(source);
+        }
+
+        internal static void CheckDiagnosticMessages(ImmutableArray<Diagnostic> diagnostics, DiagnosticSeverity level, string[] expectedMessages)
+        {
+            string[] actualMessages = diagnostics.Where(diagnostic => diagnostic.Severity == level).Select(diagnostic => diagnostic.GetMessage()).ToArray();
+
+            // Can't depending on reflection order when generating type metadata.
+            Array.Sort(actualMessages);
+            Array.Sort(expectedMessages);
+
+            Assert.Equal(expectedMessages, actualMessages);
         }
     }
 }

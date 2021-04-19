@@ -6,5 +6,5 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Dummy class so C# init-only properties can compile on NetStandard.
     /// </summary>
-    public sealed class IsExternalInit { }
+    internal sealed class IsExternalInit { }
 }

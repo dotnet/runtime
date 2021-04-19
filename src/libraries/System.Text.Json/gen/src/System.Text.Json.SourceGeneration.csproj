@@ -3,7 +3,7 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
-    <!-- Suppress warning XML comment has cref attribute that could not be resolved -->
+    <!-- Suppress warning: XML comment has cref attribute that could not be resolved -->
     <NoWarn>CS1574</NoWarn>
   </PropertyGroup>
 
@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
 
     <PackageDestination Include="analyzers\dotnet\cs" />
   </ItemGroup>

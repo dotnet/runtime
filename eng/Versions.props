@@ -177,10 +177,6 @@
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21212.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.21212.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21212.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <!-- Roslyn dependencies for source generation -->
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.10.0-1.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.2</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>3.10.0-1.final</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />

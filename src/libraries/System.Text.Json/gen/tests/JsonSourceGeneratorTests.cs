@@ -126,8 +126,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             return new ActiveOrUpcomingEvent
             {
                 Id = 10,
-                CampaignManagedOrganizerName = "Name FamiltyName",
-                CampaignName = "The very new campaing",
+                CampaignManagedOrganizerName = "Name FamilyName",
+                CampaignName = "The very new campaign",
                 Description = "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
                 EndDate = DateTime.UtcNow.AddYears(1),
                 Name = "Just a name",
@@ -152,7 +152,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             return new CampaignSummaryViewModel
             {
-                Description = "Very nice campaing",
+                Description = "Very nice campaign",
                 Headline = "The Headline",
                 Id = 234235,
                 OrganizationName = "The Company XYZ",
@@ -178,7 +178,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 IsNewAccount = false,
                 FeaturedCampaign = new CampaignSummaryViewModel
                 {
-                    Description = "Very nice campaing",
+                    Description = "Very nice campaign",
                     Headline = "The Headline",
                     Id = 234235,
                     OrganizationName = "The Company XYZ",
@@ -189,8 +189,8 @@ namespace System.Text.Json.SourceGeneration.Tests
                     new ActiveOrUpcomingEvent
                     {
                         Id = 10,
-                        CampaignManagedOrganizerName = "Name FamiltyName",
-                        CampaignName = "The very new campaing",
+                        CampaignManagedOrganizerName = "Name FamilyName",
+                        CampaignName = "The very new campaign",
                         Description = "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
                         EndDate = DateTime.UtcNow.AddYears(1),
                         Name = "Just a name",

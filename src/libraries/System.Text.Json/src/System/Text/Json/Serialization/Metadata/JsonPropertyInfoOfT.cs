@@ -124,47 +124,31 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition ignoreCondition,
             JsonNumberHandling numberHandling,
             string propertyName,
-            string? jsonPropertyName,
-            byte[]? encodedName)
+            string? jsonPropertyName)
         {
             Options = options;
             ClrName = propertyName;
 
             // Property name settings.
-            if (encodedName != null && options.PropertyNamingPolicy == null && options.Encoder == null)
+            if (jsonPropertyName != null)
             {
-                NameAsString = jsonPropertyName ?? propertyName;
-                NameAsUtf8Bytes = encodedName;
-
-                int nameSectionLength = encodedName.Length + 3;
-                EscapedNameSection = new byte[nameSectionLength];
-                EscapedNameSection[0] = (byte)'"';
-                encodedName.CopyTo(EscapedNameSection, 1);
-                EscapedNameSection[nameSectionLength - 2] = (byte)'"';
-                EscapedNameSection[nameSectionLength - 1] = (byte)':';
+                NameAsString = jsonPropertyName;
+            }
+            else if (options.PropertyNamingPolicy == null)
+            {
+                NameAsString = ClrName;
             }
             else
             {
-                if (jsonPropertyName != null)
+                NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
+                if (NameAsString == null)
                 {
-                    NameAsString = jsonPropertyName;
+                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
                 }
-                else if (options.PropertyNamingPolicy == null)
-                {
-                    NameAsString = ClrName;
-                }
-                else
-                {
-                    NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
-                    if (NameAsString == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
-                    }
-                }
-
-                NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
-                EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
             }
+
+            NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
+            EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
 
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {

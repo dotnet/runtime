@@ -28,8 +28,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition ignoreCondition,
             JsonNumberHandling numberHandling,
             string propertyName,
-            string? jsonPropertyName,
-            byte[]? encodedName)
+            string? jsonPropertyName)
         {
             if (options == null)
             {
@@ -72,8 +71,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ignoreCondition,
                 numberHandling,
                 propertyName,
-                jsonPropertyName,
-                encodedName);
+                jsonPropertyName);
 
             return jsonPropertyInfo;
         }

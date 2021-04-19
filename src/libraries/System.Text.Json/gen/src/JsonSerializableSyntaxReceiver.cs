@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace System.Text.Json.SourceGeneration
 {
-    internal class JsonSerializableSyntaxReceiver : ISyntaxReceiver
+    internal sealed class JsonSerializableSyntaxReceiver : ISyntaxReceiver
     {
         public List<CompilationUnitSyntax> CompilationUnits { get; } = new();
 
