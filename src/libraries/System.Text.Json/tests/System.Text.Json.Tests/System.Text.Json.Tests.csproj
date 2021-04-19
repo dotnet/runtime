@@ -170,7 +170,7 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+    <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="Serialization\IsExternalInit.cs" />
@@ -185,6 +185,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
-    <ProjectReference Include="..\src\System.Text.Json.csproj" />
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
   </ItemGroup>
 </Project>
