@@ -3546,7 +3546,7 @@ void region_allocator::print_map (const char* msg)
 #endif //_DEBUG
 }
 
-uint8_t* region_allocator::allocate_end (uint32_t num_units, int direction)
+uint8_t* region_allocator::allocate_end (uint32_t num_units, allocate_direction direction)
 {
     uint8_t* alloc = NULL;
 
@@ -3558,7 +3558,7 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units, int direction)
 
         if ((end_remaining / region_alignment) >= num_units)
         {
-            if (direction == 1)
+            if (direction == allocate_forward)
             {
                 make_busy_block (region_map_left_end, num_units);
                 region_map_left_end += num_units;
@@ -3567,7 +3567,7 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units, int direction)
             }
             else
             {            
-                assert(direction == -1);
+                assert(direction == allocate_backward);
                 region_map_right_start -= num_units;
                 make_busy_block (region_map_right_start, num_units);
                 global_region_right_used -= num_units * region_alignment;
@@ -3604,7 +3604,7 @@ void region_allocator::leave_spin_lock()
 #endif //_DEBUG
 }
 
-uint8_t* region_allocator::allocate (uint32_t num_units, int direction)
+uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction)
 {
     enter_spin_lock();
 
@@ -3626,8 +3626,8 @@ uint8_t* region_allocator::allocate (uint32_t num_units, int direction)
 
     print_map ("before alloc");
 
-    while ((direction == 1 && (current_index < end_index)) ||
-           (direction == -1 && (current_index > end_index)))
+    while (((direction == allocate_forward) && (current_index < end_index)) ||
+           ((direction == allocate_backward) && (current_index > end_index)))
     {
         uint32_t current_val = *(current_index - ((direction == -1) ? 1 : 0));
         uint32_t current_num_units = get_num_units (current_val);
@@ -3672,7 +3672,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, int direction)
             }
         }
 
-        if (direction == 1)
+        if (direction == allocate_forward)
         {
             current_index += current_num_units;
         }
@@ -3701,7 +3701,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, int direction)
 
 // ETW TODO: need to fire create seg events for these methods.
 // FIRE_EVENT(GCCreateSegment_V1
-bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, int direction)
+bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction)
 {
     size_t alignment = region_alignment;
     size_t alloc_size = align_region_up (size);
@@ -3721,12 +3721,12 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
 
 bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end)
 {
-    return allocate_region (region_alignment, start, end, /* direction = */ 1);
+    return allocate_region (region_alignment, start, end, allocate_forward);
 }
 
 // Large regions are 8x basic region sizes by default. If you need a larger region than that,
 // call allocate_region with the size.
-bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, int direction)
+bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction)
 {
     return allocate_region (large_region_alignment, start, end, direction);
 }
@@ -3788,7 +3788,7 @@ void region_allocator::delete_region (uint8_t* region_start)
         make_free_block (free_index, free_block_size);
     }
 
-    total_free_units += free_block_size;
+    total_free_units += current_val;
 
     print_map ("after delete");
 
@@ -10578,7 +10578,7 @@ bool gc_heap::initial_make_uoh_regions (int gen, gc_heap* hp)
     uint8_t* region_end;
 
     // REGIONS TODO: allocate POH regions on the right
-    if (!global_region_allocator.allocate_large_region (&region_start, &region_end, 1))
+    if (!global_region_allocator.allocate_large_region (&region_start, &region_end, allocate_forward))
         return false;
 
     size_t region_size = region_end - region_start;
@@ -27596,7 +27596,7 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
     uint8_t* end = 0;
     // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ? 
-        global_region_allocator.allocate_large_region (&start, &end, 1) :
+        global_region_allocator.allocate_large_region (&start, &end, allocate_forward) :
         global_region_allocator.allocate_basic_region (&start, &end));
 
     if (!allocated_p)

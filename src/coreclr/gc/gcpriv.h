@@ -5288,6 +5288,12 @@ public:
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
 
+enum allocate_direction
+{
+    allocate_forward = 1,
+    allocate_backward = -1,
+};
+
 // The big space we reserve for regions is divided into units of region_alignment.
 // 
 // SOH regions are all basic regions, meaning their size is the same as alignment. UOH regions 
@@ -5345,8 +5351,8 @@ private:
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
 
-    uint8_t* allocate (uint32_t num_units, int direction);
-    uint8_t* allocate_end (uint32_t num_units, int direction);
+    uint8_t* allocate (uint32_t num_units, allocate_direction direction);
+    uint8_t* allocate_end (uint32_t num_units, allocate_direction direction);
 
     void make_busy_block (uint32_t* index_start, uint32_t num_units);
     void make_free_block (uint32_t* index_start, uint32_t num_units);
@@ -5380,9 +5386,9 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, int direction);
+    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction);
     bool allocate_basic_region (uint8_t** start, uint8_t** end);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, int direction);
+    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction);
     void delete_region (uint8_t* start);
     uint32_t get_va_memory_load()
     {
