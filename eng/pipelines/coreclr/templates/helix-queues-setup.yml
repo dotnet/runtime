@@ -66,9 +66,9 @@ jobs:
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'Linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.312.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm32v7-20200908125213-5bece88
+        - (Alpine.313.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.312.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm32v7-20200908125213-5bece88
+        - (Alpine.313.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:

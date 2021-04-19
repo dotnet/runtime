@@ -34,6 +34,20 @@ PALEXPORT int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
                                           int32_t destinationLen);
 
 /*
+Complete the RSA signature generation for the specified hash using the provided RSA key
+(wrapped in an EVP_PKEY) and padding/digest options.
+
+Returns the number of bytes written to destination, -1 on error.
+*/
+PALEXPORT int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                           RsaPaddingMode padding,
+                                           const EVP_MD* digest,
+                                           const uint8_t* hash,
+                                           int32_t hashLen,
+                                           uint8_t* destination,
+                                           int32_t destinationLen);
+
+/*
 Shims the EVP_PKEY_get1_RSA method.
 
 Returns the RSA instance for the EVP_PKEY.

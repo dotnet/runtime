@@ -96,6 +96,18 @@ The following shows how to run tests for a specific library
     make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+### Passing arguments to xharness
+
+- `$(WasmXHarnessArgs)` - xharness command arguments
+
+    Example: `WasmXHarnessArgs="--xyz"` -> becomes `dotnet xharness wasm test --xyz`
+
+- `$(WasmXHarnessMonoArgs)` - arguments to mono
+
+    Example: `WasmXHarnessMonoArgs="--runtime-arg=--trace=E"`
+
+- `$(WasmTestAppArgs)` - arguments for the test app itself
+
 ### Running outer loop tests using Browser instance
 
 To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable, but which are more comprehensive):
@@ -131,6 +143,12 @@ At the moment supported values are:
 - `firefox`
 
 By default, `chrome` browser is used.
+
+## Debugging
+
+### Getting more information
+
+- Line numbers: add `/p:DebuggerSupport=true` to the command line, for `Release` builds. It's enabled by default for `Debug` builds.
 
 ## Kicking off outer loop tests from GitHub Interface
 

@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput">The kind of elements.</typeparam>
     /// <typeparam name="THashKey">The key used to distribute elements.</typeparam>
     /// <typeparam name="TOrderKey">The kind of keys found in the source.</typeparam>
-    internal class OrderedHashRepartitionEnumerator<TInputOutput, THashKey, TOrderKey> : QueryOperatorEnumerator<Pair<TInputOutput, THashKey>, TOrderKey>
+    internal sealed class OrderedHashRepartitionEnumerator<TInputOutput, THashKey, TOrderKey> : QueryOperatorEnumerator<Pair<TInputOutput, THashKey>, TOrderKey>
     {
         private const int ENUMERATION_NOT_STARTED = -1; // Sentinel to note we haven't begun enumerating yet.
 

@@ -363,9 +363,6 @@ mono_marshal_init (void);
 void
 mono_marshal_init_tls (void);
 
-void
-mono_marshal_cleanup (void);
-
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align);
 
@@ -550,9 +547,6 @@ mono_marshal_free_array (gpointer *ptr, int size);
 
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj);
-
-void
-mono_cominterop_release_all_rcws (void); 
 
 MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);

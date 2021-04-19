@@ -6,7 +6,7 @@ namespace System.Configuration.Internal
     /// <summary>
     /// Used to satisfy legacy interfaces.
     /// </summary>
-    internal class DummyDisposable : IDisposable
+    internal sealed class DummyDisposable : IDisposable
     {
         public void Dispose()
         {

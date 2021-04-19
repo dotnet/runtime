@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
+    internal sealed partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
     {
         // Gets the text value of the current node.
         public override Task<string> GetValueAsync()

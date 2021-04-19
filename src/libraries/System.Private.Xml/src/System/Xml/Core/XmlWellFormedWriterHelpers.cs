@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         //
         // Private types
@@ -146,7 +146,7 @@ namespace System.Xml
             XmlLang
         }
 
-        private partial class AttributeValueCache
+        private sealed partial class AttributeValueCache
         {
             private enum ItemType
             {

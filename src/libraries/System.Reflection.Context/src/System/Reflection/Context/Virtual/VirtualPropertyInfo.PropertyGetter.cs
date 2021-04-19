@@ -8,7 +8,7 @@ using System.Reflection.Context.Custom;
 
 namespace System.Reflection.Context.Virtual
 {
-    internal partial class VirtualPropertyInfo
+    internal sealed partial class VirtualPropertyInfo
     {
         private sealed class PropertyGetter : PropertyGetterBase
         {

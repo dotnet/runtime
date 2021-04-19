@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal class ENUM_SERVICE_STATUS_PROCESS
+        internal sealed class ENUM_SERVICE_STATUS_PROCESS
         {
             internal string? serviceName;
             internal string? displayName;

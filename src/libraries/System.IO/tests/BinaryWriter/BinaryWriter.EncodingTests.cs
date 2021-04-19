@@ -188,7 +188,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)] // OOM on Android could be uncatchable & kill the test runner
+        [SkipOnPlatform(TestPlatforms.Android, "OOM on Android could be uncatchable & kill the test runner")]
         public unsafe void WriteChars_VeryLargeArray_DoesNotOverflow()
         {
             const nuint INPUT_LEN_IN_CHARS = 1_500_000_000;

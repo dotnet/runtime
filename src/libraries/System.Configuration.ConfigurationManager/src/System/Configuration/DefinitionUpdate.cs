@@ -3,7 +3,7 @@
 
 namespace System.Configuration
 {
-    internal class DefinitionUpdate : Update
+    internal sealed class DefinitionUpdate : Update
     {
         internal DefinitionUpdate(string configKey, bool moved, string updatedXml, SectionRecord sectionRecord) :
             base(configKey, moved, updatedXml)

@@ -174,51 +174,6 @@ const BYTE DllMainIA64Template[] =
 
 #define DllMainIA64TemplateSize		sizeof(DllMainIA64Template)
 
-#ifdef EMIT_FIXUPS
-
-// Emitted PEFIXUP structure looks like this
-struct PEFIXUP
-{
-   WORD  wType;
-   WORD  wSpare;
-   DWORD rva;
-   DWORD rvaTarget;
-};
-
-// Following structure is used to store the reloc information which
-// will be used at UpdateFixups time to get the final data from the section
-// bytes to update the fixup information.
-//
-struct DBG_FIXUP
-{
-   WORD  wType;
-   WORD  wSpare;
-
-   union
-   {
-      DWORD rva;
-      unsigned offset;
-   };
-
-   union
-   {
-      DWORD rvaTarget;
-      CeeSection * sectionSource;
-   };
-};
-
-enum
-{
-   IMAGE_REL_I386_DIR24NB          = 0x0081,   // 24-bit base relative
-   IMAGE_REL_I386_FILEPOS          = 0x0082,   // 32-bit file relative
-                                               // all other relocation types are
-                                               // in winnt.h, for some reason
-                                               // this one is missing
-   IMAGE_REL_I386_DIR30NB          = 0x0083,   // 30-bit base relative
-};
-
-#endif // EMIT_FIXUPS
-
 // Get the Symbol entry given the head and a 0-based index
 inline IMAGE_SYMBOL* GetSymbolEntry(IMAGE_SYMBOL* pHead, SIZE_T idx)
 {
@@ -293,13 +248,6 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
     hr = pPrivateGenWriter->allocateCorHeader();   // get COR header near front
     IfFailGo(hr);
 
-#if 0 // Need to add this if we want to propagate the old COM+ header
-    if (seedFileName)
-    {
-        memcpy(m_corHeader, baseFileDecoder->ntHeaders32()->corHeader, sizeof(IMAGE_COR20_HEADER));
-    }
-#endif
-
     //If we were passed a CCeeGen at the beginning, copy it's data now.
     if (pCeeFileGenFrom) {
         pCeeFileGenFrom->cloneInstance((CCeeGen*)pPrivateGenWriter);
@@ -312,13 +260,6 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
 
     // set il RVA to be after the preallocated sections
     pPEWriter->setIlRva(preallocatedOffset);
-
-#ifdef EMIT_FIXUPS
-    if (createFlags & ICEE_CREATE_FILE_EMIT_FIXUPS)
-    {
-        pPrivateGenWriter->setEmitFixups();
-    }
-#endif
 
     pPEWriter.SuppressRelease();
     pPrivateGenWriter.SuppressRelease();
@@ -333,17 +274,11 @@ CeeFileGenWriter::CeeFileGenWriter() // ctor is protected
     m_outputFileName = NULL;
     m_resourceFileName = NULL;
     m_dllSwitch = false;
-    m_objSwitch = false;
-    m_libraryName = NULL;
-    m_libraryGuid = GUID_NULL;
 
     m_entryPoint = 0;
     m_comImageFlags = COMIMAGE_FLAGS_ILONLY;    // ceegen PEs don't have native code
     m_iatOffset = 0;
     m_dllCount = 0;
-
-    m_dwMacroDefinitionSize = 0;
-    m_dwMacroDefinitionRVA = NULL;
 
     m_dwManifestSize = 0;
     m_dwManifestRVA = NULL;
@@ -358,15 +293,6 @@ CeeFileGenWriter::CeeFileGenWriter() // ctor is protected
 
     m_linked = false;
     m_fixed = false;
-
-#ifdef EMIT_FIXUPS
-
-    m_fEmitFixups = false;
-    m_fFixupsUpdated = false;
-    m_sectionFixups = NULL;
-    m_pDebugDir = NULL;
-
-#endif
 
 } // CeeFileGenWriter::CeeFileGenWriter()
 
@@ -393,35 +319,11 @@ HRESULT CeeFileGenWriter::Cleanup() // virtual
     return CCeeGen::Cleanup();
 } // HRESULT CeeFileGenWriter::Cleanup()
 
-HRESULT CeeFileGenWriter::EmitMacroDefinitions(void *pData, DWORD cData)
-{
-    // OBSOLETE
-    m_dwMacroDefinitionSize = 0;
-
-    return S_OK;
-} // HRESULT CeeFileGenWriter::EmitMacroDefinitions()
-
 HRESULT CeeFileGenWriter::link()
 {
     HRESULT hr = checkForErrors();
     if (! SUCCEEDED(hr))
         return hr;
-
-#ifdef EMIT_FIXUPS
-
-    // The fixups describe each relocation.  Each fixup contains the relocation's
-    // type, source RVA, and target RVA.  Since the reloc target can be filled
-    // in after the relocation creation, the fixup target RVA discovery needs to
-    // be deferred.
-    // At this point all bytes should be filled in, ensuring that the final
-    // target information is available.
-    // UpdateFixups is called at this point to discover the final relocation target info.
-    //
-    hr = UpdateFixups();
-    if (! SUCCEEDED(hr))
-        return hr;
-
-#endif
 
     // Don't set this if SetManifestEntry was not called - zapper sets the
     // resource directory explicitly
@@ -457,8 +359,6 @@ HRESULT CeeFileGenWriter::link()
     m_corHeader->MinorRuntimeVersion = VAL16(COR_VERSION_MINOR);
     if (m_dllSwitch)
         getPEWriter().setCharacteristics(IMAGE_FILE_DLL);
-    if (m_objSwitch)
-        getPEWriter().clearCharacteristics(IMAGE_FILE_DLL | IMAGE_FILE_EXECUTABLE_IMAGE);
     m_corHeader->Flags = VAL32(m_comImageFlags);
     IMAGE_COR20_HEADER_FIELD(*m_corHeader, EntryPointToken) = VAL32(m_entryPoint);
     _ASSERTE(TypeFromToken(m_entryPoint) == mdtMethodDef || m_entryPoint == mdTokenNil ||
@@ -466,7 +366,7 @@ HRESULT CeeFileGenWriter::link()
     setDirectoryEntry(getCorHeaderSection(), IMAGE_DIRECTORY_ENTRY_COMHEADER, sizeof(IMAGE_COR20_HEADER), m_corHeaderOffset);
 
     if ((m_comImageFlags & COMIMAGE_FLAGS_IL_LIBRARY) == 0
-        && !m_linked && !m_objSwitch)
+        && !m_linked)
     {
         hr = emitExeMain();
         if (FAILED(hr))
@@ -508,7 +408,7 @@ HRESULT CeeFileGenWriter::fixup()
     }
 
     // remap the entry point if entry point token has been moved
-    if (pMapper != NULL && !m_objSwitch)
+    if (pMapper != NULL)
     {
         mdToken tk = m_entryPoint;
         pMapper->HasTokenMoved(tk, tk);
@@ -558,10 +458,8 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
             outputFileName = W("output.ill");
         else if (m_dllSwitch)
             outputFileName = W("output.dll");
-        else if (m_objSwitch)
-            outputFileName = W("output.exe");
         else
-            outputFileName = W("output.obj");
+            outputFileName = W("output.exe");
     }
 
     // output file name and ppImage are mutually exclusive
@@ -610,50 +508,6 @@ HRESULT CeeFileGenWriter::setResourceFileName(__in LPWSTR fileName)
     wcscpy_s(m_resourceFileName, len, fileName);
     return S_OK;
 } // HRESULT CeeFileGenWriter::setResourceFileName()
-
-HRESULT CeeFileGenWriter::setLibraryName(__in LPWSTR libraryName)
-{
-    if (m_libraryName)
-        delete[] m_libraryName;
-    size_t len = wcslen(libraryName) + 1;
-    m_libraryName = (LPWSTR)new (nothrow) WCHAR[len];
-    TESTANDRETURN(m_libraryName != NULL, E_OUTOFMEMORY);
-    wcscpy_s(m_libraryName, len, libraryName);
-    return S_OK;
-} // HRESULT CeeFileGenWriter::setLibraryName()
-
-HRESULT CeeFileGenWriter::setLibraryGuid(__in LPWSTR libraryGuid)
-{
-    return IIDFromString(libraryGuid, &m_libraryGuid);
-} // HRESULT CeeFileGenWriter::setLibraryGuid()
-
-HRESULT CeeFileGenWriter::emitLibraryName(IMetaDataEmit *emitter)
-{
-    HRESULT hr;
-    IfFailRet(emitter->SetModuleProps(m_libraryName));
-
-    // Set the GUID as a custom attribute, if it is not NULL_GUID.
-    if (m_libraryGuid != GUID_NULL)
-    {
-        static COR_SIGNATURE _SIG[] = INTEROP_GUID_SIG;
-        mdTypeRef tr;
-        mdMemberRef mr;
-        WCHAR wzGuid[40];
-        BYTE  rgCA[50];
-        IfFailRet(emitter->DefineTypeRefByName(mdTypeRefNil, INTEROP_GUID_TYPE_W, &tr));
-        IfFailRet(emitter->DefineMemberRef(tr, W(".ctor"), _SIG, sizeof(_SIG), &mr));
-        StringFromGUID2(m_libraryGuid, wzGuid, lengthof(wzGuid));
-        memset(rgCA, 0, sizeof(rgCA));
-        // Tag is 0x0001
-        rgCA[0] = 1;
-        // Length of GUID string is 36 characters.
-        rgCA[2] = 0x24;
-        // Convert 36 characters, skipping opening {, into 3rd byte of buffer.
-        WszWideCharToMultiByte(CP_ACP,0, wzGuid+1,36, reinterpret_cast<char*>(&rgCA[3]),36, 0,0);
-        hr = emitter->DefineCustomAttribute(1,mr,rgCA,41,0);
-    }
-    return (hr);
-} // HRESULT CeeFileGenWriter::emitLibraryName()
 
 HRESULT CeeFileGenWriter::setImageBase(size_t imageBase)
 {
@@ -1440,13 +1294,6 @@ HRESULT CeeFileGenWriter::setVTableEntry(ULONG size, ULONG offset)
     return setVTableEntry64(size,(void*)(ULONG_PTR)offset);
 } // HRESULT CeeFileGenWriter::setVTableEntry()
 
-HRESULT CeeFileGenWriter::setEnCRvaBase(ULONG dataBase, ULONG rdataBase)
-{
-    setEnCMode();
-    getPEWriter().setEnCRvaBase(dataBase, rdataBase);
-    return S_OK;
-} // HRESULT CeeFileGenWriter::setEnCRvaBase()
-
 HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, __in char *ptr,
                                                unsigned *offset)
 {
@@ -1482,444 +1329,3 @@ HRESULT CeeFileGenWriter::getCorHeader(IMAGE_COR20_HEADER **ppHeader)
     *ppHeader = m_corHeader;
     return S_OK;
 } // HRESULT CeeFileGenWriter::getCorHeader()
-
-
-#ifdef EMIT_FIXUPS
-
-HRESULT CeeFileGenWriter::InitFixupSection()
-{
-    if (!m_fEmitFixups)
-    {
-       return(E_UNEXPECTED);
-    }
-
-    HRESULT hr;
-
-    hr = getSectionCreate(".fixups",
-                           IMAGE_SCN_CNT_INITIALIZED_DATA  | IMAGE_SCN_MEM_READ,
-                           &m_sectionFixups);
-    if (SUCCEEDED(hr))
-    {
-       size_t cbDebugDir = sizeof(IMAGE_DEBUG_DIRECTORY);
-       hr = GetSectionBlock(m_sectionFixups, (ULONG) cbDebugDir, 32, (void **) &m_pDebugDir);
-       if (SUCCEEDED(hr))
-       {
-          memset(m_pDebugDir, 0, cbDebugDir);
-          m_pDebugDir->Type = IMAGE_DEBUG_TYPE_FIXUP;
-          m_fFixupsUpdated = false;
-
-          return(S_OK);
-       }
-    }
-
-    m_pDebugDir = NULL;
-    m_sectionFixups = NULL;
-    m_fEmitFixups = false;
-
-    return(E_FAIL);
-
-} // HRESULT CeeFileGenWriter::InitFixupSection()
-
-HRESULT CeeFileGenWriter::addFixup(CeeSection& sectionSource, unsigned offset, CeeSectionRelocType relocType, CeeSection * psectionTarget, CeeSectionRelocExtra *extra)
-{
-   if (!m_fEmitFixups)
-   {
-      return(S_OK);
-   }
-
-   _ASSERTE(sizeof(DBG_FIXUP) == sizeof(PEFIXUP));
-   _ASSERTE(m_fFixupsUpdated == false);
-
-   DBG_FIXUP * pfixup;
-
-   if (m_sectionFixups == NULL)
-   {
-      HRESULT hr = InitFixupSection();
-      if (FAILED(hr))
-      {
-         return(hr);
-      }
-
-      // The fixup section begins with a IMAGE_DEBUG_DIRECTORY containing a
-      // IMAGE_DEBUG_TYPE_FIXUP directory entry, which describes the array
-      // of fixups which follows it.
-
-      // The very first item of this array is aligned on a 32 bit boundary.
-      // All other fixup entries follow unaligned.
-      pfixup = (DBG_FIXUP *) m_sectionFixups->getBlock(sizeof(DBG_FIXUP), 32);
-      TESTANDRETURN(pfixup != NULL, E_OUTOFMEMORY);
-
-      // Initialize the IMAGE_DEBUG_TYPE_FIXUP entry relocations
-#ifdef HOST_64BIT
-      _ASSERTE(!"Base relocs are not yet implemented for 64-bit");
-      m_pDebugDir->AddressOfRawData = 0; // @ToDo: srRelocAbsolutePtr can't take a 64-bit address
-#else
-      m_pDebugDir->AddressOfRawData = (size_t) pfixup;
-      m_sectionFixups->addSectReloc(offsetof(IMAGE_DEBUG_DIRECTORY, AddressOfRawData), *m_sectionFixups, srRelocAbsolutePtr);
-#endif
-
-      m_pDebugDir->PointerToRawData = m_sectionFixups->computeOffset((char *) pfixup);
-
-      m_sectionFixups->addSectReloc(offsetof(IMAGE_DEBUG_DIRECTORY, PointerToRawData), *m_sectionFixups, srRelocFilePos);
-
-      unsigned offsetDir = m_sectionFixups->computeOffset((char *) m_pDebugDir);
-      setDirectoryEntry(*m_sectionFixups, IMAGE_DIRECTORY_ENTRY_DEBUG, sizeof(IMAGE_DEBUG_DIRECTORY), offsetDir);
-
-#ifdef TEST_EMIT_FIXUPS
-      TestEmitFixups();
-#endif
-   }
-   else
-   {
-      pfixup = (DBG_FIXUP *) m_sectionFixups->getBlock(sizeof(DBG_FIXUP), 1);
-      TESTANDRETURN(pfixup != NULL, E_OUTOFMEMORY);
-   }
-
-   // Save off the relocation information for use later.  The relocation's
-   // target information can be filled in later.
-   // The relocation target info is not always immediately available, so it needs
-   // to be extracted later, during the link phase.  For now the relocation info
-   // is stored so the target can be extracted at link time in the UpdateFixups
-   // function.
-   //
-   unsigned offsetFixup = m_sectionFixups->computeOffset((char *) pfixup);
-   pfixup->wSpare = 0;
-   pfixup->wType = relocType;
-   _ASSERTE(pfixup->wType == relocType);
-   pfixup->offset = offset;
-   pfixup->sectionSource = &sectionSource;
-
-   m_pDebugDir->SizeOfData += sizeof(DBG_FIXUP);
-
-   // Add a relocation for the fixup's source RVA field, (no fixup on this reloc)
-   m_sectionFixups->addSectReloc(offsetFixup + offsetof(DBG_FIXUP, rva), sectionSource, srRelocAbsolutePtr);
-
-   // Add a relocation for the fixup's target RVA field.  Correct target extracted
-   // later in UpdateFixups, (no fixup on this reloc)
-   CeeSectionRelocType tgtRelocType;
-
-   switch (relocType)
-   {
-      case srRelocMapToken:
-         // not an RVA
-         tgtRelocType = srRelocMapToken;
-         break;
-
-      case srRelocFilePos:
-         tgtRelocType = srRelocFilePos;
-         break;
-
-      case srRelocHighAdj:
-         tgtRelocType = srRelocHighAdj;
-         break;
-
-      default:
-         tgtRelocType = (relocType & srRelocPtr) ? srRelocAbsolutePtr : srRelocAbsolute;
-         break;
-   }
-
-   if (psectionTarget != NULL)
-   {
-      m_sectionFixups->addSectReloc(offsetFixup + offsetof(DBG_FIXUP, rvaTarget), *psectionTarget, tgtRelocType, extra);
-   }
-   else
-   {
-      m_sectionFixups->addBaseReloc(offsetFixup + offsetof(DBG_FIXUP, rvaTarget), tgtRelocType, extra);
-   }
-
-   return(S_OK);
-} // HRESULT CeeFileGenWriter::addFixup()
-
-HRESULT CeeFileGenWriter::UpdateFixups()
-{
-   // This method extracts the correct relocation target.  See addFixup method.
-
-   if (!m_fEmitFixups || m_fFixupsUpdated)
-   {
-      return(S_OK);
-   }
-   m_fFixupsUpdated = true; // prevent UpdateFixups from being called again.
-
-   size_t cfixups = m_pDebugDir->SizeOfData / sizeof(DBG_FIXUP);
-   _ASSERT(m_pDebugDir->SizeOfData % sizeof(DBG_FIXUP) == 0);
-   unsigned ibFixup = m_pDebugDir->PointerToRawData;
-
-   for (size_t idx = 0; idx < cfixups; idx++, ibFixup += sizeof(DBG_FIXUP))
-   {
-      DBG_FIXUP * pfixup = (DBG_FIXUP *) m_sectionFixups->computePointer(ibFixup);
-      CeeSection * sectionSource = pfixup->sectionSource;
-      CeeSectionRelocType relocType = (CeeSectionRelocType) pfixup->wType;
-      unsigned offset = pfixup->offset;
-
-      // Get current data for replacing fixup contents
-      const DWORD * pdw = (DWORD *) sectionSource->computePointer(offset);
-      pfixup->rva = (DWORD) (UINT_PTR) pdw;
-      pfixup->rvaTarget = *pdw;
-
-      switch (relocType)
-      {
-#ifdef HOST_X86
-      case srRelocAbsolute:
-          // Emitted bytes: RVA, offset relative to image base
-          // reloc src contains target offset relative to target section
-          if ((*pdw & 0xFF000000) == 0)
-          {
-              pfixup->wType = IMAGE_REL_I386_DIR32NB;
-          }
-          else
-          {
-              // MethodDesc::Fixup function creates a 24 bit RVA, where the
-              // high byte of the DWORD stores the flag value: METHOD_NEEDS_PRESTUB_RUN_FLAG.
-              // work around it by converting the type to 24 bits here
-              pfixup->wType = IMAGE_REL_I386_DIR24NB;
-              pfixup->rvaTarget = *pdw & 0x00FFFFFF;
-          }
-          break;
-
-      case srRelocAbsolutePtr:
-          // Emitted bytes: RVA, offset relative to image base
-          // reloc src contains target pointer
-          pfixup->wType = IMAGE_REL_I386_DIR32NB;
-          break;
-
-      case srRelocHighLow:
-          // Emitted bytes: full address of target
-          // reloc src contains target offset relative to target section
-          pfixup->wType = IMAGE_REL_I386_DIR32;
-          break;
-
-      case srRelocHighLowPtr:
-          // Emitted bytes: full address of target
-          // reloc src contains target pointer
-          pfixup->wType = IMAGE_REL_I386_DIR32;
-          break;
-
-      case srRelocRelative:
-          // Emitted bytes: value of reloc tgt - (reloc source + sizeof(DWORD))
-          // reloc src contains offset relative to target section, minus sizeof(DWORD)
-          // the reloc type for pFixup->rvaTarget is srRelocAbsolute
-          // so contents of pFixup->rvaTarget need to be offset Target + sizeof(DWORD)
-          // which is offset Target == Source contents + sizeof(DWORD) == *pdw + sizeof(DWORD)
-          pfixup->wType = IMAGE_REL_I386_REL32;
-          pfixup->rvaTarget = *pdw + sizeof(DWORD);
-          break;
-
-      case srRelocRelativePtr:
-          // Emitted bytes: value of reloc tgt - (reloc source + sizeof(DWORD))
-          // reloc src contains disp, disp = pTarget - (pSource + sizeof(DWORD))
-          // the reloc type for pFixup->rvaTarget is srRelocAbsolutePtr
-          // so contents of pFixup->rvaTarget need to be pTarget
-          // which is pTarget == pSource + sizeof(DWORD) + disp == pdw + 4 + *pdw
-          pfixup->wType = IMAGE_REL_I386_REL32;
-          pfixup->rvaTarget = (int) (INT_PTR) pdw + sizeof(DWORD) + (int) *pdw;
-          break;
-
-      case srRelocMapToken:
-          // Emitted bytes: contents of reloc source unchanged.
-          // reloc src contains token value
-          pfixup->wType = IMAGE_REL_I386_TOKEN;
-          break;
-
-#elif defined(HOST_AMD64)
-          /*
-          //
-          // X86-64 relocations
-          //
-          IMAGE_REL_AMD64_ABSOLUTE        0x0000  // Reference is absolute, no relocation is necessary
-          IMAGE_REL_AMD64_ADDR64          0x0001  // 64-bit address (VA).
-          IMAGE_REL_AMD64_ADDR32          0x0002  // 32-bit address (VA).
-          IMAGE_REL_AMD64_ADDR32NB        0x0003  // 32-bit address w/o image base (RVA).
-          IMAGE_REL_AMD64_REL32           0x0004  // 32-bit relative address from byte following reloc
-          IMAGE_REL_AMD64_REL32_1         0x0005  // 32-bit relative address from byte distance 1 from reloc
-          IMAGE_REL_AMD64_REL32_2         0x0006  // 32-bit relative address from byte distance 2 from reloc
-          IMAGE_REL_AMD64_REL32_3         0x0007  // 32-bit relative address from byte distance 3 from reloc
-          IMAGE_REL_AMD64_REL32_4         0x0008  // 32-bit relative address from byte distance 4 from reloc
-          IMAGE_REL_AMD64_REL32_5         0x0009  // 32-bit relative address from byte distance 5 from reloc
-          IMAGE_REL_AMD64_SECTION         0x000A  // Section index
-          IMAGE_REL_AMD64_SECREL          0x000B  // 32 bit offset from base of section containing target
-          IMAGE_REL_AMD64_SECREL7         0x000C  // 7 bit unsigned offset from base of section containing target
-          IMAGE_REL_AMD64_TOKEN           0x000D  // 32 bit metadata token
-          IMAGE_REL_AMD64_SREL32          0x000E  // 32 bit signed span-dependent value emitted into object
-          IMAGE_REL_AMD64_PAIR            0x000F
-          IMAGE_REL_AMD64_SSPAN32         0x0010  // 32 bit signed span-dependent value applied at link time
-          */
-      case srRelocAbsolute:
-          // Emitted bytes: RVA, offset relative to image base
-          pfixup->wType = IMAGE_REL_AMD64_ADDR32NB;
-          break;
-
-      case srRelocAbsolutePtr:
-          // Emitted bytes: RVA, offset relative to image base
-          // reloc src contains target pointer
-          pfixup->wType = IMAGE_REL_AMD64_ADDR32NB;
-          break;
-
-      case srRelocDir64Ptr:
-          // Emitted bytes: full address of target
-          // reloc src contains target pointer
-          pfixup->wType = IMAGE_REL_IA64_DIR64;
-          break;
-
-      case srRelocMapToken:
-          // Emitted bytes: contents of reloc source unchanged.
-          // reloc src contains token value
-          pfixup->wType = IMAGE_REL_AMD64_TOKEN;
-          break;
-#endif
-      case srRelocFilePos:
-          // Emitted bytes: offset relative to start of file, differs from RVA.
-          pfixup->wType = IMAGE_REL_I386_FILEPOS;
-          break;
-
-      case srRelocAbsoluteTagged:
-            pfixup->wType = IMAGE_REL_I386_DIR30NB;
-            pfixup->rvaTarget = (*pdw & ~0x80000001) >> 1;
-          break;
-
-      case srRelocHighAdj:
-          // Emitted bytes: 2 part relocation, with high part adjusted by constant.
-          pfixup->wType = IMAGE_REL_BASED_HIGHADJ;
-          break;
-
-      default:
-          _ASSERTE(!"Unknown relocation type");
-          return(E_UNEXPECTED);
-          break;
-      }
-   }
-
-   return(S_OK);
-
-} // HRESULT CeeFileGenWriter::UpdateFixups()
-
-
-HRESULT CeeFileGenWriter::setEmitFixups()
-{
-   m_fEmitFixups = true;
-   return(S_OK);
-
-} // HRESULT CeeFileGenWriter::setEmitFixups()
-
-#ifdef TEST_EMIT_FIXUPS
-
-HRESULT CeeFileGenWriter::TestEmitFixups()
-{
-   HRESULT hr;
-   // Test fixups
-
-   CeeSection * testSection;
-   hr = getSectionCreate(".test",
-                          IMAGE_SCN_CNT_INITIALIZED_DATA  | IMAGE_SCN_MEM_READ,
-                          &testSection);
-   if (SUCCEEDED(hr))
-   {
-      struct FixupEntry
-      {
-         char sz[18];
-         DWORD wTargets[8];
-      };
-
-      struct FixupTypes
-      {
-         char *               pszType;
-         CeeSectionRelocType  relocType;
-      };
-
-      FixupTypes rgTypes[] =
-      {
-         { "srRelocAbsolute   ", srRelocAbsolute      },
-         { "srRelocAbsolutePtr", srRelocAbsolutePtr   },
-         { "srRelocHighLow    ", srRelocHighLow       },
-         { "srRelocHighLowPtr ", srRelocHighLowPtr    },
-      // { "srRelocRelative   ", srRelocRelative      },
-      // { "srRelocRelativePtr", srRelocRelativePtr   },
-         { "srRelocMapToken   ", srRelocMapToken      },
-      // { "srRelocFilePos    ", srRelocFilePos       },
-      // { "srRelocHighAdj    ", srRelocHighAdj       },
-      };
-
-      const size_t cFixups = sizeof(rgTypes) / sizeof(rgTypes[0]);
-
-      DWORD * pdwTargets[20];
-
-      // Target Blocks:
-
-      for (size_t idx = 0; idx < cFixups; idx++)
-      {
-         hr = GetSectionBlock(testSection, sizeof(DWORD), 1, (void **) &pdwTargets[idx]);
-         _ASSERTE(SUCCEEDED(hr));
-
-         DWORD * pdw = pdwTargets[idx];
-         *pdw = idx;
-      }
-
-      for (size_t idxType = 0; idxType < cFixups; idxType++)
-      {
-         // Fixup Entries
-         FixupEntry * pEntry;
-         hr = GetSectionBlock(testSection, sizeof(FixupEntry), 1, (void **) &pEntry);
-         _ASSERTE(SUCCEEDED(hr));
-
-         memset(pEntry, 0, sizeof(FixupEntry));
-         strcpy_s(pEntry->sz, sizeof(pEntry->sz), rgTypes[idxType].pszType);
-
-         size_t ibBlock = testSection->computeOffset((char *) pEntry);
-
-         for (size_t idx = 0; idx < cFixups; idx++)
-         {
-            size_t ibFixup = ((size_t) &pEntry->wTargets[idx]) - (size_t) pEntry;
-
-            switch (rgTypes[idxType].relocType)
-            {
-               case srRelocAbsolute:
-                 pEntry->wTargets[idx] = idx * sizeof(DWORD);
-                 break;
-
-               case srRelocAbsolutePtr:
-                 pEntry->wTargets[idx] = (DWORD) pdwTargets[idx];
-                 break;
-
-               case srRelocHighLow:
-                 pEntry->wTargets[idx] = idx * sizeof(DWORD);
-                 break;
-
-               case srRelocHighLowPtr:
-                 pEntry->wTargets[idx] = (DWORD) pdwTargets[idx];
-                 break;
-
-               case srRelocRelative:
-                 pEntry->wTargets[idx] = idx;
-                 break;
-
-               case srRelocRelativePtr:
-               {
-                 size_t ibTgt = (size_t) pdwTargets[idx];
-                 size_t ibSrc = ((size_t) &pEntry->wTargets[idx]) + sizeof(DWORD);
-                 pEntry->wTargets[idx] = (DWORD)( ibTgt - ibSrc );
-                 ibFixup += sizeof(DWORD); // offset needs to point at end of DWORD
-                 break;
-               }
-
-               case srRelocHighAdj:
-                 pEntry->wTargets[idx] = idx * sizeof(DWORD);
-                 break;
-
-               case srRelocMapToken:
-                 pEntry->wTargets[idx] = idx * sizeof(DWORD);
-                 break;
-
-               case srRelocFilePos:
-                 pEntry->wTargets[idx] = idx * sizeof(DWORD);
-                 break;
-            }
-
-            addFixup(*testSection, ibBlock + ibFixup, rgTypes[idxType].relocType, testSection);
-            testSection->addSectReloc(ibBlock + ibFixup, *testSection, rgTypes[idxType].relocType);
-         }
-      }
-   }
-
-   return(S_OK);
-}
-#endif // TEST_EMIT_FIXUPS
-#endif // EMIT_FIXUPS

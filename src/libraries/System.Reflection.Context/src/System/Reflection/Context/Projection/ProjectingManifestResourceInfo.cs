@@ -7,7 +7,7 @@ using System.Reflection.Context.Delegation;
 namespace System.Reflection.Context.Projection
 {
     // Recursively 'projects' any assemblies, modules, types and members returned by a given resource
-    internal class ProjectingManifestResourceInfo : DelegatingManifestResourceInfo
+    internal sealed class ProjectingManifestResourceInfo : DelegatingManifestResourceInfo
     {
         private readonly Projector _projector;
 

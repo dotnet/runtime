@@ -308,11 +308,29 @@ namespace System.Diagnostics
         }
 
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
-        private bool IsParentOf(Process possibleChildProcess) =>
-            Id == possibleChildProcess.ParentProcessId;
+        private bool IsParentOf(Process possibleChildProcess)
+        {
+            try
+            {
+                return Id == possibleChildProcess.ParentProcessId;
+            }
+            catch (Exception e) when (IsProcessInvalidException(e))
+            {
+                return false;
+            }
+        }
 
-        private bool Equals(Process process) =>
-            Id == process.Id;
+        private bool Equals(Process process)
+        {
+            try
+            {
+                return Id == process.Id;
+            }
+            catch (Exception e) when (IsProcessInvalidException(e))
+            {
+                return false;
+            }
+        }
 
         partial void ThrowIfExited(bool refresh)
         {

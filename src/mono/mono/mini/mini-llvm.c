@@ -1462,7 +1462,7 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
-#ifdef HOST_WASM
+#ifdef TARGET_WASM
 		/* Need volatile stores otherwise the compiler might move them */
 		mono_llvm_build_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg], TRUE, LLVM_BARRIER_NONE);
 #else
@@ -2854,7 +2854,7 @@ emit_get_method (MonoLLVMModule *module)
 {
 	LLVMModuleRef lmodule = module->lmodule;
 	LLVMValueRef func, switch_ins, m;
-	LLVMBasicBlockRef entry_bb, fail_bb, bb, code_start_bb, code_end_bb;
+	LLVMBasicBlockRef entry_bb, fail_bb, bb, code_start_bb, code_end_bb, main_bb;
 	LLVMBasicBlockRef *bbs = NULL;
 	LLVMTypeRef rtype;
 	LLVMBuilderRef builder = LLVMCreateBuilder ();
@@ -2874,12 +2874,13 @@ emit_get_method (MonoLLVMModule *module)
 
 	rtype = LLVMPointerType (LLVMInt8Type (), 0);
 
+	int table_len = module->max_method_idx + 1;
+
 	if (emit_table) {
 		LLVMTypeRef table_type;
 		LLVMValueRef *table_elems;
 		char *table_name;
 
-		int table_len = module->max_method_idx + 1;
 		table_type = LLVMArrayType (rtype, table_len);
 		table_name = g_strdup_printf ("%s_method_table", module->global_prefix);
 		table = LLVMAddGlobal (lmodule, table_type, table_name);
@@ -2926,13 +2927,21 @@ emit_get_method (MonoLLVMModule *module)
 
 	if (emit_table) {
 		/*
+		 * Because table_len is computed using the method indexes available for us, it
+		 * might not include methods which are not compiled because of AOT profiles.
+		 * So table_len can be smaller than info->nmethods. Add a bounds check because
+		 * of that.
 		 * switch (index) {
 		 * case -1: return code_start;
 		 * case -2: return code_end;
-		 * default: return method_table [index];
+		 * default: return index < table_len ? method_table [index] : 0;
 		 */
-		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
-		LLVMPositionBuilderAtEnd (builder, default_bb);
+		fail_bb = LLVMAppendBasicBlock (func, "FAIL");
+		LLVMPositionBuilderAtEnd (builder, fail_bb);
+		LLVMBuildRet (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), rtype, ""));
+
+		main_bb = LLVMAppendBasicBlock (func, "MAIN");
+		LLVMPositionBuilderAtEnd (builder, main_bb);
 		LLVMValueRef base = table;
 		LLVMValueRef indexes [2];
 		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -2940,6 +2949,11 @@ emit_get_method (MonoLLVMModule *module)
 		LLVMValueRef addr = LLVMBuildGEP (builder, base, indexes, 2, "");
 		LLVMValueRef res = mono_llvm_build_load (builder, addr, "", FALSE);
 		LLVMBuildRet (builder, res);
+
+		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
+		LLVMPositionBuilderAtEnd (builder, default_bb);
+		LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntSGE, LLVMGetParam (func, 0), LLVMConstInt (LLVMInt32Type (), table_len, FALSE), "");
+		LLVMBuildCondBr (builder, cmp, fail_bb, main_bb);
 
 		LLVMPositionBuilderAtEnd (builder, entry_bb);
 
@@ -12402,18 +12416,6 @@ mono_llvm_init (gboolean enable_jit)
 }
 
 void
-mono_llvm_cleanup (void)
-{
-	MonoLLVMModule *module = &aot_module;
-
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
-	if (module->context)
-		LLVMContextDispose (module->context);
-}
-
-void
 mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
 	MonoLLVMModule *module = (MonoLLVMModule*)mem_manager->llvm_module;
@@ -13713,6 +13715,10 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },
+#endif
+// flags_map cannot be zero length in MSVC, so add useless dummy entry for arm32
+#if defined(TARGET_ARM) && defined(HOST_WIN32)
+		{ "inited",	MONO_CPU_INITED},
 #endif
 	};
 	if (!cpu_features)

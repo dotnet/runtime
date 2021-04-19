@@ -798,6 +798,30 @@ class MetaSig
             _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
+        enum CallingConventionModifiers
+        {
+            CALL_CONV_MOD_NONE = 0,
+            CALL_CONV_MOD_SUPPRESSGCTRANSITION = 0x1,
+            CALL_CONV_MOD_MEMBERFUNCTION = 0x2
+        };
+
+        enum class CallConvModOptNameType
+        {
+            TypeName,
+            FullyQualifiedName
+        };
+
+        // Attempt to parse the provided calling convention name and add it to the collected modifiers and calling convention
+        // Returns false if the modopt is known and cannot be applied.
+        // This occurs when the modopt is a base calling convention and a base calling convention has already been supplied.
+        // Otherwise, returns true.
+        static bool TryApplyModOptToCallingConvention(
+            _In_z_ LPCSTR callConvModOptName,
+            _In_ size_t callConvModOptNameLength,
+            _In_ CallConvModOptNameType nameType,
+            _Inout_ CorInfoCallConvExtension* pBaseCallConv,
+            _Inout_ CallingConventionModifiers* pCallConvModifiers);
+
         static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
         {
 #ifdef TARGET_UNIX
@@ -805,6 +829,24 @@ class MetaSig
 #else // TARGET_UNIX
             return CorInfoCallConvExtension::Stdcall;
 #endif // !TARGET_UNIX
+        }
+
+        static CorInfoCallConvExtension GetMemberFunctionUnmanagedCallingConventionVariant(CorInfoCallConvExtension baseCallConv)
+        {
+            switch (baseCallConv)
+            {
+            case CorInfoCallConvExtension::C:
+                return CorInfoCallConvExtension::CMemberFunction;
+            case CorInfoCallConvExtension::Stdcall:
+                return CorInfoCallConvExtension::StdcallMemberFunction;
+            case CorInfoCallConvExtension::Fastcall:
+                return CorInfoCallConvExtension::FastcallMemberFunction;
+            case CorInfoCallConvExtension::Thiscall:
+                return CorInfoCallConvExtension::Thiscall;
+            default:
+                _ASSERTE("Calling convention is not an unmanaged base calling convention.");
+                return baseCallConv;
+            }
         }
 
         //------------------------------------------------------------------

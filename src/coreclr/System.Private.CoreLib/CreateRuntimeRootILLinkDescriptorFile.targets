@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_ILLinkRuntimeRootDescriptorFilePath>$(ILLinkTrimXml)</_ILLinkRuntimeRootDescriptorFilePath>
+    <_ILLinkRuntimeRootDescriptorFilePath>$(ILLinkDescriptorsXml)</_ILLinkRuntimeRootDescriptorFilePath>
     <_NamespaceFilePath Condition=" '$(_NamespaceFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\namespace.h</_NamespaceFilePath>
     <_MscorlibFilePath Condition=" '$(_MscorlibFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\corelib.h</_MscorlibFilePath>
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>
@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLinkTrim.xml" />
+    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
   </ItemGroup>
 
@@ -49,7 +49,7 @@
                            CombinedLinkerXmlFile="$(_ILLinkDescriptorsIntermediatePath)" />
 
     <ItemGroup>
-      <FileWrites Include="$(_ILLinkDescriptorsXmlIntermediatePath)" />
+      <FileWrites Include="$(_ILLinkDescriptorsIntermediatePath)" />
     </ItemGroup>
   </Target>
 

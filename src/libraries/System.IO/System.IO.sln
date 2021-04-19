@@ -23,7 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{9FDAA57A-696
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D9FD8082-D04C-4DA8-9F4C-261D1C65A6D3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Legacy.Tests", "tests\LegacyTests\System.IO.Legacy.Tests.csproj", "{0217540D-FA86-41B3-9754-7BB5096ABA3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Net5Compat.Tests", "tests\Net5CompatTests\System.IO.Net5Compat.Tests.csproj", "{0217540D-FA86-41B3-9754-7BB5096ABA3E}"
 EndProject
 Global
 	GlobalSection(NestedProjects) = preSolution

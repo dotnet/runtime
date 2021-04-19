@@ -4322,6 +4322,12 @@ namespace System.Tests
             Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
         }
 
+        [Fact]
+        public static void MaxSizes()
+        {
+            Assert.Equal(0x7FFFFFC7, Array.MaxLength);
+        }
+
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             VerifyArray(array, elementType, lengths, lowerBounds);

@@ -3,7 +3,7 @@
 
 namespace System.Net
 {
-    internal class HeaderInfo
+    internal sealed class HeaderInfo
     {
         internal readonly bool IsRequestRestricted;
         internal readonly bool IsResponseRestricted;

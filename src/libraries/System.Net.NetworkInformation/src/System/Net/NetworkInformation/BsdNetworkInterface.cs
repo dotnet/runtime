@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdNetworkInterface : UnixNetworkInterface
+    internal sealed class BsdNetworkInterface : UnixNetworkInterface
     {
         private readonly BsdIpInterfaceProperties _ipProperties;
         private readonly OperationalStatus _operationalStatus;
         private readonly bool _supportsMulticast;
         private readonly long _speed;
 
-        protected unsafe BsdNetworkInterface(string name, int index) : base(name)
+        private unsafe BsdNetworkInterface(string name, int index) : base(name)
         {
             _index = index;
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;

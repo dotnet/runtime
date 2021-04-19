@@ -28,7 +28,7 @@
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />
     <Compile Include="System\PlatformDetection.Windows.cs" />
-    <!-- 
+    <!--
       Interop.Library is not designed to support runtime checks therefore we are picking the Windows
       variant from the Common folder and adding the missing members manually.
     -->
@@ -65,6 +65,11 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+  </ItemGroup>
+  <!-- Android imports -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />

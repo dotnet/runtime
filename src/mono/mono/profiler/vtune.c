@@ -172,7 +172,6 @@ mono_profiler_init_vtune (const char *desc)
 	if (flags == iJIT_SAMPLING_ON)
 	{
 		MonoProfilerHandle handle = mono_profiler_create (NULL);
-		mono_profiler_set_runtime_shutdown_end_callback (handle, codeanalyst_shutdown);
 		mono_profiler_set_jit_done_callback (handle, method_jit_done);
 		mono_profiler_set_jit_code_buffer_callback (handle, code_buffer_new);
 	}

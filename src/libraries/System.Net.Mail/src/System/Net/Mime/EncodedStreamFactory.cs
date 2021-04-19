@@ -5,7 +5,7 @@ using System.Text;
 
 namespace System.Net.Mime
 {
-    internal class EncodedStreamFactory
+    internal sealed class EncodedStreamFactory
     {
         //RFC 2822: no encoded-word line should be longer than 76 characters not including the soft CRLF
         //since the header length is unknown (if there even is one) we're going to be slightly more conservative
@@ -20,7 +20,7 @@ namespace System.Net.Mime
         internal IEncodableStream GetEncoderForHeader(Encoding encoding, bool useBase64Encoding, int headerTextLength)
         {
             byte[] header = CreateHeader(encoding, useBase64Encoding);
-            byte[] footer = CreateFooter();
+            byte[] footer = s_footer;
 
             WriteStateInfoBase writeState;
             if (useBase64Encoding)
@@ -36,10 +36,10 @@ namespace System.Net.Mime
         //Create the header for what type of byte encoding is going to be used
         //based on the encoding type and if base64 encoding should be forced
         //sample header: =?utf-8?B?
-        protected byte[] CreateHeader(Encoding encoding, bool useBase64Encoding) =>
+        private byte[] CreateHeader(Encoding encoding, bool useBase64Encoding) =>
             Encoding.ASCII.GetBytes("=?" + encoding.HeaderName + "?" + (useBase64Encoding ? "B?" : "Q?"));
 
-        //creates the footer that marks the end of a quoted string of some sort
-        protected byte[] CreateFooter() => new byte[] { (byte)'?', (byte)'=' };
+        //The footer that marks the end of a quoted string of some sort
+        private static readonly byte[] s_footer = new byte[] { (byte)'?', (byte)'=' };
     }
 }

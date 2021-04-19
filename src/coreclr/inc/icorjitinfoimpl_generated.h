@@ -21,6 +21,9 @@
 
 public:
 
+bool isJitIntrinsic(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 uint32_t getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -689,13 +692,6 @@ JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           ICorJitInfo::PgoInstrumentationSchema* pSchema,
           uint32_t countSchemaItems,
           uint8_t** pInstrumentationData) override;
-
-CORINFO_CLASS_HANDLE getLikelyClass(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          CORINFO_CLASS_HANDLE baseHnd,
-          uint32_t ilOffset,
-          uint32_t* pLikelihood,
-          uint32_t* pNumberOfClasses) override;
 
 void recordCallSite(
           uint32_t instrOffset,

@@ -8,7 +8,7 @@ using System.Collections;
 namespace System.Security.Cryptography.Xml
 {
     // the class that provides node subset state and canonicalization function to XmlElement
-    internal class CanonicalXmlElement : XmlElement, ICanonicalizableNode
+    internal sealed class CanonicalXmlElement : XmlElement, ICanonicalizableNode
     {
         private bool _isInNodeSet;
 

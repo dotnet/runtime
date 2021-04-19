@@ -580,6 +580,35 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     GCPROTECT_END();
 }
 
+/* static */
+void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+        PRECONDITION(assemblyName != NULL);
+        PRECONDITION(IsProtectedByGCFrame(assemblyNameRef));
+    }
+    CONTRACTL_END;
+
+    AssemblySpec spec;
+    spec.InitializeWithAssemblyIdentity(assemblyName);
+
+    StackScratchBuffer nameBuffer;
+    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+
+    StackScratchBuffer cultureBuffer;
+    if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
+    {
+        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        spec.SetCulture(culture);
+    }
+
+    spec.AssemblyNameInit(assemblyNameRef, NULL);
+}
+
 #endif // CROSSGEN_COMPILE
 
 // Check if the supplied assembly's public key matches up with the one in the Spec, if any
@@ -859,9 +888,7 @@ HRESULT AssemblySpec::CheckFriendAssemblyName()
 
 HRESULT AssemblySpec::EmitToken(
     IMetaDataAssemblyEmit *pEmit,
-    mdAssemblyRef *pToken,
-    BOOL fUsePublicKeyToken, /*=TRUE*/
-    BOOL fMustBeBindable /*=FALSE*/)
+    mdAssemblyRef *pToken)
 {
     CONTRACTL
     {
@@ -902,7 +929,7 @@ HRESULT AssemblySpec::EmitToken(
 
         // If we've been asked to emit a public key token in the reference but we've
         // been given a public key then we need to generate the token now.
-        if (m_cbPublicKeyOrToken && fUsePublicKeyToken && IsAfPublicKey(m_dwFlags)) {
+        if (m_cbPublicKeyOrToken && IsAfPublicKey(m_dwFlags)) {
             StrongNameBufferHolder<BYTE> pbPublicKeyToken;
             DWORD cbPublicKeyToken;
             IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
@@ -938,11 +965,6 @@ HRESULT AssemblySpec::EmitToken(
 
     return hr;
 }
-
-//===========================================================================================
-// Constructs an AssemblySpec for the given IAssemblyName. Recognizes IAssemblyName objects
-// that were built from WinRT AssemblySpec objects, extracts the encoded type name, and sets
-// the type namespace and class name properties appropriately.
 
 AssemblySpecBindingCache::AssemblySpecBindingCache()
 {

@@ -31,7 +31,7 @@ namespace System.Net.Mime
     // stores a Date and a Time Zone.  These are parsed and formatted according to the
     // rules in RFC 2822 section 3.3.
     // This class is immutable
-    internal class SmtpDateTime
+    internal sealed class SmtpDateTime
     {
         #region constants
 

@@ -249,27 +249,6 @@ namespace System.Drawing
             internal static extern int GdipGetImagePaletteSize(HandleRef image, out int size);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyCount(HandleRef image, out int count);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyIdList(HandleRef image, int count, int[] list);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyItemSize(HandleRef image, int propid, out int size);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyItem(HandleRef image, int propid, int size, IntPtr buffer);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertySize(HandleRef image, out int totalSize, ref int count);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetAllPropertyItems(HandleRef image, int totalSize, int count, IntPtr buffer);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSetPropertyItem(HandleRef image, PropertyItemInternal propitem);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipImageForceValidation(IntPtr image);
 
             [DllImport(LibraryName, ExactSpelling = true)]

@@ -47,7 +47,7 @@ namespace System.Collections.Tests
         protected override void Clear(IEnumerable<T> enumerable) => ((Queue<T>)enumerable).Clear();
         protected override bool Contains(IEnumerable<T> enumerable, T value) => ((Queue<T>)enumerable).Contains(value);
         protected override void CopyTo(IEnumerable<T> enumerable, T[] array, int index) => ((Queue<T>)enumerable).CopyTo(array, index);
-        protected override bool Remove(IEnumerable<T> enumerable) { ((Queue<T>)enumerable).Dequeue(); return true; }
+        protected override bool Remove(IEnumerable<T> enumerable) => ((Queue<T>)enumerable).TryDequeue(out _);
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
         protected override Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
@@ -348,12 +348,15 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(-1));
         }
 
-        const int MaxArraySize = 0X7FEFFFFF;
+        public static IEnumerable<object[]> Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData()
+        {
+            yield return new object[] { Array.MaxLength + 1 };
+            yield return new object[] { int.MaxValue };
+        }
 
         [Theory]
-        [InlineData(MaxArraySize + 1)]
-        [InlineData(int.MaxValue)]
-        [SkipOnMono("mono forces no restrictions on array size.")]
+        [MemberData(nameof(Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
         {
             var queue = GenericQueueFactory();

@@ -49,6 +49,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
+#include "mono/metadata/jit-info.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
@@ -266,17 +267,6 @@ mono_marshal_init (void)
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
 	}
-}
-
-void
-mono_marshal_cleanup (void)
-{
-	mono_cominterop_cleanup ();
-
-	mono_native_tls_free (load_type_info_tls_id);
-	mono_native_tls_free (last_error_tls_id);
-	mono_coop_mutex_destroy (&marshal_mutex);
-	marshal_mutex_initialized = FALSE;
 }
 
 void
@@ -551,7 +541,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		void **method_data;
 		MonoMethod *method;
 
-		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
+		ji = mono_jit_info_table_find_internal (mono_get_addr_from_ftnptr (ptr), TRUE, FALSE);
 		/* FIXME we leak wrapper with the interpreter */
 		if (!ji)
 			return;

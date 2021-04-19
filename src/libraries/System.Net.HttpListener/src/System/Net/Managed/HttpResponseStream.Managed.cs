@@ -39,7 +39,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal partial class HttpResponseStream : Stream
+    internal sealed partial class HttpResponseStream : Stream
     {
         private HttpListenerResponse _response;
         private bool _ignore_errors;
@@ -129,11 +129,8 @@ namespace System.Net
         }
 
         private static byte[] s_crlf = new byte[] { 13, 10 };
-        private static byte[] GetChunkSizeBytes(int size, bool final)
-        {
-            string str = string.Format("{0:x}\r\n{1}", size, final ? "\r\n" : "");
-            return Encoding.ASCII.GetBytes(str);
-        }
+        private static byte[] GetChunkSizeBytes(int size, bool final) =>
+            Encoding.ASCII.GetBytes($"{size:x}\r\n{(final ? "\r\n" : "")}");
 
         internal void InternalWrite(byte[] buffer, int offset, int count)
         {

@@ -536,7 +536,6 @@ class ThreadStatics
     {
         // Get the current thread
         Thread * pThread = GetThread();
-
         return &pThread->m_ThreadLocalBlock;
     }
 

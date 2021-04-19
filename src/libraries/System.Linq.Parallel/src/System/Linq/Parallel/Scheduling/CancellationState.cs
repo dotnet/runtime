@@ -15,7 +15,7 @@ using System.Threading;
 
 namespace System.Linq.Parallel
 {
-    internal class CancellationState
+    internal sealed class CancellationState
     {
         // a cancellation signal that can be set internally to prompt early query termination.
         internal CancellationTokenSource? InternalCancellationTokenSource;

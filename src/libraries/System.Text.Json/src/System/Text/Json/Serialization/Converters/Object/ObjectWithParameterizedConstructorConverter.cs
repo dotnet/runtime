@@ -6,9 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Metadata;
 
-using FoundProperty = System.ValueTuple<System.Text.Json.JsonPropertyInfo, System.Text.Json.JsonReaderState, long, byte[]?, string?>;
-using FoundPropertyAsync = System.ValueTuple<System.Text.Json.JsonPropertyInfo, object?, string?>;
+using FoundProperty = System.ValueTuple<System.Text.Json.Serialization.Metadata.JsonPropertyInfo, System.Text.Json.JsonReaderState, long, byte[]?, string?>;
+using FoundPropertyAsync = System.ValueTuple<System.Text.Json.Serialization.Metadata.JsonPropertyInfo, object?, string?>;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -62,7 +63,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (useExtensionProperty)
                         {
-                            Debug.Assert(jsonPropertyInfo == state.Current.JsonClassInfo.DataExtensionProperty);
+                            Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.DataExtensionProperty);
                             state.Current.JsonPropertyNameAsString = dataExtKey;
                             JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo);
                         }
@@ -106,7 +107,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                         else
                         {
-                            Debug.Assert(jsonPropertyInfo == state.Current.JsonClassInfo.DataExtensionProperty);
+                            Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.DataExtensionProperty);
 
                             JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo);
                             object extDictionary = jsonPropertyInfo.GetValueAsObject(obj)!;
@@ -130,13 +131,13 @@ namespace System.Text.Json.Serialization.Converters
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
             {
-                state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
+                state.Current.JsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
             }
 
             // Check if we are trying to build the sorted parameter cache.
             if (argumentState.ParameterRefCache != null)
             {
-                state.Current.JsonClassInfo.UpdateSortedParameterCache(ref state.Current);
+                state.Current.JsonTypeInfo.UpdateSortedParameterCache(ref state.Current);
             }
 
             EndRead(ref state);
@@ -208,7 +209,7 @@ namespace System.Text.Json.Serialization.Converters
                         if (argumentState.FoundProperties == null)
                         {
                             argumentState.FoundProperties =
-                                ArrayPool<FoundProperty>.Shared.Rent(Math.Max(1, state.Current.JsonClassInfo.PropertyCache!.Count));
+                                ArrayPool<FoundProperty>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache!.Count));
                         }
                         else if (argumentState.FoundPropertyCount == argumentState.FoundProperties.Length)
                         {
@@ -341,7 +342,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Returning false below will cause the read-ahead functionality to finish the read.
                 state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.ClassType, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.ConverterStrategy, ref reader, ref state))
                 {
                     return false;
                 }
@@ -406,7 +407,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (argumentState.FoundPropertiesAsync == null)
             {
-                argumentState.FoundPropertiesAsync = ArrayPool<FoundPropertyAsync>.Shared.Rent(Math.Max(1, state.Current.JsonClassInfo.PropertyCache!.Count));
+                argumentState.FoundPropertiesAsync = ArrayPool<FoundPropertyAsync>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache!.Count));
             }
             else if (argumentState.FoundPropertyCount == argumentState.FoundPropertiesAsync!.Length)
             {
@@ -439,7 +440,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
             }
 
-            if (state.Current.JsonClassInfo.ParameterCount != state.Current.JsonClassInfo.ParameterCache!.Count)
+            if (state.Current.JsonTypeInfo.ParameterCount != state.Current.JsonTypeInfo.ParameterCache!.Count)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo!, TypeToConvert);
             }
@@ -463,11 +464,11 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             out JsonParameterInfo? jsonParameterInfo)
         {
-            Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
+            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
             ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
 
-            jsonParameterInfo = state.Current.JsonClassInfo.GetParameter(
+            jsonParameterInfo = state.Current.JsonTypeInfo.GetParameter(
                 unescapedPropertyName,
                 ref state.Current,
                 out byte[] utf8PropertyName);

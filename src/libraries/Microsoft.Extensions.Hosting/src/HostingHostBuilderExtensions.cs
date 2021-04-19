@@ -3,12 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.EventLog;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -45,7 +49,7 @@ namespace Microsoft.Extensions.Hosting
                 configBuilder.AddInMemoryCollection(new[]
                 {
                     new KeyValuePair<string, string>(HostDefaults.ContentRootKey,
-                        contentRoot  ?? throw new ArgumentNullException(nameof(contentRoot)))
+                        contentRoot ?? throw new ArgumentNullException(nameof(contentRoot)))
                 });
             });
         }
@@ -132,6 +136,105 @@ namespace Microsoft.Extensions.Hosting
         public static IHostBuilder ConfigureContainer<TContainerBuilder>(this IHostBuilder hostBuilder, Action<TContainerBuilder> configureDelegate)
         {
             return hostBuilder.ConfigureContainer<TContainerBuilder>((context, builder) => configureDelegate(builder));
+        }
+
+        /// <summary>
+        /// Configures an existing <see cref="IHostBuilder"/> instance with pre-configured defaults.
+        /// </summary>
+        /// <remarks>
+        ///   The following defaults are applied to the <see cref="IHostBuilder"/>:
+        ///   <list type="bullet">
+        ///     <item><description>set the <see cref="IHostEnvironment.ContentRootPath"/> to the result of <see cref="Directory.GetCurrentDirectory()"/></description></item>
+        ///     <item><description>load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
+        ///     <item><description>load host <see cref="IConfiguration"/> from supplied command line args</description></item>
+        ///     <item><description>load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'</description></item>
+        ///     <item><description>load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
+        ///     <item><description>load app <see cref="IConfiguration"/> from environment variables</description></item>
+        ///     <item><description>load app <see cref="IConfiguration"/> from supplied command line args</description></item>
+        ///     <item><description>configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
+        ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+        ///   </list>
+        /// </remarks>
+        /// <param name="builder">The existing builder to configure.</param>
+        /// <param name="args">The command line args.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[] args)
+        {
+            builder.UseContentRoot(Directory.GetCurrentDirectory());
+            builder.ConfigureHostConfiguration(config =>
+            {
+                config.AddEnvironmentVariables(prefix: "DOTNET_");
+                if (args is { Length: > 0 })
+                {
+                    config.AddCommandLine(args);
+                }
+            });
+
+            builder.ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                IHostEnvironment env = hostingContext.HostingEnvironment;
+
+                bool reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
+                      .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+
+                if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
+                {
+                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
+                    if (appAssembly is not null)
+                    {
+                        config.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
+                    }
+                }
+
+                config.AddEnvironmentVariables();
+
+                if (args is { Length: > 0 })
+                {
+                    config.AddCommandLine(args);
+                }
+            })
+            .ConfigureLogging((hostingContext, logging) =>
+            {
+                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+                // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
+                // the defaults be overridden by the configuration.
+                if (isWindows)
+                {
+                    // Default the EventLogLoggerProvider to warning or above
+                    logging.AddFilter<EventLogLoggerProvider>(level => level >= LogLevel.Warning);
+                }
+
+                logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+                logging.AddConsole();
+                logging.AddDebug();
+                logging.AddEventSourceLogger();
+
+                if (isWindows)
+                {
+                    // Add the EventLogLoggerProvider on windows machines
+                    logging.AddEventLog();
+                }
+
+                logging.Configure(options =>
+                {
+                    options.ActivityTrackingOptions =
+                        ActivityTrackingOptions.SpanId |
+                        ActivityTrackingOptions.TraceId |
+                        ActivityTrackingOptions.ParentId;
+                });
+
+            })
+            .UseDefaultServiceProvider((context, options) =>
+            {
+                bool isDevelopment = context.HostingEnvironment.IsDevelopment();
+                options.ValidateScopes = isDevelopment;
+                options.ValidateOnBuild = isDevelopment;
+            });
+
+            return builder;
         }
 
         /// <summary>

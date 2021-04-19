@@ -12,7 +12,7 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
-    internal class DataMember
+    internal sealed class DataMember
     {
         private readonly CriticalHelper _helper;
 

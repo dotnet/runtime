@@ -260,7 +260,7 @@ namespace System.Formats.Cbor
             // clean up
             s_bufferPool.Return(tempBuffer);
             _currentIndefiniteLengthStringRanges.Clear();
-            buffer.Slice(_offset, initialOffset - _offset).Fill(0x0);
+            buffer.Slice(_offset, initialOffset - _offset).Clear();
         }
     }
 }

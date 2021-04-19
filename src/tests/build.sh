@@ -148,8 +148,7 @@ precompile_coreroot_fx()
     # processors available to a single process.
     local platform="$(uname)"
     if [[ "$platform" == "FreeBSD" ]]; then
-        output=("$(sysctl hw.ncpu)")
-        __NumProc="$((output[1] + 1))"
+        __NumProc=$(($(sysctl -n hw.ncpu)+1))
     elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
         __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
     elif [[ "$platform" == "Darwin" ]]; then
@@ -159,7 +158,7 @@ precompile_coreroot_fx()
     fi
 
     local outputDir="$__TestIntermediatesDir/crossgen.out"
-    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --release --nocleanup --target-arch $__BuildArch -dop $__NumProc  -m \"$CORE_ROOT/StandardOptimizationData.mibc\""
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
@@ -280,7 +279,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
-        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"

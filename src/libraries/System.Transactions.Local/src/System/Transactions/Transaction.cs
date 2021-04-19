@@ -1222,11 +1222,11 @@ namespace System.Transactions
     //
     // MarshalByRefObject is needed for cross AppDomain scenarios where just using object will end up with a different reference when call is made across serialization boundary.
     //
-    internal class ContextKey // : MarshalByRefObject
+    internal sealed class ContextKey // : MarshalByRefObject
     {
     }
 
-    internal class ContextData
+    internal sealed class ContextData
     {
         internal TransactionScope? CurrentScope;
         internal Transaction? CurrentTransaction;

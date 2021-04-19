@@ -5,7 +5,7 @@
 #include "pal_utilities.h"
 #include <assert.h>
 
-static int HasNoPrivateKey(RSA* rsa);
+static int HasNoPrivateKey(const RSA* rsa);
 
 EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
 {
@@ -85,12 +85,11 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
 
     // This check may no longer be needed on OpenSSL 3.0
     {
-        RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
 
         if (rsa == NULL || HasNoPrivateKey(rsa))
         {
             ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-            ret = -1;
             goto done;
         }
     }
@@ -98,6 +97,81 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     size_t written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_decrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
+    {
+        ret = SizeTToInt32(written);
+    }
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    return ret;
+}
+
+int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                 RsaPaddingMode padding,
+                                 const EVP_MD* digest,
+                                 const uint8_t* hash,
+                                 int32_t hashLen,
+                                 uint8_t* destination,
+                                 int32_t destinationLen)
+{
+    assert(pkey != NULL);
+    assert(destination != NULL);
+    assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
+    assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    int ret = -1;
+
+    if (ctx == NULL || EVP_PKEY_sign_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (padding == RsaPaddingPkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        assert(padding == RsaPaddingOaepOrPss);
+
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0 ||
+            EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+        {
+            goto done;
+        }
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        goto done;
+    }
+
+    // This check may no longer be needed on OpenSSL 3.0
+    {
+        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            goto done;
+        }
+    }
+
+    size_t written = Int32ToSizeT(destinationLen);
+
+    if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
     {
         ret = SizeTToInt32(written);
     }
@@ -121,7 +195,7 @@ int32_t CryptoNative_EvpPkeySetRsa(EVP_PKEY* pkey, RSA* rsa)
     return EVP_PKEY_set1_RSA(pkey, rsa);
 }
 
-static int HasNoPrivateKey(RSA* rsa)
+static int HasNoPrivateKey(const RSA* rsa)
 {
     if (rsa == NULL)
         return 1;

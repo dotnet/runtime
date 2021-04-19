@@ -274,7 +274,7 @@ namespace System
 
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (uint)_length);
             }
             else
             {
@@ -295,7 +295,7 @@ namespace System
             bool retVal = false;
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (uint)_length);
                 retVal = true;
             }
             return retVal;
@@ -319,7 +319,7 @@ namespace System
             {
                 return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _pointer.Value), _length));
             }
-            return string.Format("System.ReadOnlySpan<{0}>[{1}]", typeof(T).Name, _length);
+            return $"System.ReadOnlySpan<{typeof(T).Name}>[{_length}]";
         }
 
         /// <summary>

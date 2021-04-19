@@ -771,6 +771,28 @@ DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
     return value;
 }
 
+void MethodContext::recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
+{
+    if (IsJitIntrinsic == nullptr)
+        IsJitIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
+
+    IsJitIntrinsic->Add(CastHandle(ftn), (DWORD)result);
+    DEBUG_REC(dmpIsJitIntrinsic(CastHandle(ftn), (DWORD)result));
+}
+void MethodContext::dmpIsJitIntrinsic(DWORDLONG key, DWORD value)
+{
+    printf("IsJitIntrinsic key ftn-%016llX, value res-%u", key, value);
+}
+bool MethodContext::repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    AssertCodeMsg((IsJitIntrinsic != nullptr) && (IsJitIntrinsic->GetIndex(CastHandle(ftn)) != -1), EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(ftn));
+
+    bool result = (BOOL)IsJitIntrinsic->Get(CastHandle(ftn));
+    DEBUG_REP(dmpIsJitIntrinsic(CastHandle(ftn), (DWORD)result));
+    return result;
+}
+
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
 {
     if (GetMethodAttribs == nullptr)
@@ -2685,8 +2707,11 @@ void MethodContext::dmpGetArgNext(DWORDLONG key, DWORDLONG value)
 }
 CORINFO_ARG_LIST_HANDLE MethodContext::repGetArgNext(CORINFO_ARG_LIST_HANDLE args)
 {
-    CORINFO_ARG_LIST_HANDLE temp = (CORINFO_ARG_LIST_HANDLE)GetArgNext->Get(CastHandle(args));
-    DEBUG_REP(dmpGetArgNext(CastHandle(args), CastHandle(temp)));
+    DWORDLONG key = CastHandle(args);
+    AssertCodeMsg(GetArgNext != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llx", key);
+    AssertCodeMsg(GetArgNext->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llx", key);
+    CORINFO_ARG_LIST_HANDLE temp = (CORINFO_ARG_LIST_HANDLE)GetArgNext->Get(key);
+    DEBUG_REP(dmpGetArgNext(key, CastHandle(temp)));
     return temp;
 }
 void MethodContext::recGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent)
@@ -5531,48 +5556,6 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
 
     HRESULT result = (HRESULT)tempValue.result;
     return result;
-}
-
-void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE result, UINT32* pLikelihood, UINT32* pNumberOfClasses)
-{
-    if (GetLikelyClass == nullptr)
-        GetLikelyClass = new LightWeightMap<Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult>();
-
-    Agnostic_GetLikelyClass key;
-    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
-
-    key.ftnHnd = CastHandle(ftnHnd);
-    key.baseHnd = CastHandle(baseHnd);
-    key.ilOffset = (DWORD) ilOffset;
-
-    Agnostic_GetLikelyClassResult value;
-    ZeroMemory(&value, sizeof(Agnostic_GetLikelyClassResult));
-    value.classHnd = CastHandle(result);
-    value.likelihood = *pLikelihood;
-    value.numberOfClasses = *pNumberOfClasses;
-
-    GetLikelyClass->Add(key, value);
-    DEBUG_REC(dmpGetLikelyClass(key, value));
-}
-void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
-{
-    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u",
-        key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
-}
-CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
-{
-    Agnostic_GetLikelyClass key;
-    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
-    key.ftnHnd = CastHandle(ftnHnd);
-    key.baseHnd = CastHandle(baseHnd);
-    key.ilOffset = (DWORD) ilOffset;
-
-    Agnostic_GetLikelyClassResult value = GetLikelyClass->Get(key);
-    DEBUG_REP(dmpGetLikelyClass(key, value));
-
-    *pLikelihood = value.likelihood;
-    *pNumberOfClasses = value.numberOfClasses;
-    return (CORINFO_CLASS_HANDLE) value.classHnd;
 }
 
 void MethodContext::recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result)

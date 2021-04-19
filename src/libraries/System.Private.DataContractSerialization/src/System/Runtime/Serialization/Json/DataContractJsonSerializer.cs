@@ -26,6 +26,8 @@ namespace System.Runtime.Serialization.Json
         private const char LOW_SURROGATE_END = (char)0xdfff;
         private const char MAX_CHAR = (char)0xfffe;
         private const char WHITESPACE = ' ';
+        internal const string SerializerTrimmerWarning = "Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the " +
+            "required types are preserved.";
 
 
         internal IList<Type>? knownTypeList;
@@ -40,36 +42,43 @@ namespace System.Runtime.Serialization.Json
         private readonly DataContractJsonSerializerImpl _serializer;
         private readonly bool _ignoreExtensionDataObject;
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type)
         {
             _serializer = new DataContractJsonSerializerImpl(type);
         }
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, string? rootName)
             : this(type, rootName, null)
         {
         }
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName)
             : this(type, rootName, null)
         {
         }
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, IEnumerable<Type>? knownTypes)
         {
             _serializer = new DataContractJsonSerializerImpl(type, knownTypes);
         }
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, string? rootName, IEnumerable<Type>? knownTypes)
             : this(type, new DataContractJsonSerializerSettings() { RootName = rootName, KnownTypes = knownTypes })
         {
         }
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName, IEnumerable<Type>? knownTypes)
         {
             _serializer = new DataContractJsonSerializerImpl(type, rootName, knownTypes);
         }
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, DataContractJsonSerializerSettings? settings)
         {
             _serializer = new DataContractJsonSerializerImpl(type, settings);
@@ -425,11 +434,13 @@ namespace System.Runtime.Serialization.Json
             return (xmlName == null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static object? ReadJsonValue(DataContract contract, XmlReaderDelegator reader, XmlObjectSerializerReadContextComplexJson context)
         {
             return JsonDataContract.GetJsonDataContract(contract).ReadJsonValue(reader, context);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static void WriteJsonValue(JsonDataContract contract, XmlWriterDelegator writer, object graph, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
         {
             contract.WriteJsonValue(writer, graph, context, declaredTypeHandle);
@@ -497,21 +508,25 @@ namespace System.Runtime.Serialization.Json
         private DateTimeFormat? _dateTimeFormat;
         private bool _useSimpleDictionaryFormat;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public DataContractJsonSerializerImpl(Type type)
             : this(type, (IEnumerable<Type>?)null)
         {
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public DataContractJsonSerializerImpl(Type type, IEnumerable<Type>? knownTypes)
             : this(type, null, knownTypes, int.MaxValue, false, false)
         {
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public DataContractJsonSerializerImpl(Type type, XmlDictionaryString? rootName, IEnumerable<Type>? knownTypes)
             : this(type, rootName, knownTypes, int.MaxValue, false, false)
         {
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal DataContractJsonSerializerImpl(Type type,
             XmlDictionaryString? rootName,
             IEnumerable<Type>? knownTypes,
@@ -523,6 +538,7 @@ namespace System.Runtime.Serialization.Json
             Initialize(type, rootName, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public DataContractJsonSerializerImpl(Type type, DataContractJsonSerializerSettings? settings)
         {
             if (settings == null)
@@ -783,6 +799,7 @@ namespace System.Runtime.Serialization.Json
             return false;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static object? ReadJsonValue(DataContract contract, XmlReaderDelegator reader, XmlObjectSerializerReadContextComplexJson? context)
         {
             return JsonDataContract.GetJsonDataContract(contract).ReadJsonValue(reader, context);
@@ -793,6 +810,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.nullString); //  prefix //  namespace
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static void WriteJsonValue(JsonDataContract contract, XmlWriterDelegator writer, object graph, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             contract.WriteJsonValue(writer, graph, context, declaredTypeHandle);
@@ -818,6 +836,7 @@ namespace System.Runtime.Serialization.Json
             return IsJsonLocalName(reader, RootName.Value);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override object? InternalReadObject(XmlReaderDelegator xmlReader, bool verifyObjectName)
         {
             if (MaxItemsInObjectGraph == 0)
@@ -852,6 +871,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteEndElement();
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override void InternalWriteObject(XmlWriterDelegator writer, object? graph)
         {
             InternalWriteStartObject(writer, graph);
@@ -859,6 +879,7 @@ namespace System.Runtime.Serialization.Json
             InternalWriteEndObject(writer);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override void InternalWriteObjectContent(XmlWriterDelegator writer, object? graph)
         {
             if (MaxItemsInObjectGraph == 0)
@@ -924,6 +945,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void AddCollectionItemTypeToKnownTypes(Type knownType)
         {
             Type? itemType;
@@ -940,6 +962,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         [MemberNotNull(nameof(_rootType))]
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
@@ -978,6 +1001,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         [MemberNotNull(nameof(_rootType))]
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void Initialize(Type type,
             XmlDictionaryString? rootName,
             IEnumerable<Type>? knownTypes,

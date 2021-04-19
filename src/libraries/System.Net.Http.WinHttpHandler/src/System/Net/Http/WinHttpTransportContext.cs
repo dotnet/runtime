@@ -8,7 +8,7 @@ using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-    internal class WinHttpTransportContext : TransportContext
+    internal sealed class WinHttpTransportContext : TransportContext
     {
         private WinHttpChannelBinding _channelBinding;
 

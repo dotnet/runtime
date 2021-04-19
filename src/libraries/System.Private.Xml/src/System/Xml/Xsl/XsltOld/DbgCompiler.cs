@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Xml.Xsl.XsltOld.Debugger;
 
-    internal class DbgData
+    internal sealed class DbgData
     {
         private VariableAction[] _variables;
         public XPathNavigator StyleSheet { get; }
@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
         public static DbgData Empty { get { return s_nullDbgData; } }
     }
 
-    internal class DbgCompiler : Compiler
+    internal sealed class DbgCompiler : Compiler
     {
         private readonly IXsltDebugger _debugger;
 
@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
         private readonly ArrayList _localVars = new ArrayList();
         private VariableAction[]? _globalVarsCache, _localVarsCache;
 
-        public virtual VariableAction[] GlobalVariables
+        public VariableAction[] GlobalVariables
         {
             get
             {
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.XsltOld
                 return _globalVarsCache;
             }
         }
-        public virtual VariableAction[] LocalVariables
+        public VariableAction[] LocalVariables
         {
             get
             {

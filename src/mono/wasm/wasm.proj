@@ -180,7 +180,7 @@
           Lines="$(ActualEmccVersion)"
           Overwrite="true" />
 
-    <Copy SourceFiles="$(MonoObjDir)\pinvoke-table.h;runtime\pinvoke.h"
+    <Copy SourceFiles="runtime\pinvoke.h"
           DestinationFolder="$(NativeBinDir)\include\wasm"
           SkipUnchangedFiles="true" />
     
@@ -226,7 +226,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles)"
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
   </Target>

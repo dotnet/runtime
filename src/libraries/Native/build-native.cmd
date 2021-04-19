@@ -13,9 +13,8 @@ set __BuildArch=x64
 set __BuildTarget="build"
 set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
-set "__LinkArgs= "
 set "__LinkLibraries= "
-set __Ninja=0
+set __Ninja=1
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -37,7 +36,7 @@ if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
-if /i [%1] == [ninja] ( set __Ninja=1&&shift&goto Arg_Loop)
+if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -53,10 +52,10 @@ echo.
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
 set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if /i "%__BuildArch%" == "wasm" (
     set __sourceDir=%~dp0\Unix
-    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 )
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
@@ -66,6 +65,9 @@ if %__CMakeBinDir% == "" (
 )
 if %__IntermediatesDir% == "" (
     set "__IntermediatesDir=%__artifactsDir%\obj\native\%__outConfig%"
+)
+if %__Ninja% == 0 (
+    set "__IntermediatesDir=%__IntermediatesDir%\ide"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"

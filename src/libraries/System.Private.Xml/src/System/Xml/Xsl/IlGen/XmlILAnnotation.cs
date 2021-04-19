@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// Several annotations are created and attached to Qil nodes during the optimization and code generation phase.
     /// </summary>
-    internal class XmlILAnnotation : ListBase<object?>
+    internal sealed class XmlILAnnotation : ListBase<object?>
     {
         private readonly object? _annPrev;
         private MethodInfo? _funcMethod;

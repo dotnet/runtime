@@ -12,7 +12,7 @@ namespace System.Xml
         void SetOutput(Stream stream, Encoding encoding, bool ownsStream);
     }
 
-    internal class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
+    internal sealed class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
     {
         private XmlUTF8NodeWriter? _writer;
 

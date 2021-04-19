@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.IO.MemoryMappedFiles
 {
-    internal partial class MemoryMappedView
+    internal sealed partial class MemoryMappedView
     {
         public static MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,

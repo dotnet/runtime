@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    internal class FileSystemWrapper : IFileSystem
+    internal sealed class FileSystemWrapper : IFileSystem
     {
         public static IFileSystem Default { get; } = new FileSystemWrapper();
 

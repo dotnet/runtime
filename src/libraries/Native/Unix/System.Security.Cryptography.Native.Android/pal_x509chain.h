@@ -33,9 +33,9 @@ Return the number of certificates in the path
 PALEXPORT int32_t AndroidCryptoNative_X509ChainGetCertificateCount(X509ChainContext* ctx);
 
 /*
-Get the certificates in the path
+Get the certificates in the path.
 
-Returns 1 on success, 0 otherwise
+Returns the number of certificates exported.
 */
 PALEXPORT int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
                                                                jobject* /*X509Certificate[]*/ certs,
@@ -61,6 +61,11 @@ Set the custom trust store
 PALEXPORT int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
                                                                    jobject* /*X509Certificate[]*/ customTrustStore,
                                                                    int32_t customTrustStoreLen);
+
+/*
+Returns true if revocation checking is supported. Returns false otherwise.
+*/
+PALEXPORT bool AndroidCryptoNative_X509ChainSupportsRevocationOptions(void);
 
 // Matches managed X509RevocationMode enum
 enum

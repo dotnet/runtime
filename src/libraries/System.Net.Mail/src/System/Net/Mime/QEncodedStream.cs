@@ -13,7 +13,7 @@ namespace System.Net.Mime
     /// buffer as the data being encoded will most likely grow.
     /// Encoding and decoding is done transparently to the caller.
     /// </summary>
-    internal class QEncodedStream : DelegatedStream, IEncodableStream
+    internal sealed class QEncodedStream : DelegatedStream, IEncodableStream
     {
 
         private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation

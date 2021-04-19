@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -209,8 +210,13 @@ namespace System
             return outHandles;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
@@ -224,8 +230,14 @@ namespace System
             return instantiatedObject!;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter1,
+            RuntimeType genericParameter2)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr* pTypeHandles = stackalloc IntPtr[]
@@ -952,7 +964,7 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeMethod(object? target, object[]? arguments, Signature sig, bool constructor, bool wrapExceptions);
+        internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);

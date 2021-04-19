@@ -9790,6 +9790,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
 
             if (FAILED(hr))
             {
+                delete [] pArgData;
                 return hr;
             }
         }

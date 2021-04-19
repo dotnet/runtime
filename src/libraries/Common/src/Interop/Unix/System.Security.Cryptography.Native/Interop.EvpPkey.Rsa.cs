@@ -62,6 +62,41 @@ internal static partial class Interop
             return written;
         }
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaSignHash(
+            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            ref byte hash,
+            int hashLength,
+            ref byte destination,
+            int destinationLength);
+
+        internal static int RsaSignHash(
+            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination)
+        {
+            int written = CryptoNative_RsaSignHash(
+                pkey,
+                paddingMode,
+                digestAlgorithm,
+                ref MemoryMarshal.GetReference(hash),
+                hash.Length,
+                ref MemoryMarshal.GetReference(destination),
+                destination.Length);
+
+            if (written < 0)
+            {
+                Debug.Assert(written == -1);
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return written;
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetRsa")]
         internal static extern SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
 

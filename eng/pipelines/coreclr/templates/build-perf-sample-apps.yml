@@ -1,0 +1,45 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  runtimeFlavor: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: ''
+  rootFolder: ''
+  includeRootFolder: ''
+  displayName: ''
+  artifactName: ''
+  archiveExtension: ''
+  archiveType: ''
+  tarCompression: ''
+
+steps:
+# Build Android sample app
+  - ${{ if eq(parameters.osGroup, 'Android') }}:
+    - script: make run MONO_ARCH=arm64 DEPLOY_AND_RUN=false
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
+      displayName: Build HelloAndroid sample app
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      helixQueues: ${{ parameters.helixQueues }}
+      targetRid: ${{ parameters.targetRid }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      platform: ${{ parameters.platform }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      rootFolder:  ${{ parameters.rootFolder }}
+      includeRootFolder:  ${{ parameters.includeRootFolder }}
+      displayName:  ${{ parameters.displayName }}
+      artifactName:  ${{ parameters.artifactName }}
+      archiveExtension:  ${{ parameters.archiveExtension }}
+      archiveType:  ${{ parameters.archiveType }}
+      tarCompression:  ${{ parameters.tarCompression }}

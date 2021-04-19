@@ -30,9 +30,7 @@ void SyncClean::AddHashMap (Bucket *bucket)
         return;
     }
 
-    BEGIN_GETTHREAD_ALLOWED
-    _ASSERTE (GetThread() == NULL || GetThread()->PreemptiveGCDisabled());
-    END_GETTHREAD_ALLOWED
+    _ASSERTE (GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
 
     Bucket * pTempBucket = NULL;
     do
@@ -52,9 +50,7 @@ void SyncClean::AddEEHashTable (EEHashEntry** entry)
         return;
     }
 
-    BEGIN_GETTHREAD_ALLOWED
-    _ASSERTE (GetThread() == NULL || GetThread()->PreemptiveGCDisabled());
-    END_GETTHREAD_ALLOWED
+    _ASSERTE (GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
 
     EEHashEntry ** pTempHashEntry = NULL;
     do
@@ -72,7 +68,7 @@ void SyncClean::CleanUp ()
     // Only GC thread can call this.
     _ASSERTE (g_fProcessDetach ||
               IsGCSpecialThread() ||
-              (GCHeapUtilities::IsGCInProgress()  && GetThread() == ThreadSuspend::GetSuspensionThread()));
+              (GCHeapUtilities::IsGCInProgress()  && GetThreadNULLOk() == ThreadSuspend::GetSuspensionThread()));
     if (m_HashMap)
     {
         Bucket * pTempBucket = FastInterlockExchangePointer(m_HashMap.GetPointer(), NULL);

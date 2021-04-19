@@ -6,7 +6,7 @@ using System.IO;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPGlobalStatistics : IPGlobalStatistics
+    internal sealed class LinuxIPGlobalStatistics : IPGlobalStatistics
     {
         // MIB-II statistics data.
         private readonly IPGlobalStatisticsTable _table;

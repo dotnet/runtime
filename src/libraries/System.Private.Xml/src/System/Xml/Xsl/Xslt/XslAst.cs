@@ -58,7 +58,7 @@ namespace System.Xml.Xsl.Xslt
         WithParam,
     }
 
-    internal class NsDecl
+    internal sealed class NsDecl
     {
         public readonly NsDecl? Prev;
         public readonly string? Prefix;  // Empty string denotes the default namespace, null - extension or excluded namespace
@@ -198,7 +198,7 @@ namespace System.Xml.Xsl.Xslt
         Completed = 2,
     }
 
-    internal class AttributeSet : ProtoTemplate
+    internal sealed class AttributeSet : ProtoTemplate
     {
         public CycleCheck CycleCheck;     // Used to detect circular references
 
@@ -225,7 +225,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class Template : ProtoTemplate
+    internal sealed class Template : ProtoTemplate
     {
         public readonly string? Match;
         public readonly QilName Mode;
@@ -274,7 +274,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class VarPar : XslNode
+    internal sealed class VarPar : XslNode
     {
         public XslFlags DefValueFlags;
         public QilNode? Value;          // Contains value for WithParams and global VarPars
@@ -282,7 +282,7 @@ namespace System.Xml.Xsl.Xslt
         public VarPar(XslNodeType nt, QilName name, string? select, XslVersion xslVer) : base(nt, name, select, xslVer) { }
     }
 
-    internal class Sort : XslNode
+    internal sealed class Sort : XslNode
     {
         public readonly string? Lang;
         public readonly string? DataType;
@@ -299,7 +299,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class Keys : KeyedCollection<QilName, List<Key>>
+    internal sealed class Keys : KeyedCollection<QilName, List<Key>>
     {
         protected override QilName GetKeyForItem(List<Key> list)
         {
@@ -308,7 +308,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class Key : XslNode
+    internal sealed class Key : XslNode
     {
         public readonly string? Match;
         public readonly string? Use;
@@ -354,7 +354,7 @@ namespace System.Xml.Xsl.Xslt
         Any,
     }
 
-    internal class Number : XslNode
+    internal sealed class Number : XslNode
     {
         public readonly NumberLevel Level;
         public readonly string? Count;
@@ -382,7 +382,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class NodeCtor : XslNode
+    internal sealed class NodeCtor : XslNode
     {
         public readonly string NameAvt;
         public readonly string? NsAvt;
@@ -395,7 +395,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class Text : XslNode
+    internal sealed class Text : XslNode
     {
         public readonly SerializationHints Hints;
 
@@ -406,7 +406,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class XslNodeEx : XslNode
+    internal sealed class XslNodeEx : XslNode
     {
         public readonly ISourceLineInfo? ElemNameLi;
         public readonly ISourceLineInfo? EndTagLi;

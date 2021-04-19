@@ -1156,7 +1156,7 @@ namespace System.Text
             return new DBCSDecoder(this);
         }
 
-        internal class DBCSDecoder : DecoderNLS
+        internal sealed class DBCSDecoder : DecoderNLS
         {
             // Need a place for the last left over byte
             internal byte bLeftOver;

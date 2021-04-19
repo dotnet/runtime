@@ -527,21 +527,6 @@ struct HijackArgs;
 
 #endif // FEATURE_HIJACK
 
-//***************************************************************************
-#ifdef ENABLE_CONTRACTS_IMPL
-inline Thread* GetThreadNULLOk()
-{
-    LIMITED_METHOD_CONTRACT;
-    Thread * pThread;
-    BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
-    pThread = GetThread();
-    END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
-    return pThread;
-}
-#else
-#define GetThreadNULLOk() GetThread()
-#endif
-
 // manifest constant for waiting in the exposed classlibs
 const INT32 INFINITE_TIMEOUT = -1;
 
@@ -633,6 +618,8 @@ EXTERN_C void WINAPI OnHijackFPTripThread();  // hijacked JIT code is returning 
 #endif // FEATURE_HIJACK
 
 void CommonTripThread();
+
+void SetupTLSForThread();
 
 // When we resume a thread at a new location, to get an exception thrown, we have to
 // pretend the exception originated elsewhere.
@@ -1041,8 +1028,6 @@ class Thread
     friend class DacDbiInterfaceImpl;       // DacDbiInterfaceImpl::GetThreadHandle(HANDLE * phThread);
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
-
-    friend void SetupTLSForThread(Thread* pThread);
 
     friend class CheckAsmOffsets;
 
@@ -3210,7 +3195,7 @@ public:
     static BOOL IsAddressInCurrentStack (PTR_VOID addr)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        Thread* currentThread = GetThread();
+        Thread* currentThread = GetThreadNULLOk();
         if (currentThread == NULL)
         {
             return FALSE;
@@ -4185,7 +4170,7 @@ public:
         Thread * const m_pThread;
     public:
         AVInRuntimeImplOkayHolder() :
-            m_pThread(GetThread())
+            m_pThread(GetThreadNULLOk())
         {
             LIMITED_METHOD_CONTRACT;
             AVInRuntimeImplOkayAcquire(m_pThread);
@@ -4833,7 +4818,7 @@ public:
         WRAPPER_NO_CONTRACT;
         // Note that GetThread() may be 0 if it is the debugger thread
         // or perhaps a concurrent GC thread.
-        return HoldingThreadStore(GetThread());
+        return HoldingThreadStore(GetThreadNULLOk());
     }
 
     static BOOL HoldingThreadStore(Thread *pThread);
@@ -5247,13 +5232,9 @@ protected:
         if (m_WasCoop)
         {
             // m_WasCoop is only TRUE if we've already verified there's an EE thread.
-            BEGIN_GETTHREAD_ALLOWED;
-
             _ASSERTE(m_Thread != NULL);  // Cannot switch to cooperative with no thread
             if (!m_Thread->PreemptiveGCDisabled())
                 m_Thread->DisablePreemptiveGC();
-
-            END_GETTHREAD_ALLOWED;
         }
         else
         {
@@ -5267,10 +5248,8 @@ protected:
             // when it's TRUE, so we check it for perf.
             if (THREAD_EXISTS || m_Thread != NULL)
             {
-                BEGIN_GETTHREAD_ALLOWED;
                 if (m_Thread->PreemptiveGCDisabled())
                     m_Thread->EnablePreemptiveGC();
-                END_GETTHREAD_ALLOWED;
             }
         }
 
@@ -5303,7 +5282,6 @@ protected:
 
         if (m_Thread != NULL)
         {
-            BEGIN_GETTHREAD_ALLOWED;
             m_WasCoop = m_Thread->PreemptiveGCDisabled();
 
             if (conditional && !m_WasCoop)
@@ -5311,7 +5289,6 @@ protected:
                 m_Thread->DisablePreemptiveGC();
                 _ASSERTE(m_Thread->PreemptiveGCDisabled());
             }
-            END_GETTHREAD_ALLOWED;
         }
         else
         {
@@ -5330,15 +5307,12 @@ protected:
         m_fThreadMustExist = false;
         if (m_Thread != NULL && conditional)
         {
-            BEGIN_GETTHREAD_ALLOWED;
             GCHOLDER_CHECK_FOR_PREEMP_IN_NOTRIGGER(m_Thread);
-            END_GETTHREAD_ALLOWED;
         }
 #endif  // ENABLE_CONTRACTS_IMPL
 
         if (m_Thread != NULL)
         {
-            BEGIN_GETTHREAD_ALLOWED;
             m_WasCoop = m_Thread->PreemptiveGCDisabled();
 
             if (conditional && m_WasCoop)
@@ -5346,7 +5320,6 @@ protected:
                 m_Thread->EnablePreemptiveGC();
                 _ASSERTE(!m_Thread->PreemptiveGCDisabled());
             }
-            END_GETTHREAD_ALLOWED;
         }
         else
         {
@@ -5359,7 +5332,7 @@ protected:
     {
         // This is the perf version. So we deliberately restrict the calls
         // to already setup threads to avoid the null checks and GetThread call
-        _ASSERTE(pThread && (pThread == GetThread()));
+        _ASSERTE(pThread == GetThread());
 #ifdef ENABLE_CONTRACTS_IMPL
         m_fThreadMustExist = true;
 #endif // ENABLE_CONTRACTS_IMPL
@@ -5381,7 +5354,7 @@ protected:
     {
         // This is the perf version. So we deliberately restrict the calls
         // to already setup threads to avoid the null checks and GetThread call
-        _ASSERTE(!THREAD_EXISTS || (pThread && (pThread == GetThread())));
+        _ASSERTE(!THREAD_EXISTS || (pThread == GetThread()));
 #ifdef ENABLE_CONTRACTS_IMPL
         m_fThreadMustExist = !!THREAD_EXISTS;
 #endif // ENABLE_CONTRACTS_IMPL
@@ -5695,7 +5668,7 @@ public:
     FORCEINLINE void DoCheck()
     {
         WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (COOPERATIVE)
         {
             _ASSERTE(pThread != NULL);
@@ -6006,7 +5979,7 @@ public:
 inline BOOL GC_ON_TRANSITIONS(BOOL val) {
     WRAPPER_NO_CONTRACT;
 #ifdef _DEBUG
-    Thread* thread = GetThread();
+    Thread* thread = GetThreadNULLOk();
     if (thread == 0)
         return(FALSE);
     BOOL ret = thread->m_GCOnTransitionsOK;
@@ -6200,7 +6173,6 @@ class DeadlockAwareLock
     static void ReleaseBlockingLock()
     {
         Thread *pThread = GetThread();
-        _ASSERTE (pThread);
         pThread->m_pBlockingLock = NULL;
     }
 public:
@@ -6237,7 +6209,7 @@ public:
     ThreadStateHolder (BOOL fNeed, DWORD state)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread());
+        _ASSERTE (GetThreadNULLOk());
         m_fNeed = fNeed;
         m_state = state;
     }
@@ -6248,7 +6220,6 @@ public:
         if (m_fNeed)
         {
             Thread *pThread = GetThread();
-            _ASSERTE (pThread);
             FastInterlockAnd((ULONG *) &pThread->m_State, ~m_state);
         }
     }
@@ -6271,15 +6242,13 @@ class ThreadStateNCStackHolder
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE (GetThread());
+        _ASSERTE (GetThreadNULLOk());
         m_fNeed = fNeed;
         m_state = state;
 
         if (fNeed)
         {
             Thread *pThread = GetThread();
-            _ASSERTE (pThread);
-
             if (fNeed < 0)
             {
                 // if the state is set, reset it
@@ -6315,8 +6284,6 @@ class ThreadStateNCStackHolder
         if (m_fNeed)
         {
             Thread *pThread = GetThread();
-            _ASSERTE (pThread);
-
             if (m_fNeed < 0)
             {
                 pThread->SetThreadStateNC(m_state); // set it

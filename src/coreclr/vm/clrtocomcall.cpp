@@ -836,7 +836,7 @@ TADDR ComPlusCall::GetFrameCallIP(FramedMethodFrame *frame)
 
 #ifndef DACCESS_COMPILE
 
-    Thread* thread = GetThread();
+    Thread* thread = GetThreadNULLOk();
     if (thread == NULL)
     {
         //

@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
+    internal sealed class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
     {
         private string? _extensionDataValueType;
         private readonly DateTimeFormat? _dateTimeFormat;
@@ -34,6 +34,7 @@ namespace System.Runtime.Serialization.Json
             return new XmlObjectSerializerReadContextComplexJson(serializer, rootTypeDataContract);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected override object? ReadDataContractValue(DataContract dataContract, XmlReaderDelegator reader)
         {
             return DataContractJsonSerializerImpl.ReadJsonValue(dataContract, reader, this);

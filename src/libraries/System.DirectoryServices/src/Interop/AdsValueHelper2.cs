@@ -21,7 +21,7 @@ namespace System.DirectoryServices.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class DnWithBinary
+    internal sealed class DnWithBinary
     {
         public int dwLength;
         public IntPtr lpBinaryValue;       // GUID of directory object
@@ -29,7 +29,7 @@ namespace System.DirectoryServices.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class DnWithString
+    internal sealed class DnWithString
     {
         public IntPtr pszStringValue;      // associated value
         public IntPtr pszDNString;         // Distinguished Name
@@ -38,7 +38,7 @@ namespace System.DirectoryServices.Interop
     /// <summary>
     /// Helper class for dealing with struct AdsValue.
     /// </summary>
-    internal class AdsValueHelper
+    internal sealed class AdsValueHelper
     {
         public AdsValue adsvalue;
         private GCHandle _pinnedHandle;

@@ -12,7 +12,7 @@ using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
-    internal class SourceInfo
+    internal sealed class SourceInfo
     {
         //a[ia]
         //((global::System.Xml.Serialization.XmlSerializerNamespaces)p[0])
@@ -32,10 +32,13 @@ namespace System.Xml.Serialization
         public string Source;
         public readonly string Arg;
         public readonly MemberInfo? MemberInfo;
+
+        [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)]
         public readonly Type? Type;
         public readonly CodeGenerator ILG;
 
-        public SourceInfo(string source, string? arg, MemberInfo? memberInfo, Type? type, CodeGenerator ilg)
+        public SourceInfo(string source, string? arg, MemberInfo? memberInfo,
+            [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type? type, CodeGenerator ilg)
         {
             this.Source = source;
             this.Arg = arg ?? source;
@@ -49,16 +52,19 @@ namespace System.Xml.Serialization
             return new SourceInfo("((" + td.CSharpName + ")" + Source + ")", Arg, MemberInfo, td.Type!, ILG);
         }
 
+        [RequiresUnreferencedCode("calls InternalLoad")]
         public void LoadAddress(Type? elementType)
         {
             InternalLoad(elementType, asAddress: true);
         }
 
+        [RequiresUnreferencedCode("calls InternalLoad")]
         public void Load(Type? elementType)
         {
             InternalLoad(elementType);
         }
 
+        [RequiresUnreferencedCode("calls LoadMemberAddress")]
         private void InternalLoad(Type? elementType, bool asAddress = false)
         {
             Match match = s_regex.Match(Arg);
@@ -209,7 +215,9 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void ConvertNullableValue(Type nullableType, Type targetType)
+        private void ConvertNullableValue(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
+                | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type nullableType, Type targetType)
         {
             System.Diagnostics.Debug.Assert(targetType == nullableType || targetType.IsAssignableFrom(nullableType.GetGenericArguments()[0]));
             if (targetType != nullableType)

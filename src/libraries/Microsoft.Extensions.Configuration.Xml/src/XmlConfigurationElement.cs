@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Configuration.Xml
 {
-    internal class XmlConfigurationElement
+    internal sealed class XmlConfigurationElement
     {
         public string ElementName { get; }
 

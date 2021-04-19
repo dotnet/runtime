@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonWriterDelegator : XmlWriterDelegator
+    internal sealed class JsonWriterDelegator : XmlWriterDelegator
     {
         private readonly DateTimeFormat? _dateTimeFormat;
 

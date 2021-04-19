@@ -540,13 +540,8 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private string GetDisplayName()
-        {
-            return string.Format(CultureInfo.CurrentCulture,
-                                "{0} (Assembly=\"{1}\")",   // NOLOC
-                                GetType().Name,
-                                Assembly.FullName);
-        }
+        private string GetDisplayName() =>
+            $"{GetType().Name} (Assembly=\"{Assembly.FullName}\")";   // NOLOC
 
         private static Assembly LoadAssembly(string codeBase)
         {

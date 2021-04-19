@@ -12,7 +12,7 @@ namespace System.Xml
     using System.Xml.Schema;
     using System.Globalization;
 
-    internal class XmlNodeReaderNavigator
+    internal sealed class XmlNodeReaderNavigator
     {
         private XmlNode _curNode;
         private XmlNode? _elemNode;

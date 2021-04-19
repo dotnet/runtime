@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 
@@ -25,6 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             TypeLib = typeLibDesc;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static ComTypeDesc FromITypeInfo(ITypeInfo typeInfo, TYPEATTR typeAttr)
         {
             switch (typeAttr.typekind)

@@ -854,7 +854,7 @@ namespace System.Runtime.Caching
         }
     }
 
-    internal class CacheUsage
+    internal sealed class CacheUsage
     {
         internal static readonly TimeSpan NEWADD_INTERVAL = new TimeSpan(0, 0, 10);
         internal static readonly TimeSpan CORRELATED_REQUEST_TIMEOUT = new TimeSpan(0, 0, 1);

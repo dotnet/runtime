@@ -130,16 +130,10 @@ namespace System.IO.Pipelines
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return CopyToAsyncCore(destination, async (destination, memory, cancellationToken) =>
-            {
-                FlushResult result = await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
-
-                if (result.IsCanceled)
-                {
-                    ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
-                }
-            },
-            cancellationToken);
+            return CopyToAsyncCore(
+                destination,
+                (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
+                cancellationToken);
         }
 
         /// <summary>Asynchronously reads the bytes from the <see cref="System.IO.Pipelines.PipeReader" /> and writes them to the specified stream, using a specified cancellation token.</summary>
@@ -158,13 +152,28 @@ namespace System.IO.Pipelines
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return CopyToAsyncCore(
-                destination,
-                (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
-                cancellationToken);
+            return CopyToAsyncCore(destination, (destination, memory, cancellationToken) =>
+            {
+                ValueTask task = destination.WriteAsync(memory, cancellationToken);
+
+                if (task.IsCompletedSuccessfully)
+                {
+                    task.GetAwaiter().GetResult();
+                    return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: false));
+                }
+
+                static async ValueTask<FlushResult> Awaited(ValueTask writeTask)
+                {
+                    await writeTask.ConfigureAwait(false);
+                    return new FlushResult(isCanceled: false, isCompleted: false);
+                }
+
+                return Awaited(task);
+            },
+            cancellationToken);
         }
 
-        private async Task CopyToAsyncCore<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask> writeAsync, CancellationToken cancellationToken)
+        private async Task CopyToAsyncCore<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask<FlushResult>> writeAsync, CancellationToken cancellationToken)
         {
             while (true)
             {
@@ -182,9 +191,19 @@ namespace System.IO.Pipelines
 
                     while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                     {
-                        await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
+                        FlushResult flushResult = await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
+
+                        if (flushResult.IsCanceled)
+                        {
+                            ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                        }
 
                         consumed = position;
+
+                        if (flushResult.IsCompleted)
+                        {
+                            return;
+                        }
                     }
 
                     // The while loop completed succesfully, so we've consumed the entire buffer.
