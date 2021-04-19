@@ -60,8 +60,6 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
     m_totalCount                   = 0;
     uint32_t unknownTypeHandleMask = 0;
 
-    JITDUMP("... histogram of %u entries at %p\n", entryCount, histogramEntries);
-
     for (unsigned k = 0; k < entryCount; k++)
     {
         if (histogramEntries[k] == 0)
@@ -72,8 +70,6 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
         m_totalCount++;
 
         INT_PTR currentEntry = histogramEntries[k];
-
-        JITDUMP("[%u] : %p]\n", k, currentEntry);
 
         bool     found = false;
         unsigned h     = 0;
@@ -124,7 +120,6 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
         if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) &&
             (schema[i].Count == 1))
         {
-            JITDUMP("getLikelyClass: precomputed case\n");
             *pNumberOfClasses = (UINT32)schema[i].Other >> 8;
             *pLikelihood      = (UINT32)(schema[i].Other && 0xFF);
             INT_PTR result    = *(INT_PTR*)(pInstrumentationData + schema[i + 1].Offset);
@@ -138,7 +133,6 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
             (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
         {
-            JITDUMP("getLikelyClass: building histogram...\n");
             // Form a histogram
             //
             LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset),
