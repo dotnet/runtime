@@ -162,4 +162,7 @@
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+  </ItemGroup>
 </Project>

@@ -73,6 +73,8 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             if (writer == null)
             {
                 throw new ArgumentNullException(nameof(writer));

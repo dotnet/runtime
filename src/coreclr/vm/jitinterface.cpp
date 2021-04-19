@@ -6614,6 +6614,29 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
 }
 
 /*********************************************************************/
+bool CEEInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool ret = false;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(ftn);
+
+    MethodDesc *pMD = (MethodDesc*)ftn;
+    ret = pMD->IsJitIntrinsic();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return ret;
+}
+
+/*********************************************************************/
 uint32_t CEEInfo::getMethodAttribs (CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
@@ -9109,7 +9132,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
 
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
-    //   
+    //
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
@@ -9210,7 +9233,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
 
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
-    //   
+    //
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
@@ -12094,7 +12117,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         newPgoData->m_next = m_foundPgoData;
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
-        
+
         newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData);
         pDataCur = m_foundPgoData;
     }
@@ -12111,54 +12134,6 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     EE_TO_JIT_TRANSITION();
 
     return hr;
-}
-
-CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
-                     CORINFO_METHOD_HANDLE ftnHnd,
-                     CORINFO_CLASS_HANDLE  baseHnd,
-                     uint32_t              ilOffset,
-                     uint32_t *            pLikelihood,
-                     uint32_t *            pNumberOfClasses
-)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-    *pLikelihood = 0;
-    *pNumberOfClasses = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-#ifdef FEATURE_PGO
-
-    // Query the PGO manager's per call site class profile.
-    //
-    MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    unsigned codeSize = 0;
-    if (pMD->IsDynamicMethod())
-    {
-        unsigned stackSize, ehSize;
-        CorInfoOptions options;
-        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-    }
-    else if (pMD->HasILHeader())
-    {
-        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
-        codeSize = decoder.GetCodeSize();
-    }
-
-    result = PgoManager::getLikelyClass(pMD, codeSize, ilOffset, pLikelihood, pNumberOfClasses);
-
-#endif
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 void CEEJitInfo::allocMem (
@@ -14405,18 +14380,6 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
             )
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_RET();      // only called on derived class.
-}
-
-CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
-                     CORINFO_METHOD_HANDLE ftnHnd,
-                     CORINFO_CLASS_HANDLE  baseHnd,
-                     uint32_t              ilOffset,
-                     uint32_t*             pLikelihood,
-                     uint32_t*             pNumberOfCases
-)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.

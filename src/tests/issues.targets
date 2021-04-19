@@ -702,9 +702,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>https://github.com/dotnet/runtime/issues/10001</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/10w5d_cs_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48892</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- MacOS specific CoreCLR -->

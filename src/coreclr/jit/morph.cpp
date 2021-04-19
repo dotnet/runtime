@@ -7655,7 +7655,31 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             //
             if (nextBlock->bbJumpKind != BBJ_RETURN)
             {
-                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
+
+                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
+                // to temp locals over and over.
+                if (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                {
+                    // Make sure the block has a single statement
+                    assert(nextBlock->firstStmt() == nextBlock->lastStmt());
+                    // And the root node is "ASG(LCL_VAR, LCL_VAR)"
+                    GenTree* asgNode = nextBlock->firstStmt()->GetRootNode();
+                    assert(asgNode->OperIs(GT_ASG));
+
+                    unsigned lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+
+                    while (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                    {
+                        assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
+                        asgNode = nextNextBlock->firstStmt()->GetRootNode();
+                        assert(asgNode->OperIs(GT_ASG));
+                        assert(lcl == asgNode->gtGetOp2()->AsLclVarCommon()->GetLclNum());
+                        lcl           = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        nextNextBlock = nextNextBlock->GetUniqueSucc();
+                    }
+                }
+
                 assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
 
                 if (nextNextBlock->hasProfileWeight())
@@ -8937,7 +8961,6 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Finish hooking things up.
     block->bbJumpKind = BBJ_ALWAYS;
-    block->bbJumpDest->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
 }
@@ -17682,7 +17705,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true);
     BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
 
-    remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+    remainderBlock->bbFlags |= propagateFlags;
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -17868,7 +17891,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         elseBlock->bbFlags |= BBF_IMPORTED;
     }
 
-    remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+    remainderBlock->bbFlags |= propagateFlags;
 
     condBlock->inheritWeight(block);
 
@@ -17897,8 +17920,6 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
             thenBlock->bbFlags &= ~BBF_INTERNAL;
             thenBlock->bbFlags |= BBF_IMPORTED;
         }
-
-        elseBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 
         fgAddRefPred(thenBlock, condBlock);
         fgAddRefPred(remainderBlock, thenBlock);

@@ -126,7 +126,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     stream.Shutdown();
-                    await stream.ShutdownWriteCompleted();
+                    await stream.ShutdownCompleted();
                 },
                 async serverConnection =>
                 {
@@ -144,7 +144,7 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(expectedTotalBytes, totalBytes);
 
                     stream.Shutdown();
-                    await stream.ShutdownWriteCompleted();
+                    await stream.ShutdownCompleted();
                 });
         }
 
@@ -173,6 +173,7 @@ namespace System.Net.Quic.Tests
             GatheredSequence
         }
 
+        // will induce failure (byte mixing) in QuicStreamTests_MsQuicProvider.LargeDataSentAndReceived if run in parallel with it
         [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
@@ -204,6 +205,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public async Task CloseAsync_ByServer_AcceptThrows()
         {
             await RunClientServer(
@@ -220,7 +222,7 @@ namespace System.Net.Quic.Tests
                 });
         }
 
-        private static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
+        internal static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
         {
             List<byte[]> segments = new List<byte[]>
             {

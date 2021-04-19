@@ -1754,5 +1754,24 @@ get_notify_debugger_of_wait_completion_method (void)
 	return notify_debugger_of_wait_completion_method_cache;
 }
 
+DbgEngineErrorCode
+mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
+{
+	int size;
+
+	if (t->byref) {
+		addr = *(gpointer*)addr;
+		if (!addr)
+			return ERR_INVALID_OBJECT;
+	}
+
+	if (MONO_TYPE_IS_REFERENCE (t))
+		size = sizeof (gpointer);
+	else
+		size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+
+	memcpy (addr, val_buf, size);
+	return ERR_NONE;
+}
 
 #endif

@@ -2753,8 +2753,8 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     // hit only under JIT stress. See if the block is the one we injected.
     // Note that EH canonicalization can inject internal blocks here. We might
     // be able to re-use such a block (but we don't, right now).
-    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET)) ==
-        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET))
+    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE)) ==
+        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
     {
         Statement* stmt = hndBlk->firstStmt();
 
@@ -2801,7 +2801,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
-        newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
+        newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE;
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
@@ -14446,14 +14446,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // we're able to handle shared returns.
                         if (impInlineInfo->iciCall->IsImplicitTailCall())
                         {
-                            JITDUMP(" (Inline Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
+                            JITDUMP("\n (Inline Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
                             prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
                         }
 #endif // FEATURE_TAILCALL_OPT_SHARED_RETURN
                     }
                     else
                     {
-                        JITDUMP(" (Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
+                        JITDUMP("\n (Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
                         prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
                     }
                 }
@@ -15178,7 +15178,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     assert(tiObj);
 
-                    if (impIsValueType(tiObj))
+                    // If we can resolve the field to be within some local,
+                    // then just spill that local.
+                    //
+                    GenTreeLclVarCommon* const lcl = obj->IsLocalAddrExpr();
+
+                    if (lcl != nullptr)
+                    {
+                        impSpillLclRefs(lcl->GetLclNum());
+                    }
+                    else if (impIsValueType(tiObj))
                     {
                         impSpillEvalStack();
                     }
@@ -20395,6 +20404,17 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
     call->gtInlineCandidateInfo                         = inlineCandidateInfo;
 
+    // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
+    // is also a tail call candidate, it can use the same return spill temp.
+    //
+    if (compIsForInlining() && call->CanTailCall() &&
+        (impInlineInfo->inlineCandidateInfo->preexistingSpillTemp != BAD_VAR_NUM))
+    {
+        inlineCandidateInfo->preexistingSpillTemp = impInlineInfo->inlineCandidateInfo->preexistingSpillTemp;
+        JITDUMP("Inline candidate [%06u] can share spill temp V%02u\n", dspTreeID(call),
+                inlineCandidateInfo->preexistingSpillTemp);
+    }
+
     // Mark the call node as inline candidate.
     call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
 
@@ -21305,11 +21325,12 @@ void Compiler::considerGuardedDevirtualization(
 
     // See if there's a likely guess for the class.
     //
-    const unsigned       likelihoodThreshold = isInterface ? 25 : 30;
-    unsigned             likelihood          = 0;
-    unsigned             numberOfClasses     = 0;
+    const unsigned likelihoodThreshold = isInterface ? 25 : 30;
+    unsigned       likelihood          = 0;
+    unsigned       numberOfClasses     = 0;
+
     CORINFO_CLASS_HANDLE likelyClass =
-        info.compCompHnd->getLikelyClass(info.compMethodHnd, baseClass, ilOffset, &likelihood, &numberOfClasses);
+        getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
 
     if (likelyClass == NO_CLASS_HANDLE)
     {

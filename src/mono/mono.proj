@@ -249,7 +249,6 @@
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
@@ -264,7 +263,6 @@
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
@@ -316,22 +314,25 @@
       <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/include" />
       <_MonoCXXFLAGS Include="-Wl,-application_extension" />
     </ItemGroup>
-    <!-- iOS simulator specific options -->
-    <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">
+    <!-- iOS/tvOS simulator specific options -->
+    <ItemGroup Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true')">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=shared_perfcounters"/>
     </ItemGroup>
-    <!-- iOS device specific options -->
-    <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
+    <!-- iOS/tvOS device specific options -->
+    <ItemGroup Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true')">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,logging,shared_perfcounters" />
       <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
       <_MonoCFLAGS Include="-Werror=partial-availability" />
+      <_MonoCFLAGS Condition="'$(TargetstvOS)' == 'true'" Include="-fno-gnu-inline-asm" />
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCPPFLAGS Include="-DSMALL_CONFIG" />
       <_MonoCPPFLAGS Include="-D_XOPEN_SOURCE" />
       <_MonoCPPFLAGS Include="-DHAVE_LARGE_FILE_SUPPORT=1" />
       <_MonoCXXFLAGS Include="-Werror=partial-availability" />
+      <_MonoCXXFLAGS Condition="'$(TargetstvOS)' == 'true'" Include="-fno-gnu-inline-asm" />
+      <_MonoCXXFLAGS Include="-fexceptions" />
     </ItemGroup>
     <!-- Android specific options -->
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
@@ -375,15 +376,6 @@
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DSK_RELEASE" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-DNDEBUG" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'arm'" Include="-UDEBUG" />
-
-      <_MonoLDFLAGS Include="-z now" />
-      <_MonoLDFLAGS Include="-z relro" />
-      <_MonoLDFLAGS Include="-z noexecstack" />
-      <_MonoLDFLAGS Include="-ldl" />
-      <_MonoLDFLAGS Include="-lm" />
-      <_MonoLDFLAGS Include="-llog" />
-      <_MonoLDFLAGS Include="-lc" />
-      <_MonoLDFLAGS Include="-lgcc" />
     </ItemGroup>
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">

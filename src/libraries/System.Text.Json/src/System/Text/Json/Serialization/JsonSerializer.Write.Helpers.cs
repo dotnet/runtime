@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -21,7 +22,7 @@ namespace System.Text.Json
             Debug.Assert(writer != null);
 
             //  We treat typeof(object) special and allow polymorphic behavior.
-            if (inputType == JsonClassInfo.ObjectType && value != null)
+            if (inputType == JsonTypeInfo.ObjectType && value != null)
             {
                 inputType = value.GetType();
             }

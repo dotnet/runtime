@@ -1139,6 +1139,9 @@ public:
     virtual void doLinearScan()                                = 0;
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
+#if TRACK_LSRA_STATS
+    virtual void dumpLsraStatsCsv(FILE* file) = 0;
+#endif // TRACK_LSRA_STATS
 };
 
 LinearScanInterface* getLinearScanAllocator(Compiler* comp);
@@ -7542,6 +7545,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 

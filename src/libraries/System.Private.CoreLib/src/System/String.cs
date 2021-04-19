@@ -24,6 +24,10 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
     {
+        /// <summary>Maximum length allowed for a string.</summary>
+        /// <remarks>Keep in sync with AllocateString in gchelpers.cpp.</remarks>
+        internal const int MaxLength = 0x3FFFFFDF;
+
         //
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //

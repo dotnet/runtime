@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -462,7 +463,7 @@ namespace System.IO.Strategies
                 // If there was anything in the write buffer, clear it.
                 if (_writePos > 0)
                 {
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                 }
 
@@ -474,7 +475,7 @@ namespace System.IO.Strategies
 
                 // Ok. We can fill the buffer:
                 EnsureBufferAllocated();
-                _readLen = await _strategy.ReadAsync(new Memory<byte>(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
+                _readLen = await _strategy.ReadAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
 
                 bytesFromBuffer = Math.Min(_readLen, buffer.Length);
                 _buffer.AsSpan(0, bytesFromBuffer).CopyTo(buffer.Span);
@@ -604,6 +605,7 @@ namespace System.IO.Strategies
             }
             else
             {
+                Debug.Assert(_writePos <= _bufferSize);
                 FlushWrite();
             }
 
@@ -731,7 +733,7 @@ namespace System.IO.Strategies
                         }
                     }
 
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                 }
 
@@ -832,7 +834,7 @@ namespace System.IO.Strategies
             {
                 if (_writePos > 0)
                 {
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                     Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
                     return;
@@ -886,13 +888,13 @@ namespace System.IO.Strategies
                 {
                     // If there's any read data in the buffer, write it all to the destination stream.
                     Debug.Assert(_writePos == 0, "Write buffer must be empty if there's data in the read buffer");
-                    await destination.WriteAsync(new ReadOnlyMemory<byte>(_buffer, _readPos, readBytes), cancellationToken).ConfigureAwait(false);
+                    await destination.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, _readPos, readBytes), cancellationToken).ConfigureAwait(false);
                     _readPos = _readLen = 0;
                 }
                 else if (_writePos > 0)
                 {
                     // If there's write data in the buffer, flush it back to the underlying stream, as does ReadAsync.
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                 }
 
@@ -1067,7 +1069,8 @@ namespace System.IO.Strategies
 
             void AllocateBuffer() // logic kept in a separate method to get EnsureBufferAllocated() inlined
             {
-                _strategy.OnBufferAllocated(_buffer = new byte[_bufferSize]);
+                _buffer = GC.AllocateUninitializedArray<byte>(_bufferSize,
+                    pinned: true); // this allows us to avoid pinning when the buffer is used for the syscalls
             }
         }
 

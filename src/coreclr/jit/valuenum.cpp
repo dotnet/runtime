@@ -1682,7 +1682,7 @@ ValueNum ValueNumStore::VNForDoubleCon(double cnsVal)
     return VnForConst(cnsVal, GetDoubleCnsMap(), TYP_DOUBLE);
 }
 
-ValueNum ValueNumStore::VNForByrefCon(size_t cnsVal)
+ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
 {
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
@@ -2673,9 +2673,9 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             }
             else // We could see GT_OR of a constant ByRef and Null
             {
-                assert((typ == TYP_BYREF) || (typ == TYP_LONG));
+                assert((typ == TYP_BYREF) || (typ == TYP_I_IMPL));
                 size_t resultVal = EvalOp<size_t>(func, arg0Val, arg1Val);
-                result           = VNForByrefCon(resultVal);
+                result           = VNForByrefCon((target_size_t)resultVal);
             }
         }
     }
@@ -2705,7 +2705,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             switch (typ)
             {
                 case TYP_BYREF:
-                    result = VNForByrefCon((size_t)resultVal);
+                    result = VNForByrefCon((target_size_t)resultVal);
                     break;
                 case TYP_LONG:
                     result = VNForLongCon(resultVal);
@@ -2862,7 +2862,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     else
                     {
                         assert(typ == TYP_BYREF);
-                        return VNForByrefCon(size_t(arg0Val));
+                        return VNForByrefCon(target_size_t(arg0Val));
                     }
 #else // TARGET_32BIT
                     if (srcIsUnsigned)
@@ -2872,7 +2872,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 #endif
                 case TYP_BYREF:
                     assert(typ == TYP_BYREF);
-                    return VNForByrefCon(size_t(arg0Val));
+                    return VNForByrefCon(target_size_t(arg0Val));
 
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
@@ -2934,7 +2934,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                             return arg0VN;
                         case TYP_BYREF:
                             assert(typ == TYP_BYREF);
-                            return VNForByrefCon((size_t)arg0Val);
+                            return VNForByrefCon((target_size_t)arg0Val);
                         case TYP_FLOAT:
                             assert(typ == TYP_FLOAT);
                             if (srcIsUnsigned)
@@ -6780,7 +6780,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 }
                 else
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon(tree->AsIntConCommon()->IconValue()));
+                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon((target_size_t)tree->AsIntConCommon()->IconValue()));
                 }
             }
             break;
