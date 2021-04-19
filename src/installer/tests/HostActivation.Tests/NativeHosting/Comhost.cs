@@ -205,7 +205,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     ClsidMapPath,
                     TypeLibraries);
 
-                System.Threading.Thread.Sleep(10000);
             }
 
             protected override void Dispose(bool disposing)

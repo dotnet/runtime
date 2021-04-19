@@ -92,9 +92,6 @@ namespace Microsoft.NET.HostModel.ComHost
                         new XAttribute("resourceid", typeLibrary.Key),
                         new XAttribute("version", version),
                         new XAttribute("helpdir", ""));
-                    // XElement typelibFileElement = new XElement(ns + "file",
-                    //         new XAttribute("name", Path.GetFileName(typeLibrary.Value)),
-                    //         );
                     fileElement.Add(typeLibElement);
                 }
                 catch (FileNotFoundException ex)
