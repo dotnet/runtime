@@ -21,7 +21,7 @@ namespace System.Formats.Cbor
         /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
         /// <remarks>
         /// Map contents are consumed as if they were arrays twice the length of the map's declared size.
-        /// For instance, a map of size `1` containing a key of type `int` with a value of type `string`
+        /// For instance, a map of size 1 containing a key of type <see cref="System.Int32" /> with a value of type <see cref="System.String" />
         /// must be consumed by successive calls to <see cref="ReadInt32" /> and <see cref="ReadTextString" />.
         /// It is up to the caller to keep track of whether the next value is a key or a value.
         /// Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
