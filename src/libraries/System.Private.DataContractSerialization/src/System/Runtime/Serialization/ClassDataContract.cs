@@ -18,7 +18,6 @@ namespace System.Runtime.Serialization
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Linq;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization.Json;
 
     internal sealed class ClassDataContract : DataContract
     {

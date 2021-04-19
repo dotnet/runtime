@@ -8,8 +8,7 @@ namespace System.Runtime.Serialization
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
-    using System.Runtime.Serialization.Json;
-    using System.Security;
+        using System.Security;
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
 

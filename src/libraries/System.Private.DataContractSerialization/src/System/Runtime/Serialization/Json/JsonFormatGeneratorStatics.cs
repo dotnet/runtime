@@ -4,10 +4,10 @@
 using System;
 using System.Collections;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {

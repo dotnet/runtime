@@ -8,7 +8,6 @@ namespace System.Runtime.Serialization
     using System.Reflection;
     using System.Collections.ObjectModel;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization.Json;
 
     internal static class DataContractSurrogateCaller
     {

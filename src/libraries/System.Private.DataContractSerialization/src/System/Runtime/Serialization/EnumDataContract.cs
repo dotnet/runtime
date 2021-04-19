@@ -12,7 +12,6 @@ using System.Xml;
 using System.Security;
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {

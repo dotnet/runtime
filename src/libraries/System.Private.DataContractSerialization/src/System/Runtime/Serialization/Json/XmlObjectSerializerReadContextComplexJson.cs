@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Xml;
-using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 using System.Diagnostics;

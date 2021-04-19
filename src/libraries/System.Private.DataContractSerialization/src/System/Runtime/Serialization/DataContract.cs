@@ -18,7 +18,6 @@ namespace System.Runtime.Serialization
     using System.Collections.Concurrent;
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics;
-    using System.Runtime.Serialization.Json;
 
     internal abstract class DataContract
     {

@@ -10,7 +10,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;

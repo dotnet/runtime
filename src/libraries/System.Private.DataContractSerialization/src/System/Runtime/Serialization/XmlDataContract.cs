@@ -15,7 +15,6 @@ namespace System.Runtime.Serialization
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization.Json;
 
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     internal sealed class XmlDataContract : DataContract

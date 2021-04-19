@@ -8,7 +8,6 @@ namespace System.Runtime.Serialization
     using System.Runtime.CompilerServices;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization.Json;
 
     internal sealed class SurrogateDataContract : DataContract
     {

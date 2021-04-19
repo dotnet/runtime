@@ -13,7 +13,6 @@ namespace System.Runtime.Serialization
     using System.Security;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization.Json;
 
     public abstract class XmlObjectSerializer
     {

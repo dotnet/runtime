@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Security;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {

@@ -15,7 +15,6 @@ using System.Security;
 using System.Runtime.CompilerServices;
 using ExtensionDataObject = System.Object;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {

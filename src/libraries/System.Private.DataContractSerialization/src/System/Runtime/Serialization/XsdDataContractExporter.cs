@@ -8,7 +8,6 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {

@@ -16,7 +16,6 @@ namespace System.Runtime.Serialization
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Security;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization.Json;
 
     // The interface is a perf optimization.
     // Only KeyValuePairAdapter should implement the interface.
