@@ -72,7 +72,8 @@ ifeq ($(ENABLE_METADATA_UPDATE),true)
 endif
 
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
-EMCC_RELEASE_FLAGS=-O3 --llvm-opts 3 -flto
+EMCC_RELEASE_FLAGS=-O3 -flto --llvm-opts 3
+EMCC_CLOSURE_ARGS=--externs runtime/externs.js
 
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
