@@ -297,6 +297,8 @@
       <_EmscriptenAddPATH Condition="'$(EmscriptenPythonBinPath)' != ''" Include="$(EmscriptenPythonBinPath)" />
       <_EmscriptenAddPATH Condition="'$(EmscriptenNodeBinPath)' != ''"   Include="$(EmscriptenNodeBinPath)" />
       <_EmscriptenAddPATH Condition="'$(EmSdkUpstreamBinPath)' != ''"    Include="$(EmSdkUpstreamBinPath)" />
+
+      <_EmscriptenAddPATH Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'"  Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
     </ItemGroup>
 
     <!-- paths with trailing slash, like:
@@ -537,6 +539,9 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
     <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
