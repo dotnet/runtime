@@ -191,7 +191,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
-        [PlatformSpecific(~TestPlatforms.Windows)] // All data is sent, even when very large (100M).
+        [SkipOnPlatform(TestPlatforms.Windows, "All data is sent, even when very large (100M).")]
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
             using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

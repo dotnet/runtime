@@ -13,6 +13,11 @@ namespace Microsoft.Extensions.DependencyInjection
 }
 namespace Microsoft.Extensions.Hosting
 {
+    public enum BackgroundServiceExceptionBehavior
+    {
+        StopHost,
+        Ignore
+    }
     public partial class ConsoleLifetimeOptions
     {
         public ConsoleLifetimeOptions() { }
@@ -56,6 +61,7 @@ namespace Microsoft.Extensions.Hosting
     {
         public HostOptions() { }
         public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
+        public Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get { throw null; } set { } }
     }
 }
 namespace Microsoft.Extensions.Hosting.Internal

@@ -102,6 +102,7 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.IO.FileSystem" />
   </ItemGroup>

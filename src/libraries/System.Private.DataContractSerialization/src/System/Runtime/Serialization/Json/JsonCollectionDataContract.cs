@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -13,6 +14,7 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonCollectionDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public JsonCollectionDataContract(CollectionDataContract traditionalDataContract)
             : base(new JsonCollectionDataContractCriticalHelper(traditionalDataContract))
         {
@@ -26,6 +28,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatCollectionReaderDelegate JsonFormatReaderDelegate
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -60,6 +63,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatGetOnlyCollectionReaderDelegate JsonFormatGetOnlyReaderDelegate
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatGetOnlyReaderDelegate == null)
@@ -93,6 +97,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private JsonFormatCollectionWriterDelegate CreateJsonFormatWriterDelegate()
         {
             return new ReflectionJsonFormatWriter().ReflectionWriteCollection;
@@ -101,6 +106,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatCollectionWriterDelegate JsonFormatWriterDelegate
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -130,6 +136,7 @@ namespace System.Runtime.Serialization.Json
 
         private CollectionDataContract TraditionalCollectionDataContract => _helper.TraditionalCollectionDataContract;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             Debug.Assert(context != null);
@@ -150,6 +157,7 @@ namespace System.Runtime.Serialization.Json
             return o;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             Debug.Assert(context != null);
@@ -165,6 +173,7 @@ namespace System.Runtime.Serialization.Json
             private JsonFormatCollectionWriterDelegate? _jsonFormatWriterDelegate;
             private readonly CollectionDataContract _traditionalCollectionDataContract;
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             public JsonCollectionDataContractCriticalHelper(CollectionDataContract traditionalDataContract)
                 : base(traditionalDataContract)
             {

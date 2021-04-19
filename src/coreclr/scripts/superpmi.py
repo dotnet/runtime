@@ -2595,7 +2595,7 @@ def process_mch_files_arg(coreclr_args):
     # See if the cache directory already exists. If so, we just use it (unless `--force_download` is passed).
 
     if os.path.isdir(mch_cache_dir) and not coreclr_args.force_download:
-        # The cache directory is already there, and "--force_download" was passed, so just
+        # The cache directory is already there, and "--force_download" was not passed, so just
         # assume it's got what we want.
         # NOTE: a different solution might be to verify that everything we would download is
         #       already in the cache, and simply not download if it is. However, that would
@@ -2608,7 +2608,12 @@ def process_mch_files_arg(coreclr_args):
 
     # Add the private store files
     if coreclr_args.private_store is not None:
-        local_mch_paths += process_local_mch_files(coreclr_args, coreclr_args.private_store, mch_cache_dir)
+        # Only include the directories corresponding to the current JIT/EE version, target OS, and MCH architecture (this is the
+        # same filtering done for Azure storage). Only include them if they actually exist (e.g., the private store might have
+        # windows x64 but not Linux arm).
+        target_specific_stores = [ os.path.abspath(os.path.join(store, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)) for store in coreclr_args.private_store ]
+        filtered_stores = [ s for s in target_specific_stores if os.path.isdir(s) ]
+        local_mch_paths += process_local_mch_files(coreclr_args, filtered_stores, mch_cache_dir)
 
     return local_mch_paths
 

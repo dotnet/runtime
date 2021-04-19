@@ -52,7 +52,12 @@ namespace System
 
         /// <summary>Returns a non-negative random integer.</summary>
         /// <returns>A 32-bit signed integer that is greater than or equal to 0 and less than <see cref="int.MaxValue"/>.</returns>
-        public virtual int Next() => _impl.Next();
+        public virtual int Next()
+        {
+            int result = _impl.Next();
+            AssertInRange(result, 0, int.MaxValue);
+            return result;
+        }
 
         /// <summary>Returns a non-negative random integer that is less than the specified maximum.</summary>
         /// <param name="maxValue">The exclusive upper bound of the random number to be generated. <paramref name="maxValue"/> must be greater than or equal to 0.</param>
@@ -68,7 +73,9 @@ namespace System
                 ThrowMaxValueMustBeNonNegative();
             }
 
-            return _impl.Next(maxValue);
+            int result = _impl.Next(maxValue);
+            AssertInRange(result, 0, maxValue);
+            return result;
         }
 
         /// <summary>Returns a random integer that is within a specified range.</summary>
@@ -86,12 +93,19 @@ namespace System
                 ThrowMinMaxValueSwapped();
             }
 
-            return _impl.Next(minValue, maxValue);
+            int result = _impl.Next(minValue, maxValue);
+            AssertInRange(result, minValue, maxValue);
+            return result;
         }
 
         /// <summary>Returns a non-negative random integer.</summary>
         /// <returns>A 64-bit signed integer that is greater than or equal to 0 and less than <see cref="long.MaxValue"/>.</returns>
-        public virtual long NextInt64() => _impl.NextInt64();
+        public virtual long NextInt64()
+        {
+            long result = _impl.NextInt64();
+            AssertInRange(result, 0, long.MaxValue);
+            return result;
+        }
 
         /// <summary>Returns a non-negative random integer that is less than the specified maximum.</summary>
         /// <param name="maxValue">The exclusive upper bound of the random number to be generated. <paramref name="maxValue"/> must be greater than or equal to 0.</param>
@@ -107,7 +121,9 @@ namespace System
                 ThrowMaxValueMustBeNonNegative();
             }
 
-            return _impl.NextInt64(maxValue);
+            long result = _impl.NextInt64(maxValue);
+            AssertInRange(result, 0, maxValue);
+            return result;
         }
 
         /// <summary>Returns a random integer that is within a specified range.</summary>
@@ -125,16 +141,28 @@ namespace System
                 ThrowMinMaxValueSwapped();
             }
 
-            return _impl.NextInt64(minValue, maxValue);
+            long result = _impl.NextInt64(minValue, maxValue);
+            AssertInRange(result, minValue, maxValue);
+            return result;
         }
 
         /// <summary>Returns a random floating-point number that is greater than or equal to 0.0, and less than 1.0.</summary>
         /// <returns>A single-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
-        public virtual float NextSingle() => _impl.NextSingle();
+        public virtual float NextSingle()
+        {
+            float result = _impl.NextSingle();
+            AssertInRange(result);
+            return result;
+        }
 
         /// <summary>Returns a random floating-point number that is greater than or equal to 0.0, and less than 1.0.</summary>
         /// <returns>A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
-        public virtual double NextDouble() => _impl.NextDouble();
+        public virtual double NextDouble()
+        {
+            double result = _impl.NextDouble();
+            AssertInRange(result);
+            return result;
+        }
 
         /// <summary>Fills the elements of a specified array of bytes with random numbers.</summary>
         /// <param name="buffer">The array to be filled with random numbers.</param>
@@ -155,13 +183,35 @@ namespace System
 
         /// <summary>Returns a random floating-point number between 0.0 and 1.0.</summary>
         /// <returns>A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
-        protected virtual double Sample() => _impl.Sample();
+        protected virtual double Sample()
+        {
+            double result = _impl.Sample();
+            AssertInRange(result);
+            return result;
+        }
 
         private static void ThrowMaxValueMustBeNonNegative() =>
             throw new ArgumentOutOfRangeException("maxValue", SR.Format(SR.ArgumentOutOfRange_NeedNonNegNum, "maxValue"));
 
         private static void ThrowMinMaxValueSwapped() =>
             throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
+
+        [Conditional("DEBUG")]
+        private static void AssertInRange(long result, long minInclusive, long maxExclusive)
+        {
+            if (maxExclusive > minInclusive)
+            {
+                Debug.Assert(result >= minInclusive && result < maxExclusive, $"Expected {minInclusive} <= {result} < {maxExclusive}");
+            }
+            else
+            {
+                Debug.Assert(result == minInclusive, $"Expected {minInclusive} == {result}");
+            }
+        }
+
+        [Conditional("DEBUG")]
+        private static void AssertInRange(double result) =>
+            Debug.Assert(result >= 0.0 && result < 1.0f, $"Expected 0.0 <= {result} < 1.0");
 
         /// <summary>Random implementation that delegates all calls to a ThreadStatic Impl instance.</summary>
         private sealed class ThreadSafeRandom : Random
@@ -189,7 +239,12 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             private static XoshiroImpl Create() => t_random = new();
 
-            public override int Next() => LocalRandom.Next();
+            public override int Next()
+            {
+                int result = LocalRandom.Next();
+                AssertInRange(result, 0, int.MaxValue);
+                return result;
+            }
 
             public override int Next(int maxValue)
             {
@@ -198,7 +253,9 @@ namespace System
                     ThrowMaxValueMustBeNonNegative();
                 }
 
-                return LocalRandom.Next(maxValue);
+                int result = LocalRandom.Next(maxValue);
+                AssertInRange(result, 0, maxValue);
+                return result;
             }
 
             public override int Next(int minValue, int maxValue)
@@ -208,10 +265,17 @@ namespace System
                     ThrowMinMaxValueSwapped();
                 }
 
-                return LocalRandom.Next(minValue, maxValue);
+                int result = LocalRandom.Next(minValue, maxValue);
+                AssertInRange(result, minValue, maxValue);
+                return result;
             }
 
-            public override long NextInt64() => LocalRandom.NextInt64();
+            public override long NextInt64()
+            {
+                long result = LocalRandom.NextInt64();
+                AssertInRange(result, 0, long.MaxValue);
+                return result;
+            }
 
             public override long NextInt64(long maxValue)
             {
@@ -220,7 +284,9 @@ namespace System
                     ThrowMaxValueMustBeNonNegative();
                 }
 
-                return LocalRandom.NextInt64(maxValue);
+                long result = LocalRandom.NextInt64(maxValue);
+                AssertInRange(result, 0, maxValue);
+                return result;
             }
 
             public override long NextInt64(long minValue, long maxValue)
@@ -230,12 +296,24 @@ namespace System
                     ThrowMinMaxValueSwapped();
                 }
 
-                return LocalRandom.NextInt64(minValue, maxValue);
+                long result = LocalRandom.NextInt64(minValue, maxValue);
+                AssertInRange(result, minValue, maxValue);
+                return result;
             }
 
-            public override float NextSingle() => LocalRandom.NextSingle();
+            public override float NextSingle()
+            {
+                float result = LocalRandom.NextSingle();
+                AssertInRange(result);
+                return result;
+            }
 
-            public override double NextDouble() => LocalRandom.NextDouble();
+            public override double NextDouble()
+            {
+                double result = LocalRandom.NextDouble();
+                AssertInRange(result);
+                return result;
+            }
 
             public override void NextBytes(byte[] buffer)
             {

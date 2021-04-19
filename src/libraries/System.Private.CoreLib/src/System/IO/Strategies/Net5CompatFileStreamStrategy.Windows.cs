@@ -36,7 +36,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy, IFileStreamCompletionSourceStrategy
+    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.
@@ -44,7 +44,7 @@ namespace System.IO.Strategies
 
         private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private CompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
@@ -427,13 +427,13 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                if (errorCode == ERROR_BROKEN_PIPE)
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                 {
                     r = 0;
                 }
                 else
                 {
-                    if (errorCode == ERROR_INVALID_PARAMETER)
+                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
@@ -544,14 +544,10 @@ namespace System.IO.Strategies
             Debug.Assert(_preallocatedOverlapped == null);
 
             if (_useAsyncIO)
-                _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, _buffer);
+                _preallocatedOverlapped = new PreAllocatedOverlapped(CompletionSource.s_ioCallback, this, _buffer);
         }
 
-        SafeFileHandle IFileStreamCompletionSourceStrategy.FileHandle => _fileHandle;
-
-        FileStreamCompletionSource? IFileStreamCompletionSourceStrategy.CurrentOverlappedOwner => _currentOverlappedOwner;
-
-        FileStreamCompletionSource? IFileStreamCompletionSourceStrategy.CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource)
+        private CompletionSource? CompareExchangeCurrentOverlappedOwner(CompletionSource? newSource, CompletionSource? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         private void WriteSpan(ReadOnlySpan<byte> source)
@@ -633,7 +629,7 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
-                if (errorCode == ERROR_NO_DATA)
+                if (errorCode == Interop.Errors.ERROR_NO_DATA)
                 {
                     r = 0;
                 }
@@ -642,7 +638,7 @@ namespace System.IO.Strategies
                     // ERROR_INVALID_PARAMETER may be returned for writes
                     // where the position is too large or for synchronous writes
                     // to a handle opened asynchronously.
-                    if (errorCode == ERROR_INVALID_PARAMETER)
+                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
@@ -761,7 +757,7 @@ namespace System.IO.Strategies
             Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, numBufferedBytesRead, destination);
+            CompletionSource completionSource = CompletionSource.Create(this, _preallocatedOverlapped, numBufferedBytesRead, destination);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -817,7 +813,7 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, when they hit EOF, they will come here.
-                if (errorCode == ERROR_BROKEN_PIPE)
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                 {
                     // Not an error, but EOF.  AsyncFSCallback will NOT be
                     // called.  Call the user callback here.
@@ -827,7 +823,7 @@ namespace System.IO.Strategies
                     intOverlapped->InternalLow = IntPtr.Zero;
                     completionSource.SetCompletedSynchronously(0);
                 }
-                else if (errorCode != ERROR_IO_PENDING)
+                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
@@ -836,7 +832,7 @@ namespace System.IO.Strategies
 
                     completionSource.ReleaseNativeResource();
 
-                    if (errorCode == ERROR_HANDLE_EOF)
+                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
@@ -979,7 +975,7 @@ namespace System.IO.Strategies
             Debug.Assert(_useAsyncIO, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, 0, source);
+            CompletionSource completionSource = CompletionSource.Create(this, _preallocatedOverlapped, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (CanSeek)
@@ -1022,14 +1018,14 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, when they are closed on the other side, they will come here.
-                if (errorCode == ERROR_NO_DATA)
+                if (errorCode == Interop.Errors.ERROR_NO_DATA)
                 {
                     // Not an error, but EOF. AsyncFSCallback will NOT be called.
                     // Completing TCS and return cached task allowing the GC to collect TCS.
                     completionSource.SetCompletedSynchronously(0);
                     return Task.CompletedTask;
                 }
-                else if (errorCode != ERROR_IO_PENDING)
+                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
@@ -1038,7 +1034,7 @@ namespace System.IO.Strategies
 
                     completionSource.ReleaseNativeResource();
 
-                    if (errorCode == ERROR_HANDLE_EOF)
+                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
@@ -1066,13 +1062,6 @@ namespace System.IO.Strategies
 
             return completionSource.Task;
         }
-
-        // Error codes (not HRESULTS), from winerror.h
-        internal const int ERROR_BROKEN_PIPE = 109;
-        internal const int ERROR_NO_DATA = 232;
-        private const int ERROR_HANDLE_EOF = 38;
-        private const int ERROR_INVALID_PARAMETER = 87;
-        private const int ERROR_IO_PENDING = 997;
 
         // __ConsoleStream also uses this code.
         private unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)

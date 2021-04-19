@@ -76,12 +76,6 @@ set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
 
-@REM CMD has a nasty habit of eating "=" on the argument list, so passing:
-@REM    -priority=1
-@REM appears to CMD parsing as "-priority 1". Handle -priority specially to avoid problems,
-@REM and allow the "-priority=1" syntax.
-set __Priority=
-
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -116,8 +110,6 @@ if /i "%1" == "arm64"               (set __BuildArchArm64=1&set processedArgs=!p
 if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-
-if /i "%1" == "-priority"           (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 
 REM Explicitly block -Rebuild.
 if /i "%1" == "Rebuild" (
@@ -180,15 +172,6 @@ if [!processedArgs!]==[] (
 )
 
 :ArgsDone
-
-@REM Special handling for -priority=N argument.
-if defined __Priority (
-    if defined __PassThroughArgs (
-        set __PassThroughArgs=%__PassThroughArgs% -priority=%__Priority%
-    ) else (
-        set __PassThroughArgs=-priority=%__Priority%
-    )
-)
 
 :: Initialize VS environment
 call %__RepoRootDir%\eng\native\init-vs-env.cmd
@@ -833,6 +816,8 @@ echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
+echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
+echo                     Allowed ^<name^>: jit alljits runtime paltests iltools
 echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
@@ -843,18 +828,24 @@ echo -skipnative: skip building native components ^(default: native components a
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
 echo -skipgenerateversion: skip generating the native version headers.
-echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
-echo portable : build for portable RID.
+echo.
+echo Examples:
+echo     build-runtime
+echo        -- builds x64 debug, all components
+echo     build-runtime -component jit
+echo        -- builds x64 debug, just the JIT
+echo     build-runtime -component jit -component runtime
+echo        -- builds x64 debug, just the JIT and runtime
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,
 echo one or more build architectures or types is specified, then only those build architectures
 echo and types are built.
 echo.
 echo For example:
-echo     build -all
+echo     build-runtime -all
 echo        -- builds all architectures, and all build types per architecture
-echo     build -all -x86
+echo     build-runtime -all -x86
 echo        -- builds all build types for x86
-echo     build -all -x64 -x86 -Checked -Release
+echo     build-runtime -all -x64 -x86 -Checked -Release
 echo        -- builds x64 and x86 architectures, Checked and Release build types for each
 exit /b 1

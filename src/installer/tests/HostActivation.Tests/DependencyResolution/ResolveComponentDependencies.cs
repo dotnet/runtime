@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // Linux: we fail
             // Windows and Mac, probing succeeds but
             // Windows: probing returns the original name
-            // Mac: probing return the new name including 2 assembly probing with the same new name and the changed deps file
+            // Mac: probing return the new name including 2 assembly probing with the original and new name, and the changed deps file
 
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -89,7 +89,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
                     .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
@@ -115,7 +115,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // Linux: we fail
             // Windows and Mac, probing succeeds but
             // Windows: probing returns the original name
-            // Mac: probing return the new name including 2 assembly probing with the same new name and the changed deps file
+            // Mac: probing return the new name including 2 assembly probing with the original and new name, and the changed deps file
 
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
                     .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
@@ -242,7 +242,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies native_search_paths:[" +
-                    $"{ExpectedProbingPaths(Path.Combine(sharedTestState.ComponentWithDependencies.Location, "runtimes", "win10-x86", "native"))}]");
+                    $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "runtimes", "win10-x86", "native")}" +
+                    $"{Path.DirectorySeparatorChar}{Path.PathSeparator}]");
         }
 
         [Fact]
@@ -251,7 +252,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             var component = sharedTestState.ComponentWithDependencies.Copy();
 
             // Remove a dependency
-            // This will cause the resolution to fail
             File.Delete(Path.Combine(component.Location, "ComponentDependency.dll"));
 
             sharedTestState.RunComponentResolutionTest(component)
@@ -259,6 +259,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
         }
@@ -369,36 +370,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Pass()
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining($"corehost_resolve_component_dependencies resource_search_paths:[" +
-                    $"{ExpectedProbingPaths(sharedTestState.ComponentWithResources.Location)}]");
-        }
-
-        private string ExpectedProbingPaths(params string[] paths)
-        {
-            string result = string.Empty;
-            foreach (string path in paths)
-            {
-                string expectedPath = path;
-                if (expectedPath.EndsWith(Path.DirectorySeparatorChar))
-                {
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        // On non-windows the paths are normalized to not end with a /
-                        expectedPath = expectedPath.Substring(0, expectedPath.Length - 1);
-                    }
-                }
-                else
-                {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        // On windows all paths are normalized to end with a \
-                        expectedPath += Path.DirectorySeparatorChar;
-                    }
-                }
-
-                result += expectedPath + Path.PathSeparator;
-            }
-
-            return result;
+                    $"{sharedTestState.ComponentWithResources.Location}" +
+                    $"{Path.DirectorySeparatorChar}{Path.PathSeparator}]");
         }
 
         [Fact]
@@ -425,7 +398,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies assemblies:[{sharedTestState.ComponentWithNoDependencies.AppDll}{Path.PathSeparator}]")
                 .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies resource_search_paths:[" +
-                    $"{ExpectedProbingPaths(sharedTestState.ComponentWithResources.Location)}]");
+                    $"{sharedTestState.ComponentWithResources.Location}" +
+                    $"{Path.DirectorySeparatorChar}{Path.PathSeparator}]");
         }
 
         [Fact]

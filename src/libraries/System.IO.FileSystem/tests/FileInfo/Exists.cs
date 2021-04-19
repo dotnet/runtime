@@ -146,7 +146,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         public void LockedFileExists()
         {
             string path = GetTestFilePath();

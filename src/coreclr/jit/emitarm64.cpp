@@ -8168,7 +8168,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     insFormat fmt = IF_NONE;
 
@@ -8238,7 +8238,7 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     assert((ins == INS_cbz) || (ins == INS_cbnz));
 
     assert(dst != nullptr);
-    assert((dst->bbFlags & BBF_JMP_TARGET) != 0);
+    assert((dst->bbFlags & BBF_HAS_LABEL) != 0);
 
     insFormat fmt = IF_LARGEJMP;
 
@@ -8276,7 +8276,7 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
     assert((ins == INS_tbz) || (ins == INS_tbnz));
 
     assert(dst != nullptr);
-    assert((dst->bbFlags & BBF_JMP_TARGET) != 0);
+    assert((dst->bbFlags & BBF_HAS_LABEL) != 0);
     assert((EA_SIZE(attr) == EA_4BYTE) || (EA_SIZE(attr) == EA_8BYTE));
     assert(imm < ((EA_SIZE(attr) == EA_4BYTE) ? 32 : 64));
 
@@ -8318,7 +8318,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(dst->bbFlags & BBF_HAS_LABEL);
     }
     else
     {
@@ -13510,6 +13510,20 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     }
     else // addr is not contained, so we evaluate it into a register
     {
+#ifdef DEBUG
+        if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        {
+            // If the local var is a gcref or byref, the local var better be untracked, because we have
+            // no logic here to track local variable lifetime changes, like we do in the contained case
+            // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
+            // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
+            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+            unsigned             lclNum  = varNode->GetLclNum();
+            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            assert(!varDsc->lvTracked);
+        }
+#endif // DEBUG
+
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
     }

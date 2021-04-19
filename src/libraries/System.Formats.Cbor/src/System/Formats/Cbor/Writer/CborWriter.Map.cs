@@ -118,7 +118,7 @@ namespace System.Formats.Cbor
                 if (!keyEncodingRanges.Add(currentKey))
                 {
                     // reset writer state to right before the offending key write
-                    _buffer.AsSpan(currentKey.Offset, _offset).Fill(0);
+                    _buffer.AsSpan(currentKey.Offset, _offset).Clear();
                     _offset = currentKey.Offset;
 
                     throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_ContainsDuplicateKeys, ConformanceMode));

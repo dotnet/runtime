@@ -639,6 +639,36 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("DistinctBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> DistinctBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.DistinctBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector)
+                    ));
+        }
+
+        [DynamicDependency("DistinctBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> DistinctBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.DistinctBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
+                    ));
+        }
+
         [DynamicDependency("Chunk`1", typeof(Enumerable))]
         public static IQueryable<TSource[]> Chunk<TSource>(this IQueryable<TSource> source, int size)
         {
@@ -763,6 +793,43 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("UnionBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> UnionBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, Expression<Func<TSource, TKey>> keySelector)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.UnionBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source1.Expression, GetSourceExpression(source2), Expression.Quote(keySelector)
+                    ));
+        }
+
+        [DynamicDependency("UnionBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> UnionBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.UnionBy_TSource_TKey_4(typeof(TSource), typeof(TKey)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
+                    ));
+        }
+
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
@@ -795,6 +862,45 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("IntersectBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> IntersectBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TKey> source2, Expression<Func<TSource, TKey>> keySelector)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.IntersectBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Quote(keySelector)
+                    ));
+        }
+
+        [DynamicDependency("IntersectBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> IntersectBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TKey> source2, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.IntersectBy_TSource_TKey_4(typeof(TSource), typeof(TKey)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
+                    ));
+        }
+
         [DynamicDependency("Except`1", typeof(Enumerable))]
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
@@ -824,6 +930,45 @@ namespace System.Linq
                     source1.Expression,
                     GetSourceExpression(source2),
                     Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
+                    ));
+        }
+
+        [DynamicDependency("ExceptBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> ExceptBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TKey> source2, Expression<Func<TSource, TKey>> keySelector)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.ExceptBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Quote(keySelector)
+                    ));
+        }
+
+        [DynamicDependency("ExceptBy`2", typeof(Enumerable))]
+        public static IQueryable<TSource> ExceptBy<TSource, TKey>(this IQueryable<TSource> source1, IEnumerable<TKey> source2, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source1.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.ExceptBy_TSource_TKey_4(typeof(TSource), typeof(TKey)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
                     ));
         }
 
@@ -1339,6 +1484,20 @@ namespace System.Linq
                     CachedReflectionInfo.Min_TSource_1(typeof(TSource)), source.Expression));
         }
 
+        [DynamicDependency("Min`1", typeof(Enumerable))]
+        public static TSource? Min<TSource>(this IQueryable<TSource> source, IComparer<TSource>? comparer)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Min_TSource_2(typeof(TSource)),
+                    source.Expression,
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))
+                    ));
+        }
+
         [DynamicDependency("Min`2", typeof(Enumerable))]
         public static TResult? Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
@@ -1354,6 +1513,39 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("MinBy`2", typeof(Enumerable))]
+        public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.MinBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression,
+                    Expression.Quote(keySelector)
+                    ));
+        }
+
+        [DynamicDependency("MinBy`2", typeof(Enumerable))]
+        public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.MinBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression,
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))
+                    ));
+        }
+
         [DynamicDependency("Max`1", typeof(Enumerable))]
         public static TSource? Max<TSource>(this IQueryable<TSource> source)
         {
@@ -1363,6 +1555,20 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Max_TSource_1(typeof(TSource)), source.Expression));
+        }
+
+        [DynamicDependency("Max`1", typeof(Enumerable))]
+        public static TSource? Max<TSource>(this IQueryable<TSource> source, IComparer<TSource>? comparer)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Max_TSource_2(typeof(TSource)),
+                    source.Expression,
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))
+                    ));
         }
 
         [DynamicDependency("Max`2", typeof(Enumerable))]
@@ -1377,6 +1583,39 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.Max_TSource_TResult_2(typeof(TSource), typeof(TResult)),
                     source.Expression, Expression.Quote(selector)
+                    ));
+        }
+
+        [DynamicDependency("MaxBy`2", typeof(Enumerable))]
+        public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.MaxBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression,
+                    Expression.Quote(keySelector)
+                    ));
+        }
+
+        [DynamicDependency("MaxBy`2", typeof(Enumerable))]
+        public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (keySelector == null)
+                throw Error.ArgumentNull(nameof(keySelector));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.MaxBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression,
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))
                     ));
         }
 

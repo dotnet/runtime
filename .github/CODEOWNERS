@@ -51,4 +51,6 @@
 /src/mono/mono/utils/mono-state* @lambdageek
 /src/mono/mono/utils/mono-threads* @lambdageek @vargaz
 
+/src/mono/dlls @thaystg @lambdageek
+
 /src/mono/netcore @marek-safar @akoeplinger @vargaz @steveisok
