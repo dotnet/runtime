@@ -208,7 +208,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            propertyValue = BindInstance(property.PropertyType, propertyValue, config.GetSection(property.Name), options);
+            propertyValue = GetPropertyValue(property, instance, config, options);
 
             if (propertyValue != null && hasSetter)
             {
@@ -574,6 +574,49 @@ namespace Microsoft.Extensions.Configuration
             while (type != typeof(object));
 
             return allProperties;
+        }
+
+        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
+        {
+            string propertyName = GetPropertyName(property);
+            return BindInstance(
+                property.PropertyType,
+                property.GetValue(instance),
+                config.GetSection(propertyName),
+                options);
+        }
+
+        private static string GetPropertyName(MemberInfo property)
+        {
+            if (property == null)
+            {
+                throw new ArgumentNullException(nameof(property));
+            }
+
+            // Check for a custom property name used for configuration key binding
+            foreach (var attributeData in property.GetCustomAttributesData())
+            {
+                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
+                {
+                    continue;
+                }
+
+                // Ensure ConfigurationKeyName constructor signature matches expectations
+                if (attributeData.ConstructorArguments.Count != 1)
+                {
+                    break;
+                }
+
+                // Assumes ConfigurationKeyName constructor first arg is the string key name
+                string name = attributeData
+                    .ConstructorArguments[0]
+                    .Value?
+                    .ToString();
+
+                return !string.IsNullOrWhiteSpace(name) ? name : property.Name;
+            }
+
+            return property.Name;
         }
     }
 }

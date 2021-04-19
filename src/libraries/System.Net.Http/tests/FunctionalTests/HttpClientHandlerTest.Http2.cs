@@ -254,9 +254,11 @@ namespace System.Net.Http.Functional.Tests
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
                 // Send invalid initial SETTINGS value
-                await server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value });
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value });
 
                 await AssertProtocolErrorAsync(sendTask, expectedError);
+
+                connection.Dispose();
             }
         }
 

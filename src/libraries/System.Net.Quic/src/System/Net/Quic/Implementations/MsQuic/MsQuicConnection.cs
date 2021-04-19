@@ -7,6 +7,8 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -16,6 +18,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicConnection : QuicConnectionProvider
     {
+        private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
+        private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+
         // Delegate that wraps the static function that will be called when receiving an event.
         private static readonly ConnectionCallbackDelegate s_connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
 
@@ -30,6 +35,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         private IPEndPoint? _localEndPoint;
         private readonly EndPoint _remoteEndPoint;
         private SslApplicationProtocol _negotiatedAlpnProtocol;
+        private bool _isServer;
+        private bool _remoteCertificateRequired;
+        private X509RevocationMode _revocationMode = X509RevocationMode.Offline;
+        private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
 
         private sealed class State
         {
@@ -61,6 +70,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.Connected = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
+            _remoteCertificateRequired = false;
+            _isServer = true;
 
             _stateHandle = GCHandle.Alloc(_state);
 
@@ -83,6 +94,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _remoteEndPoint = options.RemoteEndPoint!;
             _configuration = SafeMsQuicConfigurationHandle.Create(options);
+            _isServer = false;
+            _remoteCertificateRequired = true;
+            if (options.ClientAuthenticationOptions != null)
+            {
+                _revocationMode = options.ClientAuthenticationOptions.CertificateRevocationCheckMode;
+                _remoteCertificateValidationCallback = options.ClientAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
 
             _stateHandle = GCHandle.Alloc(_state);
             try
@@ -179,6 +197,75 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static uint HandleEventStreamsAvailable(State state, ref ConnectionEvent connectionEvent)
         {
             return MsQuicStatusCodes.Success;
+        }
+
+        private static uint HandleEventPeerCertificateReceived(State state, ref ConnectionEvent connectionEvent)
+        {
+            SslPolicyErrors sslPolicyErrors  = SslPolicyErrors.None;
+            X509Chain? chain = null;
+            X509Certificate2? certificate = null;
+
+            if (!OperatingSystem.IsWindows())
+            {
+                // TODO fix validation with OpenSSL
+                return MsQuicStatusCodes.Success;
+            }
+
+            MsQuicConnection? connection = state.Connection;
+            if (connection == null)
+            {
+                return MsQuicStatusCodes.InvalidState;
+            }
+
+            if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle != IntPtr.Zero)
+            {
+                certificate = new X509Certificate2(connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle);
+            }
+
+            try
+            {
+                if (certificate == null)
+                {
+                    if (NetEventSource.Log.IsEnabled() && connection._remoteCertificateRequired) NetEventSource.Error(state.Connection, $"Remote certificate required, but no remote certificate received");
+                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
+                }
+                else
+                {
+                    chain = new X509Chain();
+                    chain.ChainPolicy.RevocationMode = connection._revocationMode;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+                    chain.ChainPolicy.ApplicationPolicy.Add(connection._isServer ? s_clientAuthOid : s_serverAuthOid);
+
+                    if (!chain.Build(certificate))
+                    {
+                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+                    }
+                }
+
+                if (!connection._remoteCertificateRequired)
+                {
+                    sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
+                }
+
+                if (connection._remoteCertificateValidationCallback != null)
+                {
+                    bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
+                    if (!success && NetEventSource.Log.IsEnabled())
+                        NetEventSource.Error(state.Connection, "Remote certificate rejected by verification callback");
+                    return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
+                }
+
+                if (NetEventSource.Log.IsEnabled())
+                    NetEventSource.Info(state.Connection, $"Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
+
+                return (sslPolicyErrors == SslPolicyErrors.None) ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
+            }
+            catch (Exception ex)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state.Connection, $"Certificate validation failed ${ex.Message}");
+            }
+
+            return MsQuicStatusCodes.InternalError;
         }
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
@@ -312,10 +399,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             ref ConnectionEvent connectionEvent)
         {
             var state = (State)GCHandle.FromIntPtr(context).Target!;
-
             try
             {
-                switch ((QUIC_CONNECTION_EVENT_TYPE)connectionEvent.Type)
+                switch (connectionEvent.Type)
                 {
                     case QUIC_CONNECTION_EVENT_TYPE.CONNECTED:
                         return HandleEventConnected(state, ref connectionEvent);
@@ -329,6 +415,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return HandleEventNewStream(state, ref connectionEvent);
                     case QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE:
                         return HandleEventStreamsAvailable(state, ref connectionEvent);
+                    case QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED:
+                        return HandleEventPeerCertificateReceived(state, ref connectionEvent);
                     default:
                         return MsQuicStatusCodes.Success;
                 }

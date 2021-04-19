@@ -12,7 +12,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return status < 0x80000000;
             }
 
-            if (OperatingSystem.IsLinux())
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 return (int)status <= 0;
             }

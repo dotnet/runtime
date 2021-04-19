@@ -59,6 +59,12 @@ inline INT64 PEImage::GetSize() const
     return m_bundleFileLocation.Size;
 }
 
+inline INT64 PEImage::GetUncompressedSize() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_bundleFileLocation.UncompresedSize;
+}
+
 inline void PEImage::SetModuleFileNameHintForDAC()
 {
     LIMITED_METHOD_DAC_CONTRACT;
