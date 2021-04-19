@@ -265,16 +265,19 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     }
     if (m_coreclrPath.empty())
     {
-        size_t last = moduleName.rfind(MAKEDLLNAME_A("coreclr"));
+        size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = moduleName.substr(0, last);
+            m_coreclrPath = moduleName.substr(0, last + 1);
 
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory
             // necessary is in the core dump.
             if (PopulateForSymbolLookup(baseAddress)) {
                 uint64_t symbolOffset;
-                TryLookupSymbol("g_dacTable", &symbolOffset);
+                if (!TryLookupSymbol("g_dacTable", &symbolOffset))
+                {
+                    TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                }
             }
         }
     }

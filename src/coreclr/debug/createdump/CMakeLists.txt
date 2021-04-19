@@ -63,12 +63,14 @@ if(CLR_CMAKE_HOST_OSX)
     add_executable_clr(createdump
         crashinfomac.cpp
         threadinfomac.cpp
+        dumpwritermacho.cpp
         ${CREATEDUMP_SOURCES}
     )
 else()
     add_executable_clr(createdump
         crashinfounix.cpp
         threadinfounix.cpp
+        dumpwriterelf.cpp
         ${CREATEDUMP_SOURCES}
         ${PAL_REDEFINES_FILE}
     )

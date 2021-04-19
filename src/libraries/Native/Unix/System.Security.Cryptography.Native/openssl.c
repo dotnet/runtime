@@ -1123,7 +1123,7 @@ int64_t CryptoNative_OpenSslVersionNumber()
 
 void CryptoNative_RegisterLegacyAlgorithms()
 {
-#if NEED_OPENSSL_3_0
+#ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(OSSL_PROVIDER_try_load))
     {
         OSSL_PROVIDER_try_load(NULL, "legacy", 1);

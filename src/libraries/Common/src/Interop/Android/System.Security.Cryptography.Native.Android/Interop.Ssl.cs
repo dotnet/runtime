@@ -3,6 +3,8 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -66,17 +68,61 @@ internal static partial class Interop
                 throw new SslException();
         }
 
-        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamConfigureParameters")]
-        private static extern int SSLStreamConfigureParametersImpl(
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetTargetHost")]
+        private static extern int SSLStreamSetTargetHostImpl(
             SafeSslHandle sslHandle,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
-        internal static void SSLStreamConfigureParameters(
+        internal static void SSLStreamSetTargetHost(
             SafeSslHandle sslHandle,
             string targetHost)
         {
-            int ret = SSLStreamConfigureParametersImpl(sslHandle, targetHost);
+            int ret = SSLStreamSetTargetHostImpl(sslHandle, targetHost);
             if (ret != SUCCESS)
                 throw new SslException();
+        }
+
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRequestClientAuthentication")]
+        internal static extern void SSLStreamRequestClientAuthentication(SafeSslHandle sslHandle);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct ApplicationProtocolData
+        {
+            public byte* Data;
+            public int Length;
+        }
+
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetApplicationProtocols")]
+        private static unsafe extern int SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, ApplicationProtocolData[] protocolData, int count);
+        internal static unsafe void SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, List<SslApplicationProtocol> protocols)
+        {
+            int count = protocols.Count;
+            MemoryHandle[] memHandles = new MemoryHandle[count];
+            ApplicationProtocolData[] protocolData = new ApplicationProtocolData[count];
+            try
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    ReadOnlyMemory<byte> protocol = protocols[i].Protocol;
+                    memHandles[i] = protocol.Pin();
+                    protocolData[i] = new ApplicationProtocolData
+                    {
+                        Data = (byte*)memHandles[i].Pointer,
+                        Length = protocol.Length
+                    };
+                }
+                int ret = SSLStreamSetApplicationProtocols(sslHandle, protocolData, count);
+                if (ret != SUCCESS)
+                {
+                    throw new SslException();
+                }
+            }
+            finally
+            {
+                foreach (MemoryHandle memHandle in memHandles)
+                {
+                    memHandle.Dispose();
+                }
+            }
         }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetEnabledProtocols")]
@@ -173,30 +219,18 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetPeerCertificate")]
-        private static extern int SSLStreamGetPeerCertificate(SafeSslHandle ssl, out SafeX509Handle cert);
-        internal static SafeX509Handle SSLStreamGetPeerCertificate(SafeSslHandle ssl)
-        {
-            SafeX509Handle cert;
-            int ret = Interop.AndroidCrypto.SSLStreamGetPeerCertificate(ssl, out cert);
-            if (ret != SUCCESS)
-                throw new SslException();
-
-            return cert;
-        }
+        internal static extern SafeX509Handle SSLStreamGetPeerCertificate(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetPeerCertificates")]
-        private static extern int SSLStreamGetPeerCertificates(
+        private static extern void SSLStreamGetPeerCertificates(
             SafeSslHandle ssl,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] out IntPtr[] certs,
             out int count);
-        internal static IntPtr[] SSLStreamGetPeerCertificates(SafeSslHandle ssl)
+        internal static IntPtr[]? SSLStreamGetPeerCertificates(SafeSslHandle ssl)
         {
-            IntPtr[] ptrs;
+            IntPtr[]? ptrs;
             int count;
-            int ret = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(ssl, out ptrs, out count);
-            if (ret != SUCCESS)
-                throw new SslException();
-
+            Interop.AndroidCrypto.SSLStreamGetPeerCertificates(ssl, out ptrs, out count);
             return ptrs;
         }
 

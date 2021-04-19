@@ -52,6 +52,9 @@ namespace System.Net.Http
         private CancellationTokenSource? _altSvcBlocklistTimerCancellation;
         private volatile bool _altSvcEnabled = true;
 
+        /// <summary>The maximum number of times to retry a request after a failure on an established connection.</summary>
+        private const int MaxConnectionFailureRetries = 3;
+
         /// <summary>
         /// If <see cref="_altSvcBlocklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds.
         /// This is to prevent a failing server from bloating the dictionary beyond a reasonable value.
@@ -358,20 +361,19 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        private ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
-            GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private ValueTask<HttpConnectionBase> GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
             if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
                 if (request.Version.Major == 3 && !_http3Enabled)
                 {
-                    return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                    return ValueTask.FromException<HttpConnectionBase>(
                         new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3)));
                 }
                 if (request.Version.Major == 2 && !_http2Enabled)
                 {
-                    return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                    return ValueTask.FromException<HttpConnectionBase>(
                         new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2)));
                 }
             }
@@ -392,7 +394,7 @@ namespace System.Net.Http
                     {
                         if (IsAltSvcBlocked(authority))
                         {
-                            return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                            return ValueTask.FromException<HttpConnectionBase>(
                                 new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
                         }
 
@@ -404,7 +406,7 @@ namespace System.Net.Http
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                return ValueTask.FromException<HttpConnectionBase>(
                     new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
             }
 
@@ -417,7 +419,7 @@ namespace System.Net.Http
             // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
-                return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                return ValueTask.FromException<HttpConnectionBase>(
                     new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2)));
             }
 
@@ -522,21 +524,19 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
-            GetHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnectionBase> GetHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             HttpConnection? connection = await GetOrReserveHttp11ConnectionAsync(async, cancellationToken).ConfigureAwait(false);
-            if (connection != null)
+            if (connection is not null)
             {
-                return (connection, false);
+                return connection;
             }
 
-            if (NetEventSource.Log.IsEnabled()) Trace("Creating new connection for pool.");
+            if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/1.1 connection for pool.");
 
             try
             {
-                connection = await CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-                return (connection, true);
+                return await CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
@@ -545,8 +545,7 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
-            GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnectionBase> GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
@@ -558,7 +557,7 @@ namespace System.Net.Http
                 // Connection exists and it is still good to use.
                 if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP2 connection.");
                 _usedSinceLastCleanup = true;
-                return (http2Connection, false);
+                return http2Connection;
             }
 
             // Ensure that the connection creation semaphore is created
@@ -586,7 +585,7 @@ namespace System.Net.Http
                 http2Connection = GetExistingHttp2Connection();
                 if (http2Connection != null)
                 {
-                    return (http2Connection, false);
+                    return http2Connection;
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
@@ -613,7 +612,7 @@ namespace System.Net.Http
                             Trace("New unencrypted HTTP2 connection established.");
                         }
 
-                        return (http2Connection, true);
+                        return http2Connection;
                     }
 
                     Debug.Assert(sslStream != null);
@@ -635,7 +634,7 @@ namespace System.Net.Http
                             Trace("New HTTP2 connection established.");
                         }
 
-                        return (http2Connection, true);
+                        return http2Connection;
                     }
                 }
             }
@@ -682,8 +681,8 @@ namespace System.Net.Http
 
                 if (canUse)
                 {
-                    return (await ConstructHttp11ConnectionAsync(async, socket, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), true);
-                }
+                    return await ConstructHttp11ConnectionAsync(async, socket, stream!, transportContext, request, cancellationToken).ConfigureAwait(false);
+               }
                 else
                 {
                     if (NetEventSource.Log.IsEnabled())
@@ -751,8 +750,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
-            GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnectionBase> GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https);
             Debug.Assert(_http3Enabled == true);
@@ -774,7 +772,7 @@ namespace System.Net.Http
                     // Connection exists and it is still good to use.
                     if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP3 connection.");
                     _usedSinceLastCleanup = true;
-                    return (http3Connection, false);
+                    return http3Connection;
                 }
             }
 
@@ -802,7 +800,7 @@ namespace System.Net.Http
                         Trace("Using existing HTTP3 connection.");
                     }
 
-                    return (_http3Connection, false);
+                    return _http3Connection;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
@@ -839,7 +837,7 @@ namespace System.Net.Http
                     Trace("New HTTP3 connection established.");
                 }
 
-                return (http3Connection, true);
+                return http3Connection;
             }
             finally
             {
@@ -849,11 +847,13 @@ namespace System.Net.Http
 
         public async ValueTask<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
+            int retryCount = 0;
+
             while (true)
             {
-                // Loop on connection failures and retry if possible.
+                // Loop on connection failures (or other problems like version downgrade) and retry if possible.
 
-                (HttpConnectionBase connection, bool isNewConnection) = await GetConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                HttpConnectionBase connection = await GetConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
 
                 HttpResponseMessage response;
 
@@ -878,9 +878,33 @@ namespace System.Net.Http
                         response = await connection!.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
                     }
                 }
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnConnectionFailure)
+                {
+                    Debug.Assert(retryCount >= 0 && retryCount <= MaxConnectionFailureRetries);
+
+                    if (retryCount == MaxConnectionFailureRetries)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"MaxConnectionFailureRetries limit of {MaxConnectionFailureRetries} hit. Retryable request will not be retried. Exception: {e}");
+                        }
+
+                        throw;
+                    }
+
+                    retryCount++;
+
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Retry attempt {retryCount} after connection failure. Connection exception: {e}");
+                    }
+
+                    // Eat exception and try again.
+                    continue;
+                }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
-                    // Throw since fallback is not allowed by the version policy.
+                    // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
                         throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
@@ -888,7 +912,7 @@ namespace System.Net.Http
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Retrying request after exception on existing connection: {e}");
+                        Trace($"Retrying request because server requested version fallback: {e}");
                     }
 
                     // Eat exception and try again on a lower protocol version.
@@ -896,17 +920,7 @@ namespace System.Net.Http
                     request.Version = HttpVersion.Version11;
                     continue;
                 }
-                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry == RequestRetryType.RetryOnSameOrNextProxy)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Retrying request after exception on existing connection: {e}");
-                    }
-
-                    // Eat exception and try again.
-                    continue;
-                }
-                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnNextConnection)
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnStreamLimitReached)
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
