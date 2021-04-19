@@ -64,6 +64,8 @@ internal static partial class Interop
 
         public static int ber_printf_tag(SafeBerHandle berElement, string format, int tag)
         {
+            // Ber Linux tags are passed with the values that they affect, like `ber_printf_int(.., tag)`.
+            // So this function does nothing on Linux.
             return ber_default_successful_return_code;
         }
 

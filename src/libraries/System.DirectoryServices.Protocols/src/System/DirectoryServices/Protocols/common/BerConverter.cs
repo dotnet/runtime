@@ -30,7 +30,7 @@ namespace System.DirectoryServices.Protocols
             int valueCount = 0;
             int error = 0;
 
-            // We can't use vararg on Unix and can't do bet_printf(tag), so we use ber_put_int(val, tag)
+            // We can't use vararg on Unix and can't do ber_printf(tag), so we use ber_put_int(val, tag)
             // and this local keeps tag value for the next element.
             int tag = 0;
             bool tagIsSet = false;
