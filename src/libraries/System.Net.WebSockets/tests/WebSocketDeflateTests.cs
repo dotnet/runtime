@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -493,19 +494,23 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(WebSocketState.Aborted, client.State);
         }
 
-        [Fact]
-        public async Task PayloadShouldHaveSimilarSizeWhenSplitIntoSegments()
+        [Theory]
+        [MemberData(nameof(SupportedWindowBits))]
+        public async Task PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(int windowBits)
         {
-            WebSocketTestStream stream = new();
+            MemoryStream stream = new();
             WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 DangerousDeflateOptions = new WebSocketDeflateOptions()
+                {
+                    ClientMaxWindowBits = windowBits
+                }
             });
 
             // We're using a frame size that is close to the sliding window size for the deflate
-            const int frameSize = 32_000;
+            int frameSize = 2 << windowBits;
 
-            byte[] message = new byte[frameSize * 100];
+            byte[] message = new byte[frameSize * 10];
             Random random = new(0);
 
             for (int i = 0; i < message.Length; ++i)
@@ -515,15 +520,18 @@ namespace System.Net.WebSockets.Tests
 
             await client.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken);
 
-            int payloadLength = stream.Remote.Available;
-            stream.Remote.Clear();
+            long payloadLength = stream.Length;
+            stream.SetLength(0);
 
-            for (var i = 0; i < message.Length; i += frameSize)
+            for (int i = 0; i < message.Length; i += frameSize)
             {
                 await client.SendAsync(message.AsMemory(i, frameSize), WebSocketMessageType.Binary, i + frameSize == message.Length, CancellationToken);
             }
 
-            Assert.Equal(0.999, Math.Round(payloadLength * 1.0 / stream.Remote.Available, 3));
+            double difference = Math.Round(1 - payloadLength * 1.0 / stream.Length, 3);
+
+            // The difference should not be more than 10% in either direction
+            Assert.InRange(difference, -0.1, 0.1);
         }
 
         [Theory]

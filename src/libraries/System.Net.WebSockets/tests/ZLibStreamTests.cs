@@ -13,7 +13,7 @@ namespace System.Net.WebSockets.Tests
         [Fact]
         public async Task PoolShouldReuseTheSameInstance()
         {
-            var pool = new Pool(timeoutMilliseconds: 100);
+            var pool = new Pool(timeoutMilliseconds: 25);
 
             object inflater = pool.GetInflater();
             for ( var i = 0; i < 10_000; ++i)
@@ -29,7 +29,7 @@ namespace System.Net.WebSockets.Tests
             pool.ReturnInflater(inflater);
 
             Assert.Equal(1, pool.ActiveCount);
-            await Task.Delay(250);
+            await Task.Delay(200);
 
             // After timeout elapses we should not have any active instances
             Assert.Equal(0, pool.ActiveCount);
@@ -39,7 +39,7 @@ namespace System.Net.WebSockets.Tests
         [PlatformSpecific(~TestPlatforms.Browser)] // There is no concurrency in browser
         public async Task PoolingConcurrently()
         {
-            var pool = new Pool(timeoutMilliseconds: 100);
+            var pool = new Pool(timeoutMilliseconds: 25);
             var parallelOptions = new ParallelOptions
             {
                 MaxDegreeOfParallelism = 16
@@ -60,7 +60,7 @@ namespace System.Net.WebSockets.Tests
 
             Assert.True(pool.ActiveCount >= 2);
             Assert.True(pool.ActiveCount <= parallelOptions.MaxDegreeOfParallelism * 2);
-            await Task.Delay(250);
+            await Task.Delay(200);
             Assert.Equal(0, pool.ActiveCount);
         }
 
