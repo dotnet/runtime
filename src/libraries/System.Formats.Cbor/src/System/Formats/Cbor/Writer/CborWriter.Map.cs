@@ -26,7 +26,7 @@ namespace System.Formats.Cbor
         /// In canonical conformance modes, the writer will reject indefinite-length writes unless
         /// the <see cref="ConvertIndefiniteLengthEncodings" /> flag is enabled.
         /// Map contents are written as if arrays twice the length of the map's declared size.
-        /// For instance, a map of size 1 containing a key of type <see cref="System.Int32" /> with a value of type string must be written
+        /// For instance, a map of size 1 containing a key of type <see cref="int" /> with a value of type string must be written
         /// by successive calls to <see cref="WriteInt32(int)" /> and <see cref="WriteTextString(System.ReadOnlySpan{char})" />.
         /// It is up to the caller to keep track of whether the next call is a key or a value.
         /// Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
