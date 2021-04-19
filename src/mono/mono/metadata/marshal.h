@@ -619,14 +619,6 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err);
 
 ICALL_EXPORT
-guint32
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastSystemError (void);
-
-ICALL_EXPORT
-void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastSystemError (guint32 err);
-
-ICALL_EXPORT
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2 *ptr, int len);
 

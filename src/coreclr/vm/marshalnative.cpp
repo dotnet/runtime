@@ -415,7 +415,6 @@ FCIMPL0(int, MarshalNative::GetLastPInvokeError)
 }
 FCIMPLEND
 
-
 /************************************************************************
  * Marshal.SetLastPInvokeError
  */
@@ -426,21 +425,6 @@ FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
     GetThread()->m_dwLastError = (DWORD)error;
 }
 FCIMPLEND
-
-FCIMPL0(int, MarshalNative::GetLastSystemError)
-{
-    FCALL_CONTRACT;
-    return ::GetLastError();
-}
-FCIMPLEND
-
-FCIMPL1(void, MarshalNative::SetLastSystemError, int error)
-{
-    FCALL_CONTRACT;
-    ::SetLastError(error);
-}
-FCIMPLEND
-
 
 /************************************************************************
  * Support for the GCHandle class.

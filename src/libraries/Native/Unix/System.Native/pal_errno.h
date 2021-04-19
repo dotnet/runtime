@@ -42,3 +42,13 @@ PALEXPORT int32_t SystemNative_ConvertErrorPalToPlatform(int32_t error);
  * as possible and null-terminated.
  */
 PALEXPORT const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize);
+
+/**
+ * Gets the current errno value
+ */
+PALEXPORT int32_t SystemNative_GetErrNo(void);
+
+/**
+ * Sets the errno value
+ */
+PALEXPORT void SystemNative_SetErrNo(int32_t errorCode);

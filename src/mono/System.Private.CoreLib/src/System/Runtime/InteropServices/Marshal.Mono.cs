@@ -29,26 +29,6 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void SetLastPInvokeError(int error);
 
-        /// <summary>
-        /// Get the last system error on the current thread
-        /// </summary>
-        /// <returns>The last system error</returns>
-        /// <remarks>
-        /// The error is that for the current operating system (e.g. errno on Unix, GetLastError on Windows)
-        /// </remarks>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetLastSystemError();
-
-        /// <summary>
-        /// Set the last system error on the current thread
-        /// </summary>
-        /// <param name="error">Error to set</param>
-        /// <remarks>
-        /// The error is that for the current operating system (e.g. errno on Unix, SetLastError on Windows)
-        /// </remarks>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetLastSystemError(int error);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 

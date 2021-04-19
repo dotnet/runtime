@@ -4798,26 +4798,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 er
 }
 
 guint32
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastSystemError (void)
-{
-#ifdef WIN32
-	return GetLastError ();
-#else
-	return errno;
-#endif
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastSystemError (guint32 err)
-{
-#ifdef WIN32
-	SetLastError (err);
-#else
-	errno = err;
-#endif
-}
-
-guint32
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (rtype)) {
