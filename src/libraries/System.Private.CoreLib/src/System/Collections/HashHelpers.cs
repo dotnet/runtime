@@ -14,7 +14,7 @@ namespace System.Collections
         public const int MaxPrimeArrayLength = 0x7FEFFFFD;
 
         public const int HashPrime = 101;
-        
+
 #if SYSTEM_PRIVATE_CORELIB
         // This field is shared between Dictionary and HashSet for initially empty collections and shouldn't be written to
         public static readonly int[] SizeOneIntArray = new int[1];
