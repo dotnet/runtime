@@ -1077,6 +1077,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_free local_EVP_CIPHER_CTX_free
 #define EVP_CIPHER_CTX_new local_EVP_CIPHER_CTX_new
 #define EVP_CIPHER_CTX_reset local_EVP_CIPHER_CTX_reset
+#define EVP_PKEY_get0_RSA local_EVP_PKEY_get0_RSA
 #define EVP_PKEY_up_ref local_EVP_PKEY_up_ref
 #define HMAC_CTX_free local_HMAC_CTX_free
 #define HMAC_CTX_new local_HMAC_CTX_new
