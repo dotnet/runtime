@@ -34,7 +34,10 @@ namespace Microsoft.NET.HostModel.ComHost
                 new XAttribute("version", assemblyVersion)));
 
             var fileElement = CreateComHostFileElement(clsidMapPath, comHostName, ns);
-            AddTypeLibFileElementsToManifest(typeLibraries, ns, fileElement);
+            if (typeLibraries is not null)
+            {
+                AddTypeLibElementsToFileElement(typeLibraries, ns, fileElement);
+            }
             manifest.Add(fileElement);
 
             XDocument manifestDocument = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), manifest);
@@ -72,7 +75,7 @@ namespace Microsoft.NET.HostModel.ComHost
             return fileElement;
         }
 
-        private static void AddTypeLibFileElementsToManifest(IReadOnlyDictionary<int, string> typeLibraries, XNamespace ns, XElement fileElement)
+        private static void AddTypeLibElementsToFileElement(IReadOnlyDictionary<int, string> typeLibraries, XNamespace ns, XElement fileElement)
         {
             foreach (var typeLibrary in typeLibraries)
             {
@@ -80,7 +83,7 @@ namespace Microsoft.NET.HostModel.ComHost
                 {
                     byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
                     TypeLibReader reader = new TypeLibReader(tlbFileBytes);
-                    if (!reader.TryReadTypeLibNameAndVersion(out Guid name, out Version version))
+                    if (!reader.TryReadTypeLibGuidAndVersion(out Guid name, out Version version))
                     {
                         throw new InvalidTypeLibraryException(typeLibrary.Value);
                     }

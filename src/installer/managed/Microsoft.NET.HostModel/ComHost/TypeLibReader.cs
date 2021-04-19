@@ -8,7 +8,7 @@ using System.Buffers.Binary;
 namespace Microsoft.NET.HostModel.ComHost
 {
     /// <summary>
-    /// Reads data from a COM Type Library file based on the official implementation.
+    /// Reads data from a COM Type Library file based on the official implementation in the Win32 function LoadTypeLib.
     /// </summary>
     internal class TypeLibReader
     {
@@ -47,7 +47,7 @@ namespace Microsoft.NET.HostModel.ComHost
             }
         }
 
-        public bool TryReadTypeLibNameAndVersion(out Guid typelibId, out Version version)
+        public bool TryReadTypeLibGuidAndVersion(out Guid typelibId, out Version version)
         {
             typelibId = default;
             version = default;

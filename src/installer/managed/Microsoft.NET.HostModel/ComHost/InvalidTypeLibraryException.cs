@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.NET.HostModel.ComHost
 {
     /// <summary>
-    /// The provided resource id for the type library is unsupported.
+    /// The provided type library file is an invalid format.
     /// </summary>
     public class InvalidTypeLibraryException : Exception
     {
