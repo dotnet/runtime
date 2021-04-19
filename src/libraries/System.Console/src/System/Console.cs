@@ -596,6 +596,7 @@ namespace System
             return ConsolePal.OpenStandardError();
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static void SetIn(TextReader newIn)
         {
@@ -643,6 +644,7 @@ namespace System
         // the inlined console writelines from them.
         //
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static int Read()
         {
@@ -650,6 +652,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static string? ReadLine()
         {

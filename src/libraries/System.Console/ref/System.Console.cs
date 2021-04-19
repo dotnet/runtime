@@ -82,6 +82,7 @@ namespace System
         public static System.IO.Stream OpenStandardInput(int bufferSize) { throw null; }
         public static System.IO.Stream OpenStandardOutput() { throw null; }
         public static System.IO.Stream OpenStandardOutput(int bufferSize) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int Read() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
@@ -90,6 +91,7 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.ConsoleKeyInfo ReadKey(bool intercept) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static string? ReadLine() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
@@ -101,6 +103,7 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void SetCursorPosition(int left, int top) { }
         public static void SetError(System.IO.TextWriter newError) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
