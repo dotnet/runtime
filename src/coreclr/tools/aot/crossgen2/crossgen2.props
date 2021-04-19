@@ -58,7 +58,7 @@
 
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
 
     <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitectureForLocalJitBuild)' == ''">$(TargetArchitecture)</TargetArchitectureForLocalJitBuild>
     <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForLocalJitBuild>
