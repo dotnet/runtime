@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -226,7 +227,82 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CheckFieldsPropertiesMethods("ReferencedAssembly.Location", ref generator, expectedFieldNamesNotMyType, expectedPropertyNamesNotMyType, expectedMethodNamesNotMyType );
         }
 
-        // TODO: add test where there is a local invalid System.Text.Json.JsonSerializableAttribute (https://github.com/dotnet/runtimelab/issues/29)
+        [Theory]
+        [InlineData("System.Text.Json", true)]
+        [InlineData("System.Text.Json.Not", true)]
+        [InlineData("System.Text.Json", false)]
+        [InlineData("System.Text.Json.Not", false)]
+        public static void LocalJsonSerializableAttributeExpectedShape(string assemblyName, bool includeSTJ)
+        {
+            string source = @"using System;
+using System.Text.Json.Serialization;
+
+[assembly: JsonSerializable(typeof(int))]
+[assembly: JsonSerializable(typeof(string), TypeInfoPropertyName = ""Str"")]
+
+namespace System.Text.Json.Serialization
+{
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class JsonSerializableAttribute : JsonAttribute
+    {
+        public string TypeInfoPropertyName { get; set; }
+
+        public JsonSerializableAttribute(Type type) { }
+    }
+}";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences: null, assemblyName, includeSTJ);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            Dictionary<string, Type> types = generator.SerializableTypes;
+            if (includeSTJ)
+            {
+                Assert.Equal("System.Int32", types["System.Int32"].FullName);
+                Assert.Equal("System.String", types["System.String"].FullName);
+            }
+            else
+            {
+                Assert.Null(types);
+            }
+
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+        }
+
+        [Theory]
+        [InlineData("System.Text.Json", true)]
+        [InlineData("System.Text.Json.Not", true)]
+        [InlineData("System.Text.Json", false)]
+        [InlineData("System.Text.Json.Not", false)]
+        public static void LocalJsonSerializableAttributeUnexpectedShape(string assemblyName, bool includeSTJ)
+        {
+            string source = @"using System;
+using System.Text.Json.Serialization;
+
+[assembly: JsonSerializable(typeof(int))]
+
+namespace System.Text.Json.Serialization
+{
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class JsonSerializableAttribute : JsonAttribute
+    {
+        public JsonSerializableAttribute(string typeInfoPropertyName, Type type) { }
+    }
+}";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences: null, assemblyName, includeSTJ);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+            Assert.Null(generator.SerializableTypes);
+
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+        }
 
         [Fact]
         public void NameClashCompilation()

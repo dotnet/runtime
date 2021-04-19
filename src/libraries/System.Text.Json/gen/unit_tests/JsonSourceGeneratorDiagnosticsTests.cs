@@ -64,9 +64,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 "Generated serialization metadata for type JsonSourceGenerator.IndexViewModel",
             };
 
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, expectedInfoDiagnostics);
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, new string[] { });
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, new string[] { });
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, expectedInfoDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, new string[] { });
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, new string[] { });
         }
 
         [Fact]
@@ -121,9 +121,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Expected warning logs.
             string[] expectedWarningDiagnostics = new string[] { "Did not generate serialization metadata for type System.Collections.Generic.ISet<ReferencedAssembly.ActiveOrUpcomingEvent>" };
 
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, expectedInfoDiagnostics);
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, new string[] { });
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, expectedInfoDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, new string[] { });
         }
 
         [Fact]
@@ -136,29 +136,61 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             string[] expectedWarningDiagnostics = new string[] { "There are multiple types named Location. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision." };
 
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
 
             // With resolution.
             compilation = CompilationHelper.CreateRepeatedLocationsWithResolutionCompilation();
             generator = new JsonSourceGenerator();
             CompilationHelper.RunGenerators(compilation, out generatorDiags, generator);
 
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
-            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
         }
 
-        private void CheckDiagnosticMessages(ImmutableArray<Diagnostic> diagnostics, DiagnosticSeverity level, string[] expectedMessages)
+        [Fact]
+        public void ProgramsThatDontUseGeneratorCompile()
         {
-            string[] actualMessages = diagnostics.Where(diagnostic => diagnostic.Severity == level).Select(diagnostic => diagnostic.GetMessage()).ToArray();
+            // No STJ usage.
+            string source = @"using System;
 
-            // Can't depending on reflection order when generating type metadata.
-            Array.Sort(actualMessages);
-            Array.Sort(expectedMessages);
+public class Program
+{
+	public static void Main()
+	{
+		Console.WriteLine(""Hello World"");
 
-            Assert.Equal(expectedMessages, actualMessages);
+    }
+}
+";
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+
+            // With STJ usage.
+            source = @"using System.Text.Json;
+
+public class Program
+{
+	public static void Main()
+	{
+		JsonSerializer.Serialize(""Hello World"");
+    }
+}
+";
+            compilation = CompilationHelper.CreateCompilation(source);
+            generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
         }
     }
 }

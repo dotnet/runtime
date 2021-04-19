@@ -163,7 +163,7 @@ namespace System.Text.Json
             }
 
             // Priority 1: If there is a JsonSerializerContext, fetch the converter from there.
-            converter = _context?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo!.ConverterBase;
+            converter = _context?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.

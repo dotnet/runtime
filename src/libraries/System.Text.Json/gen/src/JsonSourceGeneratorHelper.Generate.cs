@@ -16,6 +16,8 @@ namespace System.Text.Json.SourceGeneration
         private readonly string _generationNamespace;
 
         // TODO: consider public option for this.
+        // Converter-honoring logic generation can be simplified
+        // if we don't plan to have a feature around this.
         private bool _honorRuntimeProvidedCustomConverters = true;
 
         private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
@@ -29,8 +31,6 @@ namespace System.Text.Json.SourceGeneration
         private const string JsonMetadataServicesClassName = "JsonMetadataServices";
 
         private const string CreateValueInfoMethodName = "CreateValueInfo";
-
-        // TODO: Enable localization for these descriptors.
 
         private static DiagnosticDescriptor TypeNotSupported { get; } = new DiagnosticDescriptor(
             "SYSLIB2021",
@@ -375,18 +375,6 @@ namespace System.Text.Json.SourceGeneration
                         ? $"ignoreCondition: JsonIgnoreCondition.{ignoreCondition.Value}"
                         : "ignoreCondition: default";
 
-                    string encodedNameArg;
-                    if (!NeedsEscaping(clrPropertyName))
-                    {
-                        byte[] name = Encoding.UTF8.GetBytes(memberMetadata.JsonPropertyName ?? clrPropertyName);
-                        string nameBytes = string.Join(", ", name.Select(b => $"{b}"));
-                        encodedNameArg = "encodedName: new byte[] {" + nameBytes + "}";
-                    }
-                    else
-                    {
-                        encodedNameArg = "encodedName: default";
-                    }
-
                     string converterNamedArg = memberMetadata.ConverterInstantiationLogic == null
                         ? "converter: null"
                         : $"converter: {memberMetadata.ConverterInstantiationLogic}";
@@ -405,8 +393,7 @@ namespace System.Text.Json.SourceGeneration
                 {ignoreConditionNamedArg},
                 numberHandling: {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
                 propertyName: ""{clrPropertyName}"",
-                {jsonPropertyNameNamedArg},
-                {encodedNameArg});
+                {jsonPropertyNameNamedArg});
             ");
                 }
             }
@@ -416,19 +403,6 @@ namespace System.Text.Json.SourceGeneration
         }}");
 
             return sb.ToString();
-
-            static bool NeedsEscaping(string str)
-            {
-                foreach (char c in str)
-                {
-                    if (c > 127 || c == '\'' || c == '\\')
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
 
         private string GenerateForType(TypeMetadata typeMetadata, string metadataInitSource, string? additionalSource = null)

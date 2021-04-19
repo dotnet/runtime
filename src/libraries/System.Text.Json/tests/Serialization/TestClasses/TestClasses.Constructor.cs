@@ -1778,8 +1778,8 @@ namespace System.Text.Json.Serialization.Tests
                   ""Id"": 10,
                   ""ImageUrl"": ""https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png"",
                   ""Name"": ""Just a name"",
-                  ""CampaignName"": ""The very new campaing"",
-                  ""CampaignManagedOrganizerName"": ""Name FamiltyName"",
+                  ""CampaignName"": ""The very new campaign"",
+                  ""CampaignManagedOrganizerName"": ""Name FamilyName"",
                   ""Description"": ""The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities."",
                   ""StartDate"": ""2019-01-30T12:01:02+00:00"",
                   ""EndDate"": ""2019-01-30T12:01:02+00:00""
@@ -1788,7 +1788,7 @@ namespace System.Text.Json.Serialization.Tests
               ""FeaturedCampaign"": {
                 ""Id"": 234235,
                 ""Title"": ""Promoting Open Source"",
-                ""Description"": ""Very nice campaing"",
+                ""Description"": ""Very nice campaign"",
                 ""ImageUrl"": ""https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png"",
                 ""OrganizationName"": ""The Company XYZ"",
                 ""Headline"": ""The Headline""
@@ -1807,15 +1807,15 @@ namespace System.Text.Json.Serialization.Tests
 
             ActiveOrUpcomingEvent @event = ActiveOrUpcomingEvents.First();
             Assert.Equal(10, @event.Id);
-            Assert.Equal("Name FamiltyName", @event.CampaignManagedOrganizerName);
-            Assert.Equal("The very new campaing", @event.CampaignName);
+            Assert.Equal("Name FamilyName", @event.CampaignManagedOrganizerName);
+            Assert.Equal("The very new campaign", @event.CampaignName);
             Assert.Equal("The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.", @event.Description);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), @event.EndDate);
             Assert.Equal("Just a name", @event.Name);
             Assert.Equal("https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png", @event.ImageUrl);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), @event.StartDate);
 
-            Assert.Equal("Very nice campaing", FeaturedCampaign.Description);
+            Assert.Equal("Very nice campaign", FeaturedCampaign.Description);
             Assert.Equal("The Headline", FeaturedCampaign.Headline);
             Assert.Equal(234235, FeaturedCampaign.Id);
             Assert.Equal("The Company XYZ", FeaturedCampaign.OrganizationName);
@@ -2324,7 +2324,7 @@ namespace System.Text.Json.Serialization.Tests
         public static MyEventsListerItem Instance
             = new MyEventsListerItem
             {
-                Campaign = "A very nice campaing",
+                Campaign = "A very nice campaign",
                 EndDate = DateTime.UtcNow.AddDays(7),
                 EventId = 321,
                 EventName = "wonderful name",

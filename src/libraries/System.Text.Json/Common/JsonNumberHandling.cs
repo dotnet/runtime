@@ -8,7 +8,6 @@ namespace System.Text.Json.Serialization
     /// </summary>
     [Flags]
 #if BUILDING_SOURCE_GENERATOR
-    // cref references below are not present when compiling this assembly.
     internal
 #else
     public
