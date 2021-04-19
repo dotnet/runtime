@@ -12,6 +12,7 @@ using Xunit;
 [assembly: JsonSerializable(typeof(JsonSerializerSourceGeneratorTests.MyNestedClass.MyNestedNestedClass))]
 [assembly: JsonSerializable(typeof(object[]))]
 [assembly: JsonSerializable(typeof(string))]
+[assembly: JsonSerializable(typeof(JsonSerializerSourceGeneratorTests.ClassWithEnumAndNullable))]
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
@@ -443,6 +444,27 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             // Deserialization not supported for now.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, JsonContext.Default.HighLowTempsImmutable));
+        }
+
+        [Fact]
+        public static void EnumAndNullable()
+        {
+            RunTest(new ClassWithEnumAndNullable() { Day = DayOfWeek.Monday, NullableDay = DayOfWeek.Tuesday });
+            RunTest(new ClassWithEnumAndNullable());
+
+            static void RunTest(ClassWithEnumAndNullable expected)
+            {
+                string json = JsonSerializer.Serialize(expected, JsonContext.Default.ClassWithEnumAndNullable);
+                ClassWithEnumAndNullable actual = JsonSerializer.Deserialize(json, JsonContext.Default.ClassWithEnumAndNullable);
+                Assert.Equal(expected.Day, actual.Day);
+                Assert.Equal(expected.NullableDay, actual.NullableDay);
+            }
+        }
+
+        public class ClassWithEnumAndNullable
+        {
+            public DayOfWeek Day { get; set; }
+            public DayOfWeek? NullableDay { get; set; }
         }
     }
 }
