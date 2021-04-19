@@ -3,6 +3,10 @@
 
 #include <platformdefines.h>
 
+#ifndef WINDOWS
+#include <errno.h>
+#endif
+
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE SetError(int err, bool shouldSetError)
 {
     if (!shouldSetError)
