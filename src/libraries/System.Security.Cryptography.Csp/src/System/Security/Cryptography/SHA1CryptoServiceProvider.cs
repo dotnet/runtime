@@ -14,6 +14,7 @@ namespace System.Security.Cryptography
     {
         private const int HashSizeBits = 160;
         private readonly IncrementalHash _incrementalHash;
+        private bool _running;
 
         public SHA1CryptoServiceProvider()
         {
@@ -23,26 +24,43 @@ namespace System.Security.Cryptography
 
         public override void Initialize()
         {
-            Span<byte> destination = stackalloc byte[HashSizeBits / 8];
-
-            if (!_incrementalHash.TryGetHashAndReset(destination, out _))
+            if (_running)
             {
-                Debug.Fail("Reset expected a properly sized buffer.");
-                throw new CryptographicException();
+                Span<byte> destination = stackalloc byte[HashSizeBits / 8];
+
+                if (!_incrementalHash.TryGetHashAndReset(destination, out _))
+                {
+                    Debug.Fail("Reset expected a properly sized buffer.");
+                    throw new CryptographicException();
+                }
+
+                _running = false;
             }
         }
 
-        protected override void HashCore(byte[] array, int ibStart, int cbSize) =>
+        protected override void HashCore(byte[] array, int ibStart, int cbSize)
+        {
+            _running = true;
             _incrementalHash.AppendData(array, ibStart, cbSize);
+        }
 
-        protected override void HashCore(ReadOnlySpan<byte> source) =>
+        protected override void HashCore(ReadOnlySpan<byte> source)
+        {
+            _running = true;
             _incrementalHash.AppendData(source);
+        }
 
-        protected override byte[] HashFinal() =>
-            _incrementalHash.GetHashAndReset();
+        protected override byte[] HashFinal()
+        {
+            _running = false;
+            return _incrementalHash.GetHashAndReset();
+        }
 
-        protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
-            _incrementalHash.TryGetHashAndReset(destination, out bytesWritten);
+        protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten)
+        {
+            _running = false;
+            return _incrementalHash.TryGetHashAndReset(destination, out bytesWritten);
+        }
 
         // The Hash and HashSize properties are not overridden since the correct values are returned from base.
 
