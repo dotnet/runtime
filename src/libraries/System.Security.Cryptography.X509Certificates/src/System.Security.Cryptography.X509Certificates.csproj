@@ -12,6 +12,8 @@
   <PropertyGroup>
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
+    <UseAppleCryptoMobile Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">false</UseAppleCryptoMobile>
+    <UseAppleCryptoMobile Condition="'$(UseAppleCryptoMobile)' == ''">true</UseAppleCryptoMobile>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
@@ -480,8 +482,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Shared.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Shared.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs"
@@ -591,6 +593,14 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(UseAppleCryptoMobile)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(UseAppleCryptoMobile)' != 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Mobile.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Mobile.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
