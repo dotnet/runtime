@@ -279,6 +279,7 @@ jobs:
       useContinueOnErrorDuringBuild: true
       enablePublisTestResults: true
       testResultsFormat: xunit
+      timeoutInMinutes: 90
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
