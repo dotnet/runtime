@@ -61,7 +61,7 @@ namespace HttpStress
                 OperationProbabilities = probabilitiesString
                     .Split(';')
                     .Select(assignmentStr => assignmentStr.Split('='))
-                    .Select(s => (s[0], double.Parse(s[1], CultureInfo.InvariantCulture)))
+                    .Select(s => (s[0].Replace('_', ' '), double.Parse(s[1], CultureInfo.InvariantCulture)))
                     .ToArray();
                 return true;
             }
