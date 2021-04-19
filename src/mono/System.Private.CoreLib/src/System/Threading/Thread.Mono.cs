@@ -138,9 +138,8 @@ namespace System.Threading
                 return 7;
             }
         }
-
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo => EnsureWaitInfo();
 #endif
 
         public ThreadPriority Priority
@@ -206,15 +205,15 @@ namespace System.Threading
         {
             InitInternal(this);
 #if TARGET_UNIX || TARGET_BROWSER
-            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+            EnsureWaitInfo();
 #endif
         }
 
 #if TARGET_UNIX || TARGET_BROWSER
-        private void EnsureWaitInfo()
+        [MemberNotNull(nameof(_waitInfo))]
+        private WaitSubsystem.ThreadWaitInfo EnsureWaitInfo()
         {
-            if (_waitInfo == null)
-                _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+            return LazyInitializer.EnsureInitialized(ref _waitInfo, () => new WaitSubsystem.ThreadWaitInfo(this));
         }
 #endif
 
