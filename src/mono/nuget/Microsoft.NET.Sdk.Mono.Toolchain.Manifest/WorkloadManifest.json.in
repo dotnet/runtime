@@ -4,54 +4,52 @@
     "microsoft-net-runtime-mono-browser-build": {
       "description": "Browser Mono Runtime Build Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm",
         "Microsoft.NET.Runtime.Emscripten.Node",
         "Microsoft.NET.Runtime.Emscripten.Python",
         "Microsoft.NET.Runtime.Emscripten.Sdk"
-      ],
+      ]
     },
     "microsoft-net-runtime-android": {
       "description": "Android Mono Runtime and AOT Workload",
       "packs": [
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
-        "Microsoft.NETCore.App.Runtime.android-arm",
-        "Microsoft.NETCore.App.Runtime.android-arm64",
-        "Microsoft.NETCore.App.Runtime.android-x64",
-        "Microsoft.NETCore.App.Runtime.android-x86",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86",
+        "Microsoft.NETCore.App.Runtime.Mono.android-arm",
+        "Microsoft.NETCore.App.Runtime.Mono.android-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.android-x64",
+        "Microsoft.NETCore.App.Runtime.Mono.android-x86",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
-      ],
+      ]
     },
     "microsoft-net-runtime-ios": {
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
-        "Microsoft.NETCore.App.Runtime.ios-arm",
-        "Microsoft.NETCore.App.Runtime.ios-arm64",
-        "Microsoft.NETCore.App.Runtime.iossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime.iossimulator-x64",
-        "Microsoft.NETCore.App.Runtime.iossimulator-x86",
+        "Microsoft.NETCore.App.Runtime.Mono.ios-arm",
+        "Microsoft.NETCore.App.Runtime.Mono.ios-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.iossimulator",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator"
       ],
+      "platforms": [ "osx-arm64", "osx-x64" ]
     },
     "microsoft-net-runtime-tvos": {
-      ""description": "tvOS Mono Runtime and AOT Workload"
+      "description": "tvOS Mono Runtime and AOT Workload"
       "packs": [
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
-        "Microsoft.NETCore.App.Runtime.tvos-arm64",
-        "Microsoft.NETCore.App.Runtime.tvos-x64",
-        "Microsoft.NETCore.App.Runtime.tvossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime.tvossimulator-x64",
+        "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.tvos-x64",
+        "Microsoft.NETCore.App.Runtime.Mono.tvossimulator",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator"
       ],
+      "platforms": [ "osx-arm64", "osx-x64" ]
     }
   },
   "packs": {
@@ -67,19 +65,19 @@
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.android-arm": {
+    "Microsoft.NETCore.App.Runtime.Mono.android-arm": {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.android-arm64": {
+    "Microsoft.NETCore.App.Runtime.Mono.android-arm64": {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.android-x64": {
+    "Microsoft.NETCore.App.Runtime.Mono.android-x64": {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.android-x86": {
+    "Microsoft.NETCore.App.Runtime.Mono.android-x86": {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
@@ -87,87 +85,57 @@
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
-        "win-x86": "microsoft.netcore.app.runtime.aot.win-x86.cross.android-x86",
         "win-x64": "microsoft.netcore.app.runtime.aot.win-x64.cross.android-x86",
         "linux-x64": "microsoft.netcore.app.runtime.aot.linux-x64.cross.android-x86",
-        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-x86"
+        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-x86",
+        "osx-arm64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-x86"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
-        "win-x86": "microsoft.netcore.app.runtime.aot.win-x86.cross.android-x64",
         "win-x64": "microsoft.netcore.app.runtime.aot.win-x64.cross.android-x64",
         "linux-x64": "microsoft.netcore.app.runtime.aot.linux-x64.cross.android-x64",
-        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-x64"
+        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-x64",
+        "osx-arm64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-x64"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
-        "win-x86": "microsoft.netcore.app.runtime.aot.win-x86.cross.android-arm",
         "win-x64": "microsoft.netcore.app.runtime.aot.win-x64.cross.android-arm",
         "linux-x64": "microsoft.netcore.app.runtime.aot.linux-x64.cross.android-arm",
-        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-arm"
+        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-arm",
+        "osx-arm64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-arm"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
-        "win-x86": "microsoft.netcore.app.runtime.aot.win-x86.cross.android-arm64",
         "win-x64": "microsoft.netcore.app.runtime.aot.win-x64.cross.android-arm64",
         "linux-x64": "microsoft.netcore.app.runtime.aot.linux-x64.cross.android-arm64",
-        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-arm64"
+        "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-arm64",
+        "osx-arm64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.android-arm64"
       }
     },
-    "Microsoft.NETCore.App.Runtime.ios-arm" : {
+    "Microsoft.NETCore.App.Runtime.Mono.ios-arm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.ios-arm64" : {
+    "Microsoft.NETCore.App.Runtime.Mono.ios-arm64" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NETCore.App.Runtime.ios-arm" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.iossimulator-arm64" : {
+    "Microsoft.NETCore.App.Runtime.Mono.iossimulator" : {
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.iossimulator-arm64"
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
       }
-    },
-    "Microsoft.NETCore.App.Runtime.iossimulator-x64" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.iossimulator-x86" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.tvos-arm64" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.tvos-x64" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.tvossimulator-arm64" : {
-      "kind": "framework",
-      "version": "${PackageVersion}",
-      "alias-to": {
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.tvossimulator-arm64"
-      }
-    },
-    "Microsoft.NETCore.App.Runtime.tvossimulator-x64" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64": {
       "kind": "Sdk",
@@ -175,6 +143,18 @@
       "alias-to": {
         "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.tvos-arm64",
         "osx-arm64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.tvos-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.tvossimulator" : {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-x64"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator": {
@@ -220,7 +200,7 @@
         "osx-x64": "microsoft.netcore.app.runtime.aot.osx-x64.cross.browser-wasm"
       }
     },
-    "Microsoft.NETCore.App.Runtime.browser-wasm" : {
+    "Microsoft.NETCore.App.Runtime.Mono.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },
@@ -228,29 +208,29 @@
       "kind": "Sdk",
       "version": "${EmscriptenVersion}",
       "alias-to": {
-        "win-x86": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.win-x86",
         "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.win-x64",
         "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64"
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64",
+        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64"
       }
     },
     "Microsoft.NET.Runtime.Emscripten.Python" : {
       "kind": "Sdk",
       "version": "${EmscriptenVersion}",
       "alias-to": {
-        "win-x86": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.win-x86",
         "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.win-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64"
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64",
+        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64"
       }
     },
     "Microsoft.NET.Runtime.Emscripten.Sdk" : {
       "kind": "Sdk",
       "version": "${EmscriptenVersion}",
       "alias-to": {
-        "win-x86": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.win-x86",
         "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.win-x64",
         "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64"
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64",
+        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64"
       }
     }
   }
