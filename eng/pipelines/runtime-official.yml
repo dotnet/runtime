@@ -98,14 +98,17 @@ stages:
       - tvOS_arm64
       - iOS_x64
       - iOS_x86
-      - iOS_arm
-      - iOS_arm64
       - OSX_x64
       - Linux_x64
       - Linux_arm
       - Linux_arm64
       - Linux_musl_x64
       - Browser_wasm
+
+      # https://github.com/dotnet/runtime/pull/50940
+      # - iOS_arm
+      # - iOS_arm64
+
       # - Linux_musl_arm
       # - Linux_musl_arm64
       # - Windows_NT_x64 enable once coreclr.dll has a version header: https://github.com/dotnet/runtime/issues/37503
