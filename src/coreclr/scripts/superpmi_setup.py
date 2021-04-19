@@ -478,7 +478,18 @@ def main(main_args):
 
             print("Inside make_readable")
             run_command(["ls", "-l", folder_name])
-            os.chmod(folder_name,
+            for file_path, dirs, files in walk(folder_name, topdown=True):
+                for d in dirs:
+                    os.chmod(os.path.join(file_path, d),
+                    # read+write+execute for owner
+                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                    # read for group
+                    (stat.S_IRGRP) |
+                    # read for other
+                    (stat.S_IROTH))
+
+                for f in files:
+                    os.chmod(os.path.join(file_path, f),
                     # read+write+execute for owner
                     (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
                     # read for group
