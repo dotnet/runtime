@@ -1175,40 +1175,5 @@ namespace System.Text.RegularExpressions.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
         }
-
-        [Theory]
-        [InlineData(".*foo", "hifoo")]
-        [InlineData("ab.*foo", "abhifoo")]
-        [InlineData("ab.*foo.*bar", "abhifooabcbar")]
-        [InlineData("ab.*foo.*", "abhifooabcbar")]
-        [InlineData(".*abc|ghi", "ghi")]
-        public void TestRegressions(string pattern, string input)
-        {
-            var regex = new Regex(pattern);
-            var match = regex.Match(input);
-            Assert.True(match.Success);
-            Assert.Equal(input, match.Value);
-        }
-
-        [Fact]
-        public void HowManyAlternationsAreChecked()
-        {
-            // We can statically determine if it's impossible for an alternation branch N + 1 to match after we've gotten to a certain place in matching branch N, e.g. given the alternation "abc|def" we know that once we match the 'a', there's no point in even considering the second branch. We should be able to utilize that knowledge to avoid unnecessarily checking branches when a previous one fails to match.
-
-            //Debugger.Launch();
-            var regex = new Regex(".*(ss)");
-            var match = regex.Match("Essential services are provided by regular exprs.");
-            Assert.True(match.Success);
-            Assert.Equal("Ess", match.Value);
-            Assert.Equal(0, match.Index);
-            Assert.Equal(1, match.Groups[1].Index);
-
-            //var regex = new Regex(".*abc|ghi");
-            //var match = regex.Match("ghi");
-            //Assert.Equal(1, match.Groups.Count);
-            //Assert.Equal("ghi", match.Groups[0].Value);
-
-            Console.WriteLine("BH");
-        }
     }
 }
