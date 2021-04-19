@@ -228,6 +228,8 @@ namespace System.Diagnostics.Tracing
     /// </code>
     /// </remarks>
 #if !ES_BUILD_STANDALONE
+    /// The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
+    /// members and the trimmer ensures that these members are preserved.
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
 #endif
     public partial class EventSource : IDisposable
