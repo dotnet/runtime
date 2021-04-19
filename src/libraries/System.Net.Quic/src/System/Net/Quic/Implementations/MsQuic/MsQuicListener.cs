@@ -67,6 +67,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _stateHandle.Free();
                 throw;
             }
+
+            Start();
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -116,7 +118,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _disposed = true;
         }
 
-        internal override unsafe void Start()
+        private unsafe void Start()
         {
             ThrowIfDisposed();
 
