@@ -66,7 +66,7 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
@@ -198,22 +198,25 @@ namespace System.Threading
         }
 
 #if TARGET_UNIX || TARGET_BROWSER
-        [MemberNotNull(nameof(_waitInfo))]
         [DynamicDependency(nameof(OnThreadExiting))]
 #endif
         private void Initialize()
         {
             InitInternal(this);
-#if TARGET_UNIX || TARGET_BROWSER
-            EnsureWaitInfo();
-#endif
         }
 
 #if TARGET_UNIX || TARGET_BROWSER
-        [MemberNotNull(nameof(_waitInfo))]
         private WaitSubsystem.ThreadWaitInfo EnsureWaitInfo()
         {
-            return LazyInitializer.EnsureInitialized(ref _waitInfo, () => new WaitSubsystem.ThreadWaitInfo(this));
+            return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+        }
+
+        private WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+        {
+            var value = new WaitSubsystem.ThreadWaitInfo(this);
+            Interlocked.CompareExchange(ref _waitInfo, value, null!);
+            Debug.Assert(_waitInfo != null);
+            return _waitInfo;
         }
 #endif
 
