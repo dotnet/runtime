@@ -414,6 +414,9 @@ namespace Mono.Linker.Dataflow
 			case ValueNodeKind.Array:
 				ArrayValue av = (ArrayValue) node;
 				foundCycle = av.Size.DetectCycle (seenNodes, allNodesSeen);
+				foreach (ValueBasicBlockPair pair in av.IndexValues.Values) {
+					foundCycle |= pair.Value.DetectCycle (seenNodes, allNodesSeen);
+				}
 				break;
 
 			default:
@@ -1211,12 +1214,12 @@ namespace Mono.Linker.Dataflow
 
 	class ArrayValue : ValueNode
 	{
-		protected override int NumChildren => 1;
+		protected override int NumChildren => 1 + IndexValues.Count;
 
 		/// <summary>
 		/// Constructs an array value of the given size
 		/// </summary>
-		public ArrayValue (ValueNode size)
+		public ArrayValue (ValueNode size, TypeReference elementType)
 		{
 			Kind = ValueNodeKind.Array;
 
@@ -1224,9 +1227,19 @@ namespace Mono.Linker.Dataflow
 			StaticType = null;
 
 			Size = size ?? UnknownValue.Instance;
+			ElementType = elementType.ResolveToMainTypeDefinition ();
+			IndexValues = new Dictionary<int, ValueBasicBlockPair> ();
+		}
+
+		private ArrayValue (ValueNode size, TypeReference elementType, Dictionary<int, ValueBasicBlockPair> indexValues)
+			: this (size, elementType)
+		{
+			IndexValues = indexValues;
 		}
 
 		public ValueNode Size { get; }
+		public TypeReference ElementType { get; }
+		public Dictionary<int, ValueBasicBlockPair> IndexValues { get; }
 
 		public override int GetHashCode ()
 		{
@@ -1239,23 +1252,36 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			ArrayValue otherArr = (ArrayValue) other;
-			return Size.Equals (otherArr.Size);
+			bool equals = Size.Equals (otherArr.Size);
+			equals &= IndexValues.Count == otherArr.IndexValues.Count;
+			if (!equals)
+				return false;
+
+			// If both sets T and O are the same size and "T intersect O" is empty, then T == O.
+			HashSet<KeyValuePair<int, ValueBasicBlockPair>> thisValueSet = new (IndexValues);
+			HashSet<KeyValuePair<int, ValueBasicBlockPair>> otherValueSet = new (otherArr.IndexValues);
+			thisValueSet.ExceptWith (otherValueSet);
+			return thisValueSet.Count == 0;
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, Size);
+			// TODO: Use StringBuilder and remove Linq usage.
+			return $"(Array Size:{ValueNodeDump.ValueNodeToString (this, Size)}, Values:({string.Join (',', IndexValues.Select (v => $"({v.Key},{ValueNodeDump.ValueNodeToString (v.Value.Value)})"))})";
 		}
 
 		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
 		{
 			foreach (var sizeConst in Size.UniqueValuesInternal)
-				yield return new ArrayValue (sizeConst);
+				yield return new ArrayValue (sizeConst, ElementType, IndexValues);
 		}
 
 		protected override ValueNode ChildAt (int index)
 		{
 			if (index == 0) return Size;
+			if (index - 1 <= IndexValues.Count)
+				return IndexValues.Values.ElementAt (index - 1).Value;
+
 			throw new InvalidOperationException ();
 		}
 	}
@@ -1336,5 +1362,11 @@ namespace Mono.Linker.Dataflow
 				hashCode.Add (item);
 			return hashCode.ToHashCode ();
 		}
+	}
+
+	public struct ValueBasicBlockPair
+	{
+		public ValueNode Value;
+		public int BasicBlockIndex;
 	}
 }

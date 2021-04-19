@@ -161,7 +161,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			var array = new object[1];
 			array[0] = this.GetType ();
+			MakeArrayValuesUnknown (array);
 			RequirePublicParameterlessConstructor ((Type) array[0]);
+
+			static void MakeArrayValuesUnknown (object[] array)
+			{
+			}
 		}
 
 		[RecognizedReflectionAccessPattern]

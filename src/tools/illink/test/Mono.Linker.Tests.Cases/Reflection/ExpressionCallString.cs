@@ -238,10 +238,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{ }
 
 			[Kept]
+			[ExpectedWarning ("IL2060", "Expression::Call")]
 			static void TestWithNoTypeParameters ()
 			{
-				// Linker doesn't check if it's valid to call a generic method without generic parameters, it looks like a non-generic call
-				// so it will preserve the target method.
+				// Linker warns since this is a call to a generic method with a mismatching number of generic parameters
+				// and provided type values for the generic instantiation.
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodCalledAsNonGeneric), Type.EmptyTypes);
 			}
 
@@ -253,18 +254,24 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2060", "Expression::Call")]
 			static void TestMethodWithRequirements ()
 			{
-				// This must warn - as this is dangerous
-				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirements), new Type[] { GetUnknownType () });
+				// This may not warn - as it's safe
+				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirements), new Type[] { GetUnknownTypeWithRequrements () });
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2060", "Expression::Call")]
+			static void TestMethodWithRequirementsUnknownTypeArray (Type[] types)
+			{
+				// The passed in types array cannot be analyzed, so a warning is produced.
+				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirements), types);
 			}
 
 			[Kept]
 			[ExpectedWarning ("IL2060", "Expression::Call")]
 			static void TestMethodWithRequirementsButNoTypeArguments ()
 			{
-				// Linker could figure out that this is not a problem, but it's not worth the complexity, since this will always throw at runtime
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirementsNoArguments), Type.EmptyTypes);
 			}
 
@@ -333,6 +340,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				TestWithNoTypeParameters ();
 				TestMethodWithoutRequirements ();
 				TestMethodWithRequirements ();
+				TestMethodWithRequirementsUnknownTypeArray (null);
 				TestMethodWithRequirementsButNoTypeArguments ();
 				UnknownMethodWithRequirements.TestWithTypeParameters ();
 				UnknownMethodWithRequirements.TestWithoutTypeParameters ();
@@ -342,6 +350,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			static Type GetUnknownType () { return null; }
+
+			[Kept]
+			[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+			static Type GetUnknownTypeWithRequrements () { return null; }
 		}
 	}
 }
