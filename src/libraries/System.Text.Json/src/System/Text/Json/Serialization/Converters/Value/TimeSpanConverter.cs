@@ -270,7 +270,7 @@ namespace System.Text.Json.Serialization.Converters
                 position += Write(result[position..], 'H', ref ticks, TicksPerHour);
                 position += Write(result[position..], 'M', ref ticks, TicksPerMinute);
                 position += Write(result[position..], 'S', ref ticks, TicksPerSecond);
-                
+
                 if (ticks != 0)
                 {
                     for (ulong temp = ticks;
