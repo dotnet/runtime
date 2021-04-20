@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 var result = span[0];
-                span = span[1..];
+                span = span.Slice(1);
 
                 return result;
             }
@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     value = value * 10 + digit;
-                    span = span[1..];
+                    span = span.Slice(1);
                 }
                 while (!span.IsEmpty);
                 return value;
@@ -260,16 +260,16 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             result[position++] = (byte)'P';
-            position += Write(result[position..], 'Y', ref ticks, TicksPerYear);
-            position += Write(result[position..], 'M', ref ticks, TicksPerMonth);
-            position += Write(result[position..], 'D', ref ticks, TicksPerDay);
+            position += Write(result.Slice(position), 'Y', ref ticks, TicksPerYear);
+            position += Write(result.Slice(position), 'M', ref ticks, TicksPerMonth);
+            position += Write(result.Slice(position), 'D', ref ticks, TicksPerDay);
 
             if (ticks != 0)
             {
                 result[position++] = (byte)'T';
-                position += Write(result[position..], 'H', ref ticks, TicksPerHour);
-                position += Write(result[position..], 'M', ref ticks, TicksPerMinute);
-                position += Write(result[position..], 'S', ref ticks, TicksPerSecond);
+                position += Write(result.Slice(position), 'H', ref ticks, TicksPerHour);
+                position += Write(result.Slice(position), 'M', ref ticks, TicksPerMinute);
+                position += Write(result.Slice(position), 'S', ref ticks, TicksPerSecond);
 
                 if (ticks != 0)
                 {
@@ -278,12 +278,12 @@ namespace System.Text.Json.Serialization.Converters
                         ticks = temp);
 
                     result[position - 1] = (byte)'.';
-                    position += WriteDigits(result[position..], ticks);
+                    position += WriteDigits(result.Slice(position), ticks);
                     result[position++] = (byte)'S';
                 }
             }
 
-            writer.WriteStringValue(result[0..position]);
+            writer.WriteStringValue(result.Slice(0, position));
         }
     }
 }
