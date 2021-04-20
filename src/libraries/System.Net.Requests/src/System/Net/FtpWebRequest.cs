@@ -480,7 +480,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(_uri);
 #pragma warning restore SYSLIB0014
 
@@ -492,7 +492,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
         internal FtpWebRequest(Uri uri)
 #pragma warning restore SYSLIB0014
         {

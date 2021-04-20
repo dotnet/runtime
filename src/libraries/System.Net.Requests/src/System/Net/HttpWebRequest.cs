@@ -183,7 +183,7 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
         internal HttpWebRequest(Uri uri)
         {
             _requestUri = uri;
@@ -758,7 +758,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
 #pragma warning restore SYSLIB0014
 

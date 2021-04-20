@@ -25,7 +25,7 @@ namespace System.Net
         private bool _syncHint;
         private int _aborted;
 
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
         internal FileWebRequest(Uri uri)
         {
             if (uri.Scheme != (object)Uri.UriSchemeFile)
