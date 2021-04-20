@@ -65,16 +65,16 @@ namespace Microsoft.NET.HostModel.Tests
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
 
             // second symlink -> apphost
-            string secondSymbolicLink = Path.Combine(testDir, secondSymlinkRelativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(secondSymbolicLink));
-            CreateSymbolicLink(secondSymbolicLink, appExe);
+            string symlink2Path = Path.Combine(testDir, secondSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(symlink2Path));
+            using var symlink2 = new SymLink(symlink2Path, appExe);
 
             // first symlink -> second symlink
-            string firstSymbolicLink = Path.Combine(testDir, firstSymlinkRelativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(firstSymbolicLink));
-            CreateSymbolicLink(firstSymbolicLink, secondSymbolicLink);
+            string symlink1Path = Path.Combine(testDir, firstSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(symlink1Path));
+            using var symlink1 = new SymLink(symlink1Path, symlink2Path);
 
-            Command.Create(firstSymbolicLink.SrcPath)
+            Command.Create(symlink1.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
