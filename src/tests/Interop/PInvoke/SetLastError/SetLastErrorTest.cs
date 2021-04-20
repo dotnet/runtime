@@ -12,13 +12,13 @@ class SetLastErrorTest
         private const string SetError = nameof(SetError);
 
         [DllImport(nameof(SetLastErrorNative), EntryPoint = SetError)]
-        public static extern int SetError_Default(int error, byte shouldSetError);
+        public static extern void SetError_Default(int error, byte shouldSetError);
 
         [DllImport(nameof(SetLastErrorNative), EntryPoint = SetError, SetLastError = false)]
-        public static extern int SetError_False(int error, byte shouldSetError);
+        public static extern void SetError_False(int error, byte shouldSetError);
 
         [DllImport(nameof(SetLastErrorNative), EntryPoint = SetError, SetLastError = true)]
-        public static extern int SetError_True(int error, byte shouldSetError);
+        public static extern void SetError_True(int error, byte shouldSetError);
     }
 
     public static void LastErrorHasExpectedValue()
@@ -53,9 +53,10 @@ class SetLastErrorTest
     {
         // Set the last P/Invoke error to non-zero
         int error = 100;
-        Marshal.SetLastPInvokeError(0);
+        Marshal.SetLastPInvokeError(error);
 
-        // Don't actually set the error in the native call. SetLastError=true should clear any existing error.
+        // Don't actually set the error in the native call.
+        // Calling a P/Invoke with SetLastError=true should clear any existing error.
         SetLastErrorNative.SetError_True(error, shouldSetError: 0);
         int actual = Marshal.GetLastPInvokeError();
         Assert.AreEqual(0, actual);
