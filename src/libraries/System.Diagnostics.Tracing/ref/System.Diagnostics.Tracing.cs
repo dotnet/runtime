@@ -145,6 +145,7 @@ namespace System.Diagnostics.Tracing
         Send = 9,
         Receive = 240,
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
     public partial class EventSource : System.IDisposable
     {
         protected EventSource() { }
