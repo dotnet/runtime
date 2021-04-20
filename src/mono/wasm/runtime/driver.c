@@ -95,13 +95,23 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	mono_unichar2 *native_val = mono_string_chars (str);
+	int is_interned = mono_string_is_interned (str) == str;
+	mono_unichar2 *native_chars = mono_string_chars (str);
 	int native_len = mono_string_length (str) * 2;
 	int native_res_len;
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var str = MONO.string_decoder.decode ($0, $0 + $1);
+		var str;
+		// If the expression is interned, use binding_support's intern table implementation to
+		//  avoid decoding it again unless necessary
+		// We could technically use conv_string for both cases here, but it's more expensive
+		//  than using decode directly in the case where the expression isn't interned
+		if ($4)
+			str = BINDING.conv_string($5, true);
+		else
+			str = MONO.string_decoder.decode ($0, $0 + $1);
+
 		try {
 			var res = eval (str);
 			if (res === null || res == undefined)
@@ -128,7 +138,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
 		setValue ($3, res.length, "i32");
 		return buff;
-	}, (int)native_val, native_len, is_exception, p_native_res_len);
+	}, (int)native_chars, native_len, is_exception, p_native_res_len, is_interned, (int)str);
 
 	if (native_res == NULL)
 		return NULL;
