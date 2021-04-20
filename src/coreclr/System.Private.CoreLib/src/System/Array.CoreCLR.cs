@@ -138,8 +138,8 @@ namespace System
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
             if (pMT == RuntimeHelpers.GetMethodTable(destinationArray) &&
                 !pMT->IsMultiDimensionalArray &&
-                (uint)length <= (nuint)sourceArray.LongLength &&
-                (uint)length <= (nuint)destinationArray.LongLength)
+                (uint)length <= sourceArray.NativeLength &&
+                (uint)length <= destinationArray.NativeLength)
             {
                 nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
                 ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
@@ -169,8 +169,8 @@ namespace System
                 if (pMT == RuntimeHelpers.GetMethodTable(destinationArray) &&
                     !pMT->IsMultiDimensionalArray &&
                     length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
-                    (uint)(sourceIndex + length) <= (nuint)sourceArray.LongLength &&
-                    (uint)(destinationIndex + length) <= (nuint)destinationArray.LongLength)
+                    (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
+                    (uint)(destinationIndex + length) <= destinationArray.NativeLength)
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
@@ -214,9 +214,9 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_ArrayLB);
             destinationIndex -= dstLB;
 
-            if ((uint)(sourceIndex + length) > (nuint)sourceArray.LongLength)
+            if ((uint)(sourceIndex + length) > sourceArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
-            if ((uint)(destinationIndex + length) > (nuint)destinationArray.LongLength)
+            if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
             if (sourceArray.GetType() == destinationArray.GetType() || IsSimpleCopy(sourceArray, destinationArray))
@@ -287,7 +287,7 @@ namespace System
 
             int offset = index - lowerBound;
 
-            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > (nuint)array.LongLength)
+            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > array.NativeLength)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
             nuint elementSize = pMT->ComponentSize;
@@ -419,7 +419,10 @@ namespace System
 
         public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
 
-        public long LongLength => Unsafe.As<RawArrayData>(this).Length;
+        // This could return a length greater than int.MaxValue
+        internal nuint NativeLength => Unsafe.As<RawArrayData>(this).Length;
+
+        public long LongLength => (long)NativeLength;
 
         public unsafe int Rank
         {

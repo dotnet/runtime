@@ -35,6 +35,12 @@ namespace System
             get => Length;
         }
 
+        // This could return a length greater than int.MaxValue
+        internal nuint NativeLength
+        {
+            get => (nuint)Unsafe.As<RawData>(this).Count;
+        }
+
         public long LongLength
         {
             get
@@ -62,7 +68,7 @@ namespace System
 
             int lowerBound = array.GetLowerBound(0);
             int elementSize = array.GetElementSize();
-            nuint numComponents = (nuint)(nint)Unsafe.As<RawData>(array).Count;
+            nuint numComponents = array.NativeLength;
 
             int offset = index - lowerBound;
 
