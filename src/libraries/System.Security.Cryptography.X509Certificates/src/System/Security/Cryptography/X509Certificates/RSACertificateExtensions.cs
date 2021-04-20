@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
@@ -28,6 +29,8 @@ namespace System.Security.Cryptography.X509Certificates
             return certificate.GetPrivateKey<RSA>();
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, RSA privateKey)
         {
             if (certificate == null)

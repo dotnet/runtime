@@ -109,7 +109,9 @@ namespace Internal.Cryptography.Pal
                 RSA rsa = RSA.Create();
                 try
                 {
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
+#pragma warning restore CA1416
                     return rsa;
                 }
                 catch (Exception)

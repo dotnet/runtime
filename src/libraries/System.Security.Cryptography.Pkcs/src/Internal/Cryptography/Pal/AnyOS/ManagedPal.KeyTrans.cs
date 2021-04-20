@@ -170,7 +170,9 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             using (RSA rsa = recipient.Certificate.GetRSAPublicKey()!)
             {
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 ktri.EncryptedKey = rsa.Encrypt(cek, padding);
+#pragma warning restore CA1416
             }
 
             v0Recipient = (ktri.Version == 0);
@@ -197,7 +199,9 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 cek = CryptoPool.Rent(privateKey.KeySize / 8);
 
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 if (!privateKey.TryDecrypt(encryptedKey, cek, encryptionPadding, out cekLength))
+#pragma warning restore CA1416
                 {
                     Debug.Fail("TryDecrypt wanted more space than the key size");
                     exception = new CryptographicException();

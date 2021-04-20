@@ -74,6 +74,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 return publicKey.VerifyHash(
                     valueHash,
 #if NETCOREAPP || NETSTANDARD2_1
@@ -83,6 +84,7 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                     digestAlgorithmName,
                     padding);
+#pragma warning restore CA1416
             }
 
             protected abstract RSASignaturePadding GetSignaturePadding(
@@ -154,18 +156,22 @@ namespace System.Security.Cryptography.Pkcs
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] signature = new byte[privateKey.KeySize / 8];
 
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 bool signed = privateKey.TrySignHash(
                     dataHash,
                     signature,
                     hashAlgorithmName,
                     RSASignaturePadding.Pkcs1,
                     out int bytesWritten);
+#pragma warning restore CA1416
 
                 if (signed && signature.Length == bytesWritten)
                 {
                     signatureValue = signature;
 
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
+#pragma warning restore CA1416
                     {
                         // key did not match certificate
                         signatureValue = null;
@@ -184,7 +190,9 @@ namespace System.Security.Cryptography.Pkcs
                     hashAlgorithmName,
                     RSASignaturePadding.Pkcs1);
 
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
+#pragma warning restore CA1416
                 {
                     // key did not match certificate
                     signatureValue = null;
