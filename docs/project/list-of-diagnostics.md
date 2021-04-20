@@ -4,7 +4,7 @@
 
 Per https://github.com/dotnet/designs/blob/master/accepted/2020/better-obsoletion/better-obsoletion.md, we now have a strategy for marking existing APIs as `[Obsolete]`. This takes advantage of the new diagnostic id and URL template mechanisms introduced to `ObsoleteAttribute` in .NET 5.
 
-The diagnostic id values reserved for obsoletions are `SYSLIB0001` through `SYSLIB0999`. When obsoleting an API, claim the next three-digit identifier in the sequence and add it to the list below. The URL template for all obsoletions is `https://aka.ms/dotnet-warnings/{0}`. The `{0}` placeholder is replaced by the compiler with the `SYSLIB0###` identifier.
+The diagnostic id values reserved for obsoletions are `SYSLIB0001` through `SYSLIB0999`. When obsoleting an API, claim the next three-digit identifier in the `SYSLIB0###` sequence and add it to the list below. The URL template for all obsoletions is `https://aka.ms/dotnet-warnings/{0}`. The `{0}` placeholder is replaced by the compiler with the `SYSLIB0###` identifier.
 
 The acceptance criteria for adding an obsoletion includes:
 
@@ -12,7 +12,7 @@ The acceptance criteria for adding an obsoletion includes:
     * Ensure the description is meaningful within the context of this table, and without requiring the context of the calling code
 * Add new constants to `src\libraries\Common\src\System\Obsoletions.cs`, following the existing conventions
     * A `...Message` const using the same description added to the table below
-    * A `...DiagId` const for the `SYSLIB####` id
+    * A `...DiagId` const for the `SYSLIB0###` id
 * Annotate `src` files by referring to the constants defined from `Obsoletions.cs`
     * Specify the `UrlFormat = Obsoletions.SharedUrlFormat`
     * Example: `[Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]`
@@ -60,7 +60,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 
 ## Analyzer Warnings
 
-The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSLIB1001` through `SYSLIB1999`. When creating a new analyzer that ships as part of the Libraries (and not part of the SDK), claim the next three-digit identifier in the sequence and add it to the list below.
+The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSLIB1001` through `SYSLIB1999`. When creating a new analyzer that ships as part of the Libraries (and not part of the SDK), claim the next three-digit identifier in the `SYSLIB1###` sequence and add it to the list below.
 
 ### Analyzer Diagnostics (`SYSLIB1001` - `SYSLIB1999`)
 
