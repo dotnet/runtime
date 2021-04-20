@@ -9183,6 +9183,15 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 }
 
 //==========================================================================================
+// Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
+MethodDesc *
+MethodTable::ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD)
+{
+    // TODO
+    COMPlusThrow(kTypeLoadException, E_NOTIMPL);
+}
+
+//==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface method pInterfaceMD.
 //
 // Note our ability to resolve constraint methods is affected by the degree of code sharing we are
@@ -9200,6 +9209,11 @@ MethodTable::TryResolveConstraintMethodApprox(
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
+    if (pInterfaceMD->IsStatic())
+    {
+        return ResolveVirtualStaticMethod(pInterfaceMD);
+    }
 
     // We can't resolve constraint calls effectively for reference types, and there's
     // not a lot of perf. benefit in doing it anyway.

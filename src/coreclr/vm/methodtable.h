@@ -1560,6 +1560,9 @@ public:
 
     inline WORD GetNumNonVirtualSlots();
 
+    inline BOOL HasVirtualStaticMethods() const;
+    inline void SetHasVirtualStaticMethods();
+
     inline WORD GetNumVirtuals()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2278,6 +2281,9 @@ public:
     MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
 #endif // FEATURE_COMINTEROP
 
+
+    // Resolve virtual static interface method pInterfaceMD on this type.
+    MethodDesc *ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -3658,7 +3664,7 @@ private:
         enum_flag_RequiresDispatchTokenFat  = 0x0200,
 
         enum_flag_HasCctor                  = 0x0400,
-        // enum_flag_unused                 = 0x0800,
+        enum_flag_HasVirtualStaticMethods   = 0x0800,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
