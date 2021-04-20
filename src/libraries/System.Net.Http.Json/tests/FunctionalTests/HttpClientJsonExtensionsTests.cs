@@ -1,13 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using Xunit;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Text.Json;
-using System.Linq;
-using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Net.Http.Json.Functional.Tests
 {
@@ -15,7 +15,7 @@ namespace System.Net.Http.Json.Functional.Tests
     {
         [Theory]
         [MemberData(nameof(ReadFromJsonTestData))]
-        public async Task TestGetFromJsonAsync(string json)
+        public async Task TestGetFromJsonAsync(string json, bool containsQuotedNumbers)
         {
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
@@ -36,6 +36,21 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         per = await client.GetFromJsonAsync<Person>(uri.ToString());
                         per.Validate();
+
+                        if (!containsQuotedNumbers)
+                        {
+                            per = (Person)await client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default);
+                            per.Validate();
+
+                            per = (Person)await client.GetFromJsonAsync(uri.ToString(), typeof(Person), JsonContext.Default);
+                            per.Validate();
+
+                            per = await client.GetFromJsonAsync<Person>(uri, JsonContext.Default.Person);
+                            per.Validate();
+
+                            per = await client.GetFromJsonAsync<Person>(uri.ToString(), JsonContext.Default.Person);
+                            per.Validate();
+                        }
                     }
                 },
                 server => server.HandleRequestAsync(content: json, headers: headers));
@@ -44,8 +59,8 @@ namespace System.Net.Http.Json.Functional.Tests
         public static IEnumerable<object[]> ReadFromJsonTestData()
         {
             Person per = Person.Create();
-            yield return new object[] { per.Serialize() };
-            yield return new object[] { per.SerializeWithNumbersAsStrings() };
+            yield return new object[] { per.Serialize(), false };
+            yield return new object[] { per.SerializeWithNumbersAsStrings(), true };
         }
 
         [Fact]
@@ -58,6 +73,8 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync(uri, typeof(Person)));
                         await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync<Person>(uri));
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default));
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync<Person>(uri, JsonContext.Default.Person));
                     }
                 },
                 server => server.HandleRequestAsync(statusCode: HttpStatusCode.InternalServerError));
@@ -170,6 +187,8 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         Person per = Assert.IsType<Person>(await client.GetFromJsonAsync((string)null, typeof(Person)));
                         per = Assert.IsType<Person>(await client.GetFromJsonAsync((Uri)null, typeof(Person)));
+                        per = Assert.IsType<Person>(await client.GetFromJsonAsync((string)null, typeof(Person), JsonContext.Default));
+                        per = Assert.IsType<Person>(await client.GetFromJsonAsync((Uri)null, typeof(Person), JsonContext.Default));
 
                         per = await client.GetFromJsonAsync<Person>((string)null);
                         per = await client.GetFromJsonAsync<Person>((Uri)null);
