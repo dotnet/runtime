@@ -11,6 +11,8 @@
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>
     <_RexcepFilePath Condition=" '$(_RexcepFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\rexcep.h</_RexcepFilePath>
     <_ILLinkDescriptorsIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.Combined.xml</_ILLinkDescriptorsIntermediatePath>
+    <_DefineConstants>$(DefineConstants)</_DefineConstants>
+    <_DefineConstants Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(DefineConstants);_DEBUG</_DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,6 +39,7 @@
                                            CortypeFilePath="$(_CortypeFilePath)"
                                            RexcepFilePath="$(_RexcepFilePath)"
                                            ILLinkTrimXmlFilePath="$(_ILLinkDescriptorsIntermediatePath)"
+                                           DefineConstants="$(_DefineConstants)"
                                            RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </Target>
 
