@@ -185,7 +185,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                string output = JsonSerializer.Serialize<string>(null, null);
+                string output = JsonSerializer.Serialize<string>(null, options: null);
                 Assert.Equal("null", output);
             }
         }

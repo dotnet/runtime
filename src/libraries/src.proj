@@ -7,6 +7,8 @@
   <ItemGroup>
     <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
              Exclude="@(ProjectExclusions)" />
+    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"
+                          Exclude="@(ProjectExclusions)" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
     <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"

@@ -407,6 +407,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        // KeyValuePair converter is not a primitive JsonConverter<T>, so there's no way to properly flow the ReadStack state in the direct call to the serializer.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50205")]
         public static void Options_GetConverter_GivesCorrectKeyValuePairConverter()
         {
             GenericConverterTestHelper<KeyValuePair<string, string>>(
