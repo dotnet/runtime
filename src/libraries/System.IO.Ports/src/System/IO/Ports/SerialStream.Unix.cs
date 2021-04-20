@@ -568,11 +568,12 @@ namespace System.IO.Ports
                 {
                     DtrEnable = dtrEnable;
                 }
-                catch (IOException)
+                catch (IOException) when (dtrEnable == false)
                 {
                     // An IOException can be thrown when using a virtual port from eg. socat, which doesn't implement
                     // the required termios command for setting DtrEnable, but it still works without setting the value
-                    // so we ignore this error in the constructor but still throw when setting the property manually
+                    // so we ignore this error in the constructor only if being set to false (which is the default).
+                    // When the property is set manually the exception is still thrown.
                 }
 
                 BaudRate = baudRate;
@@ -589,11 +590,12 @@ namespace System.IO.Ports
                         _rtsEnable = RtsEnabledNative();
                         RtsEnable = rtsEnable;
                     }
-                    catch (IOException)
+                    catch (IOException) when (rtsEnable == false)
                     {
                         // An IOException can be thrown when using a virtual port from eg. socat, which doesn't implement
                         // the required termios command for setting RtsEnable, but it still works without setting the value
-                        // so we ignore this error in the constructor but still throw when setting the property manually
+                        // so we ignore this error in the constructor only if being set to false (which is the default).
+                        // When the property is set manually the exception is still thrown.
                     }
                 }
             }
