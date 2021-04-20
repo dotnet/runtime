@@ -20,11 +20,17 @@ namespace System.IO
 {
     public partial class FileSystemWatcher
     {
+        private GCHandle _cachedRunningInstance;
         /// <summary>Called when FileSystemWatcher is finalized.</summary>
         private void FinalizeDispose()
         {
             // Make sure we cleanup
             StopRaisingEvents();
+
+            if (_cachedRunningInstance.IsAllocated)
+            {
+                _cachedRunningInstance.Free();
+            }
         }
 
         private void StartRaisingEvents()
@@ -49,6 +55,11 @@ namespace System.IO
                 _enabled = true;
 
                 var instance = new RunningInstance(this, _directory, _includeSubdirectories, TranslateFlags(_notifyFilters));
+                if (_cachedRunningInstance.IsAllocated)
+                {
+                    throw new Exception("Should've called StopRaisingEvents before restarting");
+                }
+                _cachedRunningInstance = GCHandle.Alloc(instance, GCHandleType.Normal);
                 instance.Start(cancellation.Token);
             }
             catch
@@ -72,6 +83,11 @@ namespace System.IO
                 _cancellation = null;
                 token.Cancel();
                 token.Dispose();
+            }
+
+            if (_cachedRunningInstance.IsAllocated)
+            {
+                _cachedRunningInstance.Free();
             }
         }
 
