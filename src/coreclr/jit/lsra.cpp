@@ -2746,29 +2746,12 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 {
     regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition/*, RegSelectionOrder, REGSELECT_HEURISTIC_COUNT*/);
     if (foundRegBit == REG_NA)
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FREE, refPosition->bbNum));
-            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CONST_AVAILABLE, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_THIS_ASSIGNED, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_OWN_PREFERENCE, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_RELATED, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_RELATED_PREFERENCE, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CALLER_CALLEE, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_UNASSIGNED, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_FULL, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_BEST_FIT, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_IS_PREV_REG, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_ORDER, refPosition->bbNum));
     {
         return REG_NA;
     }
 
     regNumber  foundReg               = genRegNumFromMask(foundRegBit);
     RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_PREV_REG_OPT, refPosition->bbNum));
-        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_NUM, refPosition->bbNum));
     Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
     if ((assignedInterval != currentInterval) && isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
     {
@@ -11118,6 +11101,11 @@ regMaskTP LinearScan::RegisterSelection::select(Interval* currentInterval, RefPo
         if (mappingTable->Lookup(heuristicToApply, &fn))
         {
             (this->*fn)();
+#if TRACK_LSRA_STATS
+            int heuristic = (int)heuristicToApply;
+            LsraStat lsraStat  = (LsraStat)(4 + heuristicToApply);
+            INTRACK_STATS_IF(found, linearScan->updateLsraStat(lsraStat, refPosition->bbNum));
+#endif // TRACK_LSRA_STATS
         }
         else
         {
