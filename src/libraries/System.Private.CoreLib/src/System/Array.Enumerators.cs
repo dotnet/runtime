@@ -28,6 +28,7 @@ namespace System
             nint index = _index + 1;
             if ((nuint)index >= (nuint)_array.LongLength)
             {
+                _index = (nint)_array.LongLength;
                 return false;
             }
             _index = index;
@@ -87,6 +88,7 @@ namespace System
             int index = _index + 1;
             if ((uint)index >= (uint)_array.Length)
             {
+                _index = _array.Length;
                 return false;
             }
             _index = index;
