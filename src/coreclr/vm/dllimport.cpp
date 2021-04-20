@@ -2538,7 +2538,7 @@ namespace
 
         switch( value )
         {
-        case 0:         // Not set
+        case (CorNativeLinkType)0:  // Not set
         case nltAnsi:
             *nlt = nltAnsi;
             break;
