@@ -263,13 +263,13 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-    - Android_x86
-    - Android_arm64
-    - tvOS_x64
-    - iOS_x86
     - Linux_arm
 
     # https://github.com/dotnet/runtime/pull/50940
+    # - Android_x86
+    # - Android_arm64
+    # - tvOS_x64
+    # - iOS_x86
     # - iOS_arm64
     jobParameters:
       testGroup: innerloop
@@ -288,13 +288,13 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_x64
-    - Android_arm
-    - tvOS_arm64
-    - iOS_x64
     - Linux_musl_x64
 
     # https://github.com/dotnet/runtime/pull/50940
+    # - Android_x64
+    # - Android_arm
+    # - tvOS_arm64
+    # - iOS_x64
     # - iOS_arm
     jobParameters:
       testGroup: innerloop

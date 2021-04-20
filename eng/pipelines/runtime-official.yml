@@ -90,14 +90,6 @@ stages:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Android_x64
-      - Android_x86
-      - Android_arm
-      - Android_arm64
-      - tvOS_x64
-      - tvOS_arm64
-      - iOS_x64
-      - iOS_x86
       - OSX_x64
       - Linux_x64
       - Linux_arm
@@ -106,6 +98,14 @@ stages:
       - Browser_wasm
 
       # https://github.com/dotnet/runtime/pull/50940
+      # - Android_x64
+      # - Android_x86
+      # - Android_arm
+      # - Android_arm64
+      # - tvOS_x64
+      # - tvOS_arm64
+      # - iOS_x64
+      # - iOS_x86
       # - iOS_arm
       # - iOS_arm64
 
