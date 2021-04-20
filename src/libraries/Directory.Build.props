@@ -67,8 +67,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
-    <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
+    <RunApiCompatForSrc>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunApiCompatForSrc>
+    <RunMatchingRefApiCompat>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunMatchingRefApiCompat>
     <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
