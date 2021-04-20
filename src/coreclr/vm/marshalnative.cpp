@@ -69,6 +69,23 @@ VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
     END_QCALL;
 }
 
+// IsComSupported
+// Built-in COM support is only checked from the native side to ensure the runtime
+// is in a consistent state
+BOOL QCALLTYPE MarshalNative::IsComSupported()
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = TRUE;
+
+    BEGIN_QCALL;
+
+    ret = g_pConfig->IsBuiltInCOMSupported();
+
+    END_QCALL;
+
+    return ret;
+}
 
 FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld)
 {

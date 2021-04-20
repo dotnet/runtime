@@ -20,6 +20,7 @@ class MarshalNative
 {
 public:
     static VOID QCALLTYPE Prelink(MethodDesc * pMD);
+    static BOOL QCALLTYPE IsComSupported();
 
     //====================================================================
     // These methods convert between an HR and and a managed exception.
