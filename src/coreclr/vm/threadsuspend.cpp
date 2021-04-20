@@ -2767,11 +2767,11 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
             }
 #endif
 
-            LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
+            LOG((LF_SYNC, LL_INFO1000, "Resuming execution with ClrRestoreContext\n"));
 
             SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
-            RtlRestoreContext(pCtx, NULL);
+            ClrRestoreContext(pCtx);
         }
 #endif // TARGET_X86
     }
@@ -3869,7 +3869,7 @@ ThrowControlForThread(
                 _ASSERTE(!"Should not reach here");
             }
 #else // FEATURE_EH_FUNCLETS
-            RtlRestoreContext(pThread->m_OSContext, NULL);
+            ClrRestoreContext(pThread->m_OSContext);
 #endif // !FEATURE_EH_FUNCLETS
             _ASSERTE(!"Should not reach here");
         }

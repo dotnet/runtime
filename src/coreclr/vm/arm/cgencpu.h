@@ -1300,6 +1300,10 @@ inline size_t GetARMInstructionLength(PBYTE pInstr)
     return GetARMInstructionLength(*(WORD*)pInstr);
 }
 
+inline void ClrRestoreContext(PCONTEXT ContextRecord)
+{
+    RtlRestoreContext(ContextRecord, NULL);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Call counting

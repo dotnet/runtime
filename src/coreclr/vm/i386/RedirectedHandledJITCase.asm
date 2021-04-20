@@ -66,7 +66,7 @@ _RedirectedHandledJITCaseFor&reason&_Stub@0 PROC PUBLIC
 
         ;
         ; Call target, which will do whatever we needed to do in the context
-        ; of the target thread, and will RtlRestoreContext when it is done.
+        ; of the target thread, and will ClrRestoreContext when it is done.
         ;
         call            ?RedirectedHandledJITCaseFor&reason&@Thread@@CGXXZ
 

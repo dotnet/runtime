@@ -808,6 +808,11 @@ struct ThisPtrRetBufPrecode {
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
+inline void ClrRestoreContext(PCONTEXT ContextRecord)
+{
+    RtlRestoreContext(ContextRecord, NULL);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Call counting
 

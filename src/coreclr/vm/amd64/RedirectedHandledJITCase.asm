@@ -80,7 +80,7 @@ NESTED_ENTRY RedirectedHandledJITCaseFor&reason&_Stub, _TEXT, FixRedirectContext
 
         ;
         ; Call target, which will do whatever we needed to do in the context
-        ; of the target thread, and will RtlRestoreContext when it is done.
+        ; of the target thread, and will ClrRestoreContext when it is done.
         ;
         call            ?RedirectedHandledJITCaseFor&reason&@Thread@@CAXXZ
 

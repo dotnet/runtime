@@ -746,7 +746,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_AMD64)
     // Since we made a copy of the incoming CONTEXT in context, clear any new flags we
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
-    // on this copy to RtlRestoreContext, and this copy doesn't have the extra info
+    // on this copy to ClrRestoreContext, and this copy doesn't have the extra info
     // required by the XSAVE or other flags.
     //
     // FUTURE: No reason to ifdef this for amd64-only, except to make this late fix as
@@ -819,7 +819,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
 #else
-    RtlRestoreContext(pContext, NULL);
+    ClrRestoreContext(pContext);
 #endif
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.

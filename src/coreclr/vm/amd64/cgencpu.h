@@ -515,6 +515,14 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
+#ifdef TARGET_WINDOWS
+EXTERN_C void STDCALL ClrRestoreContext(PCONTEXT ContextRecord);
+#else // !TARGET_WINDOWS
+inline void ClrRestoreContext(PCONTEXT ContextRecord)
+{
+    RtlRestoreContext(ContextRecord, NULL);
+}
+#endif // TARGET_WINDOWS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Call counting
