@@ -78,7 +78,5 @@
     <WasmFilesToIncludeFromPublishDir Include="System.Private.CoreLib.dll" />
     <WasmFilesToIncludeFromPublishDir Include="System.Reflection.MetadataLoadContext.Tests.dll" />
     <WasmFilesToIncludeFromPublishDir Include="mscorlib.dll" />
-
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>
