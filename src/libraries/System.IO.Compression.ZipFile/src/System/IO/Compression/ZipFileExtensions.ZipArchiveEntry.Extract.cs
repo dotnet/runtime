@@ -75,7 +75,7 @@ namespace System.IO.Compression
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
-            using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+            using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, allocationSize: source.Length))
             {
                 using (Stream es = source.Open())
                     es.CopyTo(fs);
