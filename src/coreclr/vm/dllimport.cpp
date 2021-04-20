@@ -2536,9 +2536,12 @@ namespace
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(nlt != NULL);
 
+        // Handle case where the value is not in the defined enumeration.
+        if ((int)value == 0)
+            value = nltAnsi;
+
         switch( value )
         {
-        case (CorNativeLinkType)0:  // Not set
         case nltAnsi:
             *nlt = nltAnsi;
             break;
