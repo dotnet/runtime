@@ -162,4 +162,7 @@
   <data name="ZLibUnsupportedCompression" xml:space="preserve">
     <value>The message was compressed using an unsupported compression method.</value>
   </data>
+  <data name="net_WebSockets_Argument_MessageFlagsHasDifferentCompressionOptions" xml:space="preserve">
+    <value>The compression options for a continuation cannot be different than the options used to send the first fragment of the message.</value>
+  </data>
 </root>

@@ -300,18 +300,20 @@ namespace System.Net.WebSockets
             }
 
             bool endOfMessage = messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage);
-            bool disableCompression;
+            bool disableCompression = messageFlags.HasFlag(WebSocketMessageFlags.DisableCompression);
             MessageOpcode opcode;
 
             if (_lastSendWasFragment)
             {
-                disableCompression = _lastSendHadDisableCompression;
+                if (_lastSendHadDisableCompression != disableCompression)
+                {
+                    throw new ArgumentException(SR.net_WebSockets_Argument_MessageFlagsHasDifferentCompressionOptions, nameof(messageFlags));
+                }
                 opcode = MessageOpcode.Continuation;
             }
             else
             {
                 opcode = messageType == WebSocketMessageType.Binary ? MessageOpcode.Binary : MessageOpcode.Text;
-                disableCompression = messageFlags.HasFlag(WebSocketMessageFlags.DisableCompression);
             }
 
             ValueTask t = SendFrameAsync(opcode, endOfMessage, disableCompression, buffer, cancellationToken);
