@@ -89,6 +89,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FTruncate)
     DllImportEntry(SystemNative_Poll)
     DllImportEntry(SystemNative_PosixFAdvise)
+    DllImportEntry(SystemNative_FAllocate)
     DllImportEntry(SystemNative_Read)
     DllImportEntry(SystemNative_ReadLink)
     DllImportEntry(SystemNative_Rename)

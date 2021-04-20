@@ -62,7 +62,7 @@ namespace System.IO.Tests
 
             using FileStream createdFromHandle = new FileStream(stream.SafeFileHandle, FileAccess.Write);
 
-            Assert.Equal(buffer.Length, stream.Position); 
+            Assert.Equal(buffer.Length, stream.Position);
             Assert.Equal(stream.Position, createdFromHandle.Position);
         }
 
@@ -187,17 +187,22 @@ namespace System.IO.Tests
             byte[] allBytes = File.ReadAllBytes(filePath);
             Assert.Equal(writtenBytes.ToArray(), allBytes);
         }
-        
+
         [Fact]
         public void WhenFileStreamFailsToPreallocateDiskSpaceTheErrorMessageContainsAllTheDetails()
         {
             const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
 
             string filePath = GetTestFilePath();
-            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, BufferSize, Options, tooMuch));
+
+            Assert.False(File.Exists(filePath));
+
+            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, Options, tooMuch));
             Assert.Contains("disk was full", ex.Message);
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(AllocationSize.ToString(), ex.Message);
+
+            Assert.False(File.Exists(filePath));
         }
     }
 

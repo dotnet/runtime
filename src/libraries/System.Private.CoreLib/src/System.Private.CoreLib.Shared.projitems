@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <PropertyGroup>
     <HasSharedItems>true</HasSharedItems>
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
@@ -1820,6 +1820,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PosixFAdvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FAllocate.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.FAllocate.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
