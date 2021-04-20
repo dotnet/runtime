@@ -6,7 +6,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class TimeSpanConverter : JsonConverter<TimeSpan>
     {
-        private readonly static JsonEncodedText Zero = JsonEncodedText.Encode("PT0S");
+        private static readonly JsonEncodedText Zero = JsonEncodedText.Encode("PT0S");
         private const ulong TicksPerYear = TimeSpan.TicksPerDay * 365;
         private const ulong TicksPerMonth = TimeSpan.TicksPerDay * 30;
         private const ulong TicksPerDay = (ulong)TimeSpan.TicksPerDay;
