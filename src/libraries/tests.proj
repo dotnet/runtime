@@ -365,6 +365,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Buffers\tests\System.Buffers.Tests.csproj"
+                      Exclude="@ProjectExclusions" />
+    <!--
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'" />
@@ -379,6 +382,7 @@
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' != 'true'"
                       BuildInParallel="false" />
+    -->
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator')">
