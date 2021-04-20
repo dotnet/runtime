@@ -246,6 +246,9 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/50714 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj" />
 
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51570-->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
+
     <!-- Issue: https://github.com/dotnet/runtime/issues/50715 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
 
