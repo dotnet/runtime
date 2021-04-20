@@ -87,16 +87,6 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static IntPtr GetHINSTANCE(Module m)
-        {
-            if (m is null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
-
-            return (IntPtr)(-1);
-        }
-
         [SupportedOSPlatform("windows")]
         public static IntPtr GetIDispatchForObject(object o)
         {

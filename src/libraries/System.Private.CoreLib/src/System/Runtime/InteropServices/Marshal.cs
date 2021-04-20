@@ -605,6 +605,19 @@ namespace System.Runtime.InteropServices
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
+// CoreCLR has a different implementation for Windows only
+#if !CORECLR || !TARGET_WINDOWS
+        public static IntPtr GetHINSTANCE(Module m)
+        {
+            if (m is null)
+            {
+                throw new ArgumentNullException(nameof(m));
+            }
+
+            return (IntPtr)(-1);
+        }
+#endif
+
         /// <summary>
         /// Converts the HRESULT to a CLR exception.
         /// </summary>
