@@ -13,7 +13,6 @@ namespace VirtualStaticInterfaceMethodTestGen
         public enum InterfaceImplementationApproach
         {
             OnBaseType,
-            OnDerivedType,
             OnBothBaseAndDerived,
             OnBothBaseAndDerivedBaseIsAbstract
         }
@@ -377,7 +376,6 @@ namespace VirtualStaticInterfaceMethodTestGen
                 {
                     case InterfaceImplementationApproach.OnBaseType:
                     case InterfaceImplementationApproach.OnBothBaseAndDerived:
-                    case InterfaceImplementationApproach.OnDerivedType:
                         baseType.ClassFlags = "public auto ansi";
                         break;
 
@@ -395,32 +393,31 @@ namespace VirtualStaticInterfaceMethodTestGen
                     baseType.InterfacesImplemented = new string[] { ToILDasmTypeName(iface.Name, scenario.InterfaceTypeInstantiationOnBaseType) };
                 }
                 EmitClass(twOutputTest, baseType);
-                MethodDesc ifaceImplMethod = new MethodDesc();
-                ifaceImplMethod.HasBody = true;
-                ifaceImplMethod.MethodFlags = "public static";
-                ifaceImplMethod.ReturnType = scenario.BaseTypeReturnType;
-                ifaceImplMethod.Name = "Method";
-                EmitMethod(twOutputTest, ifaceImplMethod);
                 switch (scenario.InterfaceImplementationApproach)
                 {
                     case InterfaceImplementationApproach.OnBaseType:
                     case InterfaceImplementationApproach.OnBothBaseAndDerived:
+                        MethodDesc ifaceImplMethod = new MethodDesc();
+                        ifaceImplMethod.HasBody = true;
+                        ifaceImplMethod.MethodFlags = "public static";
+                        ifaceImplMethod.ReturnType = scenario.BaseTypeReturnType;
+                        ifaceImplMethod.Name = "Method";
+                        EmitMethod(twOutputTest, ifaceImplMethod);
                         twOutputTest.WriteLine($"    .override method {scenario.InterfaceReturnType} {ToILDasmTypeName(iface.Name, scenario.InterfaceTypeInstantiationOnBaseType)}::Method()");
+                        twOutputTest.WriteLine($"    .locals init ({scenario.BaseTypeReturnType} V_O)");
+                        twOutputTest.WriteLine($"    ldloca.s 0");
+                        twOutputTest.WriteLine($"    initobj {scenario.BaseTypeReturnType}");
+                        twOutputTest.WriteLine($"    ldloc.0");
+                        twOutputTest.WriteLine($"    ret");
+                        EmitEndMethod(twOutputTest, ifaceImplMethod);
                         break;
 
                     case InterfaceImplementationApproach.OnBothBaseAndDerivedBaseIsAbstract:
-                    case InterfaceImplementationApproach.OnDerivedType:
                         break;
 
                     default:
                         throw new Exception("Unknown interface approach");
                 }
-                twOutputTest.WriteLine($"    .locals init ({scenario.BaseTypeReturnType} V_O)");
-                twOutputTest.WriteLine($"    ldloca.s 0");
-                twOutputTest.WriteLine($"    initobj {scenario.BaseTypeReturnType}");
-                twOutputTest.WriteLine($"    ldloc.0");
-                twOutputTest.WriteLine($"    ret");
-                EmitEndMethod(twOutputTest, ifaceImplMethod);
                 EmitEndClass(twOutputTest, baseType);
 
                 // Emit derived class.
@@ -430,7 +427,6 @@ namespace VirtualStaticInterfaceMethodTestGen
                 {
                     case InterfaceImplementationApproach.OnBaseType:
                     case InterfaceImplementationApproach.OnBothBaseAndDerived:
-                    case InterfaceImplementationApproach.OnDerivedType:
                     case InterfaceImplementationApproach.OnBothBaseAndDerivedBaseIsAbstract:
                         derivedType.ClassFlags = "public auto ansi";
                         break;
@@ -442,22 +438,33 @@ namespace VirtualStaticInterfaceMethodTestGen
                 derivedType.GenericParams = scenario.DerivedTypeGenericParams;
                 if (scenario.InterfaceImplementationApproach.ToString().Contains("Derived"))
                 {
-                    derivedType.InterfacesImplemented = new string[] { ToILDasmTypeName(iface.Name, scenario.InterfaceTypeInstantiationOnBaseType) };
+                    derivedType.InterfacesImplemented = new string[] { ToILDasmTypeName(iface.Name, scenario.InterfaceTypeInstantiationOnDerivedType) };
                 }
 
                 EmitClass(twOutputTest, derivedType);
                 switch (scenario.InterfaceImplementationApproach)
                 {
                     case InterfaceImplementationApproach.OnBaseType:
-                        break;
                     case InterfaceImplementationApproach.OnBothBaseAndDerived:
-                    case InterfaceImplementationApproach.OnBothBaseAndDerivedBaseIsAbstract:
-                    case InterfaceImplementationApproach.OnDerivedType:
-                        twOutputTest.WriteLine($"    .override method {scenario.DerivedTypeReturnType} {ToILDasmTypeName(iface.Name, scenario.InterfaceTypeInstantiationOnDerivedType)}::Method() with method {scenario.BaseTypeReturnType} {derivedType.BaseType}::Method()");
                         break;
 
+                    case InterfaceImplementationApproach.OnBothBaseAndDerivedBaseIsAbstract:
+                        MethodDesc ifaceImplMethod = new MethodDesc();
+                        ifaceImplMethod.HasBody = true;
+                        ifaceImplMethod.MethodFlags = "public static";
+                        ifaceImplMethod.ReturnType = scenario.DerivedTypeReturnType;
+                        ifaceImplMethod.Name = "MethodImplOnDerived";
+                        EmitMethod(twOutputTest, ifaceImplMethod);
+                        twOutputTest.WriteLine($"    .override method {scenario.InterfaceReturnType} {ToILDasmTypeName(iface.Name, scenario.InterfaceTypeInstantiationOnDerivedType)}::Method()");
+                        twOutputTest.WriteLine($"    .locals init ({scenario.DerivedTypeReturnType} V_O)");
+                        twOutputTest.WriteLine($"    ldloca.s 0");
+                        twOutputTest.WriteLine($"    initobj {scenario.DerivedTypeReturnType}");
+                        twOutputTest.WriteLine($"    ldloc.0");
+                        twOutputTest.WriteLine($"    ret");
+                        EmitEndMethod(twOutputTest, ifaceImplMethod);
+                        break;
                     default:
-                        throw new Exception("Unkonwn interface approach");
+                        throw new Exception("Unknown interface approach");
                 }
                 EmitEndClass(twOutputTest, derivedType);
 
