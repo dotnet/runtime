@@ -365,7 +365,7 @@ namespace System.Net.Http
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            return new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3));
+            return new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, desiredVersion));
         }
 
         private ValueTask<HttpConnection?> GetOrReserveHttp11ConnectionAsync(bool async, CancellationToken cancellationToken)
@@ -753,46 +753,46 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP3 cannot be used.
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
         private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
-            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
-                if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+                // Loop in case we get a 421 and need to send the request to a different authority.
+                while (true)
                 {
-                    // Loop in case we get a 421 and need to send the request to a different authority.
-                    while (true)
+                    HttpAuthority? authority = _http3Authority;
+
+                    // If H3 is explicitly requested, assume prenegotiated H3.
+                    if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        HttpAuthority? authority = _http3Authority;
+                        authority = authority ?? _originAuthority;
+                    }
 
-                        // If H3 is explicitly requested, assume prenegotiated H3.
-                        if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    if (authority != null)
+                    {
+                        if (IsAltSvcBlocked(authority))
                         {
-                            authority = authority ?? _originAuthority;
+                            throw GetVersionException(request, 3);
                         }
 
-                        if (authority != null)
+                        Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
+                        HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+
+                        // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                        // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                        // In this case, we blocklist the authority and retry the request at the origin.
+                        if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
                         {
-                            if (IsAltSvcBlocked(authority))
-                            {
-                                throw GetVersionException(request, 3);
-                            }
-
-                            Http3Connection connection = await GetHttp3ConnectionAsync(request, authority, cancellationToken).ConfigureAwait(false);
-                            HttpResponseMessage response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
-
-                            // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                            // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                            // In this case, we blocklist the authority and retry the request at the origin.
-                            if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
-                            {
-                                response.Dispose();
-                                BlocklistAuthority(connection.Authority);
-                                continue;
-                            }
-
-                            return response;
+                            response.Dispose();
+                            BlocklistAuthority(connection.Authority);
+                            continue;
                         }
+
+                        return response;
                     }
                 }
             }
@@ -853,10 +853,16 @@ namespace System.Net.Http
 
         private async ValueTask<HttpResponseMessage> DetermineVersionAndSendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            HttpResponseMessage? response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            if (response is not null)
+            HttpResponseMessage? response;
+
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
             {
-                return response;
+                response = await TrySendUsingHttp3Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                if (response is not null)
+                {
+                    return response;
+                }
             }
 
             // We cannot use HTTP/3. Do not continue if downgrade is not allowed.
