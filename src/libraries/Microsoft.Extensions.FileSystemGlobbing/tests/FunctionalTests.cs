@@ -844,6 +844,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Fact] // https://github.com/dotnet/runtime/issues/36415
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50648")]
         public void VerifyInMemoryDirectoryInfo_IsNotEmpty()
         {
             IEnumerable<string> files = new[] { @"pagefile.sys" };

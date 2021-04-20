@@ -144,6 +144,34 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf<T>() => SizeOf(typeof(T));
 
+        public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            fixed (Guid* pIID = &iid)
+            fixed (IntPtr* p = &ppv)
+            {
+                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+            }
+        }
+
+        public static unsafe int AddRef(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+        }
+
+        public static unsafe int Release(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+        }
+
         /// <summary>
         /// IMPORTANT NOTICE: This method does not do any verification on the array.
         /// It must be used with EXTREME CAUTION since passing in invalid index or
@@ -932,7 +960,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -979,7 +1007,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -1205,7 +1233,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr bstr = AllocBSTR(s.Length);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
+            s.CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
 
             return bstr;
         }

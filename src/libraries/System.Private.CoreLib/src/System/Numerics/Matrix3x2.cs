@@ -652,12 +652,7 @@ namespace System.Numerics
         /// <summary>Returns a string that represents this matrix.</summary>
         /// <returns>The string representation of this matrix.</returns>
         /// <remarks>The numeric values in the returned string are formatted by using the conventions of the current culture. For example, for the en-US culture, the returned string might appear as <c>{ {M11:1.1 M12:1.2} {M21:2.1 M22:2.2} {M31:3.1 M32:3.2} }</c>.</remarks>
-        public override readonly string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "{{ {{M11:{0} M12:{1}}} {{M21:{2} M22:{3}}} {{M31:{4} M32:{5}}} }}",
-                                 M11, M12,
-                                 M21, M22,
-                                 M31, M32);
-        }
+        public override readonly string ToString() =>
+            $"{{ {{M11:{M11} M12:{M12}}} {{M21:{M21} M22:{M22}}} {{M31:{M31} M32:{M32}}} }}";
     }
 }

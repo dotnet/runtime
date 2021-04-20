@@ -17,6 +17,7 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
     apibridge.c
+    apibridge_30.c
     openssl.c
     pal_asn1.c
     pal_bignum.c
@@ -119,4 +120,4 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
 endif()
 
-install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

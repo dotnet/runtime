@@ -69,16 +69,44 @@ void Compiler::fgComputeProfileScale()
     // No, not yet -- try and compute the scale.
     JITDUMP("Computing inlinee profile scale:\n");
 
-    // Call site has profile weight?
+    // Callee has profile data?
     //
-    // Todo: handle case of unprofiled caller invoking profiled callee.
+    if (!fgHaveProfileData())
+    {
+        // No; we will carry on nonetheless.
+        //
+        JITDUMP("   ... no callee profile data, will use non-pgo weight to scale\n");
+    }
+
+    // Ostensibly this should be fgCalledCount for the callee, but that's not available
+    // as it requires some analysis.
+    //
+    // For most callees it will be the same as the entry block count.
+    //
+    // Note when/if we early do normalization this may need to change.
+    //
+    BasicBlock::weight_t const calleeWeight = fgFirstBB->bbWeight;
+
+    // Callee entry weight is nonzero?
+    //
+    // If callee entry profile count is zero, perhaps we should discard
+    // the profile data.
+    //
+    if (calleeWeight == BB_ZERO_WEIGHT)
+    {
+        JITDUMP("   ... callee entry count is zero\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Call site has profile weight?
     //
     const BasicBlock* callSiteBlock = impInlineInfo->iciBlock;
     if (!callSiteBlock->hasProfileWeight())
     {
-        JITDUMP("   ... call site not profiled\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
+        // No? We will carry on nonetheless.
+        //
+        JITDUMP("   ... call site not profiled, will use non-pgo weight to scale\n");
     }
 
     const BasicBlock::weight_t callSiteWeight = callSiteBlock->bbWeight;
@@ -88,39 +116,14 @@ void Compiler::fgComputeProfileScale()
     // Todo: perhaps retain some semblance of callee profile data,
     // possibly scaled down severely.
     //
-    if (callSiteWeight == 0)
+    // You might wonder why we bother to inline at cold sites.
+    // Recall ALWAYS and FORCE inlines bypass all profitability checks.
+    // And, there can be hot-path benefits to a cold-path inline.
+    //
+    if (callSiteWeight == BB_ZERO_WEIGHT)
     {
-        JITDUMP("   ... zero call site count\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
+        JITDUMP("   ... zero call site count; scale will be 0.0\n");
     }
-
-    // Callee has profile data?
-    //
-    if (!fgHaveProfileData())
-    {
-        JITDUMP("   ... no callee profile data\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
-    }
-
-    // Find callee's unscaled entry weight.
-    //
-    // Ostensibly this should be fgCalledCount for the callee, but that's not available
-    // as it requires some analysis.
-    //
-    // For most callees it will be the same as the entry block count.
-    //
-    if (!fgFirstBB->hasProfileWeight())
-    {
-        JITDUMP("   ... no callee profile data for entry block\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
-    }
-
-    // Note when/if we early do normalization this may need to change.
-    //
-    BasicBlock::weight_t const calleeWeight = fgFirstBB->bbWeight;
 
     // If profile data reflects a complete single run we can expect
     // calleeWeight >= callSiteWeight.
@@ -131,13 +134,6 @@ void Compiler::fgComputeProfileScale()
     // So, we are willing to scale the callee counts down or up as
     // needed to match the call site.
     //
-    if (calleeWeight == BB_ZERO_WEIGHT)
-    {
-        JITDUMP("   ... callee entry count is zero\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
-    }
-
     // Hence, scale can be somewhat arbitrary...
     //
     const double scale                = ((double)callSiteWeight) / calleeWeight;
@@ -1680,6 +1676,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
 //------------------------------------------------------------------------
 // fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//   and compute profile scale for inlinees
 //
 // Returns:
 //   appropriate phase status
@@ -1692,6 +1689,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         JITDUMP("JitStress -- incorporating random profile data\n");
         fgIncorporateBlockCounts();
+
+        if (compIsForInlining())
+        {
+            fgComputeProfileScale();
+        }
+
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -1707,6 +1710,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             JITDUMP("BBOPT not set\n");
         }
+
+        if (compIsForInlining())
+        {
+            fgComputeProfileScale();
+        }
+
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -2460,7 +2469,8 @@ void EfficientEdgeCountReconstructor::Propagate()
 
         // Make sure nothing else in the jit looks at the profile data.
         //
-        m_comp->fgPgoSchema = nullptr;
+        m_comp->fgPgoSchema     = nullptr;
+        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction error";
 
         return;
     }

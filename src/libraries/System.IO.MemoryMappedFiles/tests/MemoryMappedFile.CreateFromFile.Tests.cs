@@ -613,7 +613,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test exceptional behavior when trying to create a map for a non-shared file that's currently in use.
         /// </summary>
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation ignores FileShare.None
+        [SkipOnPlatform(TestPlatforms.Browser, "the emscripten implementation ignores FileShare.None")]
         public void FileInUse_CreateFromFile_FailsWithExistingNoShareFile()
         {
             // Already opened with a FileStream
@@ -768,7 +768,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate we can create multiple maps from the same FileStream.
         /// </summary>
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation doesn't share data
+        [SkipOnPlatform(TestPlatforms.Browser, "the emscripten implementation doesn't share data")]
         public void MultipleMapsForTheSameFileStream()
         {
             const int Capacity = 4096;
@@ -829,7 +829,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [PlatformSpecific(~TestPlatforms.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [SkipOnPlatform(TestPlatforms.OSX, "Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)")]
         [Fact]
         public void TooLargeCapacity()
         {

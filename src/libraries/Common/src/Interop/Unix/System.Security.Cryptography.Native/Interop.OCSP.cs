@@ -44,7 +44,7 @@ internal static partial class Interop
         {
             X509VerifyStatusCode response = CryptoNative_X509ChainGetCachedOcspStatus(ctx, cachePath, chainDepth);
 
-            if (response < 0)
+            if (response.Code < 0)
             {
                 Debug.Fail($"Unexpected response from X509ChainGetCachedOcspSuccess: {response}");
                 throw new CryptographicException();
@@ -70,7 +70,7 @@ internal static partial class Interop
         {
             X509VerifyStatusCode response = CryptoNative_X509ChainVerifyOcsp(ctx, req, resp, cachePath, chainDepth);
 
-            if (response < 0)
+            if (response.Code < 0)
             {
                 Debug.Fail($"Unexpected response from X509ChainGetCachedOcspSuccess: {response}");
                 throw new CryptographicException();

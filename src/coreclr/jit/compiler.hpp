@@ -902,9 +902,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 #ifdef DEBUG
     gtDebugFlags = 0;
 #endif // DEBUG
-#if FEATURE_ANYCSE
     gtCSEnum = NO_CSE;
-#endif // FEATURE_ANYCSE
 #if ASSERTION_PROP
     ClearAssertion();
 #endif
@@ -3616,27 +3614,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-// are we compiling for fast code, or are we compiling for blended code and
-// inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
-inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
-{
-    return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
-}
-
-// are we running on a Intel Pentium 4?
-inline bool Compiler::optPentium4(void)
-{
-    return (info.genCPU == CPU_X86_PENTIUM_4);
-}
-
-// should we use add/sub instead of inc/dec? (faster on P4, but increases size)
-inline bool Compiler::optAvoidIncDec(BasicBlock::weight_t bbWeight)
-{
-    return optPentium4() && optFastCodeOrBlendedLoop(bbWeight);
-}
-
 // should we try to replace integer multiplication with lea/add/shift sequences?
 inline bool Compiler::optAvoidIntMult(void)
 {
@@ -4181,7 +4158,7 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (opts.IsOSR() && (varNum == lvaGSSecurityCookie)) ||
+    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #if FEATURE_FIXED_OUT_ARGS

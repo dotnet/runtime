@@ -3094,7 +3094,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3152,7 +3152,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3688,10 +3688,19 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
                 break;
         }
 
-        id = emitNewInstrAmdCns(attr, offset, iconVal);
-        emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
-        id->idIns(ins);
-        sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        if (addr->isContained() && addr->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_I(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs(), iconVal);
+            return;
+        }
+        else
+        {
+            id = emitNewInstrAmdCns(attr, offset, iconVal);
+            emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
+            id->idIns(ins);
+            sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        }
     }
     else
     {
@@ -3743,6 +3752,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
+    }
+
+    if (addr->isContained() && addr->OperIsLocalAddr())
+    {
+        GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+        emitIns_S(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs());
+        return;
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);
@@ -5147,7 +5163,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -5206,7 +5222,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -6772,7 +6788,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(dst->bbFlags & BBF_HAS_LABEL);
         assert(instrCount == 0);
     }
     else
@@ -9434,6 +9450,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     {
         assert(paddingToAdd == paddingNeeded);
     }
+
+    emitComp->loopsAligned++;
 #endif
 
     return emitOutputNOP(dst, paddingToAdd);
@@ -14285,7 +14303,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
             result.insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (id->idInsFmt() == IF_RWR_LABEL)
+            if (insFmt == IF_RWR_LABEL)
             {
                 // RIP relative addressing
                 //
@@ -14293,7 +14311,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 //
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
-            else if (id->idInsFmt() != IF_RWR_SRD)
+            else if (insFmt != IF_RWR_SRD)
             {
                 if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
                 {
@@ -14341,11 +14359,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_14:
         case INS_imul_15:
 #endif // TARGET_AMD64
-        case INS_mulEAX:
-        case INS_imulEAX:
         case INS_imul:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_3C;
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_mulEAX:
+        case INS_imulEAX:
+            // uops.info: mul/imul rdx:rax,reg latency is 3 only if the low half of the result is needed, but in that
+            // case codegen uses imul reg,reg instruction form (except for unsigned overflow checks, which are rare)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_div:
@@ -14359,12 +14383,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insThroughput = PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
         case INS_idiv:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
             // The integer divide instructions have long latenies
             if ((id->idOpSize() == EA_8BYTE))
             {
@@ -14375,7 +14398,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insThroughput = PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
@@ -14402,19 +14425,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case IF_ARW_CNS:
                     // ins   [mem], cns
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency += PERFSCORE_LATENCY_1C;
                     break;
 
-                case IF_RRW: // probably should use INS_shl_N
+                case IF_RRW:
                     // ins   reg, cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case IF_MRW: // probably should use INS_shr_N
+                case IF_MRW:
                 case IF_SRW:
                 case IF_ARW:
                     // ins   [mem], cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    result.insLatency += PERFSCORE_LATENCY_2C;
                     break;
 
                 default:
@@ -14427,7 +14452,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_shl_1:
         case INS_shr_1:
         case INS_sar_1:
-            result.insLatency = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW:
@@ -14452,7 +14477,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_ror_1:
         case INS_rol_1:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             break;
 
         case INS_shl_N:
@@ -14460,19 +14485,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_sar_N:
         case INS_ror_N:
         case INS_rol_N:
-            result.insLatency = PERFSCORE_LATENCY_2C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW_SHF:
-                    // ins   reg, cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    // ins   reg, cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     break;
 
                 case IF_MRW_SHF:
                 case IF_SRW_SHF:
                 case IF_ARW_SHF:
-                    // ins   [mem], cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    // ins   [mem], cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
                 default:
@@ -14485,13 +14510,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_rcr:
         case INS_rcl:
             result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
 
         case INS_rcr_1:
         case INS_rcl_1:
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_2C;
             break;
 
         case INS_shld:
@@ -14880,16 +14906,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_sqrtsd:
         case INS_sqrtpd:
-        case INS_rcpps:
-        case INS_rcpss:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency += PERFSCORE_LATENCY_13C;
             break;
 
+        case INS_rcpps:
+        case INS_rcpss:
         case INS_rsqrtss:
         case INS_rsqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_12C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_roundpd:

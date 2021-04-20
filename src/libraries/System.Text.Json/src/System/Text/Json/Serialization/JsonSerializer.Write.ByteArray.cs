@@ -66,6 +66,8 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
             {
                 using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))

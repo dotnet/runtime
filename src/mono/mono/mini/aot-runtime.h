@@ -248,7 +248,7 @@ guint8*   mono_aot_get_plt_entry            (host_mgreg_t *regs, guint8 *code);
 guint32   mono_aot_get_plt_info_offset      (gpointer aot_module, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_space, const char *name, MonoClass **klass);
-MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
+MonoJitInfo* mono_aot_find_jit_info         (MonoImage *image, gpointer addr);
 gpointer mono_aot_plt_resolve               (gpointer aot_module, host_mgreg_t *regs, guint8 *code, MonoError *error);
 void     mono_aot_patch_plt_entry           (gpointer aot_module, guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr);
 gpointer mono_aot_get_method_from_vt_slot   (MonoVTable *vtable, int slot, MonoError *error);

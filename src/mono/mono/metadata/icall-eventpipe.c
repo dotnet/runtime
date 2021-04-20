@@ -519,11 +519,11 @@ eventpipe_execute_rundown (
 		events_data.buffer_size = 1024 * sizeof(uint32_t);
 		events_data.buffer = g_new (uint8_t, events_data.buffer_size);
 		events_data.method_events_func = method_events_func;
-		mono_jit_info_table_foreach_internal (root_domain, eventpipe_fire_method_events_func, &events_data);
+		mono_jit_info_table_foreach_internal (eventpipe_fire_method_events_func, &events_data);
 		g_free (events_data.buffer);
 
 		// Iterate all assemblies in domain.
-		GPtrArray *assemblies = mono_domain_get_assemblies (root_domain);
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		if (assemblies) {
 			for (int i = 0; i < assemblies->len; ++i) {
 				MonoAssembly *assembly = (MonoAssembly *)g_ptr_array_index (assemblies, i);

@@ -1355,7 +1355,7 @@ namespace System.Diagnostics
                 string processName = ProcessName;
                 if (processName.Length != 0)
                 {
-                    return string.Format(CultureInfo.CurrentCulture, "{0} ({1})", base.ToString(), processName);
+                    return $"{base.ToString()} ({processName})";
                 }
             }
             return base.ToString();

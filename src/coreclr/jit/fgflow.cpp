@@ -779,9 +779,6 @@ void Compiler::fgComputePreds()
     // the first block is always reachable
     fgFirstBB->bbRefs = 1;
 
-    // Treat the initial block as a jump target
-    fgFirstBB->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
     // Under OSR, we may need to specially protect the original method entry.
     //
     if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
@@ -802,7 +799,6 @@ void Compiler::fgComputePreds()
                     /* Mark the next block as being a jump target,
                        since the call target will return there */
                     PREFIX_ASSUME(block->bbNext != nullptr);
-                    block->bbNext->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
                 }
 
                 FALLTHROUGH;
@@ -812,9 +808,6 @@ void Compiler::fgComputePreds()
             case BBJ_COND:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-
-                /* Mark the jump dest block as being a jump target */
-                block->bbJumpDest->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
                 fgAddRefPred(block->bbJumpDest, block, nullptr, true);
 
@@ -898,9 +891,6 @@ void Compiler::fgComputePreds()
 
                 do
                 {
-                    /* Mark the target block as being a jump target */
-                    (*jumpTab)->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
                     fgAddRefPred(*jumpTab, block, nullptr, true);
                 } while (++jumpTab, --jumpCnt);
 
@@ -918,13 +908,9 @@ void Compiler::fgComputePreds()
 
         if (ehDsc->HasFilter())
         {
-            ehDsc->ebdFilter->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
             // The first block of a filter has an artifical extra refcount.
             ehDsc->ebdFilter->bbRefs++;
         }
-
-        ehDsc->ebdHndBeg->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
         // The first block of a handler has an artificial extra refcount.
         ehDsc->ebdHndBeg->bbRefs++;

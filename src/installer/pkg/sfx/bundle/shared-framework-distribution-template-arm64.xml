@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="1">
+    <background file="dotnetbackground.png" mime-type="image/png"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64" />
+    <welcome file="welcome.html" mime-type="text/html" />
+    <conclusion file="conclusion.html" mime-type="text/html" />
+    <volume-check>
+        <allowed-os-versions>
+            <os-version min="11.0" />
+        </allowed-os-versions>
+    </volume-check>
+</installer-gui-script>

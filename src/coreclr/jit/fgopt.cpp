@@ -1357,7 +1357,7 @@ void Compiler::fgRemoveEmptyBlocks()
                     fgSetTryBeg(HBtab, newTryEntry);
 
                     // Try entry blocks get specially marked and have special protection.
-                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_HAS_LABEL;
+                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG;
 
                     // We are keeping this try region
                     removeTryRegion = false;
@@ -1539,7 +1539,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         JITDUMP("Second block has multiple incoming edges\n");
 
         assert(block->isEmpty());
-        block->bbFlags |= BBF_JMP_TARGET;
         for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
         {
             fgReplaceJumpTarget(pred->getBlock(), block, bNext);
@@ -1882,16 +1881,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    // Add the LOOP_ALIGN flag
     if (bNext->isLoopAlign())
     {
-        // Only if the new block is jump target or has label
-        if (((block->bbFlags & BBF_JMP_TARGET) != 0) || ((block->bbFlags & BBF_HAS_LABEL) != 0))
-        {
-            block->bbFlags |= BBF_LOOP_ALIGN;
-            JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
-                    block->bbNum);
-        }
+        block->bbFlags |= BBF_LOOP_ALIGN;
+        JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
+                block->bbNum);
     }
 
     // If we're collapsing a block created after the dominators are
@@ -1995,6 +1989,20 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
         if (optLoopTable[loopNum].lpEntry == bNext)
         {
             optLoopTable[loopNum].lpEntry = block;
+        }
+
+        /* Check the loop's first block */
+
+        if (optLoopTable[loopNum].lpFirst == bNext)
+        {
+            optLoopTable[loopNum].lpFirst = block;
+        }
+
+        /* Check the loop top */
+
+        if (optLoopTable[loopNum].lpTop == bNext)
+        {
+            optLoopTable[loopNum].lpTop = block;
         }
     }
 }
@@ -3114,7 +3122,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // The new block 'next' will inherit its weight from 'block'
     next->inheritWeight(block);
     next->bbJumpDest = target->bbNext;
-    target->bbNext->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(next, block);
     fgAddRefPred(next->bbJumpDest, next);
 
@@ -3369,11 +3376,17 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     unsigned estDupCostSz = 0;
     for (Statement* stmt : bDest->Statements())
     {
+        // We want to compute the costs of the statement. Unfortunately, gtPrepareCost() / gtSetStmtInfo()
+        // call gtSetEvalOrder(), which can reorder nodes. If it does so, we need to re-thread the gtNext/gtPrev
+        // links. We don't know if it does or doesn't reorder nodes, so we end up always re-threading the links.
+
+        gtSetStmtInfo(stmt);
+        if (fgStmtListThreaded)
+        {
+            fgSetStmtSeq(stmt);
+        }
+
         GenTree* expr = stmt->GetRootNode();
-
-        /* We call gtPrepareCost to measure the cost of duplicating this tree */
-        gtPrepareCost(expr);
-
         estDupCostSz += expr->GetCostSz();
     }
 
@@ -3545,9 +3558,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;
 
-    /* Mark the jump dest block as being a jump target */
-    bJump->bbJumpDest->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
     /* Update bbRefs and bbPreds */
 
     // bJump now falls through into the next block
@@ -3653,6 +3663,333 @@ bool Compiler::fgOptimizeSwitchJumps()
         }
     }
 #endif
+
+    return result;
+}
+
+//-----------------------------------------------------------------------------
+// fgExpandRunRarelyBlocks: given the current set of run rarely blocks,
+//   see if we can deduce that some other blocks are run rarely.
+//
+// Returns:
+//    True if new block was marked as run rarely.
+//
+bool Compiler::fgExpandRarelyRunBlocks()
+{
+    bool result = false;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\n*************** In fgExpandRarelyRunBlocks()\n");
+    }
+
+    const char* reason = nullptr;
+#endif
+
+    // Helper routine to figure out the lexically earliest predecessor
+    // of bPrev that could become run rarely, given that bPrev
+    // has just become run rarely.
+    //
+    // Note this is potentially expensive for large flow graphs and blocks
+    // with lots of predecessors.
+    //
+    auto newRunRarely = [](BasicBlock* block, BasicBlock* bPrev) {
+        // Figure out earliest block that might be impacted
+        BasicBlock* bPrevPrev = nullptr;
+        BasicBlock* tmpbb;
+
+        if ((bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0)
+        {
+            // If we've got a BBJ_CALLFINALLY/BBJ_ALWAYS pair, treat the BBJ_CALLFINALLY as an
+            // additional predecessor for the BBJ_ALWAYS block
+            tmpbb = bPrev->bbPrev;
+            noway_assert(tmpbb != nullptr);
+#if defined(FEATURE_EH_FUNCLETS)
+            noway_assert(tmpbb->isBBCallAlwaysPair());
+            bPrevPrev = tmpbb;
+#else
+            if (tmpbb->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                bPrevPrev = tmpbb;
+            }
+#endif
+        }
+
+        flowList* pred = bPrev->bbPreds;
+
+        if (pred != nullptr)
+        {
+            // bPrevPrev will be set to the lexically
+            // earliest predecessor of bPrev.
+
+            while (pred != nullptr)
+            {
+                if (bPrevPrev == nullptr)
+                {
+                    // Initially we select the first block in the bbPreds list
+                    bPrevPrev = pred->getBlock();
+                    continue;
+                }
+
+                // Walk the flow graph lexically forward from pred->getBlock()
+                // if we find (block == bPrevPrev) then
+                // pred->getBlock() is an earlier predecessor.
+                for (tmpbb = pred->getBlock(); tmpbb != nullptr; tmpbb = tmpbb->bbNext)
+                {
+                    if (tmpbb == bPrevPrev)
+                    {
+                        /* We found an ealier predecessor */
+                        bPrevPrev = pred->getBlock();
+                        break;
+                    }
+                    else if (tmpbb == bPrev)
+                    {
+                        // We have reached bPrev so stop walking
+                        // as this cannot be an earlier predecessor
+                        break;
+                    }
+                }
+
+                // Onto the next predecessor
+                pred = pred->flNext;
+            }
+        }
+
+        if (bPrevPrev != nullptr)
+        {
+            // Walk the flow graph forward from bPrevPrev
+            // if we don't find (tmpbb == bPrev) then our candidate
+            // bPrevPrev is lexically after bPrev and we do not
+            // want to select it as our new block
+
+            for (tmpbb = bPrevPrev; tmpbb != nullptr; tmpbb = tmpbb->bbNext)
+            {
+                if (tmpbb == bPrev)
+                {
+                    // Set up block back to the lexically
+                    // earliest predecessor of pPrev
+
+                    return bPrevPrev;
+                }
+            }
+        }
+
+        // No reason to backtrack
+        //
+        return (BasicBlock*)nullptr;
+    };
+
+    // We expand the number of rarely run blocks by observing
+    // that a block that falls into or jumps to a rarely run block,
+    // must itself be rarely run and when we have a conditional
+    // jump in which both branches go to rarely run blocks then
+    // the block must itself be rarely run
+
+    BasicBlock* block;
+    BasicBlock* bPrev;
+
+    for (bPrev = fgFirstBB, block = bPrev->bbNext; block != nullptr; bPrev = block, block = block->bbNext)
+    {
+        if (bPrev->isRunRarely())
+        {
+            continue;
+        }
+
+        if (bPrev->hasProfileWeight())
+        {
+            continue;
+        }
+
+        const char* reason = nullptr;
+
+        switch (bPrev->bbJumpKind)
+        {
+            case BBJ_ALWAYS:
+
+                if (bPrev->bbJumpDest->isRunRarely())
+                {
+                    reason = "Unconditional jump to a rarely run block";
+                }
+                break;
+
+            case BBJ_CALLFINALLY:
+
+                if (bPrev->isBBCallAlwaysPair() && block->isRunRarely())
+                {
+                    reason = "Call of finally followed by a rarely run block";
+                }
+                break;
+
+            case BBJ_NONE:
+
+                if (block->isRunRarely())
+                {
+                    reason = "Falling into a rarely run block";
+                }
+                break;
+
+            case BBJ_COND:
+
+                if (block->isRunRarely() && bPrev->bbJumpDest->isRunRarely())
+                {
+                    reason = "Both sides of a conditional jump are rarely run";
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        if (reason != nullptr)
+        {
+            JITDUMP("%s, marking " FMT_BB " as rarely run\n", reason, bPrev->bbNum);
+
+            // Must not have previously been marked
+            noway_assert(!bPrev->isRunRarely());
+
+            // Mark bPrev as a new rarely run block
+            bPrev->bbSetRunRarely();
+
+            // We have marked at least one block.
+            //
+            result = true;
+
+            // See if we should to backtrack.
+            //
+            BasicBlock* bContinue = newRunRarely(block, bPrev);
+
+            // If so, reset block to the backtrack point.
+            //
+            if (bContinue != nullptr)
+            {
+                block = bContinue;
+            }
+        }
+    }
+
+    // Now iterate over every block to see if we can prove that a block is rarely run
+    // (i.e. when all predecessors to the block are rarely run)
+    //
+    for (bPrev = fgFirstBB, block = bPrev->bbNext; block != nullptr; bPrev = block, block = block->bbNext)
+    {
+        // If block is not run rarely, then check to make sure that it has
+        // at least one non-rarely run block.
+
+        if (!block->isRunRarely())
+        {
+            bool rare = true;
+
+            /* Make sure that block has at least one normal predecessor */
+            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+            {
+                /* Find the fall through predecessor, if any */
+                if (!pred->getBlock()->isRunRarely())
+                {
+                    rare = false;
+                    break;
+                }
+            }
+
+            if (rare)
+            {
+                // If 'block' is the start of a handler or filter then we cannot make it
+                // rarely run because we may have an exceptional edge that
+                // branches here.
+                //
+                if (bbIsHandlerBeg(block))
+                {
+                    rare = false;
+                }
+            }
+
+            if (rare)
+            {
+                block->bbSetRunRarely();
+                result = true;
+
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("All branches to " FMT_BB " are from rarely run blocks, marking as rarely run\n",
+                           block->bbNum);
+                }
+#endif // DEBUG
+
+                // When marking a BBJ_CALLFINALLY as rarely run we also mark
+                // the BBJ_ALWAYS that comes after it as rarely run
+                //
+                if (block->isBBCallAlwaysPair())
+                {
+                    BasicBlock* bNext = block->bbNext;
+                    PREFIX_ASSUME(bNext != nullptr);
+                    bNext->bbSetRunRarely();
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("Also marking the BBJ_ALWAYS at " FMT_BB " as rarely run\n", bNext->bbNum);
+                    }
+#endif // DEBUG
+                }
+            }
+        }
+
+        /* COMPACT blocks if possible */
+        if (bPrev->bbJumpKind == BBJ_NONE)
+        {
+            if (fgCanCompactBlocks(bPrev, block))
+            {
+                fgCompactBlocks(bPrev, block);
+
+                block = bPrev;
+                continue;
+            }
+        }
+        //
+        // if bPrev->bbWeight is not based upon profile data we can adjust
+        // the weights of bPrev and block
+        //
+        else if (bPrev->isBBCallAlwaysPair() &&          // we must have a BBJ_CALLFINALLY and BBK_ALWAYS pair
+                 (bPrev->bbWeight != block->bbWeight) && // the weights are currently different
+                 !bPrev->hasProfileWeight())             // and the BBJ_CALLFINALLY block is not using profiled
+                                                         // weights
+        {
+            if (block->isRunRarely())
+            {
+                bPrev->bbWeight =
+                    block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
+                bPrev->bbFlags |= BBF_RUN_RARELY; // and is now rarely run
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Marking the BBJ_CALLFINALLY block at " FMT_BB " as rarely run because " FMT_BB
+                           " is rarely run\n",
+                           bPrev->bbNum, block->bbNum);
+                }
+#endif // DEBUG
+            }
+            else if (bPrev->isRunRarely())
+            {
+                block->bbWeight =
+                    bPrev->bbWeight; // the BBJ_ALWAYS block now has the same weight as the BBJ_CALLFINALLY block
+                block->bbFlags |= BBF_RUN_RARELY; // and is now rarely run
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Marking the BBJ_ALWAYS block at " FMT_BB " as rarely run because " FMT_BB
+                           " is rarely run\n",
+                           block->bbNum, bPrev->bbNum);
+                }
+#endif // DEBUG
+            }
+            else // Both blocks are hot, bPrev is known not to be using profiled weight
+            {
+                bPrev->bbWeight =
+                    block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
+            }
+            noway_assert(block->bbWeight == bPrev->bbWeight);
+        }
+    }
 
     return result;
 }
@@ -4723,7 +5060,6 @@ bool Compiler::fgReorderBlocks()
             {
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
                 bPrev->bbJumpDest = bStart;
-                bStart->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
             }
             else
             {
@@ -4732,7 +5068,6 @@ bool Compiler::fgReorderBlocks()
 
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
                 bPrev->bbJumpDest = block;
-                block->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
             }
         }
 
@@ -4985,18 +5320,46 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                     }
                 }
 
-                // Check for a conditional branch that just skips over an empty BBJ_ALWAYS block
-
+                // Check for cases where reversing the branch condition may enable
+                // other flow opts.
+                //
+                // Current block falls through to an empty bNext BBJ_ALWAYS, and
+                // (a) block jump target is bNext's bbNext.
+                // (b) block jump target is elsewhere but join free, and
+                //      bNext's jump target has a join.
+                //
                 if ((block->bbJumpKind == BBJ_COND) &&   // block is a BBJ_COND block
                     (bNext != nullptr) &&                // block is not the last block
                     (bNext->bbRefs == 1) &&              // No other block jumps to bNext
-                    (bNext->bbNext == bDest) &&          // The block after bNext is the BBJ_COND jump dest
                     (bNext->bbJumpKind == BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
                     bNext->isEmpty() &&                  // and it is an an empty block
                     (bNext != bNext->bbJumpDest) &&      // special case for self jumps
                     (bDest != fgFirstColdBlock))
                 {
-                    bool optimizeJump = true;
+                    // case (a)
+                    //
+                    const bool isJumpAroundEmpty = (bNext->bbNext == bDest);
+
+                    // case (b)
+                    //
+                    // Note the asymetric checks for refs == 1 and refs > 1 ensures that we
+                    // differentiate the roles played by bDest and bNextJumpDest. We need some
+                    // sense of which arrangement is preferable to avoid getting stuck in a loop
+                    // reversing and re-reversing.
+                    //
+                    // Other tiebreaking criteria could be considered.
+                    //
+                    // Pragmatic constraints:
+                    //
+                    // * don't consider lexical predecessors, or we may confuse loop recognition
+                    // * don't consider blocks of different rarities
+                    //
+                    BasicBlock* const bNextJumpDest    = bNext->bbJumpDest;
+                    const bool        isJumpToJoinFree = !isJumpAroundEmpty && (bDest->bbRefs == 1) &&
+                                                  (bNextJumpDest->bbRefs > 1) && (bDest->bbNum > block->bbNum) &&
+                                                  (block->isRunRarely() == bDest->isRunRarely());
+
+                    bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
                     // We do not optimize jumps between two different try regions.
                     // However jumping to a block that is not in any try region is OK
@@ -5028,18 +5391,65 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                         }
                     }
 
+                    if (optimizeJump && isJumpToJoinFree)
+                    {
+                        // In the join free case, we also need to move bDest right after bNext
+                        // to create same flow as in the isJumpAroundEmpty case.
+                        //
+                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallAlwaysPair())
+                        {
+                            optimizeJump = false;
+                        }
+                        else
+                        {
+                            // We don't expect bDest to already be right after bNext.
+                            //
+                            assert(bDest != bNext->bbNext);
+
+                            JITDUMP("\nMoving " FMT_BB " after " FMT_BB " to enable reversal\n", bDest->bbNum,
+                                    bNext->bbNum);
+
+                            // If bDest can fall through we'll need to create a jump
+                            // block after it too. Remember where to jump to.
+                            //
+                            BasicBlock* const bDestNext = bDest->bbNext;
+
+                            // Move bDest
+                            //
+                            if (ehIsBlockEHLast(bDest))
+                            {
+                                ehUpdateLastBlocks(bDest, bDest->bbPrev);
+                            }
+
+                            fgUnlinkBlock(bDest);
+                            fgInsertBBafter(bNext, bDest);
+
+                            if (ehIsBlockEHLast(bNext))
+                            {
+                                ehUpdateLastBlocks(bNext, bDest);
+                            }
+
+                            // Add fall through fixup block, if needed.
+                            //
+                            if ((bDest->bbJumpKind == BBJ_NONE) || (bDest->bbJumpKind == BBJ_COND))
+                            {
+                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
+                                bFixup->inheritWeight(bDestNext);
+                                bFixup->bbJumpDest = bDestNext;
+                                fgReplacePred(bDestNext, bDest, bFixup);
+                                fgAddRefPred(bFixup, bDest);
+                            }
+                        }
+                    }
+
                     if (optimizeJump)
                     {
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
-                                   " -> " FMT_BB ")\n",
-                                   block->bbNum, bDest->bbNum, bNext->bbJumpDest->bbNum);
-                        }
-#endif // DEBUG
-                        /* Reverse the jump condition */
+                        JITDUMP("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
+                                " -> " FMT_BB ")\n",
+                                block->bbNum, bDest->bbNum, bNextJumpDest->bbNum);
 
+                        //  Reverse the jump condition
+                        //
                         GenTree* test = block->lastNode();
                         noway_assert(test->OperIsConditionalJump());
 

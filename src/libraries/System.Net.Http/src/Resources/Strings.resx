@@ -606,4 +606,7 @@
   <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
     <value>Synchronous reads are not supported, use ReadAsync instead.</value>
   </data>
+  <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
+    <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
+  </data>
 </root>

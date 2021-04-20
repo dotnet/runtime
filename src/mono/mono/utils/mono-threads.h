@@ -327,7 +327,7 @@ typedef struct {
 	SMR remains functional as its small_id has not been reclaimed.
 	*/
 	void (*thread_detach_with_lock)(THREAD_INFO_TYPE *info);
-	gboolean (*ip_in_critical_region) (MonoDomain *domain, gpointer ip);
+	gboolean (*ip_in_critical_region) (gpointer ip);
 	gboolean (*thread_in_critical_region) (THREAD_INFO_TYPE *info);
 
 	// Called on the affected thread.

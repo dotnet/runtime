@@ -3,18 +3,6 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="ComObjectTypeTest.cs" />
-    <TestConsoleAppSourceFiles Include="DesigntimeLicenseContextSerialization_Serialize.cs" TrimmerRootAssemblies="mscorlib">
-      <ExtraTrimmerArgs>--feature System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization true</ExtraTrimmerArgs>
-      <AdditionalSourceFiles>DesigntimeLicenseContextSerialization_Stream.cs</AdditionalSourceFiles>
-      <!-- Justification: BinaryFormatter is not available on wasm-->
-      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
-    </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="DesigntimeLicenseContextSerialization_Deserialize.cs" TrimmerRootAssemblies="mscorlib">
-      <ExtraTrimmerArgs>--feature System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization true</ExtraTrimmerArgs>
-      <AdditionalSourceFiles>DesigntimeLicenseContextSerialization_Stream.cs</AdditionalSourceFiles>
-      <!-- Justification: BinaryFormatter is not available on wasm-->
-      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
-    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterTest.cs" />

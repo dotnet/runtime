@@ -15,6 +15,12 @@ namespace Microsoft.Extensions.Configuration
         public static string GetConnectionString(this Microsoft.Extensions.Configuration.IConfiguration configuration, string name) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(this Microsoft.Extensions.Configuration.IConfiguration configuration, string key) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
+    public sealed partial class ConfigurationKeyNameAttribute : System.Attribute
+    {
+        public ConfigurationKeyNameAttribute(string name) { }
+        public string Name { get { throw null; } }
+    }
     public static partial class ConfigurationPath
     {
         public static readonly string KeyDelimiter;

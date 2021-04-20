@@ -121,10 +121,6 @@ mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *k
 
 void  mono_gc_free_fixed             (void* addr);
 
-/* make sure the gchandle was allocated for an object in domain */
-gboolean mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain);
-void     mono_gchandle_free_domain  (MonoDomain *domain);
-
 typedef void (*FinalizerThreadCallback) (gpointer user_data);
 
 MonoObject*

@@ -2256,7 +2256,7 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 	name_handle = mono_string_new_handle (fullName->str, error);
 	goto_if_nok (error, return_null);
 
-	reflection_assembly = mono_domain_try_type_resolve_name (domain, image->assembly, name_handle, error);
+	reflection_assembly = mono_domain_try_type_resolve_name (image->assembly, name_handle, error);
 	goto_if_nok (error, return_null);
 
 	if (MONO_HANDLE_BOOL (reflection_assembly)) {

@@ -783,6 +783,14 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 	return (int64_t)mono_atomic_dec_i64 ((volatile gint64 *)value);
 }
 
+static
+inline
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
+{
+	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+}
+
 /*
  * EventPipe.
  */

@@ -11,6 +11,7 @@
 
 #define FAIL 0
 #define SUCCESS 1
+#define INSUFFICIENT_BUFFER -1
 
 extern JavaVM* gJvm;
 
@@ -22,6 +23,10 @@ extern jmethodID g_ByteArrayInputStreamReset;
 // java/lang/Enum
 extern jclass    g_Enum;
 extern jmethodID g_EnumOrdinal;
+
+// java/lang/String
+extern jclass    g_String;
+extern jmethodID g_StringGetBytes;
 
 // java/lang/Throwable
 extern jclass    g_ThrowableClass;
@@ -82,8 +87,10 @@ extern jmethodID g_bitLengthMethod;
 extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
-extern jclass    g_sslParamsClass;
-extern jmethodID g_sslParamsGetProtocolsMethod;
+extern jclass    g_SSLParametersClass;
+extern jmethodID g_SSLParametersGetProtocols;
+extern jmethodID g_SSLParametersSetApplicationProtocols;
+extern jmethodID g_SSLParametersSetServerNames;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
@@ -204,6 +211,7 @@ extern jmethodID g_keyPairGenGenKeyPairMethod;
 
 // java/security/KeyStore
 extern jclass    g_KeyStoreClass;
+extern jmethodID g_KeyStoreGetDefaultType;
 extern jmethodID g_KeyStoreGetInstance;
 extern jmethodID g_KeyStoreAliases;
 extern jmethodID g_KeyStoreContainsAlias;
@@ -331,6 +339,10 @@ extern jmethodID g_EllipticCurveGetB;
 extern jmethodID g_EllipticCurveGetField;
 extern jmethodID g_EllipticCurveGetSeed;
 
+// java/security/spec/PKCS8EncodedKeySpec
+extern jclass    g_PKCS8EncodedKeySpec;
+extern jmethodID g_PKCS8EncodedKeySpecCtor;
+
 // java/security/spec/X509EncodedKeySpec
 extern jclass    g_X509EncodedKeySpecClass;
 extern jmethodID g_X509EncodedKeySpecCtor;
@@ -350,6 +362,11 @@ extern jmethodID g_ArrayListAdd;
 extern jclass    g_CollectionClass;
 extern jmethodID g_CollectionIterator;
 extern jmethodID g_CollectionSize;
+
+// java/util/ArrayList
+extern jclass    g_ArrayList;
+extern jmethodID g_ArrayListCtor;
+extern jmethodID g_ArrayListAdd;
 
 // java/util/Date
 extern jclass    g_DateClass;
@@ -374,49 +391,73 @@ extern jmethodID g_IteratorNext;
 extern jclass    g_ListClass;
 extern jmethodID g_ListGet;
 
+// javax/net/ssl/HostnameVerifier
+extern jclass    g_HostnameVerifier;
+extern jmethodID g_HostnameVerifierVerify;
+
+// javax/net/ssl/HttpsURLConnection
+extern jclass    g_HttpsURLConnection;
+extern jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
+
+// javax/net/ssl/KeyManagerFactory
+extern jclass    g_KeyManagerFactory;
+extern jmethodID g_KeyManagerFactoryGetInstance;
+extern jmethodID g_KeyManagerFactoryInit;
+extern jmethodID g_KeyManagerFactoryGetKeyManagers;
+
+// javax/net/ssl/SNIHostName
+extern jclass    g_SNIHostName;
+extern jmethodID g_SNIHostNameCtor;
+
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
-extern jmethodID g_SSLEngineSetUseClientModeMethod;
-extern jmethodID g_SSLEngineGetSessionMethod;
-extern jmethodID g_SSLEngineBeginHandshakeMethod;
-extern jmethodID g_SSLEngineWrapMethod;
-extern jmethodID g_SSLEngineUnwrapMethod;
-extern jmethodID g_SSLEngineCloseInboundMethod;
-extern jmethodID g_SSLEngineCloseOutboundMethod;
-extern jmethodID g_SSLEngineGetHandshakeStatusMethod;
+extern jmethodID g_SSLEngineBeginHandshake;
+extern jmethodID g_SSLEngineCloseOutbound;
+extern jmethodID g_SSLEngineGetApplicationProtocol;
+extern jmethodID g_SSLEngineGetHandshakeStatus;
+extern jmethodID g_SSLEngineGetSession;
+extern jmethodID g_SSLEngineGetSSLParameters;
+extern jmethodID g_SSLEngineGetSupportedProtocols;
+extern jmethodID g_SSLEngineSetEnabledProtocols;
+extern jmethodID g_SSLEngineSetSSLParameters;
+extern jmethodID g_SSLEngineSetUseClientMode;
+extern jmethodID g_SSLEngineSetWantClientAuth;
+extern jmethodID g_SSLEngineUnwrap;
+extern jmethodID g_SSLEngineWrap;
 
 // java/nio/ByteBuffer
 extern jclass    g_ByteBuffer;
-extern jmethodID g_ByteBufferAllocateMethod;
-extern jmethodID g_ByteBufferPutMethod;
-extern jmethodID g_ByteBufferPut2Method;
-extern jmethodID g_ByteBufferPut3Method;
-extern jmethodID g_ByteBufferFlipMethod;
-extern jmethodID g_ByteBufferGetMethod;
-extern jmethodID g_ByteBufferLimitMethod;
-extern jmethodID g_ByteBufferRemainingMethod;
-extern jmethodID g_ByteBufferPutBufferMethod;
-extern jmethodID g_ByteBufferCompactMethod;
-extern jmethodID g_ByteBufferPositionMethod;
+extern jmethodID g_ByteBufferAllocate;
+extern jmethodID g_ByteBufferCompact;
+extern jmethodID g_ByteBufferFlip;
+extern jmethodID g_ByteBufferGet;
+extern jmethodID g_ByteBufferLimit;
+extern jmethodID g_ByteBufferPosition;
+extern jmethodID g_ByteBufferPutBuffer;
+extern jmethodID g_ByteBufferPutByteArray;
+extern jmethodID g_ByteBufferPutByteArrayWithLength;
+extern jmethodID g_ByteBufferRemaining;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_SSLContext;
+extern jmethodID g_SSLContextGetDefault;
 extern jmethodID g_SSLContextGetInstanceMethod;
 extern jmethodID g_SSLContextInitMethod;
 extern jmethodID g_SSLContextCreateSSLEngineMethod;
+extern jmethodID g_SSLContextCreateSSLEngineWithPeer;
 
 // javax/net/ssl/SSLSession
 extern jclass    g_SSLSession;
-extern jmethodID g_SSLSessionGetApplicationBufferSizeMethod;
-extern jmethodID g_SSLSessionGetPacketBufferSizeMethod;
+extern jmethodID g_SSLSessionGetApplicationBufferSize;
+extern jmethodID g_SSLSessionGetCipherSuite;
+extern jmethodID g_SSLSessionGetPacketBufferSize;
+extern jmethodID g_SSLSessionGetPeerCertificates;
+extern jmethodID g_SSLSessionGetProtocol;
 
 // javax/net/ssl/SSLEngineResult
 extern jclass    g_SSLEngineResult;
-extern jmethodID g_SSLEngineResultGetStatusMethod;
-extern jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
-
-// javax/net/ssl/TrustManager
-extern jclass    g_TrustManager;
+extern jmethodID g_SSLEngineResultGetStatus;
+extern jmethodID g_SSLEngineResultGetHandshakeStatus;
 
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;
@@ -425,12 +466,17 @@ extern jmethodID g_KeyAgreementInit;
 extern jmethodID g_KeyAgreementDoPhase;
 extern jmethodID g_KeyAgreementGenerateSecret;
 
-// JNI helpers
+// Logging helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+
+// JNI helpers - assume there is a JNIEnv* variable named env
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 #define ON_EXCEPTION_PRINT_AND_GOTO(label) if (CheckJNIExceptions(env)) goto label
+
+// Explicitly ignore jobject return value
+#define IGNORE_RETURN(retval) (*env)->DeleteLocalRef(env, retval)
 
 #define INIT_LOCALS(name, ...) \
     enum { __VA_ARGS__, count_##name }; \
@@ -469,9 +515,6 @@ bool TryClearJNIExceptions(JNIEnv* env);
 
 // Get any pending JNI exception. Returns true if there was an exception, false otherwise.
 bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException);
-
-// Assert on any JNI exceptions. Prints the exception before asserting.
-void AssertOnJNIExceptions(JNIEnv* env);
 
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);

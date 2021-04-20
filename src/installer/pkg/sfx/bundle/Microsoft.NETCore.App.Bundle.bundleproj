@@ -13,7 +13,7 @@
     <InstallerName>dotnet-runtime</InstallerName>
     <InstallerRuntimeIdentifiers>win-x86;win-x64;win-arm64;osx-x64;osx-arm64</InstallerRuntimeIdentifiers>
     <BundleNameSuffix>Runtime</BundleNameSuffix>
-    <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template.xml</MacOSBundleTemplate>
+    <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template-$(TargetArchitecture).xml</MacOSBundleTemplate>
     <MacOSBundleIdentifierName>com.microsoft.dotnet.Microsoft.NETCore.App.$(ProductVersion).osx.$(TargetArchitecture)</MacOSBundleIdentifierName>
     <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcesPath>
   </PropertyGroup>

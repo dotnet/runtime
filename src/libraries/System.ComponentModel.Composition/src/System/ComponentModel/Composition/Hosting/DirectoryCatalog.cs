@@ -732,13 +732,8 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private string GetDisplayName()
-        {
-            return string.Format(CultureInfo.CurrentCulture,
-                                "{0} (Path=\"{1}\")",   // NOLOC
-                                GetType().Name,
-                                _path);
-        }
+        private string GetDisplayName() =>
+            $"{GetType().Name} (Path=\"{_path}\")";   // NOLOC
 
         private string[] GetFiles()
         {

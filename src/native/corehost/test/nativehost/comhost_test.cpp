@@ -6,6 +6,7 @@
 #include <iostream>
 #include <future>
 #include <pal.h>
+#include <oleauto.h>
 
 namespace
 {
@@ -67,12 +68,42 @@ namespace
         return pal::pal_utf8string(clsid_str, &clsidVect);
     }
 
+    void log_hresult(HRESULT hr, std::ostream &ss)
+    {
+        if (FAILED(hr))
+            ss << "(" << std::hex << std::showbase << hr << ")";
+    }
+
     void log_activation(const char *clsid, int activationNumber, int total, HRESULT hr, std::ostream &ss)
     {
         ss << "Activation of " << clsid << (FAILED(hr) ? " failed. " : " succeeded. ") << activationNumber << " of " << total;
-        if (FAILED(hr))
-            ss << "(" << std::hex << std::showbase << hr << ")";
+        log_hresult(hr, ss);
+        ss << std::endl;
+    }
 
+    HRESULT load_typelib(const pal::string_t &typelib_path)
+    {
+        HRESULT hr;
+        ITypeLib* typelib = nullptr;
+        hr = LoadTypeLibEx(typelib_path.c_str(), REGKIND_NONE, &typelib);
+        if (FAILED(hr))
+            return hr;
+
+        typelib->Release();
+        return hr;
+    }
+
+    void log_typelib_load(int typelib_id, HRESULT hr, std::ostream &ss)
+    {
+        ss << "Loading type library " << typelib_id << (FAILED(hr) ? " failed. " : " succeeded. ");
+        log_hresult(hr, ss);
+        ss << std::endl;
+    }
+
+    void log_default_typelib_load(HRESULT hr, std::ostream &ss)
+    {
+        ss << "Loading default type library" << (FAILED(hr) ? " failed. " : " succeeded. ");
+        log_hresult(hr, ss);
         ss << std::endl;
     }
 }
@@ -163,5 +194,28 @@ bool comhost_test::errorinfo(const pal::string_t &comhost_path, const pal::strin
         ei->Release();
     }
 
+    return true;
+}
+
+bool comhost_test::typelib(const pal::string_t &comhost_path, int count)
+{
+    HRESULT hr;
+
+    hr = load_typelib(comhost_path);
+    log_default_typelib_load(hr, std::cout);
+    if (FAILED(hr))
+        return false;
+
+    for (int i = 1; i < count + 1; i++)
+    {
+        // The path format for a non-default embedded TLB is 'C:\file\path\to.exe\\2' where '2' is the resource name of the tlb to load.
+        // See https://docs.microsoft.com/windows/win32/api/oleauto/nf-oleauto-loadtypelib#remarks for documentation on the path format.
+        pal::stringstream_t tlb_path;
+        tlb_path << comhost_path << '\\' << i;
+        hr = load_typelib(tlb_path.str());
+        log_typelib_load(i, hr, std::cout);
+        if (FAILED(hr))
+            return false;
+    }
     return true;
 }
