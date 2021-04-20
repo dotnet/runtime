@@ -69,15 +69,15 @@ namespace Microsoft.NET.HostModel.Tests
             
             var appExe = fixture.TestProject.AppExe;
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
-            Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(firstSymlinkRelativePath)));
-            Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(secondSymlinkRelativePath)));
 
             // second symlink -> apphost
             string secondSymbolicLink = Path.Combine(testDir, secondSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(secondSymbolicLink));
             CreateSymbolicLink(secondSymbolicLink, appExe);
 
             // first symlink -> second symlink
             string firstSymbolicLink = Path.Combine(testDir, firstSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(firstSymbolicLink));
             CreateSymbolicLink(firstSymbolicLink, secondSymbolicLink);
 
             Command.Create(firstSymbolicLink)
@@ -86,12 +86,6 @@ namespace Microsoft.NET.HostModel.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Directory.Delete(firstSymbolicLink);
-                Directory.Delete(secondSymbolicLink);
-            }
         }
 
         //[Theory]
@@ -199,11 +193,6 @@ namespace Microsoft.NET.HostModel.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Directory.Delete(dotnetSymlink);
-            }
         }
 
         [Fact]
