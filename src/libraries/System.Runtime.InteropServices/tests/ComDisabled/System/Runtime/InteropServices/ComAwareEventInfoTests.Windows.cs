@@ -14,7 +14,6 @@ namespace System.Runtime.InteropServices.Tests
         public void AddEventHandler_ComObjectWithMultipleComEventInterfaceAttribute_ThrowsAmbiguousMatchException()
         {
             Assert.Throws<NotSupportedException>(() => new ComImportObject());
-
         }
 
     }

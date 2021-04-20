@@ -5,7 +5,6 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="..\System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
     <Compile Include="..\System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="..\System\Runtime\InteropServices\Marshal\Common\Variant.cs" />
