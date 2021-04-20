@@ -14,6 +14,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace HttpStress
 {
@@ -342,6 +343,12 @@ namespace HttpStress
                             Console.ResetColor();
                             Console.WriteLine(exn);
                             Console.WriteLine();
+
+                            DriveInfo cDrive = new DriveInfo("C");
+                            double availableSpace = (double)cDrive.AvailableFreeSpace / 1024 / 1024;
+                            Console.WriteLine("*************************************");
+                            Console.WriteLine($"AVAILABLE SPACE: {availableSpace} MB");
+                            Console.WriteLine("*************************************");
                         }
                     }
                 }

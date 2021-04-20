@@ -172,6 +172,12 @@ public static class Program
 
         string GetAssemblyInfo(Assembly assembly) => $"{assembly.Location}, modified {new FileInfo(assembly.Location).LastWriteTime}";
 
+        DriveInfo cDrive = new DriveInfo("C");
+        double availableSpace = (double)cDrive.AvailableFreeSpace / 1024 / 1024;
+        Console.WriteLine("*************************************");
+        Console.WriteLine($"AVAILABLE SPACE: {availableSpace} MB");
+        Console.WriteLine("*************************************");
+
         Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
         Console.WriteLine("    ASP.NET Core: " + GetAssemblyInfo(typeof(WebHost).Assembly));
         Console.WriteLine(" System.Net.Http: " + GetAssemblyInfo(typeof(System.Net.Http.HttpClient).Assembly));
