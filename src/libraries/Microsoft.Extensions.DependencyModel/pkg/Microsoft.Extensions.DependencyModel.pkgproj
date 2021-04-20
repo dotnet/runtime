@@ -4,8 +4,18 @@
     <ProjectReference Include="..\src\Microsoft.Extensions.DependencyModel.csproj">
       <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <!-- Elements from previous packages that will be included in the newly built package -->
-    <HarvestIncludePaths Include="lib/net451;lib/netstandard1.3;lib/netstandard1.6" />
   </ItemGroup>
+  <!-- Remove TFMs that aren't supported by the package intentionally anymore. -->
+  <Target Name="_RemoveSupportedFramework"
+          BeforeTargets="ValidateLibraryPackage">
+    <ItemGroup>
+      <SupportedFramework Remove="netcoreapp1.0" />
+      <SupportedFramework Remove="netcoreapp1.1" />
+      <SupportedFramework Remove="netcore50" />
+      <SupportedFramework Remove="uap10.0" />
+      <SupportedFramework Remove="net451" />
+      <SupportedFramework Remove="net46" />
+    </ItemGroup>
+  </Target>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
