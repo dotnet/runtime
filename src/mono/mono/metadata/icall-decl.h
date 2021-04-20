@@ -158,7 +158,7 @@ ICALL_EXPORT void ves_icall_System_GCHandle_FreeHandle (MonoGCHandle handle);
 ICALL_EXPORT void ves_icall_System_GC_InternalCollect (int generation);
 ICALL_EXPORT void ves_icall_System_GC_RecordPressure (gint64);
 ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
-ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*);
+ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*, gint64*);
 
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, size_t);
 ICALL_EXPORT void ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *, guint8 *, size_t, MonoType *);

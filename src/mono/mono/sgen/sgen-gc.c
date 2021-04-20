@@ -3223,6 +3223,9 @@ sgen_gc_collect (int generation)
 int
 sgen_gc_collection_count (int generation)
 {
+	if (generation >= GENERATION_MAX)
+		return 0;
+
 	return mono_atomic_load_i32 (generation == GENERATION_NURSERY ? &mono_gc_stats.minor_gc_count : &mono_gc_stats.major_gc_count);
 }
 

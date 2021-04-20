@@ -1813,7 +1813,7 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 // In particular, if an exception is returned from underlying otherwise succeeded call,
 // is set into the MonoError with mono_error_set_exception_instance.
 // The result is that caller need only check MonoError.
-MonoObjectHandle
+MONO_COMPONENT_API MonoObjectHandle
 mono_runtime_try_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
 MonoObject*

@@ -237,6 +237,7 @@ sgen_memgov_major_post_sweep (mword used_slots_size)
 	}
 
 	sgen_gc_info.heap_size_bytes = sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size + sgen_los_memory_usage_total;
+	sgen_gc_info.total_committed_bytes = used_slots_size + (sgen_total_allocated_major - total_allocated_major_end) + sgen_los_memory_usage;
 	sgen_gc_info.fragmented_bytes = sgen_gc_info.heap_size_bytes - sgen_los_memory_usage - (used_slots_size + sgen_total_allocated_major - total_allocated_major_end);
 	sgen_gc_info.memory_load_bytes = mono_determine_physical_ram_available_size ();
 

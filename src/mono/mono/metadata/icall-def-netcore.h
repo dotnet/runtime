@@ -96,6 +96,9 @@ NOHANDLES(ICALL(ENV_15a, "get_TickCount64", ves_icall_System_Environment_get_Tic
 HANDLES(ENV_17, "internalGetEnvironmentVariable_native", ves_icall_System_Environment_GetEnvironmentVariable_native, MonoString, 1, (const_char_ptr))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
+ICALL_TYPE(EXCEPTION, "System.Exception", EXCEPTION_1)
+HANDLES(EXCEPTION_1, "GetExceptionCount", ves_icall_System_Exception_GetCount, guint32, 0, ())
+
 ICALL_TYPE(GC, "System.GC", GC_13)
 HANDLES(GC_13, "AllocPinnedArray", ves_icall_System_GC_AllocPinnedArray, MonoArray, 2, (MonoReflectionType, gint32))
 NOHANDLES(ICALL(GC_10, "GetAllocatedBytesForCurrentThread", ves_icall_System_GC_GetAllocatedBytesForCurrentThread))

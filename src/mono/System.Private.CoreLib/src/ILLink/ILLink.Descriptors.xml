@@ -99,6 +99,13 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<!-- ep-rt-mono.c: ep_rt_mono_init_finish -->
+		<!-- used in ep-rt-mono.c to intialize RuntimeEventSource -->
+		<type fullname="System.Diagnostics.Tracing.RuntimeEventSource">
+			<!-- ep-rt-mono.c: ep_rt_mono_init_finish -->
+			<method signature="System.Void Initialize()" />
+		</type>
+
 		<!-- exception.c (mono_get_exception_divide_by_zero) -->
 		<type fullname="System.DivideByZeroException">
 			<!-- mono_exception_from_name -->

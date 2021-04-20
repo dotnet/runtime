@@ -3040,6 +3040,8 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	}
 }
 
+static gint32 exceptions_thrown;
+
 /**
  * mono_handle_exception:
  * \param ctx saved processor state
@@ -3058,8 +3060,15 @@ mono_handle_exception (MonoContext *ctx, gpointer void_obj)
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_inc_i32 (&mono_perfcounters->exceptions_thrown);
 #endif
+	mono_atomic_inc_i32 (&exceptions_thrown);
 
 	return mono_handle_exception_internal (ctx, obj, FALSE, NULL);
+}
+
+guint32
+ves_icall_System_Exception_GetCount (void)
+{
+	return (guint32)exceptions_thrown;
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK

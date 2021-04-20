@@ -30,8 +30,8 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _fragmentationCounter;
         private PollingCounter? _committedCounter;
 
-#if !MONO
         private IncrementingPollingCounter? _exceptionCounter;
+#if !MONO
         private PollingCounter? _gcTimeCounter;
         private PollingCounter? _gen0SizeCounter;
         private PollingCounter? _gen1SizeCounter;
@@ -78,8 +78,8 @@ namespace System.Diagnostics.Tracing
                     return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
                 _committedCounter ??= new PollingCounter("gc-committed", this, () => (double)(GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
-#if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+#if !MONO
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
                 _gen0SizeCounter ??= new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size", DisplayUnits = "B" };
                 _gen1SizeCounter ??= new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size", DisplayUnits = "B" };

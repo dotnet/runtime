@@ -242,6 +242,7 @@ namespace System
         private static extern void _GetGCMemoryInfo(out long highMemoryLoadThresholdBytes,
                                         out long memoryLoadBytes,
                                         out long totalAvailableMemoryBytes,
+                                        out long totalCommittedBytes,
                                         out long heapSizeBytes,
                                         out long fragmentedBytes);
 
@@ -252,6 +253,7 @@ namespace System
             _GetGCMemoryInfo(out data._highMemoryLoadThresholdBytes,
                              out data._memoryLoadBytes,
                              out data._totalAvailableMemoryBytes,
+                             out data._totalCommittedBytes,
                              out data._heapSizeBytes,
                              out data._fragmentedBytes);
 

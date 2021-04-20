@@ -5,12 +5,16 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
     public partial class Exception
     {
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern uint GetExceptionCount();
+
         internal readonly struct DispatchState
         {
             public readonly MonoStackFrame[]? StackFrames;
@@ -145,5 +149,6 @@ namespace System
         private static string? SerializationWatsonBuckets => null;
         private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
         private string? SerializationStackTraceString => GetStackTrace(true);
+
     }
 }
