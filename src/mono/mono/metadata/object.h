@@ -135,6 +135,9 @@ mono_ldstr		    (MonoDomain *domain, MonoImage *image, uint32_t str_index);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString*
 mono_string_is_interned	    (MonoString *str);
 
+MONO_API MONO_RT_EXTERNAL_ONLY int
+mono_string_instance_is_interned (MonoString *str_raw);
+
 MONO_API MONO_RT_EXTERNAL_ONLY
 MonoString*
 mono_string_intern	    (MonoString *str);

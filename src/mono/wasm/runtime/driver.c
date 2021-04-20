@@ -95,7 +95,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	int is_interned = mono_string_is_interned (str) == str;
+	int is_interned = mono_string_instance_is_interned (str);
 	mono_unichar2 *native_chars = mono_string_chars (str);
 	int native_len = mono_string_length (str) * 2;
 	int native_res_len;
@@ -928,7 +928,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
+		mono_string_instance_is_interned ((MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
@@ -955,7 +955,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
+		mono_string_instance_is_interned ((MonoString *)obj)) {
 		*resultL = 0;
 		return MARSHAL_TYPE_STRING_INTERNED;
 	}

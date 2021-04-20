@@ -103,6 +103,7 @@ static MonoCoopMutex ldstr_section;
 /* Used by remoting proxies */
 static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
+static MonoGHashTable *instance_intern_table;
 
 static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
@@ -6715,6 +6716,16 @@ mono_string_get_pinned (MonoStringHandle str, MonoError *error)
 	return news;
 }
 
+static guint
+intern_ptr_hash_internal (MonoString *s) {
+	return (guint)(void*)s;
+}
+
+static gboolean
+intern_ptr_equal_internal (MonoString *s1, MonoString *s2) {
+	return s1 == s2;
+}
+
 MonoStringHandle
 mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error)
 {
@@ -6744,10 +6755,34 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 	res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, MONO_HANDLE_RAW (str));
 	if (res)
 		MONO_HANDLE_ASSIGN_RAW (s, res);
-	else
+	else {
+		if (!instance_intern_table) {
+			MonoGHashTable *table = mono_g_hash_table_new_type_internal ((GHashFunc)intern_ptr_hash_internal, (GCompareFunc)intern_ptr_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Interned Flags");
+			mono_memory_barrier ();
+			instance_intern_table = table;
+		}
 		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+		mono_g_hash_table_insert_internal (instance_intern_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+	}
 	ldstr_unlock ();
 	return s;
+}
+
+int
+mono_string_instance_is_interned (MonoString *str_raw)
+{
+	int result = FALSE;
+	ERROR_DECL (error);
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoString, str);
+	MONO_ENTER_GC_UNSAFE;
+	ldstr_lock ();
+	MonoString * ptr = (MonoString *)mono_g_hash_table_lookup (instance_intern_table, MONO_HANDLE_RAW (str));
+	result = (ptr != 0);
+	ldstr_unlock ();
+	MONO_EXIT_GC_UNSAFE;
+	mono_error_assert_ok (error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /**
