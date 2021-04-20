@@ -34,12 +34,6 @@
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
-
-    <TrimmerRootAssembly Include="LoaderLinkTest.Dynamic" />
-    <TrimmerRootAssembly Include="LoaderLinkTest.Shared" />
-    <TrimmerRootAssembly Include="ReferencedClassLib" />
-    <TrimmerRootAssembly Include="ReferencedClassLibNeutralIsSatellite" />
-    <TrimmerRootAssembly Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
