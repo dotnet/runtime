@@ -207,10 +207,10 @@ namespace System.ComponentModel
         /// <summary>Clear the global caches this maintains on top of reflection.</summary>
         internal static void ClearReflectionCaches()
         {
-            Volatile.Write(ref s_propertyCache, null);
-            Volatile.Write(ref s_eventCache, null);
-            Volatile.Write(ref s_attributeCache, null);
-            Volatile.Write(ref s_extendedPropertyCache, null);
+            s_propertyCache = null;
+            s_eventCache = null;
+            s_attributeCache = null;
+            s_extendedPropertyCache = null;
         }
 
         /// <summary>
