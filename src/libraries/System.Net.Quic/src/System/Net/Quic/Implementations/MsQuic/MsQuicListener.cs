@@ -21,8 +21,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _stateHandle;
         private volatile bool _disposed;
 
-        private IPEndPoint _listenEndPoint;
-        private readonly List<SslApplicationProtocol> _applicationProtocols;
+        private readonly IPEndPoint _listenEndPoint;
 
         private sealed class State
         {
@@ -46,9 +45,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
-            _applicationProtocols = options.ServerAuthenticationOptions!.ApplicationProtocols!;
-            _listenEndPoint = options.ListenEndPoint!;
-
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);
             try
@@ -68,7 +64,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            Start();
+            _listenEndPoint = Start(options);
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -118,11 +114,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             _disposed = true;
         }
 
-        private unsafe void Start()
+        private unsafe IPEndPoint Start(QuicListenerOptions options)
         {
-            ThrowIfDisposed();
+            List<SslApplicationProtocol> applicationProtocols = options.ServerAuthenticationOptions!.ApplicationProtocols!;
+            IPEndPoint listenEndPoint = options.ListenEndPoint!;
 
-            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
+            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(listenEndPoint);
 
             uint status;
 
@@ -130,8 +127,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicBuffer[]? buffers = null;
             try
             {
-                MsQuicAlpnHelper.Prepare(_applicationProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)_applicationProtocols.Count, ref address);
+                MsQuicAlpnHelper.Prepare(applicationProtocols, out handles, out buffers);
+                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)applicationProtocols.Count, ref address);
             }
             finally
             {
@@ -141,7 +138,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
             SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
-            _listenEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
+            return MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
         }
 
         internal override void Close()
