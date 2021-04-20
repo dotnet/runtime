@@ -204,11 +204,13 @@
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
                              $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
 
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
       Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj;
                              $(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
@@ -260,7 +262,7 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.packages+'))">
+  <ItemGroup Condition="$(_subset.Contains('+libs.packages+')) and '$(PgoInstrument)' != 'true'">
     <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 

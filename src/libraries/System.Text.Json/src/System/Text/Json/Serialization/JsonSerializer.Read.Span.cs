@@ -22,12 +22,14 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            options.RootBuiltInConvertersAndTypeInfoCreator();
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
@@ -54,7 +56,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
-        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
             {
@@ -65,6 +67,8 @@ namespace System.Text.Json
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            options.RootBuiltInConvertersAndTypeInfoCreator();
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);

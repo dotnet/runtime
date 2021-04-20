@@ -4,6 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Net.Quic;
 using System.IO;
 using System.Collections.Generic;
@@ -13,6 +14,10 @@ using System.Net.Security;
 
 namespace System.Net.Http
 {
+    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
         // TODO: once HTTP/3 is standardized, create APIs for this.
@@ -204,7 +209,7 @@ namespace System.Net.Http
 
                 if (quicStream == null)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 // 0-byte write to force QUIC to allocate a stream ID.
@@ -219,7 +224,7 @@ namespace System.Net.Http
 
                 if (goAway)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
@@ -233,7 +238,7 @@ namespace System.Net.Http
             {
                 // This will happen if we aborted _connection somewhere.
                 Abort(ex);
-                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ErrorCode), ex, RequestRetryType.RetryOnSameOrNextProxy);
+                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ErrorCode), ex, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {
@@ -276,7 +281,7 @@ namespace System.Net.Http
 
             while (_waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
             {
-                tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy));
+                tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure));
             }
         }
 

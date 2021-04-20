@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Text;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 using Internal.Runtime.CompilerServices;
@@ -280,53 +279,28 @@ namespace System
         /// <summary>
         /// Fills the contents of this span with the given value.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Fill(T value)
         {
             if (Unsafe.SizeOf<T>() == 1)
             {
-                uint length = (uint)_length;
-                if (length == 0)
-                    return;
-
-                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loop below.
-                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref tmp), length);
+#if MONO
+                // Mono runtime's implementation of initblk performs a null check on the address.
+                // We'll perform a length check here to avoid passing a null address in the empty span case.
+                if (_length != 0)
+#endif
+                {
+                    // Special-case single-byte types like byte / sbyte / bool.
+                    // The runtime eventually calls memset, which can efficiently support large buffers.
+                    // We don't need to check IsReferenceOrContainsReferences because no references
+                    // can ever be stored in types this small.
+                    Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref value), (uint)_length);
+                }
             }
             else
             {
-                // Do all math as nuint to avoid unnecessary 64->32->64 bit integer truncations
-                nuint length = (uint)_length;
-                if (length == 0)
-                    return;
-
-                ref T r = ref _pointer.Value;
-
-                // TODO: Create block fill for value types of power of two sizes e.g. 2,4,8,16
-
-                nuint elementSize = (uint)Unsafe.SizeOf<T>();
-                nuint i = 0;
-                for (; i < (length & ~(nuint)7); i += 8)
-                {
-                    Unsafe.AddByteOffset<T>(ref r, (i + 0) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 1) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 2) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 3) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 4) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 5) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 6) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 7) * elementSize) = value;
-                }
-                if (i < (length & ~(nuint)3))
-                {
-                    Unsafe.AddByteOffset<T>(ref r, (i + 0) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 1) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 2) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 3) * elementSize) = value;
-                    i += 4;
-                }
-                for (; i < length; i++)
-                {
-                    Unsafe.AddByteOffset<T>(ref r, i * elementSize) = value;
-                }
+                // Call our optimized workhorse method for all other types.
+                SpanHelpers.Fill(ref _pointer.Value, (uint)_length, value);
             }
         }
 

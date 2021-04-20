@@ -10,5 +10,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
+    <_InTreeEmSdk>$(MSBuildThisFileDirectory)..\..\..\mono\wasm\emsdk</_InTreeEmSdk>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists($(_InTreeEmSdk))">$(_InTreeEmSdk)</EMSDK_PATH>
   </PropertyGroup>
 </Project>

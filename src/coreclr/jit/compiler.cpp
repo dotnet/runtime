@@ -5180,6 +5180,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
+#if TRACK_LSRA_STATS
+    if (JitConfig.DisplayLsraStats() == 2)
+    {
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+    }
+#endif // TRACK_LSRA_STATS
+
     // We're done -- set the active phase to the last phase
     // (which isn't really a phase)
     mostRecentlyActivePhase = PHASE_POST_EMIT;

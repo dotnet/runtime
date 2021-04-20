@@ -100,6 +100,31 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(builder => configureLogging(builder)));
         }
+
+        /// <summary>
+        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/>.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions">The delegate for configuring the <see cref="HostOptions"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureHostOptions(this IHostBuilder hostBuilder, Action<HostBuilderContext, HostOptions> configureOptions)
+        {
+            return hostBuilder.ConfigureServices(
+                (context, collection) => collection.Configure<HostOptions>(options => configureOptions(context, options)));
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the <see cref="HostOptions"/> of the <see cref="IHost"/> instance
+        /// related to th.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions">The delegate for configuring the <see cref="HostOptions"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureHostOptions(this IHostBuilder hostBuilder, Action<HostOptions> configureOptions)
+        {
+            return hostBuilder.ConfigureServices(collection => collection.Configure(configureOptions));
+        }
+
         /// <summary>
         /// Sets up the configuration for the remainder of the build process and application. This can be called multiple times and
         /// the results will be additive. The results will be available at <see cref="HostBuilderContext.Configuration"/> for
@@ -245,7 +270,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
-            return hostBuilder.ConfigureServices((context, collection) => collection.AddSingleton<IHostLifetime, ConsoleLifetime>());
+            return hostBuilder.ConfigureServices(collection => collection.AddSingleton<IHostLifetime, ConsoleLifetime>());
         }
 
         /// <summary>
@@ -257,7 +282,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
         {
-            return hostBuilder.ConfigureServices((context, collection) =>
+            return hostBuilder.ConfigureServices(collection =>
             {
                 collection.AddSingleton<IHostLifetime, ConsoleLifetime>();
                 collection.Configure(configureOptions);
