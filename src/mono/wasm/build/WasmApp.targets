@@ -258,8 +258,9 @@
       <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
       <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
       <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
-      <EmscriptenPythonBinPath   Condition="'$(EmscriptenPythonToolsPath)' != ''">$(EmscriptenPythonToolsPath)\bin\</EmscriptenPythonBinPath>
-
+      <EmscriptenPythonBinPath Condition="'$(EmscriptenPythonToolsPath)' != '' and $([MSBuild]::IsOSPlatform('windows'))">$(EmscriptenPythonToolsPath)</EmscriptenPythonBinPath>
+      <EmscriptenPythonBinPath Condition="'$(EmscriptenPythonToolsPath)' != '' and !$([MSBuild]::IsOSPlatform('windows'))">$(EmscriptenPythonToolsPath)\bin\</EmscriptenPythonBinPath>
+        
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonBinPath)' == '' or !Exists('$(EmscriptenPythonBinPath)'))">%24(EmscriptenPythonBinPath)=$(EmscriptenPythonBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
