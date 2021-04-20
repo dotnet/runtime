@@ -5320,20 +5320,17 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ CORINFO_MODULE_HANDLE pModule,
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
-    _Out_ CorInfoCallConvExtension *callConvOut,
-    _Out_ bool* suppressGCTransitionOut,
+    _Inout_ CallConvBuilder* builder,
     _Out_ UINT *errorResID)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(callConvOut != NULL);
-        PRECONDITION(suppressGCTransitionOut != NULL);
+        PRECONDITION(builder != NULL);
         PRECONDITION(errorResID != NULL);
     }
     CONTRACTL_END
 
-    *suppressGCTransitionOut = false;
     HRESULT hr;
 
     // Instantiations aren't relevant here
@@ -5349,9 +5346,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
 
-    *callConvOut = CorInfoCallConvExtension::Managed;
-
-    CallConvBuilder callConvBuilder;
+    CallConvBuilder& callConvBuilder = *builder;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
@@ -5387,24 +5382,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         }
     }
 
-    CallConvBuilder::CallConvModifiers modifiers;
-    callConvBuilder.GetCurrentCallConv(*callConvOut, modifiers);
-
-    *suppressGCTransitionOut = ((modifiers & CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION) != 0);
-
-    if (modifiers & CallConvBuilder::CALL_CONV_MOD_MEMBERFUNCTION)
-    {
-        if (*callConvOut == CallConvBuilder::DefaultValue)
-        {
-            // In this case, the only specified calling convention is CallConvMemberFunction.
-            // Set *callConvOut to the default unmanaged calling convention.
-            *callConvOut = MetaSig::GetDefaultUnmanagedCallingConvention();
-        }
-
-        *callConvOut = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(*callConvOut);
-    }
-
-    return *callConvOut != CallConvBuilder::DefaultValue ? S_OK : S_FALSE;
+    return  S_OK;
 }
 
 // According to ECMA-335, type name strings are UTF-8. Since we are
@@ -5514,7 +5492,7 @@ namespace
                 continue;
 
             // If the base calling convention is already set, then we are observing an error.
-            if (state.CallConvBase != CallConvBuilder::DefaultValue)
+            if (state.CallConvBase != CallConvBuilder::UnsetValue)
                 return false;
 
             state.CallConvBase = baseTypes[i].Flag;
@@ -5536,12 +5514,30 @@ namespace
         // we don't know anything about.
         return true;
     }
+
+    CorInfoCallConvExtension GetMemberFunctionUnmanagedCallingConventionVariant(CorInfoCallConvExtension baseCallConv)
+    {
+        switch (baseCallConv)
+        {
+        case CorInfoCallConvExtension::C:
+            return CorInfoCallConvExtension::CMemberFunction;
+        case CorInfoCallConvExtension::Stdcall:
+            return CorInfoCallConvExtension::StdcallMemberFunction;
+        case CorInfoCallConvExtension::Fastcall:
+            return CorInfoCallConvExtension::FastcallMemberFunction;
+        case CorInfoCallConvExtension::Thiscall:
+            return CorInfoCallConvExtension::Thiscall;
+        default:
+            _ASSERTE("Calling convention is not an unmanaged base calling convention.");
+            return baseCallConv;
+        }
+    }
 }
 
-const CorInfoCallConvExtension CallConvBuilder::DefaultValue = CorInfoCallConvExtension::Managed;
+const CorInfoCallConvExtension CallConvBuilder::UnsetValue = CorInfoCallConvExtension::Managed;
 
 CallConvBuilder::CallConvBuilder()
-    : _state{ DefaultValue , CALL_CONV_MOD_NONE }
+    : _state{ UnsetValue , CALL_CONV_MOD_NONE }
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -5584,13 +5580,31 @@ bool CallConvBuilder::AddTypeName(
         TypeModCallConvs);
 }
 
-void CallConvBuilder::GetCurrentCallConv(
-    _Out_ CorInfoCallConvExtension &baseCallConv,
-    _Out_ CallConvModifiers &modsCallConv)
+CorInfoCallConvExtension CallConvBuilder::GetCurrentCallConv() const
 {
     LIMITED_METHOD_CONTRACT;
-    baseCallConv = _state.CallConvBase;
-    modsCallConv = _state.CallConvModifiers;
+
+    if (IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_MEMBERFUNCTION))
+    {
+        CorInfoCallConvExtension baseMaybe = _state.CallConvBase;
+        if (baseMaybe == CallConvBuilder::UnsetValue)
+        {
+            // In this case, the only specified calling convention is CallConvMemberFunction.
+            // When the Member function modifier is defined with no base type, we assume
+            // the default unmanaged calling convention.
+            baseMaybe = MetaSig::GetDefaultUnmanagedCallingConvention();
+        }
+
+        return GetMemberFunctionUnmanagedCallingConventionVariant(baseMaybe);
+    }
+
+    return _state.CallConvBase;
+}
+
+bool CallConvBuilder::IsCurrentCallConvModSet(_In_ CallConvModifiers mod) const
+{
+    LIMITED_METHOD_CONTRACT;
+    return (mod & _state.CallConvModifiers) != CALL_CONV_MOD_NONE;
 }
 
 //---------------------------------------------------------------------------------------
