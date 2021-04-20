@@ -3331,7 +3331,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
 
         //[Variation("Bug398968 - Globalization is broken for document() function")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51244", TestPlatforms.Browser)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
         public void RegressionTest1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
