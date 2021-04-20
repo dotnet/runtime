@@ -38,7 +38,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return SerializeAsync(
+            return WriteAsync(
                 utf8Json,
                 value,
                 GetRuntimeType(value),
@@ -77,23 +77,12 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return SerializeAsync<object?>(
+            return WriteAsync<object?>(
                 utf8Json,
                 value!,
                 GetRuntimeTypeAndValidateInputType(value, inputType),
                 options,
                 cancellationToken);
-        }
-
-        private static Task SerializeAsync<TValue>(
-            Stream utf8Json,
-            in TValue value,
-            Type runtimeType,
-            JsonSerializerOptions? options,
-            CancellationToken cancellationToken)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
-            return WriteAsyncCore(utf8Json, value!, runtimeType, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -123,7 +112,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteAsyncCore(utf8Json, value, typeof(TValue), jsonTypeInfo, cancellationToken);
+            return WriteAsyncCore(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -162,18 +151,28 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             return WriteAsyncCore(
                 utf8Json,
                 value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                JsonHelpers.GetTypeInfo(context, inputType),
+                JsonHelpers.GetTypeInfo(context, runtimeType),
                 cancellationToken);
+        }
+
+        private static Task WriteAsync<TValue>(
+            Stream utf8Json,
+            in TValue value,
+            Type runtimeType,
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken)
+        {
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
+            return WriteAsyncCore(utf8Json, value!, jsonTypeInfo, cancellationToken);
         }
 
         private static async Task WriteAsyncCore<TValue>(
             Stream utf8Json,
             TValue value,
-            Type inputType,
             JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken)
         {

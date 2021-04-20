@@ -25,7 +25,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonSerializerOptions? options = null)
         {
-            return Serialize(value, GetRuntimeType(value), options);
+            return Write(value, GetRuntimeType(value), options);
         }
 
         /// <summary>
@@ -51,18 +51,10 @@ namespace System.Text.Json
             [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
             JsonSerializerOptions? options = null)
         {
-            return Serialize<object?>(
+            return Write(
                 value,
                 GetRuntimeTypeAndValidateInputType(value, inputType),
                 options);
-        }
-
-        private static string Serialize<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-            JsonTypeInfo typeInfo = options.GetOrAddClassForRootType(runtimeType);
-            return SerializeUsingMetadata(value, typeInfo);
         }
 
         /// <summary>
@@ -117,6 +109,14 @@ namespace System.Text.Json
             return SerializeUsingMetadata(value, JsonHelpers.GetTypeInfo(context, runtimeType));
         }
 
+        private static string Write<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
+        {
+            options ??= JsonSerializerOptions.s_defaultOptions;
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+            JsonTypeInfo typeInfo = options.GetOrAddClassForRootType(runtimeType);
+            return SerializeUsingMetadata(value, typeInfo);
+        }
+
         private static string SerializeUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
         {
             if (jsonTypeInfo == null)
@@ -133,7 +133,7 @@ namespace System.Text.Json
             {
                 using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
                 {
-                    SerializeUsingMetadata(writer, value, jsonTypeInfo);
+                    WriteUsingMetadata(writer, value, jsonTypeInfo);
                 }
 
                 return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);

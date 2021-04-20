@@ -21,7 +21,7 @@ namespace System.Net.Http.Json.Functional.Tests
         {
         }
 
-        private JsonConverter GetRuntimeProvidedCustomConverter(System.Type type)
+        private JsonConverter GetRuntimeProvidedCustomConverter(Type type)
         {
             IList<JsonConverter> converters = Options.Converters;
 

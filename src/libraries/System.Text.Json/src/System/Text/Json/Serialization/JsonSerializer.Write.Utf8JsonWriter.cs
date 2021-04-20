@@ -60,17 +60,6 @@ namespace System.Text.Json
                 options);
         }
 
-        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
-            SerializeUsingMetadata(writer, value, typeInfo);
-        }
-
         /// <summary>
         /// Write one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
@@ -96,7 +85,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            SerializeUsingMetadata(writer, value, jsonTypeInfo);
+            WriteUsingMetadata(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -133,7 +122,18 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            SerializeUsingMetadata(writer, value, JsonHelpers.GetTypeInfo(context, runtimeType));
+            WriteUsingMetadata(writer, value, JsonHelpers.GetTypeInfo(context, runtimeType));
+        }
+
+        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type runtimeType, JsonSerializerOptions? options)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
+            WriteUsingMetadata(writer, value, typeInfo);
         }
     }
 }

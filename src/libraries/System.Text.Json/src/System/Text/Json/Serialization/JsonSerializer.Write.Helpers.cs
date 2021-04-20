@@ -39,7 +39,7 @@ namespace System.Text.Json
             return success;
         }
 
-        private static void SerializeUsingMetadata<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static void WriteUsingMetadata<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
         {
             WriteStack state = default;
             state.Initialize(jsonTypeInfo, supportContinuation: false);

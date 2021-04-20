@@ -645,7 +645,7 @@ namespace System.Text.Json.Node
     }
     public abstract partial class JsonValue : System.Text.Json.Node.JsonNode
     {
-        internal JsonValue() { }
+        private protected JsonValue(System.Text.Json.Node.JsonNodeOptions? options = default(System.Text.Json.Node.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Node.JsonValue? Create<T>(T? value, System.Text.Json.Node.JsonNodeOptions? options = default(System.Text.Json.Node.JsonNodeOptions?)) { throw null; }
         public abstract bool TryGetValue<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? value);
     }
