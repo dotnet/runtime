@@ -502,8 +502,8 @@ implements. The remaining information specifies the virtual instance or non-virt
 provides the implementation.
 
 While the syntax specified here (as well as the actual metadata format (paragraph II.22.27) allows any virtual
-method to be used to provide an implementation, a conforming program shall provide a virtual instance method
-actually implemented directly on the type or a static method implemented on the type or on a base type.
+method to be used to provide an implementation, a conforming program shall provide a virtual instance
+or static method actually implemented directly on the type.
 
 ### II.12 Semantics of Interfaces
 
