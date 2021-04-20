@@ -3521,6 +3521,7 @@ void region_allocator::print_map (const char* msg)
 
     uint32_t* current_index = region_map_left_start;
     uint32_t* end_index = region_map_left_end;
+    uint32_t  count_free_units = 0;
 
     for (int i = 0; i < 2; i++)
     {
@@ -3531,14 +3532,22 @@ void region_allocator::print_map (const char* msg)
             bool free_p = is_unit_memory_free (current_val);
 
             dprintf (REGIONS_LOG, ("[%s][%s: %Id]%d->%d", heap_type, (free_p ? "F" : "B"), (size_t)current_num_units,
-                (int)(current_index - map_start),
-                (int)(current_index - map_start + current_num_units)));
+                (int)(current_index - region_map_left_start),
+                (int)(current_index - region_map_left_start + current_num_units)));
+
+            if (free_p)
+            {
+                count_free_units += current_num_units;
+            }
 
             current_index += current_num_units;
         }
         current_index = region_map_right_start;
         end_index = region_map_right_end;
     }
+
+    count_free_units += (uint32_t)(region_map_right_start - region_map_left_end);
+    assert(count_free_units == total_free_units);
 
     uint32_t total_regions = (uint32_t)((global_region_end - global_region_start) / region_alignment); 
 
@@ -3610,14 +3619,14 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
 
     uint32_t* current_index;
     uint32_t* end_index;
-    if (direction == 1)
+    if (direction == allocate_forward)
     {
         current_index = region_map_left_start;
         end_index = region_map_left_end;
     }
     else
     {
-        assert(direction == -1);
+        assert(direction == allocate_backward);
         current_index = region_map_right_end;
         end_index = region_map_right_start;
     }
