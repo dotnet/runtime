@@ -25,13 +25,13 @@ namespace System
 
         public bool MoveNext()
         {
-            nint length = (nint)_array.LongLength;
-            if (_index < length)
+            nint index = _index + 1;
+            if ((nuint)index >= (nuint)_array.LongLength)
             {
-                _index++;
-                return _index < length;
+                return false;
             }
-            return false;
+            _index = index;
+            return true;
         }
 
         public object? Current
@@ -39,11 +39,21 @@ namespace System
             get
             {
                 nint index = _index;
-                if (index < 0)
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-                if (index >= (nint)_array.LongLength)
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
-                return _array.InternalGetValue(index);
+                Array array = _array;
+
+                if ((nuint)index >= (nuint)array.LongLength)
+                {
+                    if (index < 0)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
+                    }
+                }
+
+                return array.InternalGetValue(index);
             }
         }
 
@@ -77,7 +87,6 @@ namespace System
             int index = _index + 1;
             if ((uint)index >= (uint)_array.Length)
             {
-                _index = _array.Length;
                 return false;
             }
             _index = index;

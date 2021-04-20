@@ -1041,10 +1041,11 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
                 COMPlusThrow(kInvalidCastException,W("InvalidCast_StoreArrayElement"));
 
             HELPER_METHOD_FRAME_END();
+
+            // Refresh pData in case GC moved objects around
+            pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
         }
 
-        // Refresh pData in case GC moved objects around
-        pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
         SetObjectReference((OBJECTREF*)pData,obj);
     }
     else
