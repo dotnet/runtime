@@ -16,12 +16,6 @@ namespace Microsoft.NET.HostModel.Tests
     {
         private SharedTestState sharedTestState;
 
-        private void CreateSymbolicLink(string source, string target)
-        {
-            if (!SymbolicLinking.MakeSymbolicLink(source, target, out var errorString))
-                throw new Exception($"Failed to create symbolic link '{source}' targeting: '{target}': {errorString}");
-        }
-
         public AppHostUsedWithSymbolicLinks(AppHostUsedWithSymbolicLinks.SharedTestState fixture)
         {
             sharedTestState = fixture;
@@ -44,7 +38,7 @@ namespace Microsoft.NET.HostModel.Tests
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
             var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
 
-            CreateSymbolicLink(symlinkFullPath, appExe);
+            using var symlink = new SymLink(symlinkFullPath, appExe);
             Command.Create(symlinkFullPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -66,32 +60,24 @@ namespace Microsoft.NET.HostModel.Tests
 
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
-            
+
             var appExe = fixture.TestProject.AppExe;
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(firstSymlinkRelativePath)));
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(secondSymlinkRelativePath)));
 
             // second symlink -> apphost
-            string secondSymbolicLink = Path.Combine(testDir, secondSymlinkRelativePath);
-            CreateSymbolicLink(secondSymbolicLink, appExe);
+            using var secondSymbolicLink = new SymLink(Path.Combine(testDir, secondSymlinkRelativePath), appExe);
 
             // first symlink -> second symlink
-            string firstSymbolicLink = Path.Combine(testDir, firstSymlinkRelativePath);
-            CreateSymbolicLink(firstSymbolicLink, secondSymbolicLink);
+            using var firstSymbolicLink = new SymLink(Path.Combine(testDir, firstSymlinkRelativePath), secondSymbolicLink.SrcPath);
 
-            Command.Create(firstSymbolicLink)
+            Command.Create(firstSymbolicLink.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Directory.Delete(firstSymbolicLink);
-                Directory.Delete(secondSymbolicLink);
-            }
         }
 
         //[Theory]
@@ -114,10 +100,9 @@ namespace Microsoft.NET.HostModel.Tests
             var builtDotnet = fixture.BuiltDotnet.BinPath;
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
-            var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
 
-            CreateSymbolicLink(symlinkFullPath, appExe);
-            Command.Create(symlinkFullPath)
+            using var symlink = new SymLink(Path.Combine(testDir, symlinkRelativePath), appExe);
+            Command.Create(symlink.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("DOTNET_ROOT", builtDotnet)
@@ -143,9 +128,9 @@ namespace Microsoft.NET.HostModel.Tests
             var dotnetSymlink = Path.Combine(testDir, "dotnet");
             var dotnetDir = fixture.BuiltDotnet.BinPath;
 
-            CreateSymbolicLink(dotnetSymlink, dotnetDir);
+            using var symlink = new SymLink(dotnetSymlink, dotnetDir);
             Command.Create(appExe)
-                .EnvironmentVariable("DOTNET_ROOT", dotnetSymlink)
+                .EnvironmentVariable("DOTNET_ROOT", symlink.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -168,7 +153,7 @@ namespace Microsoft.NET.HostModel.Tests
             var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
             Directory.Move(binDir, binDirNewPath);
 
-            CreateSymbolicLink(binDir, binDirNewPath);
+            using var symlink = new SymLink(binDir, binDirNewPath);
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -192,18 +177,13 @@ namespace Microsoft.NET.HostModel.Tests
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             var dotnetSymlink = Path.Combine(testDir, "dotnet");
 
-            CreateSymbolicLink(dotnetSymlink, dotnetExe);
-            Command.Create(dotnetSymlink, fixture.TestProject.AppDll)
+            using var symlink = new SymLink(dotnetSymlink, dotnetExe);
+            Command.Create(symlink.SrcPath, fixture.TestProject.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Directory.Delete(dotnetSymlink);
-            }
         }
 
         [Fact]
@@ -221,7 +201,7 @@ namespace Microsoft.NET.HostModel.Tests
             var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
             Directory.Move(binDir, binDirNewPath);
 
-            CreateSymbolicLink(binDir, binDirNewPath);
+            using var symlink = new SymLink(binDir, binDirNewPath);
             dotnet.Exec(fixture.TestProject.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -242,10 +222,10 @@ namespace Microsoft.NET.HostModel.Tests
 
             var dotnet = fixture.SdkDotnet;
             var binDir = fixture.TestProject.OutputDirectory;
-            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse"); 
+            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
             Directory.Move(binDir, binDirNewPath);
 
-            CreateSymbolicLink(binDir, binDirNewPath);
+            using var symlink = new SymLink(binDir, binDirNewPath);
             dotnet.Exec("run")
                 .WorkingDirectory(fixture.TestProject.Location)
                 .CaptureStdErr()
@@ -275,12 +255,12 @@ namespace Microsoft.NET.HostModel.Tests
             var firstSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("kn-IN"));
             var firstSatelliteNewDir = Path.Combine(satellitesDir, "kn-IN");
             Directory.Move(firstSatelliteDir, firstSatelliteNewDir);
-            CreateSymbolicLink(firstSatelliteDir, firstSatelliteNewDir);
+            using var symlink1 = new SymLink(firstSatelliteDir, firstSatelliteNewDir);
 
             var secondSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("ta-IN"));
             var secondSatelliteNewDir = Path.Combine(satellitesDir, "ta-IN");
             Directory.Move(secondSatelliteDir, secondSatelliteNewDir);
-            CreateSymbolicLink(secondSatelliteDir, secondSatelliteNewDir);
+            using var symlink2 = new SymLink(secondSatelliteDir, secondSatelliteNewDir);
 
             Command.Create(appExe)
                 .CaptureStdErr()
