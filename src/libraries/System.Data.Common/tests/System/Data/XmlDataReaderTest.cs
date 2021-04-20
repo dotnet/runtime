@@ -34,7 +34,6 @@ namespace System.Data.Tests
     public class XmlDataReaderTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51369", TestPlatforms.Browser)]
         public void XmlLoadTest()
         {
             var ds = new DataSet();
