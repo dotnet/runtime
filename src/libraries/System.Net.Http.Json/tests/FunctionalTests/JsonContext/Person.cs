@@ -55,7 +55,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 setter: static (obj, value) => { ((Person)obj).Age = value; },
                 ignoreCondition: default,
                 numberHandling: default,
-                propertyName: "Age",
+                propertyName: nameof(Tests.Person.Age),
                 jsonPropertyName: null);
 
             properties[1] = JsonMetadataServices.CreatePropertyInfo(
@@ -68,7 +68,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 setter: static (obj, value) => { ((Person)obj).Name = value; },
                 ignoreCondition: default,
                 numberHandling: default,
-                propertyName: "Name",
+                propertyName: nameof(Tests.Person.Name),
                 jsonPropertyName: null);
 
             properties[2] = JsonMetadataServices.CreatePropertyInfo(
@@ -81,7 +81,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 setter: static (obj, value) => { ((Person)obj).Parent = value; },
                 ignoreCondition: default,
                 numberHandling: default,
-                propertyName: "Parent",
+                propertyName: nameof(Tests.Person.Parent),
                 jsonPropertyName: null);
 
             properties[3] = JsonMetadataServices.CreatePropertyInfo(
@@ -94,7 +94,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 setter: static (obj, value) => { ((Person)obj).PlaceOfBirth = value; },
                 ignoreCondition: default,
                 numberHandling: default,
-                propertyName: "PlaceOfBirth",
+                propertyName: nameof(Tests.Person.PlaceOfBirth),
                 jsonPropertyName: null);
 
             return properties;
