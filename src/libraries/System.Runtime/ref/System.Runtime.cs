@@ -305,6 +305,7 @@ namespace System
         public bool IsSynchronized { get { throw null; } }
         public int Length { get { throw null; } }
         public long LongLength { get { throw null; } }
+        public static int MaxLength { get { throw null; } }
         public int Rank { get { throw null; } }
         public object SyncRoot { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }

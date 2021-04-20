@@ -1644,19 +1644,6 @@ JITINTERFACE_HRESULT WrapICorJitInfo::allocPgoInstrumentationBySchema(
     return temp;
 }
 
-CORINFO_CLASS_HANDLE WrapICorJitInfo::getLikelyClass(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          CORINFO_CLASS_HANDLE baseHnd,
-          uint32_t ilOffset,
-          uint32_t* pLikelihood,
-          uint32_t* pNumberOfClasses)
-{
-    API_ENTER(getLikelyClass);
-    CORINFO_CLASS_HANDLE temp = wrapHnd->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
-    API_LEAVE(getLikelyClass);
-    return temp;
-}
-
 void WrapICorJitInfo::recordCallSite(
           uint32_t instrOffset,
           CORINFO_SIG_INFO* callSig,

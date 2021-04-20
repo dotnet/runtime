@@ -59,6 +59,8 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             ReadStack state = default;
             state.Initialize(typeof(TValue), options, supportContinuation: false);
 
@@ -121,6 +123,8 @@ namespace System.Text.Json
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            options.RootBuiltInConvertersAndTypeInfoCreator();
 
             ReadStack state = default;
             state.Initialize(returnType, options, supportContinuation: false);

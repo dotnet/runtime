@@ -1825,19 +1825,6 @@ HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
 }
 
-// Get the likely implementing class for a virtual call or interface call made by ftnHnd
-// at the indicated IL offset. baseHnd is the interface class or base class for the method
-// being called.
-CORINFO_CLASS_HANDLE MyICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
-                                            CORINFO_CLASS_HANDLE  baseHnd,
-                                            uint32_t              ilOffset,
-                                            uint32_t*             pLikelihood,
-                                            uint32_t*             pNumberOfClasses)
-{
-    jitInstance->mc->cr->AddCall("getLikelyClass");
-    return jitInstance->mc->repGetLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
-}
-
 // Associates a native call site, identified by its offset in the native code stream, with
 // the signature information and method handle the JIT used to lay out the call site. If
 // the call site has no signature information (e.g. a helper call) or has no method handle

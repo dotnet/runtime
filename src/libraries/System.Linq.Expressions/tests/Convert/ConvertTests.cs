@@ -1679,6 +1679,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertDoubleToNullableULongTest(bool useInterpreter)
         {
             foreach (double value in new double[] { 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN })
@@ -1904,6 +1905,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertNullableDoubleToUIntTest(bool useInterpreter)
         {
             foreach (double? value in new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN })
@@ -1913,6 +1915,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertNullableDoubleToNullableUIntTest(bool useInterpreter)
         {
             foreach (double? value in new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN })
@@ -1931,6 +1934,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertNullableDoubleToNullableULongTest(bool useInterpreter)
         {
             foreach (double? value in new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN })
@@ -3120,7 +3124,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertFloatToNullableULongTest(bool useInterpreter)
         {
             foreach (float value in new float[] { 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN })
@@ -3346,6 +3352,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertNullableFloatToUIntTest(bool useInterpreter)
         {
             foreach (float? value in new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN })
@@ -3355,6 +3362,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertNullableFloatToNullableUIntTest(bool useInterpreter)
         {
             foreach (float? value in new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN })
@@ -3373,6 +3381,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51346", TestRuntimes.CoreCLR)]
         public static void ConvertNullableFloatToNullableULongTest(bool useInterpreter)
         {
             foreach (float? value in new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN })

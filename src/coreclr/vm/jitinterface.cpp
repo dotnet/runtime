@@ -12136,54 +12136,6 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     return hr;
 }
 
-CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
-                     CORINFO_METHOD_HANDLE ftnHnd,
-                     CORINFO_CLASS_HANDLE  baseHnd,
-                     uint32_t              ilOffset,
-                     uint32_t *            pLikelihood,
-                     uint32_t *            pNumberOfClasses
-)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-    *pLikelihood = 0;
-    *pNumberOfClasses = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-#ifdef FEATURE_PGO
-
-    // Query the PGO manager's per call site class profile.
-    //
-    MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    unsigned codeSize = 0;
-    if (pMD->IsDynamicMethod())
-    {
-        unsigned stackSize, ehSize;
-        CorInfoOptions options;
-        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-    }
-    else if (pMD->HasILHeader())
-    {
-        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
-        codeSize = decoder.GetCodeSize();
-    }
-
-    result = PgoManager::getLikelyClass(pMD, codeSize, ilOffset, pLikelihood, pNumberOfClasses);
-
-#endif
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 void CEEJitInfo::allocMem (
     uint32_t            hotCodeSize,    /* IN */
     uint32_t            coldCodeSize,   /* IN */
@@ -14428,18 +14380,6 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
             )
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_RET();      // only called on derived class.
-}
-
-CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
-                     CORINFO_METHOD_HANDLE ftnHnd,
-                     CORINFO_CLASS_HANDLE  baseHnd,
-                     uint32_t              ilOffset,
-                     uint32_t*             pLikelihood,
-                     uint32_t*             pNumberOfCases
-)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.

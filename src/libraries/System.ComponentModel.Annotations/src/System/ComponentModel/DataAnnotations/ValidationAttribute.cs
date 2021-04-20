@@ -244,11 +244,7 @@ namespace System.ComponentModel.DataAnnotations
             Debug.Assert(_errorMessageResourceType != null);
             Debug.Assert(!string.IsNullOrEmpty(_errorMessageResourceName));
             var property = _errorMessageResourceType
-                .GetTypeInfo().GetDeclaredProperty(_errorMessageResourceName);
-            if (property != null && !ValidationAttributeStore.IsStatic(property))
-            {
-                property = null;
-            }
+                .GetProperty(_errorMessageResourceName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             if (property != null)
             {

@@ -822,6 +822,13 @@ void LinearScan::setBlockSequence()
     // We use a bbNum of 0 for entry RefPositions.
     // The other information in blockInfo[0] will never be used.
     blockInfo[0].weight = BB_UNITY_WEIGHT;
+#if TRACK_LSRA_STATS
+    for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+    {
+        blockInfo[0].stats[statIndex] = 0;
+    }
+#endif // TRACK_LSRA_STATS
+
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
         blockSequence[bbSeqCount] = block;
@@ -842,10 +849,10 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].hasEHPred          = false;
 
 #if TRACK_LSRA_STATS
-        blockInfo[block->bbNum].spillCount         = 0;
-        blockInfo[block->bbNum].copyRegCount       = 0;
-        blockInfo[block->bbNum].resolutionMovCount = 0;
-        blockInfo[block->bbNum].splitEdgeCount     = 0;
+        for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+        {
+            blockInfo[block->bbNum].stats[statIndex] = 0;
+        }
 #endif // TRACK_LSRA_STATS
 
         // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
@@ -1284,7 +1291,7 @@ void LinearScan::doLinearScan()
     assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 
 #if TRACK_LSRA_STATS
-    if ((JitConfig.DisplayLsraStats() != 0)
+    if ((JitConfig.DisplayLsraStats() == 1)
 #ifdef DEBUG
         || VERBOSE
 #endif
@@ -3075,6 +3082,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     else if (!found)
     {
         found = selector.applySelection(FREE, freeCandidates);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FREE, refPosition->bbNum));
     }
 
     // Apply the CONST_AVAILABLE (matching constant) heuristic. Only applies if we have freeCandidates.
@@ -3085,6 +3093,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         {
             matchingConstants = getMatchingConstants(selector.candidates, currentInterval, refPosition);
             found             = selector.applySelection(CONST_AVAILABLE, matchingConstants);
+            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CONST_AVAILABLE, refPosition->bbNum));
         }
     }
 
@@ -3092,6 +3101,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found && (prevRegRec != nullptr) && (freeCandidates != RBM_NONE))
     {
         found = selector.applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_THIS_ASSIGNED, refPosition->bbNum));
     }
 
     // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
@@ -3169,6 +3179,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found)
     {
         found = selector.applySelection(COVERS, coversSet & preferenceSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS, refPosition->bbNum));
     }
 
     // Apply the OWN_PREFERENCE heuristic.
@@ -3177,6 +3188,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         assert((preferenceSet & freeCandidates) == preferenceSet);
         found = selector.applySelection(OWN_PREFERENCE, preferenceSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_OWN_PREFERENCE, refPosition->bbNum));
     }
 
     // Apply the COVERS_RELATED heuristic.
@@ -3184,24 +3196,28 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         assert((coversRelatedSet & freeCandidates) == coversRelatedSet);
         found = selector.applySelection(COVERS_RELATED, coversRelatedSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_RELATED, refPosition->bbNum));
     }
 
     // Apply the RELATED_PREFERENCE heuristic.
     if (!found)
     {
         found = selector.applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_RELATED_PREFERENCE, refPosition->bbNum));
     }
 
     // Apply the CALLER_CALLEE heuristic.
     if (!found)
     {
         found = selector.applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CALLER_CALLEE, refPosition->bbNum));
     }
 
     // Apply the UNASSIGNED heuristic.
     if (!found)
     {
         found = selector.applySelection(UNASSIGNED, unassignedSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_UNASSIGNED, refPosition->bbNum));
     }
 
     // Apply the COVERS_FULL heuristic.
@@ -3209,6 +3225,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         assert((coversFullSet & freeCandidates) == coversFullSet);
         found = selector.applySelection(COVERS_FULL, coversFullSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_FULL, refPosition->bbNum));
     }
 
     // Apply the BEST_FIT heuristic. Only applies if we have freeCandidates.
@@ -3274,6 +3291,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         }
         assert(bestFitSet != RBM_NONE);
         found = selector.applySelection(BEST_FIT, bestFitSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_BEST_FIT, refPosition->bbNum));
     }
 
     // Apply the IS_PREV_REG heuristic. TODO: Check if Only applies if we have freeCandidates.
@@ -3281,6 +3299,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if ((prevRegRec != nullptr) && ((selector.score & COVERS_FULL) != 0))
     {
         found = selector.applySingleRegSelection(IS_PREV_REG, prevRegBit);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_IS_PREV_REG, refPosition->bbNum));
     }
 
     // Apply the REG_ORDER heuristic. Only applies if we have freeCandidates.
@@ -3305,6 +3324,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         }
         assert(lowestRegOrderBit != RBM_NONE);
         found = selector.applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_ORDER, refPosition->bbNum));
     }
 
     // The set of registers with the lowest spill weight.
@@ -3368,6 +3388,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         // We must have at least one with the lowest spill cost.
         assert(lowestCostSpillSet != RBM_NONE);
         found = selector.applySelection(SPILL_COST, lowestCostSpillSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
     }
 
     // Apply the FAR_NEXT_REF heuristic.
@@ -3398,6 +3419,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         // We must have at least one with the lowest spill cost.
         assert(farthestSet != RBM_NONE);
         found = selector.applySelection(FAR_NEXT_REF, farthestSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
     }
 
     // Apply the PREV_REG_OPT heuristic.
@@ -3476,12 +3498,14 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 #endif
         }
         found = selector.applySelection(PREV_REG_OPT, prevRegOptSet);
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_PREV_REG_OPT, refPosition->bbNum));
     }
 
     // Apply the REG_NUM heuristic.
     if (!found)
     {
         found = selector.applySingleRegSelection(REG_NUM, genFindLowestBit(selector.candidates));
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_NUM, refPosition->bbNum));
     }
 
     assert(found && isSingleRegister(selector.candidates));
@@ -4011,7 +4035,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
     }
 #endif // DEBUG
 
-    INTRACK_STATS(updateLsraStat(LSRA_STAT_SPILL, fromRefPosition->bbNum));
+    INTRACK_STATS(updateLsraStat(STAT_SPILL, fromRefPosition->bbNum));
 
     interval->isActive = false;
     setIntervalAsSpilled(interval);
@@ -6853,9 +6877,7 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     {
         oper = GT_COPY;
 
-#if TRACK_LSRA_STATS
-        updateLsraStat(LSRA_STAT_COPY_REG, block->bbNum);
-#endif
+        INTRACK_STATS(updateLsraStat(STAT_COPY_REG, block->bbNum));
     }
 
     // If the parent is a reload/copy node, then tree must be a multi-reg node
@@ -6952,16 +6974,16 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
 
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
-                                            varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+                                            varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
 
-    if (simdNode->gtSIMDBaseType == TYP_UNDEF)
+    if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
     {
         // There are a few scenarios where we can get a LCL_VAR which
         // doesn't know the underlying baseType. In that scenario, we
         // will just lie and say it is a float. Codegen doesn't actually
         // care what the type is but this avoids an assert that would
         // otherwise be fired from the more general checks that happen.
-        simdNode->gtSIMDBaseType = TYP_FLOAT;
+        simdNode->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
     }
 
     SetLsraAdded(simdNode);
@@ -7019,16 +7041,16 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
 
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
-                                            varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+                                            varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
 
-    if (simdNode->gtSIMDBaseType == TYP_UNDEF)
+    if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
     {
         // There are a few scenarios where we can get a LCL_VAR which
         // doesn't know the underlying baseType. In that scenario, we
         // will just lie and say it is a float. Codegen doesn't actually
         // care what the type is but this avoids an assert that would
         // otherwise be fired from the more general checks that happen.
-        simdNode->gtSIMDBaseType = TYP_FLOAT;
+        simdNode->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
     }
 
     regNumber restoreReg = upperVectorInterval->physReg;
@@ -8237,7 +8259,7 @@ void LinearScan::addResolution(
         assert((interval->isSpilled) || (interval->isSplit));
     }
 
-    INTRACK_STATS(updateLsraStat(LSRA_STAT_RESOLUTION_MOV, block->bbNum));
+    INTRACK_STATS(updateLsraStat(STAT_RESOLUTION_MOV, block->bbNum));
 }
 
 //------------------------------------------------------------------------
@@ -8818,7 +8840,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             block = compiler->fgSplitEdge(fromBlock, toBlock);
 
             // Split edges are counted against fromBlock.
-            INTRACK_STATS(updateLsraStat(LSRA_STAT_SPLIT_EDGE, fromBlock->bbNum));
+            INTRACK_STATS(updateLsraStat(STAT_SPLIT_EDGE, fromBlock->bbNum));
             break;
         default:
             unreached();
@@ -9173,7 +9195,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         location[sourceReg]              = REG_NA;
                         location[source[otherTargetReg]] = (regNumberSmall)fromReg;
 
-                        INTRACK_STATS(updateLsraStat(LSRA_STAT_RESOLUTION_MOV, block->bbNum));
+                        INTRACK_STATS(updateLsraStat(STAT_RESOLUTION_MOV, block->bbNum));
                     }
                     else
                     {
@@ -9269,6 +9291,22 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 }
 
 #if TRACK_LSRA_STATS
+
+const char* LinearScan::getStatName(unsigned stat)
+{
+    LsraStat lsraStat = (LsraStat)stat;
+    assert(lsraStat != COUNT);
+
+    static const char* const lsraStatNames[] = {
+#define LSRA_STAT_DEF(stat, name) name,
+#include "lsrastats.h"
+    };
+#undef LSRA_STAT_DEF
+
+    assert(stat < ArrLen(lsraStatNames));
+    return lsraStatNames[lsraStat];
+}
+
 // ----------------------------------------------------------
 // updateLsraStat: Increment LSRA stat counter.
 //
@@ -9286,27 +9324,7 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
         return;
     }
 
-    switch (stat)
-    {
-        case LSRA_STAT_SPILL:
-            ++(blockInfo[bbNum].spillCount);
-            break;
-
-        case LSRA_STAT_COPY_REG:
-            ++(blockInfo[bbNum].copyRegCount);
-            break;
-
-        case LSRA_STAT_RESOLUTION_MOV:
-            ++(blockInfo[bbNum].resolutionMovCount);
-            break;
-
-        case LSRA_STAT_SPLIT_EDGE:
-            ++(blockInfo[bbNum].splitEdgeCount);
-            break;
-
-        default:
-            break;
-    }
+    ++(blockInfo[bbNum].stats[(unsigned)stat]);
 }
 
 // -----------------------------------------------------------
@@ -9317,13 +9335,8 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 //
 void LinearScan::dumpLsraStats(FILE* file)
 {
-    unsigned             sumSpillCount         = 0;
-    unsigned             sumCopyRegCount       = 0;
-    unsigned             sumResolutionMovCount = 0;
-    unsigned             sumSplitEdgeCount     = 0;
-    BasicBlock::weight_t wtdSpillCount         = 0;
-    BasicBlock::weight_t wtdCopyRegCount       = 0;
-    BasicBlock::weight_t wtdResolutionMovCount = 0;
+    unsigned             sumStats[LsraStat::COUNT] = {0};
+    BasicBlock::weight_t wtdStats[LsraStat::COUNT] = {0};
 
     fprintf(file, "----------\n");
     fprintf(file, "LSRA Stats");
@@ -9343,6 +9356,49 @@ void LinearScan::dumpLsraStats(FILE* file)
 #endif
 
     fprintf(file, "----------\n");
+    fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
+    fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
+    fprintf(file, "Total number of Intervals: %d\n",
+            static_cast<unsigned>((intervals.size() == 0 ? 0 : (intervals.size() - 1))));
+    fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(refPositions.size() - 1));
+
+    // compute total number of spill temps created
+    unsigned numSpillTemps = 0;
+    for (int i = 0; i < TYP_COUNT; i++)
+    {
+        numSpillTemps += maxSpill[i];
+    }
+    fprintf(file, "Total Number of spill temps created: %d\n", numSpillTemps);
+    fprintf(file, "..........\n");
+    bool addedBlockHeader = false;
+    bool anyNonZeroStat   = false;
+
+    for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+    {
+        unsigned lsraStat = blockInfo[0].stats[statIndex];
+
+        if (lsraStat != 0)
+        {
+            if (!addedBlockHeader)
+            {
+                addedBlockHeader = true;
+                fprintf(file, FMT_BB " [%8.2f]: ", 0, blockInfo[0].weight);
+                fprintf(file, "%s = %d", getStatName(statIndex), lsraStat);
+            }
+            else
+            {
+                fprintf(file, ", %s = %d", getStatName(statIndex), lsraStat);
+            }
+
+            sumStats[statIndex] += lsraStat;
+            wtdStats[statIndex] += (lsraStat * blockInfo[0].weight);
+            anyNonZeroStat = true;
+        }
+    }
+    if (anyNonZeroStat)
+    {
+        fprintf(file, "\n");
+    }
 
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -9351,44 +9407,111 @@ void LinearScan::dumpLsraStats(FILE* file)
             continue;
         }
 
-        unsigned spillCount         = blockInfo[block->bbNum].spillCount;
-        unsigned copyRegCount       = blockInfo[block->bbNum].copyRegCount;
-        unsigned resolutionMovCount = blockInfo[block->bbNum].resolutionMovCount;
-        unsigned splitEdgeCount     = blockInfo[block->bbNum].splitEdgeCount;
-
-        if (spillCount != 0 || copyRegCount != 0 || resolutionMovCount != 0 || splitEdgeCount != 0)
+        addedBlockHeader = false;
+        anyNonZeroStat   = false;
+        for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
         {
-            fprintf(file, FMT_BB " [%8d]: ", block->bbNum, block->bbWeight);
-            fprintf(file, "SpillCount = %d, ResolutionMovs = %d, SplitEdges = %d, CopyReg = %d\n", spillCount,
-                    resolutionMovCount, splitEdgeCount, copyRegCount);
+            unsigned lsraStat = blockInfo[block->bbNum].stats[statIndex];
+
+            if (lsraStat != 0)
+            {
+                if (!addedBlockHeader)
+                {
+                    addedBlockHeader = true;
+                    fprintf(file, FMT_BB " [%8.2f]: ", block->bbNum, block->bbWeight);
+                    fprintf(file, "%s = %d", getStatName(statIndex), lsraStat);
+                }
+                else
+                {
+                    fprintf(file, ", %s = %d", getStatName(statIndex), lsraStat);
+                }
+
+                sumStats[statIndex] += lsraStat;
+                wtdStats[statIndex] += (lsraStat * block->bbWeight);
+                anyNonZeroStat = true;
+            }
         }
 
-        sumSpillCount += spillCount;
-        sumCopyRegCount += copyRegCount;
-        sumResolutionMovCount += resolutionMovCount;
-        sumSplitEdgeCount += splitEdgeCount;
-
-        wtdSpillCount += spillCount * block->bbWeight;
-        wtdCopyRegCount += copyRegCount * block->bbWeight;
-        wtdResolutionMovCount += resolutionMovCount * block->bbWeight;
+        if (anyNonZeroStat)
+        {
+            fprintf(file, "\n");
+        }
     }
 
-    fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
-    fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
-    fprintf(file, "Total number of Intervals: %d\n", static_cast<unsigned>(intervals.size() - 1));
-    fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(refPositions.size() - 1));
-    fprintf(file, "Total Spill Count: %d    Weighted: %f\n", sumSpillCount, wtdSpillCount);
-    fprintf(file, "Total CopyReg Count: %d   Weighted: %f\n", sumCopyRegCount, wtdCopyRegCount);
-    fprintf(file, "Total ResolutionMov Count: %d    Weighted: %f\n", sumResolutionMovCount, wtdResolutionMovCount);
-    fprintf(file, "Total number of split edges: %d\n", sumSplitEdgeCount);
-
-    // compute total number of spill temps created
-    unsigned numSpillTemps = 0;
-    for (int i = 0; i < TYP_COUNT; i++)
+    fprintf(file, "..........\n");
+    for (int regSelectI = 0; regSelectI < COUNT; regSelectI++)
     {
-        numSpillTemps += maxSpill[i];
+        if (regSelectI == firstRegSelStat)
+        {
+            fprintf(file, "..........\n");
+        }
+        // TODO-review: I don't see a point of displaying Stats (SpillCount, etc.) if they are zero. Thoughts?
+        if ((regSelectI < firstRegSelStat) || (sumStats[regSelectI] != 0))
+        {
+            // Print register selection stats
+            if (regSelectI >= firstRegSelStat)
+            {
+                fprintf(file, "Total %s [#%2d] : %d   Weighted: %f\n", getStatName(regSelectI),
+                        (regSelectI - firstRegSelStat + 1), sumStats[regSelectI], wtdStats[regSelectI]);
+            }
+            else
+            {
+                fprintf(file, "Total %s : %d   Weighted: %f\n", getStatName(regSelectI), sumStats[regSelectI],
+                        wtdStats[regSelectI]);
+            }
+        }
     }
-    fprintf(file, "Total Number of spill temps created: %d\n\n", numSpillTemps);
+    printf("\n");
+}
+
+// -----------------------------------------------------------
+// dumpLsraStatsCsvFormat - dumps Lsra stats to given file in csv format.
+//
+// Arguments:
+//    file    -  file to which stats are to be written.
+//
+void LinearScan::dumpLsraStatsCsv(FILE* file)
+{
+    unsigned sumStats[LsraStat::COUNT] = {0};
+
+    // Write the header if the file is empty
+    if (ftell(file) == 0)
+    {
+        // header
+        fprintf(file, "\"Method Name\"");
+        for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+        {
+            fprintf(file, ",\"%s\"", LinearScan::getStatName(statIndex));
+        }
+        fprintf(file, ",\"PerfScore\"\n");
+    }
+
+    // bbNum == 0
+    for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+    {
+        sumStats[statIndex] += blockInfo[0].stats[statIndex];
+    }
+
+    // blocks
+    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->bbNum > bbNumMaxBeforeResolution)
+        {
+            continue;
+        }
+
+        for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+        {
+            sumStats[statIndex] += blockInfo[block->bbNum].stats[statIndex];
+        }
+    }
+
+    fprintf(file, "\"%s\"", compiler->info.compFullName);
+    for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+    {
+        fprintf(file, ",%u", sumStats[statIndex]);
+    }
+    fprintf(file, ",%.2f\n", compiler->info.compPerfScore);
 }
 #endif // TRACK_LSRA_STATS
 

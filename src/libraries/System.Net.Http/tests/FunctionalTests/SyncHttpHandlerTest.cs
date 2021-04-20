@@ -61,9 +61,9 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SyncHttpHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
+    public sealed class SyncHttpHandlerTest_RequestRetry : HttpClientHandlerTest_RequestRetry
     {
-        public SyncHttpHandler_HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
+        public SyncHttpHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;
     }
 

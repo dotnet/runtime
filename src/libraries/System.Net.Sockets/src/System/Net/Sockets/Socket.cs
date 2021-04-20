@@ -73,7 +73,6 @@ namespace System.Net.Sockets
         private int _closeTimeout = Socket.DefaultCloseTimeout;
         private int _disposed; // 0 == false, anything else == true
 
-        #region Constructors
         public Socket(SocketType socketType, ProtocolType protocolType)
             : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
@@ -242,9 +241,10 @@ namespace System.Net.Sockets
             handle is null ? throw new ArgumentNullException(nameof(handle)) :
             handle.IsInvalid ? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle)) :
             handle;
-        #endregion
 
-        #region Properties
+        //
+        // Properties
+        //
 
         // The CLR allows configuration of these properties, separately from whether the OS supports IPv4/6.  We
         // do not provide these config options, so SupportsIPvX === OSSupportsIPvX.
@@ -761,9 +761,10 @@ namespace System.Net.Sockets
         {
             return (family == _addressFamily) || (family == AddressFamily.InterNetwork && IsDualMode);
         }
-        #endregion
 
-        #region Public Methods
+        //
+        // Public Methods
+        //
 
         // Associates a socket with an end point.
         public void Bind(EndPoint localEP)
@@ -2116,43 +2117,14 @@ namespace System.Net.Sockets
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state) =>
             TaskToApm.Begin(ConnectAsync(addresses, port), requestCallback, state);
 
-        public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state)
+        public void EndConnect(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            // Start context-flowing op.  No need to lock - we don't use the context till the callback.
-            DisconnectOverlappedAsyncResult asyncResult = new DisconnectOverlappedAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-
-            // Post the disconnect.
-            DoBeginDisconnect(reuseSocket, asyncResult);
-
-            // Finish flowing (or call the callback), and return.
-            asyncResult.FinishPostingAsyncOp();
-            return asyncResult;
+            TaskToApm.End(asyncResult);
         }
 
-        private void DoBeginDisconnect(bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
-        {
-            SocketError errorCode = SocketError.Success;
-
-            errorCode = SocketPal.DisconnectAsync(this, _handle, reuseSocket, asyncResult);
-
-            if (errorCode == SocketError.Success)
-            {
-                SetToDisconnected();
-                _remoteEndPoint = null;
-                _localEndPoint = null;
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"UnsafeNclNativeMethods.OSSOCK.DisConnectEx returns:{errorCode}");
-
-            // If the call failed, update our status and throw
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                throw new SocketException((int)errorCode);
-            }
-        }
+        public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state) =>
+            TaskToApmBeginWithSyncExceptions(DisconnectAsync(reuseSocket).AsTask(), callback, state);
 
         public void Disconnect(bool reuseSocket)
         {
@@ -2175,47 +2147,12 @@ namespace System.Net.Sockets
             _localEndPoint = null;
         }
 
-        public void EndConnect(IAsyncResult asyncResult)
+        public void EndDisconnect(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
             TaskToApm.End(asyncResult);
         }
 
-        public void EndDisconnect(IAsyncResult asyncResult)
-        {
-            ThrowIfDisposed();
-
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
-            //get async result and check for errors
-            LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndDisconnect)));
-            }
-
-            //wait for completion if it hasn't occurred
-            castedAsyncResult.InternalWaitForCompletion();
-            castedAsyncResult.EndCalled = true;
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
-
-            //
-            // if the asynchronous native call failed asynchronously
-            // we'll throw a SocketException
-            //
-            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
-            {
-                UpdateStatusAfterSocketErrorAndThrowException((SocketError)castedAsyncResult.ErrorCode);
-            }
-        }
 
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
@@ -2668,7 +2605,10 @@ namespace System.Net.Sockets
             InternalSetBlocking(_willBlockInternal);
         }
 
-        #region Async methods
+        //
+        // Async methods
+        //
+
         public bool AcceptAsync(SocketAsyncEventArgs e)
         {
             ThrowIfDisposed();
@@ -2889,7 +2829,9 @@ namespace System.Net.Sockets
             e.CancelConnectAsync();
         }
 
-        public bool DisconnectAsync(SocketAsyncEventArgs e)
+        public bool DisconnectAsync(SocketAsyncEventArgs e) => DisconnectAsync(e, default);
+
+        private bool DisconnectAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             // Throw if socket disposed
             ThrowIfDisposed();
@@ -2904,7 +2846,7 @@ namespace System.Net.Sockets
             SocketError socketError = SocketError.Success;
             try
             {
-                socketError = e.DoOperationDisconnect(this, _handle);
+                socketError = e.DoOperationDisconnect(this, _handle, cancellationToken);
             }
             catch
             {
@@ -3155,10 +3097,10 @@ namespace System.Net.Sockets
 
             return socketError == SocketError.IOPending;
         }
-        #endregion
-        #endregion
 
-        #region Internal and private properties
+        //
+        // Internal and private properties
+        //
 
         private CacheSet Caches
         {
@@ -3174,9 +3116,10 @@ namespace System.Net.Sockets
         }
 
         internal bool Disposed => _disposed != 0;
-        #endregion
 
-        #region Internal and private methods
+        //
+        // Internal and private methods
+        //
 
         internal static void GetIPProtocolInformation(AddressFamily addressFamily, Internals.SocketAddress socketAddress, out bool isIPv4, out bool isIPv6)
         {
@@ -3889,6 +3832,16 @@ namespace System.Net.Sockets
             };
         }
 
-        #endregion
+        // Helper to maintain existing behavior of Socket APM methods to throw synchronously from Begin*.
+        private static IAsyncResult TaskToApmBeginWithSyncExceptions(Task task, AsyncCallback? callback, object? state)
+        {
+            if (task.IsFaulted)
+            {
+                task.GetAwaiter().GetResult();
+                Debug.Fail("Task faulted but GetResult did not throw???");
+            }
+
+            return TaskToApm.Begin(task, callback, state);
+        }
     }
 }

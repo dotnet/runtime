@@ -169,6 +169,7 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <!-- Mono-specific files -->
+    <PlatformManifestFileEntry Include="libmonosgen-2.0.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />
@@ -176,6 +177,21 @@
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" FallbackFileVersion="6.0.0" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
+    <!-- Mono components specific files -->
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />

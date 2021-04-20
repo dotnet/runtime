@@ -29,6 +29,8 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
 
@@ -65,6 +67,8 @@ namespace System.Text.Json
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            options.RootBuiltInConvertersAndTypeInfoCreator();
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);

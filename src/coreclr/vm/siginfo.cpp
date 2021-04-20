@@ -5350,7 +5350,8 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _ASSERTE(pWalk <= pSig + cSig);
 
     *callConvOut = CorInfoCallConvExtension::Managed;
-    CallingConventionModifiers modifiers = CALL_CONV_MOD_NONE;
+
+    CallConvBuilder callConvBuilder;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
@@ -5378,12 +5379,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
             continue;
 
-        if (!TryApplyModOptToCallingConvention(
-            typeName,
-            ::strlen(typeName),
-            CallConvModOptNameType::TypeName,
-            callConvOut,
-            &modifiers))
+        if (!callConvBuilder.AddTypeName(::strlen(typeName), typeName))
         {
             // Error if there are multiple recognized base calling conventions
             *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
@@ -5391,11 +5387,14 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         }
     }
 
-    *suppressGCTransitionOut = ((modifiers & CALL_CONV_MOD_SUPPRESSGCTRANSITION) != 0);
+    CallConvBuilder::CallConvModifiers modifiers;
+    callConvBuilder.GetCurrentCallConv(*callConvOut, modifiers);
 
-    if (modifiers & CALL_CONV_MOD_MEMBERFUNCTION)
+    *suppressGCTransitionOut = ((modifiers & CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION) != 0);
+
+    if (modifiers & CallConvBuilder::CALL_CONV_MOD_MEMBERFUNCTION)
     {
-        if (*callConvOut == CorInfoCallConvExtension::Managed)
+        if (*callConvOut == CallConvBuilder::DefaultValue)
         {
             // In this case, the only specified calling convention is CallConvMemberFunction.
             // Set *callConvOut to the default unmanaged calling convention.
@@ -5405,7 +5404,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         *callConvOut = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(*callConvOut);
     }
 
-    return *callConvOut != CorInfoCallConvExtension::Managed ? S_OK : S_FALSE;
+    return *callConvOut != CallConvBuilder::DefaultValue ? S_OK : S_FALSE;
 }
 
 // According to ECMA-335, type name strings are UTF-8. Since we are
@@ -5416,75 +5415,184 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
 namespace
 {
-    // Templated function to compute if a char string begins with a constant string.
-    template<size_t S2LEN>
-    bool BeginsWith(size_t s1Len, const char* s1, const char (&s2)[S2LEN])
+    // Function to compute if a char string begins with another string.
+    bool BeginsWith(size_t s1Len, const char* s1, size_t s2Len, const char* s2)
     {
         WRAPPER_NO_CONTRACT;
-
-        size_t s2Len = S2LEN - 1; // Remove null
 
         if (s1Len < s2Len)
             return false;
 
         return (0 == strncmp(s1, s2, s2Len));
     }
+
+    // All base calling conventions and modifiers should be defined below.
+    // The declaration macros will then be used to construct static data to
+    // be read when parsing strings from metadata.
+#define DECLARE_BASE_CALL_CONVS                             \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_CDECL, C)             \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_STDCALL, Stdcall)     \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Thiscall)   \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall)
+
+#define DECLARE_MOD_CALL_CONVS \
+    CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION, CALL_CONV_MOD_SUPPRESSGCTRANSITION) \
+    CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_MEMBERFUNCTION, CALL_CONV_MOD_MEMBERFUNCTION)
+
+    template<typename FLAGTYPE>
+    struct TypeWithFlag
+    {
+        const char* Name;
+        const size_t NameLength;
+        const FLAGTYPE Flag;
+    };
+
+    const TypeWithFlag<CorInfoCallConvExtension> FullyQualifiedTypeBaseCallConvs[] =
+    {
+#define BASE_CALL_CONV(name, flag) { \
+        MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
+        lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
+        CorInfoCallConvExtension::flag },
+
+        DECLARE_BASE_CALL_CONVS
+
+#undef BASE_CALL_CONV
+    };
+
+    const TypeWithFlag<CorInfoCallConvExtension> TypeBaseCallConvs[] =
+    {
+#define BASE_CALL_CONV(name, flag) { \
+        name, \
+        lengthof(name) - 1, \
+        CorInfoCallConvExtension::flag },
+
+        DECLARE_BASE_CALL_CONVS
+
+#undef BASE_CALL_CONV
+    };
+
+    const TypeWithFlag<CallConvBuilder::CallConvModifiers> FullyQualifiedTypeModCallConvs[] =
+    {
+#define CALL_CONV_MODIFIER(name, flag) { \
+        MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
+        lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
+        CallConvBuilder::flag },
+
+        DECLARE_MOD_CALL_CONVS
+
+#undef CALL_CONV_MODIFIER
+    };
+
+    const TypeWithFlag<CallConvBuilder::CallConvModifiers> TypeModCallConvs[] =
+    {
+#define CALL_CONV_MODIFIER(name, flag) { \
+        name, \
+        lengthof(name) - 1, \
+        CallConvBuilder::flag },
+
+        DECLARE_MOD_CALL_CONVS
+
+#undef CALL_CONV_MODIFIER
+    };
+
+#undef DECLARE_CALL_CONVS
+
+    template<size_t BASECOUNT, size_t MODCOUNT>
+    bool ProcessName(
+        _Inout_ CallConvBuilder::State& state,
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName,
+        _In_ const TypeWithFlag<CorInfoCallConvExtension> (&baseTypes)[BASECOUNT],
+        _In_ const TypeWithFlag<CallConvBuilder::CallConvModifiers> (&modTypes)[MODCOUNT])
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // Check if the type is a base calling convention.
+        for (size_t i = 0; i < BASECOUNT; ++i)
+        {
+            if (!BeginsWith(typeLength, typeName, baseTypes[i].NameLength, baseTypes[i].Name))
+                continue;
+
+            // If the base calling convention is already set, then we are observing an error.
+            if (state.CallConvBase != CallConvBuilder::DefaultValue)
+                return false;
+
+            state.CallConvBase = baseTypes[i].Flag;
+            return true;
+        }
+
+        // Check if the type is a modifier calling convention.
+        for (size_t i = 0; i < MODCOUNT; ++i)
+        {
+            if (!BeginsWith(typeLength, typeName, modTypes[i].NameLength, modTypes[i].Name))
+                continue;
+
+            // Combine the current modifier with the existing ones.
+            state.CallConvModifiers = (CallConvBuilder::CallConvModifiers)(state.CallConvModifiers | modTypes[i].Flag);
+            return true;
+        }
+
+        // Unknown type. This is okay since we should be resiliant against new types that
+        // we don't know anything about.
+        return true;
+    }
 }
 
-bool MetaSig::TryApplyModOptToCallingConvention(
-            _In_z_ LPCSTR callConvModOptName,
-            _In_ size_t callConvModOptNameLength,
-            _In_ CallConvModOptNameType nameType,
-            _Inout_ CorInfoCallConvExtension* pBaseCallConv,
-            _Inout_ CallingConventionModifiers* pCallConvModifiers)
+const CorInfoCallConvExtension CallConvBuilder::DefaultValue = CorInfoCallConvExtension::Managed;
+
+CallConvBuilder::CallConvBuilder()
+    : _state{ DefaultValue , CALL_CONV_MOD_NONE }
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+bool CallConvBuilder::AddFullyQualifiedTypeName(
+    _In_ size_t typeLength,
+    _In_z_ LPCSTR typeName)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pBaseCallConv));
-        PRECONDITION(CheckPointer(pCallConvModifiers));
+        PRECONDITION(typeName != NULL);
     }
     CONTRACTL_END;
 
-#define BASE_CALL_CONV(callConvModOptMetadataName, CallConvExtensionMember)       \
-    if (COMPARE_CALLCONV_NAME(callConvModOptName, callConvModOptMetadataName))    \
-    {                                                                             \
-        if (*pBaseCallConv != CorInfoCallConvExtension::Managed) return false; \
-        *pBaseCallConv = CorInfoCallConvExtension::CallConvExtensionMember;    \
-        return true;                                                              \
-    }
-                                                                      \
-#define CALL_CONV_MODIFIER(callConvModOptMetadataName, CallConvModifiersMember)                            \
-    if (COMPARE_CALLCONV_NAME(callConvModOptName, callConvModOptMetadataName))                             \
-    {                                                                                                      \
-        *pCallConvModifiers = (CallingConventionModifiers)(*pCallConvModifiers | CallConvModifiersMember); \
-        return true;                                                                                       \
-    }
-
-#define PARSE_CALL_CONVS \
-        BASE_CALL_CONV(CMOD_CALLCONV_NAME_CDECL, C) \
-        BASE_CALL_CONV(CMOD_CALLCONV_NAME_STDCALL, Stdcall) \
-        BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Thiscall) \
-        BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall) \
-        CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION, CALL_CONV_MOD_SUPPRESSGCTRANSITION) \
-        CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_MEMBERFUNCTION, CALL_CONV_MOD_MEMBERFUNCTION)                                                                                                    \
-
-    if (nameType == CallConvModOptNameType::TypeName)
-    {
-#define COMPARE_CALLCONV_NAME(userProvidedName, metadataName) ::strcmp(userProvidedName, metadataName) == 0
-        PARSE_CALL_CONVS;
-#undef COMPARE_CALLCONV_NAME
-    }
-    else
-    {
-        _ASSERTE(nameType == CallConvModOptNameType::FullyQualifiedName);
-
-#define COMPARE_CALLCONV_NAME(userProvidedName, metadataName) BeginsWith(callConvModOptNameLength, userProvidedName, MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(metadataName))
-        PARSE_CALL_CONVS;
-#undef COMPARE_CALLCONV_NAME
-    }
-    return true;
+    return ProcessName(
+        _state,
+        typeLength,
+        typeName,
+        FullyQualifiedTypeBaseCallConvs,
+        FullyQualifiedTypeModCallConvs);
 }
+
+bool CallConvBuilder::AddTypeName(
+    _In_ size_t typeLength,
+    _In_z_ LPCSTR typeName)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(typeName != NULL);
+    }
+    CONTRACTL_END;
+
+    return ProcessName(
+        _state,
+        typeLength,
+        typeName,
+        TypeBaseCallConvs,
+        TypeModCallConvs);
+}
+
+void CallConvBuilder::GetCurrentCallConv(
+    _Out_ CorInfoCallConvExtension &baseCallConv,
+    _Out_ CallConvModifiers &modsCallConv)
+{
+    LIMITED_METHOD_CONTRACT;
+    baseCallConv = _state.CallConvBase;
+    modsCallConv = _state.CallConvModifiers;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Substitution from a token (TypeDef and TypeRef have empty instantiation, TypeSpec gets it from MetaData).
