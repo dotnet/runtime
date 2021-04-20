@@ -80,7 +80,11 @@ BOOL QCALLTYPE MarshalNative::IsComSupported()
 
     BEGIN_QCALL;
 
+#ifdef FEATURE_COMINTEROP
     ret = g_pConfig->IsBuiltInCOMSupported();
+#else // FEATURE_COMINTEROP
+    ret = FALSE;
+#endif // FEATURE_COMINTEROP
 
     END_QCALL;
 
