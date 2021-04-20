@@ -72,11 +72,6 @@ namespace System.Net.Quic.Implementations.Mock
             return _listenQueue.Writer.TryWrite(state);
         }
 
-        internal override void Close()
-        {
-            Dispose();
-        }
-
         private void CheckDisposed()
         {
             if (_disposed)

@@ -56,7 +56,6 @@ namespace System.Net.Quic
         public QuicListener(System.Net.Quic.QuicListenerOptions options) { }
         public System.Net.IPEndPoint ListenEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public void Close() { }
         public void Dispose() { }
     }
     public partial class QuicListenerOptions : System.Net.Quic.QuicOptions

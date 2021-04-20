@@ -107,7 +107,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            StopAcceptingConnections();
+            Stop();
             _state?.Handle?.Dispose();
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             _state?.ConnectionConfiguration?.Dispose();
@@ -141,18 +141,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
         }
 
-        internal override void Close()
-        {
-            ThrowIfDisposed();
-            MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
-        }
-
-        private void StopAcceptingConnections()
+        private void Stop()
         {
             // TODO finalizers are called even if the object construction fails.
-            if (_state != null)
+            if (_state == null)
             {
-                _state.AcceptConnectionQueue.Writer.TryComplete();
+                return;
+            }
+
+            _state.AcceptConnectionQueue.Writer.TryComplete();
+
+            if (_state.Handle != null)
+            {
+                MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
             }
         }
 
