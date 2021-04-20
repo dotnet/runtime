@@ -204,6 +204,15 @@ namespace System.ComponentModel
 
         private static Hashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new Hashtable());
 
+        /// <summary>Clear the global caches this maintains on top of reflection.</summary>
+        internal static void ClearReflectionCaches()
+        {
+            s_propertyCache = null;
+            s_eventCache = null;
+            s_attributeCache = null;
+            s_extendedPropertyCache = null;
+        }
+
         /// <summary>
         /// Adds an editor table for the given editor base type.
         /// Typically, editors are specified as metadata on an object. If no metadata for a
