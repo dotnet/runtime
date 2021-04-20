@@ -139,7 +139,19 @@ namespace System.Threading
             }
         }
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo WaitInfo => Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
 #endif
 
         public ThreadPriority Priority
@@ -204,16 +216,6 @@ namespace System.Threading
         {
             InitInternal(this);
         }
-
-#if TARGET_UNIX || TARGET_BROWSER
-        private WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
-        {
-            var value = new WaitSubsystem.ThreadWaitInfo(this);
-            Interlocked.CompareExchange(ref _waitInfo, value, null!);
-            Debug.Assert(_waitInfo != null);
-            return _waitInfo;
-        }
-#endif
 
         public static void SpinWait(int iterations)
         {
