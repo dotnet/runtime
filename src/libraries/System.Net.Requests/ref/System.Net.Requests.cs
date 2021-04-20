@@ -114,9 +114,7 @@ namespace System.Net
     }
     public sealed partial class FtpWebRequest : System.Net.WebRequest
     {
-#pragma warning disable SYSLIB0014
         internal FtpWebRequest() { }
-#pragma warning restore SYSLIB0014
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         public override string? ConnectionGroupName { get { throw null; } set { } }
         public override long ContentLength { get { throw null; } set { } }
