@@ -1204,8 +1204,13 @@ namespace Internal.NativeCrypto
                     throw new InvalidOperationException();
             }
 
-            using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
+            using (SafeHashHandle? hHash = hProv.CreateHashHandle(hash, calgHash, throwOnSizeError: false))
             {
+                if (hHash == null)
+                {
+                    return false;
+                }
+
                 bool verified = Interop.Advapi32.CryptVerifySignature(hHash, signature, signature.Length, hKey, null, Interop.Advapi32.CryptSignAndVerifyHashFlags.None);
                 return verified;
             }
@@ -1358,6 +1363,11 @@ namespace Internal.NativeCrypto
         /// </summary>
         private static SafeHashHandle CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash)
         {
+            return CreateHashHandle(hProv, hash, calgHash, throwOnSizeError: true)!;
+        }
+
+        private static SafeHashHandle? CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash, bool throwOnSizeError)
+        {
             SafeHashHandle? hHash;
             if (!CryptCreateHash(hProv, calgHash, SafeKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
             {
@@ -1377,8 +1387,16 @@ namespace Internal.NativeCrypto
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
                 }
+
                 if (dwHashSize != hash.Length)
-                    throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
+                {
+                    if (throwOnSizeError)
+                    {
+                        throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
+                    }
+
+                    return null;
+                }
 
                 if (!Interop.Advapi32.CryptSetHashParam(hHash, Interop.Advapi32.CryptHashProperty.HP_HASHVAL, hash, 0))
                 {

@@ -10,7 +10,7 @@ public partial class Math
         int c = a + b;
         int d = c + b;
         int e = d + a;
-        int f = 0;
+        bool f = true;
         return e;
     }
 

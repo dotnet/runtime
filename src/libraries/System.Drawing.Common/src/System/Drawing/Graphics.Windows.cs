@@ -8,8 +8,10 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Internal;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -682,40 +684,59 @@ namespace System.Drawing
         /// WARNING: This method is for internal FX support only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
-            Region cumulClip = Clip;                // current context clip.
-            Matrix cumulTransform = Transform;      // current context transform.
-            PointF currentOffset = PointF.Empty;    // offset of current context.
-            PointF totalOffset = PointF.Empty;      // absolute coord offset of top context.
+            GetContextInfo(out Matrix3x2 cumulativeTransform, calculateClip: true, out Region? cumulativeClip);
+            return new object[] { cumulativeClip ?? new Region(), new Matrix(cumulativeTransform) };
+        }
 
-            if (!cumulTransform.IsIdentity)
-            {
-                currentOffset = cumulTransform.Offset;
-            }
+        private void GetContextInfo(out Matrix3x2 cumulativeTransform, bool calculateClip, out Region? cumulativeClip)
+        {
+            cumulativeClip = calculateClip ? GetRegionIfNotInfinite() : null;   // Current context clip.
+            cumulativeTransform = TransformElements;                            // Current context transform.
+            Vector2 currentOffset = default;                                    // Offset of current context.
+            Vector2 totalOffset = default;                                      // Absolute coordinate offset of top context.
 
             GraphicsContext? context = _previousContext;
 
-            while (context != null)
+            if (!cumulativeTransform.IsIdentity)
             {
-                if (!context.TransformOffset.IsEmpty)
+                currentOffset = cumulativeTransform.Translation;
+            }
+
+            while (context is not null)
+            {
+                if (!context.TransformOffset.IsEmpty())
                 {
-                    cumulTransform.Translate(context.TransformOffset.X, context.TransformOffset.Y);
+                    cumulativeTransform.Translate(context.TransformOffset);
                 }
 
-                if (!currentOffset.IsEmpty)
+                if (!currentOffset.IsEmpty())
                 {
                     // The location of the GDI+ clip region is relative to the coordinate origin after any translate transform
                     // has been applied. We need to intersect regions using the same coordinate origin relative to the previous
                     // context.
-                    cumulClip.Translate(currentOffset.X, currentOffset.Y);
+
+                    // If we don't have a cumulative clip, we're infinite, and translation on infinite regions is a no-op.
+                    cumulativeClip?.Translate(currentOffset.X, currentOffset.Y);
                     totalOffset.X += currentOffset.X;
                     totalOffset.Y += currentOffset.Y;
                 }
 
-                if (context.Clip != null)
+                // Context only stores clips if they are not infinite. Intersecting a clip with an infinite clip is a no-op.
+                if (calculateClip && context.Clip is not null)
                 {
-                    cumulClip.Intersect(context.Clip);
+                    // Intersecting an infinite clip with another is just a copy of the second clip.
+                    if (cumulativeClip is null)
+                    {
+                        cumulativeClip = context.Clip;
+                    }
+                    else
+                    {
+                        cumulativeClip.Intersect(context.Clip);
+                    }
                 }
 
                 currentOffset = context.TransformOffset;
@@ -732,14 +753,41 @@ namespace System.Drawing
                 } while (context.IsCumulative);
             }
 
-            if (!totalOffset.IsEmpty)
+            if (!totalOffset.IsEmpty())
             {
                 // We need now to reset the total transform in the region so when calling Region.GetHRgn(Graphics)
                 // the HRegion is properly offset by GDI+ based on the total offset of the graphics object.
-                cumulClip.Translate(-totalOffset.X, -totalOffset.Y);
-            }
 
-            return new object[] { cumulClip, cumulTransform };
+                // If we don't have a cumulative clip, we're infinite, and translation on infinite regions is a no-op.
+                cumulativeClip?.Translate(-totalOffset.X, -totalOffset.Y);
+            }
+        }
+
+        /// <summary>
+        ///  Gets the cumulative offset.
+        /// </summary>
+        /// <param name="offset">The cumulative offset.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
+        public void GetContextInfo(out PointF offset)
+        {
+            GetContextInfo(out Matrix3x2 cumulativeTransform, calculateClip: false, out _);
+            Vector2 translation = cumulativeTransform.Translation;
+            offset = new PointF(translation.X, translation.Y);
+        }
+
+        /// <summary>
+        ///  Gets the cumulative offset and clip region.
+        /// </summary>
+        /// <param name="offset">The cumulative offset.</param>
+        /// <param name="clip">The cumulative clip region or null if the clip region is infinite.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
+        public void GetContextInfo(out PointF offset, out Region? clip)
+        {
+            GetContextInfo(out Matrix3x2 cumulativeTransform, calculateClip: true, out clip);
+            Vector2 translation = cumulativeTransform.Translation;
+            offset = new PointF(translation.X, translation.Y);
         }
 
         public RectangleF VisibleClipBounds

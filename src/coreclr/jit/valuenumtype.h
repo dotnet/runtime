@@ -77,19 +77,6 @@ public:
         }
     }
 
-    void Set(ValueNumKind vnk, ValueNum vn)
-    {
-        if (vnk == VNK_Liberal)
-        {
-            SetLiberal(vn);
-        }
-        else
-        {
-            assert(vnk == VNK_Conservative);
-            SetConservative(vn);
-        }
-    }
-
     void SetBoth(ValueNum vn)
     {
         m_liberal      = vn;

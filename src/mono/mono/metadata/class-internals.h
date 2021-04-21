@@ -16,6 +16,7 @@
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-compiler.h"
 
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
@@ -1126,6 +1127,7 @@ mono_identifier_escape_type_name_chars (const char* identifier);
 char*
 mono_type_get_full_name (MonoClass *klass);
 
+MONO_COMPONENT_API
 char *
 mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format);
 

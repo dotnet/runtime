@@ -109,8 +109,6 @@
              Link="Common\System\Net\Http\HttpClient.SelectedSitesTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs"
              Link="Common\System\Net\Http\HttpClientEKUTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpRetryProtocolTests.cs"
-             Link="Common\System\Net\Http\HttpRetryProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs"
              Link="Common\System\Net\Http\IdnaProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"

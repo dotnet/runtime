@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             ElementType = converter.ElementType;
             ElementTypeInfo = elementInfo ?? throw new ArgumentNullException(nameof(elementInfo));
             NumberHandling = numberHandling;
-            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
+            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             SetCreateObjectFunc(createObjectFunc);
         }
 
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Metadata
             ElementType = converter.ElementType;
             ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo));
             NumberHandling = numberHandling;
-            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
+            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             SetCreateObjectFunc(createObjectFunc);
         }
 
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter = new ObjectSourceGenConverter<T>();
 #pragma warning restore CS8714
 
-            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, options);
+            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             NumberHandling = numberHandling;
             PropInitFunc = propInitFunc;
             SetCreateObjectFunc(createObjectFunc);

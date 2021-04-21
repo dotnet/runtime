@@ -221,7 +221,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object? obj);
 
-#if FEATURE_COMINTEROP
+#if TARGET_WINDOWS
         /// <summary>
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr GetHINSTANCE(QCallModule m);
 
-#endif // FEATURE_COMINTEROP
+#endif // TARGET_WINDOWS
 
 
         [MethodImpl(MethodImplOptions.InternalCall)]
