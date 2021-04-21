@@ -5393,7 +5393,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
 namespace
 {
-    // Function to compute if a char string begins with another string.
+    // Function to compute if a char string begins with another char string.
     bool BeginsWith(size_t s1Len, const char* s1, size_t s2Len, const char* s2)
     {
         WRAPPER_NO_CONTRACT;
@@ -5402,6 +5402,12 @@ namespace
             return false;
 
         return (0 == strncmp(s1, s2, s2Len));
+    }
+
+    // Function to compute if a char string is equal to another char string.
+    bool Equals(size_t s1Len, const char* s1, size_t s2Len, const char* s2)
+    {
+        return (s1Len == s2Len) && (0 == strcmp(s1, s2));
     }
 
     // All base calling conventions and modifiers should be defined below.
@@ -5423,6 +5429,7 @@ namespace
         const char* Name;
         const size_t NameLength;
         const FLAGTYPE Flag;
+        bool (* const Matches)(size_t s1Len, const char* s1, size_t s2Len, const char* s2);
     };
 
     const TypeWithFlag<CorInfoCallConvExtension> FullyQualifiedTypeBaseCallConvs[] =
@@ -5430,7 +5437,8 @@ namespace
 #define BASE_CALL_CONV(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
         lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
-        CorInfoCallConvExtension::flag },
+        CorInfoCallConvExtension::flag, \
+        BeginsWith },
 
         DECLARE_BASE_CALL_CONVS
 
@@ -5442,7 +5450,8 @@ namespace
 #define BASE_CALL_CONV(name, flag) { \
         name, \
         lengthof(name) - 1, \
-        CorInfoCallConvExtension::flag },
+        CorInfoCallConvExtension::flag, \
+        Equals },
 
         DECLARE_BASE_CALL_CONVS
 
@@ -5454,7 +5463,8 @@ namespace
 #define CALL_CONV_MODIFIER(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
         lengthof(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
-        CallConvBuilder::flag },
+        CallConvBuilder::flag, \
+        BeginsWith },
 
         DECLARE_MOD_CALL_CONVS
 
@@ -5466,7 +5476,8 @@ namespace
 #define CALL_CONV_MODIFIER(name, flag) { \
         name, \
         lengthof(name) - 1, \
-        CallConvBuilder::flag },
+        CallConvBuilder::flag, \
+        Equals },
 
         DECLARE_MOD_CALL_CONVS
 
@@ -5488,25 +5499,27 @@ namespace
         // Check if the type is a base calling convention.
         for (size_t i = 0; i < BASECOUNT; ++i)
         {
-            if (!BeginsWith(typeLength, typeName, baseTypes[i].NameLength, baseTypes[i].Name))
+            const TypeWithFlag<CorInfoCallConvExtension>& entry = baseTypes[i];
+            if (!entry.Matches(typeLength, typeName, entry.NameLength, entry.Name))
                 continue;
 
             // If the base calling convention is already set, then we are observing an error.
             if (state.CallConvBase != CallConvBuilder::UnsetValue)
                 return false;
 
-            state.CallConvBase = baseTypes[i].Flag;
+            state.CallConvBase = entry.Flag;
             return true;
         }
 
         // Check if the type is a modifier calling convention.
         for (size_t i = 0; i < MODCOUNT; ++i)
         {
-            if (!BeginsWith(typeLength, typeName, modTypes[i].NameLength, modTypes[i].Name))
+            const TypeWithFlag<CallConvBuilder::CallConvModifiers>& entry = modTypes[i];
+            if (!entry.Matches(typeLength, typeName, entry.NameLength, entry.Name))
                 continue;
 
             // Combine the current modifier with the existing ones.
-            state.CallConvModifiers = (CallConvBuilder::CallConvModifiers)(state.CallConvModifiers | modTypes[i].Flag);
+            state.CallConvModifiers = (CallConvBuilder::CallConvModifiers)(state.CallConvModifiers | entry.Flag);
             return true;
         }
 

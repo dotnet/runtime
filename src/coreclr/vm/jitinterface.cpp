@@ -9914,6 +9914,7 @@ namespace
                 callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
             }
 
+            *pSuppressGCTransition = builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
             return callConvLocal;
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:

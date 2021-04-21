@@ -546,7 +546,7 @@ public:
         _In_ size_t typeLength,
         _In_z_ LPCSTR typeName);
 
-    // Get the currently computed calling convention values.
+    // Get the currently computed calling convention value.
     CorInfoCallConvExtension GetCurrentCallConv() const;
 
     // Check if the modifier is set on the computed calling convention.
