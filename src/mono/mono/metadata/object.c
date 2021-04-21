@@ -6769,7 +6769,7 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 }
 
 /**
- * mono_string_is_interned:
+ * mono_string_instance_is_interned:
  * Searches the interned string table for the provided string instance.
  * \param str String to probe
  * \returns TRUE if the string is interned, FALSE otherwise.
