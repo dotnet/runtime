@@ -4740,7 +4740,7 @@ void CodeGen::genCheckUseBlockInit()
         }
     }
 
-    // Record number of 4 byte slots that need zeroing.
+    // Record number of stack slots that need zeroing.
     genInitStkLclCnt = initStkLclCnt;
 
     // Decide if we will do block initialization in the prolog, or use
@@ -5493,6 +5493,36 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 }
 
 #endif // TARGET*
+
+//-----------------------------------------------------------------------------
+// genPoisonFrame: Generate code that places a recognizable value into the entire stack frame.
+//
+// Remarks:
+//    We use the same value as VC++, i.e. 0xcccccccc.
+void CodeGen::genPoisonFrame()
+{
+#ifdef TARGET_XARCH
+    noway_assert(regSet.rsRegsModified(RBM_EDI));
+    if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+    {
+        noway_assert(regSet.rsRegsModified(RBM_ESI));
+        inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
+        regSet.verifyRegUsed(REG_ESI);
+    }
+
+    noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
+    inst_RV_RV(INS_mov, REG_EDI, REG_ESP);
+    regSet.verifyRegUsed(REG_EDI);
+    inst_RV_IV(INS_mov, REG_ECX, compiler->compLclFrameSize / 4, EA_4BYTE);
+    inst_RV_IV(INS_mov, REG_EAX, (target_ssize_t)0xcccccccc, EA_4BYTE);
+    instGen(INS_r_stosd);
+
+    if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+    {
+        inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
+    }
+#endif
+} 
 
 // We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegZeroed if so.
 // Return the register to use. On ARM64, we never touch the initReg, and always just return REG_ZR.
@@ -6598,6 +6628,22 @@ void CodeGen::genFinalizeFrame()
     // locations on entry to the function.
     compiler->m_pLinearScan->recordVarLocationsAtStartOfBB(compiler->fgFirstBB);
 
+    if (compiler->opts.MinOpts())
+    {
+#ifdef TARGET_XARCH
+        regSet.rsSetRegsModified(RBM_EDI);
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+        {
+            regSet.rsSetRegsModified(RBM_ESI);
+        }
+
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX)
+        {
+            regSet.rsSetRegsModified(RBM_EBX);
+        }
+#endif
+    }
+
     genCheckUseBlockInit();
 
     // Set various registers as "modified" for special code generation scenarios: Edit & Continue, P/Invoke calls, etc.
@@ -7387,10 +7433,13 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
-    //
-    // Zero out the frame as needed
-    //
+    // In MinOpts we poison the entire stack with a recognizable value to make detecting uses of uninitialized variables easier.
+    if (compiler->opts.MinOpts())
+    {
+        genPoisonFrame();
+    }
 
+    // Zero out the frame as needed
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
 #if defined(FEATURE_EH_FUNCLETS)

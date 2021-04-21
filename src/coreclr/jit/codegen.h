@@ -434,6 +434,8 @@ protected:
 
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
 
+    void genPoisonFrame();
+
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
     void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
