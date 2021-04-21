@@ -440,28 +440,14 @@
    </PropertyGroup>
 
    <ItemGroup>
-     <_WasmRuntimePackNativeLibs Include="libmono-ee-interp.a"/>
-     <_WasmRuntimePackNativeLibs Include="libmonosgen-2.0.a"/>
-     <_WasmRuntimePackNativeLibs Include="libmono-ilgen.a"/>
-     <_WasmRuntimePackNativeLibs Include="libmono-icall-table.a"/>
-     <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
-     <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
-     <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
-     <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
+     <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a" />
+     <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
+     <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-     <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)driver.o"/>
-     <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
-     <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)corebindings.o"/>
-     <_WasmObjectsToBuild SourcePath="$(_WasmRuntimePackSrcDir)%(FileName).c" />
+     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs)" />
+     <_WasmObjects Include="@(_WasmObjectsToBuild->'%(OutputPath)')" />
 
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(FileName)%(Extension)')" />
-     <_WasmObjects Include="@(_WasmObjectsToBuild)" />
-
-     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)library_mono.js" />
-     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)binding_support.js" />
-     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)dotnet_support.js" />
-     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)pal_random.js" />
+     <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
 
      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
@@ -486,7 +472,7 @@
    </PropertyGroup>
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
     <Exec Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EnvironmentVariables="@(EmscriptenEnvVars)" />
     <Exec Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
