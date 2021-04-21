@@ -2,63 +2,79 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+
+#nullable enable
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
-    public static class SymbolicLinking
+    public sealed class SymLink : IDisposable
     {
-        static class Kernel32
+        public string SrcPath { get; private set; }
+        public SymLink(string src, string dest)
         {
-            [Flags]
-            internal enum SymbolicLinkFlag
+            if (!MakeSymbolicLink(src, dest, out var errorMessage))
             {
-                IsFile = 0x0,
-                IsDirectory = 0x1,
-                AllowUnprivilegedCreate = 0x2
+                throw new IOException($"Error creating symbolic link at {src} pointing to {dest}: {errorMessage}");
             }
-
-            [DllImport("kernel32.dll", SetLastError = true)]
-            internal static extern bool CreateSymbolicLink(
-                string symbolicLinkName,
-                string targetFileName,
-                SymbolicLinkFlag flags);
+            SrcPath = src;
         }
 
-        static class libc
+        public void Dispose()
         {
-            [DllImport("libc", SetLastError = true)]
-            internal static extern int symlink(
-                string targetFileName,
-                string linkPath);
-
-            [DllImport("libc", CharSet = CharSet.Ansi)]
-            internal static extern IntPtr strerror(int errnum);
+            if (SrcPath is not null)
+            {
+                File.Delete(SrcPath);
+                SrcPath = null!;
+            }
         }
 
-        public static bool MakeSymbolicLink(string symbolicLinkName, string targetFileName, out string errorMessage)
+        private static bool MakeSymbolicLink(string symbolicLinkName, string targetFileName, out string errorMessage)
         {
             errorMessage = string.Empty;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (!Kernel32.CreateSymbolicLink(symbolicLinkName, targetFileName, Kernel32.SymbolicLinkFlag.IsFile))
+                if (!CreateSymbolicLink(symbolicLinkName, targetFileName, SymbolicLinkFlag.IsFile))
                 {
                     int errno = Marshal.GetLastWin32Error();
                     errorMessage = $"CreateSymbolicLink failed with error number {errno}";
                     return false;
                 }
             }
-            else 
+            else
             {
-                if (libc.symlink(targetFileName, symbolicLinkName) == -1)
+                if (symlink(targetFileName, symbolicLinkName) == -1)
                 {
                     int errno = Marshal.GetLastWin32Error();
-                    errorMessage = Marshal.PtrToStringAnsi(libc.strerror(errno));
-                    return false; 
+                    errorMessage = Marshal.PtrToStringAnsi(strerror(errno))!;
+                    return false;
                 }
             }
 
             return true;
         }
+
+        [Flags]
+        private enum SymbolicLinkFlag
+        {
+            IsFile = 0x0,
+            IsDirectory = 0x1,
+            AllowUnprivilegedCreate = 0x2
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CreateSymbolicLink(
+            string symbolicLinkName,
+            string targetFileName,
+            SymbolicLinkFlag flags);
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int symlink(
+            string targetFileName,
+            string linkPath);
+
+        [DllImport("libc", CharSet = CharSet.Ansi)]
+        private static extern IntPtr strerror(int errnum);
     }
 }
