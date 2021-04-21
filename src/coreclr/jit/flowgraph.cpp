@@ -2604,7 +2604,8 @@ void Compiler::fgAddInternal()
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
     // required. Create it here.
-    if (compMethodRequiresPInvokeFrame())
+    // Similarly, for poisoning we also need a scratch BB.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;

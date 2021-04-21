@@ -9828,6 +9828,12 @@ public:
         return (info.compUnmanagedCallCountWithGCTransition > 0);
     }
 
+    // Returns true if address-exposed user variables should be poisoned with a recognizable value
+    bool compShouldPoisonFrame()
+    {
+        return !info.compInitMem && opts.MinOpts() && opts.compDbgCode;
+    }
+
 #if defined(DEBUG)
 
     void compDispLocalVars();

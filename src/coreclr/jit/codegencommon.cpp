@@ -4842,7 +4842,7 @@ void CodeGen::genCheckUseBlockInit()
         }
     }
 
-    // Record number of 4 byte slots that need zeroing.
+    // Record number of stack slots that need zeroing.
     genInitStkLclCnt = initStkLclCnt;
 
     // Decide if we will do block initialization in the prolog, or use
@@ -6732,6 +6732,12 @@ void CodeGen::genFinalizeFrame()
         regSet.rsSetRegsModified(regSet.rsMaskResvd);
     }
 #endif // TARGET_ARM
+
+    // When poisoning on ARM we need to use callee-preserved registers.
+    if (compiler->compShouldPoisonFrame())
+    {
+        genSetRegsModifiedForPoisoning();
+    }
 
 #ifdef DEBUG
     if (verbose)
@@ -12528,3 +12534,83 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 }
 #endif // DEBUG
 #endif // USING_VARIABLE_LIVE_RANGE
+
+void CodeGen::genSetRegsModifiedForPoisoning()
+{
+    // For ARM32 we need a callee-reserved register since the scratch registers may have args.
+#if defined(TARGET_ARM)
+    regSet.rsSetRegsModified(RBM_R4);
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
+//
+// Remarks:
+//   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
+//   to be called when emitting code for the scratch BB that comes right after the prolog.
+//   The variables are poisoned using 0xcccccccc. This value is stored in EAX/RAX on xarch and r/x0 on ARM,
+//   so we expect that this reg is not live.
+void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
+{
+#if defined(TARGET_XARCH)
+    const regNumber immRegNum = REG_EAX;
+#elif defined(TARGET_ARM)
+    const regNumber immRegNum = REG_R4;
+#elif defined(TARGET_ARM64)
+    const regNumber immRegNum = REG_R9;
+#else
+    return;
+#endif
+
+    assert(compiler->compShouldPoisonFrame());
+    assert((regLiveIn & genRegMask(immRegNum)) == 0);
+
+    // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that we can fit.
+    bool hasPoisonImm = false;
+    for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        {
+            continue;
+        }
+
+        assert(varDsc->lvOnFrame);
+
+        if (!hasPoisonImm)
+        {
+#ifdef TARGET_64BIT
+            instGen_Set_Reg_To_Imm(EA_8BYTE, immRegNum, (ssize_t)0xcccccccccccccccc);
+#else
+            instGen_Set_Reg_To_Imm(EA_4BYTE, immRegNum, (ssize_t)0xcccccccc);
+#endif
+            hasPoisonImm = true;
+        }
+
+        // For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
+#ifdef TARGET_64BIT
+        bool fpBased;
+        int addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+#else
+        int addr = 0;
+#endif
+        int size = (int)compiler->lvaLclSize(varNum);
+        int end = addr + size;
+        for (int offs = addr; offs < end;)
+        {
+#ifdef TARGET_64BIT
+            if ((offs & 7) == 0 && end - offs >= 8)
+            {
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, immRegNum, (int)varNum, offs - addr);
+                offs += 8;
+                continue;
+            }
+#endif
+
+            assert((offs & 3) == 0 && end - offs >= 4);
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, immRegNum, (int)varNum, offs - addr);
+            offs += 4;
+        }
+    }
+} 
