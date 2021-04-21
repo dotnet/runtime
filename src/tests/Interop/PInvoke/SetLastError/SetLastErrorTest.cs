@@ -12,13 +12,13 @@ class SetLastErrorTest
         private const string SetError = nameof(SetError);
 
         [DllImport(nameof(SetLastErrorNative), EntryPoint = SetError)]
-        public static extern void SetError_Default(int error, byte shouldSetError);
+        public static extern void SetError_Default(int error, [MarshalAs(UnmanagedType.U1)] bool shouldSetError);
 
         [DllImport(nameof(SetLastErrorNative), EntryPoint = SetError, SetLastError = false)]
-        public static extern void SetError_False(int error, byte shouldSetError);
+        public static extern void SetError_False(int error, [MarshalAs(UnmanagedType.U1)] bool shouldSetError);
 
         [DllImport(nameof(SetLastErrorNative), EntryPoint = SetError, SetLastError = true)]
-        public static extern void SetError_True(int error, byte shouldSetError);
+        public static extern void SetError_True(int error, [MarshalAs(UnmanagedType.U1)] bool shouldSetError);
     }
 
     public static void LastErrorHasExpectedValue()
@@ -26,7 +26,7 @@ class SetLastErrorTest
         // Default (same behaviour as SetLastError=false)
         {
             int expected = Marshal.GetLastPInvokeError();
-            SetLastErrorNative.SetError_Default(expected + 1, shouldSetError: 1);
+            SetLastErrorNative.SetError_Default(expected + 1, shouldSetError: true);
             int actual = Marshal.GetLastPInvokeError();
             Assert.AreEqual(expected, actual);
         }
@@ -34,7 +34,7 @@ class SetLastErrorTest
         // SetLastError=false
         {
             int expected = Marshal.GetLastPInvokeError();
-            SetLastErrorNative.SetError_False(expected + 1, shouldSetError: 1);
+            SetLastErrorNative.SetError_False(expected + 1, shouldSetError: true);
             int actual = Marshal.GetLastPInvokeError();
             Assert.AreEqual(expected, actual);
         }
@@ -43,7 +43,7 @@ class SetLastErrorTest
         {
             int expected = Marshal.GetLastPInvokeError();
             expected++;
-            SetLastErrorNative.SetError_True(expected, shouldSetError: 1);
+            SetLastErrorNative.SetError_True(expected, shouldSetError: true);
             int actual = Marshal.GetLastPInvokeError();
             Assert.AreEqual(expected, actual);
         }
@@ -57,7 +57,7 @@ class SetLastErrorTest
 
         // Don't actually set the error in the native call.
         // Calling a P/Invoke with SetLastError=true should clear any existing error.
-        SetLastErrorNative.SetError_True(error, shouldSetError: 0);
+        SetLastErrorNative.SetError_True(error, shouldSetError: false);
         int actual = Marshal.GetLastPInvokeError();
         Assert.AreEqual(0, actual);
     }
