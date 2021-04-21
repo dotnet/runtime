@@ -214,25 +214,26 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                if (OperatingSystem.IsWindows())
+                if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
                 {
-                    if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle != IntPtr.Zero)
+                    if (OperatingSystem.IsWindows())
                     {
                         certificate = new X509Certificate2(connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle);
                     }
-                }
-                else if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
-                {
-                    unsafe {
-                        ReadOnlySpan<QuicBuffer> quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle, sizeof(QuicBuffer));
-                        if (quicBuffer[0].Length != 0 && quicBuffer[0].Buffer != null)
+                    else
+                    {
+                        unsafe
                         {
-                            ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
-                            additionalCertificates = new X509Certificate2Collection();
-                            additionalCertificates.Import(asn1);
-                            if (additionalCertificates.Count > 0)
+                            ReadOnlySpan<QuicBuffer> quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle, sizeof(QuicBuffer));
+                            if (quicBuffer[0].Length != 0 && quicBuffer[0].Buffer != null)
                             {
-                                certificate = additionalCertificates[0];
+                                ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
+                                additionalCertificates = new X509Certificate2Collection();
+                                additionalCertificates.Import(asn1);
+                                if (additionalCertificates.Count > 0)
+                                {
+                                    certificate = additionalCertificates[0];
+                                }
                             }
                         }
                     }

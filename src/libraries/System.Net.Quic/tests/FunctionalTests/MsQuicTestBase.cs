@@ -3,20 +3,29 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    // TODO: why do we hawe 2 base clase with some duplicated methods?
+    // TODO: why do we have 2 base classes with some duplicated methods?
     public class MsQuicTestBase
     {
+        public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+
+        public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
+            return true;
+        }
+
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
-                // TODO: use a cert. MsQuic currently only allows certs that are trusted.
-                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
+                ServerCertificate = ServerCertificate
             };
         }
 
@@ -25,7 +34,7 @@ namespace System.Net.Quic.Tests
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
-                RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => { return true; }
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
             };
         }
 
