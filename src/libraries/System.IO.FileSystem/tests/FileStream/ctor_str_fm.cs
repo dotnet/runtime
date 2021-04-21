@@ -50,7 +50,6 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => CreateFileStream(path, FileMode.Open));
         }
 
-
         public static TheoryData<string> StreamSpecifiers
         {
             get
