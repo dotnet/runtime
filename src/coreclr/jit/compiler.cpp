@@ -5879,7 +5879,7 @@ void Compiler::compCompileFinish()
             for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
             {
                 if ((fgPgoSchema[iSchema].InstrumentationKind ==
-                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
+                     ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count) &&
                     (fgPgoSchema[iSchema].ILOffset == 0))
                 {
                     foundEntrypointBasicBlockCount = true;

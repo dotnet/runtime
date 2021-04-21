@@ -964,7 +964,7 @@ HRESULT ZapInfo::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
     // Validate that each schema item is only used for a basic block count
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
-        if (pSchema[iSchema].InstrumentationKind != PgoInstrumentationKind::BasicBlockIntCount)
+        if (pSchema[iSchema].InstrumentationKind != PgoInstrumentationKind::BasicBlockU32Count)
             return E_NOTIMPL;
         if (pSchema[iSchema].Count != 1)
             return E_NOTIMPL;
@@ -1123,7 +1123,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
         {
             PgoInstrumentationSchema blockCountSchema = {};
             blockCountSchema.Count = 1;
-            blockCountSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+            blockCountSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count;
             blockCountSchema.ILOffset = blockCounts[iSchema].ILOffset;
             blockCountSchema.Offset = (BYTE *)&blockCounts[iSchema].ExecutionCount - (BYTE*)blockCounts;
             pgoResults->m_schema.Append(blockCountSchema);

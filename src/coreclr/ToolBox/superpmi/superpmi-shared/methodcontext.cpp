@@ -5531,10 +5531,10 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 
             switch((ICorJitInfo::PgoInstrumentationKind)pBuf[i].InstrumentationKind)
             {
-                case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                case ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count:
                     printf("B %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+                case ICorJitInfo::PgoInstrumentationKind::EdgeU32Count:
                     printf("E %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
@@ -6720,8 +6720,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
             //
             for (UINT32 i = 0; i < schemaCount; i++)
             {
-                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
-                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count)
+                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeU32Count))
                 {
                     if (schema[i].Offset < minOffset)
                     {
@@ -6806,7 +6806,7 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
         {
             for (UINT32 i = 0; i < schemaCount; i++)
             {
-                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
+                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeU32Count);
                 hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
