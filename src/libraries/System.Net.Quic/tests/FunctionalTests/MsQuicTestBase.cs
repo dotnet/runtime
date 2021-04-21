@@ -42,9 +42,7 @@ namespace System.Net.Quic.Tests
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
-            listener.Start();
-            return listener;
+            return new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
         }
 
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
