@@ -330,13 +330,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //
-    pMethod->ResetCodeEntryPoint();
-
-    if (pMethod->HasNativeCodeSlot())
-    {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)pMethod->GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
-    }
+    pMethod->ResetCodeEntryPointForEnC();
 
     return S_OK;
 }

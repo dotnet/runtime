@@ -1411,6 +1411,7 @@ public:
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
     void SetCodeEntryPoint(PCODE entryPoint);
     void ResetCodeEntryPoint();
+    void ResetCodeEntryPointForEnC();
 
 #endif // !CROSSGEN_COMPILE
 
