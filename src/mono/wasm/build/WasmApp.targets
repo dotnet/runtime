@@ -487,17 +487,20 @@
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
 
-    <PropertyGroup>
-      <_EmccLinkerArguments>$(EmccLDFlags)</_EmccLinkerArguments>
-      <_EmccLinkerArguments>$(_EmccLinkerArguments) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ')</_EmccLinkerArguments>
-      <_EmccLinkerArguments>$(_EmccLinkerArguments) @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ')</_EmccLinkerArguments>
-      <_EmccLinkerArguments>$(_EmccLinkerArguments) @(_WasmObjects->'&quot;%(Identity)&quot;', ' ')</_EmccLinkerArguments>
-      <_EmccLinkerArguments>$(_EmccLinkerArguments) -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;</_EmccLinkerArguments>
+    <ItemGroup>
+      <_EmccLinkerArguments Include="$(EmccLDFlags)" />
+      <_EmccLinkerArguments Include="--js-library %(_DotnetJSSrcFile.Identity)" />
+      <_EmccLinkerArguments Include="@(_BitcodeFile)" />
+      <_EmccLinkerArguments Include="@(_WasmObjects)" />
+      <_EmccLinkerArguments Include="-o $(_WasmIntermediateOutputPath)dotnet.js" />
+    </ItemGroup>
 
+    <PropertyGroup>
       <_EmccLinkerResponseFile>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkerResponseFile>
     </PropertyGroup>
-    <WriteLinesToFile Lines="$(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" />
-    <Message Text="Running emcc with $(_EmccLinkerArguments)" Importance="Low" />
+
+    <WriteLinesToFile Lines="@(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" />
+    <Message Text="Running emcc with @(_EmccLinkerArguments->'%(Identity)', ' ')" Importance="Low" />
     <Exec Command="emcc @$(_EmccLinkerResponseFile)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Exec Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
