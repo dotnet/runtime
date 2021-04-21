@@ -13,21 +13,27 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    internal sealed partial class JsonContent<TValue> : JsonContent
+    internal sealed partial class JsonContent<TValue> : HttpContent
     {
         private readonly JsonTypeInfo<TValue> _typeInfo;
 
         private readonly TValue _typedValue;
 
         public JsonContent(TValue inputValue, JsonTypeInfo<TValue> jsonTypeInfo)
-            : base (inputValue, typeof(TValue), mediaType: null)
         {
             _typeInfo = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
             _typedValue = inputValue;
+            Headers.ContentType = Helper.GetDefaultMediaType();
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
 
         /// <summary>
         /// Based on <see cref="JsonContent.SerializeToStreamAsyncCore(Stream, bool, CancellationToken)"/>.
@@ -37,7 +43,7 @@ namespace System.Net.Http.Json
         /// </summary>
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = Helper.GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
