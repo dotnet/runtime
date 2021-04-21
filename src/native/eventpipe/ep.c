@@ -20,6 +20,8 @@ static bool _ep_can_start_threads = false;
 static ep_rt_session_id_array_t _ep_deferred_enable_session_ids = { 0 };
 static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
 
+static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
+
 /*
  * Forward declares of all static functions.
  */
@@ -842,8 +844,7 @@ static
 bool
 ipc_stream_factory_any_suspended_ports (void)
 {
-	extern bool ds_ipc_stream_factory_any_suspended_ports (void);
-	return ds_ipc_stream_factory_any_suspended_ports ();
+	return _ep_ipc_stream_factory_suspended_ports_callback ? _ep_ipc_stream_factory_suspended_ports_callback () : false;
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -1521,6 +1522,12 @@ ep_system_time_set (
 	system_time->minute = minute;
 	system_time->second = second;
 	system_time->milliseconds = milliseconds;
+}
+
+void
+ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback)
+{
+	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

@@ -1052,9 +1052,11 @@
 /* Enable runtime support for metadata updates */
 #cmakedefine ENABLE_METADATA_UPDATE 1
 
+/* Enable static linking of mono runtime components */
+#cmakedefine STATIC_COMPONENTS
+
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
 #endif
 
 #endif
-
