@@ -1242,6 +1242,7 @@ public:
 
         // TODO-CQ: Consider using REG_ORDER as a tie-breaker even for busy registers.
         REG_NUM = 0x0001, // It has a lower register number.
+        NONE    = 0
     };
 
     typedef void (LinearScan::RegisterSelection::*HeuristicFn)();
@@ -1262,7 +1263,7 @@ public:
              REG_ORDER,      SPILL_COST,      FAR_NEXT_REF,       PREV_REG_OPT,
              REG_NUM};
 
-        RegisterScore RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {0};
+        RegisterScore RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {NONE};
 
         // TODO: Add document for each field
         ScoreMappingTable* mappingTable = nullptr;
@@ -1975,16 +1976,6 @@ public:
         }
 #endif
         return loc;
-    }
-
-    template <typename RSH>
-    bool RegSelectionHeuristics(RSH (&x)[])
-    {
-        for (int i = 0; i < 10; i++)
-        {
-            rsh[i]();
-        }
-        return false;
     }
 };
 

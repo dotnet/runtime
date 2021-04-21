@@ -10809,7 +10809,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
     {
         // Make sure we do not set repeated entries
-        assert(RegSelectionOrder[orderId] == 0);
+        assert(RegSelectionOrder[orderId] == NONE);
 
         RegSelectionOrder[orderId] = DefaultOrder[ordering[orderId] - 'A'];
     }
