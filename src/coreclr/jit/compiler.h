@@ -4671,7 +4671,9 @@ public:
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
 
+#ifdef FEATURE_JIT_METHOD_PERF
     unsigned fgMeasureIR();
+#endif // FEATURE_JIT_METHOD_PERF
 
     bool fgModified;         // True if the flow graph has been modified recently
     bool fgComputePredsDone; // Have we computed the bbPreds list
@@ -5347,13 +5349,9 @@ public:
 
     flowList* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, flowList*** ptrToPred);
 
-    flowList* fgSpliceOutPred(BasicBlock* block, BasicBlock* blockPred);
-
     flowList* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
 
     flowList* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
-
-    flowList* fgRemoveAllRefPreds(BasicBlock* block, flowList** ptrToPred);
 
     void fgRemoveBlockAsPred(BasicBlock* block);
 
