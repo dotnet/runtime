@@ -12,6 +12,8 @@ namespace System.IO.Tests
             return new FileStream(path, mode);
         }
 
+        protected virtual long InitialLength => 0;
+
         [Fact]
         public void NullPathThrows()
         {

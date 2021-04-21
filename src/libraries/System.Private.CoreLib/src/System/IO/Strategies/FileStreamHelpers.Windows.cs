@@ -69,9 +69,9 @@ namespace System.IO.Strategies
             {
                 Debug.Assert(path != null);
 
-                if (allocationSize > 0)
+                if (allocationSize > 0 && (access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
                 {
-                    string prefixedAbsolutePath = PathInternal.IsExtended(path) ? path : @"\??\" + Path.GetFullPath(path); // TODO: we might consider getting rid of this managed allocation,
+                    string prefixedAbsolutePath = PathInternal.IsExtended(path) ? path : @"\??\" + Path.GetFullPath(path); // we might consider getting rid of this managed allocation
                     (uint ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(prefixedAbsolutePath, mode, access, share, options, allocationSize);
                     if (ntStatus == 0)
                     {

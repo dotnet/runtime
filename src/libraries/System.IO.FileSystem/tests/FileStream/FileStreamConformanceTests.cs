@@ -14,7 +14,6 @@ namespace System.IO.Tests
     {
         protected abstract FileOptions Options { get; }
         protected abstract int BufferSize { get; }
-        protected abstract long AllocationSize { get; }
 
         private Task<Stream> CreateStream(byte[] initialData, FileAccess access)
         {
@@ -24,7 +23,7 @@ namespace System.IO.Tests
                 File.WriteAllBytes(path, initialData);
             }
 
-            return Task.FromResult<Stream>(new FileStream(path, FileMode.OpenOrCreate, access, FileShare.None, BufferSize, Options, AllocationSize));
+            return Task.FromResult<Stream>(new FileStream(path, FileMode.OpenOrCreate, access, FileShare.None, BufferSize, Options));
         }
 
         protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
@@ -62,7 +61,7 @@ namespace System.IO.Tests
 
             using FileStream createdFromHandle = new FileStream(stream.SafeFileHandle, FileAccess.Write);
 
-            Assert.Equal(buffer.Length, stream.Position);
+            Assert.Equal(buffer.Length, stream.Position); 
             Assert.Equal(stream.Position, createdFromHandle.Position);
         }
 
@@ -187,53 +186,18 @@ namespace System.IO.Tests
             byte[] allBytes = File.ReadAllBytes(filePath);
             Assert.Equal(writtenBytes.ToArray(), allBytes);
         }
-
-        [Fact]
-        public void WhenFileStreamFailsToPreallocateDiskSpaceTheErrorMessageContainsAllTheDetails()
-        {
-            const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
-
-            string filePath = GetTestFilePath();
-
-            Assert.False(File.Exists(filePath));
-
-            IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, Options, tooMuch));
-            Assert.Contains("disk was full", ex.Message);
-            Assert.Contains(filePath, ex.Message);
-            Assert.Contains(AllocationSize.ToString(), ex.Message);
-
-            Assert.False(File.Exists(filePath));
-        }
     }
 
     public class UnbufferedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.None;
         protected override int BufferSize => 1;
-        protected override long AllocationSize => 0;
-    }
-
-    public class UnbufferedPreallocatedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
-    {
-        protected override FileOptions Options => FileOptions.None;
-        protected override int BufferSize => 1;
-
-        // any AllocationSize > 0 executes the code path where we try to pre-allocate the disk space
-        protected override long AllocationSize => 1;
     }
 
     public class BufferedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.None;
         protected override int BufferSize => 10;
-        protected override long AllocationSize => 0;
-    }
-
-    public class BufferedPreallocatedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
-    {
-        protected override FileOptions Options => FileOptions.None;
-        protected override int BufferSize => 10;
-        protected override long AllocationSize => 1;
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -242,16 +206,6 @@ namespace System.IO.Tests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
         protected override int BufferSize => 1;
-        protected override long AllocationSize => 0;
-    }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [PlatformSpecific(~TestPlatforms.Browser)] // copied from base class due to https://github.com/xunit/xunit/issues/2186
-    public class UnbufferedPreallocatedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
-    {
-        protected override FileOptions Options => FileOptions.Asynchronous;
-        protected override int BufferSize => 1;
-        protected override long AllocationSize => 1;
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -260,16 +214,6 @@ namespace System.IO.Tests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
         protected override int BufferSize => 10;
-        protected override long AllocationSize => 0;
-    }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [PlatformSpecific(~TestPlatforms.Browser)] // copied from base class due to https://github.com/xunit/xunit/issues/2186
-    public class BufferedPreallocatedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
-    {
-        protected override FileOptions Options => FileOptions.Asynchronous;
-        protected override int BufferSize => 10;
-        protected override long AllocationSize => 1;
     }
 
     public class AnonymousPipeFileStreamConnectedConformanceTests : ConnectedStreamConformanceTests
