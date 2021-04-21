@@ -1018,6 +1018,29 @@ namespace InteropLibImports
         DestroyHandleCommon(static_cast<::OBJECTHANDLE>(handle), InstanceHandleType);
     }
 
+    bool HasValidTarget(_In_ InteropLib::OBJECTHANDLE handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(handle != NULL);
+        }
+        CONTRACTL_END;
+
+        bool isValid = false;
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        {
+            // Switch to cooperative mode so the handle can be safely inspected.
+            GCX_COOP_THREAD_EXISTS(GET_THREAD());
+            isValid = ObjectFromHandle(objectHandle) != NULL;
+        }
+
+        return isValid;
+    }
+
     bool GetGlobalPeggingState() noexcept
     {
         CONTRACTL
