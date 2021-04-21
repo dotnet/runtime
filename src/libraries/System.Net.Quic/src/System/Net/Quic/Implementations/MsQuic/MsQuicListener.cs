@@ -149,7 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            _state.AcceptConnectionQueue.Writer.TryComplete();
+            _state.AcceptConnectionQueue?.Writer.TryComplete();
 
             if (_state.Handle != null)
             {
