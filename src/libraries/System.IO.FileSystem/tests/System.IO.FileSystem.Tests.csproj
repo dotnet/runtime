@@ -50,6 +50,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer_fo_AllocationSize.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileSystemTest.Windows.cs" />
@@ -61,7 +64,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="FileSystemTest.Browser.cs" />
-  </ItemGroup>  
+  </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
     <Compile Include="DirectoryInfo\GetSetAttributes.cs" />

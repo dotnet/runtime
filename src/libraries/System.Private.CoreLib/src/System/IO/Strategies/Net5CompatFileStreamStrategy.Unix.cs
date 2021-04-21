@@ -39,7 +39,8 @@ namespace System.IO.Strategies
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="originalPath">The original path specified for the FileStream.</param>
         /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
-        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
+        /// <param name="allocationSize">passed to posix_fallocate</param>
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options, long allocationSize)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -102,6 +103,20 @@ namespace System.IO.Strategies
                         throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
                     }
                 }
+            }
+
+            // If allocationSize has been provided for a creatable and writeable file
+            if (allocationSize > 0 && (_access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
+            {
+                int ENOSPC = OperatingSystem.IsLinux() ? 28 : (int)Interop.Error.ENOSPC; // Linux error code != Unix error code
+                if (Interop.Sys.FAllocate(_fileHandle, 0, allocationSize) == ENOSPC)
+                {
+                    _fileHandle.Dispose();
+                    Interop.Sys.Unlink(_path!); // remove the file to mimic Windows behaviour (atomic operation)
+
+                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, _path, allocationSize));
+                }
+                // ignore not supported and other failures (pipe etc)
             }
         }
 

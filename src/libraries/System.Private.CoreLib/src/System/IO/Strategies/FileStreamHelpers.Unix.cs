@@ -14,8 +14,6 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        private static readonly int ENOSPC = OperatingSystem.IsLinux() ? 28 : (int)Interop.Error.ENOSPC; // Linux error code != Unix error code
-
         // in the future we are most probably going to introduce more strategies (io_uring etc)
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
             => new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
@@ -23,7 +21,7 @@ namespace System.IO.Strategies
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long allocationSize)
             => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, allocationSize);
 
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
             // Translate the arguments into arguments for an open call.
             Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
@@ -37,22 +35,7 @@ namespace System.IO.Strategies
                 Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
                 Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
 
-            // Open the file and store the safe handle.
-            SafeFileHandle handle = SafeFileHandle.Open(path!, openFlags, (int)OpenPermissions);
-            // If allocationSize has been provided for a creatable and writeable file
-            if (allocationSize > 0 && (access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
-            {
-                if (Interop.Sys.FAllocate(handle, 0, allocationSize) == ENOSPC)
-                {
-                    handle.Dispose();
-                    Interop.Sys.Unlink(path); // remove the file to mimic Windows behaviour (atomic operation)
-
-                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, path, allocationSize));
-                }
-                // ignore not supported and other failures (pipe etc)
-            }
-
-            return handle;
+            return SafeFileHandle.Open(path!, openFlags, (int)OpenPermissions);
         }
 
         internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync) => handle.IsAsync ?? defaultIsAsync;
