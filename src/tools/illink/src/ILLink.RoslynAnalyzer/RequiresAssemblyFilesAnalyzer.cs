@@ -51,7 +51,8 @@ namespace ILLink.RoslynAnalyzer
 				Resources.ResourceManager, typeof (Resources)),
 			DiagnosticCategory.SingleFile,
 			DiagnosticSeverity.Warning,
-			isEnabledByDefault: true);
+			isEnabledByDefault: true,
+			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3002");
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule);
 
