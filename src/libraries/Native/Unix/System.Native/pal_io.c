@@ -1007,13 +1007,13 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
     fstore.fst_length = (off_t)length;
     fstore.fst_bytesalloc = 0; // output size, can be > length
 
-    while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR) ;
+    while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
 
     if (result == -1)
     {
         // we have failed to allocate contiguous space, let's try non-contiguous
         fstore.fst_flags = F_ALLOCATEALL; // all or nothing
-        while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR) ;
+        while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
     }
 #elif defined(F_ALLOCSP) || defined(F_ALLOCSP64) // FreeBSD
     #if HAVE_FLOCK64
@@ -1028,7 +1028,7 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;
 
-    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR) ;
+    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR);
 #endif
 
 #if defined(F_PREALLOCATE) || defined(F_ALLOCSP) || defined(F_ALLOCSP64)

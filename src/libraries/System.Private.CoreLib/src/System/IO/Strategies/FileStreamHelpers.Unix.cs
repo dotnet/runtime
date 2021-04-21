@@ -14,7 +14,7 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        private const int ENOSPC_Linux = 28;
+        private static readonly int ENOSPC = OperatingSystem.IsLinux() ? 28 : (int)Interop.Error.ENOSPC; // Linux error code != Unix error code
 
         // in the future we are most probably going to introduce more strategies (io_uring etc)
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
@@ -42,8 +42,7 @@ namespace System.IO.Strategies
             // If allocationSize has been provided for a creatable and writeable file
             if (allocationSize > 0 && (access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
             {
-                int allocationResult = Interop.Sys.FAllocate(handle, 0, allocationSize);
-                if (allocationResult == (int)Interop.Error.ENOSPC || allocationResult == ENOSPC_Linux)
+                if (Interop.Sys.FAllocate(handle, 0, allocationSize) == ENOSPC)
                 {
                     handle.Dispose();
                     Interop.Sys.Unlink(path); // remove the file to mimic Windows behaviour (atomic operation)
