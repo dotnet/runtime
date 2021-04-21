@@ -6784,7 +6784,7 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
@@ -6808,8 +6808,9 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+                hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
-                if (hasEdgeProfile && hasClassProfile)
+                if (hasEdgeProfile && hasClassProfile && hasLikelyClass)
                 {
                     break;
                 }
