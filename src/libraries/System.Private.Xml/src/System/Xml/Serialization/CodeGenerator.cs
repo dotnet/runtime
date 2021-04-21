@@ -53,6 +53,10 @@ namespace System.Xml.Serialization
             return type.Name == "Nullable`1";
         }
 
+#if DEBUG
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Debug only code, we don't ship debug binaries.")]
+#endif
         internal static void AssertHasInterface(Type type, Type iType)
         {
 #if DEBUG

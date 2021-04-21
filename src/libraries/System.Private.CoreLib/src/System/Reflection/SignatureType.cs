@@ -79,6 +79,7 @@ namespace System.Reflection
         public sealed override Type ReflectedType => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type BaseType => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public sealed override Type[] GetInterfaces() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override int MetadataToken => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -165,6 +166,8 @@ namespace System.Reflection
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public sealed override Type GetInterface(string name, bool ignoreCase) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -173,7 +176,10 @@ namespace System.Reflection
         protected sealed override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsPrimitiveImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public sealed override Type[] FindInterfaces(TypeFilter filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);

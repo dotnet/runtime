@@ -149,11 +149,13 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw not_supported();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             throw not_supported();

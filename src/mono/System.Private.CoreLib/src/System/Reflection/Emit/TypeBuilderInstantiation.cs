@@ -164,6 +164,7 @@ namespace System.Reflection.Emit
             get { return generic_type.BaseType; }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             throw new NotSupportedException();
@@ -439,6 +440,7 @@ namespace System.Reflection.Emit
         }
 
         //stuff that throws
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException();

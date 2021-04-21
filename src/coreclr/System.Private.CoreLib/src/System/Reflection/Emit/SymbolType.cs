@@ -397,11 +397,13 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);

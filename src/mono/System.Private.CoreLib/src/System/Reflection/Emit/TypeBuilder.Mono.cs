@@ -1083,12 +1083,14 @@ namespace System.Reflection.Emit
             return created!.GetFields(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
         {
             check_created();
             return created!.GetInterface(name, ignoreCase);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
         {
             if (is_created)
