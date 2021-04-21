@@ -10800,18 +10800,25 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     mappingTable->Set(PREV_REG_OPT, &LinearScan::RegisterSelection::tryPrevRegOpt);
     mappingTable->Set(REG_NUM, &LinearScan::RegisterSelection::tryRegNum);
 
-    const WCHAR* ordering = JitConfig.JitLsraOrdering();
+    LPCWSTR ordering = nullptr;
+
+#ifdef DEBUG
+    ordering = JitConfig.JitLsraOrdering();
+#endif // DEBUG
+
     if (ordering == nullptr)
     {
-        ordering = L"ABCDEFGHIJKLMNOPQ";
+        memcpy(RegSelectionOrder, DefaultOrder, sizeof(RegisterScore) * REGSELECT_HEURISTIC_COUNT);
     }
-
-    for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
+    else
     {
-        // Make sure we do not set repeated entries
-        assert(RegSelectionOrder[orderId] == NONE);
+        for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT; orderId++)
+        {
+            // Make sure we do not set repeated entries
+            assert(RegSelectionOrder[orderId] == NONE);
 
-        RegSelectionOrder[orderId] = DefaultOrder[ordering[orderId] - 'A'];
+            RegSelectionOrder[orderId] = DefaultOrder[ordering[orderId] - 'A'];
+        }
     }
 }
 
