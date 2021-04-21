@@ -312,6 +312,14 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ArgFeedsRangeCheck++;
                 break;
 
+            case InlineObservation::CALLEE_INTRINSIC_CALL:
+                m_IntrinsicCalls++;
+                break;
+
+            case InlineObservation::CALLEE_POSSIBLE_TYPE_FOLD:
+                m_PossibleTypeFolds++;
+                break;
+
             case InlineObservation::CALLEE_HAS_SWITCH:
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
                 propagate = true;
@@ -472,20 +480,16 @@ bool DefaultPolicy::BudgetCheck() const
 
     if (overBudget)
     {
-        // If the candidate is a forceinline and the callsite is
-        // not too deep, allow the inline even if it goes over budget.
-        //
-        // For now, "not too deep" means a top-level inline. Note
-        // depth 0 is used for the root method, so inline candidate depth
-        // will be 1 or more.
+        // If the candidate is a forceinline and we've seen evidence
+        // that the callee might not be as expensive as it appears,
+        // allow the inline, even if it goes over budget.
         //
         assert(m_IsForceInlineKnown);
-        assert(m_CallsiteDepth > 0);
-        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
+        const bool hasEvidence = (m_IntrinsicCalls > 0) || (m_PossibleTypeFolds > 0);
 
-        if (allowOverBudget)
+        if (hasEvidence && m_IsForceInline)
         {
-            JITDUMP("Allowing over-budget top-level forceinline\n");
+            JITDUMP("Allowing over-budget forceinline\n");
         }
         else
         {
@@ -731,6 +735,18 @@ double DefaultPolicy::DetermineMultiplier()
     {
         multiplier += 3.0;
         JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_IntrinsicCalls > 0)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nPossible intrinsic simplifications. Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_PossibleTypeFolds > 0)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nPossible type folding opportunities. Multiplier increased to %g.", multiplier);
     }
 
     switch (m_CallsiteFrequency)

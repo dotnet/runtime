@@ -853,7 +853,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const bool  isPreJit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
     const bool  resolveTokens          = makeInlineObservations && (isTier1 || isPreJit);
     unsigned    retBlocks              = 0;
-    unsigned    intrinsicCalls         = 0;
     int         prefixFlags            = 0;
     int         value                  = 0;
 
@@ -967,7 +966,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 if (isJitIntrinsic)
                 {
-                    intrinsicCalls++;
+                    compInlineResult->Note(InlineObservation::CALLEE_INTRINSIC_CALL);
+
                     ni = lookupNamedIntrinsic(methodHnd);
 
                     switch (ni)
@@ -1486,6 +1486,56 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_RET:
                 retBlocks++;
                 break;
+
+            case CEE_BOX:
+            {
+                // Look for evidence of type specialization patterns.
+                //
+                // box + br
+                // box + isinst + br
+                //
+                // Todo: share pattern recognition with impBoxPatternMatch somehow
+                //
+                if (makeInlineObservations && (codeAddr < codeEndp))
+                {
+                    switch (codeAddr[0])
+                    {
+                        case CEE_BRTRUE:
+                        case CEE_BRTRUE_S:
+                        case CEE_BRFALSE:
+                        case CEE_BRFALSE_S:
+                            // box + br_true/false
+                            if ((codeAddr + ((codeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
+                            {
+                                compInlineResult->Note(InlineObservation::CALLEE_POSSIBLE_TYPE_FOLD);
+                            }
+
+                        case CEE_ISINST:
+                            if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
+                            {
+                                const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
+                                switch (nextCodeAddr[0])
+                                {
+                                    // box + isinst + br_true/false
+                                    case CEE_BRTRUE:
+                                    case CEE_BRTRUE_S:
+                                    case CEE_BRFALSE:
+                                    case CEE_BRFALSE_S:
+                                        if ((nextCodeAddr + ((nextCodeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
+                                        {
+                                            compInlineResult->Note(InlineObservation::CALLEE_POSSIBLE_TYPE_FOLD);
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                        default:
+                            break;
+                    }
+                }
+            }
 
             default:
                 break;

@@ -96,6 +96,8 @@ public:
         , m_ArgFeedsConstantTest(0)
         , m_ArgFeedsRangeCheck(0)
         , m_ConstantArgFeedsConstantTest(0)
+        , m_IntrinsicCalls(0)
+        , m_PossibleTypeFolds(0)
         , m_CalleeNativeSizeEstimate(0)
         , m_CallsiteNativeSizeEstimate(0)
         , m_IsForceInline(false)
@@ -164,6 +166,8 @@ protected:
     unsigned                m_ArgFeedsConstantTest;
     unsigned                m_ArgFeedsRangeCheck;
     unsigned                m_ConstantArgFeedsConstantTest;
+    unsigned                m_IntrinsicCalls;
+    unsigned                m_PossibleTypeFolds;
     int                     m_CalleeNativeSizeEstimate;
     int                     m_CallsiteNativeSizeEstimate;
     bool                    m_IsForceInline : 1;
