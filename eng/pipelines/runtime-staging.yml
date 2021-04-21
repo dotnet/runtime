@@ -226,6 +226,10 @@ jobs:
           eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
+#
+# Build the whole product using Mono and run libraries tests
+# for AOT, on windows
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -242,7 +246,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_AOT
+      nameSuffix: AllSubsets_Mono_AOT_Windows
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true
       timeoutInMinutes: 120
       condition: >-
