@@ -33,7 +33,7 @@
     <HelixWorkItem Include="SOD - Pizza App - Publish">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
-      <PreCommands>cd $(BlazorPizzaDirectory);$(Python) pre.py publish -f $(PerflabTargetFrameworks)  --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild-static AdditionalMonoLinkerOptions=&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog %27./traces/blazor_publish.binlog%27</PreCommands>
+      <PreCommands>cd $(BlazorPizzaDirectory);$(Python) pre.py publish -f $(PerflabTargetFrameworks)  --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog %27./traces/blazor_publish.binlog%27</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
