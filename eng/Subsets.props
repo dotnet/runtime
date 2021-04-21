@@ -42,7 +42,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.native+clr.corelib</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetOS)' != 'MacCatalyst'">$(DefaultCoreClrSubsets)+linuxdac+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
