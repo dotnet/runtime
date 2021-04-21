@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -8,18 +9,22 @@ class Program
 {
     static int Main(string[] args)
     {
-        using (RSA rsa = RSA.Create())
+        // TODO Remove when https://github.com/dotnet/runtime/issues/51098 addressed
+        if (!OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
         {
-            RSAParameters pubPriv = rsa.ExportParameters(true);
-            string xmlPriv = rsa.ToXmlString(true);
-
-            using (RSA rsaPriv = RSA.Create())
+            using (RSA rsa = RSA.Create())
             {
-                rsaPriv.FromXmlString(xmlPriv);
+                RSAParameters pubPriv = rsa.ExportParameters(true);
+                string xmlPriv = rsa.ToXmlString(true);
 
-                if (!KeyEquals(pubPriv, rsaPriv.ExportParameters(true)))
+                using (RSA rsaPriv = RSA.Create())
                 {
-                    return -1;
+                    rsaPriv.FromXmlString(xmlPriv);
+
+                    if (!KeyEquals(pubPriv, rsaPriv.ExportParameters(true)))
+                    {
+                        return -1;
+                    }
                 }
             }
         }
