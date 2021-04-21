@@ -581,7 +581,7 @@ namespace System.Text.Json.Serialization.Metadata
                 InitializeSerializePropCache();
             }
 
-            PropertyCache = new Dictionary<string, JsonPropertyInfo>(Options.PropertyNameCaseInsensitive
+            Dictionary<string, JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive
                 ? StringComparer.OrdinalIgnoreCase
                 : StringComparer.Ordinal);
 
@@ -589,11 +589,14 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 JsonPropertyInfo jsonPropertyInfo = PropertyCacheArray[i];
 
-                if (!JsonHelpers.TryAdd(PropertyCache!, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                if (!JsonHelpers.TryAdd(propertyCache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                 }
             }
+
+            // Avoid threading issues by populating a local cache, and assigning it to the global cache after completion.
+            PropertyCache = propertyCache;
         }
     }
 }

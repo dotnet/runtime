@@ -303,119 +303,40 @@ namespace System
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }
 
-        // The various Get values...
-        public unsafe object? GetValue(params int[] indices)
+        private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
-            if (indices == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
+            // Checked by the caller
+            Debug.Assert(indices.Length == Rank);
 
-            TypedReference elemref = default;
-            fixed (int* pIndices = &indices[0])
-                InternalGetReference(&elemref, indices.Length, pIndices);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe object? GetValue(int index)
-        {
-            if (Rank != 1)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-
-            TypedReference elemref = default;
-            InternalGetReference(&elemref, 1, &index);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe object? GetValue(int index1, int index2)
-        {
-            if (Rank != 2)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
-
-            int* pIndices = stackalloc int[2];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-
-            TypedReference elemref = default;
-            InternalGetReference(&elemref, 2, pIndices);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe object? GetValue(int index1, int index2, int index3)
-        {
-            if (Rank != 3)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
-
-            int* pIndices = stackalloc int[3];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-            pIndices[2] = index3;
-
-            TypedReference elemref = default;
-            InternalGetReference(&elemref, 3, pIndices);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe void SetValue(object? value, int index)
-        {
-            if (Rank != 1)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-
-            TypedReference elemref = default;
-            InternalGetReference(&elemref, 1, &index);
-            InternalSetValue(&elemref, value);
-        }
-
-        public unsafe void SetValue(object? value, int index1, int index2)
-        {
-            if (Rank != 2)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
-
-            int* pIndices = stackalloc int[2];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-
-            TypedReference elemref = default;
-            InternalGetReference(&elemref, 2, pIndices);
-            InternalSetValue(&elemref, value);
-        }
-
-        public unsafe void SetValue(object? value, int index1, int index2, int index3)
-        {
-            if (Rank != 3)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
-
-            int* pIndices = stackalloc int[3];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-            pIndices[2] = index3;
-
-            TypedReference elemref = default;
-            InternalGetReference(&elemref, 3, pIndices);
-            InternalSetValue(&elemref, value);
-        }
-
-        public unsafe void SetValue(object? value, params int[] indices)
-        {
-            if (indices == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
-
-            TypedReference elemref = default;
-            fixed (int* pIndices = &indices[0])
-                InternalGetReference(&elemref, indices.Length, pIndices);
-            InternalSetValue(&elemref, value);
+            if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
+            {
+                ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
+                nint flattenedIndex = 0;
+                for (int i = 0; i < indices.Length; i++)
+                {
+                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length  + i);
+                    int length = Unsafe.Add(ref bounds, i);
+                    if ((uint)index >= (uint)length)
+                        ThrowHelper.ThrowIndexOutOfRangeException();
+                    flattenedIndex = (length * flattenedIndex) + index;
+                }
+                Debug.Assert((nuint)flattenedIndex < (nuint)LongLength);
+                return flattenedIndex;
+            }
+            else
+            {
+                int index = indices[0];
+                if ((uint)index >= (uint)LongLength)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                return index;
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        // reference to TypedReference is banned, so have to pass result as pointer
-        private extern unsafe void InternalGetReference(void* elemRef, int rank, int* pIndices);
+        internal extern unsafe object? InternalGetValue(nint flattenedIndex);
 
-        // Ideally, we would like to use TypedReference.SetValue instead. Unfortunately, TypedReference.SetValue
-        // always throws not-supported exception
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void InternalSetValue(void* target, object? value);
+        private extern void InternalSetValue(object? value, nint flattenedIndex);
 
         public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
 

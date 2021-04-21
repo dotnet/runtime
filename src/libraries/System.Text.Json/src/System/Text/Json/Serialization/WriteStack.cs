@@ -89,15 +89,17 @@ namespace System.Text.Json
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
-            return Initialize(jsonTypeInfo, options, supportContinuation);
+            Debug.Assert(options == jsonTypeInfo.Options);
+            return Initialize(jsonTypeInfo, supportContinuation);
         }
 
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, bool supportContinuation)
+        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation)
         {
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
 
+            JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
             {
                 Debug.Assert(options.ReferenceHandler != null);
