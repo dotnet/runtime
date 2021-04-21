@@ -386,11 +386,6 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
     HRESULT hr = S_OK;
 
-    if (m_JitInfoArray == nullptr)
-    {
-        return E_FAIL;
-    }
-
     // Preprocessing Methods
     // - Add ModuleDependency to JITInfo
     // - Increment MethodCount in Module
@@ -400,16 +395,13 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
     {
         SigBuilder sigBuilder;
 
-        _ASSERTE(m_JitInfoArray[i].data1 != 0);
-
-        if (m_JitInfoArray[i].ptr == nullptr)
+        if (m_JitInfoArray[i].IsModuleInfo())
         {
             // Module records don't need preprocessing
             continue;
         }
 
-        MethodDesc * pMethod = (MethodDesc *) m_JitInfoArray[i].ptr;
-        m_JitInfoArray[i].ptr = nullptr;
+        MethodDesc * pMethod = m_JitInfoArray[i].GetMethodDescAndClean();
 
         BOOL fSuccess = false;
         EX_TRY
@@ -429,7 +421,12 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
         DWORD dwLength;
         BYTE * pBlob = (BYTE*)sigBuilder.GetSignature(&dwLength);
-        _ASSERTE(dwLength < MAX_SIGNATURE_LENGTH);
+        if (dwLength >= SIGNATURE_LENGTH_MASK + 1)
+        {
+            skipped++;
+            continue;
+        }
+
         BYTE * pSignature = new (nothrow) BYTE[dwLength];
         if (pSignature == nullptr)
         {
@@ -439,10 +436,12 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
         memcpy(pSignature, pBlob, dwLength);
 
-        unsigned data = (dwLength & (MAX_SIGNATURE_LENGTH - 1));
-
-        m_JitInfoArray[i].data2 = data;
-        m_JitInfoArray[i].ptr = pSignature;
+        if (!m_JitInfoArray[i].PackSignatureForMethod(pSignature, dwLength))
+        {
+            _ASSERTE(m_JitInfoArray[i].GetRawMethodData2() == 0);
+            _ASSERTE(m_JitInfoArray[i].GetRawMethodSignature() == nullptr);
+            delete[] pSignature;
+        }
     }
 
     {
@@ -489,61 +488,55 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         hr = WriteModuleRecord(pStream, m_ModuleList[i]);
     }
 
-    if (SUCCEEDED(hr))
+    for (LONG i = 0 ; i < m_JitInfoCount && SUCCEEDED(hr); i++)
     {
-        for (LONG i = 0 ; i < m_JitInfoCount && SUCCEEDED(hr); i++)
+        if (m_JitInfoArray[i].IsModuleInfo())
         {
-            if (!RecorderInfo::isMethod(m_JitInfoArray[i].data1))
+            // Module record
+            _ASSERTE(m_JitInfoArray[i].IsFullyInitialized());
+
+            DWORD data1 = m_JitInfoArray[i].GetRawModuleData();
+            hr = WriteData(pStream, &data1, sizeof(data1));
+        }
+        else
+        {
+            // Method record
+            DWORD data1 = m_JitInfoArray[i].GetRawMethodData1();
+            DWORD data2 = m_JitInfoArray[i].GetRawMethodData2();
+            BYTE * pSignature = m_JitInfoArray[i].GetRawMethodSignature();
+
+            if (pSignature == nullptr)
             {
-                // Module record
-                DWORD data1 = m_JitInfoArray[i].data1;
-                _ASSERTE(data1 != 0);
-                hr = WriteData(pStream, &data1, sizeof(data1));
+                // Skipped method
+                continue;
             }
-            else
+
+            DWORD sigSize = m_JitInfoArray[i].GetMethodSignatureSize();
+            DWORD paddingSize = m_JitInfoArray[i].GetMethodRecordPaddingSize();
+
+            hr = WriteData(pStream, &data1, sizeof(data1));
+            if (SUCCEEDED(hr))
             {
-                // Method record
-                DWORD data1 = m_JitInfoArray[i].data1;
-                DWORD data2 = m_JitInfoArray[i].data2;
-                BYTE * pSignature = (BYTE *) m_JitInfoArray[i].ptr;
-
-                if (pSignature == nullptr)
-                {
-                    // Skipped method
-                    continue;
-                }
-
-                _ASSERTE(data1 != 0);
-                _ASSERTE(data2 != 0);
-                _ASSERTE(pSignature != nullptr);
-
-                DWORD sigSize = data2 & (MAX_SIGNATURE_LENGTH - 1);
-                DWORD dataSize = sigSize + sizeof(DWORD) * 2;
-                DWORD dwSize = ((DWORD)(dataSize + sizeof(DWORD) - 1) / sizeof(DWORD)) * sizeof(DWORD);
-                _ASSERTE(dwSize < MAX_SIGNATURE_LENGTH);
-                data2 = dwSize << SIGNATURE_LENGTH_OFFSET | data2;
-
-                hr = WriteData(pStream, &data1, sizeof(data1));
-                if (SUCCEEDED(hr))
-                {
-                    hr = WriteData(pStream, &data2, sizeof(data2));
-                }
-                if (SUCCEEDED(hr))
-                {
-                    hr = WriteData(pStream, pSignature, sigSize);
-                }
-                if (SUCCEEDED(hr))
-                {
-                    DWORD tmp = 0;
-                    hr = WriteData(pStream, &tmp, dwSize - dataSize);
-                }
+                hr = WriteData(pStream, &data2, sizeof(data2));
+            }
+            if (SUCCEEDED(hr))
+            {
+                hr = WriteData(pStream, pSignature, sigSize);
+            }
+            if (SUCCEEDED(hr) && paddingSize > 0)
+            {
+                DWORD tmp = 0;
+                hr = WriteData(pStream, &tmp, paddingSize);
             }
         }
     }
 
     for (LONG i = 0; i < m_JitInfoCount; i++)
     {
-        delete[] m_JitInfoArray[i].ptr;
+        if (m_JitInfoArray[i].IsMethodInfo())
+        {
+            delete[] m_JitInfoArray[i].GetRawMethodSignature();
+        }
     }
 
     MulticoreJitTrace(("New profile: %d modules, %d methods", m_ModuleCount, m_JitInfoCount));
@@ -597,14 +590,8 @@ void MulticoreJitRecorder::RecordMethodInfo(unsigned moduleIndex, MethodDesc * p
 
     if (m_JitInfoArray != nullptr && m_JitInfoCount < (LONG) MAX_METHODS)
     {
-        unsigned data = RecorderInfo::packMethod(moduleIndex, application);
-
-        // To avoid recording overhead, records only pointer to MethodDesc.
         m_ModuleList[moduleIndex].methodCount++;
-        m_JitInfoArray[m_JitInfoCount].data1 = data;
-        m_JitInfoArray[m_JitInfoCount].data2 = 0;
-        m_JitInfoArray[m_JitInfoCount].ptr = (BYTE *) pMethod;
-        m_JitInfoCount++;
+        m_JitInfoArray[m_JitInfoCount++].PackMethod(moduleIndex, pMethod, application);
     }
 }
 
@@ -650,31 +637,22 @@ void MulticoreJitRecorder::RecordOrUpdateModuleInfo(FileLoadLevel needLevel, uns
 
     if (m_JitInfoArray != nullptr && m_JitInfoCount < (LONG) MAX_METHODS)
     {
-        unsigned data = RecorderInfo::packModule(needLevel, moduleIndex);
-
         // Due to incremental loading, there are quite a few RecordModuleLoad coming with increasing load level, merge
         // Previous record and current record both represent modules
-        if (m_JitInfoCount > 0)
+        if (m_JitInfoCount > 0
+            && m_JitInfoArray[m_JitInfoCount - 1].IsModuleInfo()
+            && m_JitInfoArray[m_JitInfoCount - 1].GetModuleIndex() == moduleIndex)
         {
-            unsigned prevData = m_JitInfoArray[m_JitInfoCount - 1].data1;
-            bool isModule = m_JitInfoArray[m_JitInfoCount - 1].ptr == nullptr;
-
-            if (isModule && (prevData & (MAX_MODULES - 1)) == (data & (MAX_MODULES - 1))) // to/from modules are the same
+            if (needLevel > m_JitInfoArray[m_JitInfoCount - 1].GetModuleLoadLevel())
             {
-                if (data > prevData) // higher level
-                {
-                    m_JitInfoArray[m_JitInfoCount - 1].data1 = data; // replace
-                }
-
-                return; // no new record
+                m_JitInfoArray[m_JitInfoCount - 1].PackModule(needLevel, moduleIndex);
             }
+
+            return; // no new record
         }
 
         m_ModuleDepCount++;
-        m_JitInfoArray[m_JitInfoCount].data1 = data;
-        m_JitInfoArray[m_JitInfoCount].data2 = 0;
-        m_JitInfoArray[m_JitInfoCount].ptr = nullptr;
-        m_JitInfoCount++;
+        m_JitInfoArray[m_JitInfoCount++].PackModule(needLevel, moduleIndex);
     }
 }
 

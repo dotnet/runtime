@@ -27,7 +27,8 @@ const unsigned JIT_BY_APP_THREAD_TAG   = 0x10000;   // tag, that indicates wheth
 
 const unsigned RECORD_TYPE_OFFSET      = 24;        // offset of type of record
 
-const unsigned MAX_MODULES             = 0x10000;   // maximum allowed number of modules (2^16 values)
+const unsigned MAX_MODULES             = 0x1000;    // maximum allowed number of modules (2^12 values)
+const unsigned MODULE_MASK             = 0xffff;    // mask to get module index from packed data
 
 const unsigned MODULE_LEVEL_OFFSET     = 16;        // offset of module load level
 const unsigned MAX_MODULE_LEVELS       = 0x100;     // maximum allowed number of module levels (2^8 values)
@@ -35,7 +36,7 @@ const unsigned MAX_MODULE_LEVELS       = 0x100;     // maximum allowed number of
 const unsigned MAX_METHODS             = 0x4000;    // Maximum allowed number of methods (2^14 values) (in principle this is also limited by "unsigned short" counters)
 
 const unsigned SIGNATURE_LENGTH_OFFSET = 16;        // offset of signature length
-const unsigned MAX_SIGNATURE_LENGTH    = 0x10000;   // maximum allowed signature length (2^16 values)
+const unsigned SIGNATURE_LENGTH_MASK   = 0xffff;    // mask to get signature from packed data (2^16-1 max signature length)
 
 const int      HEADER_W_COUNTER  = 14;              // Extra 16-bit counters in header for statistics: 28
 const int      HEADER_D_COUNTER  = 3;               // Extra 32-bit counters in header for statistics: 12
@@ -47,11 +48,10 @@ enum
 {
     MULTICOREJIT_PROFILE_VERSION   = 102,
 
-    // These should be powers of 2 in order to implement fast check for rec type
-    MULTICOREJIT_HEADER_RECORD_ID          = 1,
-    MULTICOREJIT_MODULE_RECORD_ID          = 2,
-    MULTICOREJIT_MODULEINF_RECORD_ID       = 4,
-    MULTICOREJIT_METHODINF_RECORD_ID       = 8
+    MULTICOREJIT_HEADER_RECORD_ID           = 1,
+    MULTICOREJIT_MODULE_RECORD_ID           = 2,
+    MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID = 3,
+    MULTICOREJIT_METHOD_RECORD_ID           = 4
 };
 
 inline unsigned Pack8_24(unsigned up, unsigned low)
@@ -66,16 +66,17 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 // <profile>::= <HeaderRecord> { <ModuleRecord> | <JitInfRecord> }
 //
 //  1. Each record is DWORD aligned
-//  2. Each record starts with a DWORD with tag in higher 8 bits
+//  2. Each record starts with a 1 byte recordType identifier
 //  3. Counter are just statistical information gathed (mainly during play back), good for quick diagnosis, not used to guide playback
 //  4. Maximum number of modules supported is MAX_MODULES
 //  5. Maximum number of methods supported is MAX_METHODS
-//  5. Simple module name stored
+//  6. Simple module name stored
 //  7. Method flag JIT_BY_APP_THREAD is for diagnosis only
 //
-// <HeaderRecord>::= <recordID> <version> <timeStamp> <moduleCount> <methodCount> <DependencyCount> <unsigned short counter>*14 <unsigned counter>*3
-// <ModuleRecord>::= <recordID> <ModuleVersion> <JitMethodCount> <loadLevel> <lenModuleName> char*lenModuleName <padding>
-// JifInfRecord is described below.
+// <HeaderRecord>::=     <recordType=MULTICOREJIT_HEADER_RECORD_ID> <3byte_recordSize> <version> <timeStamp> <moduleCount> <methodCount> <DependencyCount> <unsigned short counter>*14 <unsigned counter>*3
+// <ModuleRecord>::=     <recordType=MULTICOREJIT_MODULE_RECORD_ID> <3byte_recordSize> <ModuleVersion> <JitMethodCount> <loadLevel> <lenModuleName> char*lenModuleName <padding>
+// <ModuleDependency>::= <recordType=MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID> <loadLevel_1byte> <moduleIndex_2bytes>
+// <Method> ::=          <recordType=MULTICOREJIT_METHOD_RECORD_ID> <methodFlags_1byte> <moduleIndex_2byte> <recordSize_2byte> <sigSize_2byte> <signature> <optional padding>
 //
 //
 // Actual profile has two representations: internal and the one, that is stored in file.
@@ -89,20 +90,20 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 //     For modules RecorderInfo::data2 and RecorderInfo::ptr are set to 0. RecorderInfo::ptr == 0 is also a flag that RecorderInfo correponds to module.
 //     RecorderInfo::data1 is non-zero and represents info for module.
 //
-//     Info for module includes module index and requested load level, with some additional data in higher bits (MULTICOREJIT_MODULEINF_RECORD_ID tag).
+//     Info for module includes module index and requested load level, with some additional data in higher bits (MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID tag).
 //     - bits 0-15 store module index
 //     - bits 16-23 store load level
-//     - bits 24-31 store tag (MULTICOREJIT_MODULEINF_RECORD_ID)
+//     - bits 24-31 store tag (MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
 //
 //   2. Methods.
 //     For methods RecorderInfo::data2 is set to 0.
 //     RecorderInfo::ptr is set to pointer to MethodDesc.
 //     RecorderInfo::data1 is non-zero and represents additional info for method.
 //
-//     Info for method includes module index and method flags (like JIT_BY_APP_THREAD_TAG, etc.), with some additional data in higher bits (MULTICOREJIT_METHODINF_RECORD_ID tag).
+//     Info for method includes module index and method flags (like JIT_BY_APP_THREAD_TAG, etc.), with some additional data in higher bits (MULTICOREJIT_METHOD_RECORD_ID tag).
 //     - bits 0-15 store module index
 //     - bits 16-23 store method flags
-//     - bits 24-31 store tag (MULTICOREJIT_METHODINF_RECORD_ID).
+//     - bits 24-31 store tag (MULTICOREJIT_METHOD_RECORD_ID).
 //
 // II. Profile in file
 //
@@ -361,37 +362,200 @@ struct RecorderInfo
         ptr  = nullptr;
     }
 
-    static bool isMethod(unsigned data)
+    bool IsPartiallyInitialized()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (data & ((unsigned) MULTICOREJIT_METHODINF_RECORD_ID << RECORD_TYPE_OFFSET)) != 0;
+        return data1 != 0;
     }
 
-    static unsigned packMethod(unsigned moduleIndex, bool application)
+    bool IsMethodInfo()
     {
         LIMITED_METHOD_CONTRACT;
 
+        _ASSERTE(IsPartiallyInitialized());
+        return (data1 >> RECORD_TYPE_OFFSET) == MULTICOREJIT_METHOD_RECORD_ID;
+    }
+
+    bool IsModuleInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsPartiallyInitialized());
+        bool ret = (data1 >> RECORD_TYPE_OFFSET) == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID;
+        _ASSERTE(ret == !IsMethodInfo());
+        return ret;
+    }
+
+    bool IsFullyInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsPartiallyInitialized());
+
+        if (IsModuleInfo())
+        {
+            return true;
+        }
+        else
+        {
+            return data2 != 0 && ptr != nullptr;
+        }
+    }
+
+    unsigned GetRawModuleData()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsModuleInfo());
+        return data1;
+    }
+
+    unsigned GetModuleIndex()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsModuleInfo());
+        return data1 & MODULE_MASK;
+    }
+
+    unsigned GetModuleLoadLevel()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsModuleInfo());
+        return (data1 >> MODULE_LEVEL_OFFSET) & (MAX_MODULE_LEVELS - 1);
+    }
+
+    unsigned GetRawMethodData1()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        return data1;
+    }
+
+    unsigned GetRawMethodData2()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        return data2;
+    }
+
+    BYTE * GetRawMethodSignature()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        return ptr;
+    }
+
+    unsigned GetMethodSignatureSize()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsFullyInitialized());
+
+        return data2 & SIGNATURE_LENGTH_MASK;
+    }
+
+    unsigned GetMethodRecordPaddingSize()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsFullyInitialized());
+
+        unsigned recSize = data2 >> SIGNATURE_LENGTH_OFFSET;
+        unsigned paddingSize = recSize - GetMethodSignatureSize() - 2 * sizeof(DWORD);
+        _ASSERTE(paddingSize < sizeof(unsigned));
+
+        return paddingSize;
+    }
+
+    MethodDesc * GetMethodDescAndClean()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        _ASSERTE(data2 == 0);
+        _ASSERTE(ptr != nullptr);
+
+        MethodDesc * ret = (MethodDesc*) ptr;
+        ptr = nullptr;
+
+        return ret;
+    }
+
+    bool PackSignatureForMethod(BYTE *pSignature, unsigned signatureLength)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsMethodInfo());
+        _ASSERTE(data2 == 0);
+        _ASSERTE(ptr == nullptr);
+
+        _ASSERTE(pSignature != nullptr);
+        _ASSERTE(signatureLength > 0);
+
+        DWORD dataSize = signatureLength + sizeof(DWORD) * 2;
+        dataSize = AlignUp(dataSize, sizeof(DWORD));
+        if (dataSize >= SIGNATURE_LENGTH_MASK + 1)
+        {
+            return false;
+        }
+
+        data2 = (dataSize << SIGNATURE_LENGTH_OFFSET) | (signatureLength & SIGNATURE_LENGTH_MASK);
+        ptr = pSignature;
+
+        _ASSERTE(IsFullyInitialized());
+
+        return true;
+    }
+
+    void PackMethod(unsigned moduleIndex, MethodDesc * pMethod, bool application)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(data1 == 0);
+        _ASSERTE(data2 == 0);
+        _ASSERTE(ptr == nullptr);
+
         _ASSERTE(moduleIndex < MAX_MODULES);
-        unsigned data = Pack8_24(MULTICOREJIT_METHODINF_RECORD_ID, moduleIndex);
+        _ASSERTE(pMethod != NULL);
+
+        data1 = Pack8_24(MULTICOREJIT_METHOD_RECORD_ID, moduleIndex);
 
         if (application)
         {
              // Jitted by application threads, not background thread
-            data |= JIT_BY_APP_THREAD_TAG;
+            data1 |= JIT_BY_APP_THREAD_TAG;
         }
 
-        return data;
+        data2 = 0;
+        // To avoid recording overhead, records only pointer to MethodDesc.
+        ptr = (BYTE *) pMethod;
+
+        _ASSERTE(IsMethodInfo());
     }
 
-    static unsigned packModule(FileLoadLevel needLevel, unsigned moduleIndex)
+    void PackModule(FileLoadLevel needLevel, unsigned moduleIndex)
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(moduleIndex < MAX_MODULES);
+        _ASSERTE(data2 == 0);
+        _ASSERTE(ptr == nullptr);
+
         _ASSERTE(((unsigned) needLevel) < MAX_MODULE_LEVELS);
-        unsigned data = Pack8_24(MULTICOREJIT_MODULEINF_RECORD_ID, ((unsigned) needLevel << MODULE_LEVEL_OFFSET) | moduleIndex);
-        return data;
+        _ASSERTE(moduleIndex < MAX_MODULES);
+
+        data1 = Pack8_24(MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID, ((unsigned) needLevel << MODULE_LEVEL_OFFSET) | moduleIndex);
+        data2 = 0;
+        ptr = nullptr;
+
+        _ASSERTE(IsModuleInfo());
     }
 };
 
@@ -407,7 +571,7 @@ private:
     unsigned                  m_ModuleCount;
     unsigned                  m_ModuleDepCount;
 
-    RecorderInfo            * m_JitInfoArray;
+    RecorderInfo              m_JitInfoArray[MAX_METHODS];
     LONG                      m_JitInfoCount;
 
     bool                      m_fFirstMethod;
@@ -451,7 +615,6 @@ public:
         m_ModuleCount       = 0;
         m_ModuleDepCount    = 0;
 
-        m_JitInfoArray      = new (nothrow) RecorderInfo[MAX_METHODS];
         m_JitInfoCount      = 0;
 
         m_fFirstMethod      = true;
@@ -478,18 +641,14 @@ public:
 
         return true;
     }
-#endif // !TARGET_UNIX
 
     ~MulticoreJitRecorder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        delete[] m_JitInfoArray;
-
-#ifndef TARGET_UNIX
         CloseTimer();
-#endif // !TARGET_UNIX
     }
+#endif // !TARGET_UNIX
 
     bool IsAtFullCapacity() const
     {

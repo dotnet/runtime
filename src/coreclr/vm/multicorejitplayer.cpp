@@ -768,7 +768,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
     
     HRESULT hr = S_OK;
 
-    MulticoreJitTrace(("ModuleRecord(%u) start module load",
+    MulticoreJitTrace(("ModuleDependency(%u) start module load",
         moduleTo));
 
     if (moduleTo >= m_moduleCount)
@@ -827,7 +827,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
         }
     }
 
-    MulticoreJitTrace(("ModuleRecord(%d) end module load, hr=%x",
+    MulticoreJitTrace(("ModuleDependency(%d) end module load, hr=%x",
         moduleTo,
         hr));
 
@@ -923,22 +923,19 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
 {
     STANDARD_VM_CONTRACT;
 
-    if (pMethod != NULL && !pMethod->IsDynamicMethod())
+    if (pMethod != NULL && MulticoreJitManager::IsMethodSupported(pMethod))
     {
-        if (pMethod->HasILHeader())
+        if (pMethod->GetNativeCode() == NULL)
         {
-            if (pMethod->GetNativeCode() == NULL)
+            if (CompileMethodDesc(pModule, pMethod))
             {
-                if (CompileMethodDesc(pModule, pMethod))
-                {
-                    return;
-                }
-            }
-            else
-            {
-                m_stats.m_nHasNativeCode++;
                 return;
             }
+        }
+        else
+        {
+            m_stats.m_nHasNativeCode++;
+            return;
         }
     }
 
@@ -1107,11 +1104,11 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         {
             rcdLen = data1 & 0xFFFFFF;    
         }
-        else if (rcdTyp == MULTICOREJIT_MODULEINF_RECORD_ID)
+        else if (rcdTyp == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
         {
             rcdLen = sizeof(unsigned);
         }
-        else if (rcdTyp == MULTICOREJIT_METHODINF_RECORD_ID)
+        else if (rcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
         {
             data2 = * (((const unsigned *) pBuffer) + 1);
             rcdLen = data2 >> SIGNATURE_LENGTH_OFFSET;
@@ -1144,95 +1141,84 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 hr = HandleModuleRecord(pRec);
             }
         }
-        else if (rcdTyp == MULTICOREJIT_MODULEINF_RECORD_ID)
+        else if (rcdTyp == MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID)
         {
-            unsigned moduleIndex = data1 & (MAX_MODULES - 1);
-            unsigned level = (data1 & ((MAX_MODULE_LEVELS - 1) << MODULE_LEVEL_OFFSET)) >> MODULE_LEVEL_OFFSET;
+            unsigned moduleIndex = data1 & MODULE_MASK;
+            unsigned level = (data1 >> MODULE_LEVEL_OFFSET) & (MAX_MODULE_LEVELS - 1);
 
             hr = HandleModuleInfoRecord(moduleIndex, level);
         }
-        else if (rcdTyp == MULTICOREJIT_METHODINF_RECORD_ID)
+        else if (rcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
         {
-            // Find all subsequent methods and jit/load them reversed if reversed order is required
-            bool reversedOrder = true;
+            // Find all subsequent methods and jit/load them reversed
+            bool isMethod = true;
+            const BYTE * pCurBuf = pBuffer;
+            unsigned curSize = nSize;
 
-            if (reversedOrder)
+            unsigned sizes[MAX_WALKBACK] = {0};
+            int count = 0;
+
+            do
             {
-                bool isMethod = true;
-                const BYTE * pCurBuf = pBuffer;
-                unsigned curSize = nSize;
+                unsigned curdata2 = * (((const unsigned *) pCurBuf) + 1);
+                unsigned currcdLen = curdata2 >> SIGNATURE_LENGTH_OFFSET;
 
-                unsigned sizes[MAX_WALKBACK] = {0};
-                int count = 0;
-
-                do
+                if (currcdLen > curSize)
                 {
-                    unsigned curdata2 = * (((const unsigned *) pCurBuf) + 1);
-                    unsigned currcdLen = curdata2 >> SIGNATURE_LENGTH_OFFSET;
-
-                    if (currcdLen > curSize)
-                    {
-                        hr = COR_E_BADIMAGEFORMAT;
-                        break;
-                    }
-
-                    sizes[count] = currcdLen;
-                    count++;
-
-                    pCurBuf += currcdLen;
-                    curSize -= currcdLen;
-
-                    if (curSize == 0)
-                    {
-                        break;
-                    }
-
-                    unsigned curdata1 = * (const unsigned *) pCurBuf;
-                    isMethod = RecorderInfo::isMethod(curdata1);
+                    hr = COR_E_BADIMAGEFORMAT;
+                    break;
                 }
-                while (isMethod && count < MAX_WALKBACK);
 
+                sizes[count] = currcdLen;
+                count++;
+
+                pCurBuf += currcdLen;
+                curSize -= currcdLen;
+
+                if (curSize == 0)
+                {
+                    break;
+                }
+
+                unsigned curdata1 = * (const unsigned *) pCurBuf;
+                unsigned currcdTyp = curdata1 >> RECORD_TYPE_OFFSET;
+                isMethod = currcdTyp == MULTICOREJIT_METHOD_RECORD_ID;
+            }
+            while (isMethod && count < MAX_WALKBACK);
+
+            if (SUCCEEDED(hr))
+            {
                 _ASSERTE(count > 0);
                 if (count > 1)
                 {
                     MulticoreJitTrace(("Jit backwards %d methods",  count));
                 }
-
-                int i = count - 1;
-                for (; (SUCCEEDED(hr)) && i >= 0; --i)
-                {
-                    pCurBuf -= sizes[i];
-
-                    unsigned curdata1 = * (const unsigned *) pCurBuf;
-                    unsigned curmoduleIndex = curdata1 & (MAX_MODULES - 1);
-                    unsigned curflags = curdata1 & METHOD_FLAGS_MASK;
-
-                    unsigned curdata2 = * (((const unsigned *) pCurBuf) + 1);
-                    unsigned cursignatureLength = curdata2 & MAX_SIGNATURE_LENGTH;
-
-                    hr = HandleMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) * 2), cursignatureLength);
-
-                    if (SUCCEEDED(hr) && ShouldAbort(false))
-                    {
-                        hr = E_ABORT;
-                    }
-                }
-
-                m_stats.m_nWalkBack += (short) count;
-                m_stats.m_nFilteredMethods += (short) (i + 1);
-
-                rcdLen = nSize - curSize;
             }
-            else
+
+            int i = count - 1;
+            for (; (SUCCEEDED(hr)) && i >= 0; --i)
             {
-                unsigned moduleIndex = data1 & (MAX_MODULES - 1);
-                unsigned flags = data1 & METHOD_FLAGS_MASK;
+                pCurBuf -= sizes[i];
 
-                unsigned signatureLength = data2 & MAX_SIGNATURE_LENGTH;
-                rcdLen = data2 >> SIGNATURE_LENGTH_OFFSET;
+                unsigned curdata1 = * (const unsigned *) pCurBuf;
+                unsigned curmoduleIndex = curdata1 & MODULE_MASK;
+                unsigned curflags = curdata1 & METHOD_FLAGS_MASK;
 
-                hr = HandleMethodInfoRecord(moduleIndex, (BYTE *) (pBuffer + sizeof(unsigned) * 2), signatureLength);
+                unsigned curdata2 = * (((const unsigned *) pCurBuf) + 1);
+                unsigned cursignatureLength = curdata2 & SIGNATURE_LENGTH_MASK;
+
+                hr = HandleMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) * 2), cursignatureLength);
+
+                if (SUCCEEDED(hr) && ShouldAbort(false))
+                {
+                    hr = E_ABORT;
+                }
             }
+
+            m_stats.m_nWalkBack += (short) count;
+            m_stats.m_nFilteredMethods += (short) (i + 1);
+
+            rcdLen = nSize - curSize;
         }
         else
         {
