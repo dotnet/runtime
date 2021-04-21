@@ -233,7 +233,6 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
                                                                            // intrinsic classes
 CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))                       // LSRA heuristics ordering
 
-
 #endif // defined(DEBUG)
 
 #if FEATURE_LOOP_ALIGN

@@ -618,8 +618,7 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp)
 //    during Lowering, including (in DEBUG) getting the stress environment variables,
 //    as they may affect the block ordering.
 
-
-//LinearScan::RegisterSelection* regSelector;
+// LinearScan::RegisterSelection* regSelector;
 
 LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
@@ -2744,7 +2743,8 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //
 regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPosition)
 {
-    regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition/*, RegSelectionOrder, REGSELECT_HEURISTIC_COUNT*/);
+    regMaskTP foundRegBit =
+        regSelector->select(currentInterval, refPosition /*, RegSelectionOrder, REGSELECT_HEURISTIC_COUNT*/);
     if (foundRegBit == REG_NA)
     {
         return REG_NA;
@@ -2753,7 +2753,8 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     regNumber  foundReg               = genRegNumFromMask(foundRegBit);
     RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
     Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
-    if ((assignedInterval != currentInterval) && isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
+    if ((assignedInterval != currentInterval) &&
+        isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
     {
         if (regSelector->isSpilling())
         {
@@ -8566,7 +8567,6 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
     ++(blockInfo[bbNum].stats[(unsigned)stat]);
 }
 
-
 // ----------------------------------------------------------
 //  getLsraStat: Get lsra stat corresponding to the RegisterScore stat
 //
@@ -10777,7 +10777,6 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
 }
 #endif // DEBUG
 
-
 LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 {
     this->linearScan = linearScan;
@@ -10820,7 +10819,7 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 {
     currentInterval = interval;
     refPosition     = refPos;
-    score           = 0; //TODO:Kpathak - why is this used?
+    score           = 0; // TODO:Kpathak - why is this used?
 
     regType         = linearScan->getRegisterType(currentInterval, refPosition);
     currentLocation = refPosition->nodeLocation;
@@ -10830,7 +10829,7 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
-    relatedInterval = currentInterval->isSpecialPutArg ? nullptr : currentInterval->relatedInterval;
+    relatedInterval    = currentInterval->isSpecialPutArg ? nullptr : currentInterval->relatedInterval;
     relatedPreferences = (relatedInterval == nullptr) ? RBM_NONE : relatedInterval->getCurrentPreferences();
 
     rangeEndLocation    = refPosition->getRangeEndLocation();
@@ -10851,12 +10850,11 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     coversRelatedSet = RBM_NONE;
     coversFullSet    = RBM_NONE;
 
-    foundRegBit      = REG_NA;
-    found            = false;
-    skipAllocation   = false;
+    foundRegBit          = REG_NA;
+    found                = false;
+    skipAllocation       = false;
     coversSetsCalculated = false;
 }
-
 
 regMaskTP LinearScan::RegisterSelection::select(Interval* currentInterval, RefPosition* refPosition)
 {
@@ -11017,8 +11015,9 @@ regMaskTP LinearScan::RegisterSelection::select(Interval* currentInterval, RefPo
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
-            regMaskTP unusedCalleeSaves = calleeSaveCandidates & ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask());
-            callerCalleePrefs           = calleeSaveCandidates & ~unusedCalleeSaves;
+            regMaskTP unusedCalleeSaves =
+                calleeSaveCandidates & ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask());
+            callerCalleePrefs = calleeSaveCandidates & ~unusedCalleeSaves;
             preferences &= ~unusedCalleeSaves;
         }
         else
@@ -11134,7 +11133,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval* currentInterval, RefPo
         if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
         {
             matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
-        } 
+        }
     }
 
     for (int orderId = 0; orderId < REGSELECT_HEURISTIC_COUNT /*heuristicsCount*/; orderId++)
@@ -11145,7 +11144,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval* currentInterval, RefPo
         }
 
         RegisterScore heuristicToApply = RegSelectionOrder[orderId];
-        HeuristicFn fn;
+        HeuristicFn   fn;
         // fn = mappingTable[heuristics[orderId]];
         // (this->*fn)();
 
@@ -11239,7 +11238,6 @@ void LinearScan::RegisterSelection::tryThisAssigned()
     {
         return;
     }
-
 
     if (prevRegRec != nullptr)
     {
@@ -11360,8 +11358,7 @@ void LinearScan::RegisterSelection::tryBestFit()
         // are "local last uses" of the Interval - otherwise the liveRange would interfere with the reg.
         // TODO: This duplicates code in an earlier loop, and is basically here to duplicate previous
         // behavior; see if we can avoid this.
-        if (nextPhysRefLocation == rangeEndLocation &&
-            rangeEndRefPosition->isFixedRefOfReg(bestFitCandidateRegNum))
+        if (nextPhysRefLocation == rangeEndLocation && rangeEndRefPosition->isFixedRefOfReg(bestFitCandidateRegNum))
         {
             INDEBUG(linearScan->dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
             nextPhysRefLocation++;
@@ -11405,7 +11402,7 @@ void LinearScan::RegisterSelection::tryBestFit()
 // Oddly, the previous heuristics only considered this if it covered the range.
 void LinearScan::RegisterSelection::tryIsPrevReg()
 {
-    //TODO: We do not check found here.
+    // TODO: We do not check found here.
     if ((prevRegRec != nullptr) && ((score & COVERS_FULL) != 0))
     {
         found = applySingleRegSelection(IS_PREV_REG, prevRegBit);
@@ -11417,7 +11414,7 @@ void LinearScan::RegisterSelection::tryRegOrder()
 {
     assert(!found);
 
-    if (freeCandidates == RBM_NONE)  // TODO: Kpathak, is this needed?
+    if (freeCandidates == RBM_NONE) // TODO: Kpathak, is this needed?
     {
         return;
     }

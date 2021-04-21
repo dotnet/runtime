@@ -1125,7 +1125,7 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
     regNumber allocateReg(Interval* current, RefPosition* refPosition);
-    regNumber    allocateReg(Interval* current, RefPosition* refPosition, int unused);
+    regNumber allocateReg(Interval* current, RefPosition* refPosition, int unused);
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1207,7 +1207,6 @@ private:
         }
     };
 
-
 public:
     class RegisterSelection;
 
@@ -1248,15 +1247,14 @@ public:
     typedef void (LinearScan::RegisterSelection::*HeuristicFn)();
     typedef JitHashTable<RegisterScore, JitSmallPrimitiveKeyFuncs<RegisterScore>, HeuristicFn> ScoreMappingTable;
 
-    #define REGSELECT_HEURISTIC_COUNT 17
-
+#define REGSELECT_HEURISTIC_COUNT 17
 
     class RegisterSelection
     {
-public:
+    public:
         RegisterSelection(LinearScan* linearScan);
 
-private:
+    private:
         RegisterScore DefaultOrder[REGSELECT_HEURISTIC_COUNT] =
             {FREE,           CONST_AVAILABLE, THIS_ASSIGNED,      COVERS,
              OWN_PREFERENCE, COVERS_RELATED,  RELATED_PREFERENCE, CALLER_CALLEE,
@@ -1266,34 +1264,32 @@ private:
 
         RegisterScore RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {0};
 
-        //TODO: Add document for each field
-        ScoreMappingTable*      mappingTable = nullptr;
+        // TODO: Add document for each field
+        ScoreMappingTable* mappingTable = nullptr;
 
-        int         score = 0;
+        int score = 0;
 
         Interval*    currentInterval = nullptr;
         RefPosition* refPosition     = nullptr;
-
 
         RegisterType regType         = RegisterType::TYP_UNKNOWN;
         LsraLocation currentLocation = MinLocation;
         RefPosition* nextRefPos      = nullptr;
 
+        regMaskTP candidates;
+        regMaskTP preferences = RBM_NONE;
 
-        regMaskTP    candidates;
-        regMaskTP    preferences     = RBM_NONE;
-
-        Interval*    relatedInterval    = nullptr;
+        Interval* relatedInterval = nullptr;
 
         regMaskTP    relatedPreferences = RBM_NONE;
         LsraLocation rangeEndLocation;
         LsraLocation relatedLastLocation; // TODO:kpathak - need to see why this is not used after refactor?
-        bool         preferCalleeSave    = false;
-        RefPosition* rangeEndRefPosition; 
+        bool         preferCalleeSave = false;
+        RefPosition* rangeEndRefPosition;
         RefPosition* lastRefPosition;
-        regMaskTP    callerCalleePrefs   = RBM_NONE;
+        regMaskTP    callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
-        RegRecord*   prevRegRec          = nullptr;
+        RegRecord*   prevRegRec = nullptr;
 
         regMaskTP prevRegBit = RBM_NONE;
 
@@ -1303,7 +1299,6 @@ private:
         regMaskTP unassignedSet;
         regMaskTP foundRegBit;
 
-
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
         regMaskTP coversSet;
@@ -1311,12 +1306,10 @@ private:
         regMaskTP coversRelatedSet;
         regMaskTP coversFullSet;
         bool      coversSetsCalculated = false;
-        bool      found            = false;
-        bool      skipAllocation   = false;
-        regNumber foundReg         = REG_NA;
+        bool      found                = false;
+        bool      skipAllocation       = false;
+        regNumber foundReg             = REG_NA;
 
-        
-        
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
         {
@@ -1324,8 +1317,8 @@ private:
             return (prevRegBit & preferences) == foundRegBit;
         }
 
-        bool             applySelection(int selectionScore, regMaskTP selectionCandidates);
-        bool             applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        bool applySelection(int selectionScore, regMaskTP selectionCandidates);
+        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
         FORCEINLINE void calculateSets();
 
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
@@ -1350,14 +1343,14 @@ private:
     public:
         LinearScan* linearScan = nullptr;
 
-        //TODO: Add a note that this is not a perfect method and it changes state of currentInterval or refPosition. In future, need
+        // TODO: Add a note that this is not a perfect method and it changes state of currentInterval or refPosition. In
+        // future, need
         // to improve it.
-        regMaskTP select(Interval*     currentInterval,
-                    RefPosition*  refPosition/*,
+        regMaskTP select(Interval* currentInterval, RefPosition* refPosition /*,
                     RegisterScore heuristics[],
                     int           heuristicsCount*/);
 
-        //TODO: Mark all methods as inline
+        // TODO: Mark all methods as inline
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
@@ -1782,7 +1775,6 @@ private:
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
 
-
     LsraLocation nextIntervalRef[REG_COUNT];
 
     float spillCost[REG_COUNT];
@@ -1986,7 +1978,7 @@ public:
     }
 
     template <typename RSH>
-    bool RegSelectionHeuristics(RSH(&x) [])
+    bool RegSelectionHeuristics(RSH (&x)[])
     {
         for (int i = 0; i < 10; i++)
         {
@@ -2555,7 +2547,6 @@ public:
     void dump();
 #endif // DEBUG
 };
-
 
 #ifdef DEBUG
 void dumpRegMask(regMaskTP regs);
