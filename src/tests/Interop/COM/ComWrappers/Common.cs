@@ -21,9 +21,10 @@ namespace ComWrappersTests.Common
     {
         public static int InstanceCount = 0;
 
+        private int id;
         private int value = -1;
-        public Test() { InstanceCount++; }
-        ~Test() { InstanceCount--; }
+        public Test() { id = Interlocked.Increment(ref InstanceCount); }
+        ~Test() { Interlocked.Decrement(ref InstanceCount); id = -1; }
 
         public void SetValue(int i) => this.value = i;
         public int GetValue() => this.value;

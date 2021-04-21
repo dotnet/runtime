@@ -492,7 +492,6 @@ namespace System.Runtime.InteropServices
     {
         public static readonly int SystemDefaultCharSize;
         public static readonly int SystemMaxDBCSCharSize;
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int AddRef(System.IntPtr pUnk) { throw null; }
         public static System.IntPtr AllocCoTaskMem(int cb) { throw null; }
         public static System.IntPtr AllocHGlobal(int cb) { throw null; }
@@ -625,7 +624,6 @@ namespace System.Runtime.InteropServices
         public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type structureType) { throw null; }
         public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
         public static byte ReadByte(System.IntPtr ptr, int ofs) { throw null; }
@@ -654,7 +652,6 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr ReadIntPtr(object ptr, int ofs) { throw null; }
         public static System.IntPtr ReAllocCoTaskMem(System.IntPtr pv, int cb) { throw null; }
         public static System.IntPtr ReAllocHGlobal(System.IntPtr pv, System.IntPtr cb) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int Release(System.IntPtr pUnk) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int ReleaseComObject(object o) { throw null; }

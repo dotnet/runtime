@@ -10,7 +10,7 @@
     <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
         AddRuntimeFilesToPackage;
@@ -42,6 +42,7 @@
     <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
     <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
+    <NativeRuntimeAsset Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_unix_osx_arm64_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <!-- Include the native hosting layer  -->
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" TargetPath="tools/" />
@@ -50,7 +51,8 @@
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <CrossgenFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'crossgen'" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile)" />
+      <OptimizationDataFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'StandardOptimizationData'" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile);@(OptimizationDataFile)" />
       <ReferenceCopyLocalPaths TargetPath="tools/" />
     </ItemGroup>
   </Target>
@@ -62,10 +64,6 @@
   </Target>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
-    <_diaSymArch>$(_hostArch)</_diaSymArch>
-    <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
-
     <!-- DiaSymReader for the target architecture, which is placed into the package -->
     <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>
     <_diaSymTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_diaSymTargetArch>

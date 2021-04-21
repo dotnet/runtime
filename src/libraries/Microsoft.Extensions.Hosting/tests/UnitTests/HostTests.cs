@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48696")]
         public async Task CreateDefaultBuilder_ConfigJsonDoesNotReload()
         {
-            var reloadFlagConfig = new Dictionary<string, string>() {{ "hostbuilder:reloadConfigOnChange", "false" }};
+            var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "false" } };
             var appSettingsPath = Path.Combine(Path.GetTempPath(), "appsettings.json");
 
             string SaveRandomConfig()
@@ -183,40 +183,49 @@ namespace Microsoft.Extensions.Hosting.Tests
             var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
             var appSettingsPath = Path.Combine(Path.GetTempPath(), "appsettings.json");
 
-            string SaveRandomConfig()
+            try
             {
-                var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
-                File.WriteAllText(appSettingsPath, $"{{ \"Hello\": \"{newMessage}\" }}");
-                return newMessage;
-            }
-
-            var dynamicConfigMessage1 = SaveRandomConfig();
-
-            using var host = Host.CreateDefaultBuilder()
-                .UseContentRoot(Path.GetDirectoryName(appSettingsPath))
-                .ConfigureHostConfiguration(builder =>
+                static string SaveRandomConfig(string appSettingsPath)
                 {
-                    builder.AddInMemoryCollection(reloadFlagConfig);
-                })
-                .Build();
+                    var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
+                    File.WriteAllText(appSettingsPath, $"{{ \"Hello\": \"{newMessage}\" }}");
+                    return newMessage;
+                }
 
-            var config = host.Services.GetRequiredService<IConfiguration>();
+                var dynamicConfigMessage1 = SaveRandomConfig(appSettingsPath);
 
-            Assert.Equal(dynamicConfigMessage1, config["Hello"]);
+                using var host = Host.CreateDefaultBuilder()
+                    .UseContentRoot(Path.GetDirectoryName(appSettingsPath))
+                    .ConfigureHostConfiguration(builder =>
+                    {
+                        builder.AddInMemoryCollection(reloadFlagConfig);
+                    })
+                    .Build();
 
-            var dynamicConfigMessage2 = SaveRandomConfig();
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                Assert.Equal(dynamicConfigMessage1, config["Hello"]);
 
-            var configReloadedCancelTokenSource = new CancellationTokenSource();
-            var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
+                var configReloadedCancelTokenSource = new CancellationTokenSource();
+                var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
 
-            config.GetReloadToken().RegisterChangeCallback(o =>
+                config.GetReloadToken().RegisterChangeCallback(
+                    _ => configReloadedCancelTokenSource.Cancel(), null);
+
+                // Only update the config after we've registered the change callback
+                var dynamicConfigMessage2 = SaveRandomConfig(appSettingsPath);
+
+                // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+                await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+                Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
+                Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
+            }
+            finally
             {
-                configReloadedCancelTokenSource.Cancel();
-            }, null);
-            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
-            Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
-            Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
+                if (File.Exists(appSettingsPath))
+                {
+                    File.Delete(appSettingsPath);
+                }
+            }
         }
 
         [Fact]
@@ -226,19 +235,18 @@ namespace Microsoft.Extensions.Hosting.Tests
             var secretId = Assembly.GetExecutingAssembly().GetName().Name;
             var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
             var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
-
             var secretFileInfo = new FileInfo(secretPath);
+
             Directory.CreateDirectory(secretFileInfo.Directory.FullName);
 
-            string SaveRandomSecret()
+            static string SaveRandomSecret(string secretPath)
             {
                 var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
                 File.WriteAllText(secretPath, $"{{ \"Hello\": \"{newMessage}\" }}");
                 return newMessage;
             }
 
-            string dynamicSecretMessage1 = SaveRandomSecret();
-
+            var dynamicSecretMessage1 = SaveRandomSecret(secretPath);
             var host = Host.CreateDefaultBuilder(new[] { "environment=Development", $"applicationName={secretId}" })
                 .ConfigureHostConfiguration(builder =>
                 {
@@ -247,18 +255,17 @@ namespace Microsoft.Extensions.Hosting.Tests
                 .Build();
 
             var config = host.Services.GetRequiredService<IConfiguration>();
-
             Assert.Equal(dynamicSecretMessage1, config["Hello"]);
 
-            string dynamicSecretMessage2 = SaveRandomSecret();
-
-            var configReloadedCancelTokenSource = new CancellationTokenSource();
+            using CancellationTokenSource configReloadedCancelTokenSource = new();
             var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
 
-            config.GetReloadToken().RegisterChangeCallback(o =>
-            {
-                configReloadedCancelTokenSource.Cancel();
-            }, null);
+            config.GetReloadToken().RegisterChangeCallback(
+                _ => configReloadedCancelTokenSource.Cancel(), null);
+
+            // Only update the secrets after we've registered the change callback
+            var dynamicSecretMessage2 = SaveRandomSecret(secretPath);
+
             // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
             await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.

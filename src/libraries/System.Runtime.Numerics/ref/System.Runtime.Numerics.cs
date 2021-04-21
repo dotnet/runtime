@@ -6,7 +6,7 @@
 
 namespace System.Numerics
 {
-    public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.IFormattable
+    public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.ISpanFormattable
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;

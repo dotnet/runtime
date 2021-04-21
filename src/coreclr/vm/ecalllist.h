@@ -751,7 +751,9 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("IsPinnable", MarshalNative::IsPinnable)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
+#ifdef TARGET_WINDOWS
     QCFuncElement("GetHINSTANCE", COMModule::GetHINSTANCE)
+#endif // TARGET_WINDOWS
 
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
 

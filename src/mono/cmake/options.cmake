@@ -53,6 +53,7 @@ option (ENABLE_CHECKED_BUILD_THREAD "Enable runtime history of per-thread coop s
 option (ENABLE_CHECKED_BUILD_METADATA "Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata)")
 option (ENABLE_METADATA_UPDATE "Enable runtime support for metadata updates")
 option (ENABLE_MSCORDBI "Generate mscordbi to support icordbg interface")
+option (STATIC_COMPONENTS "Compile mono runtime components as static (not dynamic) libraries")
 
 set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, preemptive, coop, hybrid)")
 set (CHECKED_BUILD "" CACHE STRING "Set ENABLE_CHECKED_BUILD_ options at once.  Comma-separated list of lowercase ENABLE_CHECKED_BUILD_ options ie. 'gc,threads,private_types' etc.")
@@ -60,3 +61,4 @@ set (ENABLE_MINIMAL "" CACHE STRING "Set many DISABLE_ options at once. Comma-se
 set (AOT_TARGET_TRIPLE "" CACHE STRING "Target triple for AOT cross compiler")
 set (AOT_OFFSETS_FILE "" CACHE STRING "Offsets file for AOT cross compiler")
 set (LLVM_PREFIX "" CACHE STRING "Enable LLVM support with LLVM installed at <LLVM_PREFIX>.")
+

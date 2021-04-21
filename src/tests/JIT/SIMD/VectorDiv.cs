@@ -106,6 +106,8 @@ internal partial class VectorTest
         if (VectorMulTest<sbyte>.VectorDiv(6, -3, -2) != Pass) returnVal = Fail;
         if (VectorMulTest<uint>.VectorDiv(6u, 3u, 2u) != Pass) returnVal = Fail;
         if (VectorMulTest<ulong>.VectorDiv(8ul, 2ul, 4ul) != Pass) returnVal = Fail;
+        if (VectorMulTest<nint>.VectorDiv(6, 3, 2) != Pass) returnVal = Fail;
+        if (VectorMulTest<nuint>.VectorDiv(6u, 3u, 2u) != Pass) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         // Division is only recognized as an intrinsic for floating point element types.

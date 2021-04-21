@@ -1555,10 +1555,6 @@ namespace System.Net
                     try
                     {
                         socket.NoDelay = true;
-                        if (parameters.ReadWriteTimeout > 0) // default is 5 minutes, so this is generally going to be true
-                        {
-                            socket.SendTimeout = socket.ReceiveTimeout = parameters.ReadWriteTimeout;
-                        }
 
                         if (parameters.Async)
                         {
@@ -1573,6 +1569,11 @@ namespace System.Net
 
                             // Throw in case cancellation caused the socket to be disposed after the Connect completed
                             cancellationToken.ThrowIfCancellationRequested();
+                        }
+
+                        if (parameters.ReadWriteTimeout > 0) // default is 5 minutes, so this is generally going to be true
+                        {
+                            socket.SendTimeout = socket.ReceiveTimeout = parameters.ReadWriteTimeout;
                         }
                     }
                     catch

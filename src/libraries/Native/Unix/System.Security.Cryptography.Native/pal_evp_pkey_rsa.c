@@ -35,6 +35,36 @@ EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
     return ret;
 }
 
+static bool ConfigureEncryption(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
+{
+    if (padding == RsaPaddingPkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        assert(padding == RsaPaddingOaepOrPss);
+
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        {
+            return false;
+        }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
                                 const uint8_t* source,
                                 int32_t sourceLen,
@@ -58,29 +88,9 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
         goto done;
     }
 
-    if (padding == RsaPaddingPkcs1)
+    if (!ConfigureEncryption(ctx, padding, digest))
     {
-        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
-        {
-            goto done;
-        }
-    }
-    else
-    {
-        assert(padding == RsaPaddingOaepOrPss);
-
-        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
-        {
-            goto done;
-        }
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-        if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, digest) <= 0)
-#pragma clang diagnostic pop
-        {
-            goto done;
-        }
+        goto done;
     }
 
     // This check may no longer be needed on OpenSSL 3.0
@@ -110,6 +120,80 @@ done:
     return ret;
 }
 
+int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
+                                const uint8_t* source,
+                                int32_t sourceLen,
+                                RsaPaddingMode padding,
+                                const EVP_MD* digest,
+                                uint8_t* destination,
+                                int32_t destinationLen)
+{
+    assert(pkey != NULL);
+    assert(destination != NULL);
+    assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
+    assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    int ret = -1;
+
+    if (ctx == NULL || EVP_PKEY_encrypt_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (!ConfigureEncryption(ctx, padding, digest))
+    {
+        goto done;
+    }
+
+    size_t written = Int32ToSizeT(destinationLen);
+
+    if (EVP_PKEY_encrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
+    {
+        ret = SizeTToInt32(written);
+    }
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    return ret;
+}
+
+static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
+{
+    if (padding == RsaPaddingPkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            return false;
+        }
+    }
+    else
+    {
+        assert(padding == RsaPaddingOaepOrPss);
+
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0 ||
+            EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+        {
+            return false;
+        }
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        return false;
+    }
+
+    return true;
+}
+
 int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
                                  RsaPaddingMode padding,
                                  const EVP_MD* digest,
@@ -132,28 +216,7 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
         goto done;
     }
 
-    if (padding == RsaPaddingPkcs1)
-    {
-        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
-        {
-            goto done;
-        }
-    }
-    else
-    {
-        assert(padding == RsaPaddingOaepOrPss);
-
-        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0 ||
-            EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
-        {
-            goto done;
-        }
-    }
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
-#pragma clang diagnostic pop
+    if (!ConfigureSignature(ctx, padding, digest))
     {
         goto done;
     }
@@ -175,6 +238,52 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     {
         ret = SizeTToInt32(written);
     }
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    return ret;
+}
+
+int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                   RsaPaddingMode padding,
+                                   const EVP_MD* digest,
+                                   const uint8_t* hash,
+                                   int32_t hashLen,
+                                   const uint8_t* signature,
+                                   int32_t signatureLen)
+{
+    assert(pkey != NULL);
+    assert(signature != NULL);
+    assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
+    assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    int ret = -1;
+
+    if (ctx == NULL || EVP_PKEY_verify_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (!ConfigureSignature(ctx, padding, digest))
+    {
+        goto done;
+    }
+
+    // EVP_PKEY_verify is not consistent on whether a mis-sized hash is an error or just a mismatch.
+    // Normalize to mismatch.
+    if (hashLen != EVP_MD_size(digest))
+    {
+        ret = 0;
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, signature, Int32ToSizeT(signatureLen), hash, Int32ToSizeT(hashLen));
 
 done:
     if (ctx != NULL)

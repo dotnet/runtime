@@ -272,68 +272,11 @@ namespace System.Net
 
         private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
         {
-            // A contiguous range of protocols is required.  Find the min and max of the range,
-            // or throw if it's non-contiguous or if no protocols are specified.
+            (int minIndex, int maxIndex) = protocols.ValidateContiguous(s_orderedSslProtocols);
+            SslProtocols minProtocolId = s_orderedSslProtocols[minIndex];
+            SslProtocols maxProtocolId = s_orderedSslProtocols[maxIndex];
 
-            // First, mark all of the specified protocols.
-            SslProtocols[] orderedSslProtocols = s_orderedSslProtocols;
-            Span<bool> protocolSet = stackalloc bool[orderedSslProtocols.Length];
-            for (int i = 0; i < orderedSslProtocols.Length; i++)
-            {
-                protocolSet[i] = (protocols & orderedSslProtocols[i]) != 0;
-            }
-
-            SslProtocols minProtocolId = (SslProtocols)(-1);
-            SslProtocols maxProtocolId = (SslProtocols)(-1);
-
-            // Loop through them, starting from the lowest.
-            for (int min = 0; min < protocolSet.Length; min++)
-            {
-                if (protocolSet[min])
-                {
-                    // We found the first one that's set; that's the bottom of the range.
-                    minProtocolId = orderedSslProtocols[min];
-
-                    // Now loop from there to look for the max of the range.
-                    for (int max = min + 1; max < protocolSet.Length; max++)
-                    {
-                        if (!protocolSet[max])
-                        {
-                            // We found the first one after the min that's not set; the top of the range
-                            // is the one before this (which might be the same as the min).
-                            maxProtocolId = orderedSslProtocols[max - 1];
-
-                            // Finally, verify that nothing beyond this one is set, as that would be
-                            // a discontiguous set of protocols.
-                            for (int verifyNotSet = max + 1; verifyNotSet < protocolSet.Length; verifyNotSet++)
-                            {
-                                if (protocolSet[verifyNotSet])
-                                {
-                                    throw new PlatformNotSupportedException(SR.Format(SR.net_security_sslprotocol_contiguous, protocols));
-                                }
-                            }
-
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-            }
-
-            // If no protocols were set, throw.
-            if (minProtocolId == (SslProtocols)(-1))
-            {
-                throw new PlatformNotSupportedException(SR.net_securityprotocolnotsupported);
-            }
-
-            // If we didn't find an unset protocol after the min, go all the way to the last one.
-            if (maxProtocolId == (SslProtocols)(-1))
-            {
-                maxProtocolId = orderedSslProtocols[orderedSslProtocols.Length - 1];
-            }
-
-            // Finally set this min and max.
+            // Set the min and max.
             Interop.AppleCrypto.SslSetMinProtocolVersion(sslContext, minProtocolId);
             Interop.AppleCrypto.SslSetMaxProtocolVersion(sslContext, maxProtocolId);
         }
