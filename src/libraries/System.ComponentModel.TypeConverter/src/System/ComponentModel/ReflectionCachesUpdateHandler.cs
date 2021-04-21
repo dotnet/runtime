@@ -3,6 +3,7 @@
 
 #nullable enable
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
 
@@ -12,6 +13,7 @@ namespace System.ComponentModel
 {
     internal static class ReflectionCachesUpdateHandler
     {
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The actual properties retrieved by GetProperties do not matter.")]
         public static void BeforeUpdate(Type[]? types)
         {
             // ReflectTypeDescriptionProvider maintains global caches on top of reflection.
@@ -31,6 +33,7 @@ namespace System.ComponentModel
             {
                 foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
+                    TypeDescriptor.GetProperties(assembly); // must call before calling Refresh
                     TypeDescriptor.Refresh(assembly);
                 }
             }
