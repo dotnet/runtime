@@ -17,6 +17,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # The ABI for passing parameters with 32-byte alignment has changed in GCC 4.6
   add_compile_options(-Wno-psabi)
 endif()
+if (MSVC)
+    add_compile_options(/arch:AVX2)
+else()
+    add_compile_options(-march=native)
+endif()
 set(SOURCES
   GenericsNative.IUnknown.cpp
   GenericsNative.NullableB.cpp
