@@ -17,7 +17,7 @@ Returns 1 on success, 0 on failure.  On failure, *pOSStatus should contain the O
 PALEXPORT int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
                                                    SecKeyRef* pPublicKey,
                                                    SecKeyRef* pPrivateKey,
-                                                   int32_t* pOSStatus);
+                                                   CFErrorRef* pErrorOut);
 
 /*
 Decrypt the contents of pbData using the provided privateKey under OAEP padding.

@@ -3,34 +3,40 @@
 
 #include "pal_rsa.h"
 
-int32_t AppleCryptoNative_RsaGenerateKey(
-    int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
+int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
+                                         SecKeyRef* pPublicKey,
+                                         SecKeyRef* pPrivateKey,
+                                         CFErrorRef* pErrorOut)
 {
     if (pPublicKey != NULL)
         *pPublicKey = NULL;
     if (pPrivateKey != NULL)
         *pPrivateKey = NULL;
 
-    if (pPublicKey == NULL || pPrivateKey == NULL || pOSStatus == NULL)
+    if (pPublicKey == NULL || pPrivateKey == NULL || pErrorOut == NULL)
         return kErrorBadInput;
     if (keySizeBits < 384 || keySizeBits > 16384)
         return -2;
 
+    int32_t ret = kErrorSeeError;
     CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 3, &kCFTypeDictionaryKeyCallBacks, NULL);
-
     CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
-    OSStatus status;
 
     if (attributes != NULL && cfKeySizeValue != NULL)
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeRSA);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
 
-        status = SecKeyGeneratePair(attributes, pPublicKey, pPrivateKey);
+        *pPrivateKey = SecKeyCreateRandomKey(attributes, pErrorOut);
+        if (*pPrivateKey != NULL)
+        {
+            *pPublicKey = SecKeyCopyPublicKey(*pPrivateKey);
+            ret = 1;
+        }
     }
     else
     {
-        status = errSecAllocate;
+        ret = errSecAllocate;
     }
 
     if (attributes != NULL)
@@ -38,8 +44,7 @@ int32_t AppleCryptoNative_RsaGenerateKey(
     if (cfKeySizeValue != NULL)
         CFRelease(cfKeySizeValue);
 
-    *pOSStatus = status;
-    return status == noErr;
+    return ret;
 }
 
 int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,

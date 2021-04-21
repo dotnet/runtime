@@ -12,12 +12,15 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private const int kSuccess = 1;
+        private const int kErrorSeeError = -2;
+
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaGenerateKey")]
         private static extern int AppleCryptoNative_RsaGenerateKey(
             int keySizeInBits,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey,
-            out int pOSStatus);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_RsaSignaturePrimitive(
@@ -126,31 +129,34 @@ internal static partial class Interop
         {
             SafeSecKeyRefHandle keychainPublic;
             SafeSecKeyRefHandle keychainPrivate;
-            int osStatus;
+            SafeCFErrorHandle error;
 
             int result = AppleCryptoNative_RsaGenerateKey(
                 keySizeInBits,
                 out keychainPublic,
                 out keychainPrivate,
-                out osStatus);
+                out error);
 
-            if (result == 1)
+            using (error)
             {
-                pPublicKey = keychainPublic;
-                pPrivateKey = keychainPrivate;
-                return;
-            }
-
-            using (keychainPrivate)
-            using (keychainPublic)
-            {
-                if (result == 0)
+                if (result == kSuccess)
                 {
-                    throw CreateExceptionForOSStatus(osStatus);
+                    pPublicKey = keychainPublic;
+                    pPrivateKey = keychainPrivate;
+                    return;
                 }
 
-                Debug.Fail($"Unexpected result from AppleCryptoNative_RsaGenerateKey: {result}");
-                throw new CryptographicException();
+                using (keychainPrivate)
+                using (keychainPublic)
+                {
+                    if (result == kErrorSeeError)
+                    {
+                        throw CreateExceptionForCFError(error);
+                    }
+
+                    Debug.Fail($"Unexpected result from AppleCryptoNative_RsaGenerateKey: {result}");
+                    throw new CryptographicException();
+                }
             }
         }
 
@@ -253,9 +259,6 @@ internal static partial class Interop
             Span<byte> destination,
             out int bytesWritten)
         {
-            const int kErrorSeeError = -2;
-            const int kSuccess = 1;
-
             if (returnValue == kErrorSeeError)
             {
                 throw CreateExceptionForCFError(cfError);
