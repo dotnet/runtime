@@ -243,7 +243,7 @@ namespace System.Xml
                         xtw.WriteCData(Value);
                         break;
                     case XmlNodeType.EntityReference:
-                        xtw.WriteEntityRef(Value);
+                        xtw.WriteEntityRef(Name);
                         break;
                     case XmlNodeType.XmlDeclaration:
                     case XmlNodeType.ProcessingInstruction:
@@ -376,7 +376,7 @@ namespace System.Xml
                 }
             } while (AttributeCount != 0 ? ReadAttributeValue() : await ReadAsync().ConfigureAwait(false));
 
-            ReturnContent:
+        ReturnContent:
             return sb == null ? value : sb.ToString();
         }
 

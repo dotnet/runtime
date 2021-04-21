@@ -91,7 +91,7 @@ namespace System.Xml
         public abstract XmlNodeType NodeType { get; }
 
         // Gets the name of the current node, including the namespace prefix.
-        public virtual string Name => Prefix.Length == 0 ? LocalName : NameTable.Add(string.Concat(Prefix, ":", LocalName));
+        public virtual string Name => Prefix.Length == 0 ? LocalName : NameTable.Add($"{Prefix}:{LocalName}");
 
         // Gets the name of the current node without the namespace prefix.
         public abstract string LocalName { get; }
@@ -328,7 +328,7 @@ namespace System.Xml
 
             try
             {
-                return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, namespaceResolver ?? this as IXmlNamespaceResolver);
+                return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver ?? this as IXmlNamespaceResolver)!);
             }
             catch (FormatException e)
             {
@@ -534,7 +534,7 @@ namespace System.Xml
                 return value;
             }
 
-            return returnType == typeof(string) ? string.Empty :  XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
+            return returnType == typeof(string) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver!);
         }
 
         // Checks local name and namespace of the current element and returns its content as the requested type.
@@ -1569,7 +1569,7 @@ namespace System.Xml
                 }
             } while (AttributeCount != 0 ? ReadAttributeValue() : Read());
 
-            ReturnContent:
+        ReturnContent:
             return sb == null ? value : sb.ToString();
         }
 
