@@ -9187,8 +9187,95 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 MethodDesc *
 MethodTable::ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD)
 {
-    // TODO
+    for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
+    {
+        MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceMD);
+        if (pMD != nullptr)
+        {
+            return pMD;
+        }
+    }
     COMPlusThrow(kTypeLoadException, E_NOTIMPL);
+}
+
+//==========================================================================================
+// Try to locate the appropriate MethodImpl matching a given interface static virtual method.
+// Returns nullptr on failure.
+MethodDesc*
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD)
+{
+    HRESULT hr = S_OK;
+    IMDInternalImport* pMDInternalImport = GetMDImport();
+    HENUMInternalMethodImplHolder hEnumMethodImpl(pMDInternalImport);
+    hr = hEnumMethodImpl.EnumMethodImplInitNoThrow(GetCl());
+
+    if (FAILED(hr))
+    {
+        COMPlusThrow(kTypeLoadException, hr);
+    }
+
+    // This gets the count out of the metadata interface.
+    uint32_t dwNumberMethodImpls = hEnumMethodImpl.EnumMethodImplGetCount();
+
+    // Iterate through each MethodImpl declared on this class
+    for (uint32_t i = 0; i < dwNumberMethodImpls; i++)
+    {
+        mdToken methodBody;
+        mdToken methodDecl;
+        hr = hEnumMethodImpl.EnumMethodImplNext(&methodBody, &methodDecl);
+        if (FAILED(hr))
+        {
+            COMPlusThrow(kTypeLoadException, hr);
+        }
+        if (hr == S_FALSE)
+        {
+            // In the odd case that the enumerator fails before we've reached the total reported
+            // entries, let's reset the count and just break out. (Should we throw?)
+            break;
+        }
+        mdToken tkParent;
+        hr = pMDInternalImport->GetParentToken(methodDecl, &tkParent);
+        if (FAILED(hr))
+        {
+            COMPlusThrow(kTypeLoadException, hr);
+        }
+        MethodTable *pInterfaceMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+            GetModule(),
+            tkParent,
+            NULL /*SigTypeContext*/)
+            .GetMethodTable();
+        if (pInterfaceMT != pInterfaceMD->GetMethodTable())
+        {
+            continue;
+        }
+        MethodDesc *pMethodDecl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+            GetModule(),
+            methodDecl,
+            NULL /*SigTypeContext*/,
+            /* strictMetadataChecks */ FALSE,
+            /* allowInstParam */ FALSE);
+        if (pMethodDecl == nullptr)
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+        if (pMethodDecl != pInterfaceMD)
+        {
+            continue;
+        }
+        MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+            GetModule(),
+            methodBody,
+            NULL /*SigTypeContext*/,
+            /* strictMetadataChecks */ FALSE,
+            /* allowInstParam */ FALSE);
+        if (pMethodImpl == nullptr)
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+        return pMethodImpl;
+    }
+
+    return nullptr;
 }
 
 //==========================================================================================
