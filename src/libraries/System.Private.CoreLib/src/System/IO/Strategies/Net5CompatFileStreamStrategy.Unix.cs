@@ -108,7 +108,7 @@ namespace System.IO.Strategies
             // If allocationSize has been provided for a creatable and writeable file
             if (allocationSize > 0 && (_access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
             {
-                int ENOSPC = OperatingSystem.IsLinux() ? 28 : (int)Interop.Error.ENOSPC; // Linux error code != Unix error code
+                const int ENOSPC = 28; // != Interop.Error.ENOSPC
                 if (Interop.Sys.FAllocate(_fileHandle, 0, allocationSize) == ENOSPC)
                 {
                     _fileHandle.Dispose();

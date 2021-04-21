@@ -1038,6 +1038,11 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
     {
         result = errno;
     }
+    else
+    {
+        // align the behaviour with what posix_fallocate does
+        ftruncate(fileDescriptor, length);
+    }
 #endif
 
     return result;
