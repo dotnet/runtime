@@ -11,21 +11,19 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public sealed partial class JsonContent : HttpContent
+    public partial class JsonContent : HttpContent
     {
-        internal const string JsonMediaType = "application/json";
-        internal const string JsonType = "application";
-        internal const string JsonSubtype = "json";
-        private static MediaTypeHeaderValue DefaultMediaType
-            => new MediaTypeHeaderValue(JsonMediaType) { CharSet = "utf-8" };
+        private JsonSerializerOptions _jsonSerializerOptions = null!;
 
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        private static MediaTypeHeaderValue DefaultMediaType => new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
 
-        private readonly JsonSerializerOptions? _jsonSerializerOptions;
+        internal static JsonSerializerOptions s_defaultSerializerOptions { get; } = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
         public Type ObjectType { get; }
+
         public object? Value { get; }
 
-        private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
+        internal JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType)
         {
             if (inputType == null)
             {
@@ -40,14 +38,17 @@ namespace System.Net.Http.Json
             Value = inputValue;
             ObjectType = inputType;
             Headers.ContentType = mediaType ?? DefaultMediaType;
-            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => new JsonContent(inputValue, inputType, mediaType, options);
+        {
+            JsonContent content = new JsonContent(inputValue, inputType, mediaType);
+            content._jsonSerializerOptions = options ?? s_defaultSerializerOptions;
+            return content;
+        }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
@@ -60,6 +61,8 @@ namespace System.Net.Http.Json
 
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
+            Debug.Assert(_jsonSerializerOptions != null);
+
             Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.

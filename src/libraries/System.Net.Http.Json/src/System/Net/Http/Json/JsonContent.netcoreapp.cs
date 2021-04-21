@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public sealed partial class JsonContent
+    public partial class JsonContent
     {
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             => SerializeToStreamAsyncCore(stream, async: false, cancellationToken).GetAwaiter().GetResult();
