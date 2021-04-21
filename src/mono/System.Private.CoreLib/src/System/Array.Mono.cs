@@ -62,6 +62,20 @@ namespace System
             get => Rank;
         }
 
+        internal static unsafe void Clear(Array array)
+        {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+            ref byte ptr = ref array.GetRawSzArrayData();
+            nuint byteLength = array.NativeLength * (nuint)(uint)array.GetElementSize() /* force zero-extension */;
+
+            if (RuntimeHelpers.ObjectHasReferences(array))
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
+            else
+                SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
+        }
+
         public static unsafe void Clear(Array array, int index, int length)
         {
             if (array == null)
