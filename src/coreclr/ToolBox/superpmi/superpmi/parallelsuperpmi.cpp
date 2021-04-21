@@ -539,6 +539,12 @@ int doParallelSuperPMI(CommandLine::Options& o)
                                       arrDiffMCListPath[i]);
         }
 
+        if (o.failureLimit > 0)
+        {
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failureLimit %d",
+                                      o.failureLimit);
+        }
+
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
 
         SECURITY_ATTRIBUTES sa;

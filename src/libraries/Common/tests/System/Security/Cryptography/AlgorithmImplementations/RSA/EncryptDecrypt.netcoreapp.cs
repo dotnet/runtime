@@ -106,6 +106,25 @@ namespace System.Security.Cryptography.Rsa.Tests
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA256);
         }
 
+        [Fact]
+        public static void EncryptDefaultSpan()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] dest = new byte[rsa.KeySize / 8];
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.Pkcs1, out int written));
+
+                Assert.Equal(dest.Length, written);
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA1, out written));
+
+                Assert.Equal(dest.Length, written);
+            }
+        }
+
         private static void Decrypt_WrongKey(RSAEncryptionPadding padding)
         {
             using (RSA rsa1 = RSAFactory.Create())
