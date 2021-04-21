@@ -668,7 +668,7 @@ FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pType
     BOOL retVal = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
     // <TODO>Check this approximation - we may be losing exact type information </TODO>
-    ApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)

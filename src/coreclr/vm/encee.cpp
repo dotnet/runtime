@@ -1709,6 +1709,26 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
     return dac_cast<PTR_FieldDesc>(pFD);
 }
 
+// Returns the number of fields plus the number of add EnC fields
+int EncApproxFieldDescIterator::Count()
+{
+    int count = m_nonEnCIter.Count();
+
+    // If this module doesn't have any EnC data then there aren't any EnC fields
+    if (m_encClassData == NULL)
+    {
+        return count;
+    }
+
+    BOOL doInst = ( GetIteratorType() & (int)ApproxFieldDescIterator::INSTANCE_FIELDS);
+    BOOL doStatic = ( GetIteratorType() & (int)ApproxFieldDescIterator::STATIC_FIELDS);
+
+    int cNumAddedInst    =  doInst ? m_encClassData->GetAddedInstanceFields() : 0;
+    int cNumAddedStatics =  doStatic ? m_encClassData->GetAddedStaticFields() : 0;
+
+    return count + cNumAddedInst + cNumAddedStatics;
+}
+
 // Iterate through EnC added fields.
 // Returns NULL when done.
 PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
