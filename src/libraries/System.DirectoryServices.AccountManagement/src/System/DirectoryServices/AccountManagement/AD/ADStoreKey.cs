@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class ADStoreKey : StoreKey
+    internal sealed class ADStoreKey : StoreKey
     {
         // For regular ADStoreKeys
         private System.Guid _objectGuid;

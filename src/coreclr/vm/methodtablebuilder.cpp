@@ -9011,7 +9011,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
         pMT->GetAssembly()->ThrowTypeLoadException(pMT->GetMDImport(), pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
     }
 #ifdef _DEBUG
-    duplicates |= EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AlwaysUseMetadataInterfaceMapLayout, FALSE);
+    duplicates |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AlwaysUseMetadataInterfaceMapLayout);
 
     //#InjectInterfaceDuplicates_LoadExactInterfaceMap
     // If we are injecting duplicates also for non-generic interfaces in check builds, we have to use
@@ -11592,7 +11592,7 @@ MethodTableBuilder::GatherGenericsInfo(
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(bmtGenericsInfo));
     }
@@ -11840,7 +11840,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         POSTCONDITION(!RETVAL.IsNull());
         POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));

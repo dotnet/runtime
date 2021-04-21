@@ -7,4 +7,4 @@ using Xunit;
 // like the console code page and environment variables
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
-[assembly: SkipOnMono("System.Diagnostics.Process is not supported on wasm.", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Diagnostics.Process is not supported on Browser.")]

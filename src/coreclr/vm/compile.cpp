@@ -107,7 +107,7 @@ HRESULT CEECompileInfo::Startup(  BOOL fForceDebug,
     //
     if (SUCCEEDED(hr)) {
 #ifdef _DEBUG
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         _ASSERTE(pThread);
 #endif
 

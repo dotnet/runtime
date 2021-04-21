@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class SimpleConsoleFormatter : ConsoleFormatter, IDisposable
+    internal sealed class SimpleConsoleFormatter : ConsoleFormatter, IDisposable
     {
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);

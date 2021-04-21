@@ -6,7 +6,7 @@ namespace System.Drawing.Imaging
     using System.Runtime.InteropServices;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class MetafileHeaderEmf
+    internal sealed class MetafileHeaderEmf
     {
         /// The ENHMETAHEADER structure is defined natively as a union with WmfHeader.
         /// Extreme care should be taken if changing the layout of the corresponding managed

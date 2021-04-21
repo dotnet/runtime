@@ -1830,7 +1830,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     bRangeAllowStress = false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
@@ -1852,7 +1852,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     info.compMethodHashPrivate = 0;
@@ -2879,17 +2879,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData       = nullptr;
             fgPgoSchema     = nullptr;
         }
-        // Optionally, discard the profile data.
+        // Optionally, disable use of profile data.
         //
-        else if (JitConfig.JitDisablePGO() != 0)
+        else if (JitConfig.JitDisablePgo() > 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
+            fgPgoFailReason  = "PGO data available, but JitDisablePgo > 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
+            fgPgoDisabled    = true;
+        }
+#ifdef DEBUG
+        // Optionally, enable use of profile data for only some methods.
+        //
+        else
+        {
+            static ConfigMethodRange JitEnablePgoRange;
+            JitEnablePgoRange.EnsureInit(JitConfig.JitEnablePgoRange());
+
+            // Base this decision on the root method hash, so a method either sees all available
+            // profile data (including that for inlinees), or none of it.
+            //
+            const unsigned hash = impInlineRoot()->info.compMethodHash();
+            if (!JitEnablePgoRange.Contains(hash))
+            {
+                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePgoRange";
+                fgPgoQueryResult = E_FAIL;
+                fgPgoData        = nullptr;
+                fgPgoSchema      = nullptr;
+                fgPgoDisabled    = true;
+            }
         }
 
-#ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
         if (SUCCEEDED(fgPgoQueryResult))
@@ -5006,11 +5027,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
-#if FEATURE_ANYCSE
             // Remove common sub-expressions
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
-#endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
@@ -5160,6 +5179,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
+
+#if TRACK_LSRA_STATS
+    if (JitConfig.DisplayLsraStats() == 2)
+    {
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+    }
+#endif // TRACK_LSRA_STATS
 
     // We're done -- set the active phase to the last phase
     // (which isn't really a phase)
@@ -5976,11 +6002,7 @@ void Compiler::compCompileFinish()
         else
         {
             printf(" %3d |", optAssertionCount);
-#if FEATURE_ANYCSE
             printf(" %3d |", optCSEcount);
-#else
-            printf(" %3d |", 0);
-#endif // FEATURE_ANYCSE
         }
 
         if (info.compPerfScore < 9999.995)
@@ -8234,7 +8256,12 @@ void JitTimer::PrintCsvHeader()
             fprintf(s_csvFile, "\"Min Opts\",");
             fprintf(s_csvFile, "\"Loops\",");
             fprintf(s_csvFile, "\"Loops Cloned\",");
-
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+            fprintf(s_csvFile, "\"Alignment Candidates\",");
+            fprintf(s_csvFile, "\"Loops Aligned\",");
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
@@ -8308,6 +8335,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
     fprintf(s_csvFile, "%u,", comp->optLoopCount);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
+    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {

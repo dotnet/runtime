@@ -1578,47 +1578,6 @@ mono_gc_is_null (void)
 }
 
 /**
- * mono_gchandle_is_in_domain:
- * \param gchandle a GCHandle's handle.
- * \param domain An application domain.
- *
- * Use this function to determine if the \p gchandle points to an
- * object allocated in the specified \p domain.
- *
- * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
- */
-gboolean
-mono_gchandle_is_in_domain (MonoGCHandle gch, MonoDomain *domain)
-{
-	guint32 gchandle = MONO_GC_HANDLE_TO_UINT (gch);
-	guint slot = MONO_GC_HANDLE_SLOT (gchandle);
-	guint type = MONO_GC_HANDLE_TYPE (gchandle);
-	HandleData *handles = &gc_handles [type];
-	gboolean result = FALSE;
-
-	if (type >= HANDLE_TYPE_MAX)
-		return FALSE;
-
-	lock_handles (handles);
-	if (slot < handles->size && slot_occupied (handles, slot)) {
-		if (MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
-			result = domain->domain_id == handles->domain_ids [slot];
-		} else {
-			MonoObject *obj;
-			obj = (MonoObject *)handles->entries [slot];
-			if (obj == NULL)
-				result = TRUE;
-			else
-				result = domain == mono_object_domain (obj);
-		}
-	} else {
-		/* print a warning? */
-	}
-	unlock_handles (handles);
-	return result;
-}
-
-/**
  * mono_gchandle_free_internal:
  * \param gchandle a GCHandle's handle.
  *
@@ -1657,43 +1616,6 @@ mono_gchandle_free_internal (MonoGCHandle gch)
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
 	MONO_PROFILER_RAISE (gc_handle_deleted, (gchandle, (MonoGCHandleType)handles->type));
-}
-
-/**
- * mono_gchandle_free_domain:
- * \param domain domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *domain)
-{
-	guint type;
-
-	for (type = HANDLE_TYPE_MIN; type < HANDLE_PINNED; ++type) {
-		guint slot;
-		HandleData *handles = &gc_handles [type];
-		lock_handles (handles);
-		for (slot = 0; slot < handles->size; ++slot) {
-			if (!slot_occupied (handles, slot))
-				continue;
-			if (MONO_GC_HANDLE_TYPE_IS_WEAK (type)) {
-				if (domain->domain_id == handles->domain_ids [slot]) {
-					vacate_slot (handles, slot);
-					if (handles->entries [slot])
-						mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
-				}
-			} else {
-				if (handles->entries [slot] && mono_object_domain (handles->entries [slot]) == domain) {
-					vacate_slot (handles, slot);
-					handles->entries [slot] = NULL;
-				}
-			}
-		}
-		unlock_handles (handles);
-	}
-
 }
 
 guint64

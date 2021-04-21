@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading.Tasks;
 using System.Net.Quic.Implementations;
+using Xunit;
+using System.Threading;
+using System.Text;
 
 namespace System.Net.Quic.Tests
 {
@@ -22,7 +25,8 @@ namespace System.Net.Quic.Tests
         {
             return new SslServerAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
             };
         }
 
@@ -30,7 +34,8 @@ namespace System.Net.Quic.Tests
         {
             return new SslClientAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => { return true; }
             };
         }
 
@@ -51,24 +56,91 @@ namespace System.Net.Quic.Tests
             return listener;
         }
 
-        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();
 
-            await new[]
+            var serverFinished = new ManualResetEventSlim();
+            var clientFinished = new ManualResetEventSlim();
+
+            for (int i = 0; i < iterations; ++i)
             {
-                Task.Run(async () =>
+                serverFinished.Reset();
+                clientFinished.Reset();
+
+                await new[]
                 {
-                    using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                    await serverFunction(serverConnection);
-                }),
-                Task.Run(async () =>
+                    Task.Run(async () =>
+                    {
+                        using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                        await serverFunction(serverConnection);
+                        serverFinished.Set();
+                        clientFinished.Wait();
+                        await serverConnection.CloseAsync(0);
+                    }),
+                    Task.Run(async () =>
+                    {
+                        using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                        await clientConnection.ConnectAsync();
+                        await clientFunction(clientConnection);
+                        clientFinished.Set();
+                        serverFinished.Wait();
+                        await clientConnection.CloseAsync(0);
+                    })
+                }.WhenAllOrAnyFailed(millisecondsTimeout);
+            }
+        }
+
+        internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
+        {
+            Memory<byte> memory = buffer;
+            int bytesRead = 0;
+            while (true)
+            {
+                int res = await stream.ReadAsync(memory);
+                if (res == 0)
                 {
-                    using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
-                    await clientConnection.ConnectAsync();
-                    await clientFunction(clientConnection);
-                })
-            }.WhenAllOrAnyFailed(millisecondsTimeout);
+                    break;
+                }
+                bytesRead += res;
+                memory = memory[res..];
+            }
+
+            return bytesRead;
+        }
+
+        internal static void AssertArrayEqual(byte[] expected, byte[] actual)
+        {
+            for (int i = 0; i < expected.Length; ++i)
+            {
+                if (expected[i] == actual[i])
+                {
+                    continue;
+                }
+
+                var message = $"Wrong data starting from idx={i}\n" +
+                    $"Expected: {ToStringAroundIndex(expected, i)}\n" +
+                    $"Actual:   {ToStringAroundIndex(actual, i)}";
+
+                Assert.True(expected[i] == actual[i], message);
+            }
+        }
+
+        private static string ToStringAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
+        {
+            var sb = new StringBuilder(idx - (dl+1) >= 0 ? "[..., " : "[");
+
+            for (int i = idx - dl; i <= idx + dr; ++i)
+            {
+                if (i >= 0 && i < arr.Length)
+                {
+                    sb.Append($"{arr[i]}, ");
+                }
+            }
+
+            sb.Append(idx + (dr+1) < arr.Length ? "...]" : "]");
+
+            return sb.ToString();
         }
     }
 

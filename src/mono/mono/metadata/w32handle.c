@@ -157,20 +157,6 @@ mono_w32handle_init (void)
 	initialized = TRUE;
 }
 
-void
-mono_w32handle_cleanup (void)
-{
-	MonoW32HandleSlot *slot, *slot_next;
-
-	g_assert (!shutting_down);
-	shutting_down = TRUE;
-
-	for (slot = handles_slots_first; slot; slot = slot_next) {
-		slot_next = slot->next;
-		g_free (slot);
-	}
-}
-
 static gsize
 mono_w32handle_ops_typesize (MonoW32Type type);
 

@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace System.ServiceModel
 {
-    internal class XmlBuffer
+    internal sealed class XmlBuffer
     {
         private readonly List<Section> _sections;
         private byte[] _buffer;

@@ -330,7 +330,13 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //
-    pMethod->Reset();
+    pMethod->ResetCodeEntryPoint();
+
+    if (pMethod->HasNativeCodeSlot())
+    {
+        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)pMethod->GetAddrOfNativeCodeSlot();
+        pRelPtr->SetValueMaybeNull(NULL);
+    }
 
     return S_OK;
 }
@@ -532,7 +538,6 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     // so that gc can crawl the stack and do the right thing.
     _ASSERTE(pOrigContext);
     Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
     FrameWithCookie<ResumableFrame> resFrame(pOrigContext);
     resFrame.Push(pCurThread);
 
@@ -801,8 +806,6 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction: Resume at EIP=0x%x\n", pNewCodeInfo->GetCodeAddress()));
 
     Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
-
     pCurThread->SetFilterContext(pContext);
     SetIP(pContext, pNewCodeInfo->GetCodeAddress());
 

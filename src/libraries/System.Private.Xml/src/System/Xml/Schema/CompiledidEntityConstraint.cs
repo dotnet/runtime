@@ -9,7 +9,7 @@ namespace System.Xml.Schema
     using System.Xml.XPath;
     using MS.Internal.Xml.XPath;
 
-    internal class CompiledIdentityConstraint
+    internal sealed class CompiledIdentityConstraint
     {
         internal XmlQualifiedName name = XmlQualifiedName.Empty;
         private readonly ConstraintRole _role;

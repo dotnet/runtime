@@ -144,7 +144,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // entry assembly won't be xunit.console on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "entry assembly won't be xunit.console on browser")]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -856,7 +856,7 @@ namespace System.Reflection.Tests
         private static Assembly LoadSystemRuntimeAssembly()
         {
             // Load System.Runtime
-            return Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)); ;
+            return Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName));
         }
 
         private static Assembly GetGetCallingAssembly()

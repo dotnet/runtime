@@ -11,7 +11,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Http
 {
-    internal partial class AuthenticationHelper
+    internal static partial class AuthenticationHelper
     {
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
@@ -63,15 +63,7 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
-                            // expression returns null connection on error, was not able to use '!' for the expression
-#pragma warning disable CS8600
-                            (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-#pragma warning restore CS8600
-                            if (response != null)
-                            {
-                                return response;
-                            }
-
+                            connection = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                             connectionPool.IncrementConnectionCount();
                             connection!.Acquire();
                             isNewConnection = true;

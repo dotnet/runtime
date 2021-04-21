@@ -33,7 +33,7 @@ namespace System.Net.Quic
 
         // !!! TEMPORARY: Remove or make internal before shipping
         public QuicListener(QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
-            : this(implementationProvider,  new QuicListenerOptions() { ListenEndPoint = listenEndPoint, ServerAuthenticationOptions = sslServerAuthenticationOptions })
+            : this(implementationProvider, new QuicListenerOptions() { ListenEndPoint = listenEndPoint, ServerAuthenticationOptions = sslServerAuthenticationOptions })
         {
         }
 

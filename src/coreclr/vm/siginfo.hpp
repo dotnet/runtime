@@ -807,6 +807,24 @@ class MetaSig
 #endif // !TARGET_UNIX
         }
 
+        static CorInfoCallConvExtension GetMemberFunctionUnmanagedCallingConventionVariant(CorInfoCallConvExtension baseCallConv)
+        {
+            switch (baseCallConv)
+            {
+            case CorInfoCallConvExtension::C:
+                return CorInfoCallConvExtension::CMemberFunction;
+            case CorInfoCallConvExtension::Stdcall:
+                return CorInfoCallConvExtension::StdcallMemberFunction;
+            case CorInfoCallConvExtension::Fastcall:
+                return CorInfoCallConvExtension::FastcallMemberFunction;
+            case CorInfoCallConvExtension::Thiscall:
+                return CorInfoCallConvExtension::Thiscall;
+            default:
+                _ASSERTE("Calling convention is not an unmanaged base calling convention.");
+                return baseCallConv;
+            }
+        }
+
         //------------------------------------------------------------------
         // Like NextArg, but return only normalized type (enums flattned to
         // underlying type ...
@@ -1166,6 +1184,51 @@ public:
         BYTE            m_CallConv;
 };  // class MetaSig
 
+// Attempts to parse the provided calling convention names to construct a
+// calling convention with known modifiers.
+//
+// The Add* functions return false if the type is known but cannot be applied.
+// Otherwise, they return true.
+class CallConvBuilder final
+{
+public:
+    enum CallConvModifiers
+    {
+        CALL_CONV_MOD_NONE = 0,
+        CALL_CONV_MOD_SUPPRESSGCTRANSITION = 0x1,
+        CALL_CONV_MOD_MEMBERFUNCTION = 0x2
+    };
+
+    struct State
+    {
+        CorInfoCallConvExtension CallConvBase;
+        CallConvModifiers CallConvModifiers;
+    };
+
+private:
+    State _state;
+
+public:
+    // The initial "unset" base calling convention.
+    static const CorInfoCallConvExtension DefaultValue;
+
+    CallConvBuilder();
+
+    // Add a fully qualified type name to the calling convention computation.
+    bool AddFullyQualifiedTypeName(
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName);
+
+    // Add a simple type name to the calling convention computation.
+    bool AddTypeName(
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName);
+
+    // Get the currently computed calling convention values.
+    void GetCurrentCallConv(
+        _Out_ CorInfoCallConvExtension &baseCallConv,
+        _Out_ CallConvModifiers &modsCallConv);
+};
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);
 

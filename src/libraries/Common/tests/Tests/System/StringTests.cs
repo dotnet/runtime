@@ -1821,7 +1821,7 @@ namespace System.Tests
         [Fact]
         public static void LengthMismatchEndsWith_Char()
         {
-            string value = "456";;
+            string value = "456";
 
             string s1 = value.Substring(0, 2);
             string s2 = value.Substring(0, 3);

@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

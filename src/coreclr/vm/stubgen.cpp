@@ -2813,6 +2813,18 @@ void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
             case CorInfoCallConvExtension::Fastcall:
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
                 break;
+            case CorInfoCallConvExtension::CMemberFunction:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL)));
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_MEMBERFUNCTION)));
+                break;
+            case CorInfoCallConvExtension::StdcallMemberFunction:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL)));
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_MEMBERFUNCTION)));
+                break;
+            case CorInfoCallConvExtension::FastcallMemberFunction:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_MEMBERFUNCTION)));
+                break;
             default:
                 _ASSERTE("Unknown calling convention. Unable to encode it in the native function pointer signature.");
                 break;

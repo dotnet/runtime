@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.DirectoryServices.Design
 {
-    internal class DirectoryEntryConverter : TypeConverter
+    internal sealed class DirectoryEntryConverter : TypeConverter
     {
         private static StandardValuesCollection? s_values;
         private static readonly Hashtable s_componentsCreated = new Hashtable(StringComparer.OrdinalIgnoreCase);

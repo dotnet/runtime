@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.Xslt
 {
     using T = XmlQueryTypeFactory;
 
-    internal class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
+    internal sealed class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
     {
         private readonly XPathPredicateEnvironment _predicateEnvironment;
         private readonly XPathBuilder _predicateBuilder;
@@ -40,7 +40,7 @@ namespace System.Xml.Xsl.Xslt
             get { return _fixupNode; }
         }
 
-        public virtual void StartBuild()
+        public void StartBuild()
         {
             Debug.Assert(!_inTheBuild, "XPathBuilder is busy!");
             _inTheBuild = true;
@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [return: NotNullIfNotNull("result")]
-        public virtual QilNode? EndBuild(QilNode? result)
+        public QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
             if (result == null)

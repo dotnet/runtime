@@ -388,20 +388,11 @@ namespace System.Numerics
             return finalHash;
         }
 
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", m_real, m_imaginary);
-        }
+        public override string ToString() => $"({m_real}, {m_imaginary})";
 
-        public string ToString(string? format)
-        {
-            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", m_real.ToString(format, CultureInfo.CurrentCulture), m_imaginary.ToString(format, CultureInfo.CurrentCulture));
-        }
+        public string ToString(string? format) => ToString(format, null);
 
-        public string ToString(IFormatProvider? provider)
-        {
-            return string.Format(provider, "({0}, {1})", m_real, m_imaginary);
-        }
+        public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
         public string ToString(string? format, IFormatProvider? provider)
         {

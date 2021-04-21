@@ -195,7 +195,7 @@ namespace System.Net
             if (colon >= 0)
                 host = host.Substring(0, colon);
 
-            string base_uri = string.Format("{0}://{1}:{2}", RequestScheme, host, LocalEndPoint!.Port);
+            string base_uri = $"{RequestScheme}://{host}:{LocalEndPoint!.Port}";
 
             if (!Uri.TryCreate(base_uri + path, UriKind.Absolute, out _requestUri))
             {

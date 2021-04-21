@@ -480,13 +480,13 @@ void CoreLibBinder::TriggerGCUnderStress()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    _ASSERTE (GetThread ());
+    _ASSERTE (GetThreadNULLOk());
     TRIGGERSGC ();
     // Force a GC here because GetClass could trigger GC nondeterminsticly
     if (g_pConfig->GetGCStressLevel() != 0)
     {
         DEBUG_ONLY_REGION();
-        Thread * pThread = GetThread ();
+        Thread * pThread = GetThread();
         BOOL bInCoopMode = pThread->PreemptiveGCDisabled ();
         GCX_COOP ();
         if (bInCoopMode)

@@ -5,13 +5,4 @@
      in the root of the source tree. In particular this was necessary to compile DacTableGen, which is currently compiled
      against .NET Framework.
      -->
-
-  <!-- Workaround for https://dev.azure.com/devdiv/DevDiv/_workitems/edit/1295929/ -->
-  <!-- Unset IncrementalLinkDatabaseFile when incremental linking is explicitly disabled -->
-  <ItemDefinitionGroup Condition="'$(LinkIncremental)'=='false'">
-    <Link>
-      <IncrementalLinkDatabaseFile/>
-    </Link>
-  </ItemDefinitionGroup>
-
 </Project>

@@ -635,9 +635,118 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             Assert.Equal(expectedStem, actualStem);
         }
 
-        private List<string> GetFileList()
+        [Theory]
+        [InlineData("/", '/')]
+        public void RootDir_IsPathRoot_WithInMemory_AllOS(string rootDir, char separator)
         {
-            return new List<string>
+            RootDir_IsPathRoot_WithInMemory(rootDir, separator);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("C:\\", '\\')]
+        [InlineData("C:/", '/')]
+        public void RootDir_IsPathRoot_WithInMemory_WindowsOnly(string rootDir, char separator)
+        {
+            RootDir_IsPathRoot_WithInMemory(rootDir, separator);
+        }
+
+        private static void RootDir_IsPathRoot_WithInMemory(string rootDir, char separator)
+        {
+            var matcher = new Matcher();
+            matcher.AddInclude($"**{separator}*.cs");
+
+            IEnumerable<string> files = GetFileList(rootDir, separator);
+            PatternMatchingResult results = matcher.Match(rootDir, files);
+
+            IEnumerable<string> actual = results.Files.Select(match => match.Path);
+            IEnumerable<string> expected = new string[]
+            {
+                "src/project/source1.cs",
+                "src/project/sub/source2.cs",
+                "src/project/sub/source3.cs",
+                "src/project/sub2/source4.cs",
+                "src/project/sub2/source5.cs",
+                "src/project/compiler/preprocess/preprocess-source1.cs",
+                "src/project/compiler/preprocess/sub/preprocess-source2.cs",
+                "src/project/compiler/preprocess/sub/sub/preprocess-source3.cs",
+                "src/project/compiler/shared/shared1.cs",
+                "src/project/compiler/shared/sub/shared2.cs",
+                "src/project/compiler/shared/sub/sub/sharedsub.cs",
+                "src/project2/source1.cs",
+                "src/project2/sub/source2.cs",
+                "src/project2/sub/source3.cs",
+                "src/project2/sub2/source4.cs",
+                "src/project2/sub2/source5.cs",
+                "src/project2/compiler/preprocess/preprocess-source1.cs",
+                "src/project2/compiler/preprocess/sub/preprocess-source2.cs",
+                "src/project2/compiler/preprocess/sub/sub/preprocess-source3.cs",
+                "src/project2/compiler/shared/shared1.cs",
+                "src/project2/compiler/shared/sub/shared2.cs",
+                "src/project2/compiler/shared/sub/sub/sharedsub.cs",
+                "lib/source6.cs",
+                "lib/sub3/source7.cs",
+                "lib/sub4/source8.cs",
+            };
+
+            Assert.Equal(
+                expected.OrderBy(e => e),
+                actual.OrderBy(e => e),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [InlineData("/src/project", '/')]
+        [InlineData("/src/project/", '/')]
+        public void RootDir_IsAbsolutePath_WithInMemory_AllOS(string rootDir, char separator)
+        {
+            RootDir_IsAbsolutePath_WithInMemory(rootDir, separator);
+        }
+        
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("C:\\src\\project", '\\')]
+        [InlineData("C:\\src\\project\\", '\\')]
+        [InlineData("C:/src/project", '/')]
+        [InlineData("C:/src/project/", '/')]
+        public void RootDir_IsAbsolutePath_WithInMemory_WindowsOnly(string rootDir, char separator)
+        {
+            RootDir_IsAbsolutePath_WithInMemory(rootDir, separator);
+        }
+
+        private static void RootDir_IsAbsolutePath_WithInMemory(string rootDir, char separator)
+        {
+            var matcher = new Matcher();
+            matcher.AddInclude($"**{separator}*.cs");
+
+            IEnumerable<string> files = GetFileList(Path.GetPathRoot(rootDir), separator);
+            PatternMatchingResult results = matcher.Match(rootDir, files);
+
+            IEnumerable<string> actual = results.Files.Select(match => match.Path);
+            IEnumerable<string> expected = new string[]
+            {
+                "source1.cs",
+                "sub/source2.cs",
+                "sub/source3.cs",
+                "sub2/source4.cs",
+                "sub2/source5.cs",
+                "compiler/preprocess/preprocess-source1.cs",
+                "compiler/preprocess/sub/preprocess-source2.cs",
+                "compiler/preprocess/sub/sub/preprocess-source3.cs",
+                "compiler/shared/shared1.cs",
+                "compiler/shared/sub/shared2.cs",
+                "compiler/shared/sub/sub/sharedsub.cs"
+            };
+
+            Assert.Equal(
+                expected.OrderBy(e => e),
+                actual.OrderBy(e => e),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static IEnumerable<string> GetFileList(string rootDir = "", char directorySeparator = '/')
+        {
+            var files = new List<string>
             {
                 "root/test.0",
                 "root/dir1/test.1",
@@ -693,6 +802,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 ".hidden/file1.hid",
                 ".hidden/sub/file2.hid"
             };
+
+            return files.Select(x => (rootDir + x).Replace('/', directorySeparator));
         }
 
         private DisposableFileSystem CreateContext()
@@ -712,6 +823,46 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             var expected = expectFiles.Select(relativePath => Path.GetFullPath(Path.Combine(_context.RootPath, relativePath)));
 
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact] // https://github.com/dotnet/runtime/issues/44767
+        public void VerifyAbsolutePaths_HasMatches()
+        {
+            var fileMatcher = new Matcher();
+            fileMatcher.AddInclude("**/*");
+
+            if (PlatformDetection.IsWindows)
+            {
+                // Windows-like absolute paths are not supported on Unix.
+                string fakeWindowsPath = "C:\\This\\is\\a\\nested\\windows-like\\path\\somefile.cs";
+                Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeWindowsPath), fakeWindowsPath).HasMatches);
+            }
+            
+            // Unix-like absolute paths are treated as relative paths on Windows.
+            string fakeUnixPath = "/This/is/a/nested/unix-like/path/somefile.cs";
+            Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeUnixPath), fakeUnixPath).HasMatches);
+        }
+
+        [Fact] // https://github.com/dotnet/runtime/issues/36415
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50648")]
+        public void VerifyInMemoryDirectoryInfo_IsNotEmpty()
+        {
+            IEnumerable<string> files = new[] { @"pagefile.sys" };
+            InMemoryDirectoryInfo directoryInfo;
+            IEnumerable<FileSystemInfoBase> fileSystemInfos;
+
+            if (PlatformDetection.IsWindows)
+            {
+                directoryInfo = new InMemoryDirectoryInfo(@"C:\", files);
+                fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
+
+                Assert.Equal(1, fileSystemInfos.Count());
+            }
+
+            directoryInfo = new InMemoryDirectoryInfo("/", files);
+            fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
+
+            Assert.Equal(1, fileSystemInfos.Count());
         }
     }
 }

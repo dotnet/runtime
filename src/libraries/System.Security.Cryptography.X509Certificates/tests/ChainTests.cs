@@ -210,10 +210,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         /// <summary>
         /// Tests that when a certificate chain has a root certification which is not trusted by the trust provider,
-        /// Build returns false and a ChainStatus returns UntrustedRoot
+        /// Build returns false and a ChainStatus returns UntrustedRoot.
+        /// Android does not support the detailed status in this test. It always validates time
+        /// and trusted root. It will fail to build any chain if those are not valid.
         /// </summary>
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android.")]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
@@ -822,7 +825,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         // Android does not support the detailed status in this test. It always validates time
         // and trusted root. It will fail to build any chain if those are not valid.
-        [PlatformSpecific(~TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android.")]
         public static void ChainErrorsAtMultipleLayers()
         {
             // These certificates were generated for this test using CertificateRequest
@@ -907,7 +910,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)] // Chain building on Android fails with an empty subject
+        [SkipOnPlatform(TestPlatforms.Android, "Chain building on Android fails with an empty subject")]
         public static void ChainWithEmptySubject()
         {
             using (var cert = new X509Certificate2(TestData.EmptySubjectCertificate))
@@ -1002,7 +1005,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void BuildChainForFraudulentCertificate()
         {
             // This certificate is a misissued certificate for a "high-value"
@@ -1074,7 +1077,7 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void BuildChainForCertificateSignedWithDisallowedKey()
         {
             // The intermediate certificate is from the now defunct CA DigiNotar.

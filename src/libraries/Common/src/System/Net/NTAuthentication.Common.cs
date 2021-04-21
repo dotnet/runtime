@@ -9,7 +9,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal partial class NTAuthentication
+    internal sealed partial class NTAuthentication
     {
         private bool _isServer;
 

@@ -15,7 +15,7 @@
     <Compile Include="System\Net\Quic\Implementations\Mock\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
-    <Compile Include="System\Net\Quic\Interop\*.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\*.cs" />
   </ItemGroup>
   <!-- System.Net common -->
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
@@ -52,6 +52,7 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
@@ -62,11 +63,19 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="libmsquic.dylib" Condition="Exists('libmsquic.dylib')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <Content Include="libmsquic.so" Condition="Exists('libmsquic.so')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
+    <Content Include="libmsquic.lttng.so" Condition="Exists('libmsquic.lttng.so')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

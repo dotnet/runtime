@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="THashKey"></typeparam>
     /// <typeparam name="TOutput"></typeparam>
     /// <typeparam name="TOutputKey"></typeparam>
-    internal class HashJoinQueryOperatorEnumerator<TLeftInput, TLeftKey, TRightInput, TRightKey, THashKey, TOutput, TOutputKey>
+    internal sealed class HashJoinQueryOperatorEnumerator<TLeftInput, TLeftKey, TRightInput, TRightKey, THashKey, TOutput, TOutputKey>
         : QueryOperatorEnumerator<TOutput, TOutputKey>
     {
         private readonly QueryOperatorEnumerator<Pair<TLeftInput, THashKey>, TLeftKey> _leftSource; // Left (outer) data source. For probing.
@@ -120,7 +120,7 @@ namespace System.Linq.Parallel
                 while (_leftSource.MoveNext(ref leftPair, ref leftKey))
                 {
                     if ((mutables._outputLoopCount++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     // Find the match in the hash table.
                     HashLookupValueList<TRightInput, TRightKey> matchValue = default(HashLookupValueList<TRightInput, TRightKey>);
@@ -200,7 +200,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TLeftKey"></typeparam>
     /// <typeparam name="TRightKey"></typeparam>
-    internal class LeftKeyOutputKeyBuilder<TLeftKey, TRightKey> : HashJoinOutputKeyBuilder<TLeftKey, TRightKey, TLeftKey>
+    internal sealed class LeftKeyOutputKeyBuilder<TLeftKey, TRightKey> : HashJoinOutputKeyBuilder<TLeftKey, TRightKey, TLeftKey>
     {
         public override TLeftKey Combine(TLeftKey leftKey, TRightKey rightKey)
         {
@@ -215,7 +215,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TLeftKey"></typeparam>
     /// <typeparam name="TRightKey"></typeparam>
-    internal class PairOutputKeyBuilder<TLeftKey, TRightKey> : HashJoinOutputKeyBuilder<TLeftKey, TRightKey, Pair<TLeftKey, TRightKey>>
+    internal sealed class PairOutputKeyBuilder<TLeftKey, TRightKey> : HashJoinOutputKeyBuilder<TLeftKey, TRightKey, Pair<TLeftKey, TRightKey>>
     {
         public override Pair<TLeftKey, TRightKey> Combine(TLeftKey leftKey, TRightKey rightKey)
         {

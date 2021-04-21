@@ -14,7 +14,7 @@ namespace Internal.Cryptography
         private static readonly AsnFormatter s_instance = new ManagedAsnFormatter();
     }
 
-    internal class ManagedAsnFormatter : AsnFormatter
+    internal sealed class ManagedAsnFormatter : AsnFormatter
     {
         protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {

@@ -2,7 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <PackageDescription>Provides types supporting Code Access Security (CAS).</PackageDescription>
   </PropertyGroup>

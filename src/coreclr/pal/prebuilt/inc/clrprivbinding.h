@@ -55,7 +55,6 @@ typedef interface ICLRPrivAssembly ICLRPrivAssembly;
 /* header files for imported files */
 #include "unknwn.h"
 #include "objidl.h"
-#include "fusion.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -66,8 +65,6 @@ extern "C"{
 /* [local] */ 
 
 
-
-typedef LPCSTR LPCUTF8;
 
 
 
@@ -90,7 +87,7 @@ EXTERN_C const IID IID_ICLRPrivBinder;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE BindAssemblyByName( 
-            /* [in] */ IAssemblyName *pAssemblyName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetBinderID( 
@@ -122,7 +119,7 @@ EXTERN_C const IID IID_ICLRPrivBinder;
         
         HRESULT ( STDMETHODCALLTYPE *BindAssemblyByName )( 
             ICLRPrivBinder * This,
-            /* [in] */ IAssemblyName *pAssemblyName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
         
         HRESULT ( STDMETHODCALLTYPE *GetBinderID )( 
@@ -156,8 +153,8 @@ EXTERN_C const IID IID_ICLRPrivBinder;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICLRPrivBinder_BindAssemblyByName(This,pAssemblyName,ppAssembly)	\
-    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyName,ppAssembly) ) 
+#define ICLRPrivBinder_BindAssemblyByName(This,pAssemblyNameData,ppAssembly)	\
+    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyNameData,ppAssembly) ) 
 
 #define ICLRPrivBinder_GetBinderID(This,pBinderId)	\
     ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 
@@ -233,7 +230,7 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
         
         HRESULT ( STDMETHODCALLTYPE *BindAssemblyByName )( 
             ICLRPrivAssembly * This,
-            /* [in] */ IAssemblyName *pAssemblyName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
         
         HRESULT ( STDMETHODCALLTYPE *GetBinderID )( 
@@ -271,8 +268,8 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICLRPrivAssembly_BindAssemblyByName(This,pAssemblyName,ppAssembly)	\
-    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyName,ppAssembly) ) 
+#define ICLRPrivAssembly_BindAssemblyByName(This,pAssemblyNameData,ppAssembly)	\
+    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyNameData,ppAssembly) ) 
 
 #define ICLRPrivAssembly_GetBinderID(This,pBinderId)	\
     ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 

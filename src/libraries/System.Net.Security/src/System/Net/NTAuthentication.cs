@@ -8,7 +8,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal partial class NTAuthentication
+    internal sealed partial class NTAuthentication
     {
         internal string? AssociatedName
         {

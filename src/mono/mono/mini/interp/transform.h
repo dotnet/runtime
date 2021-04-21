@@ -145,8 +145,12 @@ typedef struct {
 	// index of first basic block where this var is used
 	int bb_index;
 	union {
-		// If var is INTERP_LOCAL_FLAG_CALL_ARGS, this is the call instruction using it
+		// If var is INTERP_LOCAL_FLAG_CALL_ARGS, this is the call instruction using it.
+		// Only used during var offset allocator
 		InterpInst *call;
+		// For local vars, this represents the instruction declaring it.
+		// Only used during super instruction pass.
+		InterpInst *def;
 	};
 } InterpLocal;
 
@@ -173,6 +177,7 @@ typedef struct
 	gint32 param_area_offset;
 	gint32 total_locals_size;
 	InterpLocal *locals;
+	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
 	unsigned int locals_size;

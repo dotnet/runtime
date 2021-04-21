@@ -12,7 +12,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlJsonWriter : XmlDictionaryWriter, IXmlJsonWriterInitializer
+    internal sealed class XmlJsonWriter : XmlDictionaryWriter, IXmlJsonWriterInitializer
     {
         private const char BACK_SLASH = '\\';
         private const char FORWARD_SLASH = '/';

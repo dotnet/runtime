@@ -10,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
     ///     A helper class for providing a localizable string property.
     ///     This class is currently compiled in both System.Web.dll and System.ComponentModel.DataAnnotations.dll.
     /// </summary>
-    internal class LocalizableString
+    internal sealed class LocalizableString
     {
         #region Member fields
 

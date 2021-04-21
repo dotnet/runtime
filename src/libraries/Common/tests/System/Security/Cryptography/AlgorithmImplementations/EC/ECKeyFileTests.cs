@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();
@@ -187,7 +187,7 @@ qtlbnispri1a/EghiaPQ0po=";
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384_PasswordBytes()
         {
             // PBES2, PBKDF2 (SHA384), AES128
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
 MIIBXTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQI/JyXWyp/t3kCAggA
 MAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAECBBA3H8mbFK5afB5GzIemCCQkBIIB

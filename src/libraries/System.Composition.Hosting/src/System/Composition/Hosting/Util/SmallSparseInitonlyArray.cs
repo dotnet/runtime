@@ -6,7 +6,7 @@ namespace System.Composition.Hosting.Util
     // Extremely performance-sensitive.
     // Always safe for reading, even under concurrent writes,
     // only one writer at a time allowed.
-    internal class SmallSparseInitonlyArray
+    internal sealed class SmallSparseInitonlyArray
     {
         private sealed class Element { public int Index; public object Value; }
 

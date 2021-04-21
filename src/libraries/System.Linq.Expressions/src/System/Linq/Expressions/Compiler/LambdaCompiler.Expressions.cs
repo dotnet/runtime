@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
         [Flags]
         internal enum CompilationFlags

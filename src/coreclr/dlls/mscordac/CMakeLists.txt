@@ -98,7 +98,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.
-_add_library(mscordacobj OBJECT mscordac.cpp)
+add_library_clr(mscordacobj OBJECT mscordac.cpp)
 
 add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES} $<TARGET_OBJECTS:mscordacobj>)
 
@@ -192,14 +192,8 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
-# Create the DAC module index header file containing the DAC build id
-# for xplat and the timestamp/size on Windows.
-if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    generate_module_index(mscordaccore ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h)
-endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-
 # add the install targets
-install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT runtime)
 
 if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})
@@ -216,5 +210,8 @@ if(CLR_CMAKE_HOST_WIN32)
     string(REGEX MATCH "#define VER_FILEVERSION[ \t]+[0-9]+(,[0-9]+)+" FILE_VERSION_LINE "${NATIVE_VERSION_HEADER}")
     string(REGEX MATCHALL "[0-9]+" FILE_VERSION_COMPONENTS "${FILE_VERSION_LINE}")
     list(JOIN FILE_VERSION_COMPONENTS "." FILE_VERSION)
-    install(FILES $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework)
+    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework COMPONENT runtime)
+    if (NOT FEATURE_CROSSBITNESS)
+        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
+    endif()
 endif()

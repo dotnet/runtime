@@ -974,7 +974,7 @@ namespace System.Data.SqlTypes
         };
 
         // Class to store map of lcids to ordinal
-        internal class CBuildLcidOrdMap {
+        internal sealed class CBuildLcidOrdMap {
             internal SLcidOrdMapItem[] m_rgLcidOrdMap;
             internal int m_cValidLocales;
             internal int m_uiPosEnglish; // Start binary searches here - this is index in array, not ordinal

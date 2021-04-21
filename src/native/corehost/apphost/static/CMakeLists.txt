@@ -19,6 +19,11 @@ set(SKIP_VERSIONING 1)
 include_directories(..)
 include_directories(../../json)
 
+include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
+endif()
+
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp
@@ -78,6 +83,10 @@ else()
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
     set_exports_linker_option(${EXPORTS_FILE})
+endif()
+
+if (CLR_SINGLE_FILE_HOST_ONLY)
+    set(ADDITIONAL_INSTALL_ARGUMENTS COMPONENT runtime)
 endif()
 
 include(../../exe.cmake)

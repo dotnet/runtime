@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace System.Linq
 {
-    internal class EnumerableRewriter : ExpressionVisitor
+    internal sealed class EnumerableRewriter : ExpressionVisitor
     {
         // We must ensure that if a LabelTarget is rewritten that it is always rewritten to the same new target
         // or otherwise expressions using it won't match correctly.
@@ -172,7 +172,7 @@ namespace System.Linq
                 }
                 if (equiv == null)
                 {
-                    var interfacesWithInfo = pubType.GetInterfaces().Select(IntrospectionExtensions.GetTypeInfo).ToArray();
+                    var interfacesWithInfo = pubType.GetInterfaces();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
                         .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
                         .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })

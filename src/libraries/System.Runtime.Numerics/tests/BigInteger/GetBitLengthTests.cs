@@ -39,7 +39,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // OOM on browser due to large array allocations
+        [SkipOnPlatform(TestPlatforms.Browser, "OOM on browser due to large array allocations")]
         public static void RunGetBitLengthTestsLarge()
         {
             // Very large cases

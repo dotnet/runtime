@@ -18,11 +18,6 @@ mono_w32file_init (void)
 {
 }
 
-void
-mono_w32file_cleanup (void)
-{
-}
-
 gpointer
 mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs)
 {

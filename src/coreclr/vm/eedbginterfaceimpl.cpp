@@ -54,7 +54,7 @@ Thread* EEDbgInterfaceImpl::GetThread(void)
     CONTRACT_END;
 #endif
 
-    return ::GetThread();
+    return ::GetThreadNULLOk();
 }
 
 #ifndef DACCESS_COMPILE

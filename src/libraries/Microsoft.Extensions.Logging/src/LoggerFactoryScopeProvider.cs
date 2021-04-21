@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     /// <summary>
     /// Default implementation of <see cref="IExternalScopeProvider"/>
     /// </summary>
-    internal class LoggerFactoryScopeProvider : IExternalScopeProvider
+    internal sealed class LoggerFactoryScopeProvider : IExternalScopeProvider
     {
         private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
         private readonly ActivityTrackingOptions _activityTrackingOption;
