@@ -8566,6 +8566,57 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
     ++(blockInfo[bbNum].stats[(unsigned)stat]);
 }
 
+
+// ----------------------------------------------------------
+//  getLsraStat: Get lsra stat corresponding to the RegisterScore stat
+//
+//  Arguments:
+//      heuristic   -   RegisterScore for which LsraStat is needed
+//
+LsraStat LinearScan::getLsraStat(RegisterScore heuristic)
+{
+    switch (heuristic)
+    {
+        case FREE:
+            return REGSEL_FREE;
+        case CONST_AVAILABLE:
+            return REGSEL_CONST_AVAILABLE;
+        case THIS_ASSIGNED:
+            return REGSEL_THIS_ASSIGNED;
+        case COVERS:
+            return REGSEL_COVERS;
+        case OWN_PREFERENCE:
+            return REGSEL_OWN_PREFERENCE;
+        case COVERS_RELATED:
+            return REGSEL_COVERS_RELATED;
+        case RELATED_PREFERENCE:
+            return REGSEL_RELATED_PREFERENCE;
+        case CALLER_CALLEE:
+            return REGSEL_CALLER_CALLEE;
+        case UNASSIGNED:
+            return REGSEL_UNASSIGNED;
+        case COVERS_FULL:
+            return REGSEL_COVERS_FULL;
+        case BEST_FIT:
+            return REGSEL_BEST_FIT;
+        case IS_PREV_REG:
+            return REGSEL_IS_PREV_REG;
+        case REG_ORDER:
+            return REGSEL_REG_ORDER;
+        case SPILL_COST:
+            return REGSEL_SPILL_COST;
+        case FAR_NEXT_REF:
+            return REGSEL_FAR_NEXT_REF;
+        case PREV_REG_OPT:
+            return REGSEL_PREV_REG_OPT;
+        case REG_NUM:
+            return REGSEL_REG_NUM;
+        default:
+            assert(!"Unexpected heuristic");
+            return REGSEL_FREE;
+    }
+}
+
 // -----------------------------------------------------------
 // dumpLsraStats - dumps Lsra stats to given file.
 //
@@ -11102,9 +11153,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval* currentInterval, RefPo
         {
             (this->*fn)();
 #if TRACK_LSRA_STATS
-            int heuristic = (int)heuristicToApply;
-            LsraStat lsraStat  = (LsraStat)(4 + heuristicToApply);
-            INTRACK_STATS_IF(found, linearScan->updateLsraStat(lsraStat, refPosition->bbNum));
+            INTRACK_STATS_IF(found,
+                             linearScan->updateLsraStat(linearScan->getLsraStat(heuristicToApply), refPosition->bbNum));
 #endif // TRACK_LSRA_STATS
         }
         else

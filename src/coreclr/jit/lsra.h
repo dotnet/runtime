@@ -1543,6 +1543,7 @@ private:
 #if TRACK_LSRA_STATS
     unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
+    LsraStat getLsraStat(RegisterScore heuristic);
     void dumpLsraStats(FILE* file);
     LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
 
@@ -2554,76 +2555,6 @@ public:
     void dump();
 #endif // DEBUG
 };
-
-
-//
-//class RegSel
-//{
-//public:
-//    virtual bool applyHeuristics();
-//};
-//
-//template <typename X>
-//class RegSelectionHeuristic : RegSel
-//{
-//public:
-//    RegSelectionHeuristic(X x)
-//    {
-//        action = X;
-//    }
-//
-//protected:
-//    X action;
-//};
-//
-//template <typename X>
-//class FreeRegHeurisitic : RegSelectionHeuristic<X>
-//{
-//public:
-//    FreeRegHeurisitic(X x)
-//        : base(x)
-//    {
-//
-//    }
-//
-//    bool applyHeuristics()
-//    {
-//        return action()
-//    }
-//};
-
-//
-//class RegSelection
-//{
-//public:
-//
-//    template <typename X>
-//    RegSelectionHeuristic<X> append(X heuristic)
-//    {
-//        FreeRegHeurisitic free(heuristic);
-//
-//
-//        regHeuristics.insert(free);
-//    }
-//
-//    bool execute()
-//    {
-//        for (RegSel* current : *regHeuristics)
-//        {
-//            bool found = current->applyHeuristics();
-//        }
-//        /*for (int i = 0; i < 10; i++)
-//        {
-//            found = regHeuristics[i].applyHeuristics();
-//        }*/
-//        return false;
-//    }
-//
-//private:
-//    jitstd::vector<RegSel*>* regHeuristics;
-//};
-
-
 
 
 #ifdef DEBUG
