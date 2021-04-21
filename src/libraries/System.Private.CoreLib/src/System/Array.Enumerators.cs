@@ -26,9 +26,9 @@ namespace System
         public bool MoveNext()
         {
             nint index = _index + 1;
-            if ((nuint)index >= (nuint)_array.LongLength)
+            if ((nuint)index >= _array.NativeLength)
             {
-                _index = (nint)_array.LongLength;
+                _index = (nint)_array.NativeLength;
                 return false;
             }
             _index = index;
@@ -42,7 +42,7 @@ namespace System
                 nint index = _index;
                 Array array = _array;
 
-                if ((nuint)index >= (nuint)array.LongLength)
+                if ((nuint)index >= array.NativeLength)
                 {
                     if (index < 0)
                     {
