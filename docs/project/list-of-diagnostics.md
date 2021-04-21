@@ -28,7 +28,15 @@ The acceptance criteria for adding an obsoletion includes:
     * This will need to be specified in both the `src` and `ref` projects
 * Apply the `breaking-change` label to the PR that introduces the obsoletion
     * A bot will automatically apply the `needs-breaking-change-doc-created` label when the `breaking-change` label is detected
-* Follow up with the normal breaking change process to communicate and document the breaking change
+* Follow up with the breaking change process to communicate and document the breaking change
+    * In the breaking-change issue filed in [dotnet/docs](https://github.com/dotnet/docs), specifically mention that this breaking change is an obsoletion with a `SYSLIB` diagnostic id
+    * The documentation team will produce a PR that adds the obsoletion to the [SYSLIB warnings](https://docs.microsoft.com/en-us/dotnet/core/compatibility/syslib-obsoletions) page
+    * That PR will also add a new URL specific to this diagnostic ID; e.g. [SYSLIB0001](https://docs.microsoft.com/en-us/dotnet/core/compatibility/syslib-warnings/syslib0001)
+    * Connect with `@gewarren` or `@BillWagner` with any questions
+* Register the `SYSLIB0###` URL in `aka.ms`
+    * The vanity name will be `dotnet-warnings/syslib0###`
+    * Ensure the link's group owner matches the group owner of `dotnet-warnings/syslib0001`
+    * Connect with `@jeffhandley`, `@levib`, or `@gewarren` with any questions
 
 An example obsoletion PR that can be referenced where each of the above criteria was met is:
 
