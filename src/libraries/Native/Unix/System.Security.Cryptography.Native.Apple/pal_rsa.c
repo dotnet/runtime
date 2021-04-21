@@ -3,12 +3,8 @@
 
 #include "pal_rsa.h"
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
-static int32_t ExecuteCFDataTransform(
-    SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut);
-
 int32_t AppleCryptoNative_RsaGenerateKey(
-    int32_t keySizeBits, SecKeychainRef tempKeychain, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
+    int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
 {
     if (pPublicKey != NULL)
         *pPublicKey = NULL;
@@ -29,19 +25,8 @@ int32_t AppleCryptoNative_RsaGenerateKey(
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeRSA);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
-        CFDictionaryAddValue(attributes, kSecUseKeychain, tempKeychain);
 
         status = SecKeyGeneratePair(attributes, pPublicKey, pPrivateKey);
-
-        if (status == noErr)
-        {
-            status = ExportImportKey(pPublicKey, kSecItemTypePublicKey);
-        }
-
-        if (status == noErr)
-        {
-            status = ExportImportKey(pPrivateKey, kSecItemTypePrivateKey);
-        }
     }
     else
     {
@@ -57,33 +42,10 @@ int32_t AppleCryptoNative_RsaGenerateKey(
     return status == noErr;
 }
 
-static int32_t ExecuteOaepTransform(SecTransformRef xform,
-                                    uint8_t* pbData,
-                                    int32_t cbData,
-                                    PAL_HashAlgorithm algorithm,
-                                    CFDataRef* pDataOut,
-                                    CFErrorRef* pErrorOut)
-{
-    if (!SecTransformSetAttribute(xform, kSecPaddingKey, kSecPaddingOAEPKey, pErrorOut))
-    {
-        return kErrorSeeError;
-    }
-
-    // Documentation mentions kSecOAEPMGF1DigestAlgorithmAttributeName, but on the Apple platform
-    // "SHA2" is an algorithm and the size is encoded separately. Since there doesn't seem to be
-    // a second attribute to encode SHA2-256 vs SHA2-384, be limited to SHA-1.
-    if (algorithm != PAL_SHA1)
-    {
-        return kErrorUnknownAlgorithm;
-    }
-
-    return ExecuteCFDataTransform(xform, pbData, cbData, pDataOut, pErrorOut);
-}
-
 int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
                                          uint8_t* pbData,
                                          int32_t cbData,
-                                         PAL_HashAlgorithm mfgAlgorithm,
+                                         PAL_HashAlgorithm mgfAlgorithm,
                                          CFDataRef* pDecryptedOut,
                                          CFErrorRef* pErrorOut)
 {
@@ -98,19 +60,24 @@ int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
     }
 
     int32_t ret = kErrorSeeError;
-    SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
+    CFDataRef cfData = NULL;
+    SecKeyAlgorithm algorithm;
 
-    if (decryptor != NULL)
+    switch (mgfAlgorithm)
     {
-        if (*pErrorOut == NULL)
-        {
-            ret = ExecuteOaepTransform(decryptor, pbData, cbData, mfgAlgorithm, pDecryptedOut, pErrorOut);
-        }
-
-        CFRelease(decryptor);
+        case PAL_SHA1: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA1; break;
+        case PAL_SHA256: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA256; break;
+        case PAL_SHA384: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA384; break;
+        case PAL_SHA512: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA512; break;
+        default:
+            return kErrorUnknownAlgorithm;
     }
 
-    return ret;
+    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
+    *pDecryptedOut = SecKeyCreateDecryptedData(privateKey, algorithm, cfData, pErrorOut);
+    CFRelease(cfData);
+
+    return *pDecryptedOut == NULL ? kErrorSeeError : 1;
 }
 
 int32_t AppleCryptoNative_RsaDecryptPkcs(
@@ -127,19 +94,13 @@ int32_t AppleCryptoNative_RsaDecryptPkcs(
     }
 
     int32_t ret = kErrorSeeError;
-    SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
+    CFDataRef cfData = NULL;
 
-    if (decryptor != NULL)
-    {
-        if (*pErrorOut == NULL)
-        {
-            ret = ExecuteCFDataTransform(decryptor, pbData, cbData, pDecryptedOut, pErrorOut);
-        }
+    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
+    *pDecryptedOut = SecKeyCreateDecryptedData(privateKey, kSecKeyAlgorithmRSAEncryptionPKCS1, cfData, pErrorOut);
+    CFRelease(cfData);
 
-        CFRelease(decryptor);
-    }
-
-    return ret;
+    return *pDecryptedOut == NULL ? kErrorSeeError : 1;
 }
 
 int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
@@ -160,19 +121,24 @@ int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
     }
 
     int32_t ret = kErrorSeeError;
-    SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
+    CFDataRef cfData = NULL;
+    SecKeyAlgorithm algorithm;
 
-    if (encryptor != NULL)
+    switch (mgfAlgorithm)
     {
-        if (*pErrorOut == NULL)
-        {
-            ret = ExecuteOaepTransform(encryptor, pbData, cbData, mgfAlgorithm, pEncryptedOut, pErrorOut);
-        }
-
-        CFRelease(encryptor);
+        case PAL_SHA1: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA1; break;
+        case PAL_SHA256: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA256; break;
+        case PAL_SHA384: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA384; break;
+        case PAL_SHA512: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA512; break;
+        default:
+            return kErrorUnknownAlgorithm;
     }
 
-    return ret;
+    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
+    *pEncryptedOut = SecKeyCreateEncryptedData(publicKey, algorithm, cfData, pErrorOut);
+    CFRelease(cfData);
+
+    return *pEncryptedOut == NULL ? kErrorSeeError : 1;
 }
 
 int32_t AppleCryptoNative_RsaEncryptPkcs(
@@ -189,85 +155,14 @@ int32_t AppleCryptoNative_RsaEncryptPkcs(
     }
 
     int32_t ret = kErrorSeeError;
-    SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
-
-    if (encryptor != NULL)
-    {
-        if (*pErrorOut == NULL)
-        {
-            ret = ExecuteCFDataTransform(encryptor, pbData, cbData, pEncryptedOut, pErrorOut);
-        }
-
-        CFRelease(encryptor);
-    }
-
-    return ret;
-}
-
-static int32_t ExecuteCFDataTransform(
-    SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
-{
-    if (xform == NULL || pbData == NULL || cbData < 0 || pDataOut == NULL || pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
-
-    *pDataOut = NULL;
-    *pErrorOut = NULL;
-
-    CFTypeRef xformOutput = NULL;
     CFDataRef cfData = NULL;
-    int32_t ret = INT_MIN;
 
     cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
+    *pEncryptedOut = SecKeyCreateEncryptedData(publicKey, kSecKeyAlgorithmRSAEncryptionPKCS1, cfData, pErrorOut);
+    CFRelease(cfData);
 
-    if (cfData == NULL)
-    {
-        // This probably means that there wasn't enough memory available, but no
-        // particular failure cases are described.
-        return kErrorUnknownState;
-    }
-
-    if (!SecTransformSetAttribute(xform, kSecTransformInputAttributeName, cfData, pErrorOut))
-    {
-        ret = kErrorSeeError;
-        goto cleanup;
-    }
-
-    xformOutput = SecTransformExecute(xform, pErrorOut);
-
-    if (xformOutput == NULL || *pErrorOut != NULL)
-    {
-        ret = kErrorSeeError;
-        goto cleanup;
-    }
-
-    if (CFGetTypeID(xformOutput) == CFDataGetTypeID())
-    {
-        CFDataRef cfDataOut = (CFDataRef)xformOutput;
-        CFRetain(cfDataOut);
-        *pDataOut = cfDataOut;
-        ret = 1;
-    }
-    else
-    {
-        ret = kErrorUnknownState;
-    }
-
-cleanup:
-    if (xformOutput != NULL)
-    {
-        CFRelease(xformOutput);
-    }
-
-    if (cfData != NULL)
-    {
-        CFRelease(cfData);
-    }
-
-    return ret;
+    return *pEncryptedOut == NULL ? kErrorSeeError : 1;
 }
-#endif
 
 static int32_t RsaPrimitive(SecKeyRef key,
                             uint8_t* pbData,

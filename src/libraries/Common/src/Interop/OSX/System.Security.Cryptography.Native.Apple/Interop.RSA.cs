@@ -15,7 +15,6 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaGenerateKey")]
         private static extern int AppleCryptoNative_RsaGenerateKey(
             int keySizeInBits,
-            SafeKeychainHandle keychain,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey,
             out int pOSStatus);
@@ -125,37 +124,33 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey)
         {
-            using (SafeTemporaryKeychainHandle tempKeychain = CreateTemporaryKeychain())
+            SafeSecKeyRefHandle keychainPublic;
+            SafeSecKeyRefHandle keychainPrivate;
+            int osStatus;
+
+            int result = AppleCryptoNative_RsaGenerateKey(
+                keySizeInBits,
+                out keychainPublic,
+                out keychainPrivate,
+                out osStatus);
+
+            if (result == 1)
             {
-                SafeSecKeyRefHandle keychainPublic;
-                SafeSecKeyRefHandle keychainPrivate;
-                int osStatus;
+                pPublicKey = keychainPublic;
+                pPrivateKey = keychainPrivate;
+                return;
+            }
 
-                int result = AppleCryptoNative_RsaGenerateKey(
-                    keySizeInBits,
-                    tempKeychain,
-                    out keychainPublic,
-                    out keychainPrivate,
-                    out osStatus);
-
-                if (result == 1)
+            using (keychainPrivate)
+            using (keychainPublic)
+            {
+                if (result == 0)
                 {
-                    pPublicKey = keychainPublic;
-                    pPrivateKey = keychainPrivate;
-                    return;
+                    throw CreateExceptionForOSStatus(osStatus);
                 }
 
-                using (keychainPrivate)
-                using (keychainPublic)
-                {
-                    if (result == 0)
-                    {
-                        throw CreateExceptionForOSStatus(osStatus);
-                    }
-
-                    Debug.Fail($"Unexpected result from AppleCryptoNative_RsaGenerateKey: {result}");
-                    throw new CryptographicException();
-                }
+                Debug.Fail($"Unexpected result from AppleCryptoNative_RsaGenerateKey: {result}");
+                throw new CryptographicException();
             }
         }
 
