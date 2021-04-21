@@ -133,7 +133,7 @@ if [!__PassThroughArgs!]==[] (
 if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=alpine&shift&goto Arg_Loop)
 if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=Linux&shift&goto Arg_Loop)
 
-if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
@@ -146,7 +146,7 @@ if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
-if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -161,7 +161,7 @@ if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
 REM Preserve the equal sign for MSBuild properties
-if "!__remainingArgs:~0,1!" == "="  (set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2"&shift&shift&goto Arg_Loop)
+if "!__remainingArgs:~0,1!" == "="  (set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2"&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1"&shift&goto Arg_Loop
 
 :ArgsDone
