@@ -38,7 +38,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>53fe29e220fc0db05eafd5c6bc6c8fb9ee7cec7c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.21216.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.21221.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>53fe29e220fc0db05eafd5c6bc6c8fb9ee7cec7c</Sha>
     </Dependency>
