@@ -6768,6 +6768,12 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 	return s;
 }
 
+/**
+ * mono_string_is_interned:
+ * Searches the interned string table for the provided string instance.
+ * \param str String to probe
+ * \returns TRUE if the string is interned, FALSE otherwise.
+ */
 int
 mono_string_instance_is_interned (MonoString *str_raw)
 {
@@ -6787,8 +6793,9 @@ mono_string_instance_is_interned (MonoString *str_raw)
 
 /**
  * mono_string_is_interned:
- * \param o String to probe
- * \returns Whether the string has been interned.
+ * Searches the interned string table for a string with value equal to the provided string.
+ * \param str String to probe
+ * \returns The string located within the intern table, or null.
  */
 MonoString*
 mono_string_is_interned (MonoString *str_raw)
