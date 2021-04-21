@@ -489,10 +489,10 @@
 
     <ItemGroup>
       <_EmccLinkerArguments Include="$(EmccLDFlags)" />
-      <_EmccLinkerArguments Include="--js-library %(_DotnetJSSrcFile.Identity)" />
-      <_EmccLinkerArguments Include="@(_BitcodeFile)" />
-      <_EmccLinkerArguments Include="@(_WasmObjects)" />
-      <_EmccLinkerArguments Include="-o $(_WasmIntermediateOutputPath)dotnet.js" />
+      <_EmccLinkerArguments Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
+      <_EmccLinkerArguments Include="&quot;%(_BitcodeFile.Identity)&quot;" />
+      <_EmccLinkerArguments Include="&quot;%(_WasmObjects.Identity)&quot;" />
+      <_EmccLinkerArguments Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -501,7 +501,7 @@
 
     <WriteLinesToFile Lines="@(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" />
     <Message Text="Running emcc with @(_EmccLinkerArguments->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command="emcc @$(_EmccLinkerResponseFile)" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command="emcc &quot;@$(_EmccLinkerResponseFile)&quot;" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Exec Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
