@@ -89,7 +89,7 @@ namespace System.IO.Strategies
             if ((options & FileOptions.Asynchronous) != 0)
                 _useAsyncIO = true;
 
-            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
+            _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options, allocationSize);
 
             try
             {
