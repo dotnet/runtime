@@ -7,6 +7,11 @@ namespace System
     {
         internal const string SharedUrlFormat = "https://aka.ms/dotnet-warnings/{0}";
 
+        // Please see docs\project\list-of-diagnostics.md for instructions on the steps required
+        // to introduce a new obsoletion, apply it to downlevel builds, claim a diagnostic id,
+        // and ensure the "aka.ms/dotnet-warnings/{0}" URL points to documentation for the obsoletion
+        // The diagnostic ids reserved for obsoletions are SYSLIB0### (SYSLIB0001 - SYSLIB0999).
+
         internal const string SystemTextEncodingUTF7Message = "The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.";
         internal const string SystemTextEncodingUTF7DiagId = "SYSLIB0001";
 
