@@ -831,8 +831,7 @@ class MetaSig
         // Gets the unmanaged calling convention by reading any modopts.
         //
         // Returns:
-        //   S_OK - Calling convention was read from modopt
-        //   S_FALSE - Calling convention was not read from modopt
+        //   S_OK - No errors
         //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
         //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
         //                          than one calling convention specified)
