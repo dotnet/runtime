@@ -45,6 +45,8 @@ namespace System.IO.Tests
 
             using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, option))
             {
+                Assert.Equal((option & FileOptions.Asynchronous) != 0, fs.IsAsync);
+
                 // make sure we can write, seek, and read data with this option set
                 fs.Write(data, 0, data.Length);
                 fs.Position = 0;

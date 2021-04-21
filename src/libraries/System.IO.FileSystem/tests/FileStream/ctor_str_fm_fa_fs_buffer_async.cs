@@ -18,14 +18,15 @@ namespace System.IO.Tests
             return new FileStream(path, mode, access, share, bufferSize, useAsync);
         }
 
-        [Fact]
-        public void ValidUseAsync()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ValidUseAsync(bool isAsync)
         {
-            using (CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, true))
-            { }
-
-            using (CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, false))
-            { }
+            using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, isAsync))
+            {
+                Assert.Equal(isAsync, fs.IsAsync);
+            }
         }
     }
 }
