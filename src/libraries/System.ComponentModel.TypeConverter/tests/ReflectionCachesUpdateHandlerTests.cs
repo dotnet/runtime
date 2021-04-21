@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    [SimpleUpdateTest]
+    [Collection("NoParallelTests")]
     public class ReflectionCachesUpdateHandlerTests
     {
         [Fact]
@@ -26,7 +26,4 @@ namespace System.ComponentModel.Tests
             Assert.NotSame(ac1[0], ac3[0]);
         }
     }
-
-    [AttributeUsage(AttributeTargets.All)]
-    internal sealed class SimpleUpdateTestAttribute : Attribute { }
 }

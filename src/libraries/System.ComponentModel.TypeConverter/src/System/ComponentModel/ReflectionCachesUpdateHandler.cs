@@ -3,6 +3,7 @@
 
 #nullable enable
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -16,26 +17,34 @@ namespace System.ComponentModel
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The actual properties retrieved by GetProperties do not matter.")]
         public static void BeforeUpdate(Type[]? types)
         {
-            // ReflectTypeDescriptionProvider maintains global caches on top of reflection.
-            // Clear those.
-            ReflectTypeDescriptionProvider.ClearReflectionCaches();
-
-            // Each type descriptor may also cache reflection-based state that it gathered
-            // from ReflectTypeDescriptionProvider.  Clear those as well.
-            if (types is not null)
+            try
             {
-                foreach (Type type in types)
+                // ReflectTypeDescriptionProvider maintains global caches on top of reflection.
+                // Clear those.
+                ReflectTypeDescriptionProvider.ClearReflectionCaches();
+
+                // Each type descriptor may also cache reflection-based state that it gathered
+                // from ReflectTypeDescriptionProvider.  Clear those as well.
+                if (types is not null)
                 {
-                    TypeDescriptor.Refresh(type);
+                    foreach (Type type in types)
+                    {
+                        TypeDescriptor.Refresh(type);
+                    }
+                }
+                else
+                {
+                    foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        TypeDescriptor.GetProperties(assembly); // must call before calling Refresh
+                        TypeDescriptor.Refresh(assembly);
+                    }
                 }
             }
-            else
+            catch (Exception ex)
             {
-                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    TypeDescriptor.GetProperties(assembly); // must call before calling Refresh
-                    TypeDescriptor.Refresh(assembly);
-                }
+                // Eat any failures to prevent attempts to clear caches from tearing down an app.
+                Debug.Fail(ex.ToString());
             }
         }
     }
