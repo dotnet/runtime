@@ -55,14 +55,6 @@ include(pgosupport.cmake)
 #---------------------------------------------------
 include(components.cmake)
 
-#---------------------------
-# Build the single file host
-#---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  set(CLR_SINGLE_FILE_HOST_ONLY 1)
-  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
-  add_dependencies(runtime singlefilehost)
-endif()
 #-------------------------
 # Enable C++ EH with SEH
 #-------------------------
@@ -142,6 +134,15 @@ endif(CLR_CMAKE_HOST_WIN32)
 #  - all clr specific feature variable should also be added in this file
 #----------------------------------
 include(clrdefinitions.cmake)
+
+#---------------------------
+# Build the single file host
+#---------------------------
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  set(CLR_SINGLE_FILE_HOST_ONLY 1)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
+  add_dependencies(runtime singlefilehost)
+endif()
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
