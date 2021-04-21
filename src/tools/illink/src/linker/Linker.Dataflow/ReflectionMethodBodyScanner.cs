@@ -1721,6 +1721,18 @@ namespace Mono.Linker.Dataflow
 
 		private bool AnalyzeGenericInstatiationTypeArray (ValueNode arrayParam, ref ReflectionPatternContext reflectionContext, MethodReference calledMethod, IList<GenericParameter> genericParameters)
 		{
+			bool hasRequirements = false;
+			foreach (var genericParameter in genericParameters) {
+				if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None) {
+					hasRequirements = true;
+					break;
+				}
+			}
+
+			// If there are no requirements, then there's no point in warning
+			if (!hasRequirements)
+				return true;
+
 			foreach (var typesValue in arrayParam.UniqueValues ()) {
 				if (typesValue.Kind != ValueNodeKind.Array) {
 					return false;
@@ -2224,6 +2236,7 @@ namespace Mono.Linker.Dataflow
 		{
 			if (!genericMethod.HasGenericParameters) {
 				reflectionContext.RecordHandledPattern ();
+				return;
 			}
 
 			if (!AnalyzeGenericInstatiationTypeArray (genericParametersArray, ref reflectionContext, reflectionMethod, genericMethod.GenericParameters)) {

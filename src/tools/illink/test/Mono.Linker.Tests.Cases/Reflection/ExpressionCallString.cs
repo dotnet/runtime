@@ -238,11 +238,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{ }
 
 			[Kept]
-			[ExpectedWarning ("IL2060", "Expression::Call")]
 			static void TestWithNoTypeParameters ()
 			{
-				// Linker warns since this is a call to a generic method with a mismatching number of generic parameters
-				// and provided type values for the generic instantiation.
+				// Linker should not warn even if the type parameters don't match since the target method has no requirements
+				// the fact that the reflection API may fail in this case is not something linker should worry about.
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodCalledAsNonGeneric), Type.EmptyTypes);
 			}
 

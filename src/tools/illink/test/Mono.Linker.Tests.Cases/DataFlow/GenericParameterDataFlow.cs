@@ -910,6 +910,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestWithArrayUnknownLengthSet (1);
 				TestWithArrayPassedToAnotherMethod ();
 				TestWithNoArguments ();
+				TestWithArgumentsButNonGenericMethod ();
 
 				TestWithRequirements ();
 				TestWithRequirementsFromParam (null);
@@ -925,6 +926,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestWithNoRequirements ();
 				TestWithNoRequirementsFromParam (null);
 				TestWithNoRequirementsViaRuntimeMethod ();
+				TestWithNoRequirementsUnknownType (null);
+				TestWithNoRequirementsWrongNumberOfTypeParameters ();
+				TestWithNoRequirementsUnknownArrayElement ();
 
 				TestWithMultipleArgumentsWithRequirements ();
 
@@ -1015,6 +1019,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
 					.MakeGenericMethod ();
+			}
+
+			// This should not warn since we can't be always sure about the exact overload as we don't support
+			// method parameter signature matching, and thus the GetMethod may return multiple potential methods.
+			// It can happen that some are generic and some are not. The analysis should not fail on this.
+			[RecognizedReflectionAccessPattern]
+			static void TestWithArgumentsButNonGenericMethod ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
+					.MakeGenericMethod (typeof (TestType));
 			}
 
 			static void NonGenericMethod ()
@@ -1130,6 +1144,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithNoRequirements), Type.EmptyTypes)
 					.MakeGenericMethod (typeof (TestType));
+			}
+
+			// There are no requirements, so no warnings
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirementsUnknownType (Type type)
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
+					.MakeGenericMethod (type);
+			}
+
+			// There are no requirements, so no warnings
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirementsWrongNumberOfTypeParameters ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
+					.MakeGenericMethod (typeof (TestType), typeof (TestType));
+			}
+
+			// There are no requirements, so no warnings
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirementsUnknownArrayElement ()
+			{
+				Type[] types = new Type[1];
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
+					.MakeGenericMethod (types);
 			}
 
 			public static void GenericWithNoRequirements<T> ()
