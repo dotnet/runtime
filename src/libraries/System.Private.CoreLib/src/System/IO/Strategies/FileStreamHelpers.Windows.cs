@@ -154,7 +154,7 @@ namespace System.IO.Strategies
             }
 
             // If either of these two flags are set, the file handle is synchronous (not overlapped)
-            return (fileMode & (Interop.NtDll.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
+            return (fileMode & (uint)(Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
         }
 
         internal static void VerifyHandleIsSync(SafeFileHandle handle)
