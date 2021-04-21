@@ -1488,7 +1488,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 break;
 
             case CEE_BOX:
-            {
                 // Look for evidence of type specialization patterns.
                 //
                 // box + br
@@ -1537,7 +1536,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             break;
                     }
                 }
-            }
+                break;
 
             default:
                 break;
