@@ -139,6 +139,10 @@ void InitializeOpenSSLShim(void)
     // libcrypto.so.1.1.0/libssl.so.1.1.0
     const void* v1_0_sentinel = dlsym(libssl, "SSL_state");
 
+    // Only permit a single assignment here so that two assemblies both triggering the initializer doesn't cause a
+    // race where the fn_ptr is nullptr, then properly bound, then goes back to nullptr right before being used (then bound again).
+    void* tmp_ptr;
+
     // Get pointers to all the functions that are needed
 #define REQUIRED_FUNCTION(fn) \
     if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
@@ -150,11 +154,13 @@ void InitializeOpenSSLShim(void)
     fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn));
 
 #define FALLBACK_FUNCTION(fn) \
-    if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fn##_ptr = (TYPEOF(fn))local_##fn; }
+    if (!(tmp_ptr = dlsym(libssl, #fn))) { tmp_ptr = (void*)local_##fn; } \
+    fn##_ptr = (TYPEOF(fn))tmp_ptr;
 
 #define RENAMED_FUNCTION(fn,oldfn) \
-    fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn));\
-    if (!fn##_ptr && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #oldfn)))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); }
+    tmp_ptr = dlsym(libssl, #fn);\
+    if (!tmp_ptr && !(tmp_ptr = dlsym(libssl, #oldfn))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); } \
+    fn##_ptr = (TYPEOF(fn))tmp_ptr;
 
 #define LEGACY_FUNCTION(fn) \
     if (v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
