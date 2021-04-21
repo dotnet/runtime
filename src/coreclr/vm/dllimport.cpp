@@ -2540,7 +2540,7 @@ namespace
         if ((int)value == 0)
             value = nltAnsi;
 
-        switch( value )
+        switch (value)
         {
         case nltAnsi:
             *nlt = nltAnsi;
