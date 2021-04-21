@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                         new KeyValuePair<string, string>(
                             HostDefaults.EnvironmentKey, expectedEnvironment)
                     });
-                })
+                }) // This overwrites the call to UseEnvironment
                 .Build();
 
             var hostEnv = host.Services.GetRequiredService<IHostEnvironment>();
@@ -176,7 +176,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                             HostDefaults.EnvironmentKey, willBeOverwritten)
                     });
                 })
-                .UseEnvironment(environment)
+                .UseEnvironment(Guid.NewGuid().ToString())
+                .UseEnvironment(environment) // Last one wins...
                 .Build();
 
             var hostEnv = host.Services.GetRequiredService<IHostEnvironment>();
