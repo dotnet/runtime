@@ -13,7 +13,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)'!='OSX'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(TargetOS)'!='OSX' and '$(TargetOS)' != 'MacCatalyst'">true</FeatureXplatEventSource>
 
         <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
