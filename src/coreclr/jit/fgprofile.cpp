@@ -194,7 +194,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 
     for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
     {
-        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count) &&
+        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
             ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
         {
             *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
@@ -335,8 +335,8 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     schemaElem.Count               = 1;
     schemaElem.Other               = 0;
     schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
-                                         ? ICorJitInfo::PgoInstrumentationKind::BasicBlockU64Count
-                                         : ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count;
+                                         ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
+                                         : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
     schemaElem.ILOffset = offset;
     schemaElem.Offset   = 0;
 
@@ -367,12 +367,12 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
     const ICorJitInfo::PgoInstrumentationSchema& entry = schema[block->bbCountSchemaIndex];
 
     assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
-    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count) ||
-           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU64Count));
+    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
     size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
 
     var_types typ =
-        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count ? TYP_INT : TYP_LONG;
+        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
     // Read Basic-Block count value
     GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
@@ -417,8 +417,8 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
 
     const ICorJitInfo::PgoInstrumentationSchema& entry = schema[m_entryBlock->bbCountSchemaIndex];
     assert((IL_OFFSET)entry.ILOffset == 0);
-    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count) ||
-           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU64Count));
+    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
+           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
 
     const size_t addrOfFirstExecutionCount = (size_t)(entry.Offset + profileMemory);
 
@@ -453,7 +453,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
     GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
     var_types typ =
-        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count ? TYP_INT : TYP_LONG;
+        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
     // Read Basic-Block count value
     //
     GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
@@ -1049,8 +1049,8 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         schemaElem.Count               = 1;
         schemaElem.Other               = targetOffset;
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
-                                             ? ICorJitInfo::PgoInstrumentationKind::EdgeU64Count
-                                             : ICorJitInfo::PgoInstrumentationKind::EdgeU32Count;
+                                             ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
         schemaElem.ILOffset = sourceOffset;
         schemaElem.Offset   = 0;
 
@@ -1093,8 +1093,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         assert((schemaIndex >= 0) && (schemaIndex < (int)schema.size()));
 
         const ICorJitInfo::PgoInstrumentationSchema& entry = schema[schemaIndex];
-        assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeU32Count) ||
-               (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeU64Count));
+        assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
+               (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
         size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
 
@@ -1137,7 +1137,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         // Place the probe
 
         var_types typ =
-            entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeU32Count ? TYP_INT : TYP_LONG;
+            entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
         // Read Basic-Block count value
         GenTree* valueNode =
             m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
@@ -1737,11 +1737,11 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgNumProfileRuns += fgPgoSchema[iSchema].Other;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::BasicBlockU32Count:
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
                 fgPgoBlockCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::EdgeU32Count:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
                 fgPgoEdgeCounts++;
                 break;
 
@@ -1975,7 +1975,7 @@ private:
         }
     };
 
-    // Map for correlating EdgeU32Count schema entries with edges
+    // Map for correlating EdgeIntCount schema entries with edges
     //
     typedef JitHashTable<EdgeKey, EdgeKey, Edge*> EdgeKeyToEdgeMap;
     EdgeKeyToEdgeMap m_edgeKeyToEdgeMap;
@@ -2168,7 +2168,7 @@ void EfficientEdgeCountReconstructor::Prepare()
         const ICorJitInfo::PgoInstrumentationSchema& schemaEntry = m_comp->fgPgoSchema[iSchema];
         switch (schemaEntry.InstrumentationKind)
         {
-            case ICorJitInfo::PgoInstrumentationKind::EdgeU32Count:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
             {
                 // Optimization TODO: if profileCount is zero, we can just ignore this edge
                 // and the right things will happen.

@@ -2441,7 +2441,7 @@ namespace Internal.JitInterface
             // Validate that each schema item is only used for a basic block count
             for (uint iSchema = 0; iSchema < countSchemaItems; iSchema++)
             {
-                if (pSchema[iSchema].InstrumentationKind != PgoInstrumentationKind.BasicBlockU32Count)
+                if (pSchema[iSchema].InstrumentationKind != PgoInstrumentationKind.BasicBlockIntCount)
                     return HRESULT.E_NOTIMPL;
                 if (pSchema[iSchema].Count != 1)
                     return HRESULT.E_NOTIMPL;

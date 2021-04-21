@@ -357,14 +357,14 @@ public:
         DescriptorMin = 0x40,
 
         Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockU32Count = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
-        BasicBlockU64Count = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int. Currently only supported for collection.
+        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
+        BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int. Currently only supported for collection.
         TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
-        EdgeU32Count = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
-        EdgeU64Count = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int. Currently only supported for collection.
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
+        EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int. Currently only supported for collection.
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
     };
 
