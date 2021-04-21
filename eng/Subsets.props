@@ -38,7 +38,7 @@
   <PropertyGroup>
     <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')))">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' or (!$(_subset.Contains('+mono+')) and !$(_subset.Contains('+mono.runtime+'))) and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup>
