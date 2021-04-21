@@ -1509,6 +1509,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             {
                                 compInlineResult->Note(InlineObservation::CALLEE_POSSIBLE_TYPE_FOLD);
                             }
+                            break;
 
                         case CEE_ISINST:
                             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
@@ -1530,6 +1531,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                         break;
                                 }
                             }
+                            break;
 
                         default:
                             break;
