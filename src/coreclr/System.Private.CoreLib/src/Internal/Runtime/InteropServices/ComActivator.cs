@@ -91,7 +91,7 @@ namespace Internal.Runtime.InteropServices
         public string AssemblyName;
         public string TypeName;
 
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
@@ -128,7 +128,7 @@ namespace Internal.Runtime.InteropServices
         /// Entry point for unmanaged COM activation API from managed code
         /// </summary>
         /// <param name="cxt">Reference to a <see cref="ComActivationContext"/> instance</param>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static object GetClassFactoryForType(ComActivationContext cxt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -166,7 +166,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="cxt">Reference to a <see cref="ComActivationContext"/> instance</param>
         /// <param name="register">true if called for register or false to indicate unregister</param>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static void ClassRegistrationScenarioForType(ComActivationContext cxt, bool register)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -264,7 +264,7 @@ namespace Internal.Runtime.InteropServices
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
         public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
@@ -311,7 +311,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
         public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
@@ -361,7 +361,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         /// <summary>
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
         public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
