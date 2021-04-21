@@ -281,6 +281,15 @@ namespace Loader
     } LoadFlag;
 }
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreContext(PCONTEXT ContextRecord);
+#else // !(TARGET_WINDOWS && TARGET_AMD64)
+inline void ClrRestoreContext(PCONTEXT ContextRecord)
+{
+    RtlRestoreContext(ContextRecord, NULL);
+}
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
 // src/inc
 #include "utilcode.h"
 #include "log.h"

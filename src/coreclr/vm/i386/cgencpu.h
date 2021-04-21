@@ -528,11 +528,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_NewCrossContext         JIT_NewCrossContext
 #endif // TARGET_UNIX
 
-inline void ClrRestoreContext(PCONTEXT ContextRecord)
-{
-    RtlRestoreContext(ContextRecord, NULL);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Call counting
 
