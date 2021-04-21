@@ -23,7 +23,7 @@ namespace System.Net.Http.Json
         {
             _typeInfo = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
             _typedValue = inputValue;
-            Headers.ContentType = Helper.GetDefaultMediaType();
+            Headers.ContentType = JsonHelpers.GetDefaultMediaType();
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
@@ -43,7 +43,7 @@ namespace System.Net.Http.Json
         /// </summary>
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = Helper.GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)

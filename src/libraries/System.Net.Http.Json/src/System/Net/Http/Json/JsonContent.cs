@@ -35,7 +35,7 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             ObjectType = inputType;
-            Headers.ContentType = mediaType ?? Helper.GetDefaultMediaType();
+            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
             _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
@@ -56,7 +56,7 @@ namespace System.Net.Http.Json
 
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = Helper.GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Net.Http.Json
 {
-    internal static class Helper
+    internal static class JsonHelpers
     {
         internal static MediaTypeHeaderValue GetDefaultMediaType() => new("application/json") { CharSet = "utf-8" };
 
