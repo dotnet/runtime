@@ -1706,6 +1706,15 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
 // Returns the number of fields plus the number of add EnC fields
 int EncApproxFieldDescIterator::Count()
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
     int count = m_nonEnCIter.Count();
 
     // If this module doesn't have any EnC data then there aren't any EnC fields

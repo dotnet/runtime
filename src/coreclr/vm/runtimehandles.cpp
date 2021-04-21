@@ -30,6 +30,7 @@
 #include "eventtrace.h"
 #include "invokeutil.h"
 #include "castcache.h"
+#include "encee.h"
 
 BOOL QCALLTYPE MdUtf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {

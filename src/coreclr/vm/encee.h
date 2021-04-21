@@ -415,7 +415,7 @@ public:
 
     PTR_FieldDesc Next() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Next(); }
 
-    int Count() { return m_nonEnCIter.Count(); }
+    int Count() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Count(); }
 #endif // EnC_SUPPORTED
 
     int GetIteratorType()
