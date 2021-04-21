@@ -534,7 +534,7 @@ namespace System.Xml
                 return value;
             }
 
-            return returnType == typeof(string) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver!);
+            return returnType == typeof(string) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver);
         }
 
         // Checks local name and namespace of the current element and returns its content as the requested type.
