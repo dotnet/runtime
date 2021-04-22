@@ -103,7 +103,10 @@ static MonoCoopMutex ldstr_section;
 /* Used by remoting proxies */
 static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
+#ifdef HOST_WASM
+/* Used for fast 'is string instance interned' checks by wasm interop */
 static MonoGHashTable *instance_intern_table;
+#endif
 
 static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
@@ -6746,18 +6749,22 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 	if (res)
 		MONO_HANDLE_ASSIGN_RAW (s, res);
 	else {
+		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+
+#ifdef HOST_WASM
 		if (!instance_intern_table) {
 			MonoGHashTable *table = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Interned Flags");
 			mono_memory_barrier ();
 			instance_intern_table = table;
 		}
-		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
 		mono_g_hash_table_insert_internal (instance_intern_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+#endif
 	}
 	ldstr_unlock ();
 	return s;
 }
 
+#ifdef HOST_WASM
 /**
  * mono_string_instance_is_interned:
  * Searches the interned string table for the provided string instance.
@@ -6780,6 +6787,7 @@ mono_string_instance_is_interned (MonoString *str_raw)
 	mono_error_assert_ok (error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
+#endif
 
 /**
  * mono_string_is_interned:
