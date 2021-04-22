@@ -679,8 +679,6 @@ void BaseDomain::Init()
     m_DomainCacheCrst.Init(CrstAppDomainCache);
     m_DomainLocalBlockCrst.Init(CrstDomainLocalBlock);
 
-    m_InteropDataCrst.Init(CrstInteropData, CRST_REENTRANCY);
-
     // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
     // If you remove this flag, we will switch to preemptive mode when entering
     // m_FileLoadLock, which means all functions that enter it will become
@@ -715,12 +713,6 @@ void BaseDomain::Init()
     // Allocate the managed standard interfaces information.
     m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
 #endif // FEATURE_COMINTEROP
-
-    // Init the COM Interop data hash
-    {
-        LockOwner lock = {&m_InteropDataCrst, IsOwnerOfCrst};
-        m_interopDataHash.Init(0, NULL, false, &lock);
-    }
 
     m_dwSizedRefHandles = 0;
     if (!m_iNumberOfProcessors)
@@ -2210,9 +2202,8 @@ void AppDomain::Init()
 
     BaseDomain::Init();
 
-// Set up the binding caches
+    // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
-    m_UnmanagedCache.InitializeTable(this, &m_DomainCacheCrst);
 
     m_MemoryPressure = 0;
 
@@ -3778,39 +3769,40 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(libraryName));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    if (libraryName)
-    {
-        AssemblySpec spec;
-        spec.SetCodeBase(libraryName);
-        m_UnmanagedCache.InsertEntry(&spec, hMod);
-    }
-    return ;
-}
 
+    DWORD hash = HashString(libraryName);
+
+    CrstHolder lock(&m_DomainCacheCrst);
+    m_unmanagedCache.Add(hash, hMod);
+}
 
 NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
 {
     CONTRACT(NATIVE_LIBRARY_HANDLE)
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckPointer(libraryName,NULL_OK));
+        PRECONDITION(CheckPointer(libraryName));
         POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
-    if(libraryName == NULL) RETURN NULL;
 
-    AssemblySpec spec;
-    spec.SetCodeBase(libraryName);
-    RETURN (NATIVE_LIBRARY_HANDLE) m_UnmanagedCache.LookupEntry(&spec, 0);
+    DWORD hash = HashString(libraryName);
+    
+    CrstHolder lock(&m_DomainCacheCrst);
+    NATIVE_LIBRARY_HANDLE handle;
+    if (m_unmanagedCache.Lookup(hash, &handle))
+        RETURN handle;
+
+    RETURN NULL;
 }
 
 BOOL AppDomain::RemoveFileFromCache(PEAssembly *pFile)
