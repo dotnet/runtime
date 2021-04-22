@@ -4680,6 +4680,12 @@ extern "C"
             {
                 ETW::EnumerationLog::EnumerateForCaptureState();
             }
+
+            if (g_fEEStarted && !g_fEEShutDown)
+            {
+                // Emit the YieldProcessorNormalized calculated values at the beginning of the trace.
+                FireEtwInitializeYieldProcessorNormalizedInfo(g_yieldsPerNormalizedYield, g_optimalMaxNormalizedYieldsPerSpinIteration, GetClrInstanceId());
+            }
         }
 #ifdef FEATURE_COMINTEROP
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, CCWRefCountChange))

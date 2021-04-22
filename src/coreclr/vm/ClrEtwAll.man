@@ -87,6 +87,8 @@
                              message="$(string.RuntimePublisher.TypeDiagnosticKeywordMessage)" symbol="CLR_TYPEDIAGNOSTIC_KEYWORD" />
                     <keyword name="JitInstrumentationDataKeyword" mask="0x10000000000"
                              message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
+                    <keyword name="YieldProcessorNormalizedKeyword" mask="0x20000000000"
+                             message="$(string.RuntimePublisher.YieldProcessorNormalizedKeywordMessage)" symbol="CLR_YIELDPROCESSORNORMALIZED_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -422,7 +424,13 @@
                             <opcode name="InstrumentationDataVerbose" message="$(string.RuntimePublisher.InstrumentationDataOpcodeMessage)" symbol="CLR_INSTRUMENTATION_DATA_VERBOSE_OPCODE" value="12"/>
                         </opcodes>
                     </task>
-                <!--Next available ID is 35-->
+                    <task name="InitializeYieldProcessorNormalized" symbol="CLR_INITIALIZEYIELDPROCESSORNORMALIZED_TASK"
+                          value="35" eventGUID="{7F644185-FD46-4ACC-A4B2-3812646054BD}"
+                          message="$(string.RuntimePublisher.InitializeYieldProcessorNormalizedTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 36-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -1427,6 +1435,20 @@
                                 <ClrThreadID> %1 </ClrThreadID>
                                 <CpuUtilization> %2 </CpuUtilization>
                             </CLRThreadPoolSuspend>
+                        </UserData>
+                    </template>
+
+                    <template tid="InitializeYieldProcessorNormalized">
+                        <data name="YieldsPerNormalizedYield" inType="win:UInt32" />
+                        <data name="OptimalMaxNormalizedYieldsPerSpinIteration" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <InitializeYieldProcessorNormalized xmlns="myNs">
+                                <YieldsPerNormalizedYield> %1 </YieldsPerNormalizedYield>
+                                <OptimalMaxNormalizedYieldsPerSpinIteration> %2 </OptimalMaxNormalizedYieldsPerSpinIteration>
+                                <ClrInstanceID> %3 </ClrInstanceID>
+                            </InitializeYieldProcessorNormalized>
                         </UserData>
                     </template>
 
@@ -3273,6 +3295,11 @@
                            keywords ="ThreadingKeyword"  opcode="Wait"
                            task="ThreadPoolWorkerThread"
                            symbol="ThreadPoolWorkerThreadWait" message="$(string.RuntimePublisher.ThreadPoolWorkerThreadEventMessage)"/>
+
+                    <event value="58" version="0" level="win:LogAlways"  template="InitializeYieldProcessorNormalized"
+                           keywords ="YieldProcessorNormalizedKeyword"  opcode="win:Info"
+                           task="InitializeYieldProcessorNormalized"
+                           symbol="InitializeYieldProcessorNormalizedInfo" message="$(string.RuntimePublisher.InitializeYieldProcessorNormalizedEventMessage)"/>
 
                     <!-- CLR private ThreadPool events -->
                     <event value="60" version="0" level="win:Verbose"  template="ThreadPoolWorkingThreadCount"
@@ -7048,6 +7075,7 @@
                 <string id="RuntimePublisher.WorkerThreadTerminateEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.WorkerThreadRetirementRetireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.WorkerThreadRetirementUnretireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
+                <string id="RuntimePublisher.InitializeYieldProcessorNormalizedEventMessage" value="YieldsPerNormalizedYield=%1;%nOptimalMaxNormalizedYieldsPerSpinIteration=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreadCount=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentSampleEventMessage" value="Throughput=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentAdjustmentEventMessage" value="AverageThroughput=%1;%nNewWorkerThreadCount=%2;%nReason=%3;%nClrInstanceID=%4" />
@@ -7329,6 +7357,7 @@
                 <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
                 <string id="RuntimePublisher.TypeLoadTaskMessage" value="TypeLoad" />
                 <string id="RuntimePublisher.JitInstrumentationDataTaskMessage" value="JitInstrumentationData" />
+                <string id="RuntimePublisher.InitializeYieldProcessorNormalizedTaskMessage" value="InitializeYieldProcessorNormalized" />
 
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7657,6 +7686,7 @@
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
                 <string id="RuntimePublisher.JitInstrumentationDataKeywordMessage" value="JitInstrumentationData" />
+                <string id="RuntimePublisher.YieldProcessorNormalizedKeywordMessage" value="YieldProcessorNormalized" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
