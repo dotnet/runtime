@@ -1553,8 +1553,10 @@ var MonoSupportLib = {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
+
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
+
 			switch (asset.behavior) {
 				case "resource":
 				case "assembly":
@@ -1564,6 +1566,7 @@ var MonoSupportLib = {
 					offset = this.mono_wasm_load_bytes_into_heap (bytes);
 					ctx.loaded_assets[virtualName] = [offset, bytes.length];
 					break;
+
 				case "vfs":
 					// FIXME
 					var lastSlash = virtualName.lastIndexOf("/");
@@ -1826,7 +1829,7 @@ var MonoSupportLib = {
 				}
 			};
 
-			args.assets.forEach((asset) => {
+			args.assets.forEach (function (asset) {
 				var attemptNextSource;
 				var sourceIndex = 0;
 				var sourcesList = asset.load_remote ? args.remote_sources : [""];
@@ -1904,6 +1907,7 @@ var MonoSupportLib = {
 						attemptNextSource ();
 					}
 				};
+
 				attemptNextSource ();
 			});
 		},

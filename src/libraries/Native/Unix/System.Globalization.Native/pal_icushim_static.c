@@ -96,11 +96,11 @@ static int32_t load_icu_data(void* pData, int32_t type)
         return 0;
     } else {
 
-// #if defined(ICU_TRACING)
+#if defined(ICU_TRACING)
         // see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
-    utrace_setFunctions(0, 0, 0, icu_trace_data);
-    utrace_setLevel(UTRACE_VERBOSE);
-// #endif
+        utrace_setFunctions(0, 0, 0, icu_trace_data);
+        utrace_setLevel(UTRACE_VERBOSE);
+#endif
         isDataSet = 1;
         return 1;
     }

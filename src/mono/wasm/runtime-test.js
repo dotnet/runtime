@@ -3,6 +3,7 @@
 // Run runtime tests under a JS shell or a browser
 //
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
+
 var is_browser = typeof window != "undefined";
 
 // if the engine doesn't provide a console
@@ -141,6 +142,7 @@ function inspect_object (o) {
 	}
 	return r;
 }
+
 // Preprocess arguments
 var args = testArguments;
 console.info("Arguments: " + testArguments);
@@ -232,6 +234,7 @@ var Module = {
 		if (!enable_gc) {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
+
 		config.loaded_cb = function () {
 			let wds = FS.stat (working_dir);
 			if (wds === undefined || !FS.isDir (wds.mode)) {
