@@ -1,49 +1,30 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if !NETCOREAPP
 using System.Diagnostics;
 #endif
 using System.IO;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public sealed partial class JsonContent : HttpContent
+    internal sealed partial class JsonContent<TValue> : HttpContent
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        private readonly JsonTypeInfo<TValue> _typeInfo;
 
-        private readonly JsonSerializerOptions? _jsonSerializerOptions;
-        public Type ObjectType { get; }
-        public object? Value { get; }
+        private readonly TValue _typedValue;
 
-        private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
+        public JsonContent(TValue inputValue, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (inputType == null)
-            {
-                throw new ArgumentNullException(nameof(inputType));
-            }
-
-            if (inputValue != null && !inputType.IsAssignableFrom(inputValue.GetType()))
-            {
-                throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));
-            }
-
-            Value = inputValue;
-            ObjectType = inputType;
-            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
-            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
+            _typeInfo = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
+            _typedValue = inputValue;
+            Headers.ContentType = JsonHelpers.GetDefaultMediaType();
         }
-
-        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => Create(inputValue, typeof(T), mediaType, options);
-
-        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
@@ -54,6 +35,12 @@ namespace System.Net.Http.Json
             return false;
         }
 
+        /// <summary>
+        /// Based on <see cref="JsonContent.SerializeToStreamAsyncCore(Stream, bool, CancellationToken)"/>.
+        /// The difference is that this implementation calls overloads of <see cref="JsonSerializer"/> that take type metadata directly.
+        /// This is done to avoid rooting unused, built-in <see cref="System.Text.Json.Serialization.JsonConverter"/>s and reflection-based
+        /// warm-up logic (to reduce app size and be ILLinker-friendly), post ILLinker trimming.
+        /// </summary>
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
             Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
@@ -67,14 +54,14 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                        await JsonSerializer.SerializeAsync(transcodingStream, _typedValue, _typeInfo, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
                         // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                         // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
                         using var writer = new Utf8JsonWriter(transcodingStream);
-                        JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                        JsonSerializer.Serialize(writer, _typedValue, _typeInfo);
                     }
                 }
                 finally
@@ -95,7 +82,7 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, _typedValue, _typeInfo, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
@@ -107,7 +94,7 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(targetStream, _typedValue, _typeInfo, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -115,7 +102,7 @@ namespace System.Net.Http.Json
                     // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
                     // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
                     using var writer = new Utf8JsonWriter(targetStream);
-                    JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                    JsonSerializer.Serialize(writer, _typedValue, _typeInfo);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
