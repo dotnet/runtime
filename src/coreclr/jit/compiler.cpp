@@ -5887,7 +5887,7 @@ void Compiler::compCompileFinish()
                     break;
                 }
             }
-            assert(foundEntrypointBasicBlockCount);
+//            assert(foundEntrypointBasicBlockCount);
         }
 
         static bool headerPrinted = false;
