@@ -122,7 +122,7 @@ extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::Pgo
         {
             *pNumberOfClasses = (UINT32)schema[i].Other >> 8;
             *pLikelihood      = (UINT32)(schema[i].Other & 0xFF);
-            INT_PTR result    = *(INT_PTR*)(pInstrumentationData + schema[i + 1].Offset);
+            INT_PTR result    = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
             if (ICorJitInfo::IsUnknownTypeHandle(result))
                 return NULL;
             else
