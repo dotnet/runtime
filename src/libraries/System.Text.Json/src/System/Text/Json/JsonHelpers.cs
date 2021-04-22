@@ -161,7 +161,7 @@ namespace System.Text.Json
             }
         }
 
-        public static JsonTypeInfo GetJsonTypeInfo(JsonSerializerContext context, Type type)
+        public static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)
         {
             Debug.Assert(context != null);
             Debug.Assert(type != null);

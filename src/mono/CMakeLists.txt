@@ -11,6 +11,14 @@ set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
+if(NOT MONO_LIB_NAME)
+  set(MONO_LIB_NAME "monosgen-2.0")
+endif()
+
+if(NOT MONO_SHARED_LIB_NAME)
+  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+endif()
+
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -106,7 +114,6 @@ if(DISABLE_INTERPRETER)
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)
-add_definitions(-DMONO_DLL_EXPORT)
 
 if(GCC)
   add_definitions(-g)  # TODO: should this really be on by default?
@@ -651,6 +658,18 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   endif()
 endif()
 ### End of debug build checks
+
+######################################
+# COMPONENT BUILD CHECKS
+######################################
+if(DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+
+if(DISABLE_LINK_STATIC_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+### End of component build checks
 
 ######################################
 # OTHER CHECKS

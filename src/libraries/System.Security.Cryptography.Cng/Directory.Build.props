@@ -3,7 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides cryptographic algorithm implementations and key management with Windows Cryptographic Next Generation API (CNG).
 
 Commonly Used Types:
