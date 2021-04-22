@@ -60,7 +60,7 @@ namespace System.Text.Unicode
 
             long tempUtf8CodeUnitCountAdjustment = 0;
             int tempScalarCountAdjustment = 0;
-            char* pEndOfInputBuffer = &pInputBuffer[(uint)inputLength];
+            char* pEndOfInputBuffer = pInputBuffer + (uint)inputLength;
 
             // Per https://github.com/dotnet/runtime/issues/41699, temporarily disabling
             // ARM64-intrinsicified code paths. ARM64 platforms may still use the vectorized
