@@ -123,4 +123,7 @@
   <data name="Error_FileNotFound" xml:space="preserve">
     <value>The configuration file '{0}' was not found and is not optional.</value>
   </data>
+  <data name="Error_FailedToLoad" xml:space="preserve">
+    <value>Failed to load configuration from file '{0}'.</value>
+  </data>
 </root>

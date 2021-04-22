@@ -25,11 +25,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source settings.</param>
         public FileConfigurationProvider(FileConfigurationSource source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            Source = source;
+            Source = source ?? throw new ArgumentNullException(nameof(source));
 
             if (Source.ReloadOnChange && Source.FileProvider != null)
             {
@@ -58,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         private void Load(bool reload)
         {
             IFileInfo file = Source.FileProvider?.GetFileInfo(Source.Path);
-            if (file == null || !file.Exists)
+            if (file is null or { Exists: false })
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
@@ -66,10 +62,10 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    var error = new StringBuilder($"The configuration file '{Source.Path}' was not found and is not optional.");
+                    var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path));
                     if (!string.IsNullOrEmpty(file?.PhysicalPath))
                     {
-                        error.Append($" The physical path is '{file.PhysicalPath}'.");
+                        error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
                     }
                     HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
                 }
@@ -95,9 +91,9 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
-                using Stream stream = OpenRead(file);
                 try
                 {
+                    using Stream stream = OpenRead(file);
                     Load(stream);
                 }
                 catch (Exception e)
@@ -106,7 +102,8 @@ namespace Microsoft.Extensions.Configuration
                     {
                         Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     }
-                    HandleException(ExceptionDispatchInfo.Capture(e));
+                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), e);
+                    HandleException(ExceptionDispatchInfo.Capture(exception));
                 }
             }
             // REVIEW: Should we raise this in the base as well / instead?
@@ -118,6 +115,9 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <exception cref="FileNotFoundException">If Optional is <c>false</c> on the source and a
         /// file does not exist at specified Path.</exception>
+        /// <exception cref="InvalidDataException">Wrapping any exception thrown by the concrete implementation of the
+        /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+        /// if you need more control over the exception.</exception>
         public override void Load()
         {
             Load(reload: false);
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Configuration
         private void HandleException(ExceptionDispatchInfo info)
         {
             bool ignoreException = false;
-            if (Source.OnLoadException != null)
+            if (Source.OnLoadException is not null)
             {
                 var exceptionContext = new FileLoadExceptionContext
                 {
