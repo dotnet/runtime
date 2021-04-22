@@ -229,18 +229,18 @@
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
-  <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
-  <Choose>
-    <When Condition="'$(IncludePlatformAttributes)' == 'false'" />
-    <When Condition="('$(IncludePlatformAttributes)' == 'true' or '$(SupportedOSPlatforms)' != '' or '$(UnsupportedOSPlatforms)' != '') and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
-      <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the classes
-           in the project as internal. If a project has specified assembly-level SupportedOSPlatforms or UnsupportedOSPlatforms,
-           we can infer the need without having IncludePlatformAttributes set. -->
-      <ItemGroup>
-        <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
-      </ItemGroup>
-    </When>
-  </Choose>
+  <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
+       System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
+
+       If a project has specified assembly-level SupportedOSPlatforms or UnsupportedOSPlatforms,
+       we can infer the need without having IncludePlatformAttributes set. -->
+  <PropertyGroup>
+    <IncludePlatformAttributes Condition="'$(IncludePlatformAttributes)' == '' and ('$(SupportedOSPlatforms)' != '' or '$(UnsupportedOSPlatforms)' != '')">true</IncludePlatformAttributes>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
+  </ItemGroup>
 
   <!-- Adds ObsoleteAttribute to projects that need to apply downlevel Obsoletions with DiagnosticId and UrlFormat -->
   <Choose>

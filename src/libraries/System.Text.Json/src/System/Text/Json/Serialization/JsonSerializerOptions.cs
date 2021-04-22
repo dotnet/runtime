@@ -29,7 +29,7 @@ namespace System.Text.Json
 
         internal JsonSerializerContext? _context;
 
-        private Func<Type, JsonSerializerOptions, JsonTypeInfo>? _typeInfoCreationFunc = null!;
+        private Func<Type, JsonSerializerOptions, JsonTypeInfo>? _typeInfoCreationFunc;
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
 
