@@ -204,12 +204,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             SslPolicyErrors sslPolicyErrors  = SslPolicyErrors.None;
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
-
-            if (!OperatingSystem.IsWindows())
-            {
-                // TODO fix validation with OpenSSL
-                return MsQuicStatusCodes.Success;
-            }
+            X509Certificate2Collection? additionalCertificates = null;
 
             MsQuicConnection? connection = state.Connection;
             if (connection == null)
@@ -217,16 +212,46 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return MsQuicStatusCodes.InvalidState;
             }
 
-            if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle != IntPtr.Zero)
-            {
-                certificate = new X509Certificate2(connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle);
-            }
-
             try
             {
+                if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle != IntPtr.Zero)
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        certificate = new X509Certificate2(connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle);
+                    }
+                    else
+                    {
+                        unsafe
+                        {
+                            ReadOnlySpan<QuicBuffer> quicBuffer;
+                            if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
+                            {
+                                quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle, sizeof(QuicBuffer));
+                                if (quicBuffer[0].Length != 0 && quicBuffer[0].Buffer != null)
+                                {
+                                    ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
+                                    additionalCertificates = new X509Certificate2Collection();
+                                    additionalCertificates.Import(asn1);
+                                    if (additionalCertificates.Count > 0)
+                                    {
+                                        certificate = additionalCertificates[0];
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                 quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
+                                 ReadOnlySpan<byte> asn1 = new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length);
+                                 certificate = new X509Certificate2(asn1);
+                            }
+                        }
+                    }
+                }
+
                 if (certificate == null)
                 {
-                    if (NetEventSource.Log.IsEnabled() && connection._remoteCertificateRequired) NetEventSource.Error(state.Connection, $"Remote certificate required, but no remote certificate received");
+                    if (NetEventSource.Log.IsEnabled() && connection._remoteCertificateRequired) NetEventSource.Error(state.Connection, "Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
@@ -235,6 +260,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                     chain.ChainPolicy.RevocationMode = connection._revocationMode;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
                     chain.ChainPolicy.ApplicationPolicy.Add(connection._isServer ? s_clientAuthOid : s_serverAuthOid);
+
+                    if (additionalCertificates != null && additionalCertificates.Count > 1)
+                    {
+                        for (int i = 1; i < additionalCertificates.Count; i++)
+                        {
+                            chain.ChainPolicy.ExtraStore.Add(additionalCertificates[i]);
+                        }
+                    }
 
                     if (!chain.Build(certificate))
                     {

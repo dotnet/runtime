@@ -239,6 +239,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_CreateAutoreleasePool)
     DllImportEntry(SystemNative_DrainAutoreleasePool)
     DllImportEntry(SystemNative_iOSSupportVersion)
+    DllImportEntry(SystemNative_GetErrNo)
+    DllImportEntry(SystemNative_SetErrNo)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

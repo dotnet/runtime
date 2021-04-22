@@ -31,7 +31,7 @@ namespace System.IO.Strategies
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
 
             return result;
         }
@@ -42,7 +42,7 @@ namespace System.IO.Strategies
             // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
         }
 
         protected override void OnInitFromHandle(SafeFileHandle handle)
@@ -133,111 +133,75 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
-
-            // valueTaskSource is not null when:
-            // - First time calling ReadAsync in buffered mode
-            // - Second+ time calling ReadAsync, both buffered or unbuffered
-            // - On buffered flush, when source memory is also the internal buffer
-            // valueTaskSource is null when:
-            // - First time calling ReadAsync in unbuffered mode
-            ValueTaskSource valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
-            NativeOverlapped* intOverlapped = valueTaskSource.Configure(destination);
-
-            // Calculate position in the file we should be at after the read is done
-            long positionBefore = _filePosition;
-            if (CanSeek)
+            // Rent the reusable ValueTaskSource, or create a new one to use if we couldn't get one (which
+            // should only happen on first use or if the FileStream is being used concurrently).
+            ValueTaskSource vts = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            try
             {
-                long len = Length;
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(destination);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
 
-                if (positionBefore + destination.Length > len)
+                // Calculate position in the file we should be at after the read is done
+                long positionBefore = _filePosition;
+                if (CanSeek)
                 {
-                    if (positionBefore <= len)
+                    long len = Length;
+
+                    if (positionBefore + destination.Length > len)
                     {
-                        destination = destination.Slice(0, (int)(len - positionBefore));
+                        destination = positionBefore <= len ?
+                            destination.Slice(0, (int)(len - positionBefore)) :
+                            default;
                     }
-                    else
-                    {
-                        destination = default;
-                    }
+
+                    // Now set the position to read from in the NativeOverlapped struct
+                    // For pipes, we should leave the offset fields set to 0.
+                    nativeOverlapped->OffsetLow = unchecked((int)positionBefore);
+                    nativeOverlapped->OffsetHigh = (int)(positionBefore >> 32);
+
+                    // When using overlapped IO, the OS is not supposed to
+                    // touch the file pointer location at all.  We will adjust it
+                    // ourselves, but only in memory. This isn't threadsafe.
+                    _filePosition += destination.Length;
                 }
 
-                // Now set the position to read from in the NativeOverlapped struct
-                // For pipes, we should leave the offset fields set to 0.
-                intOverlapped->OffsetLow = unchecked((int)positionBefore);
-                intOverlapped->OffsetHigh = (int)(positionBefore >> 32);
-
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory. This isn't threadsafe.
-                _filePosition += destination.Length;
-            }
-
-            // queue an async ReadFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, intOverlapped, out int errorCode);
-
-            // ReadFile, the OS version, will return 0 on failure.  But
-            // my ReadFileNative wrapper returns -1.  My wrapper will return
-            // the following:
-            // On error, r==-1.
-            // On async requests that are still pending, r==-1 w/ errorCode==ERROR_IO_PENDING
-            // on async requests that completed sequentially, r==0
-            // You will NEVER RELIABLY be able to get the number of bytes
-            // read back from this call when using overlapped structures!  You must
-            // not pass in a non-null lpNumBytesRead to ReadFile when using
-            // overlapped structures!  This is by design NT behavior.
-            if (r == -1)
-            {
-                // For pipes, when they hit EOF, they will come here.
-                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
+                // Queue an async ReadFile operation.
+                if (Interop.Kernel32.ReadFile(_fileHandle, (byte*)vts._memoryHandle.Pointer, destination.Length, IntPtr.Zero, nativeOverlapped) == 0)
                 {
-                    // Not an error, but EOF.  AsyncFSCallback will NOT be
-                    // called.  Call the user callback here.
-
-                    // We clear the overlapped status bit for this special case.
-                    // Failure to do so looks like we are freeing a pending overlapped later.
-                    intOverlapped->InternalLow = IntPtr.Zero;
-                    valueTaskSource.ReleaseNativeResource();
-                    TryToReuse(valueTaskSource);
-                    return new ValueTask<int>(0);
-                }
-                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
-                {
-                    if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
+                    // The operation failed, or it's pending.
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(_fileHandle);
+                    switch (errorCode)
                     {
-                        _filePosition = positionBefore;
-                    }
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            vts.RegisterForCancellation(cancellationToken);
+                            break;
 
-                    valueTaskSource.ReleaseNativeResource();
-                    TryToReuse(valueTaskSource);
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                            // EOF on a pipe. Callback will not be called.
+                            // We clear the overlapped status bit for this special case (failure
+                            // to do so looks like we are freeing a pending overlapped later).
+                            nativeOverlapped->InternalLow = IntPtr.Zero;
+                            vts.Dispose();
+                            return ValueTask.FromResult(0);
 
-                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
-                    {
-                        ThrowHelper.ThrowEndOfFileException();
+                        default:
+                            // Error. Callback will not be called.
+                            vts.Dispose();
+                            return ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
                     }
-                    else
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-                    }
-                }
-                else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
-                {
-                    // Only once the IO is pending do we register for cancellation
-                    valueTaskSource.RegisterForCancellation(cancellationToken);
                 }
             }
-            else
+            catch
             {
-                // Due to a workaround for a race condition in NT's ReadFile &
-                // WriteFile routines, we will always be returning 0 from ReadFileNative
-                // when we do async IO instead of the number of bytes read,
-                // irregardless of whether the operation completed
-                // synchronously or asynchronously.  We absolutely must not
-                // set asyncResult._numBytes here, since will never have correct
-                // results.
+                vts.Dispose();
+                throw;
             }
 
-            return new ValueTask<int>(valueTaskSource, valueTaskSource.Version);
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask<int>(vts, vts.Version);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -256,93 +220,72 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
-
-            // valueTaskSource is not null when:
-            // - First time calling WriteAsync in buffered mode
-            // - Second+ time calling WriteAsync, both buffered or unbuffered
-            // - On buffered flush, when source memory is also the internal buffer
-            // valueTaskSource is null when:
-            // - First time calling WriteAsync in unbuffered mode
-            ValueTaskSource valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
-            NativeOverlapped* intOverlapped = valueTaskSource.Configure(source);
-
-            long positionBefore = _filePosition;
-            if (CanSeek)
+            // Rent the reusable ValueTaskSource, or create a new one to use if we couldn't get one (which
+            // should only happen on first use or if the FileStream is being used concurrently).
+            ValueTaskSource vts = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            try
             {
-                // Now set the position to read from in the NativeOverlapped struct
-                // For pipes, we should leave the offset fields set to 0.
-                intOverlapped->OffsetLow = (int)positionBefore;
-                intOverlapped->OffsetHigh = (int)(positionBefore >> 32);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(source);
+                Debug.Assert(vts._memoryHandle.Pointer != null);
 
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory.  This isn't threadsafe.
-                _filePosition += source.Length;
-                UpdateLengthOnChangePosition();
-            }
-
-            // queue an async WriteFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, intOverlapped, out int errorCode);
-
-            // WriteFile, the OS version, will return 0 on failure.  But
-            // my WriteFileNative wrapper returns -1.  My wrapper will return
-            // the following:
-            // On error, r==-1.
-            // On async requests that are still pending, r==-1 w/ errorCode==ERROR_IO_PENDING
-            // On async requests that completed sequentially, r==0
-            // You will NEVER RELIABLY be able to get the number of bytes
-            // written back from this call when using overlapped IO!  You must
-            // not pass in a non-null lpNumBytesWritten to WriteFile when using
-            // overlapped structures!  This is ByDesign NT behavior.
-            if (r == -1)
-            {
-                // For pipes, when they are closed on the other side, they will come here.
-                if (errorCode == Interop.Errors.ERROR_NO_DATA)
+                long positionBefore = _filePosition;
+                if (CanSeek)
                 {
-                    // Not an error, but EOF. AsyncFSCallback will NOT be called.
-                    // Completing TCS and return cached task allowing the GC to collect TCS.
-                    valueTaskSource.ReleaseNativeResource();
-                    TryToReuse(valueTaskSource);
-                    return ValueTask.CompletedTask;
+                    // Now set the position to read from in the NativeOverlapped struct
+                    // For pipes, we should leave the offset fields set to 0.
+                    nativeOverlapped->OffsetLow = (int)positionBefore;
+                    nativeOverlapped->OffsetHigh = (int)(positionBefore >> 32);
+
+                    // When using overlapped IO, the OS is not supposed to
+                    // touch the file pointer location at all.  We will adjust it
+                    // ourselves, but only in memory.  This isn't threadsafe.
+                    _filePosition += source.Length;
+                    UpdateLengthOnChangePosition();
                 }
-                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
+
+                // Queue an async WriteFile operation.
+                if (Interop.Kernel32.WriteFile(_fileHandle, (byte*)vts._memoryHandle.Pointer, source.Length, IntPtr.Zero, nativeOverlapped) == 0)
                 {
-                    if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
+                    // The operation failed, or it's pending.
+                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(_fileHandle);
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
-                        _filePosition = positionBefore;
-                    }
-
-                    valueTaskSource.ReleaseNativeResource();
-                    TryToReuse(valueTaskSource);
-
-                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
-                    {
-                        ThrowHelper.ThrowEndOfFileException();
+                        // Common case: IO was initiated, completion will be handled by callback.
+                        // Register for cancellation now that the operation has been initiated.
+                        vts.RegisterForCancellation(cancellationToken);
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                        // Error. Callback will not be invoked.
+                        vts.Dispose();
+                        return errorCode == Interop.Errors.ERROR_NO_DATA ? // EOF on a pipe. IO callback will not be called.
+                            ValueTask.CompletedTask :
+                            ValueTask.FromException(HandleIOError(positionBefore, errorCode));
                     }
                 }
-                else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
-                {
-                    // Only once the IO is pending do we register for cancellation
-                    valueTaskSource.RegisterForCancellation(cancellationToken);
-                }
             }
-            else
+            catch
             {
-                // Due to a workaround for a race condition in NT's ReadFile &
-                // WriteFile routines, we will always be returning 0 from WriteFileNative
-                // when we do async IO instead of the number of bytes written,
-                // irregardless of whether the operation completed
-                // synchronously or asynchronously.  We absolutely must not
-                // set asyncResult._numBytes here, since will never have correct
-                // results.
+                vts.Dispose();
+                throw;
             }
 
-            return new ValueTask(valueTaskSource, valueTaskSource.Version);
+            // Completion handled by callback.
+            vts.FinishedScheduling();
+            return new ValueTask(vts, vts.Version);
+        }
+
+        private Exception HandleIOError(long positionBefore, int errorCode)
+        {
+            if (!_fileHandle.IsClosed && CanSeek)
+            {
+                // Update Position... it could be anywhere.
+                _filePosition = positionBefore;
+            }
+
+            return errorCode == Interop.Errors.ERROR_HANDLE_EOF ?
+                ThrowHelper.CreateEndOfFileException() :
+                Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush

@@ -630,17 +630,6 @@ struct InlineInfo
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
     Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
-
-    // Profile support
-    enum class ProfileScaleState
-    {
-        UNDETERMINED,
-        KNOWN,
-        UNAVAILABLE
-    };
-
-    ProfileScaleState profileScaleState;
-    double            profileScaleFactor;
 };
 
 // InlineContext tracks the inline history in a method.

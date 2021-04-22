@@ -8,10 +8,10 @@ using Xunit;
 
 namespace System.Text.Json.Tests.Serialization
 {
-    public static partial class MetadataServicesTests
+    public abstract partial class MetadataTests
     {
         [Fact]
-        public static void JsonSerializerContextCtor()
+        public void JsonSerializerContextCtor()
         {
             // Pass no options.
             MyJsonContext context = new();
@@ -25,7 +25,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void AddContext()
+        public void AddContext()
         {
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContext>();
@@ -44,7 +44,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void AddContextOverwritesOptionsForFreshContext()
+        public void AddContextOverwritesOptionsForFreshContext()
         {
             // Context binds with options when instantiated with parameterless ctor.
             MyJsonContextThatSetsOptionsInParameterlessCtor context = new();
@@ -61,7 +61,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void AlreadyBindedOptions()
+        public void AlreadyBindedOptions()
         {
             // Bind the options.
             JsonSerializerOptions options = new();
@@ -72,7 +72,7 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
-        public static void OptionsImmutableAfterBinding()
+        public void OptionsImmutableAfterBinding()
         {
             // Bind via AddContext
             JsonSerializerOptions options = new();

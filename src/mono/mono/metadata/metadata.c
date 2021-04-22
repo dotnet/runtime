@@ -30,6 +30,7 @@
 #include "debug-helpers.h"
 #include "abi-details.h"
 #include "cominterop.h"
+#include "components.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-memory-model.h>
@@ -2028,6 +2029,8 @@ mono_metadata_init (void)
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
+
+	mono_components_init ();
 
 #ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_init ();

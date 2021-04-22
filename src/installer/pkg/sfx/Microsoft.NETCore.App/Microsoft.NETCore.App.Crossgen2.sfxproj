@@ -51,7 +51,8 @@
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <CrossgenFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'crossgen'" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile)" />
+      <OptimizationDataFile Include="@(RuntimeFiles)" Condition="'%(Filename)' == 'StandardOptimizationData'" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" Exclude="@(CrossgenFile);@(OptimizationDataFile)" />
       <ReferenceCopyLocalPaths TargetPath="tools/" />
     </ItemGroup>
   </Target>
