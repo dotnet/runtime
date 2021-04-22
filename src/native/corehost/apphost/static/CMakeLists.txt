@@ -132,8 +132,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         RuntimeObject.lib
     )
 
-    
-
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 else()
@@ -144,19 +142,13 @@ else()
         System.IO.Compression.Native-Static
         System.Net.Security.Native-Static
         System.Native-Static
+        System.Security.Cryptography.Native.OpenSsl-Static
 
         palrt
         coreclrpal
         eventprovider
         nativeresourcestring
     )
-
-
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST)
-        list(APPEND NATIVE_LIBS
-            System.Security.Cryptography.Native.OpenSsl-Static
-        )
-    endif()
 
     # additional requirements for System.IO.Compression.Native
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)

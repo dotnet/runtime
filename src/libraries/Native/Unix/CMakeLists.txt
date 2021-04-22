@@ -255,6 +255,7 @@ if(CLR_CMAKE_TARGET_BROWSER)
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
+    add_subdirectory(System.Security.Cryptography.Native)
     # System.Security.Cryptography.Native is intentionally disabled on iOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_IOS)
