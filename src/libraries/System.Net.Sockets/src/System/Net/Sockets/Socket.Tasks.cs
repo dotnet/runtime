@@ -72,8 +72,7 @@ namespace System.Net.Sockets
             {
                 // The operation completed synchronously.  Get a task for it.
                 t = saea.SocketError == SocketError.Success ?
-                    Task.FromResult(saea.AcceptSocket!) :
-                    Task.FromException<Socket>(GetException(saea.SocketError));
+                    Task.FromResult(saea.AcceptSocket!) : TaskToApm.GetSynchronousExceptionTask<Socket>(GetException(saea.SocketError));
 
                 // There won't be a callback, and we're done with the SAEA, so return it to the pool.
                 ReturnSocketAsyncEventArgs(saea);
@@ -959,8 +958,7 @@ namespace System.Net.Sockets
                 Release();
 
                 return error == SocketError.Success ?
-                    new ValueTask<int>(bytesTransferred) :
-                    ValueTask.FromException<int>(CreateException(error));
+                    new ValueTask<int>(bytesTransferred) : TaskToApm.GetSynchronousExceptionValueTask<int>(CreateException(error));
             }
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)

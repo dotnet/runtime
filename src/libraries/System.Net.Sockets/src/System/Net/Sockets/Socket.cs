@@ -2221,8 +2221,9 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
-
-            return TaskToApm.Begin(SendAsync(new ReadOnlyMemory<byte>(buffer, offset, size), socketFlags, default).AsTask(), callback, state);
+            var task = SendAsync(new ReadOnlyMemory<byte>(buffer, offset, size), socketFlags, default).AsTask();
+            task.ThrowIfFailedSynchronously();
+            return TaskToApm.Begin(task, callback, state);
         }
 
         public IAsyncResult? BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
@@ -2244,6 +2245,8 @@ namespace System.Net.Sockets
         public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
             ThrowIfDisposed();
+            Task task = SendAsync(buffers, socketFlags);
+            task.ThrowIfFailedSynchronously();
 
             return TaskToApm.Begin(SendAsync(buffers, socketFlags), callback, state);
         }
@@ -2496,7 +2499,7 @@ namespace System.Net.Sockets
         // This method provides support for legacy BeginAccept methods that take a "receiveSize" argument and
         // allow data to be received as part of the accept operation.
         // There's no direct equivalent of this in the Task APIs, so we mimic it here.
-        private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
+        private Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
         {
             // Validate input parameters.
             if (receiveSize < 0)
@@ -2504,22 +2507,29 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(receiveSize));
             }
 
-            Socket s = await AcceptAsync(acceptSocket).ConfigureAwait(false);
+            Task<Socket> acceptTask = AcceptAsync(acceptSocket);
+            acceptTask.ThrowIfFailedSynchronously();
 
-            byte[] buffer;
-            int bytesReceived;
-            if (receiveSize == 0)
+            static async Task<(Socket s, byte[] buffer, int bytesReceived)> Run(Task<Socket> acceptTask, int receiveSize)
             {
-                buffer = Array.Empty<byte>();
-                bytesReceived = 0;
-            }
-            else
-            {
-                buffer = new byte[receiveSize];
-                bytesReceived = await s.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                Socket s = await acceptTask.ConfigureAwait(false);
+                byte[] buffer;
+                int bytesReceived;
+                if (receiveSize == 0)
+                {
+                    buffer = Array.Empty<byte>();
+                    bytesReceived = 0;
+                }
+                else
+                {
+                    buffer = new byte[receiveSize];
+                    bytesReceived = await s.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                }
+
+                return (s, buffer, bytesReceived);
             }
 
-            return (s, buffer, bytesReceived);
+            return Run(acceptTask, receiveSize);
         }
 
         public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state) =>

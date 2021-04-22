@@ -32,6 +32,22 @@ namespace System.Threading.Tasks
         public static IAsyncResult Begin(Task task, AsyncCallback? callback, object? state) =>
             new TaskAsyncResult(task, state, callback);
 
+        public static Task GetSynchronousExceptionTask(Exception ex) => new FailedSynchronouslyCompletionSource(ex).Task;
+
+        public static Task<T> GetSynchronousExceptionTask<T>(Exception ex) => new FailedSynchronouslyCompletionSource<T>(ex).Task;
+
+        public static ValueTask<T> GetSynchronousExceptionValueTask<T>(Exception ex) => new ValueTask<T>(new FailedSynchronouslyCompletionSource<T>(ex).Task);
+
+        public static bool FailedSynchronously(this Task task) => task.IsFaulted && task.AsyncState is Exception;
+
+        public static void ThrowIfFailedSynchronously(this Task task)
+        {
+            if (task.IsFaulted && task.AsyncState is Exception ex)
+            {
+                throw ex;
+            }
+        }
+
         /// <summary>Processes an IAsyncResult returned by Begin.</summary>
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static void End(IAsyncResult asyncResult)
@@ -67,6 +83,22 @@ namespace System.Threading.Tasks
             throw (asyncResult is null ?
                 new ArgumentNullException(nameof(asyncResult)) :
                 new ArgumentException(null, nameof(asyncResult)));
+
+        private sealed class FailedSynchronouslyCompletionSource : TaskCompletionSource
+        {
+            public FailedSynchronouslyCompletionSource(Exception exception) : base(exception)
+            {
+                SetException(exception);
+            }
+        }
+
+        private sealed class FailedSynchronouslyCompletionSource<T> : TaskCompletionSource<T>
+        {
+            public FailedSynchronouslyCompletionSource(Exception exception) : base(exception)
+            {
+                SetException(exception);
+            }
+        }
 
         /// <summary>Provides a simple IAsyncResult that wraps a Task.</summary>
         /// <remarks>
