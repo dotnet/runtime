@@ -82,14 +82,18 @@ namespace Microsoft.NET.HostModel.Tests
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        [Theory]
-        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
-        [InlineData("a/SymlinkToFrameworkDependentApp")]
-        public void Run_framework_dependent_app_behind_symlink(string symlinkRelativePath)
+        //[Theory]
+        //[InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        //[InlineData("a/SymlinkToFrameworkDependentApp")]
+        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+            "CI failing to use stat on symbolic links on Linux (permission denied).")]
+        public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return;
+
+            var symlinkRelativePath = string.Empty;
 
             var fixture = sharedTestState.FrameworkDependentAppFixture_Published
                 .Copy();
@@ -110,7 +114,8 @@ namespace Microsoft.NET.HostModel.Tests
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        [Fact]
+        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+                     "CI failing to use stat on symbolic links on Linux (permission denied).")]
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
