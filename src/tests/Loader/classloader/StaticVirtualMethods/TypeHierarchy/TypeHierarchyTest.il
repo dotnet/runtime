@@ -9754,287 +9754,3660 @@
   .method public static int32 Main() cil managed noinlining
   {
     .entrypoint
-    call void TestEntrypoint::Test_Scenario1()
-    call void TestEntrypoint::Test_Scenario2()
-    call void TestEntrypoint::Test_Scenario3()
-    call void TestEntrypoint::Test_Scenario4()
-    call void TestEntrypoint::Test_Scenario5()
-    call void TestEntrypoint::Test_Scenario6()
-    call void TestEntrypoint::Test_Scenario7()
-    call void TestEntrypoint::Test_Scenario8()
-    call void TestEntrypoint::Test_Scenario9()
-    call void TestEntrypoint::Test_Scenario10()
-    call void TestEntrypoint::Test_Scenario11()
-    call void TestEntrypoint::Test_Scenario12()
-    call void TestEntrypoint::Test_Scenario13()
-    call void TestEntrypoint::Test_Scenario14()
-    call void TestEntrypoint::Test_Scenario15()
-    call void TestEntrypoint::Test_Scenario16()
-    call void TestEntrypoint::Test_Scenario17()
-    call void TestEntrypoint::Test_Scenario18()
-    call void TestEntrypoint::Test_Scenario19()
-    call void TestEntrypoint::Test_Scenario20()
-    call void TestEntrypoint::Test_Scenario21()
-    call void TestEntrypoint::Test_Scenario22()
-    call void TestEntrypoint::Test_Scenario23()
-    call void TestEntrypoint::Test_Scenario24()
-    call void TestEntrypoint::Test_Scenario25()
-    call void TestEntrypoint::Test_Scenario26()
-    call void TestEntrypoint::Test_Scenario27()
-    call void TestEntrypoint::Test_Scenario28()
-    call void TestEntrypoint::Test_Scenario29()
-    call void TestEntrypoint::Test_Scenario30()
-    call void TestEntrypoint::Test_Scenario31()
-    call void TestEntrypoint::Test_Scenario32()
-    call void TestEntrypoint::Test_Scenario33()
-    call void TestEntrypoint::Test_Scenario34()
-    call void TestEntrypoint::Test_Scenario35()
-    call void TestEntrypoint::Test_Scenario36()
-    call void TestEntrypoint::Test_Scenario37()
-    call void TestEntrypoint::Test_Scenario38()
-    call void TestEntrypoint::Test_Scenario39()
-    call void TestEntrypoint::Test_Scenario40()
-    call void TestEntrypoint::Test_Scenario41()
-    call void TestEntrypoint::Test_Scenario42()
-    call void TestEntrypoint::Test_Scenario43()
-    call void TestEntrypoint::Test_Scenario44()
-    call void TestEntrypoint::Test_Scenario45()
-    call void TestEntrypoint::Test_Scenario46()
-    call void TestEntrypoint::Test_Scenario47()
-    call void TestEntrypoint::Test_Scenario48()
-    call void TestEntrypoint::Test_Scenario49()
-    call void TestEntrypoint::Test_Scenario50()
-    call void TestEntrypoint::Test_Scenario51()
-    call void TestEntrypoint::Test_Scenario52()
-    call void TestEntrypoint::Test_Scenario53()
-    call void TestEntrypoint::Test_Scenario54()
-    call void TestEntrypoint::Test_Scenario55()
-    call void TestEntrypoint::Test_Scenario56()
-    call void TestEntrypoint::Test_Scenario57()
-    call void TestEntrypoint::Test_Scenario58()
-    call void TestEntrypoint::Test_Scenario59()
-    call void TestEntrypoint::Test_Scenario60()
-    call void TestEntrypoint::Test_Scenario61()
-    call void TestEntrypoint::Test_Scenario62()
-    call void TestEntrypoint::Test_Scenario63()
-    call void TestEntrypoint::Test_Scenario64()
-    call void TestEntrypoint::Test_Scenario65()
-    call void TestEntrypoint::Test_Scenario66()
-    call void TestEntrypoint::Test_Scenario67()
-    call void TestEntrypoint::Test_Scenario68()
-    call void TestEntrypoint::Test_Scenario69()
-    call void TestEntrypoint::Test_Scenario70()
-    call void TestEntrypoint::Test_Scenario71()
-    call void TestEntrypoint::Test_Scenario72()
-    call void TestEntrypoint::Test_Scenario73()
-    call void TestEntrypoint::Test_Scenario74()
-    call void TestEntrypoint::Test_Scenario75()
-    call void TestEntrypoint::Test_Scenario76()
-    call void TestEntrypoint::Test_Scenario77()
-    call void TestEntrypoint::Test_Scenario78()
-    call void TestEntrypoint::Test_Scenario79()
-    call void TestEntrypoint::Test_Scenario80()
-    call void TestEntrypoint::Test_Scenario81()
-    call void TestEntrypoint::Test_Scenario82()
-    call void TestEntrypoint::Test_Scenario83()
-    call void TestEntrypoint::Test_Scenario84()
-    call void TestEntrypoint::Test_Scenario85()
-    call void TestEntrypoint::Test_Scenario86()
-    call void TestEntrypoint::Test_Scenario87()
-    call void TestEntrypoint::Test_Scenario88()
-    call void TestEntrypoint::Test_Scenario89()
-    call void TestEntrypoint::Test_Scenario90()
-    call void TestEntrypoint::Test_Scenario91()
-    call void TestEntrypoint::Test_Scenario92()
-    call void TestEntrypoint::Test_Scenario93()
-    call void TestEntrypoint::Test_Scenario94()
-    call void TestEntrypoint::Test_Scenario95()
-    call void TestEntrypoint::Test_Scenario96()
-    call void TestEntrypoint::Test_Scenario97()
-    call void TestEntrypoint::Test_Scenario98()
-    call void TestEntrypoint::Test_Scenario99()
-    call void TestEntrypoint::Test_Scenario100()
-    call void TestEntrypoint::Test_Scenario101()
-    call void TestEntrypoint::Test_Scenario102()
-    call void TestEntrypoint::Test_Scenario103()
-    call void TestEntrypoint::Test_Scenario104()
-    call void TestEntrypoint::Test_Scenario105()
-    call void TestEntrypoint::Test_Scenario106()
-    call void TestEntrypoint::Test_Scenario107()
-    call void TestEntrypoint::Test_Scenario108()
-    call void TestEntrypoint::Test_Scenario109()
-    call void TestEntrypoint::Test_Scenario110()
-    call void TestEntrypoint::Test_Scenario111()
-    call void TestEntrypoint::Test_Scenario112()
-    call void TestEntrypoint::Test_Scenario113()
-    call void TestEntrypoint::Test_Scenario114()
-    call void TestEntrypoint::Test_Scenario115()
-    call void TestEntrypoint::Test_Scenario116()
-    call void TestEntrypoint::Test_Scenario117()
-    call void TestEntrypoint::Test_Scenario118()
-    call void TestEntrypoint::Test_Scenario119()
-    call void TestEntrypoint::Test_Scenario120()
-    call void TestEntrypoint::Test_Scenario121()
-    call void TestEntrypoint::Test_Scenario122()
-    call void TestEntrypoint::Test_Scenario123()
-    call void TestEntrypoint::Test_Scenario124()
-    call void TestEntrypoint::Test_Scenario125()
-    call void TestEntrypoint::Test_Scenario126()
-    call void TestEntrypoint::Test_Scenario127()
-    call void TestEntrypoint::Test_Scenario128()
-    call void TestEntrypoint::Test_Scenario129()
-    call void TestEntrypoint::Test_Scenario130()
-    call void TestEntrypoint::Test_Scenario131()
-    call void TestEntrypoint::Test_Scenario132()
-    call void TestEntrypoint::Test_Scenario133()
-    call void TestEntrypoint::Test_Scenario134()
-    call void TestEntrypoint::Test_Scenario135()
-    call void TestEntrypoint::Test_Scenario136()
-    call void TestEntrypoint::Test_Scenario137()
-    call void TestEntrypoint::Test_Scenario138()
-    call void TestEntrypoint::Test_Scenario139()
-    call void TestEntrypoint::Test_Scenario140()
-    call void TestEntrypoint::Test_Scenario141()
-    call void TestEntrypoint::Test_Scenario142()
-    call void TestEntrypoint::Test_Scenario143()
-    call void TestEntrypoint::Test_Scenario144()
-    call void TestEntrypoint::Test_Scenario145()
-    call void TestEntrypoint::Test_Scenario146()
-    call void TestEntrypoint::Test_Scenario147()
-    call void TestEntrypoint::Test_Scenario148()
-    call void TestEntrypoint::Test_Scenario149()
-    call void TestEntrypoint::Test_Scenario150()
-    call void TestEntrypoint::Test_Scenario151()
-    call void TestEntrypoint::Test_Scenario152()
-    call void TestEntrypoint::Test_Scenario153()
-    call void TestEntrypoint::Test_Scenario154()
-    call void TestEntrypoint::Test_Scenario155()
-    call void TestEntrypoint::Test_Scenario156()
-    call void TestEntrypoint::Test_Scenario157()
-    call void TestEntrypoint::Test_Scenario158()
-    call void TestEntrypoint::Test_Scenario159()
-    call void TestEntrypoint::Test_Scenario160()
-    call void TestEntrypoint::Test_Scenario161()
-    call void TestEntrypoint::Test_Scenario162()
-    call void TestEntrypoint::Test_Scenario163()
-    call void TestEntrypoint::Test_Scenario164()
-    call void TestEntrypoint::Test_Scenario165()
-    call void TestEntrypoint::Test_Scenario166()
-    call void TestEntrypoint::Test_Scenario167()
-    call void TestEntrypoint::Test_Scenario168()
-    call void TestEntrypoint::Test_Scenario169()
-    call void TestEntrypoint::Test_Scenario170()
-    call void TestEntrypoint::Test_Scenario171()
-    call void TestEntrypoint::Test_Scenario172()
-    call void TestEntrypoint::Test_Scenario173()
-    call void TestEntrypoint::Test_Scenario174()
-    call void TestEntrypoint::Test_Scenario175()
-    call void TestEntrypoint::Test_Scenario176()
-    call void TestEntrypoint::Test_Scenario177()
-    call void TestEntrypoint::Test_Scenario178()
-    call void TestEntrypoint::Test_Scenario179()
-    call void TestEntrypoint::Test_Scenario180()
-    call void TestEntrypoint::Test_Scenario181()
-    call void TestEntrypoint::Test_Scenario182()
-    call void TestEntrypoint::Test_Scenario183()
-    call void TestEntrypoint::Test_Scenario184()
-    call void TestEntrypoint::Test_Scenario185()
-    call void TestEntrypoint::Test_Scenario186()
-    call void TestEntrypoint::Test_Scenario187()
-    call void TestEntrypoint::Test_Scenario188()
-    call void TestEntrypoint::Test_Scenario189()
-    call void TestEntrypoint::Test_Scenario190()
-    call void TestEntrypoint::Test_Scenario191()
-    call void TestEntrypoint::Test_Scenario192()
-    call void TestEntrypoint::Test_Scenario193()
-    call void TestEntrypoint::Test_Scenario194()
-    call void TestEntrypoint::Test_Scenario195()
-    call void TestEntrypoint::Test_Scenario196()
-    call void TestEntrypoint::Test_Scenario197()
-    call void TestEntrypoint::Test_Scenario198()
-    call void TestEntrypoint::Test_Scenario199()
-    call void TestEntrypoint::Test_Scenario200()
-    call void TestEntrypoint::Test_Scenario201()
-    call void TestEntrypoint::Test_Scenario202()
-    call void TestEntrypoint::Test_Scenario203()
-    call void TestEntrypoint::Test_Scenario204()
-    call void TestEntrypoint::Test_Scenario205()
-    call void TestEntrypoint::Test_Scenario206()
-    call void TestEntrypoint::Test_Scenario207()
-    call void TestEntrypoint::Test_Scenario208()
-    call void TestEntrypoint::Test_Scenario209()
-    call void TestEntrypoint::Test_Scenario210()
-    call void TestEntrypoint::Test_Scenario211()
-    call void TestEntrypoint::Test_Scenario212()
-    call void TestEntrypoint::Test_Scenario213()
-    call void TestEntrypoint::Test_Scenario214()
-    call void TestEntrypoint::Test_Scenario215()
-    call void TestEntrypoint::Test_Scenario216()
-    call void TestEntrypoint::Test_Scenario217()
-    call void TestEntrypoint::Test_Scenario218()
-    call void TestEntrypoint::Test_Scenario219()
-    call void TestEntrypoint::Test_Scenario220()
-    call void TestEntrypoint::Test_Scenario221()
-    call void TestEntrypoint::Test_Scenario222()
-    call void TestEntrypoint::Test_Scenario223()
-    call void TestEntrypoint::Test_Scenario224()
-    call void TestEntrypoint::Test_Scenario225()
-    call void TestEntrypoint::Test_Scenario226()
-    call void TestEntrypoint::Test_Scenario227()
-    call void TestEntrypoint::Test_Scenario228()
-    call void TestEntrypoint::Test_Scenario229()
-    call void TestEntrypoint::Test_Scenario230()
-    call void TestEntrypoint::Test_Scenario231()
-    call void TestEntrypoint::Test_Scenario232()
-    call void TestEntrypoint::Test_Scenario233()
-    call void TestEntrypoint::Test_Scenario234()
-    call void TestEntrypoint::Test_Scenario235()
-    call void TestEntrypoint::Test_Scenario236()
-    call void TestEntrypoint::Test_Scenario237()
-    call void TestEntrypoint::Test_Scenario238()
-    call void TestEntrypoint::Test_Scenario239()
-    call void TestEntrypoint::Test_Scenario240()
-    call void TestEntrypoint::Test_Scenario241()
-    call void TestEntrypoint::Test_Scenario242()
-    call void TestEntrypoint::Test_Scenario243()
-    call void TestEntrypoint::Test_Scenario244()
-    call void TestEntrypoint::Test_Scenario245()
-    call void TestEntrypoint::Test_Scenario246()
-    call void TestEntrypoint::Test_Scenario247()
-    call void TestEntrypoint::Test_Scenario248()
-    call void TestEntrypoint::Test_Scenario249()
-    call void TestEntrypoint::Test_Scenario250()
-    call void TestEntrypoint::Test_Scenario251()
-    call void TestEntrypoint::Test_Scenario252()
-    call void TestEntrypoint::Test_Scenario253()
-    call void TestEntrypoint::Test_Scenario254()
-    call void TestEntrypoint::Test_Scenario255()
-    call void TestEntrypoint::Test_Scenario256()
-    call void TestEntrypoint::Test_Scenario257()
-    call void TestEntrypoint::Test_Scenario258()
-    call void TestEntrypoint::Test_Scenario259()
-    call void TestEntrypoint::Test_Scenario260()
-    call void TestEntrypoint::Test_Scenario261()
-    call void TestEntrypoint::Test_Scenario262()
-    call void TestEntrypoint::Test_Scenario263()
-    call void TestEntrypoint::Test_Scenario264()
-    call void TestEntrypoint::Test_Scenario265()
-    call void TestEntrypoint::Test_Scenario266()
-    call void TestEntrypoint::Test_Scenario267()
-    call void TestEntrypoint::Test_Scenario268()
-    call void TestEntrypoint::Test_Scenario269()
-    call void TestEntrypoint::Test_Scenario270()
-    call void TestEntrypoint::Test_Scenario271()
-    call void TestEntrypoint::Test_Scenario272()
-    call void TestEntrypoint::Test_Scenario273()
-    call void TestEntrypoint::Test_Scenario274()
-    call void TestEntrypoint::Test_Scenario275()
-    call void TestEntrypoint::Test_Scenario276()
-    call void TestEntrypoint::Test_Scenario277()
-    call void TestEntrypoint::Test_Scenario278()
-    call void TestEntrypoint::Test_Scenario279()
-    call void TestEntrypoint::Test_Scenario280()
-    call void TestEntrypoint::Test_Scenario281()
+    .locals init (class [System.Runtime]System.Exception V_0)
+    .try {
+        call void TestEntrypoint::Test_Scenario1()
+        leave.s Scenario1Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario1"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario1Done
+    }
+Scenario1Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario2()
+        leave.s Scenario2Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario2"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario2Done
+    }
+Scenario2Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario3()
+        leave.s Scenario3Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario3"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario3Done
+    }
+Scenario3Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario4()
+        leave.s Scenario4Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario4"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario4Done
+    }
+Scenario4Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario5()
+        leave.s Scenario5Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario5"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario5Done
+    }
+Scenario5Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario6()
+        leave.s Scenario6Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario6"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario6Done
+    }
+Scenario6Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario7()
+        leave.s Scenario7Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario7"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario7Done
+    }
+Scenario7Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario8()
+        leave.s Scenario8Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario8"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario8Done
+    }
+Scenario8Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario9()
+        leave.s Scenario9Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario9"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario9Done
+    }
+Scenario9Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario10()
+        leave.s Scenario10Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario10"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario10Done
+    }
+Scenario10Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario11()
+        leave.s Scenario11Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario11"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario11Done
+    }
+Scenario11Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario12()
+        leave.s Scenario12Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario12"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario12Done
+    }
+Scenario12Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario13()
+        leave.s Scenario13Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario13"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario13Done
+    }
+Scenario13Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario14()
+        leave.s Scenario14Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario14"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario14Done
+    }
+Scenario14Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario15()
+        leave.s Scenario15Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario15"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario15Done
+    }
+Scenario15Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario16()
+        leave.s Scenario16Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario16"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario16Done
+    }
+Scenario16Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario17()
+        leave.s Scenario17Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario17"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario17Done
+    }
+Scenario17Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario18()
+        leave.s Scenario18Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario18"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario18Done
+    }
+Scenario18Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario19()
+        leave.s Scenario19Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario19"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario19Done
+    }
+Scenario19Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario20()
+        leave.s Scenario20Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario20"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario20Done
+    }
+Scenario20Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario21()
+        leave.s Scenario21Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario21"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario21Done
+    }
+Scenario21Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario22()
+        leave.s Scenario22Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario22"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario22Done
+    }
+Scenario22Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario23()
+        leave.s Scenario23Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario23"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario23Done
+    }
+Scenario23Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario24()
+        leave.s Scenario24Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario24"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario24Done
+    }
+Scenario24Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario25()
+        leave.s Scenario25Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario25"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario25Done
+    }
+Scenario25Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario26()
+        leave.s Scenario26Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario26"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario26Done
+    }
+Scenario26Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario27()
+        leave.s Scenario27Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario27"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario27Done
+    }
+Scenario27Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario28()
+        leave.s Scenario28Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario28"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario28Done
+    }
+Scenario28Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario29()
+        leave.s Scenario29Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario29"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario29Done
+    }
+Scenario29Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario30()
+        leave.s Scenario30Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario30"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario30Done
+    }
+Scenario30Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario31()
+        leave.s Scenario31Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario31"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario31Done
+    }
+Scenario31Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario32()
+        leave.s Scenario32Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario32"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario32Done
+    }
+Scenario32Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario33()
+        leave.s Scenario33Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario33"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario33Done
+    }
+Scenario33Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario34()
+        leave.s Scenario34Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario34"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario34Done
+    }
+Scenario34Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario35()
+        leave.s Scenario35Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario35"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario35Done
+    }
+Scenario35Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario36()
+        leave.s Scenario36Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario36"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario36Done
+    }
+Scenario36Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario37()
+        leave.s Scenario37Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario37"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario37Done
+    }
+Scenario37Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario38()
+        leave.s Scenario38Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario38"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario38Done
+    }
+Scenario38Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario39()
+        leave.s Scenario39Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario39"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario39Done
+    }
+Scenario39Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario40()
+        leave.s Scenario40Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario40"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario40Done
+    }
+Scenario40Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario41()
+        leave.s Scenario41Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario41"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario41Done
+    }
+Scenario41Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario42()
+        leave.s Scenario42Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario42"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario42Done
+    }
+Scenario42Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario43()
+        leave.s Scenario43Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario43"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario43Done
+    }
+Scenario43Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario44()
+        leave.s Scenario44Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario44"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario44Done
+    }
+Scenario44Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario45()
+        leave.s Scenario45Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario45"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario45Done
+    }
+Scenario45Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario46()
+        leave.s Scenario46Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario46"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario46Done
+    }
+Scenario46Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario47()
+        leave.s Scenario47Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario47"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario47Done
+    }
+Scenario47Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario48()
+        leave.s Scenario48Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario48"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario48Done
+    }
+Scenario48Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario49()
+        leave.s Scenario49Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario49"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario49Done
+    }
+Scenario49Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario50()
+        leave.s Scenario50Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario50"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario50Done
+    }
+Scenario50Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario51()
+        leave.s Scenario51Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario51"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario51Done
+    }
+Scenario51Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario52()
+        leave.s Scenario52Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario52"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario52Done
+    }
+Scenario52Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario53()
+        leave.s Scenario53Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario53"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario53Done
+    }
+Scenario53Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario54()
+        leave.s Scenario54Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario54"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario54Done
+    }
+Scenario54Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario55()
+        leave.s Scenario55Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario55"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario55Done
+    }
+Scenario55Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario56()
+        leave.s Scenario56Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario56"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario56Done
+    }
+Scenario56Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario57()
+        leave.s Scenario57Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario57"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario57Done
+    }
+Scenario57Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario58()
+        leave.s Scenario58Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario58"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario58Done
+    }
+Scenario58Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario59()
+        leave.s Scenario59Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario59"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario59Done
+    }
+Scenario59Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario60()
+        leave.s Scenario60Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario60"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario60Done
+    }
+Scenario60Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario61()
+        leave.s Scenario61Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario61"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario61Done
+    }
+Scenario61Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario62()
+        leave.s Scenario62Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario62"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario62Done
+    }
+Scenario62Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario63()
+        leave.s Scenario63Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario63"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario63Done
+    }
+Scenario63Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario64()
+        leave.s Scenario64Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario64"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario64Done
+    }
+Scenario64Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario65()
+        leave.s Scenario65Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario65"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario65Done
+    }
+Scenario65Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario66()
+        leave.s Scenario66Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario66"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario66Done
+    }
+Scenario66Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario67()
+        leave.s Scenario67Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario67"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario67Done
+    }
+Scenario67Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario68()
+        leave.s Scenario68Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario68"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario68Done
+    }
+Scenario68Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario69()
+        leave.s Scenario69Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario69"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario69Done
+    }
+Scenario69Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario70()
+        leave.s Scenario70Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario70"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario70Done
+    }
+Scenario70Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario71()
+        leave.s Scenario71Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario71"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario71Done
+    }
+Scenario71Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario72()
+        leave.s Scenario72Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario72"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario72Done
+    }
+Scenario72Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario73()
+        leave.s Scenario73Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario73"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario73Done
+    }
+Scenario73Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario74()
+        leave.s Scenario74Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario74"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario74Done
+    }
+Scenario74Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario75()
+        leave.s Scenario75Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario75"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario75Done
+    }
+Scenario75Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario76()
+        leave.s Scenario76Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario76"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario76Done
+    }
+Scenario76Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario77()
+        leave.s Scenario77Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario77"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario77Done
+    }
+Scenario77Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario78()
+        leave.s Scenario78Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario78"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario78Done
+    }
+Scenario78Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario79()
+        leave.s Scenario79Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario79"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario79Done
+    }
+Scenario79Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario80()
+        leave.s Scenario80Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario80"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario80Done
+    }
+Scenario80Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario81()
+        leave.s Scenario81Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario81"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario81Done
+    }
+Scenario81Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario82()
+        leave.s Scenario82Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario82"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario82Done
+    }
+Scenario82Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario83()
+        leave.s Scenario83Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario83"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario83Done
+    }
+Scenario83Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario84()
+        leave.s Scenario84Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario84"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario84Done
+    }
+Scenario84Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario85()
+        leave.s Scenario85Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario85"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario85Done
+    }
+Scenario85Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario86()
+        leave.s Scenario86Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario86"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario86Done
+    }
+Scenario86Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario87()
+        leave.s Scenario87Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario87"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario87Done
+    }
+Scenario87Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario88()
+        leave.s Scenario88Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario88"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario88Done
+    }
+Scenario88Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario89()
+        leave.s Scenario89Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario89"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario89Done
+    }
+Scenario89Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario90()
+        leave.s Scenario90Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario90"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario90Done
+    }
+Scenario90Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario91()
+        leave.s Scenario91Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario91"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario91Done
+    }
+Scenario91Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario92()
+        leave.s Scenario92Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario92"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario92Done
+    }
+Scenario92Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario93()
+        leave.s Scenario93Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario93"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario93Done
+    }
+Scenario93Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario94()
+        leave.s Scenario94Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario94"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario94Done
+    }
+Scenario94Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario95()
+        leave.s Scenario95Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario95"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario95Done
+    }
+Scenario95Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario96()
+        leave.s Scenario96Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario96"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario96Done
+    }
+Scenario96Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario97()
+        leave.s Scenario97Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario97"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario97Done
+    }
+Scenario97Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario98()
+        leave.s Scenario98Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario98"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario98Done
+    }
+Scenario98Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario99()
+        leave.s Scenario99Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario99"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario99Done
+    }
+Scenario99Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario100()
+        leave.s Scenario100Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario100"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario100Done
+    }
+Scenario100Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario101()
+        leave.s Scenario101Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario101"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario101Done
+    }
+Scenario101Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario102()
+        leave.s Scenario102Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario102"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario102Done
+    }
+Scenario102Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario103()
+        leave.s Scenario103Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario103"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario103Done
+    }
+Scenario103Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario104()
+        leave.s Scenario104Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario104"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario104Done
+    }
+Scenario104Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario105()
+        leave.s Scenario105Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario105"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario105Done
+    }
+Scenario105Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario106()
+        leave.s Scenario106Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario106"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario106Done
+    }
+Scenario106Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario107()
+        leave.s Scenario107Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario107"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario107Done
+    }
+Scenario107Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario108()
+        leave.s Scenario108Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario108"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario108Done
+    }
+Scenario108Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario109()
+        leave.s Scenario109Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario109"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario109Done
+    }
+Scenario109Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario110()
+        leave.s Scenario110Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario110"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario110Done
+    }
+Scenario110Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario111()
+        leave.s Scenario111Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario111"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario111Done
+    }
+Scenario111Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario112()
+        leave.s Scenario112Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario112"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario112Done
+    }
+Scenario112Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario113()
+        leave.s Scenario113Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario113"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario113Done
+    }
+Scenario113Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario114()
+        leave.s Scenario114Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario114"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario114Done
+    }
+Scenario114Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario115()
+        leave.s Scenario115Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario115"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario115Done
+    }
+Scenario115Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario116()
+        leave.s Scenario116Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario116"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario116Done
+    }
+Scenario116Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario117()
+        leave.s Scenario117Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario117"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario117Done
+    }
+Scenario117Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario118()
+        leave.s Scenario118Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario118"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario118Done
+    }
+Scenario118Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario119()
+        leave.s Scenario119Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario119"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario119Done
+    }
+Scenario119Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario120()
+        leave.s Scenario120Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario120"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario120Done
+    }
+Scenario120Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario121()
+        leave.s Scenario121Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario121"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario121Done
+    }
+Scenario121Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario122()
+        leave.s Scenario122Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario122"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario122Done
+    }
+Scenario122Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario123()
+        leave.s Scenario123Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario123"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario123Done
+    }
+Scenario123Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario124()
+        leave.s Scenario124Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario124"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario124Done
+    }
+Scenario124Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario125()
+        leave.s Scenario125Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario125"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario125Done
+    }
+Scenario125Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario126()
+        leave.s Scenario126Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario126"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario126Done
+    }
+Scenario126Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario127()
+        leave.s Scenario127Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario127"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario127Done
+    }
+Scenario127Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario128()
+        leave.s Scenario128Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario128"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario128Done
+    }
+Scenario128Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario129()
+        leave.s Scenario129Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario129"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario129Done
+    }
+Scenario129Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario130()
+        leave.s Scenario130Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario130"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario130Done
+    }
+Scenario130Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario131()
+        leave.s Scenario131Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario131"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario131Done
+    }
+Scenario131Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario132()
+        leave.s Scenario132Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario132"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario132Done
+    }
+Scenario132Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario133()
+        leave.s Scenario133Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario133"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario133Done
+    }
+Scenario133Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario134()
+        leave.s Scenario134Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario134"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario134Done
+    }
+Scenario134Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario135()
+        leave.s Scenario135Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario135"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario135Done
+    }
+Scenario135Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario136()
+        leave.s Scenario136Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario136"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario136Done
+    }
+Scenario136Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario137()
+        leave.s Scenario137Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario137"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario137Done
+    }
+Scenario137Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario138()
+        leave.s Scenario138Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario138"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario138Done
+    }
+Scenario138Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario139()
+        leave.s Scenario139Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario139"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario139Done
+    }
+Scenario139Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario140()
+        leave.s Scenario140Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario140"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario140Done
+    }
+Scenario140Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario141()
+        leave.s Scenario141Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario141"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario141Done
+    }
+Scenario141Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario142()
+        leave.s Scenario142Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario142"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario142Done
+    }
+Scenario142Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario143()
+        leave.s Scenario143Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario143"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario143Done
+    }
+Scenario143Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario144()
+        leave.s Scenario144Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario144"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario144Done
+    }
+Scenario144Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario145()
+        leave.s Scenario145Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario145"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario145Done
+    }
+Scenario145Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario146()
+        leave.s Scenario146Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario146"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario146Done
+    }
+Scenario146Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario147()
+        leave.s Scenario147Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario147"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario147Done
+    }
+Scenario147Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario148()
+        leave.s Scenario148Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario148"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario148Done
+    }
+Scenario148Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario149()
+        leave.s Scenario149Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario149"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario149Done
+    }
+Scenario149Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario150()
+        leave.s Scenario150Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario150"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario150Done
+    }
+Scenario150Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario151()
+        leave.s Scenario151Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario151"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario151Done
+    }
+Scenario151Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario152()
+        leave.s Scenario152Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario152"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario152Done
+    }
+Scenario152Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario153()
+        leave.s Scenario153Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario153"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario153Done
+    }
+Scenario153Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario154()
+        leave.s Scenario154Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario154"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario154Done
+    }
+Scenario154Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario155()
+        leave.s Scenario155Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario155"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario155Done
+    }
+Scenario155Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario156()
+        leave.s Scenario156Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario156"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario156Done
+    }
+Scenario156Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario157()
+        leave.s Scenario157Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario157"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario157Done
+    }
+Scenario157Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario158()
+        leave.s Scenario158Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario158"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario158Done
+    }
+Scenario158Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario159()
+        leave.s Scenario159Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario159"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario159Done
+    }
+Scenario159Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario160()
+        leave.s Scenario160Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario160"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario160Done
+    }
+Scenario160Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario161()
+        leave.s Scenario161Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario161"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario161Done
+    }
+Scenario161Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario162()
+        leave.s Scenario162Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario162"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario162Done
+    }
+Scenario162Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario163()
+        leave.s Scenario163Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario163"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario163Done
+    }
+Scenario163Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario164()
+        leave.s Scenario164Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario164"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario164Done
+    }
+Scenario164Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario165()
+        leave.s Scenario165Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario165"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario165Done
+    }
+Scenario165Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario166()
+        leave.s Scenario166Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario166"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario166Done
+    }
+Scenario166Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario167()
+        leave.s Scenario167Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario167"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario167Done
+    }
+Scenario167Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario168()
+        leave.s Scenario168Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario168"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario168Done
+    }
+Scenario168Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario169()
+        leave.s Scenario169Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario169"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario169Done
+    }
+Scenario169Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario170()
+        leave.s Scenario170Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario170"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario170Done
+    }
+Scenario170Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario171()
+        leave.s Scenario171Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario171"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario171Done
+    }
+Scenario171Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario172()
+        leave.s Scenario172Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario172"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario172Done
+    }
+Scenario172Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario173()
+        leave.s Scenario173Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario173"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario173Done
+    }
+Scenario173Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario174()
+        leave.s Scenario174Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario174"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario174Done
+    }
+Scenario174Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario175()
+        leave.s Scenario175Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario175"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario175Done
+    }
+Scenario175Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario176()
+        leave.s Scenario176Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario176"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario176Done
+    }
+Scenario176Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario177()
+        leave.s Scenario177Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario177"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario177Done
+    }
+Scenario177Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario178()
+        leave.s Scenario178Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario178"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario178Done
+    }
+Scenario178Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario179()
+        leave.s Scenario179Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario179"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario179Done
+    }
+Scenario179Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario180()
+        leave.s Scenario180Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario180"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario180Done
+    }
+Scenario180Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario181()
+        leave.s Scenario181Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario181"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario181Done
+    }
+Scenario181Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario182()
+        leave.s Scenario182Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario182"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario182Done
+    }
+Scenario182Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario183()
+        leave.s Scenario183Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario183"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario183Done
+    }
+Scenario183Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario184()
+        leave.s Scenario184Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario184"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario184Done
+    }
+Scenario184Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario185()
+        leave.s Scenario185Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario185"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario185Done
+    }
+Scenario185Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario186()
+        leave.s Scenario186Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario186"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario186Done
+    }
+Scenario186Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario187()
+        leave.s Scenario187Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario187"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario187Done
+    }
+Scenario187Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario188()
+        leave.s Scenario188Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario188"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario188Done
+    }
+Scenario188Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario189()
+        leave.s Scenario189Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario189"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario189Done
+    }
+Scenario189Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario190()
+        leave.s Scenario190Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario190"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario190Done
+    }
+Scenario190Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario191()
+        leave.s Scenario191Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario191"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario191Done
+    }
+Scenario191Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario192()
+        leave.s Scenario192Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario192"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario192Done
+    }
+Scenario192Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario193()
+        leave.s Scenario193Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario193"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario193Done
+    }
+Scenario193Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario194()
+        leave.s Scenario194Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario194"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario194Done
+    }
+Scenario194Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario195()
+        leave.s Scenario195Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario195"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario195Done
+    }
+Scenario195Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario196()
+        leave.s Scenario196Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario196"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario196Done
+    }
+Scenario196Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario197()
+        leave.s Scenario197Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario197"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario197Done
+    }
+Scenario197Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario198()
+        leave.s Scenario198Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario198"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario198Done
+    }
+Scenario198Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario199()
+        leave.s Scenario199Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario199"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario199Done
+    }
+Scenario199Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario200()
+        leave.s Scenario200Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario200"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario200Done
+    }
+Scenario200Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario201()
+        leave.s Scenario201Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario201"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario201Done
+    }
+Scenario201Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario202()
+        leave.s Scenario202Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario202"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario202Done
+    }
+Scenario202Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario203()
+        leave.s Scenario203Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario203"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario203Done
+    }
+Scenario203Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario204()
+        leave.s Scenario204Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario204"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario204Done
+    }
+Scenario204Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario205()
+        leave.s Scenario205Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario205"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario205Done
+    }
+Scenario205Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario206()
+        leave.s Scenario206Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario206"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario206Done
+    }
+Scenario206Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario207()
+        leave.s Scenario207Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario207"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario207Done
+    }
+Scenario207Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario208()
+        leave.s Scenario208Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario208"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario208Done
+    }
+Scenario208Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario209()
+        leave.s Scenario209Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario209"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario209Done
+    }
+Scenario209Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario210()
+        leave.s Scenario210Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario210"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario210Done
+    }
+Scenario210Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario211()
+        leave.s Scenario211Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario211"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario211Done
+    }
+Scenario211Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario212()
+        leave.s Scenario212Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario212"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario212Done
+    }
+Scenario212Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario213()
+        leave.s Scenario213Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario213"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario213Done
+    }
+Scenario213Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario214()
+        leave.s Scenario214Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario214"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario214Done
+    }
+Scenario214Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario215()
+        leave.s Scenario215Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario215"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario215Done
+    }
+Scenario215Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario216()
+        leave.s Scenario216Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario216"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario216Done
+    }
+Scenario216Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario217()
+        leave.s Scenario217Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario217"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario217Done
+    }
+Scenario217Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario218()
+        leave.s Scenario218Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario218"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario218Done
+    }
+Scenario218Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario219()
+        leave.s Scenario219Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario219"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario219Done
+    }
+Scenario219Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario220()
+        leave.s Scenario220Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario220"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario220Done
+    }
+Scenario220Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario221()
+        leave.s Scenario221Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario221"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario221Done
+    }
+Scenario221Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario222()
+        leave.s Scenario222Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario222"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario222Done
+    }
+Scenario222Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario223()
+        leave.s Scenario223Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario223"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario223Done
+    }
+Scenario223Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario224()
+        leave.s Scenario224Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario224"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario224Done
+    }
+Scenario224Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario225()
+        leave.s Scenario225Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario225"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario225Done
+    }
+Scenario225Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario226()
+        leave.s Scenario226Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario226"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario226Done
+    }
+Scenario226Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario227()
+        leave.s Scenario227Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario227"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario227Done
+    }
+Scenario227Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario228()
+        leave.s Scenario228Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario228"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario228Done
+    }
+Scenario228Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario229()
+        leave.s Scenario229Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario229"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario229Done
+    }
+Scenario229Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario230()
+        leave.s Scenario230Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario230"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario230Done
+    }
+Scenario230Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario231()
+        leave.s Scenario231Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario231"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario231Done
+    }
+Scenario231Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario232()
+        leave.s Scenario232Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario232"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario232Done
+    }
+Scenario232Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario233()
+        leave.s Scenario233Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario233"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario233Done
+    }
+Scenario233Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario234()
+        leave.s Scenario234Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario234"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario234Done
+    }
+Scenario234Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario235()
+        leave.s Scenario235Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario235"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario235Done
+    }
+Scenario235Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario236()
+        leave.s Scenario236Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario236"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario236Done
+    }
+Scenario236Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario237()
+        leave.s Scenario237Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario237"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario237Done
+    }
+Scenario237Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario238()
+        leave.s Scenario238Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario238"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario238Done
+    }
+Scenario238Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario239()
+        leave.s Scenario239Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario239"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario239Done
+    }
+Scenario239Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario240()
+        leave.s Scenario240Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario240"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario240Done
+    }
+Scenario240Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario241()
+        leave.s Scenario241Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario241"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario241Done
+    }
+Scenario241Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario242()
+        leave.s Scenario242Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario242"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario242Done
+    }
+Scenario242Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario243()
+        leave.s Scenario243Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario243"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario243Done
+    }
+Scenario243Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario244()
+        leave.s Scenario244Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario244"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario244Done
+    }
+Scenario244Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario245()
+        leave.s Scenario245Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario245"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario245Done
+    }
+Scenario245Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario246()
+        leave.s Scenario246Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario246"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario246Done
+    }
+Scenario246Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario247()
+        leave.s Scenario247Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario247"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario247Done
+    }
+Scenario247Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario248()
+        leave.s Scenario248Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario248"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario248Done
+    }
+Scenario248Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario249()
+        leave.s Scenario249Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario249"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario249Done
+    }
+Scenario249Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario250()
+        leave.s Scenario250Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario250"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario250Done
+    }
+Scenario250Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario251()
+        leave.s Scenario251Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario251"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario251Done
+    }
+Scenario251Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario252()
+        leave.s Scenario252Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario252"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario252Done
+    }
+Scenario252Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario253()
+        leave.s Scenario253Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario253"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario253Done
+    }
+Scenario253Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario254()
+        leave.s Scenario254Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario254"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario254Done
+    }
+Scenario254Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario255()
+        leave.s Scenario255Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario255"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario255Done
+    }
+Scenario255Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario256()
+        leave.s Scenario256Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario256"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario256Done
+    }
+Scenario256Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario257()
+        leave.s Scenario257Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario257"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario257Done
+    }
+Scenario257Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario258()
+        leave.s Scenario258Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario258"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario258Done
+    }
+Scenario258Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario259()
+        leave.s Scenario259Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario259"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario259Done
+    }
+Scenario259Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario260()
+        leave.s Scenario260Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario260"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario260Done
+    }
+Scenario260Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario261()
+        leave.s Scenario261Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario261"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario261Done
+    }
+Scenario261Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario262()
+        leave.s Scenario262Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario262"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario262Done
+    }
+Scenario262Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario263()
+        leave.s Scenario263Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario263"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario263Done
+    }
+Scenario263Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario264()
+        leave.s Scenario264Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario264"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario264Done
+    }
+Scenario264Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario265()
+        leave.s Scenario265Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario265"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario265Done
+    }
+Scenario265Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario266()
+        leave.s Scenario266Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario266"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario266Done
+    }
+Scenario266Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario267()
+        leave.s Scenario267Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario267"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario267Done
+    }
+Scenario267Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario268()
+        leave.s Scenario268Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario268"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario268Done
+    }
+Scenario268Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario269()
+        leave.s Scenario269Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario269"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario269Done
+    }
+Scenario269Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario270()
+        leave.s Scenario270Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario270"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario270Done
+    }
+Scenario270Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario271()
+        leave.s Scenario271Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario271"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario271Done
+    }
+Scenario271Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario272()
+        leave.s Scenario272Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario272"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario272Done
+    }
+Scenario272Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario273()
+        leave.s Scenario273Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario273"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario273Done
+    }
+Scenario273Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario274()
+        leave.s Scenario274Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario274"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario274Done
+    }
+Scenario274Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario275()
+        leave.s Scenario275Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario275"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario275Done
+    }
+Scenario275Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario276()
+        leave.s Scenario276Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario276"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario276Done
+    }
+Scenario276Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario277()
+        leave.s Scenario277Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario277"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario277Done
+    }
+Scenario277Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario278()
+        leave.s Scenario278Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario278"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario278Done
+    }
+Scenario278Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario279()
+        leave.s Scenario279Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario279"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario279Done
+    }
+Scenario279Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario280()
+        leave.s Scenario280Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario280"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario280Done
+    }
+Scenario280Done: nop
+    .try {
+        call void TestEntrypoint::Test_Scenario281()
+        leave.s Scenario281Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario281"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario281Done
+    }
+Scenario281Done: nop
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret
   } // end of method Main

@@ -492,7 +492,19 @@ namespace VirtualStaticInterfaceMethodTestGen
                 swTestClassMethods.WriteLine($"    ret");
                 EmitEndMethod(swTestClassMethods, mdIndividualTestMethod);
                 // Call test method from main method
-                swMainMethodBody.WriteLine($"    call void TestEntrypoint::{mdIndividualTestMethod.Name}()");
+                swMainMethodBody.WriteLine("    .try {");
+                swMainMethodBody.WriteLine($"        call void TestEntrypoint::{mdIndividualTestMethod.Name}()");
+                swMainMethodBody.WriteLine($"        leave.s {scenarioName}Done");
+                swMainMethodBody.WriteLine("    } catch [System.Runtime]System.Exception {");
+                swMainMethodBody.WriteLine($"        stloc.0");
+                swMainMethodBody.WriteLine($"        ldstr \"{scenarioName}\"");
+                swMainMethodBody.WriteLine($"        ldnull");
+                swMainMethodBody.WriteLine($"        ldloc.0");
+                swMainMethodBody.WriteLine($"        callvirt   instance string [System.Runtime]System.Object::ToString()");
+                swMainMethodBody.WriteLine($"        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)");
+                swMainMethodBody.WriteLine($"        leave.s {scenarioName}Done");
+                swMainMethodBody.WriteLine("    }");
+                swMainMethodBody.WriteLine($"{scenarioName}Done: nop");
 
                 string GenericTypeSuffix(string genericParams)
                 {
@@ -522,6 +534,7 @@ namespace VirtualStaticInterfaceMethodTestGen
 
             EmitMethod(twOutputTest, mainMethod);
             twOutputTest.WriteLine("    .entrypoint");
+            twOutputTest.WriteLine("    .locals init (class [System.Runtime]System.Exception V_0)");
             twOutputTest.Write(swMainMethodBody.ToString());
             twOutputTest.WriteLine($"    call int32 { CommonCsPrefix}Statics::ReportResults()");
             twOutputTest.WriteLine("    ret");
