@@ -12,6 +12,7 @@ Imports Microsoft.VisualBasic.CompilerServices.OverloadResolution
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 Imports Microsoft.VisualBasic.CompilerServices.ReflectionExtensions
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -201,7 +202,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return type.GetTypeCode
         End Function
 
-        Friend Shared Function MapTypeCodeToType(ByVal typeCode As TypeCode) As Type
+        Friend Shared Function MapTypeCodeToType(ByVal typeCode As TypeCode) As <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)> Type
 
             Select Case typeCode
 
@@ -769,8 +770,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Class
 
             Private ReadOnly _instance As Object
+            <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
             Private ReadOnly _type As Type
 
+            <RequiresUnreferencedCode("Calls Object.GetType() which cannot be statically analyzed")>
             Friend Sub New(ByVal instance As Object)
 
                 If instance Is Nothing Then
@@ -781,7 +784,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 _type = instance.GetType
             End Sub
 
-            Friend Sub New(ByVal type As Type)
+            Friend Sub New(
+                    <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                    ByVal type As Type)
 
                 If type Is Nothing Then
                     Throw VbMakeObjNotSetException()
@@ -992,6 +997,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return result
             End Function
 
+            <RequiresUnreferencedCode("Calls Type.GetMember() on a type that cannot be statically analyzed")>
             Private Function LookupDefaultMembers(ByRef defaultMemberName As String, ByVal searchType As Type) As MemberInfo()
                 'Returns an array of default members sorted by inheritance (most derived first).
                 'If no members match MemberName, returns an empty array.
@@ -1030,6 +1036,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return s_noMembers
             End Function
 
+            <RequiresUnreferencedCode("Calls LookupDefaultMembers")>
             Friend Function GetMembers(
                 ByRef memberName As String,
                 ByVal reportErrors As Boolean) As MemberInfo()
@@ -1094,6 +1101,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return field.GetValue(_instance)
             End Function
 
+            <RequiresUnreferencedCode("Cannot statically analyze the type of FieldInfo.FieldType")>
             Friend Sub SetFieldValue(ByVal field As FieldInfo, ByVal value As Object)
                 If field.IsInitOnly Then
                     Throw New MissingMemberException(
@@ -1119,6 +1127,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return
             End Sub
 
+            <RequiresUnreferencedCode("Calls Conversions.ChangeType")>
             Friend Function GetArrayValue(ByVal indices As Object()) As Object
                 Debug.Assert(Me.IsArray, "expected array when getting array value")
                 Debug.Assert(indices IsNot Nothing, "expected valid indices")
@@ -1165,6 +1174,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             End Function
 
+            <RequiresUnreferencedCode("Uses _type.GetElementType which cannot be statically analyzed.")>
             Friend Sub SetArrayValue(ByVal arguments As Object())
                 'The last argument is the Value to be stored into the array. The other arguments are
                 'the indices into the array.
@@ -1222,6 +1232,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             End Sub
 
+            <RequiresUnreferencedCode("Calls ConstructCallArguments which is unsafe")>
             Friend Function InvokeMethod(
                 ByVal targetProcedure As Method,
                 ByVal arguments As Object(),
@@ -1342,6 +1353,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Property
 
             Friend ReadOnly Property RawParametersFromType() As ParameterInfo()
+                <RequiresUnreferencedCode("Cannot statically analyze the type of _item")>
                 Get
                     If _rawParametersFromType Is Nothing Then
                         If Not IsProperty Then
@@ -1434,6 +1446,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End Get
             End Property
 
+            <RequiresUnreferencedCode("Cannot statically infer which method _rawItem is or if it has annotations")>
             Friend Function BindGenericArguments() As Boolean
                 'This function instantiates a generic method with the type arguments supplied or inferred
                 'for this method.

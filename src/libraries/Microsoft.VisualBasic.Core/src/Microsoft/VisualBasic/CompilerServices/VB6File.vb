@@ -12,6 +12,7 @@ Imports System.Runtime.Versioning
 Imports Microsoft.VisualBasic.CompilerServices.StructUtils
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -77,9 +78,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
         [Single] = tagVT.VT_R4
         [Double] = tagVT.VT_R8
         [String] = tagVT.VT_BSTR
-        [ByteArray] = tagVT.VT_UI1 Or _
+        [ByteArray] = tagVT.VT_UI1 Or
                       tagVT.VT_ARRAY
-        [CharArray] = tagVT.VT_UI2 Or _
+        [CharArray] = tagVT.VT_UI2 Or
                       tagVT.VT_ARRAY
         [Date] = tagVT.VT_DATE
         [Long] = tagVT.VT_I8
@@ -92,7 +93,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         [Currency] = tagVT.VT_CY
     End Enum
 
-    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)> _
+    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
     Friend NotInheritable Class PutHandler
         Implements IRecordEnum
         Public m_oFile As VB6File
@@ -596,18 +597,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return m_position
         End Function
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("macos")>
         Friend Overridable Overloads Sub Lock()
             'Lock the whole file, not just the current size of file, since file could change.
             m_file.Lock(0, Int32.MaxValue)
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("macos")>
         Friend Overridable Overloads Sub Unlock()
             m_file.Unlock(0, Int32.MaxValue)
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("macos")>
         Friend Overridable Overloads Sub Lock(ByVal Record As Long)
             If m_lRecordLen = -1 Then
                 m_file.Lock((Record - 1), 1)
@@ -616,7 +617,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("macos")>
         Friend Overridable Overloads Sub Unlock(ByVal Record As Long)
             If m_lRecordLen = -1 Then
                 m_file.Unlock((Record - 1), 1)
@@ -625,7 +626,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("macos")>
         Friend Overridable Overloads Sub Lock(ByVal RecordStart As Long, ByVal RecordEnd As Long)
             If m_lRecordLen = -1 Then
                 m_file.Lock((RecordStart - 1), (RecordEnd - RecordStart) + 1)
@@ -634,7 +635,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
-        <UnsupportedOSPlatform("macos")> 
+        <UnsupportedOSPlatform("macos")>
         Friend Overridable Overloads Sub Unlock(ByVal RecordStart As Long, ByVal RecordEnd As Long)
             If m_lRecordLen = -1 Then
                 m_file.Unlock((RecordStart - 1), (RecordEnd - RecordStart) + 1)
@@ -1332,6 +1333,7 @@ NewLine:
             m_position += RecLength
         End Sub
 
+        <RequiresUnreferencedCode("Calls EnumerateUDT")>
         Friend Sub PutRecord(ByVal RecordNumber As Long, ByVal o As ValueType)
             If o Is Nothing Then
                 Throw New NullReferenceException
@@ -1631,6 +1633,7 @@ NewLine:
             End If
         End Function
 
+        <RequiresUnreferencedCode("Calls EnumerateUDT")>
         Friend Sub GetRecord(ByVal RecordNumber As Long, ByRef o As ValueType, Optional ByVal ContainedInVariant As Boolean = False)
             Dim intf As IRecordEnum
             Dim ph As GetHandler

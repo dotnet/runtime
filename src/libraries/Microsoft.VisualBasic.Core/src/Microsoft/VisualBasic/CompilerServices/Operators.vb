@@ -6,6 +6,7 @@ Option Strict On
 Imports System
 Imports System.ComponentModel
 Imports System.Diagnostics
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Runtime.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -131,6 +132,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Undefined
         End Enum
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function CompareObjectEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -149,6 +151,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConditionalCompareObjectEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -167,6 +170,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function CompareObjectNotEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -185,6 +189,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConditionalCompareObjectNotEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -203,6 +208,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function CompareObjectLess(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -221,6 +227,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConditionalCompareObjectLess(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -239,6 +246,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function CompareObjectLessEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -257,6 +265,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConditionalCompareObjectLessEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -275,6 +284,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function CompareObjectGreaterEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -293,6 +303,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConditionalCompareObjectGreaterEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -311,6 +322,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function CompareObjectGreater(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -329,6 +341,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConditionalCompareObjectGreater(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -866,6 +879,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Unary Plus + "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function PlusObject(ByVal Operand As Object) As Object
 
             Dim typ As TypeCode = GetTypeCode(Operand)
@@ -927,6 +941,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Negate - "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function NegateObject(ByVal Operand As Object) As Object
 
             Dim tc As TypeCode = GetTypeCode(Operand)
@@ -1110,6 +1125,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Not "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function NotObject(ByVal Operand As Object) As Object
 
             Dim tc As TypeCode = GetTypeCode(Operand)
@@ -1252,6 +1268,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator And "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function AndObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -1631,6 +1648,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Or "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function OrObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -2002,6 +2020,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Xor "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function XorObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -2394,6 +2413,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Plus + "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function AddObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -2911,6 +2931,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Minus - "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function SubtractObject(ByVal Left As Object, ByVal Right As Object) As Object
             Dim tc1 As TypeCode = GetTypeCode(Left)
             Dim tc2 As TypeCode = GetTypeCode(Right)
@@ -3374,6 +3395,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Multiply * "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function MultiplyObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -3828,6 +3850,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Divide / "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function DivideObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4134,6 +4157,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Power ^ "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ExponentObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4215,6 +4239,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Mod "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ModObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4627,6 +4652,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Integral Divide \ "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function IntDivideObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4997,6 +5023,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Shift Left << "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function LeftShiftObject(ByVal Operand As Object, ByVal Amount As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Operand)
@@ -5042,6 +5069,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Shift Right >> "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function RightShiftObject(ByVal Operand As Object, ByVal Amount As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Operand)
@@ -5086,6 +5114,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Concatenate & "
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Public Shared Function ConcatenateObject(ByVal Left As Object, ByVal Right As Object) As Object
             Dim conv1, conv2 As IConvertible
             Dim tc1, tc2 As TypeCode

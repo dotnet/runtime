@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Runtime.Versioning
 
 Imports Microsoft.VisualBasic.CompilerServices
@@ -1094,12 +1095,17 @@ NextOctCharacter:
             End Select
         End Function
 
-        Public Function CTypeDynamic(ByVal Expression As Object, ByVal TargetType As System.Type) As Object
+        <RequiresUnreferencedCode("Calls Conversions.ChangeType")>
+        Public Function CTypeDynamic(
+                ByVal Expression As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)>
+                ByVal TargetType As System.Type) As Object
             Return Conversions.ChangeType(Expression, TargetType, True)
         End Function
 
+        <RequiresUnreferencedCode("Calls Conversions.ChangeType")>
         Public Function CTypeDynamic(Of TargetType)(ByVal Expression As Object) As TargetType
-            return DirectCast(Conversions.ChangeType(Expression, GetType(TargetType), True), TargetType)
+            Return DirectCast(Conversions.ChangeType(Expression, GetType(TargetType), True), TargetType)
         End Function
     End Module
 End Namespace

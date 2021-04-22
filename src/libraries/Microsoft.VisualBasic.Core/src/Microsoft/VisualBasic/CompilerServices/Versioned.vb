@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Dynamic
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 
@@ -13,6 +14,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Sub New()
         End Sub
 
+        <RequiresUnreferencedCode("Calls LateSet, IDOSet, LateGet, and LateCall which are unsafe")>
         Public Shared Function CallByName(ByVal Instance As System.Object, ByVal MethodName As String, ByVal UseCallType As CallType, ByVal ParamArray Arguments() As Object) As Object
 
             Select Case UseCallType

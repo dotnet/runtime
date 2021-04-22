@@ -9,6 +9,7 @@ Imports Microsoft.Win32
 
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic
 
@@ -133,8 +134,13 @@ Namespace Microsoft.VisualBasic
             Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2035:UnresolvedAssembly",
+                Justification:="This references Microsoft.VisualBasic.Forms assembly which is outside of the shared framework.")>
+        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2075:UnrecognizedReflectionPattern",
+                Justification:="DynamicDependency will preserve the required properties in order for the call to be safe.")>
+        <DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Microsoft.VisualBasic._Interaction", "Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")>
         Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
-            Dim type As Type = type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
+            Dim type As Type = Type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
             Dim method As MethodInfo = type?.GetMethod(methodName)
             If method Is Nothing Then
                 Throw New PlatformNotSupportedException(SR.MethodRequiresSystemWindowsForms)
@@ -495,6 +501,7 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <SupportedOSPlatform("windows")>
+        <RequiresUnreferencedCode("Calls Activator.CreateInstane on a type that cannot be statically analyzed.")>
         Public Function CreateObject(ByVal ProgId As String, Optional ByVal ServerName As String = "") As Object
             'Creates local or remote COM2 objects.  Should not be used to create COM+ objects.
             'Applications that need to be STA should set STA either on their Sub Main via STAThreadAttribute
@@ -540,6 +547,7 @@ Namespace Microsoft.VisualBasic
         End Function
 
         <SupportedOSPlatform("windows")>
+        <RequiresUnreferencedCode("Calls Activator.CreateInstane on a type that cannot be statically analyzed.")>
         Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
             'Only works for Com2 objects, not for COM+ objects.
 
@@ -576,6 +584,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
         ' Object/latebound functions.
         '============================================================================
+        <RequiresUnreferencedCode("Calls InternalLateSet, LateGet and InternalLateCall")>
         Public Function CallByName(ByVal ObjectRef As System.Object, ByVal ProcName As String, ByVal UseCallType As CallType, ByVal ParamArray Args() As Object) As Object
             Select Case UseCallType
 
