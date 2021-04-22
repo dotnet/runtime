@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	// link - This assembly, Forwarder.dll and Implementation.dll
 	[SetupLinkerDefaultAction ("link")]
 
-	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/MyEnum.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
+	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/MyEnum.cs" })]
 	[SetupCompileBefore ("Attribute.dll", new[] { "Dependencies/AttributeWithEnumArgument.cs" }, references: new[] { "Forwarder.dll" })]
 
 	// After compiling the test case we then replace the reference impl with implementation + type forwarder
@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[KeptTypeInAssembly ("Forwarder.dll", typeof (UsedToReferenceForwarderAssembly))]
 	[KeptTypeInAssembly ("Implementation.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum")]
+	[RemovedForwarder ("Forwarder.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum")]
 	class AttributeEnumArgumentForwarded
 	{
 		static void Main ()

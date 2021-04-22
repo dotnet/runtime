@@ -66,6 +66,7 @@ namespace Mono.Linker.Steps
 			// Update scopes before removing any type forwarder.
 			foreach (var assembly in assemblies) {
 				switch (Annotations.GetAction (assembly)) {
+				case AssemblyAction.CopyUsed:
 				case AssemblyAction.Link:
 				case AssemblyAction.Save:
 					SweepAssemblyReferences (assembly);
