@@ -51,6 +51,7 @@ Abstract:
 #define CGROUP2_MEMORY_LIMIT_FILENAME "/memory.max"
 #define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
 #define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
+#define CGROUP_MEMORY_STAT_FILENAME "/memory.stat"
 #define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
 #define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 #define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
@@ -64,12 +65,21 @@ class CGroup
 
     static char *s_memory_cgroup_path;
     static char *s_cpu_cgroup_path;
+    static const char *s_active_file_key_name;
+    static const char *s_inactive_file_key_name;
+    static size_t s_active_file_key_length;
+    static size_t s_inactive_file_key_length;
+
 public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
         s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
         s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
+        s_active_file_key_name = s_cgroup_version == 1 ? "total_active_file " : "active_file ";
+        s_inactive_file_key_name = s_cgroup_version == 1 ? "total_inactive_file " : "inactive_file ";
+        s_active_file_key_length = strlen(s_active_file_key_name);
+        s_inactive_file_key_length = strlen(s_inactive_file_key_name);
     }
 
     static void Cleanup()
@@ -414,22 +424,73 @@ private:
         if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
             return false;
 
-        uint64_t temp = 0;
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
-        if (result)
+        uint64_t usage = 0;
+        bool success = ReadMemoryValueFromFile(mem_usage_filename, &usage);
+        free(mem_usage_filename);
+
+        if (!success)
+            return false;
+
+        char* stat_filename = nullptr;
+        if (asprintf(&stat_filename, "%s%s", s_memory_cgroup_path, CGROUP_MEMORY_STAT_FILENAME) < 0)
+            return false;
+
+        FILE *stat_file = fopen(stat_filename, "r");
+        if (stat_file == nullptr)
+            return false;
+
+        char *line = nullptr;
+        size_t lineLen = 0;
+        size_t readValues = 0;
+        size_t active_file = 0;
+        size_t inactive_file = 0;
+        char* endptr;
+
+        while (getline(&line, &lineLen, stat_file) != -1 && readValues != 2)
         {
-            if (temp > std::numeric_limits<size_t>::max())
+            if (strncmp(line, s_active_file_key_name, s_active_file_key_length) == 0)
+            {
+                errno = 0;
+                const char* startptr = line + s_active_file_key_length;
+                active_file = strtoll(startptr, &endptr, 10);
+                if (endptr == startptr || errno != 0)
+                    continue;
+
+                readValues++;
+            }
+            else if (strncmp(line, s_inactive_file_key_name, s_inactive_file_key_length) == 0)
+            {
+                errno = 0;
+                const char* startptr = line + s_inactive_file_key_length;
+                inactive_file = strtoll(startptr, &endptr, 10);
+                if (endptr == startptr || errno != 0)
+                    continue;
+
+                readValues++;
+            }
+        }
+
+        fclose(stat_file);
+        free(stat_filename);
+        free(line);
+
+        if (readValues == 2)
+        {
+            if (usage > std::numeric_limits<size_t>::max())
             {
                 *val = std::numeric_limits<size_t>::max();
             }
             else
             {
-                *val = (size_t)temp;
+                // Since file cache pages can be easily evicted and re-used
+                // they should not be considered as used memory.
+                *val = (size_t)usage - active_file - inactive_file;
             }
+
+            return true;
         }
 
-        free(mem_usage_filename);
-        return result;
+        return false;
     }
 
     static bool GetCGroup1CpuLimit(uint32_t *val)
@@ -588,6 +649,11 @@ private:
 int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_cpu_cgroup_path = nullptr;
+
+const char *CGroup::s_active_file_key_name = nullptr;
+const char *CGroup::s_inactive_file_key_name = nullptr;
+size_t CGroup::s_active_file_key_length = 0;
+size_t CGroup::s_inactive_file_key_length = 0;
 
 void InitializeCGroup()
 {
