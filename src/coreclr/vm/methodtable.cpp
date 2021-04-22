@@ -9258,7 +9258,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD)
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
-        if (pMethodDecl != pInterfaceMD)
+        if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
             continue;
         }
@@ -9272,7 +9272,15 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD)
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
-        return pMethodImpl;
+
+        if (pInterfaceMD->HasMethodInstantiation())
+        {
+            return pMethodImpl->FindOrCreateAssociatedMethodDesc(pMethodImpl, this, FALSE, pInterfaceMD->GetMethodInstantiation(), TRUE);
+        }
+        else
+        {
+            return pMethodImpl;
+        }
     }
 
     return nullptr;
