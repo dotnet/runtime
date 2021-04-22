@@ -27,7 +27,9 @@ namespace System.IO.Strategies
             internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
         }
 
-        private const uint ERROR_STATUS_DISK_FULL = 0xC000007F;
+        private const uint NT_ERROR_STATUS_DISK_FULL = 0xC000007F;
+        private const uint NT_ERROR_STATUS_FILE_TOO_LARGE = 0xC0000904;
+        private const uint NT_STATUS_INVALID_PARAMETER = 0xC000000D;
 
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
@@ -69,17 +71,22 @@ namespace System.IO.Strategies
             {
                 Debug.Assert(path != null);
 
+                uint ntStatus = 0;
                 if (allocationSize > 0 && (access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
                 {
                     string prefixedAbsolutePath = PathInternal.IsExtended(path) ? path : @"\??\" + Path.GetFullPath(path); // we might consider getting rid of this managed allocation
-                    (uint ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(prefixedAbsolutePath, mode, access, share, options, allocationSize);
+                    (ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(prefixedAbsolutePath, mode, access, share, options, allocationSize);
                     if (ntStatus == 0)
                     {
                         return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
                     }
-                    else if (ntStatus == ERROR_STATUS_DISK_FULL)
+                    else if (ntStatus == NT_ERROR_STATUS_DISK_FULL)
                     {
                         throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, path, allocationSize));
+                    }
+                    else if (ntStatus == NT_ERROR_STATUS_FILE_TOO_LARGE)
+                    {
+                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
                     }
 
                     // NtCreateFile has failed for some other reason than a full disk.
@@ -110,7 +117,34 @@ namespace System.IO.Strategies
                 // (note that this is the effective default on CreateFile2)
                 flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
 
-                return ValidateFileHandle(Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero), path, (options & FileOptions.Asynchronous) != 0);
+                SafeFileHandle safeFileHandle = ValidateFileHandle(
+                    Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero), path, (options & FileOptions.Asynchronous) != 0);
+
+                if (ntStatus == NT_STATUS_INVALID_PARAMETER)
+                {
+                    // It seems that NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
+                    // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
+                    // Since Linux reports EFBIG for such cases, we are using the following workaround to get the right exception.
+                    // TrySetFileLength uses SetFileInformationByHandle which fails with a clear error if the file is too big.
+                    if (!TrySetFileLength(safeFileHandle, path, allocationSize, out int errorCode))
+                    {
+                        // Since we have failed to extend the file, we mimic the NtCreateFile behaviour
+                        // which does not create a file if there is not enough space on the disk.
+                        // So we close the handle, remove the file and then throw an exception.
+                        safeFileHandle.Dispose();
+                        Interop.Kernel32.DeleteFile(path);
+
+                        if (errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE // this is what we would expect in such a case
+                            || errorCode == Interop.Errors.ERROR_DISK_FULL) // but this is what we get (verified with Windows 10.0.18363.1500)
+                        {
+                            throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
+                        }
+
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                    }
+                }
+
+                return safeFileHandle;
             }
         }
 
@@ -340,6 +374,19 @@ namespace System.IO.Strategies
 
         internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
+            if (!TrySetFileLength(handle, path, length, out int errorCode))
+            {
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+            }
+        }
+
+        private static unsafe bool TrySetFileLength(SafeFileHandle handle, string? path, long length, out int errorCode)
+        {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
                 EndOfFile = length
@@ -351,11 +398,12 @@ namespace System.IO.Strategies
                 &eofInfo,
                 (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                errorCode = Marshal.GetLastWin32Error();
+                return false;
             }
+
+            errorCode = 0;
+            return true;
         }
 
         // __ConsoleStream also uses this code.

@@ -36,7 +36,7 @@ namespace System.IO.Tests
     [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
     public partial class NoParallelTests { }
 
-    // Don't run in parallel as the WhenFileStreamFailsToPreallocateDiskSpaceTheErrorMessageContainsAllDetails test
+    // Don't run in parallel as the WhenDiskIsFullTheErrorMessageContainsAllDetails test
     // consumes entire available free space on the disk (only on Linux, this is how posix_fallocate works)
     // and if we try to run other disk-writing test in the meantime we are going to get "No space left on device" exception.
     [Collection("NoParallelTests")]
@@ -115,7 +115,7 @@ namespace System.IO.Tests
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
         [InlineData(FileMode.OpenOrCreate)]
-        public void WhenFileStreamFailsToPreallocateDiskSpaceTheErrorMessageContainsAllDetails(FileMode mode)
+        public void WhenDiskIsFullTheErrorMessageContainsAllDetails(FileMode mode)
         {
             const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
 
@@ -124,7 +124,7 @@ namespace System.IO.Tests
             IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, tooMuch));
             Assert.Contains("disk was full", ex.Message);
             Assert.Contains(filePath, ex.Message);
-            Assert.Contains(AllocationSize.ToString(), ex.Message);
+            Assert.Contains(tooMuch.ToString(), ex.Message);
 
             Assert.False(File.Exists(filePath)); // ensure it was NOT created (provided OOTB by Windows, emulated on Unix)
         }
