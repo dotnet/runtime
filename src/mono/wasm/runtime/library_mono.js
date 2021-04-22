@@ -1135,6 +1135,38 @@ var MonoSupportLib = {
 			return res;
 		},
 
+		_get_shard_name: function (fileList) {
+			var name_lengths = fileList.map(x => x.split("_").length);
+			var shard_ix = name_lengths.indexOf(Math.max(...name_lengths));
+			return fileList[shard_ix];
+		},
+
+		_get_list_of_icu_files: function (dictionary, culture, feature_shards=true) {
+			var icu_files = []
+			if (culture == null || culture.length < 2) {
+				icu_files = [dictionary.complete];
+			} else {
+				var parent_culture = culture.split('-')[0];
+				var files = dictionary[parent_culture];
+				if (!feature_shards) {
+					icu_files = [files.full];
+				} else {
+					icu_files = files.essentials;
+					icu_files.push(this._get_shard_name(files.coll));
+					icu_files.push(this._get_shard_name(files.locales));
+				}
+			}
+
+			icu_assets = [];
+			icu_files.forEach(file => icu_assets.push({
+																									"behavior": "icu",
+																									"name": file,
+																									"load_remote": false,
+																									"data_type": "common"
+																								}));
+			return icu_assets;
+		},
+
 		mono_wasm_get_details: function (objectId, args={}) {
 			let id = this._parse_object_id (objectId, true);
 
@@ -1521,10 +1553,8 @@ var MonoSupportLib = {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
-
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
-
 			switch (asset.behavior) {
 				case "resource":
 				case "assembly":
@@ -1534,7 +1564,6 @@ var MonoSupportLib = {
 					offset = this.mono_wasm_load_bytes_into_heap (bytes);
 					ctx.loaded_assets[virtualName] = [offset, bytes.length];
 					break;
-
 				case "vfs":
 					// FIXME
 					var lastSlash = virtualName.lastIndexOf("/");
@@ -1660,6 +1689,7 @@ var MonoSupportLib = {
 		//      "icu": load ICU globalization data from any runtime assets with behavior "icu".
 		//      "invariant": operate in invariant globalization mode.
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+		//		application_culture: (optional) current browser culture
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		mono_load_runtime_and_bcl_args: function (args) {
 			try {
@@ -1751,7 +1781,8 @@ var MonoSupportLib = {
 				throw new Error ("Invalid args (runtime_asset_sources was replaced by remote_sources)");
 			if (!args.loaded_cb)
 				throw new Error ("loaded_cb not provided");
-
+			
+			args.assets = args.assets.concat(this._get_list_of_icu_files(args.icu_dictionary, args.application_culture));
 			var ctx = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
@@ -1795,11 +1826,10 @@ var MonoSupportLib = {
 				}
 			};
 
-			args.assets.forEach (function (asset) {
+			args.assets.forEach((asset) => {
 				var attemptNextSource;
 				var sourceIndex = 0;
 				var sourcesList = asset.load_remote ? args.remote_sources : [""];
-
 				var handleFetchResponse = function (response) {
 					if (!response.ok) {
 						try {
@@ -1874,7 +1904,6 @@ var MonoSupportLib = {
 						attemptNextSource ();
 					}
 				};
-
 				attemptNextSource ();
 			});
 		},

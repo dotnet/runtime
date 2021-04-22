@@ -2,7 +2,6 @@
 //
 // Run runtime tests under a JS shell or a browser
 //
-
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
 
@@ -142,7 +141,6 @@ function inspect_object (o) {
 	}
 	return r;
 }
-
 // Preprocess arguments
 var args = testArguments;
 console.info("Arguments: " + testArguments);
@@ -151,6 +149,7 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
+enable_sharding = false;
 working_dir='/';
 while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
@@ -176,6 +175,10 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--working-dir=")) {
 		var arg = args [0].substring ("--working-dir=".length);
 		working_dir = arg;
+		args = args.slice (1);
+	} else if (args [0].startsWith ("--enable-sharding=")) {
+		var arg = args [0].substring ("--enable-sharding=".length);
+		enable_sharding = arg;
 		args = args.slice (1);
 	} else {
 		break;
@@ -229,7 +232,6 @@ var Module = {
 		if (!enable_gc) {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
-
 		config.loaded_cb = function () {
 			let wds = FS.stat (working_dir);
 			if (wds === undefined || !FS.isDir (wds.mode)) {
@@ -279,6 +281,8 @@ var Module = {
 				})
 			}
 		};
+		if (enable_sharding)
+			config.application_culture = Intl.DateTimeFormat().resolvedOptions().locale;
 
 		MONO.mono_load_runtime_and_bcl_args (config);
 	},
