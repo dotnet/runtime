@@ -180,15 +180,14 @@ namespace ABI
 }
 
 // ManagedObjectWrapper_QueryInterface needs to be visible outside of this compilation unit
-// to support the DAC. See code:ClrDataAccess::DACTryGetComWrappersObjectFromCCW for the
-// usage in the DAC (look for the GetEEFuncEntryPoint call).
+// to support the DAC (look for the GetEEFuncEntryPoint call).
 HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
     _In_ ABI::ComInterfaceDispatch* disp,
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
 {
     ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-    return wrapper->QueryInterface(disp, riid, ppvObject);
+    return wrapper->QueryInterface(riid, ppvObject);
 }
 
 namespace
@@ -218,6 +217,36 @@ namespace
     };
 
     static_assert(sizeof(ManagedObjectWrapper_IUnknownImpl) == (3 * sizeof(void*)), "Unexpected vtable size");
+}
+
+// TrackerTarget_QueryInterface needs to be visible outside of this compilation unit
+// to support the DAC (look for the GetEEFuncEntryPoint call).
+HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
+    _In_ ABI::ComInterfaceDispatch* disp,
+    /* [in] */ REFIID riid,
+    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+{
+    ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
+
+    // AddRef is "safe" at this point because since it is a MOW with an outstanding
+    // Reference Tracker reference, we know for sure the MOW is not claimed yet
+    // but the managed object could be. If the managed object is alive at this
+    // moment the AddRef will ensure it remains alive for the duration of the
+    // QueryInterface.
+    ComHolder<ManagedObjectWrapper> ensureStableLifetime{ wrapper };
+
+    // For MOWs that have outstanding Reference Tracker reference, they could be either:
+    //  1. Marked to Destroy - in this case it is unsafe to touch wrapper.
+    //  2. Object Handle target has been NULLed out by GC.
+    if (wrapper->IsMarkedToDestroy()
+        || !InteropLibImports::HasValidTarget(wrapper->Target))
+    {
+        // It is unsafe to proceed with a QueryInterface call. The MOW has been
+        // marked destroyed or the associated managed object has been collected.
+        return COR_E_ACCESSING_CCW;
+    }
+
+    return wrapper->QueryInterface(riid, ppvObject);
 }
 
 namespace
@@ -286,13 +315,17 @@ namespace
     // Hard-coded IReferenceTrackerTarget vtable
     const struct
     {
-        decltype(ManagedObjectWrapper_IUnknownImpl) IUnknownImpl;
+        decltype(&TrackerTarget_QueryInterface) QueryInterface;
+        decltype(&ManagedObjectWrapper_AddRef) AddRef;
+        decltype(&ManagedObjectWrapper_Release) Release;
         decltype(&TrackerTarget_AddRefFromReferenceTracker) AddRefFromReferenceTracker;
         decltype(&TrackerTarget_ReleaseFromReferenceTracker) ReleaseFromReferenceTracker;
         decltype(&TrackerTarget_Peg) Peg;
         decltype(&TrackerTarget_Unpeg) Unpeg;
     } ManagedObjectWrapper_IReferenceTrackerTargetImpl {
-        ManagedObjectWrapper_IUnknownImpl,
+        &TrackerTarget_QueryInterface,
+        &ManagedObjectWrapper_AddRef,
+        &ManagedObjectWrapper_Release,
         &TrackerTarget_AddRefFromReferenceTracker,
         &TrackerTarget_ReleaseFromReferenceTracker,
         &TrackerTarget_Peg,
@@ -463,14 +496,9 @@ ManagedObjectWrapper::ManagedObjectWrapper(
     , _userDefined{ userDefined }
     , _dispatches{ dispatches }
     , _flags{ flags }
-    , _refTrackerDispatch{ nullptr }
 {
     bool wasSet = TrySetObjectHandle(objectHandle);
     _ASSERTE(wasSet);
-
-    // Retain the dispatch entry for the IReferenceTrackerTarget so we
-    // can branch quickly during a QI from that interface.
-    _refTrackerDispatch = (const ABI::ComInterfaceDispatch*)AsRuntimeDefined(__uuidof(IReferenceTrackerTarget));
 }
 
 ManagedObjectWrapper::~ManagedObjectWrapper()
@@ -607,36 +635,11 @@ HRESULT ManagedObjectWrapper::Unpeg()
 }
 
 HRESULT ManagedObjectWrapper::QueryInterface(
-    _In_ const ABI::ComInterfaceDispatch* dispatch,
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
 {
     if (ppvObject == nullptr)
         return E_POINTER;
-
-    // Check if this is a QI from an IReferenceTrackerTarget.
-    ComHolder<ManagedObjectWrapper> releaseMaybe;
-    if (dispatch == _refTrackerDispatch)
-    {
-        // AddRef to keep the managed object alive.
-        // AddRef is "safe" at this point because if it is a MOW with outstanding
-        // Reference Tracker reference, we know for sure the MOW is not claimed yet
-        // but the managed object could be.
-        AddRef();
-
-        // We are taking an extra AddRef() that now must be released.
-        releaseMaybe.Attach(this);
-
-        // For MOWs that have outstanding Reference Tracker reference, they could be either:
-        //  1. Marked to Destroy - in this case it is unsafe to touch wrapper.
-        //  2. Object Handle target has been NULLed out by GC.
-        if (IsMarkedToDestroy() || !InteropLibImports::HasValidTarget(Target))
-        {
-            // It is unsafe to proceed with a QueryInterface call. The MOW has been
-            // marked destroyed or the associated managed object has been collected.
-            return COR_E_ACCESSING_CCW;
-        }
-    }
 
     // Find target interface
     *ppvObject = AsRuntimeDefined(riid);

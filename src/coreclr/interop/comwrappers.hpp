@@ -49,7 +49,6 @@ private:
     ABI::ComInterfaceDispatch* _dispatches;
 
     Volatile<CreateComInterfaceFlagsEx> _flags;
-    const ABI::ComInterfaceDispatch* _refTrackerDispatch;
 
 public: // static
     // Get the implementation for IUnknown.
@@ -115,7 +114,6 @@ public: // IReferenceTrackerTarget
 
 public: // Lifetime
     HRESULT QueryInterface(
-        _In_ const ABI::ComInterfaceDispatch* dispatch,
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR * __RPC_FAR * ppvObject);
     ULONG AddRef(void);

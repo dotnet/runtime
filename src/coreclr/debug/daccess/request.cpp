@@ -4133,7 +4133,8 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface);
+    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
+        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)

@@ -528,6 +528,30 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTracking
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
 }
 
+extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTrackerAndReturn(IUnknown *obj)
+{
+    assert(obj != nullptr);
+
+    API::IReferenceTrackerTarget* targetMaybe;
+    if (S_OK == obj->QueryInterface(&targetMaybe))
+    {
+        (void)targetMaybe->AddRefFromReferenceTracker();
+        (void)targetMaybe->Release();
+
+        // The IReferenceTrackerTarget instance is returned even after calling Release since
+        // the Reference Tracker count is now extending the lifetime of the object.
+        return targetMaybe;
+    }
+
+    return nullptr;
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceTracker(API::IReferenceTrackerTarget *target)
+{
+    assert(target != nullptr);
+    (void)target->ReleaseFromReferenceTracker();
+}
+
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown *obj, int i, IUnknown **out)
 {
     if (obj == nullptr)

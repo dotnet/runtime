@@ -150,6 +150,12 @@ namespace ComWrappersTests.Common
 
         [DllImport(nameof(MockReferenceTrackerRuntime))]
         extern public static int Trigger_NotifyEndOfReferenceTrackingOnThread();
+
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static IntPtr TrackerTarget_AddRefFromReferenceTrackerAndReturn(IntPtr ptr);
+
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static void TrackerTarget_ReleaseFromReferenceTracker(IntPtr ptr);
     }
 
     [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
