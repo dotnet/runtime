@@ -51,7 +51,7 @@ namespace System
         internal const string EscapeUriStringMessage = "Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.";
         internal const string EscapeUriStringDiagId = "SYSLIB0013";
 
-        internal const string WebRequestMessage = "Use HttpClient instead.";
+        internal const string WebRequestMessage = "WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.";
         internal const string WebRequestDiagId = "SYSLIB0014";
 
         internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications.";
