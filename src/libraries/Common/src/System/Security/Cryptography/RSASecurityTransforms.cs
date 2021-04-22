@@ -190,29 +190,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override unsafe void ImportSubjectPublicKeyInfo(
-                ReadOnlySpan<byte> source,
-                out int bytesRead)
-            {
-                ThrowIfDisposed();
-
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                    {
-                        // Validate the DER value and get the number of bytes.
-                        RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                            manager.Memory,
-                            out int localRead);
-
-                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
-                        SetKey(SecKeyPair.PublicOnly(publicKey));
-
-                        bytesRead = localRead;
-                    }
-                }
-            }
-
             public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
                 ThrowIfDisposed();
@@ -221,24 +198,18 @@ namespace System.Security.Cryptography
                 {
                     using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
                     {
-                        AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                        ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
+                        // Validate the DER value and get the number of bytes.
+                        RSAKeyFormatHelper.ReadRsaPublicKey(
+                            manager.Memory,
+                            out int localRead);
 
-                        SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
-                        {
-                            Algorithm = new AlgorithmIdentifierAsn
-                            {
-                                Algorithm = Oids.Rsa,
-                                Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
-                            },
-                            SubjectPublicKey = firstElement,
-                        };
+                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
+                            source.Slice(0, localRead),
+                            Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
+                            isPublic: true);
+                        SetKey(SecKeyPair.PublicOnly(publicKey));
 
-                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                        spki.Encode(writer);
-
-                        ImportSubjectPublicKeyInfo(writer.Encode(), out _);
-                        bytesRead = firstElement.Length;
+                        bytesRead = localRead;
                     }
                 }
             }
@@ -523,10 +494,12 @@ namespace System.Security.Cryptography
                                 hashAlgorithm.Name));
                     }
 
-                    return Interop.AppleCrypto.GenerateSignature(
+                    return Interop.AppleCrypto.KeyServicesCreateSignature(
                         keys.PrivateKey,
                         hash,
-                        palAlgId);
+                        palAlgId,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
+                        digest: true);
                 }
 
                 // A signature will always be the keysize (in ceiling-bytes) in length.
@@ -600,11 +573,13 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    return Interop.AppleCrypto.TryGenerateSignature(
+                    return Interop.AppleCrypto.KeyServicesTryCreateSignature(
                         keys.PrivateKey,
                         hash,
                         destination,
                         palAlgId,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
+                        digest: true,
                         out bytesWritten);
                 }
 
@@ -666,7 +641,13 @@ namespace System.Security.Cryptography
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
-                    return Interop.AppleCrypto.VerifySignature(GetKeys().PublicKey, hash, signature, palAlgId);
+                    return Interop.AppleCrypto.KeyServicesVerifySignature(
+                        GetKeys().PublicKey,
+                        hash,
+                        signature,
+                        palAlgId,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
+                        digest: true);
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
@@ -826,7 +807,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    keyWriter = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                    keyWriter = RSAKeyFormatHelper.WritePkcs1PublicKey(parameters);
                     hasPrivateKey = false;
                 }
 
@@ -843,7 +824,10 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                    return Interop.AppleCrypto.CreateDataKey(
+                        rented.AsSpan(0, written),
+                        Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
+                        isPublic: !hasPrivateKey);
                 }
                 finally
                 {
