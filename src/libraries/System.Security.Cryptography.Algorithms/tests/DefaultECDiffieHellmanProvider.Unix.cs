@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        public bool CanDeriveNewPublicKey => true;
+        public bool CanDeriveNewPublicKey => !PlatformDetection.IsiOS && !PlatformDetection.IstvOS;
 
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
