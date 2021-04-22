@@ -40460,7 +40460,7 @@ HRESULT GCHeap::Initialize()
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
-        return E_INVALIDARG;
+        return E_OUTOFMEMORY;
     }
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else

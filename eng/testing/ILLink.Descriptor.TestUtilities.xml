@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="TestUtilities">
+    <namespace fullname="System" />
+  </assembly>
+</linker>
