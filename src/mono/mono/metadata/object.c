@@ -6716,16 +6716,6 @@ mono_string_get_pinned (MonoStringHandle str, MonoError *error)
 	return news;
 }
 
-static guint
-intern_ptr_hash_internal (MonoString *s) {
-	return (guint)(void*)s;
-}
-
-static gboolean
-intern_ptr_equal_internal (MonoString *s1, MonoString *s2) {
-	return s1 == s2;
-}
-
 MonoStringHandle
 mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error)
 {
@@ -6757,7 +6747,7 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 		MONO_HANDLE_ASSIGN_RAW (s, res);
 	else {
 		if (!instance_intern_table) {
-			MonoGHashTable *table = mono_g_hash_table_new_type_internal ((GHashFunc)intern_ptr_hash_internal, (GCompareFunc)intern_ptr_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Interned Flags");
+			MonoGHashTable *table = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Interned Flags");
 			mono_memory_barrier ();
 			instance_intern_table = table;
 		}
