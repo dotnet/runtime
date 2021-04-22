@@ -1078,11 +1078,6 @@ public:
     inline WORD GetSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifndef DACCESS_COMPILE
-        // The DAC build uses this method to test for "sanity" of a MethodDesc, and
-        // doesn't need the assert.
-        _ASSERTE(! IsEnCAddedMethod() || !"Cannot get slot for method added via EnC");
-#endif // !DACCESS_COMPILE
 
         // Check if this MD is using the packed slot layout
         if (!RequiresFullSlotNumber())
