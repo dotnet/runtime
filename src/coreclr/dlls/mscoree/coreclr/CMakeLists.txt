@@ -252,4 +252,6 @@ endif(CLR_CMAKE_TARGET_WIN32)
 install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 
 # Enable profile guided optimization
-add_pgo(coreclr)
+if (NOT (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM))
+    add_pgo(coreclr)
+endif (NOT (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM))
