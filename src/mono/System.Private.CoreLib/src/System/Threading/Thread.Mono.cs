@@ -66,7 +66,7 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
@@ -138,9 +138,20 @@ namespace System.Threading
                 return 7;
             }
         }
-
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
 #endif
 
         public ThreadPriority Priority
@@ -199,24 +210,12 @@ namespace System.Threading
         }
 
 #if TARGET_UNIX || TARGET_BROWSER
-        [MemberNotNull(nameof(_waitInfo))]
         [DynamicDependency(nameof(OnThreadExiting))]
 #endif
         private void Initialize()
         {
             InitInternal(this);
-#if TARGET_UNIX || TARGET_BROWSER
-            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-#endif
         }
-
-#if TARGET_UNIX || TARGET_BROWSER
-        private void EnsureWaitInfo()
-        {
-            if (_waitInfo == null)
-                _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-        }
-#endif
 
         public static void SpinWait(int iterations)
         {
@@ -321,9 +320,6 @@ namespace System.Threading
         private static Thread InitializeCurrentThread()
         {
             var current = GetCurrentThread();
-#if TARGET_UNIX || TARGET_BROWSER
-            current.EnsureWaitInfo();
-#endif
             t_currentThread = current;
             return t_currentThread;
         }

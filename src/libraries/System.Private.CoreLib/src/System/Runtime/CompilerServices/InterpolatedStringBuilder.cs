@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Runtime.CompilerServices
 {
@@ -29,23 +30,41 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Optional provider to pass to IFormattable.ToString or ISpanFormattable.TryFormat calls.</summary>
         private readonly IFormatProvider? _provider;
-        /// <summary>Optional custom formatter derived from the <see cref="_provider"/>.</summary>
-        private readonly object? _customFormatter;
         /// <summary>Array rented from the array pool and used to back <see cref="_chars"/>.</summary>
         private char[]? _arrayToReturnToPool;
         /// <summary>The span to write into.</summary>
         private Span<char> _chars;
         /// <summary>Position at which to write the next character.</summary>
         private int _pos;
+        /// <summary>Whether <see cref="_provider"/> provides an ICustomFormatter.</summary>
+        /// <remarks>
+        /// Custom formatters are very rare.  We want to support them, but it's ok if we make them more expensive
+        /// in order to make them as pay-for-play as possible.  So, we avoid adding another reference type field
+        /// to reduce the size of the builder and to reduce required zero'ing, by only storing whether the provider
+        /// provides a formatter, rather than actually storing the formatter.  This in turn means, if there is a
+        /// formatter, we pay for the extra interface call on each AppendFormatted that needs it.
+        /// </remarks>
+        private readonly bool _hasCustomFormatter;
 
         /// <summary>Initializes the builder.</summary>
         /// <param name="initialCapacity">Approximated capacity required to support the interpolated string.  The final size may be smaller or larger.</param>
         private InterpolatedStringBuilder(int initialCapacity)
         {
             _provider = null;
-            _customFormatter = null;
             _chars = _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
             _pos = 0;
+            _hasCustomFormatter = false;
+        }
+
+        /// <summary>Initializes the builder.</summary>
+        /// <param name="scratchBuffer">A buffer temporarily transferred to the builder for use as part of its formatting.  Contents may be overwritten.</param>
+        private InterpolatedStringBuilder(Span<char> scratchBuffer)
+        {
+            _provider = null;
+            _arrayToReturnToPool = null;
+            _chars = scratchBuffer;
+            _pos = 0;
+            _hasCustomFormatter = false;
         }
 
         /// <summary>Initializes the builder.</summary>
@@ -54,20 +73,9 @@ namespace System.Runtime.CompilerServices
         private InterpolatedStringBuilder(int initialCapacity, IFormatProvider? provider)
         {
             _provider = provider;
-            _customFormatter = provider?.GetFormat(typeof(ICustomFormatter));
             _chars = _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
             _pos = 0;
-        }
-
-        /// <summary>Initializes the builder.</summary>
-        /// <param name="scratchBuffer">A buffer temporarily transferred to the builder for use as part of its formatting.  Contents may be overwritten.</param>
-        private InterpolatedStringBuilder(Span<char> scratchBuffer)
-        {
-            _provider = null;
-            _customFormatter = null;
-            _arrayToReturnToPool = null;
-            _chars = scratchBuffer;
-            _pos = 0;
+            _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
         }
 
         /// <summary>Initializes the builder.</summary>
@@ -76,10 +84,10 @@ namespace System.Runtime.CompilerServices
         private InterpolatedStringBuilder(Span<char> scratchBuffer, IFormatProvider? provider)
         {
             _provider = provider;
-            _customFormatter = provider?.GetFormat(typeof(ICustomFormatter));
             _arrayToReturnToPool = null;
             _chars = scratchBuffer;
             _pos = 0;
+            _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
         }
 
         /// <summary>Creates a builder used to translate an interpolated string into a <see cref="string"/>.</summary>
@@ -117,13 +125,13 @@ namespace System.Runtime.CompilerServices
         /// <summary>Derives a default length with which to seed the builder.</summary>
         /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
         /// <param name="formattedCount">The number of holes in the interpolated string.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // becomes a constant when inputs are constant
         private static int GetDefaultLength(int literalLength, int formattedCount) =>
             Math.Max(MinimumArrayPoolLength, literalLength + (formattedCount * GuessedLengthPerHole));
 
         /// <summary>Gets the built <see cref="string"/>.</summary>
         /// <returns>The built string.</returns>
-        public override string ToString() => _chars.Slice(0, _pos).ToString();
+        public override string ToString() => new string(_chars.Slice(0, _pos));
 
         /// <summary>Gets the built <see cref="string"/> and clears the builder.</summary>
         /// <returns>The built string.</returns>
@@ -135,7 +143,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public string ToStringAndClear()
         {
-            string result = _chars.Slice(0, _pos).ToString();
+            string result = new string(_chars.Slice(0, _pos));
 
             char[]? toReturn = _arrayToReturnToPool;
             this = default; // defensive clear
@@ -246,7 +254,7 @@ namespace System.Runtime.CompilerServices
             // e.g. for Int32 it enables the JIT to eliminate code in the inlined method based on a length check on the format.
 
             // If there's a custom formatter, always use it.
-            if (_customFormatter is not null)
+            if (_hasCustomFormatter)
             {
                 AppendCustomFormatter(value, format: null);
                 return;
@@ -293,7 +301,7 @@ namespace System.Runtime.CompilerServices
         public void AppendFormatted<T>(T value, string? format)
         {
             // If there's a custom formatter, always use it.
-            if (_customFormatter is not null)
+            if (_hasCustomFormatter)
             {
                 AppendCustomFormatter(value, format);
                 return;
@@ -426,7 +434,7 @@ namespace System.Runtime.CompilerServices
         public void AppendFormatted(string? value)
         {
             // Fast-path for no custom formatter and a non-null string that fits in the current destination buffer.
-            if (_customFormatter is null &&
+            if (!_hasCustomFormatter &&
                 value is not null &&
                 value.TryCopyTo(_chars.Slice(_pos)))
             {
@@ -447,18 +455,15 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AppendFormattedSlow(string? value)
         {
-            if (_customFormatter is null)
-            {
-                if (value is not null)
-                {
-                    EnsureCapacityForAdditionalChars(value.Length);
-                    value.CopyTo(_chars.Slice(_pos));
-                    _pos += value.Length;
-                }
-            }
-            else
+            if (_hasCustomFormatter)
             {
                 AppendCustomFormatter(value, format: null);
+            }
+            else if (value is not null)
+            {
+                EnsureCapacityForAdditionalChars(value.Length);
+                value.CopyTo(_chars.Slice(_pos));
+                _pos += value.Length;
             }
         }
 
@@ -486,6 +491,17 @@ namespace System.Runtime.CompilerServices
         #endregion
         #endregion
 
+        /// <summary>Gets whether the provider provides a custom formatter.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used in two hot path call sites
+        private static bool HasCustomFormatter(IFormatProvider provider)
+        {
+            Debug.Assert(provider is not null);
+            Debug.Assert(provider is not CultureInfo || provider.GetFormat(typeof(ICustomFormatter)) is null, "Expected CultureInfo to not provide a custom formatter");
+            return
+                provider.GetType() != typeof(CultureInfo) && // optimization to avoid GetFormat in the majority case
+                provider.GetFormat(typeof(ICustomFormatter)) != null;
+        }
+
         /// <summary>Formats the value using the custom formatter from the provider.</summary>
         /// <param name="value">The value to write.</param>
         /// <param name="format">The format string.</param>
@@ -496,8 +512,13 @@ namespace System.Runtime.CompilerServices
             // a provider was used that supplied an ICustomFormatter which wanted to intercept the particular value.
             // We do the cast here rather than in the ctor, even though this could be executed multiple times per
             // formatting, to make the cast pay for play.
-            Debug.Assert(_customFormatter is not null);
-            if (((ICustomFormatter)_customFormatter).Format(format, value, _provider) is string customFormatted)
+            Debug.Assert(_hasCustomFormatter);
+            Debug.Assert(_provider != null);
+
+            ICustomFormatter? formatter = (ICustomFormatter?)_provider.GetFormat(typeof(ICustomFormatter));
+            Debug.Assert(formatter != null, "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
+
+            if (formatter is not null && formatter.Format(format, value, _provider) is string customFormatted)
             {
                 AppendLiteral(customFormatted);
             }

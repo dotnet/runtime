@@ -77,6 +77,9 @@ namespace Internal.JitInterface
         [DllImport(JitLibrary)]
         private extern static IntPtr getJit();
 
+        [DllImport(JitLibrary)]
+        private extern static IntPtr getLikelyClass(PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset, out uint pLikelihood, out uint pNumberOfClasses);
+
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
 
@@ -146,6 +149,96 @@ namespace Internal.JitInterface
         }
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
+
+        public static IEnumerable<PgoSchemaElem> ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(PgoSchemaElem[] pgoData, CompilationModuleGroup compilationModuleGroup)
+        {
+            bool hasTypeHistogram = false;
+            foreach (var elem in pgoData)
+            {
+                if (elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
+                {
+                    // found histogram
+                    hasTypeHistogram = true;
+                    break;
+                }
+            }
+            if (!hasTypeHistogram)
+            {
+                foreach (var elem in pgoData)
+                {
+                    yield return elem;
+                }
+            }
+            else
+            {
+                int currentObjectIndex = 0x1000000; // This needs to be a somewhat large non-zero number, so that the jit does not confuse it with NULL, or any other special value.
+                Dictionary<object, IntPtr> objectToHandle = new Dictionary<object, IntPtr>();
+                Dictionary<IntPtr, object> handleToObject = new Dictionary<IntPtr, object>();
+
+                ComputeJitPgoInstrumentationSchema(LocalObjectToHandle, pgoData, out var nativeSchema, out var instrumentationData);
+
+                for (int i = 0; i < (pgoData.Length); i++)
+                {
+                    if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
+                    {
+                        PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
+                        if (newElem.HasValue)
+                        {
+                            yield return newElem.Value;
+                        }
+                        i++; // The histogram is two entries long, so skip an extra entry
+                        continue;
+                    }
+                    yield return pgoData[i];
+                }
+
+                IntPtr LocalObjectToHandle(object input)
+                {
+                    if (objectToHandle.TryGetValue(input, out var result))
+                    {
+                        return result;
+                    }
+                    result = new IntPtr(currentObjectIndex++);
+                    objectToHandle.Add(input, result);
+                    handleToObject.Add(result, input);
+                    return result;
+                }
+            }
+        }
+
+        private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
+        {
+            // getLikelyClass will use two entries from the native schema table. There must be at least two present to avoid ovberruning the buffer
+            if (index > (nativeSchema.Length - 2))
+                return null;
+
+            fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
+            {
+                fixed(byte* pInstrumentationData = &instrumentationData[0])
+                {
+                    IntPtr classType = getLikelyClass(pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset, out uint likelihood, out uint numberOfClasses);
+
+                    if (classType != IntPtr.Zero)
+                    {
+                        TypeDesc type = (TypeDesc)handleToObject[classType];
+#if READYTORUN
+                        if (compilationModuleGroup.VersionsWithType(type))
+#endif
+                        {
+                            PgoSchemaElem likelyClassElem = new PgoSchemaElem();
+                            likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;
+                            likelyClassElem.ILOffset = nativeSchema[index].ILOffset;
+                            likelyClassElem.Count = 1;
+                            likelyClassElem.Other = (int)(likelihood | (numberOfClasses << 8));
+                            likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown(type) };
+                            return likelyClassElem;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
 
         private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
@@ -1069,7 +1162,7 @@ namespace Internal.JitInterface
             MethodDesc decl = HandleToObject(info->virtualMethod);
             Debug.Assert(!decl.HasInstantiation);
 
-            if (info->context != null)
+            if ((info->context != null) && decl.OwningType.IsInterface)
             {
                 TypeDesc ownerTypeDesc = typeFromContext(info->context);
                 if (decl.OwningType != ownerTypeDesc)
@@ -2837,8 +2930,6 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedModuleHandle"); }
-        private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedClassHandle"); }
 
         private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedFieldHandle"); }
@@ -3383,6 +3474,69 @@ namespace Internal.JitInterface
             return _compilation.ProfileData[method]?.SchemaData;
         }
 
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData)
+        {
+            nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
+            MemoryStream msInstrumentationData = new MemoryStream();
+            BinaryWriter bwInstrumentationData = new BinaryWriter(msInstrumentationData);
+            for (int i = 0; i < nativeSchemas.Length; i++)
+            {
+                if ((bwInstrumentationData.BaseStream.Position % 8) == 4)
+                {
+                    bwInstrumentationData.Write(0);
+                }
+
+                Debug.Assert((bwInstrumentationData.BaseStream.Position % 8) == 0);
+                nativeSchemas[i].Offset = new IntPtr(checked((int)bwInstrumentationData.BaseStream.Position));
+                nativeSchemas[i].ILOffset = pgoResultsSchemas[i].ILOffset;
+                nativeSchemas[i].Count = pgoResultsSchemas[i].Count;
+                nativeSchemas[i].Other = pgoResultsSchemas[i].Other;
+                nativeSchemas[i].InstrumentationKind = (PgoInstrumentationKind)pgoResultsSchemas[i].InstrumentationKind;
+
+                if (pgoResultsSchemas[i].DataObject == null)
+                {
+                    bwInstrumentationData.Write(pgoResultsSchemas[i].DataLong);
+                }
+                else
+                {
+                    object dataObject = pgoResultsSchemas[i].DataObject;
+                    if (dataObject is int[] intArray)
+                    {
+                        foreach (int intVal in intArray)
+                            bwInstrumentationData.Write(intVal);
+                    }
+                    else if (dataObject is long[] longArray)
+                    {
+                        foreach (long longVal in longArray)
+                            bwInstrumentationData.Write(longVal);
+                    }
+                    else if (dataObject is TypeSystemEntityOrUnknown[] typeArray)
+                    {
+                        foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
+                        {
+                            IntPtr ptrVal = IntPtr.Zero;
+                            if (typeVal.AsType != null)
+                                ptrVal = (IntPtr)objectToHandle(typeVal.AsType);
+                            else
+                            {
+                                // The "Unknown types are the values from 1-33
+                                ptrVal = new IntPtr((typeVal.AsUnknown % 32) + 1);
+                            }
+
+                            if (IntPtr.Size == 4)
+                                bwInstrumentationData.Write((int)ptrVal);
+                            else
+                                bwInstrumentationData.Write((long)ptrVal);
+                        }
+                    }
+                }
+            }
+
+            bwInstrumentationData.Flush();
+
+            instrumentationData = msInstrumentationData.ToArray();
+        }
+
         private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);
@@ -3396,64 +3550,9 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    PgoInstrumentationSchema[] nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
-                    MemoryStream msInstrumentationData = new MemoryStream();
-                    BinaryWriter bwInstrumentationData = new BinaryWriter(msInstrumentationData);
-                    for (int i = 0; i < nativeSchemas.Length; i++)
-                    {
-                        if ((bwInstrumentationData.BaseStream.Position % 8) == 4)
-                        {
-                            bwInstrumentationData.Write(0);
-                        }
+                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, out var instrumentationData);
 
-                        Debug.Assert((bwInstrumentationData.BaseStream.Position % 8) == 0);
-                        nativeSchemas[i].Offset = new IntPtr(checked((int)bwInstrumentationData.BaseStream.Position));
-                        nativeSchemas[i].ILOffset = pgoResultsSchemas[i].ILOffset;
-                        nativeSchemas[i].Count = pgoResultsSchemas[i].Count;
-                        nativeSchemas[i].Other = pgoResultsSchemas[i].Other;
-                        nativeSchemas[i].InstrumentationKind = (PgoInstrumentationKind)pgoResultsSchemas[i].InstrumentationKind;
-
-                        if (pgoResultsSchemas[i].DataObject == null)
-                        {
-                            bwInstrumentationData.Write(pgoResultsSchemas[i].DataLong);
-                        }
-                        else
-                        {
-                            object dataObject = pgoResultsSchemas[i].DataObject;
-                            if (dataObject is int[] intArray)
-                            {
-                                foreach (int intVal in intArray)
-                                    bwInstrumentationData.Write(intVal);
-                            }
-                            else if (dataObject is long[] longArray)
-                            {
-                                foreach (long longVal in longArray)
-                                    bwInstrumentationData.Write(longVal);
-                            }
-                            else if (dataObject is TypeSystemEntityOrUnknown[] typeArray)
-                            {
-                                foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
-                                {
-                                    IntPtr ptrVal = IntPtr.Zero;
-                                    if (typeVal.AsType != null)
-                                        ptrVal = (IntPtr)ObjectToHandle(typeVal.AsType);
-                                    else
-                                    {
-                                        // The "Unknown types are the values from 1-33
-                                        ptrVal = new IntPtr((typeVal.AsUnknown % 32) + 1);
-                                    }
-
-                                    if (IntPtr.Size == 4)
-                                        bwInstrumentationData.Write((int)ptrVal);
-                                    else
-                                        bwInstrumentationData.Write((long)ptrVal);
-                                }
-                            }
-                        }
-                    }
-
-                    bwInstrumentationData.Flush();
-                    pgoResults.pInstrumentationData = (byte*)GetPin(msInstrumentationData.ToArray());
+                    pgoResults.pInstrumentationData = (byte*)GetPin(instrumentationData);
                     pgoResults.countSchemaItems = (uint)nativeSchemas.Length;
                     pgoResults.pSchema = (PgoInstrumentationSchema*)GetPin(nativeSchemas);
                     pgoResults.hr = HRESULT.S_OK;

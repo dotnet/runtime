@@ -22,8 +22,9 @@ private:
     load_command* m_commands;
     std::vector<segment_command_64*> m_segments;
     symtab_command* m_symtabCommand;
+    dysymtab_command* m_dysymtabCommand;
     nlist_64* m_nlists;
-    char* m_strtab;
+    uint64_t m_strtabAddress;
 
 public:
     MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mach_header_64* header = nullptr, std::string* name = nullptr);
@@ -43,7 +44,8 @@ private:
 
     bool ReadLoadCommands();
     bool ReadSymbolTable();
-    void* GetAddressFromFileOffset(uint32_t offset);
+    uint64_t GetAddressFromFileOffset(uint32_t offset);
+    std::string GetSymbolName(int index);
 };
 
 class MachOReader

@@ -252,9 +252,15 @@ void CrashInfo::VisitModule(MachOModule& module)
     // Save the runtime module path
     if (m_coreclrPath.empty())
     {
-        size_t last = module.Name().rfind(MAKEDLLNAME_A("coreclr"));
+        size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = module.Name().substr(0, last);
+            m_coreclrPath = module.Name().substr(0, last + 1);
+
+            uint64_t symbolOffset;
+            if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
+            {
+                TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+            }
         }
     }
     // VisitSegment is called for each segment of the module

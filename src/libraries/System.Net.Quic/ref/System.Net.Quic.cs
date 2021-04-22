@@ -56,9 +56,7 @@ namespace System.Net.Quic
         public QuicListener(System.Net.Quic.QuicListenerOptions options) { }
         public System.Net.IPEndPoint ListenEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public void Close() { }
         public void Dispose() { }
-        public void Start() { }
     }
     public partial class QuicListenerOptions : System.Net.Quic.QuicOptions
     {
@@ -104,6 +102,7 @@ namespace System.Net.Quic
         public override void SetLength(long value) { }
         public void Shutdown() { }
         public System.Threading.Tasks.ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.ValueTask ShutdownCompleted(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public System.Threading.Tasks.ValueTask WriteAsync(System.Buffers.ReadOnlySequence<byte> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

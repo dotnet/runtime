@@ -88,8 +88,8 @@ extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_SSLParametersClass;
-extern jmethodID g_SSLParametersCtor;
 extern jmethodID g_SSLParametersGetProtocols;
+extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
 
 // javax/net/ssl/SSLContext
@@ -411,17 +411,19 @@ extern jmethodID g_SNIHostNameCtor;
 
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
-extern jmethodID g_SSLEngineGetApplicationProtocol;
-extern jmethodID g_SSLEngineSetUseClientMode;
-extern jmethodID g_SSLEngineGetSession;
 extern jmethodID g_SSLEngineBeginHandshake;
-extern jmethodID g_SSLEngineWrap;
-extern jmethodID g_SSLEngineUnwrap;
 extern jmethodID g_SSLEngineCloseOutbound;
+extern jmethodID g_SSLEngineGetApplicationProtocol;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
+extern jmethodID g_SSLEngineGetSession;
+extern jmethodID g_SSLEngineGetSSLParameters;
 extern jmethodID g_SSLEngineGetSupportedProtocols;
 extern jmethodID g_SSLEngineSetEnabledProtocols;
 extern jmethodID g_SSLEngineSetSSLParameters;
+extern jmethodID g_SSLEngineSetUseClientMode;
+extern jmethodID g_SSLEngineSetWantClientAuth;
+extern jmethodID g_SSLEngineUnwrap;
+extern jmethodID g_SSLEngineWrap;
 
 // java/nio/ByteBuffer
 extern jclass    g_ByteBuffer;

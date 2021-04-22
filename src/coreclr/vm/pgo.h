@@ -36,9 +36,6 @@ public:
 
     static void CreatePgoManager(PgoManager* volatile* ppPgoManager, bool loaderAllocator);
 
-    // Retrieve the most likely class for a particular call
-    static CORINFO_CLASS_HANDLE getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses);
-
     // Verify address in bounds
     static void VerifyAddress(void* address);
 

@@ -40,7 +40,6 @@ namespace System.Net.Test.Common
             };
 
             _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
-            _listener.Start();
         }
 
         public override void Dispose()

@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition ignoreCondition,
             JsonNumberHandling numberHandling,
             string propertyName,
-            JsonEncodedText jsonPropertyName)
+            string? jsonPropertyName)
         {
             if (options == null)
             {
@@ -131,14 +131,23 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for a primitive or a type with a custom converter.
         /// </summary>
         /// <typeparam name="T">The generic type definition.</typeparam>
-        /// <typeparam name="TConverterReturn">The generic type definition.</typeparam>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the type.</returns>
-        public static JsonTypeInfo<T> CreateValueInfo<T, TConverterReturn>(JsonSerializerOptions options, JsonConverter<TConverterReturn> converter)
-            where TConverterReturn : T
+        public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
             JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options);
-            info.PropertyInfoForTypeInfo = JsonPropertyInfo<TConverterReturn>.CreateForSourceGenTypeInfo(typeof(T), runtimeTypeInfo: info, converter, options);
+            info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
             return info;
+        }
+
+        internal static JsonPropertyInfo CreateJsonPropertyInfoForClassInfo(
+            Type type,
+            JsonTypeInfo typeInfo,
+            JsonConverter converter,
+            JsonSerializerOptions options)
+        {
+            JsonPropertyInfo propertyInfo = converter.CreateJsonPropertyInfo();
+            propertyInfo.InitializeForTypeInfo(type, typeInfo, converter, options);
+            return propertyInfo;
         }
     }
 }
