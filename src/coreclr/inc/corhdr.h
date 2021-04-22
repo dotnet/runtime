@@ -16,18 +16,6 @@
 #ifndef __CORHDR_H__
 #define __CORHDR_H__
 
-#define FRAMEWORK_REGISTRY_KEY          "Software\\Microsoft\\.NETFramework"
-#define FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
-
-// keys for HKCU
-#ifdef HOST_64BIT
-#define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework64"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework64")
-#else
-#define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
-#endif
-
 #include <stdint.h>
 
 #ifdef _MSC_VER

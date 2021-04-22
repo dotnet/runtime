@@ -157,7 +157,22 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
 static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 {
-    TailCallArgBuffer* argBuffer = pThread->GetTailCallTls()->GetArgBuffer();
+    TailCallTls* tls = pThread->GetTailCallTls();
+    // Keep loader associated with CallTailCallTarget alive.
+    if (sc->promotion)
+    {
+#ifndef DACCESS_COMPILE
+        const PortableTailCallFrame* frame = tls->GetFrame();
+        if (frame->NextCall != NULL)
+        {
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)frame->NextCall);
+            if (pMD != NULL)
+                GcReportLoaderAllocator(fn, sc, pMD->GetLoaderAllocator());
+        }
+#endif
+    }
+
+    TailCallArgBuffer* argBuffer = tls->GetArgBuffer();
     if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 
@@ -1125,7 +1140,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     // otherwise, ask the config subsystem.
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::EEConfig_default };
+        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::LookupOptions::Default };
         *value = CLRConfig::GetConfigValue(info) != 0;
         return true;
     }
@@ -1170,7 +1185,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     // so have to fake it with getting the string and converting to uint64_t
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
         LPWSTR out = CLRConfig::GetConfigValue(info);
         if (!out)
         {
@@ -1226,7 +1241,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
     LPWSTR fromClrConfig = CLRConfig::GetConfigValue(info);
     LPCWSTR out = fromClrConfig;
     if (out == NULL)

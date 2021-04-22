@@ -66,7 +66,7 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
@@ -81,18 +81,7 @@ namespace System.Threading
 
         ~Thread()
         {
-#if TARGET_UNIX || TARGET_BROWSER
-            _waitInfo?.OnThreadExiting();
-#endif
             FreeInternal();
-        }
-
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return GetCurrentOSThreadId();
-            }
         }
 
         public bool IsAlive
@@ -149,9 +138,20 @@ namespace System.Threading
                 return 7;
             }
         }
-
 #if TARGET_UNIX || TARGET_BROWSER
-        internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
 #endif
 
         public ThreadPriority Priority
@@ -210,23 +210,12 @@ namespace System.Threading
         }
 
 #if TARGET_UNIX || TARGET_BROWSER
-        [MemberNotNull(nameof(_waitInfo))]
+        [DynamicDependency(nameof(OnThreadExiting))]
 #endif
         private void Initialize()
         {
             InitInternal(this);
-#if TARGET_UNIX || TARGET_BROWSER
-            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-#endif
         }
-
-#if TARGET_UNIX || TARGET_BROWSER
-        private void EnsureWaitInfo()
-        {
-            if (_waitInfo == null)
-                _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-        }
-#endif
 
         public static void SpinWait(int iterations)
         {
@@ -236,16 +225,6 @@ namespace System.Threading
             while (iterations-- > 0)
                 SpinWait_nop();
         }
-
-        public static void Sleep(int millisecondsTimeout)
-        {
-            if (millisecondsTimeout < Timeout.Infinite)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-
-            SleepInternal(millisecondsTimeout, true);
-        }
-
-        internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
         // Called from the runtime
         internal void StartCallback()
@@ -320,6 +299,13 @@ namespace System.Threading
             ClrState(this, ThreadState.WaitSleepJoin);
         }
 
+        private static void OnThreadExiting(Thread thread)
+        {
+#if TARGET_UNIX || TARGET_BROWSER
+            thread.WaitInfo.OnThreadExiting();
+#endif
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
@@ -328,15 +314,13 @@ namespace System.Threading
         private static extern void InitInternal(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InitializeCurrentThread_icall([NotNull] ref Thread? thread);
+        private static extern Thread GetCurrentThread();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            InitializeCurrentThread_icall(ref t_currentThread);
-#if TARGET_UNIX || TARGET_BROWSER
-            t_currentThread.EnsureWaitInfo();
-#endif
+            var current = GetCurrentThread();
+            t_currentThread = current;
             return t_currentThread;
         }
 
@@ -366,9 +350,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool YieldInternal();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SleepInternal(int millisecondsTimeout, bool allowInterruption);
 
         [Intrinsic]
         private static void SpinWait_nop()

@@ -221,7 +221,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object? obj);
 
-#if FEATURE_COMINTEROP
+#if TARGET_WINDOWS
         /// <summary>
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr GetHINSTANCE(QCallModule m);
 
-#endif // FEATURE_COMINTEROP
+#endif // TARGET_WINDOWS
 
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -599,37 +599,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsTypeVisibleFromCom(Type t);
-
-        [SupportedOSPlatform("windows")]
-        public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
-        {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
-
-            fixed (Guid* pIID = &iid)
-            fixed (IntPtr* p = &ppv)
-            {
-                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        public static unsafe int AddRef(IntPtr pUnk)
-        {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
-
-            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
-        }
-
-        [SupportedOSPlatform("windows")]
-        public static unsafe int Release(IntPtr pUnk)
-        {
-            if (pUnk == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(pUnk));
-
-            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
-        }
 
         [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]

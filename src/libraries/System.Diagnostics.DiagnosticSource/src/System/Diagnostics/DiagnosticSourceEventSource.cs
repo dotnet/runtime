@@ -717,7 +717,9 @@ namespace System.Diagnostics
                         if (eventNameFilter != null)
                             eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
 
-                        var subscription = newListener.Subscribe(new CallbackObserver<KeyValuePair<string, object?>>(delegate (KeyValuePair<string, object?> evnt)
+                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                            Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
+                        void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
                             // Thus we look for any events that may have snuck through and filter them out before forwarding.
@@ -727,7 +729,9 @@ namespace System.Diagnostics
                             var outputArgs = this.Morph(evnt.Value);
                             var eventName = evnt.Key;
                             writeEvent(newListener.Name, eventName, outputArgs);
-                        }), eventNameFilterPredicate);
+                        }
+
+                        var subscription = newListener.Subscribe(new CallbackObserver<KeyValuePair<string, object?>>(OnEventWritten), eventNameFilterPredicate);
                         _liveSubscriptions = new Subscriptions(subscription, _liveSubscriptions);
                     }
                 }));
@@ -948,41 +952,55 @@ namespace System.Diagnostics
                     return false;
                 };
 
-                eventSource._activityListener.ActivityStarted = activity =>
-                {
-                    FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
-                    {
-                        if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
-                            (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
-                        {
-                            eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
-                            return;
-                        }
+                eventSource._activityListener.ActivityStarted = activity => OnActivityStarted(eventSource, activity);
 
-                        list = list.Next;
-                    }
-                };
-
-                eventSource._activityListener.ActivityStopped = activity =>
-                {
-                    FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
-                    {
-                        if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
-                            (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
-                        {
-                            eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
-                            return;
-                        }
-
-                        list = list.Next;
-                    }
-                };
+                eventSource._activityListener.ActivityStopped = activity => OnActivityStopped(eventSource, activity);
 
                 ActivitySource.AddActivityListener(eventSource._activityListener);
+            }
+
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Activity))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityContext))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityEvent))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityLink))]
+            [DynamicDependency(nameof(DateTime.Ticks), typeof(DateTime))]
+            [DynamicDependency(nameof(TimeSpan.Ticks), typeof(TimeSpan))]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+            private static void OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
+            {
+                FilterAndTransform? list = eventSource._activitySourceSpecs;
+                while (list != null)
+                {
+                    if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
+                        (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
+                        (list.ActivityName == null || list.ActivityName == activity.OperationName))
+                    {
+                        eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
+                        return;
+                    }
+
+                    list = list.Next;
+                }
+            }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+            private static void OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
+            {
+                FilterAndTransform? list = eventSource._activitySourceSpecs;
+                while (list != null)
+                {
+                    if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
+                        (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
+                        (list.ActivityName == null || list.ActivityName == activity.OperationName))
+                    {
+                        eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
+                        return;
+                    }
+
+                    list = list.Next;
+                }
             }
 
             // Move all wildcard nodes at the end of the list.
@@ -1067,6 +1085,7 @@ namespace System.Diagnostics
                 }
             }
 
+            [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public List<KeyValuePair<string, string?>> Morph(object? args)
             {
                 // Transform the args into a bag of key-value strings.
@@ -1105,7 +1124,11 @@ namespace System.Diagnostics
                                 Interlocked.CompareExchange(ref _implicitTransformsTable,
                                     new ConcurrentDictionary<Type, TransformSpec?>(1, 8), null);
                             }
-                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, type => MakeImplicitTransforms(type));
+                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, type => MakeImplicitTransformsWrapper(type));
+
+                            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                                Justification = "The Morph method has RequiresUnreferencedCode, but the trimmer can't see through lamdba calls.")]
+                            static TransformSpec? MakeImplicitTransformsWrapper(Type transformType) => MakeImplicitTransforms(transformType);
                         }
 
                         // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.
@@ -1145,6 +1168,7 @@ namespace System.Diagnostics
 
             // Given a type generate all the implicit transforms for type (that is for every field
             // generate the spec that fetches it).
+            [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             private static TransformSpec? MakeImplicitTransforms(Type type)
             {
                 TransformSpec? newSerializableArgs = null;
@@ -1239,6 +1263,7 @@ namespace System.Diagnostics
             /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
             /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
             /// </summary>
+            [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public KeyValuePair<string, string?> Morph(object? obj)
             {
                 for (PropertySpec? cur = _fetches; cur != null; cur = cur.Next)
@@ -1289,6 +1314,7 @@ namespace System.Diagnostics
                 /// Given an object fetch the property that this PropertySpec represents.
                 /// obj may be null when IsStatic is true, otherwise it must be non-null.
                 /// </summary>
+                [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                 public object? Fetch(object? obj)
                 {
                     PropertyFetch? fetch = _fetchForExpectedType;
@@ -1331,9 +1357,7 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
-                    [DynamicDependency("#ctor(System.Type)", typeof(EnumeratePropertyFetch<>))]
-                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(RefTypedFetchProperty<,>))]
-                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(ValueTypedFetchProperty<,>))]
+                    [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
@@ -1385,7 +1409,7 @@ namespace System.Diagnostics
                             PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
                             if (propertyInfo == null)
                             {
-                                Logger.Message($"Property {propertyName} not found on {type}");
+                                Logger.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
                                 return new PropertyFetch(type);
                             }
                             // Delegate creation below is incompatible with static properties.

@@ -1048,11 +1048,11 @@ void Debugger::InitDebugEventCounting()
     memset(&g_iDbgDebuggerCounter, 0, DBG_DEBUGGER_MAX*sizeof(int));
 
     // retrieve the possible counter for break point
-    LPWSTR      wstrValue = NULL;
+    CLRConfigStringHolder wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint);
     // The string value is of the following format
     // <Event Name>=Count;<Event Name>=Count;....;
     // The string must end with ;
-    if ((wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint)) != NULL)
+    if (wstrValue != NULL)
     {
         LPSTR   strValue;
         int     cbReq;
@@ -1108,7 +1108,6 @@ void Debugger::InitDebugEventCounting()
 
         // free the ansi buffer
         delete [] strValue;
-        REGUTIL::FreeConfigString(wstrValue);
     }
 #endif // _DEBUG
 }

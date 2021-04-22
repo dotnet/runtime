@@ -326,16 +326,6 @@ public:
 #define GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD_COND(cond)               \
     GCHolderEEInterface<FALSE, TRUE, TRUE> __gcCoop_onlyOneAllowedPerScope((cond))
 
-
-
-// There are still some APIs that call new that we call from the helper thread.
-// These are unsafe operations, so we wrap them here. Each of these is a potential hang.
-inline DWORD UnsafeGetConfigDWORD_DontUse_(LPCWSTR name, DWORD defValue)
-{
-    SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue);
-}
-
 inline DWORD UnsafeGetConfigDWORD(const CLRConfig::ConfigDWORDInfo & info)
 {
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;

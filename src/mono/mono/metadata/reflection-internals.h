@@ -20,7 +20,7 @@ TYPED_HANDLE_DECL (MonoReflectionAssembly)
 TYPED_HANDLE_DECL (MonoReflectionTypeBuilder)
 
 MonoReflectionAssemblyHandle
-mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, MonoStringHandle name, MonoError *error);
+mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name, MonoError *error);
 
 MonoReflectionTypeBuilderHandle
 mono_class_get_ref_info (MonoClass *klass);

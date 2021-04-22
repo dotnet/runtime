@@ -29,14 +29,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AddRef_Unix_ThrowsPlatformNotSupportedException()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.AddRef(IntPtr.Zero));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void AddRef_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.AddRef(IntPtr.Zero));

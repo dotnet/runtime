@@ -8,6 +8,7 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.
     // The answer of HOW the values are serialized is answered by a particular reflection importer
@@ -30,11 +31,13 @@ namespace System.Xml.Serialization
             get { return _typeScope; }
         }
 
+        [RequiresUnreferencedCode("calls GetTypeModel")]
         internal TypeModel GetTypeModel(Type type)
         {
             return GetTypeModel(type, true);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         internal TypeModel GetTypeModel(Type type, bool directReference)
         {
             TypeModel? model;
@@ -70,6 +73,7 @@ namespace System.Xml.Serialization
             return model;
         }
 
+        [RequiresUnreferencedCode("calls GetArrayTypeDesc")]
         internal ArrayModel GetArrayModel(Type type)
         {
             TypeModel? model;
@@ -90,16 +94,21 @@ namespace System.Xml.Serialization
     internal abstract class TypeModel
     {
         private readonly TypeDesc _typeDesc;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _type;
         private readonly ModelScope _scope;
 
-        protected TypeModel(Type type, TypeDesc typeDesc, ModelScope scope)
+        protected TypeModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc,
+            ModelScope scope)
         {
             _scope = scope;
             _type = type;
             _typeDesc = typeDesc;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal Type Type
         {
             get { return _type; }
@@ -118,27 +127,34 @@ namespace System.Xml.Serialization
 
     internal sealed class ArrayModel : TypeModel
     {
-        internal ArrayModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal ArrayModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
         internal TypeModel Element
         {
+            [RequiresUnreferencedCode("Calls GetTypeModel")]
             get { return ModelScope.GetTypeModel(TypeScope.GetArrayElementType(Type, null)!); }
         }
     }
 
     internal sealed class PrimitiveModel : TypeModel
     {
-        internal PrimitiveModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal PrimitiveModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
     }
 
     internal sealed class SpecialModel : TypeModel
     {
-        internal SpecialModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal SpecialModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
     }
 
     internal sealed class StructModel : TypeModel
     {
-        internal StructModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal StructModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
         internal MemberInfo[] GetMemberInfos()
         {
@@ -168,6 +184,7 @@ namespace System.Xml.Serialization
             return fieldsAndProps;
         }
 
+        [RequiresUnreferencedCode("calls GetFieldModel")]
         internal FieldModel? GetFieldModel(MemberInfo memberInfo)
         {
             FieldModel? model = null;
@@ -199,6 +216,7 @@ namespace System.Xml.Serialization
             CheckSupportedMember(typeDesc.ArrayElementTypeDesc, member, type);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private FieldModel? GetFieldModel(FieldInfo fieldInfo)
         {
             if (fieldInfo.IsStatic) return null;
@@ -212,6 +230,7 @@ namespace System.Xml.Serialization
             return new FieldModel(fieldInfo, fieldInfo.FieldType, typeDesc);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private FieldModel? GetPropertyModel(PropertyInfo propertyInfo)
         {
             if (propertyInfo.DeclaringType != Type) return null;
@@ -274,6 +293,7 @@ namespace System.Xml.Serialization
             _readOnly = readOnly;
         }
 
+        [RequiresUnreferencedCode("Calls GetField on MemberInfo type")]
         internal FieldModel(MemberInfo memberInfo, Type fieldType, TypeDesc fieldTypeDesc)
         {
             _name = memberInfo.Name;
@@ -400,7 +420,9 @@ namespace System.Xml.Serialization
     {
         private ConstantModel[]? _constants;
 
-        internal EnumModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal EnumModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
         internal ConstantModel[] Constants
         {

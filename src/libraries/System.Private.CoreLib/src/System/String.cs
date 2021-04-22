@@ -24,6 +24,10 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
     {
+        /// <summary>Maximum length allowed for a string.</summary>
+        /// <remarks>Keep in sync with AllocateString in gchelpers.cpp.</remarks>
+        internal const int MaxLength = 0x3FFFFFDF;
+
         //
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //
@@ -399,7 +403,7 @@ namespace System
             }
 #endif
 
-            slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count);
+            slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */), count);
             return true;
         }
 
@@ -445,6 +449,40 @@ namespace System
                 destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), destinationIndex),
                 source: ref Unsafe.Add(ref _firstChar, sourceIndex),
                 elementCount: (uint)count);
+        }
+
+        // TODO: https://github.com/dotnet/runtime/issues/51061
+        // Make these {Try}CopyTo methods public and use throughout dotnet/runtime.
+
+        /// <summary>Copies the contents of this string into the destination span.</summary>
+        /// <param name="destination">The span into which to copy this string's contents.</param>
+        /// <exception cref="System.ArgumentException">The destination span is shorter than the source string.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CopyTo(Span<char> destination)
+        {
+            if ((uint)Length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+            }
+            else
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+        }
+
+        /// <summary>Copies the contents of this string into the destination span.</summary>
+        /// <param name="destination">The span into which to copy this string's contents.</param>
+        /// <returns>true if the data was copied; false if the destination was too short to fit the contents of the string.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryCopyTo(Span<char> destination)
+        {
+            bool retVal = false;
+            if ((uint)Length <= (uint)destination.Length)
+            {
+                Buffer.Memmove(ref destination._pointer.Value, ref _firstChar, (uint)Length);
+                retVal = true;
+            }
+            return retVal;
         }
 
         // Returns the entire string as an array of characters.

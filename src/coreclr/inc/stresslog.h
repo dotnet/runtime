@@ -267,7 +267,7 @@ struct StressLogMsg;
 class StressLog {
 public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
-        ULONGLONG maxBytesTotal, void* moduleBase, LPWSTR logFilename = nullptr);
+        unsigned maxBytesTotal, void* moduleBase, LPWSTR logFilename = nullptr);
     static void Terminate(BOOL fProcessDetach=FALSE);
     static void ThreadDetach();         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
 #ifndef STRESS_LOG_ANALYZER

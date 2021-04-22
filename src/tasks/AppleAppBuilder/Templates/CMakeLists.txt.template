@@ -31,6 +31,21 @@ set_target_properties(%ProjectName% PROPERTIES
     RESOURCE "${APP_RESOURCES}"
 )
 
+set(HARDENED_RUNTIME
+%HardenedRuntime%
+)
+
+set(HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE
+%HardenedRuntimeUseEntitlementsFile%
+)
+
+if("${HARDENED_RUNTIME}")
+  set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_HARDENED_RUNTIME "YES")
+  if("${HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE}")
+    set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
+  endif()
+endif()
+
 # FIXME: `XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING` should not be NO
 
 target_link_libraries(

@@ -10,7 +10,6 @@
 #include "assembler.h"
 #include "strongnameinternal.h"
 #include <limits.h>
-#include <fusion.h>
 
 extern WCHAR*   pwzInputFiles[];
 

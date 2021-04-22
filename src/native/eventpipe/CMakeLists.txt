@@ -41,6 +41,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-file.h
         ep-getter-setter.h
         ep-ipc-pal-types.h
+        ep-ipc-pal-types-forward.h
         ep-ipc-stream.h
         ep-json-file.h
         ep-metadata-generator.h
@@ -56,6 +57,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-stream.h
         ep-thread.h
         ep-types.h
+        ep-types-forward.h
     )
 
     list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES

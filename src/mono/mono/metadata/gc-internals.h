@@ -18,6 +18,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/gc-internal-agnostic.h>
 #include <mono/metadata/icalls.h>
+#include <mono/utils/mono-compiler.h>
 
 /* Register a memory area as a conservatively scanned GC root */
 #define MONO_GC_REGISTER_ROOT_PINNING(x,src,key,msg) mono_gc_register_root ((char*)&(x), sizeof(x), MONO_GC_DESCRIPTOR_NULL, (src), (key), (msg))
@@ -120,10 +121,6 @@ MonoObject*
 mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg);
 
 void  mono_gc_free_fixed             (void* addr);
-
-/* make sure the gchandle was allocated for an object in domain */
-gboolean mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain);
-void     mono_gchandle_free_domain  (MonoDomain *domain);
 
 typedef void (*FinalizerThreadCallback) (gpointer user_data);
 
@@ -430,7 +427,7 @@ extern gchar **mono_do_not_finalize_class_names;
  * Unified runtime stop/restart world, SGEN Only.
  * Will take and release the LOCK_GC.
  */
-void mono_stop_world (MonoThreadInfoFlags flags);
-void mono_restart_world (MonoThreadInfoFlags flags);
+MONO_COMPONENT_API void mono_stop_world (MonoThreadInfoFlags flags);
+MONO_COMPONENT_API void mono_restart_world (MonoThreadInfoFlags flags);
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */

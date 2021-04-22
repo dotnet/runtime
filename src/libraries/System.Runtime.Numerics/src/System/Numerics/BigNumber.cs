@@ -606,7 +606,7 @@ namespace System.Numerics
             {
                 if (fmt == 'g' || fmt == 'G' || fmt == 'r' || fmt == 'R')
                 {
-                    formatSpan = formatString = digits > 0 ? string.Format("D{0}", digits) : "D";
+                    formatSpan = formatString = digits > 0 ? $"D{digits}" : "D";
                 }
 
                 if (targetSpan)

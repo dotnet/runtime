@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.XUnitExtensions;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -914,6 +915,74 @@ namespace System.Net.NetworkInformation.Tests
                         Assert.Equal(buffer, pingReply.Buffer);
                     });
             }, localIpAddress.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
+        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
+        public void SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
+            if (localIpAddress == null)
+            {
+                // No local address for given address family.
+                return;
+            }
+
+            var remoteInvokeStartInfo = new ProcessStartInfo();
+
+            remoteInvokeStartInfo.EnvironmentVariables["LANG"] = envVar_LANG;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_MESSAGES"] = envVar_LC_MESSAGES;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_ALL"] = envVar_LC_ALL;
+
+            RemoteExecutor.Invoke(address =>
+            {
+                SendBatchPing(
+                    (ping) => ping.Send(address, TestSettings.PingTimeout),
+                    (pingReply) =>
+                    {
+                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
+                    });
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
+        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
+        public void SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
+            if (localIpAddress == null)
+            {
+                // No local address for given address family.
+                return;
+            }
+
+            var remoteInvokeStartInfo = new ProcessStartInfo();
+
+            remoteInvokeStartInfo.EnvironmentVariables["LANG"] = envVar_LANG;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_MESSAGES"] = envVar_LC_MESSAGES;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_ALL"] = envVar_LC_ALL;
+
+            RemoteExecutor.Invoke(async address =>
+            {
+                await SendBatchPingAsync(
+                    (ping) => ping.SendPingAsync(address),
+                    (pingReply) =>
+                    {
+                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
+                    });
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
         }
     }
 }

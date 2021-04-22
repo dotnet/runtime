@@ -2579,6 +2579,7 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
                             (sizeof(MethodDescChunk) + (GetMethodDescIndex() * MethodDesc::ALIGNMENT)));
 }
 
+MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
 // convert an entry point into a MethodDesc
 MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
 

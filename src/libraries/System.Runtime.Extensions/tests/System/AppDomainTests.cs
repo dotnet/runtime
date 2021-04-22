@@ -44,7 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
+        [SkipOnPlatform(TestPlatforms.Browser, "throws pNSE")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
         public void TargetFrameworkTest()
@@ -88,7 +88,7 @@ namespace System.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18984")]
-        [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
+        [SkipOnPlatform(TestPlatforms.OSX, "Unhandled exception on a separate process causes xunit to crash on osx")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnhandledException_Called()
         {
@@ -361,7 +361,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -376,7 +376,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Throws PNSE
+        [SkipOnPlatform(TestPlatforms.Browser, "Throws PNSE")]
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);

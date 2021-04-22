@@ -1368,7 +1368,7 @@ public:
             break;
         case mdtString:
         default:
-            if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 0))
+            if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat))
                 _ASSERTE(!"Unexpected token type in FindCustomAttributeByName");
             hr = COR_E_BADIMAGEFORMAT;
             goto ErrExit;

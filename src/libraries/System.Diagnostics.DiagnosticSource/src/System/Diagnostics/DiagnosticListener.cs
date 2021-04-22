@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -255,6 +256,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Override abstract method
         /// </summary>
+        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public override void Write(string name, object? value)
         {
             for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
