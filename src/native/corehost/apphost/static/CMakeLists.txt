@@ -140,6 +140,7 @@ else()
     set(NATIVE_LIBS
         coreclr_static
 
+        System.Globalization.Native-Static
         System.IO.Compression.Native-Static
         System.Net.Security.Native-Static
         System.Native-Static
@@ -153,7 +154,6 @@ else()
 
     if(NOT CLR_CMAKE_TARGET_MACCATALYST)
         list(APPEND NATIVE_LIBS
-            System.Globalization.Native-Static
             System.Security.Cryptography.Native.OpenSsl-Static
         )
     endif()

@@ -107,14 +107,9 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
+    System.Globalization.Native-Static
     interop
 )
-
-if(NOT CLR_CMAKE_TARGET_MACCATALYST)
-    list(APPEND CORECLR_LIBRARIES
-        System.Globalization.Native-Static
-    )
-endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
