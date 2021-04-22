@@ -304,7 +304,7 @@ namespace System.Text.Json.Tests.Serialization
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class Utf8MemoryStream : MemoryStream
+        public class Utf8MemoryStream : MemoryStream
         {
             public Utf8MemoryStream() : base()
             {
