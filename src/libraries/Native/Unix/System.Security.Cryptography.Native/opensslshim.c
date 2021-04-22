@@ -90,7 +90,7 @@ static bool OpenLibrary()
     if (libssl == NULL)
     {
         // Debian 9 has dropped support for SSLv3 and so they have bumped their soname. Let's try it
-        // before trying the version 1.0.0 to make it less probable that some of our other dependencies 
+        // before trying the version 1.0.0 to make it less probable that some of our other dependencies
         // end up loading conflicting version of libssl.
         DlOpen(MAKELIB("1.0.2"));
     }
@@ -141,7 +141,7 @@ void InitializeOpenSSLShim(void)
 
     // Only permit a single assignment here so that two assemblies both triggering the initializer doesn't cause a
     // race where the fn_ptr is nullptr, then properly bound, then goes back to nullptr right before being used (then bound again).
-    void* tmp_ptr;
+    void* volatile tmp_ptr;
 
     // Get pointers to all the functions that are needed
 #define REQUIRED_FUNCTION(fn) \
