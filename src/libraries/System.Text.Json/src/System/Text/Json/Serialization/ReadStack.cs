@@ -83,6 +83,11 @@ namespace System.Text.Json
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            Initialize(jsonTypeInfo, supportContinuation);
+        }
+
+        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
+        {
             Current.JsonTypeInfo = jsonTypeInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
@@ -90,6 +95,7 @@ namespace System.Text.Json
 
             Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
 
+            JsonSerializerOptions options = jsonTypeInfo.Options;
             bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
             if (preserveReferences)
             {

@@ -231,6 +231,20 @@ namespace DebuggerTests
             Assert.True(false, $"Could not find variable '{name}'");
         }
 
+        internal void CheckNumberAsString(JToken locals, string name, string value)
+        {
+            foreach (var l in locals)
+            {
+                if (name != l["name"]?.Value<string>())
+                    continue;
+                var val = l["value"];
+                Assert.Equal("number", val["type"]?.Value<string>());
+                Assert.Equal(value, val["value"].ToString());
+                return;
+            }
+            Assert.True(false, $"Could not find variable '{name}'");
+        }
+
         internal void CheckString(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
@@ -385,6 +399,21 @@ namespace DebuggerTests
 
             var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
             Assert.True(expect_ok == res.IsOk, $"InvokeGetter failed for {req} with {res}");
+
+            return res;
+        }
+
+        internal async Task<Result> SetValueOnObject(JToken obj, string property, string newvalue, string fn = "function(a, b) { this[a] = b; }", bool expect_ok = true)
+        {
+            var req = JObject.FromObject(new
+            {
+                functionDeclaration = fn,
+                objectId = obj["value"]?["objectId"]?.Value<string>(),
+                arguments = new[] { new { value = property } , new { value = newvalue } },
+                silent = true
+            });
+            var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
+            Assert.True(expect_ok == res.IsOk, $"SetValueOnObject failed for {req} with {res}");
 
             return res;
         }
@@ -783,6 +812,16 @@ namespace DebuggerTests
 
             var res = await cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, token);
             AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
+
+            return (null, res);
+        }
+
+        internal async Task<(JToken, Result)> SetVariableValueOnCallFrame(JObject parms, bool expect_ok = true)
+        {
+            var res = await cli.SendCommand("Debugger.setVariableValue", parms, token);
+            AssertEqual(expect_ok, res.IsOk, $"Debugger.setVariableValue ('{parms}') returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
             if (res.IsOk)
                 return (res.Value["result"], res);
 

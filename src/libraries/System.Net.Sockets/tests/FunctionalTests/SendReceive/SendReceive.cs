@@ -575,6 +575,39 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Send_0ByteSend_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        // Zero byte send should be a no-op 
+                        int bytesSent = await SendAsync(client, new ArraySegment<byte>(Array.Empty<byte>()));
+                        Assert.Equal(0, bytesSent);
+
+                        // Socket should still be usable
+                        await SendAsync(client, new byte[] { 99 });
+                        byte[] buffer = new byte[10];
+                        int bytesReceived = await ReceiveAsync(server, buffer);
+                        Assert.Equal(1, bytesReceived);
+                        Assert.Equal(99, buffer[0]);
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public async Task SendRecv_0ByteReceive_Success()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -1149,6 +1182,39 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceive_SpanSync : SendReceive<SocketHelperSpanSync>
     {
         public SendReceive_SpanSync(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task Send_0ByteSend_Span_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        // Zero byte send should be a no-op 
+                        int bytesSent = client.Send(ReadOnlySpan<byte>.Empty, SocketFlags.None);
+                        Assert.Equal(0, bytesSent);
+
+                        // Socket should still be usable
+                        await SendAsync(client, new byte[] { 99 });
+                        byte[] buffer = new byte[10];
+                        int bytesReceived = await ReceiveAsync(server, buffer);
+                        Assert.Equal(1, bytesReceived);
+                        Assert.Equal(99, buffer[0]);
+                    }
+                }
+            }
+        }
     }
 
     public sealed class SendReceive_SpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
@@ -1159,6 +1225,40 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceive_MemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
     {
         public SendReceive_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task Send_0ByteSend_Memory_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        // Zero byte send should be a no-op and complete immediately
+                        Task<int> sendTask = client.SendAsync(ReadOnlyMemory<byte>.Empty, SocketFlags.None).AsTask();
+                        Assert.True(sendTask.IsCompleted);
+                        Assert.Equal(0, await sendTask);
+
+                        // Socket should still be usable
+                        await SendAsync(client, new byte[] { 99 });
+                        byte[] buffer = new byte[10];
+                        int bytesReceived = await ReceiveAsync(server, buffer);
+                        Assert.Equal(1, bytesReceived);
+                        Assert.Equal(99, buffer[0]);
+                    }
+                }
+            }
+        }
 
         [Fact]
         public async Task Precanceled_Throws()

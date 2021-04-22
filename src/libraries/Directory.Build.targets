@@ -44,7 +44,7 @@
 
   <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
-    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</IsRuntimeAssembly>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsGeneratorProject)' != 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/runtime/issues/19584 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
@@ -133,12 +133,12 @@
     <PropertyGroup>
       <_ExcludeAPIList>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', 'ReferenceSourceExcludeApi.txt'))</_ExcludeAPIList>
       <_ExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAttributesList>
-      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath> 
+      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
       <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
       <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --exclude-attributes-list "$(_ExcludeAttributesList)"</GenAPIAdditionalParameters>
       <GenAPIAdditionalParameters Condition="Exists('$(_ExcludeAPIList)')">$(GenAPIAdditionalParameters) --exclude-api-list "$(_ExcludeAPIList)"</GenAPIAdditionalParameters>
       <GenAPIAdditionalParameters>$(GenAPIAdditionalParameters) --header-file "$(_LicenseHeaderTxtPath)"</GenAPIAdditionalParameters>
-      <GenAPIAdditionalParameters Condition="'$(LangVersion)' != ''">$(GenAPIAdditionalParameters) --lang-version "$(LangVersion)"</GenAPIAdditionalParameters>  
+      <GenAPIAdditionalParameters Condition="'$(LangVersion)' != ''">$(GenAPIAdditionalParameters) --lang-version "$(LangVersion)"</GenAPIAdditionalParameters>
       <GenAPIAdditionalParameters Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">$(GenAPIAdditionalParameters) --follow-type-forwards</GenAPIAdditionalParameters>
     </PropertyGroup>
   </Target>
@@ -229,15 +229,18 @@
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
-  <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
-  <Choose>
-    <When Condition="'$(IncludePlatformAttributes)' == 'false'" />
-    <When Condition="('$(IncludePlatformAttributes)' == 'true' or '$(IsWindowsSpecific)' == 'true') and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
-      <ItemGroup>
-        <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
-      </ItemGroup>
-    </When>
-  </Choose>
+  <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
+       System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
+
+       If a project has specified assembly-level SupportedOSPlatforms or UnsupportedOSPlatforms,
+       we can infer the need without having IncludePlatformAttributes set. -->
+  <PropertyGroup>
+    <IncludePlatformAttributes Condition="'$(IncludePlatformAttributes)' == '' and ('$(SupportedOSPlatforms)' != '' or '$(UnsupportedOSPlatforms)' != '')">true</IncludePlatformAttributes>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
+  </ItemGroup>
 
   <!-- Adds ObsoleteAttribute to projects that need to apply downlevel Obsoletions with DiagnosticId and UrlFormat -->
   <Choose>

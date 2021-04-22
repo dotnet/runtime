@@ -2733,8 +2733,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     LclVarDsc* varDsc   = lvaGetDesc(lclNum);
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
-                    var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
+                    CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+                    newTree                     = gtGetSIMDZero(simdType, simdBaseJitType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;
@@ -4986,9 +4986,6 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         bool ignoreRoot = true;
 
         gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
-
-        JITDUMP("Extracted side effects from a constant tree [%06u]:\n", tree->gtTreeID);
-        DISPTREE(sideEffList);
     }
 
     return sideEffList;

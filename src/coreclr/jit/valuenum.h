@@ -246,14 +246,6 @@ public:
         return unsigned(vnf) > VNF_Boundary || GenTreeOpIsLegalVNFunc(static_cast<genTreeOps>(vnf));
     }
 
-    // Returns "true" iff "vnf" is one of:
-    // VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF,
-    // VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF.
-    static bool VNFuncIsOverflowArithmetic(VNFunc vnf);
-
-    // Returns "true" iff "vnf" is VNF_Cast or VNF_CastOvf.
-    static bool VNFuncIsNumericCast(VNFunc vnf);
-
     // Returns the arity of "vnf".
     static unsigned VNFuncArity(VNFunc vnf);
 
@@ -289,12 +281,7 @@ public:
     }
 #endif
 
-    // Packs information about the cast into an integer constant represented by the returned value number,
-    // to be used as the second operand of VNF_Cast & VNF_CastOvf.
-    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false DEBUGARG(bool printResult = true));
-
-    // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
-    void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
+    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false);
 
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
@@ -347,7 +334,7 @@ public:
     }
 
     // Returns the value number for zero of the given "typ".
-    // It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
+    // It has an unreached() for a "typ" that has no zero value, such as TYP_BYREF.
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for one of the given "typ".
@@ -605,7 +592,7 @@ public:
     // Returns true iff the VN represents a (non-handle) constant.
     bool IsVNConstant(ValueNum vn);
 
-    // Returns true iff the VN represents an integer constant.
+    // Returns true iff the VN represents an integeral constant.
     bool IsVNInt32Constant(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;

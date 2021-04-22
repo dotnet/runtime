@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
@@ -41,14 +42,15 @@ namespace System.Net.Quic.Tests
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
-            listener.Start();
-            return listener;
+            return new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
         }
 
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();
+
+            var serverFinished = new ManualResetEventSlim();
+            var clientFinished = new ManualResetEventSlim();
 
             await new[]
             {
@@ -56,12 +58,18 @@ namespace System.Net.Quic.Tests
                 {
                     using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                     await serverFunction(serverConnection);
+                    serverFinished.Set();
+                    clientFinished.Wait();
+                    await serverConnection.CloseAsync(0);
                 }),
                 Task.Run(async () =>
                 {
                     using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                     await clientConnection.ConnectAsync();
                     await clientFunction(clientConnection);
+                    clientFinished.Set();
+                    serverFinished.Wait();
+                    await clientConnection.CloseAsync(0);
                 })
             }.WhenAllOrAnyFailed(millisecondsTimeout);
         }

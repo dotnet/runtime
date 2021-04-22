@@ -405,9 +405,9 @@ FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* re
 FCIMPLEND
 
 /************************************************************************
- * PInvoke.GetLastWin32Error
+ * Marshal.GetLastPInvokeError
  */
-FCIMPL0(int, MarshalNative::GetLastWin32Error)
+FCIMPL0(int, MarshalNative::GetLastPInvokeError)
 {
     FCALL_CONTRACT;
 
@@ -415,18 +415,16 @@ FCIMPL0(int, MarshalNative::GetLastWin32Error)
 }
 FCIMPLEND
 
-
 /************************************************************************
- * PInvoke.SetLastWin32Error
+ * Marshal.SetLastPInvokeError
  */
-FCIMPL1(void, MarshalNative::SetLastWin32Error, int error)
+FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
 {
     FCALL_CONTRACT;
 
     GetThread()->m_dwLastError = (DWORD)error;
 }
 FCIMPLEND
-
 
 /************************************************************************
  * Support for the GCHandle class.

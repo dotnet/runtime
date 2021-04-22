@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -58,6 +59,8 @@ namespace System.Text.Json
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            options.RootBuiltInConvertersAndTypeInfoCreator();
 
             ReadStack state = default;
             state.Initialize(typeof(TValue), options, supportContinuation: false);
@@ -122,10 +125,136 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
             ReadStack state = default;
             state.Initialize(returnType, options, supportContinuation: false);
 
             return ReadValueCore<object>(options, ref reader, ref state);
+        }
+
+        /// <summary>
+        /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="reader">The reader to read.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON is invalid,
+        /// <typeparamref name="TValue"/> is not compatible with the JSON,
+        /// or a value could not be read from the reader.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
+        /// </remarks>
+        public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
+        {
+            if (jsonTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
+
+            return ReadValueCore<TValue>(jsonTypeInfo.Options, ref reader, ref state);
+        }
+
+        /// <summary>
+        /// Reads one JSON value (including objects or arrays) from the provided reader into a <paramref name="returnType"/>.
+        /// </summary>
+        /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
+        /// <param name="reader">The reader to read.</param>
+        /// <param name="returnType">The type of the object to convert to and return.</param>
+        /// <param name="context">A metadata provider for serializable types.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when the JSON is invalid,
+        /// <paramref name="returnType"/> is not compatible with the JSON,
+        /// or a value could not be read from the reader.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method on the provided <paramref name="context"/>
+        /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
+        /// </remarks>
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
+        {
+            if (returnType == null)
+            {
+                throw new ArgumentNullException(nameof(returnType));
+            }
+
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            ReadStack state = default;
+
+            JsonTypeInfo jsonTypeInfo = JsonHelpers.GetTypeInfo(context, returnType);
+            state.Initialize(jsonTypeInfo);
+
+            return ReadValueCore<object>(jsonTypeInfo.Options, ref reader, ref state);
         }
 
         private static void CheckSupportedOptions(JsonReaderOptions readerOptions, string paramName)
