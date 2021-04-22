@@ -7417,6 +7417,12 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
+    // In MinOpts we poison the entire stack with a recognizable value to make detecting uses of uninitialized variables easier.
+    if (compiler->opts.MinOpts())
+    {
+        genPoisonFrame();
+    }
+
     if (compiler->info.compPublishStubParam)
     {
 #if CPU_LOAD_STORE_ARCH
@@ -7431,12 +7437,6 @@ void CodeGen::genFnProlog()
 
         // It's no longer live; clear it out so it can be used after this in the prolog
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
-    }
-
-    // In MinOpts we poison the entire stack with a recognizable value to make detecting uses of uninitialized variables easier.
-    if (compiler->opts.MinOpts())
-    {
-        genPoisonFrame();
     }
 
     // Zero out the frame as needed
