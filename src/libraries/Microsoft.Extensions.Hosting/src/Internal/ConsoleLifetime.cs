@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             ApplicationLifetime.StopApplication();
 
             // Don't block in process shutdown for CTRL+C/SIGINT since we can set e.Cancel to true
-            // we assume that application code will unwind once StopApplication signals the
+            // we assume that application code will unwind once StopApplication signals the token
             _shutdownBlock.Set();
         }
 
