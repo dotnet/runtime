@@ -98,11 +98,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Implements IRecordEnum
         Public m_oFile As VB6File
 
+        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
         Sub New(ByVal oFile As VB6File)
             MyBase.New()
             m_oFile = oFile
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:="The constructor of this interface implementation has been anotated.")>
         Function Callback(ByVal field_info As Reflection.FieldInfo, ByRef vValue As Object) As Boolean Implements IRecordEnum.Callback
             Dim FieldType As System.Type = field_info.FieldType
 
@@ -217,11 +220,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Implements IRecordEnum
         Dim m_oFile As VB6File
 
+        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
         Sub New(ByVal oFile As VB6File)
             MyBase.New()
             m_oFile = oFile
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:="The constructor of this interface implementation has been anotated.")>
         Function Callback(ByVal field_info As Reflection.FieldInfo, ByRef vValue As Object) As Boolean Implements IRecordEnum.Callback
             Dim FieldType As System.Type
 
@@ -923,6 +929,7 @@ NewLine:
             End If
         End Function
 
+        <RequiresUnreferencedCode("Calls PutArrayData")>
         Friend Sub PutFixedArray(ByVal RecordNumber As Long, ByVal arr As System.Array, ByVal ElementType As System.Type,
             Optional ByVal FixedStringLength As Integer = -1, Optional ByVal FirstBound As Integer = -1,
             Optional ByVal SecondBound As Integer = -1)
@@ -934,6 +941,7 @@ NewLine:
             PutArrayData(arr, ElementType, FixedStringLength, FirstBound, SecondBound)
         End Sub
 
+        <RequiresUnreferencedCode("Calls PutArrayData")>
         Friend Sub PutDynamicArray(ByVal RecordNumber As Long, ByVal arr As System.Array,
             Optional ByVal ContainedInVariant As Boolean = True, Optional ByVal FixedStringLength As Integer = -1)
 
@@ -1393,6 +1401,7 @@ NewLine:
             End Select
         End Function
 
+        <RequiresUnreferencedCode("Calls GetArrayData")>
         Friend Sub GetFixedArray(ByVal RecordNumber As Long, ByRef arr As System.Array,
         ByVal FieldType As System.Type, Optional ByVal FirstBound As Integer = -1,
             Optional ByVal SecondBound As Integer = -1, Optional ByVal FixedStringLength As Integer = -1)
@@ -1407,6 +1416,7 @@ NewLine:
             GetArrayData(arr, FieldType, FirstBound, SecondBound, FixedStringLength)
         End Sub
 
+        <RequiresUnreferencedCode("Calls GetArrayData")>
         Friend Sub GetDynamicArray(ByRef arr As System.Array, ByVal t As System.Type, Optional ByVal FixedStringLength As Integer = -1)
             arr = GetArrayDesc(t)
 
@@ -1653,6 +1663,7 @@ NewLine:
             EnumerateUDT(o, intf, True)
         End Sub
 
+        <RequiresUnreferencedCode("Calls PutObject")>
         Friend Sub PutArrayData(ByVal arr As System.Array, ByVal typ As System.Type, ByVal FixedStringLength As Integer,
             ByVal FirstBound As Integer, ByVal SecondBound As Integer)
 
@@ -1911,6 +1922,7 @@ NewLine:
             Next iElementX
         End Sub
 
+        <RequiresUnreferencedCode("Calls GetObject")>
         Friend Sub GetArrayData(ByVal arr As System.Array, ByVal typ As System.Type, Optional ByVal FirstBound As Integer = -1,
             Optional ByVal SecondBound As Integer = -1, Optional ByVal FixedStringLength As Integer = -1)
 
@@ -2331,14 +2343,17 @@ NewLine:
             End If
         End Sub
 
+        <RequiresUnreferencedCode("VB6RandomFile implementation is unsafe.")>
         Friend Overridable Sub GetObject(ByRef Value As Object, Optional ByVal RecordNumber As Long = 0, Optional ByVal ContainedInVariant As Boolean = True)
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub
 
+        <RequiresUnreferencedCode("VB6RandomFile implementation is unsafe.")>
         Friend Overridable Overloads Sub [Get](ByRef Value As ValueType, Optional ByVal RecordNumber As Long = 0)
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub
 
+        <RequiresUnreferencedCode("VB6RandomFile implementation is unsafe.")>
         Friend Overridable Overloads Sub [Get](ByRef Value As System.Array, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 
@@ -2389,6 +2404,7 @@ NewLine:
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub
 
+        <RequiresUnreferencedCode("VB6RandomFile implementation is unsafe.")>
         Friend Overridable Sub PutObject(ByVal Value As Object, Optional ByVal RecordNumber As Long = 0, Optional ByVal ContainedInVariant As Boolean = True)
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub
@@ -2397,10 +2413,12 @@ NewLine:
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub
 
+        <RequiresUnreferencedCode("VB6RandomFile implementation is unsafe.")>
         Friend Overridable Overloads Sub Put(ByVal Value As ValueType, Optional ByVal RecordNumber As Long = 0)
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub
 
+        <RequiresUnreferencedCode("VB6RandomFile implementation is unsafe.")>
         Friend Overridable Overloads Sub Put(ByVal Value As System.Array, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 
@@ -2454,6 +2472,7 @@ NewLine:
         '======================================
         ' Input
         '======================================
+        <RequiresUnreferencedCode("Implementation of Vb6InputFile is unsafe.")>
         Friend Overridable Overloads Sub Input(ByRef obj As Object)
             Throw VbMakeException(vbErrors.BadFileMode)
         End Sub

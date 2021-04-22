@@ -290,6 +290,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             GetRecord(RecordNumber, Value, False)
         End Sub
 
+        <RequiresUnreferencedCode("Calls GetFixedArray and GetArrayData")>
         Friend Overloads Overrides Sub [Get](ByRef Value As System.Array, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 
@@ -508,6 +509,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             PutRecord(RecordNumber, Value)
         End Sub
 
+        <RequiresUnreferencedCode("Calls PutFixedArray and PutDynamicArray")>
         Friend Overloads Overrides Sub Put(ByVal Value As System.Array, Optional ByVal RecordNumber As Long = 0,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 

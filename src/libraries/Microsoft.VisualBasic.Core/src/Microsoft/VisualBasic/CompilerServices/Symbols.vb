@@ -921,6 +921,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object 
             ' itself. So GetMembers calls here to find the member in all the collection interfaces that this object 
             ' implements.
+            <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+                Justification:="_type is annotated with .All, so it's Interfaces will be annotated as well and it is safe to call GetMember on the Interfaces")>
             Friend Function LookupWinRTCollectionInterfaceMembers(ByVal memberName As String) As List(Of MemberInfo)
                 Debug.Assert(Me.IsWindowsRuntimeObject(), "Expected a Windows Runtime Object")
 
@@ -937,6 +939,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return result
             End Function
 
+            <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification:="_type is annotated with .All, so it's BaseType will be annotated as well and it is safe to call GetMember on the BaseType")>
             Friend Function LookupNamedMembers(ByVal memberName As String) As MemberInfo()
                 'Returns an array of members matching MemberName sorted by inheritance (most derived first).
                 'If no members match MemberName, returns an empty array.
@@ -981,6 +985,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object 
             ' itself. Search through all the collection interfaces for default members.
+            <RequiresUnreferencedCode("Calls Container.LookupDefaultMembers")>
             Private Function LookupWinRTCollectionDefaultMembers(ByRef defaultMemberName As String) As List(Of MemberInfo)
                 Debug.Assert(Me.IsWindowsRuntimeObject(), "Expected a Windows Runtime Object")
 
