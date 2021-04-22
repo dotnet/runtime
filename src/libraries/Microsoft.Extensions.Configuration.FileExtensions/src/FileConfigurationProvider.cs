@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         private void Load(bool reload)
         {
             IFileInfo file = Source.FileProvider?.GetFileInfo(Source.Path);
-            if (file is null or { Exists: false })
+            if (file == null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Configuration
         private void HandleException(ExceptionDispatchInfo info)
         {
             bool ignoreException = false;
-            if (Source.OnLoadException is not null)
+            if (Source.OnLoadException != null)
             {
                 var exceptionContext = new FileLoadExceptionContext
                 {

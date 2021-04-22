@@ -70,12 +70,10 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
         {
             public FileConfigurationProviderImpl(FileConfigurationSource source)
                 : base(source)
-            {
-            }
+            { }
 
             public override void Load(Stream stream)
-            {
-            }
+            { }
         }
 
         public class FileConfigurationSourceImpl : FileConfigurationSource
