@@ -156,6 +156,7 @@
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvossimulator-arm64",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvossimulator-x64"
       }
     },
@@ -177,6 +178,7 @@
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-arm64",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x64"
       }
     },
