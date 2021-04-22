@@ -983,25 +983,17 @@ namespace System.Drawing.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetHashCode doesn't include font name in .NET Framework")]
         public void GetHashCode_DifferentNameSameSizeStyleUnit_HashCodeIsNotSame()
         {
-            using (FontFamily family1 = FontFamily.GenericSansSerif)
-            using (var font1 = new Font(family1, 1, FontStyle.Bold, GraphicsUnit.Point))
+            using FontFamily family1 = FontFamily.GenericSansSerif;
+            using var font1 = new Font(family1, 1, FontStyle.Bold, GraphicsUnit.Point);
 
-            using (FontFamily family2 = FontFamily.GenericSerif)
-            using (var font2 = new Font(family2, 1, FontStyle.Bold, GraphicsUnit.Point))
+            using FontFamily family2 = FontFamily.GenericMonospace;
+            using var font2 = new Font(family2, 1, FontStyle.Bold, GraphicsUnit.Point);
+            // This test depends on machine setup and whether the fonts we use are installed or not.
+            // If not installed we could get the same font for the two Font families we are testing for.
+            if (font1.Name.Equals(font2.Name, StringComparison.OrdinalIgnoreCase))
+                return;
 
-            using (FontFamily family3 = FontFamily.GenericMonospace)
-            using (var font3 = new Font(family3, 1, FontStyle.Bold, GraphicsUnit.Point))
-            {
-                if (font1 != font2)
-                {
-                    Assert.NotEqual(font1.GetHashCode(), font2.GetHashCode());
-                }
-                else
-                {
-                    Assert.NotEqual(font1, font3);
-                    Assert.NotEqual(font1.GetHashCode(), font3.GetHashCode());
-                }
-            }
+            Assert.NotEqual(font1.GetHashCode(), font2.GetHashCode());
         }
     }
 }
