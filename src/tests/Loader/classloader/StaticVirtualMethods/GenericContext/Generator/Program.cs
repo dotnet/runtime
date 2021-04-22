@@ -262,14 +262,14 @@ namespace VirtualStaticInterfaceMethodTestGen
                     GenerateImpl(implClass.Name + "<!0>", "IFaceNonGeneric", "", false);
                     GenerateImpl(implClass.Name + "<!0>", "IFaceGeneric`1", "<string>", true);
                     GenerateImpl(implClass.Name + "<!0>", "IFaceGeneric`1", "<object>", true);
-                    GenerateImpl(implClass.Name + "<!0>", $"IFaceCuriouslyRecurringGeneric`1", $"<class {implClass.Name}<!0>>", true);
+                    GenerateImpl(implClass.Name + "<!0>", $"IFaceCuriouslyRecurringGeneric`1", $"<{implTypePrefix} {implClass.Name}<!0>>", true);
                 }
                 else
                 {
                     GenerateImpl(implClass.Name, "IFaceNonGeneric", "", false);
                     GenerateImpl(implClass.Name, "IFaceGeneric`1", "<string>", true);
                     GenerateImpl(implClass.Name, "IFaceGeneric`1", "<object>", true);
-                    GenerateImpl(implClass.Name, $"IFaceCuriouslyRecurringGeneric`1", $"<class {implClass.Name}>", true);
+                    GenerateImpl(implClass.Name, $"IFaceCuriouslyRecurringGeneric`1", $"<{implTypePrefix} {implClass.Name}>", true);
                 }
 
                 EmitClass(tw, implClass);
@@ -303,7 +303,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                     EmitEndMethod(implsGenerated, implMethodDesc);
 
                     implMethodDesc.Name = $"'{iface}{ifaceGenericArguments}.GenericMethod'<U>";
-                    implMethodDesc.MethodImpls = new string[] { $"method void {ToILDasmTypeName(ImplPrefix + iface, ifaceGenericArguments)}::GenericMethod()" };
+                    implMethodDesc.MethodImpls = new string[] { $"method void {ToILDasmTypeName(ImplPrefix + iface, ifaceGenericArguments)}::GenericMethod<[1]>()" };
                     EmitMethod(implsGenerated, implMethodDesc);
                     GenerateMethodBody(true);
                     EmitEndMethod(implsGenerated, implMethodDesc);
@@ -311,7 +311,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                     void GenerateMethodBody(bool genericMethod)
                     {
                         implsGenerated.WriteLine($"    ldtoken {implTypePrefix} {implType}");
-                        implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)");
+                        implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)");
 
                         string methodNameToEmit = implMethodDesc.Name;
                         if (methodNameToEmit.EndsWith("<U>"))
@@ -323,7 +323,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                         {
                             implsGenerated.WriteLine($"    ldstr \"<\"");
                             implsGenerated.WriteLine($"    ldtoken !!0");
-                            implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
+                            implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
                             implsGenerated.WriteLine($"    ldstr \">\"");
                             implsGenerated.WriteLine($"    call string[System.Runtime] System.String::Concat(string, string, string,string)");
                         }
@@ -349,7 +349,7 @@ namespace VirtualStaticInterfaceMethodTestGen
         }
 
         static string CommonCsAssemblyName = "GenericContextCommonCs";
-        static string CommonAndImplAssemblyName = "GenericContextCommonAndImplementations";
+        static string CommonAndImplAssemblyName = "GenericContextCommonAndImplementation";
         static string TestAssemblyName = "GenericContextTest";
         static string CommonPrefix = $"[{CommonAndImplAssemblyName}]";
         static string CommonCsPrefix = $"[{CommonCsAssemblyName}]";
@@ -516,7 +516,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                 if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
                 {
                     EmitTestMethod();
-                    swMainMethodBody.WriteLine($"    call void TestEntrypoint::{mdIndividualTestMethod.Name}()");
+                    CallTestEntrypoint($"        call void TestEntrypoint::{mdIndividualTestMethod.Name}()");
                 }
                 else
                 {
@@ -535,7 +535,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                             expectedString = expectedString.Replace(ImplPrefix, "");
                             EmitTestMethod();
 
-                            swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{methodInstantiation}>()");
+                            CallTestEntrypoint($"        call void TestEntrypoint::{basicTestMethodName}<{methodInstantiation}>()");
                             break;
 
                         case CallerMethodScenario.GenericOverConstrainedType:
@@ -546,16 +546,32 @@ namespace VirtualStaticInterfaceMethodTestGen
 
                             EmitTestMethod();
 
-                            swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},string>()");
+                            string callCommand = $"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},string>()";
                             if (scenario.InterfaceType == InterfaceType.GenericOverObject)
-                                swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},object>()");
+                                callCommand = callCommand + Environment.NewLine + $"        call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},object>()";
+                            CallTestEntrypoint(callCommand);
                             break;
                         default:
                             throw new Exception("AACLL");
                     }
                 }
 
-
+                void CallTestEntrypoint(string callCommand)
+                {
+                    swMainMethodBody.WriteLine("    .try {");
+                    swMainMethodBody.WriteLine(callCommand);
+                    swMainMethodBody.WriteLine($"        leave.s {scenarioName}Done");
+                    swMainMethodBody.WriteLine("    } catch [System.Runtime]System.Exception {");
+                    swMainMethodBody.WriteLine($"        stloc.0");
+                    swMainMethodBody.WriteLine($"        ldstr \"{scenarioName}\"");
+                    swMainMethodBody.WriteLine($"        ldstr \"{expectedString}\"");
+                    swMainMethodBody.WriteLine($"        ldloc.0");
+                    swMainMethodBody.WriteLine($"        callvirt   instance string [System.Runtime]System.Object::ToString()");
+                    swMainMethodBody.WriteLine($"        call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)");
+                    swMainMethodBody.WriteLine($"        leave.s {scenarioName}Done");
+                    swMainMethodBody.WriteLine("    }");
+                    swMainMethodBody.WriteLine($"{scenarioName}Done: nop");
+                }
 
                 // If test scenario requires generic class caller, Create Caller class and make a global method method which calls it
                 // If test scenario requires generic method caller, create global generic method as required and non-generic test method
@@ -574,6 +590,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                     swTestClassMethods.WriteLine($"    ldstr \"{scenario.ToString()}\"");
                     swTestClassMethods.WriteLine($"    ldstr \"{expectedString}\"");
                     swTestClassMethods.WriteLine($"    call void {CommonCsPrefix}Statics::CheckForFailure(string,string)");
+                    swTestClassMethods.WriteLine($"    ret");
                     twIL = swTestClassMethods;
                     EmitEndMethod(swTestClassMethods, mdIndividualTestMethod);
                 }
@@ -643,6 +660,7 @@ namespace VirtualStaticInterfaceMethodTestGen
 
             EmitMethod(twOutputTest, mainMethod);
             twOutputTest.WriteLine("    .entrypoint");
+            twOutputTest.WriteLine("    .locals init (class [System.Runtime]System.Exception V_0)");
             twOutputTest.Write(swMainMethodBody.ToString());
             twOutputTest.WriteLine($"    call int32 { CommonCsPrefix}Statics::ReportResults()");
             twOutputTest.WriteLine("    ret");

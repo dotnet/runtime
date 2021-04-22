@@ -6,7 +6,7 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern GenericContextCommonCs {}
-.assembly GenericContextCommonAndImplementations {}
+.assembly GenericContextCommonAndImplementation {}
 .class interface public abstract auto ansi IFaceNonGeneric
 {
     .method public newslot virtual abstract static void NormalMethod() {}
@@ -46,9 +46,9 @@
   }
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -56,13 +56,13 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<[1]>()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -71,9 +71,9 @@
   } // end of method 'IFaceNonGeneric.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::NormalMethod()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -81,13 +81,13 @@
   } // end of method 'IFaceGeneric`1<string>.NormalMethod'
   .method public static void 'IFaceGeneric`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::GenericMethod<[1]>()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -96,9 +96,9 @@
   } // end of method 'IFaceGeneric`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::NormalMethod()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -106,13 +106,13 @@
   } // end of method 'IFaceGeneric`1<object>.NormalMethod'
   .method public static void 'IFaceGeneric`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::GenericMethod<[1]>()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -121,9 +121,9 @@
   } // end of method 'IFaceGeneric`1<object>.GenericMethod'<U>
   .method public static void 'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>::NormalMethod()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -131,13 +131,13 @@
   } // end of method 'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.NormalMethod'
   .method public static void 'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>::GenericMethod<[1]>()
     ldtoken class NonGenericClass
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -151,13 +151,13 @@
        implements IFaceNonGeneric,
                   class IFaceGeneric`1<string>,
                   class IFaceGeneric`1<object>,
-                  class IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>
+                  class IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>
 {
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -165,13 +165,13 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -180,9 +180,9 @@
   } // end of method 'IFaceNonGeneric.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::NormalMethod()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -190,13 +190,13 @@
   } // end of method 'IFaceGeneric`1<string>.NormalMethod'
   .method public static void 'IFaceGeneric`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -205,9 +205,9 @@
   } // end of method 'IFaceGeneric`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::NormalMethod()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -215,44 +215,44 @@
   } // end of method 'IFaceGeneric`1<object>.NormalMethod'
   .method public static void 'IFaceGeneric`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
   } // end of method 'IFaceGeneric`1<object>.GenericMethod'<U>
-  .method public static void 'IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>.NormalMethod'() cil managed noinlining
+  .method public static void 'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>::NormalMethod()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    ldstr "'IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>.NormalMethod'"
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ldstr "'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
-  } // end of method 'IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>.NormalMethod'
-  .method public static void 'IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>.GenericMethod'<U>() cil managed noinlining
+  } // end of method 'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.NormalMethod'
+  .method public static void 'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    ldstr "'IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>.GenericMethod'"
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ldstr "'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
-  } // end of method 'IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>.GenericMethod'<U>
+  } // end of method 'IFaceCuriouslyRecurringGeneric`1<valuetype NonGenericValuetype>.GenericMethod'<U>
 
 } // end of class NonGenericValuetype
 .class public auto ansi GenericClass`1<T>
@@ -272,9 +272,9 @@
   }
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -282,13 +282,13 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -297,9 +297,9 @@
   } // end of method 'IFaceNonGeneric.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::NormalMethod()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -307,13 +307,13 @@
   } // end of method 'IFaceGeneric`1<string>.NormalMethod'
   .method public static void 'IFaceGeneric`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -322,9 +322,9 @@
   } // end of method 'IFaceGeneric`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::NormalMethod()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -332,13 +332,13 @@
   } // end of method 'IFaceGeneric`1<object>.NormalMethod'
   .method public static void 'IFaceGeneric`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -347,9 +347,9 @@
   } // end of method 'IFaceGeneric`1<object>.GenericMethod'<U>
   .method public static void 'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>::NormalMethod()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -357,13 +357,13 @@
   } // end of method 'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'
   .method public static void 'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -377,13 +377,13 @@
        implements IFaceNonGeneric,
                   class IFaceGeneric`1<string>,
                   class IFaceGeneric`1<object>,
-                  class IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>
+                  class IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>
 {
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -391,13 +391,13 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementation]IFaceNonGeneric::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -406,9 +406,9 @@
   } // end of method 'IFaceNonGeneric.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -416,13 +416,13 @@
   } // end of method 'IFaceGeneric`1<string>.NormalMethod'
   .method public static void 'IFaceGeneric`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<string>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<string>::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<string>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
@@ -431,9 +431,9 @@
   } // end of method 'IFaceGeneric`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGeneric`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
@@ -441,43 +441,43 @@
   } // end of method 'IFaceGeneric`1<object>.NormalMethod'
   .method public static void 'IFaceGeneric`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceGeneric`1<object>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceGeneric`1<object>::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGeneric`1<object>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
   } // end of method 'IFaceGeneric`1<object>.GenericMethod'<U>
-  .method public static void 'IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>.NormalMethod'() cil managed noinlining
+  .method public static void 'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    ldstr "'IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>.NormalMethod'"
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ldstr "'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.NormalMethod'"
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
-  } // end of method 'IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>.NormalMethod'
-  .method public static void 'IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>.GenericMethod'<U>() cil managed noinlining
+  } // end of method 'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.NormalMethod'
+  .method public static void 'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>::GenericMethod()
+    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    ldstr "'IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>.GenericMethod'"
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ldstr "'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.GenericMethod'"
     ldstr "<"
     ldtoken !!0
-    call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
     ldstr ">"
     call string[System.Runtime] System.String::Concat(string, string, string,string)
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
-  } // end of method 'IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>.GenericMethod'<U>
+  } // end of method 'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.GenericMethod'<U>
 
 } // end of class GenericValuetype`1

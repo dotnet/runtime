@@ -8,6 +8,6 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GenericContextCommonAndImplementations.il" />
+    <Compile Include="GenericContextCommonAndImplementation.il" />
   </ItemGroup>
 </Project>
