@@ -28,7 +28,8 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |
 |  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications. |
 |  __`SYSLIB0016`__ | Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations. |
-|  __`SYSLIB0017`__ | Strong name signing is not supported on this platform.|
+|  __`SYSLIB0017`__ | Strong name signing is not supported and throws PlatformNotSupportedException. |
+|  __`SYSLIB0018`__ | ReflectionOnly loading is not supported and throws PlatformNotSupportedException. |
 
 ### Analyzer warnings (`SYSLIB1001` - `SYSLIB1999`)
 | Diagnostic ID     | Description |

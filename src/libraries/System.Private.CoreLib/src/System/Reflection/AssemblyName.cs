@@ -198,7 +198,7 @@ namespace System.Reflection
             set => _versionCompatibility = value;
         }
 
-        [Obsolete(Obsoletions.StrongNameKeyPairMessage, DiagnosticId = Obsoletions.StrongNameKeyPairDiagId)]
+        [Obsolete(Obsoletions.StrongNameKeyPairMessage, DiagnosticId = Obsoletions.StrongNameKeyPairDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public StrongNameKeyPair? KeyPair
         {
             get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);

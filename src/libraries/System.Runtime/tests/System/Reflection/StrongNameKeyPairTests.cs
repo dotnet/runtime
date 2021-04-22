@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
 {
     public class StrongNameKeyPairTests : FileCleanupTestBase
     {
-#pragma warning disable SYSLIB0017 // Strong name signing is not supported on this platform.
+#pragma warning disable SYSLIB0017 // Strong name signing is not supported and throws PlatformNotSupportedException.
         [Fact]
         public void Ctor_ByteArray_ThrowsPlatformNotSupportedException()
         {
