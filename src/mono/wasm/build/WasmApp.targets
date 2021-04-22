@@ -386,9 +386,8 @@
      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
 
      <_DotnetJSSrcPreFile Include="$(_WasmRuntimePackSrcDir)*channel.js" />
-     <_DotnetJSSrcWokerFile Include="$(_WasmRuntimePackSrcDir)*webworker.js" />
 
-     <_DotnetJSSrcFile Remove="@(_DotnetJSSrcPreFile);@(_DotnetJSSrcWokerFile)" />
+     <_DotnetJSSrcFile Remove="@(_DotnetJSSrcPreFile)" />
 
      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
