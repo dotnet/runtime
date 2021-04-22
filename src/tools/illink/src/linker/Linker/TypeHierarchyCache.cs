@@ -14,13 +14,15 @@ namespace Mono.Linker
 		}
 
 		readonly Dictionary<TypeDefinition, HierarchyFlags> _cache = new Dictionary<TypeDefinition, HierarchyFlags> ();
+		readonly LinkContext context;
 
-		private HierarchyFlags GetFlags (TypeReference type)
+		public TypeHierarchyCache (LinkContext context)
 		{
-			TypeDefinition resolvedType = type.Resolve ();
-			if (resolvedType == null)
-				return 0;
+			this.context = context;
+		}
 
+		private HierarchyFlags GetFlags (TypeDefinition resolvedType)
+		{
 			if (_cache.TryGetValue (resolvedType, out var flags)) {
 				return flags;
 			}
@@ -43,20 +45,21 @@ namespace Mono.Linker
 					}
 				}
 
-				baseType = baseType.BaseType?.Resolve ();
+				baseType = context.TryResolveTypeDefinition (baseType.BaseType);
 			}
 
-			_cache.Add (resolvedType, flags);
+			if (resolvedType != null)
+				_cache.Add (resolvedType, flags);
 
 			return flags;
 		}
 
-		public bool IsSystemType (TypeReference type)
+		public bool IsSystemType (TypeDefinition type)
 		{
 			return (GetFlags (type) & HierarchyFlags.IsSystemType) != 0;
 		}
 
-		public bool IsSystemReflectionIReflect (TypeReference type)
+		public bool IsSystemReflectionIReflect (TypeDefinition type)
 		{
 			return (GetFlags (type) & HierarchyFlags.IsSystemReflectionIReflect) != 0;
 		}

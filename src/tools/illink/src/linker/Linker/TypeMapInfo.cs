@@ -35,9 +35,15 @@ namespace Mono.Linker
 	public class TypeMapInfo
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
+		readonly LinkContext context;
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation)>> ();
+
+		public TypeMapInfo (LinkContext context)
+		{
+			this.context = context;
+		}
 
 		void EnsureProcessed (AssemblyDefinition assembly)
 		{
@@ -118,8 +124,8 @@ namespace Mono.Linker
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.
 			foreach (var interfaceImpl in type.GetInflatedInterfaces ()) {
-				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods ()) {
-					MethodDefinition resolvedInterfaceMethod = interfaceMethod.Resolve ();
+				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
+					MethodDefinition resolvedInterfaceMethod = context.TryResolveMethodDefinition (interfaceMethod);
 					if (resolvedInterfaceMethod == null)
 						continue;
 
@@ -182,7 +188,7 @@ namespace Mono.Linker
 		void MapOverrides (MethodDefinition method)
 		{
 			foreach (MethodReference override_ref in method.Overrides) {
-				MethodDefinition @override = override_ref.Resolve ();
+				MethodDefinition @override = context.TryResolveMethodDefinition (override_ref);
 				if (@override == null)
 					continue;
 
@@ -196,35 +202,64 @@ namespace Mono.Linker
 			AddOverride (@base, @override, matchingInterfaceImplementation);
 		}
 
-		static MethodDefinition GetBaseMethodInTypeHierarchy (MethodDefinition method)
+		MethodDefinition GetBaseMethodInTypeHierarchy (MethodDefinition method)
 		{
 			return GetBaseMethodInTypeHierarchy (method.DeclaringType, method);
 		}
 
-		static MethodDefinition GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodReference method)
+		MethodDefinition GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodReference method)
 		{
-			TypeReference @base = type.GetInflatedBaseType ();
+			TypeReference @base = GetInflatedBaseType (type);
 			while (@base != null) {
 				MethodDefinition base_method = TryMatchMethod (@base, method);
 				if (base_method != null)
 					return base_method;
 
-				@base = @base.GetInflatedBaseType ();
+				@base = GetInflatedBaseType (@base);
 			}
 
 			return null;
+		}
+
+		TypeReference GetInflatedBaseType (TypeReference type)
+		{
+			if (type == null)
+				return null;
+
+			if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
+				return null;
+
+			if (type is SentinelType sentinelType)
+				return GetInflatedBaseType (sentinelType.ElementType);
+
+			if (type is PinnedType pinnedType)
+				return GetInflatedBaseType (pinnedType.ElementType);
+
+			if (type is RequiredModifierType requiredModifierType)
+				return GetInflatedBaseType (requiredModifierType.ElementType);
+
+			if (type is GenericInstanceType genericInstance) {
+				var baseType = context.TryResolveTypeDefinition (type)?.BaseType;
+
+				if (baseType is GenericInstanceType)
+					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType);
+
+				return baseType;
+			}
+
+			return context.TryResolveTypeDefinition (type)?.BaseType;
 		}
 
 		// Returns a list of default implementations of the given interface method on this type.
 		// Note that this returns a list to potentially cover the diamond case (more than one
 		// most specific implementation of the given interface methods). Linker needs to preserve
 		// all the implementations so that the proper exception can be thrown at runtime.
-		static IEnumerable<InterfaceImplementation> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
+		IEnumerable<InterfaceImplementation> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
 			foreach (var interfaceImpl in type.Interfaces) {
-				var potentialImplInterface = interfaceImpl.InterfaceType.Resolve ();
+				var potentialImplInterface = context.TryResolveTypeDefinition (interfaceImpl.InterfaceType);
 				if (potentialImplInterface == null)
 					continue;
 
@@ -241,7 +276,7 @@ namespace Mono.Linker
 
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
-						if (@override.Resolve () == interfaceMethod) {
+						if (context.TryResolveMethodDefinition (@override) == interfaceMethod) {
 							yield return interfaceImpl;
 							foundImpl = true;
 							break;
@@ -262,11 +297,15 @@ namespace Mono.Linker
 			}
 		}
 
-		static MethodDefinition TryMatchMethod (TypeReference type, MethodReference method)
+		MethodDefinition TryMatchMethod (TypeReference type, MethodReference method)
 		{
-			foreach (var candidate in type.GetMethods ()) {
+			foreach (var candidate in type.GetMethods (context)) {
+				var md = context.TryResolveMethodDefinition (candidate);
+				if (md?.IsVirtual != true)
+					continue;
+
 				if (MethodMatch (candidate, method))
-					return candidate.Resolve ();
+					return md;
 			}
 
 			return null;
@@ -274,11 +313,6 @@ namespace Mono.Linker
 
 		static bool MethodMatch (MethodReference candidate, MethodReference method)
 		{
-			var candidateDef = candidate.Resolve ();
-
-			if (!candidateDef.IsVirtual)
-				return false;
-
 			if (candidate.HasParameters != method.HasParameters)
 				return false;
 

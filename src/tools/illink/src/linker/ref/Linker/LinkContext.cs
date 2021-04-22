@@ -20,5 +20,13 @@ namespace Mono.Linker
 
 		public bool HasCustomData (string key) { throw null; }
 		public bool TryGetCustomData (string key, out string value) { throw null; }
+
+		public MethodDefinition ResolveMethodDefinition (MethodReference methodReference) { throw null; }
+		public FieldDefinition ResolveFieldDefinition (FieldReference fieldReference) { throw null; }
+		public TypeDefinition ResolveTypeDefinition (TypeReference typeReference) { throw null; }
+
+		public MethodDefinition TryResolveMethodDefinition (MethodReference methodReference) { throw null; }
+		public FieldDefinition TryResolveFieldDefinition (FieldReference fieldReference) { throw null; }
+		public TypeDefinition TryResolveTypeDefinition (TypeReference typeReference) { throw null; }
 	}
 }

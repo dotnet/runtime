@@ -833,14 +833,10 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (MethodDefinition method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
+		public MethodParameterValue (TypeDefinition staticType, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
 		{
 			Kind = ValueNodeKind.MethodParameter;
-			StaticType = method.HasImplicitThis ()
-				? (parameterIndex == 0
-					? method.DeclaringType
-					: method.Parameters[parameterIndex - 1].ParameterType.ResolveToMainTypeDefinition ())
-				: method.Parameters[parameterIndex].ParameterType.ResolveToMainTypeDefinition ();
+			StaticType = staticType;
 			ParameterIndex = parameterIndex;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 			SourceContext = sourceContext;
@@ -905,12 +901,12 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodReturnValue (MethodReturnType methodReturnType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public MethodReturnValue (TypeDefinition staticType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
 		{
 			Kind = ValueNodeKind.MethodReturn;
-			StaticType = methodReturnType.ReturnType.ResolveToMainTypeDefinition ();
+			StaticType = staticType;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			SourceContext = methodReturnType;
+			SourceContext = sourceContext;
 		}
 
 		public override bool Equals (ValueNode other)
@@ -1144,10 +1140,10 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	class LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public LoadFieldValue (FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public LoadFieldValue (TypeDefinition staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Kind = ValueNodeKind.LoadField;
-			StaticType = fieldToLoad.FieldType.ResolveToMainTypeDefinition ();
+			StaticType = staticType;
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 			SourceContext = fieldToLoad;
@@ -1227,7 +1223,7 @@ namespace Mono.Linker.Dataflow
 			StaticType = null;
 
 			Size = size ?? UnknownValue.Instance;
-			ElementType = elementType.ResolveToMainTypeDefinition ();
+			ElementType = elementType;
 			IndexValues = new Dictionary<int, ValueBasicBlockPair> ();
 		}
 

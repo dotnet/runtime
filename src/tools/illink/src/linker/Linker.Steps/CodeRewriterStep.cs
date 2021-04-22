@@ -78,7 +78,7 @@ namespace Mono.Linker.Steps
 
 				Context.Annotations.TryGetFieldUserValue (field, out object value);
 
-				var valueInstr = CreateConstantResultInstruction (field.FieldType, value);
+				var valueInstr = CreateConstantResultInstruction (Context, field.FieldType, value);
 				if (valueInstr == null)
 					throw new NotImplementedException (field.FieldType.ToString ());
 
@@ -153,7 +153,11 @@ namespace Mono.Linker.Steps
 
 			var il = body.GetILProcessor ();
 			if (method.IsInstanceConstructor () && !method.DeclaringType.IsValueType) {
-				var base_ctor = method.DeclaringType.BaseType.GetDefaultInstanceConstructor ();
+				var baseType = Context.ResolveTypeDefinition (method.DeclaringType.BaseType);
+				if (baseType is null)
+					return body;
+
+				MethodReference base_ctor = baseType.GetDefaultInstanceConstructor ();
 				if (base_ctor == null)
 					throw new NotSupportedException ($"Cannot replace constructor for '{method.DeclaringType}' when no base default constructor exists");
 
@@ -207,21 +211,21 @@ namespace Mono.Linker.Steps
 		public static Instruction CreateConstantResultInstruction (LinkContext context, MethodDefinition method)
 		{
 			context.Annotations.TryGetMethodStubValue (method, out object value);
-			return CreateConstantResultInstruction (method.ReturnType, value);
+			return CreateConstantResultInstruction (context, method.ReturnType, value);
 		}
 
-		public static Instruction CreateConstantResultInstruction (TypeReference rtype, object value = null)
+		public static Instruction CreateConstantResultInstruction (LinkContext context, TypeReference rtype, object value = null)
 		{
 			switch (rtype.MetadataType) {
 			case MetadataType.ValueType:
-				var definition = rtype.Resolve ();
+				var definition = context.TryResolveTypeDefinition (rtype);
 				if (definition?.IsEnum == true) {
 					rtype = definition.GetEnumUnderlyingType ();
 				}
 
 				break;
 			case MetadataType.GenericInstance:
-				rtype = rtype.Resolve ();
+				rtype = context.TryResolveTypeDefinition (rtype);
 				break;
 			}
 

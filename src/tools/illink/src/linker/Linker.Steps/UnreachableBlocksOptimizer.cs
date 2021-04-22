@@ -283,7 +283,7 @@ namespace Mono.Linker.Steps
 			if (!_context.IsOptimizationEnabled (CodeOptimizations.IPConstantPropagation, method))
 				return null;
 
-			var analyzer = new ConstantExpressionMethodAnalyzer (method, instructions ?? method.Body.Instructions);
+			var analyzer = new ConstantExpressionMethodAnalyzer (_context, method, instructions ?? method.Body.Instructions);
 			if (analyzer.Analyze ()) {
 				return analyzer.Result;
 			}
@@ -355,8 +355,7 @@ namespace Mono.Linker.Steps
 
 				case Code.Call:
 				case Code.Callvirt:
-					var target = (MethodReference) instr.Operand;
-					var md = target.Resolve ();
+					var md = _context.TryResolveMethodDefinition ((MethodReference) instr.Operand);
 					if (md == null)
 						break;
 
@@ -415,12 +414,12 @@ namespace Mono.Linker.Steps
 
 				case Code.Ldsfld:
 					var ftarget = (FieldReference) instr.Operand;
-					var field = ftarget.Resolve ();
+					var field = _context.TryResolveFieldDefinition (ftarget);
 					if (field == null)
 						break;
 
 					if (_context.Annotations.TryGetFieldUserValue (field, out object value)) {
-						targetResult = CodeRewriterStep.CreateConstantResultInstruction (field.FieldType, value);
+						targetResult = CodeRewriterStep.CreateConstantResultInstruction (_context, field.FieldType, value);
 						if (targetResult == null)
 							break;
 						reducer.Rewrite (i, targetResult);
@@ -438,11 +437,9 @@ namespace Mono.Linker.Steps
 
 					var operand = (TypeReference) instr.Operand;
 					if (operand.MetadataType == MetadataType.UIntPtr) {
-						sizeOfImpl = (UIntPtrSize ??= FindSizeMethod (operand.Resolve ()));
-					}
-
-					if (operand.MetadataType == MetadataType.IntPtr) {
-						sizeOfImpl = (IntPtrSize ??= FindSizeMethod (operand.Resolve ()));
+						sizeOfImpl = (UIntPtrSize ??= FindSizeMethod (_context.TryResolveTypeDefinition (operand)));
+					} else if (operand.MetadataType == MetadataType.IntPtr) {
+						sizeOfImpl = (IntPtrSize ??= FindSizeMethod (_context.TryResolveTypeDefinition (operand)));
 					}
 
 					if (sizeOfImpl != null) {
@@ -1253,12 +1250,14 @@ namespace Mono.Linker.Steps
 		{
 			readonly MethodDefinition method;
 			readonly Collection<Instruction> instructions;
+			readonly LinkContext context;
 
 			Stack<Instruction> stack_instr;
 			Dictionary<int, Instruction> locals;
 
-			public ConstantExpressionMethodAnalyzer (MethodDefinition method)
+			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method)
 			{
+				this.context = context;
 				this.method = method;
 				instructions = method.Body.Instructions;
 				stack_instr = null;
@@ -1266,8 +1265,8 @@ namespace Mono.Linker.Steps
 				Result = null;
 			}
 
-			public ConstantExpressionMethodAnalyzer (MethodDefinition method, Collection<Instruction> instructions)
-				: this (method)
+			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method, Collection<Instruction> instructions)
+				: this (context, method)
 			{
 				this.instructions = instructions;
 			}
@@ -1436,7 +1435,7 @@ namespace Mono.Linker.Steps
 					return null;
 
 				// local variables don't need to be explicitly initialized
-				return CodeRewriterStep.CreateConstantResultInstruction (body.Variables[index].VariableType);
+				return CodeRewriterStep.CreateConstantResultInstruction (context, body.Variables[index].VariableType);
 			}
 
 			void PushOnStack (Instruction instruction)
