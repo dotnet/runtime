@@ -36,7 +36,7 @@ The acceptance criteria for adding an obsoletion includes:
 * Register the `SYSLIB0###` URL in `aka.ms`
     * The vanity name will be `dotnet-warnings/syslib0###`
     * Ensure the link's group owner matches the group owner of `dotnet-warnings/syslib0001`
-    * Connect with `@jeffhandley`, `@levib`, or `@gewarren` with any questions
+    * Connect with `@jeffhandley`, `@GrabYourPitchforks`, or `@gewarren` with any questions
 
 An example obsoletion PR that can be referenced where each of the above criteria was met is:
 
