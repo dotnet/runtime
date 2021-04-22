@@ -11,6 +11,10 @@ class Program
     static int Main()
     {
         JsonSerializerOptions options = new JsonSerializerOptions();
+
+        // This is needed to internally call RootBuiltInConvertersAndTypeInfoCreator
+        JsonSerializer.Serialize("a-string");
+
         JsonConverter converter = options.GetConverter(typeof(DateTime));
         Console.WriteLine("Converter type: {0}", converter.GetType());
         return converter != null ? 100 : 1;
