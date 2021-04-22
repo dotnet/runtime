@@ -3,16 +3,17 @@
 
 namespace System.IO.Tests
 {
-    public class FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_Unix : FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_OS
+    public partial class FileStream_ctor_str_fm_fa_fs_buffer_fo_as : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
     {
         protected override long AllocationSize => 10;
 
         protected override long InitialLength => 10;
 
-        protected override long GetExpectedFileLength(long allocationSize) => allocationSize;
+        private long GetExpectedFileLength(long allocationSize) => allocationSize;
 
-        protected override long GetAllocationSize(FileStream fileStream)
+        private long GetActualAllocationSize(FileStream fileStream)
         {
+            // On Unix posix_fallocate modifies file length and we are using fstat to get it for verificaiton
             Interop.Sys.FStat(fileStream.SafeFileHandle, out Interop.Sys.FileStatus fileStatus);
             return fileStatus.Size;
         }

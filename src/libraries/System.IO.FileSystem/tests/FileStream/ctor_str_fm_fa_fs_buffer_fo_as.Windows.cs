@@ -5,15 +5,15 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_Windows : FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_OS
+    public partial class FileStream_ctor_str_fm_fa_fs_buffer_fo_as : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
     {
         protected override long AllocationSize => 10;
 
         protected override long InitialLength => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
 
-        protected override long GetExpectedFileLength(long allocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
+        private long GetExpectedFileLength(long allocationSize) => 0; // Windows modifies AllocationSize, but not EndOfFile (file length)
 
-        protected override unsafe Int64 GetAllocationSize(FileStream fileStream)
+        private unsafe long GetActualAllocationSize(FileStream fileStream)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 

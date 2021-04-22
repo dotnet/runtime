@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public abstract class FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize : FileStream_ctor_str_fm_fa_fs_buffer_fo
+    public abstract class FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base : FileStream_ctor_str_fm_fa_fs_buffer_fo
     {
         protected abstract long AllocationSize { get; }
 
@@ -19,14 +19,14 @@ namespace System.IO.Tests
             => new FileStream(path, mode, access, share, bufferSize, options, allocationSize: AllocationSize);
     }
 
-    public class FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_Default : FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize
+    public class FileStream_ctor_str_fm_fa_fs_buffer_fo_as_zero : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
     {
         protected override long AllocationSize => 0; // specifying 0 should have no effect
 
         protected override long InitialLength => 0;
     }
 
-    public class FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_Negative : FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize
+    public class FileStream_ctor_str_fm_fa_fs_buffer_fo_as_negative : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
     {
         protected override long AllocationSize => -1; // specifying negative value should have no effect
 
@@ -37,15 +37,11 @@ namespace System.IO.Tests
     public partial class NoParallelTests { }
 
     // Don't run in parallel as the WhenFileStreamFailsToPreallocateDiskSpaceTheErrorMessageContainsAllDetails test
-    // consumes entire available free space on the disk and if we try to run other disk-writing test in the meantime
-    // we are going to get "No space left on device" exception.
+    // consumes entire available free space on the disk (only on Linux, this is how posix_fallocate works)
+    // and if we try to run other disk-writing test in the meantime we are going to get "No space left on device" exception.
     [Collection("NoParallelTests")]
-    public abstract class FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize_OS : FileStream_ctor_str_fm_fa_fs_buffer_fo_AllocationSize
+    public partial class FileStream_ctor_str_fm_fa_fs_buffer_fo_as : FileStream_ctor_str_fm_fa_fs_buffer_fo_as_base
     {
-        protected abstract long GetAllocationSize(FileStream fileStream);
-
-        protected abstract long GetExpectedFileLength(long allocationSize);
-
         [Theory]
         [InlineData(FileMode.Create, 0L)]
         [InlineData(FileMode.Create, -1L)]
@@ -57,8 +53,7 @@ namespace System.IO.Tests
         {
             using (var fs = new FileStream(GetPathToNonExistingFile(), mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
             {
-                Assert.Equal(0, GetAllocationSize(fs));
-
+                Assert.Equal(0, GetActualAllocationSize(fs));
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, fs.Position);
             }
@@ -83,13 +78,12 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None)) // allocationSize NOT provided
             {
-                initialAllocationSize = GetAllocationSize(fs); // just read it to ensure it's not being changed
+                initialAllocationSize = GetActualAllocationSize(fs); // just read it to ensure it's not being changed
             }
 
             using (var fs = new FileStream(filePath, mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
             {
-                Assert.Equal(initialAllocationSize, GetAllocationSize(fs)); // it has NOT been changed
-
+                Assert.Equal(initialAllocationSize, GetActualAllocationSize(fs)); // it has NOT been changed
                 Assert.Equal(initialSize, fs.Length);
                 Assert.Equal(mode == FileMode.Append ? initialSize : 0, fs.Position);
             }
@@ -105,13 +99,18 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(GetPathToNonExistingFile(), mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
             {
-                Assert.True(GetAllocationSize(fs) >= allocationSize, $"Provided {allocationSize}, actual: {GetAllocationSize(fs)}"); // OS might allocate MORE than we have requested
-
+                // OS might allocate MORE than we have requested
+                Assert.True(GetActualAllocationSize(fs) >= allocationSize, $"Provided {allocationSize}, actual: {GetActualAllocationSize(fs)}");
                 Assert.Equal(GetExpectedFileLength(allocationSize), fs.Length);
                 Assert.Equal(0, fs.Position);
             }
         }
 
+        [OuterLoop("Might allocate 1 TB file if there is enough space on the disk")]
+        // macOS fcntl doc does not mention ENOSPC error: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fcntl.2.html
+        // But depending on the OS version, it might actually return it.
+        // Since we don't want to have unstable tests, it's better to not run it on macOS at all.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
@@ -127,7 +126,7 @@ namespace System.IO.Tests
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(AllocationSize.ToString(), ex.Message);
 
-            Assert.False(File.Exists(filePath)); // ensure it was NOT created
+            Assert.False(File.Exists(filePath)); // ensure it was NOT created (provided OOTB by Windows, emulated on Unix)
         }
 
         [Theory]
@@ -142,7 +141,7 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, FileMode.Truncate, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
             {
-                Assert.Equal(0, GetAllocationSize(fs));
+                Assert.Equal(0, GetActualAllocationSize(fs));
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, fs.Position);
             }
@@ -159,9 +158,9 @@ namespace System.IO.Tests
 
             using (var fs = new FileStream(filePath, FileMode.Truncate, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
             {
-                Assert.True(GetAllocationSize(fs) >= allocationSize, $"Provided {allocationSize}, actual: {GetAllocationSize(fs)}");
-                Assert.True(GetAllocationSize(fs) < initialSize); // less than initial file size (file got truncated)
-
+                Assert.True(GetActualAllocationSize(fs) >= allocationSize, $"Provided {allocationSize}, actual: {GetActualAllocationSize(fs)}");
+                // less than initial file size (file got truncated)
+                Assert.True(GetActualAllocationSize(fs) < initialSize, $"initialSize {initialSize}, actual: {GetActualAllocationSize(fs)}");
                 Assert.Equal(GetExpectedFileLength(allocationSize), fs.Length);
                 Assert.Equal(0, fs.Position);
             }

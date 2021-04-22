@@ -143,7 +143,7 @@ namespace System.IO
         /// <param name="share">A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is Read.</param>
         /// <param name="bufferSize">A positive <see cref="T:System.Int32" /> value greater than 0 indicating the buffer size. The default buffer size is 4096.</param>
         /// <param name="options">A bitwise combination of the enumeration values that specifies additional file options. The default value is None which means synchronous IO.</param>
-        /// <param name="allocationSize">The initial allocation size in bytes for the file. A nonzero value has no effect unless the file is being created, overwritten, or superseded.</param>
+        /// <param name="allocationSize">The initial allocation size in bytes for the file. A value has no effect unless it's positive and a regular file is being created, overwritten, or replaced.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name = "path" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is an empty string (""), contains only white space, or contains one or more invalid characters.
         /// -or-
@@ -157,7 +157,7 @@ namespace System.IO
         ///  -or-
         ///  The stream has been closed.
         ///  -or-
-        ///  The disk was full.</exception>
+        ///  The disk was full (when <paramref name="allocationSize" /> was provided and <paramref name="allocationSize" /> was pointing to a regular file).</exception>
         /// <exception cref="T:System.Security.SecurityException">The caller does not have the required permission.</exception>
         /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid, such as being on an unmapped drive.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException">The <paramref name="access" /> requested is not permitted by the operating system for the specified <paramref name="path" />, such as when <paramref name="access" /> is <see langword="Write" /> or <see langword="ReadWrite" /> and the file or directory is set for read-only access.
