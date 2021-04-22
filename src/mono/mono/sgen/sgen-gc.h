@@ -766,6 +766,12 @@ typedef struct _SgenGCInfo {
 	guint64 memory_load_bytes;
 	guint64 total_available_memory_bytes;
 	guint64 total_committed_bytes;
+	guint64 total_promoted_bytes;
+	guint64 total_nursery_size;
+	guint64 total_major_size;
+	guint64 total_major_size_in_use;
+	guint64 total_los_size;
+	guint64 total_los_size_in_use;
 } SgenGCInfo;
 
 extern SgenGCInfo sgen_gc_info;
@@ -932,6 +938,7 @@ int sgen_gc_collection_count (int generation);
 size_t sgen_gc_get_used_size (void)
 	MONO_PERMIT (need (sgen_lock_gc));
 size_t sgen_gc_get_total_heap_allocation (void);
+void sgen_gc_get_gctimeinfo (guint64 *total_last, guint64 *total_since_last, guint64 *max);
 
 /* STW */
 

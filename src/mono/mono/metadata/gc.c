@@ -543,6 +543,21 @@ ves_icall_System_GC_InternalCollect (int generation)
 	mono_gc_collect (generation);
 }
 
+int
+ves_icall_System_GC_GetLastGCPercentTimeInGC (void)
+{
+	guint64 time_total_last_gc = 0;
+	guint64 time_total_since_last_gc = 0;
+	guint64 time_max_gc = 0;
+	mono_gc_get_gctimeinfo (&time_total_last_gc, &time_total_since_last_gc, &time_max_gc);
+
+	// Calculate percent of time spend in this GC since end of last GC.
+	int percent_time_in_gc_since_last_gc = 0;
+	if (time_total_since_last_gc != 0)
+		percent_time_in_gc_since_last_gc = (int)(time_total_last_gc * 100 / time_total_since_last_gc);
+	return percent_time_in_gc_since_last_gc;
+}
+
 gint64
 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 {
@@ -551,14 +566,19 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 	return mono_gc_get_used_size ();
 }
 
+int ves_icall_System_GC_GetGenerationSize (int generation)
+{
+	return mono_gc_get_generation_size (generation);
+}
+
 void
 ves_icall_System_GC_GetGCMemoryInfo (
-	gint64* high_memory_load_threshold_bytes,
-	gint64* memory_load_bytes,
-	gint64* total_available_memory_bytes,
-	gint64* total_committed_bytes,
-	gint64* heap_size_bytes,
-	gint64* fragmented_bytes)
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
 	mono_gc_get_gcmemoryinfo (high_memory_load_threshold_bytes, memory_load_bytes, total_available_memory_bytes, total_committed_bytes, heap_size_bytes, fragmented_bytes);
 }

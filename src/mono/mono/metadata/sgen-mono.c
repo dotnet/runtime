@@ -2592,6 +2592,19 @@ mono_gc_collection_count (int generation)
 	return sgen_gc_collection_count (generation);
 }
 
+int
+mono_gc_get_generation_size (int generation)
+{
+	if (generation == GENERATION_NURSERY)
+		return sgen_gc_info.total_nursery_size;
+	else if (generation == GENERATION_OLD)
+		return sgen_gc_info.total_major_size;
+	else if (generation == 3)
+		return sgen_gc_info.total_los_size;
+	else
+		return 0;
+}
+
 int64_t
 mono_gc_get_used_size (void)
 {
@@ -2606,12 +2619,12 @@ mono_gc_get_heap_size (void)
 
 void
 mono_gc_get_gcmemoryinfo (
-	gint64* high_memory_load_threshold_bytes,
-	gint64* memory_load_bytes,
-	gint64* total_available_memory_bytes,
-	gint64* total_committed_bytes,
-	gint64* heap_size_bytes,
-	gint64* fragmented_bytes)
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
 	*high_memory_load_threshold_bytes = sgen_gc_info.high_memory_load_threshold_bytes;
 	*fragmented_bytes = sgen_gc_info.fragmented_bytes;
@@ -2621,7 +2634,15 @@ mono_gc_get_gcmemoryinfo (
 	*memory_load_bytes = sgen_gc_info.memory_load_bytes;
 	*total_available_memory_bytes = sgen_gc_info.total_available_memory_bytes;
 	*total_committed_bytes = sgen_gc_info.total_committed_bytes;
-}	
+}
+
+void mono_gc_get_gctimeinfo (
+	guint64 *total_last,
+	guint64 *total_since_last,
+	guint64 *max)
+{
+	sgen_gc_get_gctimeinfo (total_last, total_since_last, max);
+}
 
 MonoGCDescriptor
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)

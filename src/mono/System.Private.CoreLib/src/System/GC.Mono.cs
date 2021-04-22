@@ -31,6 +31,12 @@ namespace System
         private static extern int GetMaxGeneration();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern int GetGenerationSize(int generation);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern int GetLastGCPercentTimeInGC();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InternalCollect(int generation);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
