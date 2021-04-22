@@ -32,6 +32,13 @@ namespace Mono.Linker.Dataflow
 
 	abstract partial class MethodBodyScanner
 	{
+		protected readonly LinkContext _context;
+
+		protected MethodBodyScanner (LinkContext context)
+		{
+			this._context = context;
+		}
+
 		internal ValueNode MethodReturnValue { private set; get; }
 
 		protected virtual void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
@@ -706,7 +713,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		private static void ScanLdtoken (Instruction operation, Stack<StackSlot> currentStack)
+		void ScanLdtoken (Instruction operation, Stack<StackSlot> currentStack)
 		{
 			if (operation.Operand is GenericParameter genericParameter) {
 				StackSlot slot = new StackSlot (new RuntimeTypeHandleForGenericParameterValue (genericParameter));
@@ -715,14 +722,14 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (operation.Operand is TypeReference typeReference) {
-				var resolvedReference = typeReference.ResolveToMainTypeDefinition ();
+				var resolvedReference = ResolveToTypeDefinition (typeReference);
 				if (resolvedReference != null) {
 					StackSlot slot = new StackSlot (new RuntimeTypeHandleValue (resolvedReference));
 					currentStack.Push (slot);
 					return;
 				}
 			} else if (operation.Operand is MethodReference methodReference) {
-				var resolvedMethod = methodReference.Resolve ();
+				var resolvedMethod = _context.TryResolveMethodDefinition (methodReference);
 				if (resolvedMethod != null) {
 					StackSlot slot = new StackSlot (new RuntimeMethodHandleValue (resolvedMethod));
 					currentStack.Push (slot);
@@ -782,7 +789,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
-			FieldDefinition field = (operation.Operand as FieldReference)?.Resolve ();
+			FieldDefinition field = _context.TryResolveFieldDefinition (operation.Operand as FieldReference);
 			if (field != null) {
 				StackSlot slot = new StackSlot (GetFieldValue (thisMethod, field), isByRef);
 				currentStack.Push (slot);
@@ -810,7 +817,7 @@ namespace Mono.Linker.Dataflow
 			if (operation.OpCode.Code == Code.Stfld)
 				PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
-			FieldDefinition field = (operation.Operand as FieldReference)?.Resolve ();
+			FieldDefinition field = _context.TryResolveFieldDefinition (operation.Operand as FieldReference);
 			if (field != null) {
 				HandleStoreField (thisMethod, field, operation, valueToStoreSlot.Value);
 			}
@@ -899,6 +906,17 @@ namespace Mono.Linker.Dataflow
 					MarkArrayValuesAsUnknown (arr, curBasicBlock);
 				}
 			}
+		}
+
+		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
+		// Any data flow annotations placed on a type parameter which receives an array type apply to the array itself. None of the members in its
+		// element type should be marked.
+		public TypeDefinition ResolveToTypeDefinition (TypeReference typeReference)
+		{
+			if (typeReference is ArrayType)
+				return BCL.FindPredefinedType ("System", "Array", _context);
+
+			return _context.TryResolveTypeDefinition (typeReference);
 		}
 
 		public abstract bool HandleCall (

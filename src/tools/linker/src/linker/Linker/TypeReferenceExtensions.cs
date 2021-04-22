@@ -109,35 +109,6 @@ namespace Mono.Linker
 			}
 		}
 
-		public static TypeReference GetInflatedBaseType (this TypeReference type)
-		{
-			if (type == null)
-				return null;
-
-			if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
-				return null;
-
-			if (type is SentinelType sentinelType)
-				return sentinelType.ElementType.GetInflatedBaseType ();
-
-			if (type is PinnedType pinnedType)
-				return pinnedType.ElementType.GetInflatedBaseType ();
-
-			if (type is RequiredModifierType requiredModifierType)
-				return requiredModifierType.ElementType.GetInflatedBaseType ();
-
-			if (type is GenericInstanceType genericInstance) {
-				var baseType = type.Resolve ()?.BaseType;
-
-				if (baseType is GenericInstanceType)
-					return InflateGenericType (genericInstance, baseType);
-
-				return baseType;
-			}
-
-			return type.Resolve ()?.BaseType;
-		}
-
 		public static TypeReference GetInflatedDeclaringType (this TypeReference type)
 		{
 			if (type == null)
@@ -287,10 +258,9 @@ namespace Mono.Linker
 			return result;
 		}
 
-		public static IEnumerable<MethodReference> GetMethods (this TypeReference type)
+		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, LinkContext context)
 		{
-			var typeDef = type.Resolve ();
-
+			TypeDefinition typeDef = context.ResolveTypeDefinition (type);
 			if (typeDef?.HasMethods != true)
 				yield break;
 
@@ -325,9 +295,9 @@ namespace Mono.Linker
 			return fullTypeName.Replace ('+', '/');
 		}
 
-		public static bool HasDefaultConstructor (this TypeReference type)
+		public static bool HasDefaultConstructor (this TypeDefinition type)
 		{
-			foreach (var m in type.GetMethods ()) {
+			foreach (var m in type.Methods) {
 				if (m.HasParameters)
 					continue;
 
@@ -339,9 +309,9 @@ namespace Mono.Linker
 			return false;
 		}
 
-		public static MethodReference GetDefaultInstanceConstructor (this TypeReference type)
+		public static MethodReference GetDefaultInstanceConstructor (this TypeDefinition type)
 		{
-			foreach (var m in type.GetMethods ()) {
+			foreach (var m in type.Methods) {
 				if (m.HasParameters)
 					continue;
 
@@ -377,17 +347,6 @@ namespace Mono.Linker
 			}
 
 			return false;
-		}
-
-		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
-		// Any data flow annotations placed on a type parameter which receives an array type apply to the array itself. None of the members in its
-		// element type should be marked.
-		public static TypeDefinition ResolveToMainTypeDefinition (this TypeReference type)
-		{
-			return type switch {
-				ArrayType _ => type.Module.ImportReference (typeof (Array))?.Resolve (),
-				_ => type?.Resolve ()
-			};
 		}
 	}
 }

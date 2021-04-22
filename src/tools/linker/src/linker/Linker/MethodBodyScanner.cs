@@ -50,8 +50,17 @@ namespace Mono.Linker
 
 			return true;
 		}
+	}
+	readonly struct InterfacesOnStackScanner
+	{
+		readonly LinkContext context;
 
-		public static IEnumerable<(InterfaceImplementation, TypeDefinition)> GetReferencedInterfaces (MethodBody body)
+		public InterfacesOnStackScanner (LinkContext context)
+		{
+			this.context = context;
+		}
+
+		public IEnumerable<(InterfaceImplementation, TypeDefinition)> GetReferencedInterfaces (MethodBody body)
 		{
 			var possibleStackTypes = AllPossibleStackTypes (body.Method);
 			if (possibleStackTypes.Count == 0)
@@ -75,14 +84,14 @@ namespace Mono.Linker
 				while (currentType?.BaseType != null) // Checking BaseType != null to skip System.Object
 				{
 					AddMatchingInterfaces (interfaceImplementations, currentType, interfaceTypes);
-					currentType = currentType.BaseType.Resolve ();
+					currentType = context.TryResolveTypeDefinition (currentType.BaseType);
 				}
 			}
 
 			return interfaceImplementations;
 		}
 
-		static HashSet<TypeDefinition> AllPossibleStackTypes (MethodDefinition method)
+		HashSet<TypeDefinition> AllPossibleStackTypes (MethodDefinition method)
 		{
 			if (!method.HasBody)
 				throw new ArgumentException ("Method does not have body", nameof (method));
@@ -104,7 +113,7 @@ namespace Mono.Linker
 
 			foreach (Instruction instruction in body.Instructions) {
 				if (instruction.Operand is FieldReference fieldReference) {
-					AddIfResolved (types, fieldReference.Resolve ()?.FieldType);
+					AddIfResolved (types, context.TryResolveFieldDefinition (fieldReference)?.FieldType);
 				} else if (instruction.Operand is MethodReference methodReference) {
 					if (methodReference is GenericInstanceMethod genericInstanceMethod)
 						AddFromGenericInstance (types, genericInstanceMethod);
@@ -112,7 +121,7 @@ namespace Mono.Linker
 					if (methodReference.DeclaringType is GenericInstanceType genericInstanceType)
 						AddFromGenericInstance (types, genericInstanceType);
 
-					var resolvedMethod = methodReference.Resolve ();
+					var resolvedMethod = context.TryResolveMethodDefinition (methodReference);
 					if (resolvedMethod != null) {
 						if (resolvedMethod.HasParameters) {
 							foreach (var param in resolvedMethod.Parameters)
@@ -126,21 +135,38 @@ namespace Mono.Linker
 				}
 			}
 
+
 			return types;
 		}
 
-		static void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
+		void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
 		{
 			if (!type.HasInterfaces)
 				return;
 
 			foreach (var interfaceType in interfaceTypes) {
-				if (type.HasInterface (interfaceType, out InterfaceImplementation implementation))
+				if (HasInterface (type, interfaceType, out InterfaceImplementation implementation))
 					results.Add ((implementation, type));
 			}
 		}
 
-		static void AddFromGenericInstance (HashSet<TypeDefinition> set, IGenericInstance instance)
+		bool HasInterface (TypeDefinition type, TypeDefinition interfaceType, out InterfaceImplementation implementation)
+		{
+			implementation = null;
+			if (!type.HasInterfaces)
+				return false;
+
+			foreach (var iface in type.Interfaces) {
+				if (context.TryResolveTypeDefinition (iface.InterfaceType) == interfaceType) {
+					implementation = iface;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		void AddFromGenericInstance (HashSet<TypeDefinition> set, IGenericInstance instance)
 		{
 			if (!instance.HasGenericArguments)
 				return;
@@ -149,7 +175,7 @@ namespace Mono.Linker
 				AddIfResolved (set, genericArgument);
 		}
 
-		static void AddFromGenericParameterProvider (HashSet<TypeDefinition> set, IGenericParameterProvider provider)
+		void AddFromGenericParameterProvider (HashSet<TypeDefinition> set, IGenericParameterProvider provider)
 		{
 			if (!provider.HasGenericParameters)
 				return;
@@ -160,11 +186,12 @@ namespace Mono.Linker
 			}
 		}
 
-		static void AddIfResolved (HashSet<TypeDefinition> set, TypeReference item)
+		void AddIfResolved (HashSet<TypeDefinition> set, TypeReference item)
 		{
-			var resolved = item?.Resolve ();
+			var resolved = context.TryResolveTypeDefinition (item);
 			if (resolved == null)
 				return;
+
 			set.Add (resolved);
 		}
 	}

@@ -72,7 +72,7 @@ namespace Mono.Linker
 			this.context = context;
 			FlowAnnotations = new FlowAnnotations (context);
 			VirtualMethodsWithAnnotationsToValidate = new HashSet<MethodDefinition> ();
-			TypeMapInfo = new TypeMapInfo ();
+			TypeMapInfo = new TypeMapInfo (context);
 			MemberActions = new MemberActionStore (context);
 		}
 

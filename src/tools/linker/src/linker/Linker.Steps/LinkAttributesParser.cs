@@ -258,7 +258,7 @@ namespace Mono.Linker.Steps
 				return new CustomAttributeArgument (typeref, ConvertStringValue (svalue, typeref));
 
 			case MetadataType.ValueType:
-				var enumType = typeref.Resolve ();
+				var enumType = _context.ResolveTypeDefinition (typeref);
 				if (enumType?.IsEnum != true)
 					goto default;
 
@@ -376,7 +376,7 @@ namespace Mono.Linker.Steps
 					return false;
 				}
 
-				attributeType = _context.TypeNameResolver.ResolveTypeName (assembly, attributeFullName)?.Resolve ();
+				attributeType = _context.TryResolveTypeDefinition (assembly, attributeFullName);
 			}
 
 			if (attributeType == null) {

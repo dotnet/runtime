@@ -663,6 +663,174 @@ namespace Mono.Linker
 
 			return _targetRuntime.Value;
 		}
+
+		readonly Dictionary<MethodReference, MethodDefinition> methodresolveCache = new ();
+		readonly Dictionary<FieldReference, FieldDefinition> fieldresolveCache = new ();
+		readonly Dictionary<TypeReference, TypeDefinition> typeresolveCache = new ();
+
+		public MethodDefinition ResolveMethodDefinition (MethodReference methodReference)
+		{
+			if (methodReference is MethodDefinition md)
+				return md;
+
+			if (methodReference is null)
+				return null;
+
+			if (methodresolveCache.TryGetValue (methodReference, out md)) {
+				if (md == null && !IgnoreUnresolved)
+					ReportUnresolved (methodReference);
+
+				return md;
+			}
+
+			md = methodReference.Resolve ();
+			if (md == null && !IgnoreUnresolved) {
+				ReportUnresolved (methodReference);
+			}
+
+			methodresolveCache.Add (methodReference, md);
+			return md;
+		}
+
+		public MethodDefinition TryResolveMethodDefinition (MethodReference methodReference)
+		{
+			if (methodReference is MethodDefinition md)
+				return md;
+
+			if (methodReference is null)
+				return null;
+
+			if (methodresolveCache.TryGetValue (methodReference, out md))
+				return md;
+
+			md = methodReference.Resolve ();
+			methodresolveCache.Add (methodReference, md);
+			return md;
+		}
+
+		public FieldDefinition ResolveFieldDefinition (FieldReference fieldReference)
+		{
+			if (fieldReference is FieldDefinition fd)
+				return fd;
+
+			if (fieldReference is null)
+				return null;
+
+			if (fieldresolveCache.TryGetValue (fieldReference, out fd)) {
+				if (fd == null && !IgnoreUnresolved)
+					ReportUnresolved (fieldReference);
+
+				return fd;
+			}
+
+			fd = fieldReference.Resolve ();
+			if (fd == null && !IgnoreUnresolved) {
+				ReportUnresolved (fieldReference);
+			}
+
+			fieldresolveCache.Add (fieldReference, fd);
+			return fd;
+		}
+
+		public FieldDefinition TryResolveFieldDefinition (FieldReference fieldReference)
+		{
+			if (fieldReference is FieldDefinition fd)
+				return fd;
+
+			if (fieldReference is null)
+				return null;
+
+			if (fieldresolveCache.TryGetValue (fieldReference, out fd))
+				return fd;
+
+			fd = fieldReference.Resolve ();
+			fieldresolveCache.Add (fieldReference, fd);
+			return fd;
+		}
+
+		public TypeDefinition ResolveTypeDefinition (TypeReference typeReference)
+		{
+			if (typeReference is TypeDefinition td)
+				return td;
+
+			if (typeReference is null)
+				return null;
+
+			if (typeresolveCache.TryGetValue (typeReference, out td)) {
+				if (td == null && !IgnoreUnresolved)
+					ReportUnresolved (typeReference);
+
+				return td;
+			}
+
+			//
+			// Types which never have TypeDefinition or can have ambiguous definition should not be passed in
+			//
+			if (typeReference is GenericParameter || (typeReference is TypeSpecification && typeReference is not GenericInstanceType))
+				throw new NotSupportedException ($"TypeDefinition cannot be resolved from '{typeReference.GetType ()}' type");
+
+			td = typeReference.Resolve ();
+			if (td == null && !IgnoreUnresolved) {
+				ReportUnresolved (typeReference);
+			}
+
+			typeresolveCache.Add (typeReference, td);
+			return td;
+		}
+
+		public TypeDefinition TryResolveTypeDefinition (TypeReference typeReference)
+		{
+			if (typeReference is TypeDefinition td)
+				return td;
+
+			if (typeReference is null || typeReference is GenericParameter)
+				return null;
+
+			if (typeresolveCache.TryGetValue (typeReference, out td))
+				return td;
+
+			if (typeReference is TypeSpecification ts) {
+				if (typeReference is FunctionPointerType) {
+					td = null;
+				} else {
+					//
+					// It returns element-type for arrays and also element type for wrapping types like ByReference, PinnedType, etc
+					//
+					td = TryResolveTypeDefinition (ts.GetElementType ());
+				}
+			} else {
+				td = typeReference.Resolve ();
+			}
+
+			typeresolveCache.Add (typeReference, td);
+			return td;
+		}
+
+		public TypeDefinition TryResolveTypeDefinition (AssemblyDefinition assembly, string typeNameString)
+		{
+			// It could be cached if it shows up on fast path
+			return TryResolveTypeDefinition (_typeNameResolver.ResolveTypeName (assembly, typeNameString));
+		}
+
+		readonly HashSet<MemberReference> unresolved_reported = new ();
+
+		protected virtual void ReportUnresolved (FieldReference fieldReference)
+		{
+			if (unresolved_reported.Add (fieldReference))
+				LogError ($"Field '{fieldReference.FullName}' reference could not be resolved", 1040);
+		}
+
+		protected virtual void ReportUnresolved (MethodReference methodReference)
+		{
+			if (unresolved_reported.Add (methodReference))
+				LogError ($"Method '{methodReference.GetDisplayName ()}' reference could not be resolved", 1040);
+		}
+
+		protected virtual void ReportUnresolved (TypeReference typeReference)
+		{
+			if (unresolved_reported.Add (typeReference))
+				LogError ($"Type '{typeReference.GetDisplayName ()}' reference could not be resolved", 1040);
+		}
 	}
 
 	public class CodeOptimizationsSettings

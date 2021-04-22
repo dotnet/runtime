@@ -6,20 +6,16 @@ namespace Mono.Linker
 	{
 		public static class EventTracingForWindows
 		{
-			public static bool IsEventSourceImplementation (TypeDefinition type, LinkContext context = null)
+			public static bool IsEventSourceImplementation (TypeDefinition type, LinkContext context)
 			{
 				if (!type.IsClass)
 					return false;
 
 				while (type.BaseType != null) {
-					var bt = type.BaseType.Resolve ();
+					var bt = context.ResolveTypeDefinition (type.BaseType);
 
-					if (bt == null) {
-						if (context != null && !context.IgnoreUnresolved)
-							throw new ResolutionException (type.BaseType);
-
-						break;
-					}
+					if (bt == null)
+						return false;
 
 					if (IsEventSourceType (bt))
 						return true;
