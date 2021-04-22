@@ -38,7 +38,6 @@ function(add_pgo TargetName)
             ProfilePath
         )
 
-        # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
         if(CLR_CMAKE_HOST_WIN32)
             set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")
             set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")
