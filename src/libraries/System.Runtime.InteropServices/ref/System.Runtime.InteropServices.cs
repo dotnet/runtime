@@ -570,6 +570,8 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr GetIDispatchForObject(object o) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.IntPtr GetIUnknownForObject(object o) { throw null; }
+        public static int GetLastPInvokeError() { throw null; }
+        public static int GetLastSystemError() { throw null; }
         public static int GetLastWin32Error() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -662,6 +664,8 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool SetComObjectData(object obj, object key, object? data) { throw null; }
+        public static void SetLastPInvokeError(int error) { throw null; }
+        public static void SetLastSystemError(int error) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static int SizeOf(object structure) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
