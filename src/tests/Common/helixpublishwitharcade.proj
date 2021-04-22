@@ -122,7 +122,7 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
     <!-- wasm and Android need to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
-    <DotNetCliRuntime Condition=" '$(TargetArchitecture)' == 'arm64' ">win-x64</DotNetCliRuntime>
+    <DotNetCliRuntime Condition=" '$(TargetArchitecture)' == 'arm64' Or '$(TargetArchitecture)' == 'arm' ">win-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
