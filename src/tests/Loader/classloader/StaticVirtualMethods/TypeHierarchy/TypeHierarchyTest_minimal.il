@@ -47,7 +47,20 @@
   .method public static int32 Main() cil managed noinlining
   {
     .entrypoint
-    call void TestEntrypoint::Test_Scenario1()
+    .locals init (class [System.Runtime]System.Exception V_0)
+    .try {
+        call void TestEntrypoint::Test_Scenario1()
+        leave.s Scenario1Done
+    } catch [System.Runtime]System.Exception {
+        stloc.0
+        ldstr "Scenario1"
+        ldnull
+        ldloc.0
+        callvirt   instance string [System.Runtime]System.Object::ToString()
+        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+        leave.s Scenario1Done
+    }
+Scenario1Done: nop
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret
   } // end of method Main
