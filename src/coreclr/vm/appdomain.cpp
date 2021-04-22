@@ -3772,6 +3772,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(libraryName));
+        PRECONDITION(CheckPointer(hMod));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
