@@ -12,9 +12,6 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        private const int kSuccess = 1;
-        private const int kErrorSeeError = -2;
-
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaGenerateKey")]
         private static extern int AppleCryptoNative_RsaGenerateKey(
             int keySizeInBits,

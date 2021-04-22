@@ -12,7 +12,7 @@
 /*
 Generate a new RSA keypair with the specified key size, in bits.
 
-Returns 1 on success, 0 on failure.  On failure, *pOSStatus should contain the OS reported error.
+Follows pal_seckey return conventions.
 */
 PALEXPORT int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
                                                    SecKeyRef* pPublicKey,
