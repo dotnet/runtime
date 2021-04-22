@@ -926,8 +926,10 @@ NextOctCharacter:
 
         End Function
 
+
         <ResourceExposure(ResourceScope.None)>
         <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
+        <RequiresUnreferencedCode("Calls UnsafeNativeMethods.VariantChangeType")>
         Friend Function ParseInputField(ByVal Value As Object, ByVal vtInput As VariantType) As Object
 #If TARGET_WINDOWS Then
             Dim numprsPtr() As Byte
