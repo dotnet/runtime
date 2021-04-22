@@ -179,6 +179,8 @@
     <Compile Include="System\Net\Http\HttpTelemetry.AnyOS.cs" />
     <Compile Include="System\Net\Http\HttpUtilities.AnyOS.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocksHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"

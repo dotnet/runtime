@@ -4852,6 +4852,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->info.target_bb = exit_bb;
 				init_bb_stack_state (td, exit_bb);
 				interp_link_bblocks (td, td->cbb, exit_bb);
+				// If the next bblock didn't have its stack state yet initialized, we need to make
+				// sure we properly keep track of the stack height, even after ret.
+				if (ult->type != MONO_TYPE_VOID)
+					--td->sp;
 				break;
 			}
 

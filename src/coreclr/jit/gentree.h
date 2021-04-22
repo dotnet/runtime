@@ -4849,11 +4849,8 @@ struct GenTreeJitIntrinsic : public GenTreeOp
 private:
     ClassLayout* m_layout;
 
-    union {
-        unsigned char gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by
-                                          // element))
-        regNumberSmall gtOtherReg;        // For intrinsics that return 2 registers
-    };
+    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
 
     unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
     unsigned char gtSimdSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics

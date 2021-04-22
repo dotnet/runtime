@@ -104,7 +104,6 @@ namespace System.Net.Quic.Tests
                 provider,
                 new IPEndPoint(IPAddress.Loopback, 0),
                 GetSslServerAuthenticationOptions());
-            listener.Start();
 
             QuicConnection connection1 = null, connection2 = null;
             QuicStream stream1 = null, stream2 = null;

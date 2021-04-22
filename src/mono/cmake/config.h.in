@@ -580,6 +580,9 @@
 /* Define to 1 if you have the `pthread_get_stackaddr_np' function. */
 #cmakedefine HAVE_PTHREAD_GET_STACKADDR_NP 1
 
+/* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
+#cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
+
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
    and to 0 if you don't. */
 #cmakedefine HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL 1

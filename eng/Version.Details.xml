@@ -38,7 +38,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>f7e58cfb0f6c93980cbb664cc9e62d9ef2df0c2f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.21221.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.21221.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>f7e58cfb0f6c93980cbb664cc9e62d9ef2df0c2f</Sha>
     </Dependency>
@@ -194,9 +194,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>ccc25a90082fa6592eeca8e146ff37e1b7d6b79d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.2.21217.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.2.21222.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>0e2e95e9db92cd41f620f96dda84171cbf34fa6c</Sha>
+      <Sha>012efef292663aa38f9047896942cdcc8765b8e0</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21220.1">
       <Uri>https://github.com/dotnet/xharness</Uri>

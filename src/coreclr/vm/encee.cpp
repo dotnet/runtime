@@ -330,13 +330,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //
-    pMethod->ResetCodeEntryPoint();
-
-    if (pMethod->HasNativeCodeSlot())
-    {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)pMethod->GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
-    }
+    pMethod->ResetCodeEntryPointForEnC();
 
     return S_OK;
 }
@@ -1707,6 +1701,35 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
 #endif
 
     return dac_cast<PTR_FieldDesc>(pFD);
+}
+
+// Returns the number of fields plus the number of add EnC fields
+int EncApproxFieldDescIterator::Count()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    int count = m_nonEnCIter.Count();
+
+    // If this module doesn't have any EnC data then there aren't any EnC fields
+    if (m_encClassData == NULL)
+    {
+        return count;
+    }
+
+    BOOL doInst = ( GetIteratorType() & (int)ApproxFieldDescIterator::INSTANCE_FIELDS);
+    BOOL doStatic = ( GetIteratorType() & (int)ApproxFieldDescIterator::STATIC_FIELDS);
+
+    int cNumAddedInst    =  doInst ? m_encClassData->GetAddedInstanceFields() : 0;
+    int cNumAddedStatics =  doStatic ? m_encClassData->GetAddedStaticFields() : 0;
+
+    return count + cNumAddedInst + cNumAddedStatics;
 }
 
 // Iterate through EnC added fields.

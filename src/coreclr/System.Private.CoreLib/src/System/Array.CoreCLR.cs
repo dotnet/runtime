@@ -266,6 +266,28 @@ namespace System
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
+        internal static unsafe void Clear(Array array)
+        {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);
+            nuint totalByteLength = pMT->ComponentSize * array.NativeLength;
+            ref byte pStart = ref array.GetRawArrayData();
+
+            if (!pMT->ContainsGCPointers)
+            {
+                SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
+            }
+            else
+            {
+                Debug.Assert(totalByteLength % (nuint)sizeof(IntPtr) == 0);
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref pStart), totalByteLength / (nuint)sizeof(IntPtr));
+            }
+
+            // GC.KeepAlive(array) not required. pMT kept alive via `pStart`
+        }
+
         // Sets length elements in array to 0 (or null for Object arrays), starting
         // at index.
         //
