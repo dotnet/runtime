@@ -1136,7 +1136,15 @@ var MonoSupportLib = {
 		},
 
 		_get_shard_name: function (fileList) {
+			// Assumes that all filter files follow the naming convention:
+			// 		icudt_<feature>_<locale division>.json
+			// The more descriptors in a file name (separated by _) the granular the shard data is.
+
+			// Get a list of file name descriptor length 
 			var name_lengths = fileList.map(x => x.split("_").length);
+
+			// Choose the file with the most number of descriptors 
+			// Assuming that we want the most condensed version available
 			var shard_ix = name_lengths.indexOf(Math.max(...name_lengths));
 			return fileList[shard_ix];
 		},

@@ -125,10 +125,15 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
-        if (!File.Exists(MainJS))
-            throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+        if (!File.Exists(MainJS)) {
+            Log.LogError($"File MainJS='{MainJS}' doesn't exist.");
+            return false;
+        }
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDictionary))
-            throw new ArgumentException("IcuDictionary property shouldn't be empty if InvariantGlobalization=false");
+        {
+            Log.LogError("IcuDictionary property shouldn't be empty if InvariantGlobalization=false");
+            return false;
+        }
 
         if (Assemblies?.Length == 0)
         {
@@ -247,8 +252,17 @@ public class WasmAppBuilder : Task
 
         if (!InvariantGlobalization)
         {
-            string? icuDictionary = File.ReadAllText(IcuDictionary!);
-            config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
+            try
+            {
+                string? icuDictionary = File.ReadAllText(IcuDictionary!);
+                config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
+            }
+            catch (Exception e)
+            {
+                Log.LogError($"Error with opening ICU Dictionary");
+                return false;
+            }
+            
         }
 
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");
