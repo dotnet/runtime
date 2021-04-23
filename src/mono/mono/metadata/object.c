@@ -6715,14 +6715,6 @@ mono_string_get_pinned (MonoStringHandle str, MonoError *error)
 	return news;
 }
 
-#ifdef HOST_WASM
-void 
-mono_set_string_interned_internal (MonoObject* obj);
-
-gboolean
-mono_is_string_interned_internal (MonoObject* obj);
-#endif
-
 MonoStringHandle
 mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error)
 {

@@ -1431,7 +1431,7 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 }
 
 #ifdef HOST_WASM
-void 
+void
 mono_set_string_interned_internal (MonoObject* obj)
 {
 	LockWord tmp;
@@ -1448,7 +1448,7 @@ mono_is_string_interned_internal (MonoObject* obj)
 	tmp.sync = obj->synchronisation;
 	if (!lock_word_is_inflated (tmp))
 		return 0;
-	
+
 	return obj->synchronisation->is_interned;
 }
 #endif
