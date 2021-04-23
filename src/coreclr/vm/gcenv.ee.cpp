@@ -165,7 +165,7 @@ static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanCo
         const PortableTailCallFrame* frame = tls->GetFrame();
         if (frame->NextCall != NULL)
         {
-            MethodDesc* pMD = Entry2MethodDesc((PCODE)frame->NextCall, NULL);
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)frame->NextCall);
             if (pMD != NULL)
                 GcReportLoaderAllocator(fn, sc, pMD->GetLoaderAllocator());
         }

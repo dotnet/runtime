@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -197,9 +197,16 @@ namespace System.Net.Sockets
             return sent;
         }
 
+        // The Linux kernel doesn't like it if we pass a null reference for buffer pointers, even if the length is 0.
+        // Replace any null pointer (e.g. from Memory<byte>.Empty) with a valid pointer.
+        private static ReadOnlySpan<byte> AvoidNullReference(ReadOnlySpan<byte> buffer) =>
+            Unsafe.IsNullRef(ref MemoryMarshal.GetReference(buffer)) ? Array.Empty<byte>() : buffer;
+
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
+
+            buffer = AvoidNullReference(buffer);
 
             int sent;
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
@@ -225,6 +232,8 @@ namespace System.Net.Sockets
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
+
+            buffer = AvoidNullReference(buffer);
 
             int sent;
             fixed (byte* sockAddr = socketAddress)

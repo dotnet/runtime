@@ -177,7 +177,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(Type type, JsonPropertyInfo jsonPropertyInfo)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, jsonPropertyInfo.MemberInfo?.Name));
+            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, jsonPropertyInfo.ClrName));
         }
 
         [DoesNotReturn]
@@ -677,6 +677,27 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext()
         {
             throw new InvalidOperationException(SR.Format(SR.OptionsAlreadyBoundToContext));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_BuiltInConvertersNotRooted(Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.BuiltInConvertersNotRooted, type));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_NoMetadataForType(Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_NoMetadataForType(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForType, type));
         }
     }
 }

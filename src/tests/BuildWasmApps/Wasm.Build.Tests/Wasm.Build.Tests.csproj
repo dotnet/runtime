@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
     <BundleXunitRunner>true</BundleXunitRunner>
     <CLRTestKind>BuildAndRun</CLRTestKind>

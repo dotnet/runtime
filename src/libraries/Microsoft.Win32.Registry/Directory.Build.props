@@ -3,7 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides support for accessing and modifying the Windows Registry.
 
 Commonly Used Types:

@@ -191,6 +191,11 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
+  <!-- Requires SocketsHttpHandler -->
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="Socks\LoopbackSocksServer.cs" />
+    <Compile Include="Socks\SocksProxyTest.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomContent.netcore.cs" />
     <Compile Include="HPackTest.cs" />

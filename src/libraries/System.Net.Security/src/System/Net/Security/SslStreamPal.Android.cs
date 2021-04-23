@@ -54,16 +54,16 @@ namespace System.Net.Security
             return new SafeFreeSslCredentials(certificateContext, protocols, policy);
         }
 
-        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
+        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteSslContext? context)
         {
             if (context == null)
                 return null;
 
-            return Interop.AndroidCrypto.SSLStreamGetApplicationProtocol(((SafeDeleteSslContext)context).SslContext);
+            return Interop.AndroidCrypto.SSLStreamGetApplicationProtocol(context.SslContext);
         }
 
         public static SecurityStatusPal EncryptMessage(
-            SafeDeleteContext securityContext,
+            SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
             int headerSize,
             int trailerSize,
@@ -75,8 +75,7 @@ namespace System.Net.Security
 
             try
             {
-                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-                SafeSslHandle sslHandle = sslContext.SslContext;
+                SafeSslHandle sslHandle = securityContext.SslContext;
 
                 PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, input);
                 SecurityStatusPalErrorCode statusCode = ret switch
@@ -88,13 +87,13 @@ namespace System.Net.Security
                     _ => SecurityStatusPalErrorCode.InternalError
                 };
 
-                if (sslContext.BytesReadyForConnection <= output?.Length)
+                if (securityContext.BytesReadyForConnection <= output?.Length)
                 {
-                    resultSize = sslContext.ReadPendingWrites(output, 0, output.Length);
+                    resultSize = securityContext.ReadPendingWrites(output, 0, output.Length);
                 }
                 else
                 {
-                    output = sslContext.ReadPendingWrites()!;
+                    output = securityContext.ReadPendingWrites()!;
                     resultSize = output.Length;
                 }
 
@@ -107,17 +106,16 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal DecryptMessage(
-            SafeDeleteContext securityContext,
+            SafeDeleteSslContext securityContext,
             byte[] buffer,
             ref int offset,
             ref int count)
         {
             try
             {
-                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-                SafeSslHandle sslHandle = sslContext.SslContext;
+                SafeSslHandle sslHandle = securityContext.SslContext;
 
-                sslContext.Write(buffer.AsSpan(offset, count));
+                securityContext.Write(buffer.AsSpan(offset, count));
 
                 PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer.AsSpan(offset, count), out int read);
                 if (ret == PAL_SSLStreamStatus.Error)
@@ -162,10 +160,10 @@ namespace System.Net.Security
         }
 
         public static void QueryContextConnectionInfo(
-            SafeDeleteContext securityContext,
+            SafeDeleteSslContext securityContext,
             out SslConnectionInfo connectionInfo)
         {
-            connectionInfo = new SslConnectionInfo(((SafeDeleteSslContext)securityContext).SslContext);
+            connectionInfo = new SslConnectionInfo(securityContext.SslContext);
         }
 
         private static SecurityStatusPal HandshakeInternal(
@@ -225,10 +223,9 @@ namespace System.Net.Security
 
         public static SecurityStatusPal ApplyShutdownToken(
             ref SafeFreeCredentials? credentialsHandle,
-            SafeDeleteContext securityContext)
+            SafeDeleteSslContext securityContext)
         {
-            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
-            SafeSslHandle sslHandle = sslContext.SslContext;
+            SafeSslHandle sslHandle = securityContext.SslContext;
 
 
             bool success = Interop.AndroidCrypto.SSLStreamShutdown(sslHandle);

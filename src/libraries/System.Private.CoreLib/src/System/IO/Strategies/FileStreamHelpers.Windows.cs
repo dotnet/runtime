@@ -227,7 +227,7 @@ namespace System.IO.Strategies
             return ret;
         }
 
-        private static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
+        internal static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
         {
             int errorCode = Marshal.GetLastWin32Error();
 
@@ -340,7 +340,6 @@ namespace System.IO.Strategies
             }
         }
 
-        // __ConsoleStream also uses this code.
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert(handle != null, "handle != null");

@@ -190,8 +190,17 @@ namespace System.Net.Http
                     _http3Enabled = false;
                     break;
 
+                case HttpConnectionKind.SocksTunnel:
+                case HttpConnectionKind.SslSocksTunnel:
+                    Debug.Assert(host != null);
+                    Debug.Assert(port != 0);
+                    Debug.Assert(proxyUri != null);
+
+                    _http3Enabled = false; // TODO: SOCKS supports UDP and may be used for HTTP3
+                    break;
+
                 default:
-                    Debug.Fail("Unkown HttpConnectionKind in HttpConnectionPool.ctor");
+                    Debug.Fail("Unknown HttpConnectionKind in HttpConnectionPool.ctor");
                     break;
             }
 
@@ -317,7 +326,7 @@ namespace System.Net.Http
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
-        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
+        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderValueBytes => _hostHeaderValueBytes;
@@ -339,10 +348,10 @@ namespace System.Net.Http
 
                     Debug.Assert(_originAuthority != null);
                     sb
-                        .Append(_kind == HttpConnectionKind.Https ? "https://" : "http://")
+                        .Append(IsSecure ? "https://" : "http://")
                         .Append(_originAuthority.IdnHost);
 
-                    if (_originAuthority.Port != (_kind == HttpConnectionKind.Https ? DefaultHttpsPort : DefaultHttpPort))
+                    if (_originAuthority.Port != (IsSecure ? DefaultHttpsPort : DefaultHttpPort))
                     {
                         sb
                             .Append(':')
@@ -547,7 +556,7 @@ namespace System.Net.Http
 
         private async ValueTask<HttpConnectionBase> GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
+            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
 
             // See if we have an HTTP2 connection
             Http2Connection? http2Connection = GetExistingHttp2Connection();
@@ -603,7 +612,7 @@ namespace System.Net.Http
 
                     sslStream = stream as SslStream;
 
-                    if (_kind == HttpConnectionKind.Http)
+                    if (!IsSecure)
                     {
                         http2Connection = await ConstructHttp2ConnectionAsync(stream, request, cancellationToken).ConfigureAwait(false);
 
@@ -1148,7 +1157,7 @@ namespace System.Net.Http
             Debug.Assert(_altSvcBlocklistTimerCancellation != null);
             if (added)
             {
-               _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
+                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
                     .ContinueWith(t =>
                     {
                         lock (altSvcBlocklist)
@@ -1263,6 +1272,14 @@ namespace System.Net.Http
                     case HttpConnectionKind.ProxyTunnel:
                     case HttpConnectionKind.SslProxyTunnel:
                         stream = await EstablishProxyTunnelAsync(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                        break;
+
+                    case HttpConnectionKind.SocksTunnel:
+                    case HttpConnectionKind.SslSocksTunnel:
+                        Debug.Assert(_originAuthority != null);
+                        Debug.Assert(_proxyUri != null);
+                        (socket, stream) = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
                         break;
                 }
 

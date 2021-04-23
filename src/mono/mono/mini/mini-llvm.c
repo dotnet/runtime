@@ -572,6 +572,13 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			return LLVMVectorType (LLVMInt64Type (), size / 8);
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+			return LLVMVectorType (LLVMInt64Type (), size / 8);
+#else
+			return LLVMVectorType (LLVMInt32Type (), size / 4);
+#endif
 		case MONO_TYPE_R4:
 			return LLVMVectorType (LLVMFloatType (), size / 4);
 		case MONO_TYPE_R8:
@@ -604,6 +611,13 @@ type_to_sse_type (int type)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 		return LLVMVectorType (LLVMInt64Type (), 2);
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return LLVMVectorType (LLVMInt64Type (), 2);
+#else
+		return LLVMVectorType (LLVMInt32Type (), 4);
+#endif
 	case MONO_TYPE_R8:
 		return LLVMVectorType (LLVMDoubleType (), 2);
 	case MONO_TYPE_R4:
@@ -774,6 +788,7 @@ primitive_type_is_unsigned (MonoTypeEnum t)
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
 		return TRUE;
 	default:
 		return FALSE;
