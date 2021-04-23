@@ -295,7 +295,6 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
-    currentMcIndex = mcIndex;
 
     times[0] = 0;
     times[1] = 0;

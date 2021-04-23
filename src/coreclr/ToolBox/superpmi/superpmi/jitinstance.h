@@ -42,7 +42,6 @@ public:
     };
     CycleTimer       lt;
     MethodContext*   mc;
-    int              currentMcIndex;
     ULONGLONG        times[2];
     ICorJitCompiler* pJitInstance;
 
