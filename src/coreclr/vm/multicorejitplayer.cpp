@@ -1096,7 +1096,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {
         unsigned data1 = * (const unsigned *) pBuffer;
-        unsigned data2 = 0;
+        unsigned short data2 = 0;
         unsigned rcdTyp = data1 >> RECORD_TYPE_OFFSET;
         unsigned rcdLen = 0;
         
@@ -1110,8 +1110,11 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         }
         else if (rcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
         {
-            data2 = * (((const unsigned *) pBuffer) + 1);
-            rcdLen = data2 >> SIGNATURE_LENGTH_OFFSET;
+            data2 = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
+            unsigned signatureLength = data2;
+            DWORD dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
+            dataSize = AlignUp(dataSize, sizeof(DWORD));
+            rcdLen = dataSize;
         }
         else
         {
@@ -1160,8 +1163,11 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
             do
             {
-                unsigned curdata2 = * (((const unsigned *) pCurBuf) + 1);
-                unsigned currcdLen = curdata2 >> SIGNATURE_LENGTH_OFFSET;
+                unsigned short curdata2 = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
+                unsigned cursignatureLength = curdata2;
+                DWORD dataSize = cursignatureLength + sizeof(DWORD) + sizeof(unsigned short);
+                dataSize = AlignUp(dataSize, sizeof(DWORD));
+                unsigned currcdLen = dataSize;
 
                 if (currcdLen > curSize)
                 {
@@ -1204,10 +1210,10 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 unsigned curmoduleIndex = curdata1 & MODULE_MASK;
                 unsigned curflags = curdata1 & METHOD_FLAGS_MASK;
 
-                unsigned curdata2 = * (((const unsigned *) pCurBuf) + 1);
-                unsigned cursignatureLength = curdata2 & SIGNATURE_LENGTH_MASK;
+                unsigned short curdata2 = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
+                unsigned cursignatureLength = curdata2;
 
-                hr = HandleMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) * 2), cursignatureLength);
+                hr = HandleMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) + sizeof(unsigned short)), cursignatureLength);
 
                 if (SUCCEEDED(hr) && ShouldAbort(false))
                 {

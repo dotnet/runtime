@@ -35,7 +35,6 @@ const unsigned MAX_MODULE_LEVELS       = 0x100;     // maximum allowed number of
 
 const unsigned MAX_METHODS             = 0x4000;    // Maximum allowed number of methods (2^14 values) (in principle this is also limited by "unsigned short" counters)
 
-const unsigned SIGNATURE_LENGTH_OFFSET = 16;        // offset of signature length
 const unsigned SIGNATURE_LENGTH_MASK   = 0xffff;    // mask to get signature from packed data (2^16-1 max signature length)
 
 const int      HEADER_W_COUNTER  = 14;              // Extra 16-bit counters in header for statistics: 28
@@ -76,7 +75,7 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 // <HeaderRecord>::=     <recordType=MULTICOREJIT_HEADER_RECORD_ID> <3byte_recordSize> <version> <timeStamp> <moduleCount> <methodCount> <DependencyCount> <unsigned short counter>*14 <unsigned counter>*3
 // <ModuleRecord>::=     <recordType=MULTICOREJIT_MODULE_RECORD_ID> <3byte_recordSize> <ModuleVersion> <JitMethodCount> <loadLevel> <lenModuleName> char*lenModuleName <padding>
 // <ModuleDependency>::= <recordType=MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID> <loadLevel_1byte> <moduleIndex_2bytes>
-// <Method> ::=          <recordType=MULTICOREJIT_METHOD_RECORD_ID> <methodFlags_1byte> <moduleIndex_2byte> <recordSize_2byte> <sigSize_2byte> <signature> <optional padding>
+// <Method> ::=          <recordType=MULTICOREJIT_METHOD_RECORD_ID> <methodFlags_1byte> <moduleIndex_2byte> <sigSize_2byte> <signature> <optional padding>
 //
 //
 // Actual profile has two representations: internal and the one, that is stored in file.
@@ -115,7 +114,7 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 //   2. Methods.
 //     For methods, binary signature is computed and RecorderInfo contents are changed.
 //     a) RecorderInfo::data1 doesn't change.
-//     b) RecorderInfo::data2 stores binary sizes, bits 0-15 store signature length, bits 16-31 store overall record length.
+//     b) RecorderInfo::data2 stores signature length.
 //     c) RecorderInfo::ptr is replaced with pointer to method's binary signature.
 //
 //     File write order: RecorderInfo::data1, RecorderInfo::data2, signature, extra alignment (this is optional). All of these represent JitInfRecord.
@@ -349,9 +348,9 @@ struct RecorderModuleInfo
 
 struct RecorderInfo
 {
-    unsigned data1;
-    unsigned data2;
-    BYTE *   ptr;
+    unsigned       data1;
+    unsigned short data2;
+    BYTE *         ptr;
 
     RecorderInfo()
     {
@@ -435,7 +434,7 @@ struct RecorderInfo
         return data1;
     }
 
-    unsigned GetRawMethodData2()
+    unsigned short GetRawMethodData2()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -458,7 +457,7 @@ struct RecorderInfo
         _ASSERTE(IsMethodInfo());
         _ASSERTE(IsFullyInitialized());
 
-        return data2 & SIGNATURE_LENGTH_MASK;
+        return data2;
     }
 
     unsigned GetMethodRecordPaddingSize()
@@ -468,8 +467,9 @@ struct RecorderInfo
         _ASSERTE(IsMethodInfo());
         _ASSERTE(IsFullyInitialized());
 
-        unsigned recSize = data2 >> SIGNATURE_LENGTH_OFFSET;
-        unsigned paddingSize = recSize - GetMethodSignatureSize() - 2 * sizeof(DWORD);
+        unsigned unalignedrecSize = GetMethodSignatureSize() + sizeof(DWORD) + sizeof(unsigned short);
+        unsigned recSize = AlignUp(unalignedrecSize, sizeof(DWORD));
+        unsigned paddingSize = recSize - unalignedrecSize;
         _ASSERTE(paddingSize < sizeof(unsigned));
 
         return paddingSize;
@@ -489,7 +489,7 @@ struct RecorderInfo
         return ret;
     }
 
-    bool PackSignatureForMethod(BYTE *pSignature, unsigned signatureLength)
+    void PackSignatureForMethod(BYTE *pSignature, unsigned signatureLength)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -500,19 +500,10 @@ struct RecorderInfo
         _ASSERTE(pSignature != nullptr);
         _ASSERTE(signatureLength > 0);
 
-        DWORD dataSize = signatureLength + sizeof(DWORD) * 2;
-        dataSize = AlignUp(dataSize, sizeof(DWORD));
-        if (dataSize >= SIGNATURE_LENGTH_MASK + 1)
-        {
-            return false;
-        }
-
-        data2 = (dataSize << SIGNATURE_LENGTH_OFFSET) | (signatureLength & SIGNATURE_LENGTH_MASK);
+        data2 = signatureLength & SIGNATURE_LENGTH_MASK;
         ptr = pSignature;
 
         _ASSERTE(IsFullyInitialized());
-
-        return true;
     }
 
     void PackMethod(unsigned moduleIndex, MethodDesc * pMethod, bool application)

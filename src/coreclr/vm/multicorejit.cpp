@@ -435,13 +435,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         }
 
         memcpy(pSignature, pBlob, dwLength);
-
-        if (!m_JitInfoArray[i].PackSignatureForMethod(pSignature, dwLength))
-        {
-            _ASSERTE(m_JitInfoArray[i].GetRawMethodData2() == 0);
-            _ASSERTE(m_JitInfoArray[i].GetRawMethodSignature() == nullptr);
-            delete[] pSignature;
-        }
+        m_JitInfoArray[i].PackSignatureForMethod(pSignature, dwLength);
     }
 
     {
@@ -502,7 +496,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         {
             // Method record
             DWORD data1 = m_JitInfoArray[i].GetRawMethodData1();
-            DWORD data2 = m_JitInfoArray[i].GetRawMethodData2();
+            unsigned short data2 = m_JitInfoArray[i].GetRawMethodData2();
             BYTE * pSignature = m_JitInfoArray[i].GetRawMethodSignature();
 
             if (pSignature == nullptr)
