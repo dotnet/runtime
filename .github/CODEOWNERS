@@ -28,9 +28,9 @@
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek @CoffeeFlux
 
-/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @CoffeeFlux
+/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT @CoffeeFlux @imhameed
 /src/mono/mono/mini/*cfgdump* @vargaz
-/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad
+/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad @imhameed
 /src/mono/mono/mini/*llvm* @vargaz @imhameed @EgorBo
 /src/mono/mono/mini/*ppc* @vargaz
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
