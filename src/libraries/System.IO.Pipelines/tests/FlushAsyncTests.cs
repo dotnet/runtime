@@ -22,6 +22,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", TestPlatforms.Browser)]
         public async Task FlushAsync_ThrowsIfWriterReaderWithException()
         {
             void ThrowTestException()
