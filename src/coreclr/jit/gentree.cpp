@@ -6759,7 +6759,7 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     }
     dst->gtFlags |= GTF_DONT_CSE;
 
-    /* Create the assignment node */
+/* Create the assignment node */
 
 #if FEATURE_SIMD
     if (varTypeIsSIMD(dst->gtType))
