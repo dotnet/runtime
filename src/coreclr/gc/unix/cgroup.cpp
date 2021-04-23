@@ -436,6 +436,7 @@ private:
             return false;
 
         FILE *stat_file = fopen(stat_filename, "r");
+        free(stat_filename);
         if (stat_file == nullptr)
             return false;
 
@@ -471,7 +472,6 @@ private:
         }
 
         fclose(stat_file);
-        free(stat_filename);
         free(line);
 
         if (readValues == 2)
