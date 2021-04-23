@@ -73,8 +73,6 @@ namespace System.Text.Json.Node
             return false;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:ystem.Text.Json.Node.JsonValue<TValue>.WriteTo(Utf8JsonWriter,JsonSerializerOptions): 'inputType' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicFields', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Text.Json.JsonSerializer.Serialize(Utf8JsonWriter,Object,Type,JsonSerializerOptions)'. The return value of method 'System.Object.GetType()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.",
-            Justification = "The 'inputType' parameter if obtained by calling System.Object.GetType().")]
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             if (writer == null)

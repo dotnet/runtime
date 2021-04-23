@@ -4,6 +4,7 @@
 #if !NETCOREAPP
 using System.Diagnostics;
 #endif
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -11,17 +12,30 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+    Target = "M:System.Net.Http.Json.JsonContent.<SerializeToStreamAsyncCore>d__15.MoveNext()",
+    Scope = "member",
+    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as UnconditionalSuppressMessage.")]
+
 namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
         internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        internal const DynamicallyAccessedMemberTypes SerializationMemberTypes = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties;
+        internal const DynamicallyAccessedMemberTypes DeserializationMemberTypes = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties;
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
+        [DynamicallyAccessedMembers(SerializationMemberTypes)]
         public Type ObjectType { get; }
         public object? Value { get; }
 
-        private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        private JsonContent(
+            object? inputValue,
+            [DynamicallyAccessedMembers(SerializationMemberTypes)] Type inputType,
+            MediaTypeHeaderValue? mediaType,
+            JsonSerializerOptions? options)
         {
             if (inputType == null)
             {
@@ -39,10 +53,12 @@ namespace System.Net.Http.Json
             _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
-        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        public static JsonContent Create<[DynamicallyAccessedMembers(SerializationMemberTypes)] T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
-        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        public static JsonContent Create(object? inputValue, [DynamicallyAccessedMembers(SerializationMemberTypes)] Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
@@ -54,6 +70,8 @@ namespace System.Net.Http.Json
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is annotated with RequiresUnreferencedCode.")]
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
             Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);

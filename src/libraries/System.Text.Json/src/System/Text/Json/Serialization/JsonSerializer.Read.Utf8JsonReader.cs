@@ -53,6 +53,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
             => ReadUsingOptions<TValue>(ref reader, typeof(TValue), options);
 
@@ -101,6 +102,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(ref Utf8JsonReader reader, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
@@ -227,6 +229,7 @@ namespace System.Text.Json
             return ReadUsingMetadata<object>(ref reader, GetTypeInfo(context, returnType));
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadUsingOptions<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options)
         {
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
