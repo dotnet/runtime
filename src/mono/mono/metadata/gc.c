@@ -546,15 +546,15 @@ ves_icall_System_GC_InternalCollect (int generation)
 int
 ves_icall_System_GC_GetLastGCPercentTimeInGC (void)
 {
-	guint64 total_time_last_gc_100ns = 0;
-	guint64 total_time_since_last_gc_100ns = 0;
-	guint64 total_time_max_gc_100ns = 0;
-	mono_gc_get_gctimeinfo (&total_time_last_gc_100ns, &total_time_since_last_gc_100ns, &total_time_max_gc_100ns);
+	guint64 time_last_gc_100ns = 0;
+	guint64 time_since_last_gc_100ns = 0;
+	guint64 time_max_gc_100ns = 0;
+	mono_gc_get_gctimeinfo (&time_last_gc_100ns, &time_since_last_gc_100ns, &time_max_gc_100ns);
 
 	// Calculate percent of time spend in this GC since end of last GC.
 	int percent_time_in_gc_since_last_gc = 0;
-	if (total_time_since_last_gc_100ns != 0)
-		percent_time_in_gc_since_last_gc = (int)(total_time_last_gc_100ns * 100 / total_time_since_last_gc_100ns);
+	if (time_since_last_gc_100ns != 0)
+		percent_time_in_gc_since_last_gc = (int)(time_last_gc_100ns * 100 / time_since_last_gc_100ns);
 	return percent_time_in_gc_since_last_gc;
 }
 

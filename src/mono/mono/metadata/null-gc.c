@@ -658,13 +658,13 @@ mono_gc_get_gcmemoryinfo (
 }
 
 void mono_gc_get_gctimeinfo (
-	guint64 *total_time_last_gc_100ns,
-	guint64 *total_time_since_last_gc_100ns,
-	guint64 *total_time_max_gc_100ns)
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
 {
-	*total_time_last_gc_100ns = 0;
-	*total_time_since_last_gc_100ns = 0;
-	*total_time_max_gc_100ns = 0;
+	*time_last_gc_100ns = 0;
+	*time_since_last_gc_100ns = 0;
+	*time_max_gc_100ns = 0;
 }
 
 #else

@@ -2637,11 +2637,11 @@ mono_gc_get_gcmemoryinfo (
 }
 
 void mono_gc_get_gctimeinfo (
-	guint64 *total_time_last_gc_100ns,
-	guint64 *total_time_since_last_gc_100ns,
-	guint64 *total_time_max_gc_100ns)
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
 {
-	sgen_gc_get_gctimeinfo (total_time_last_gc_100ns, total_time_since_last_gc_100ns, total_time_max_gc_100ns);
+	sgen_gc_get_gctimeinfo (time_last_gc_100ns, time_since_last_gc_100ns, time_max_gc_100ns);
 }
 
 MonoGCDescriptor
