@@ -18949,16 +18949,27 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(var_types       type,
 //
 void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
 {
-    if (op != nullptr)
+    if (op == nullptr)
     {
-        if (op->OperIsLocal())
+        return;
+    }
+
+    if (op->OperIsLocal())
+    {
+        setLclRelatedToSIMDIntrinsic(op);
+    }
+    else if (op->OperIs(GT_OBJ))
+    {
+        GenTree* addr = op->AsIndir()->Addr();
+
+        if (addr->OperIs(GT_ADDR))
         {
-            setLclRelatedToSIMDIntrinsic(op);
-        }
-        else if ((op->OperGet() == GT_OBJ) && (op->AsOp()->gtOp1->OperGet() == GT_ADDR) &&
-                 op->AsOp()->gtOp1->AsOp()->gtOp1->OperIsLocal())
-        {
-            setLclRelatedToSIMDIntrinsic(op->AsOp()->gtOp1->AsOp()->gtOp1);
+            GenTree* addrOp1 = addr->AsOp()->gtGetOp1();
+
+            if (addrOp1->OperIsLocal())
+            {
+                setLclRelatedToSIMDIntrinsic(addrOp1);
+            }
         }
     }
 }
