@@ -38,7 +38,9 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 MONO_API MonoBundledSatelliteAssembly *
 mono_create_new_bundled_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size);
 
+#ifdef HOST_WASM
 MONO_API int
 mono_string_instance_is_interned (MonoString *str_raw);
+#endif
 
 #endif /*__MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__*/
