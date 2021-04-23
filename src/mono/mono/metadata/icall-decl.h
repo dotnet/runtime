@@ -63,6 +63,7 @@ typedef enum {
 
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
+ICALL_EXPORT guint32 ves_icall_System_Reflection_AssemblyName_GetAssemblyCount (void);
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
 ICALL_EXPORT MonoBoolean ves_icall_System_Environment_GetIs64BitOperatingSystem (void);

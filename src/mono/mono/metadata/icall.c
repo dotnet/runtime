@@ -5254,6 +5254,12 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	g_free (filename);
 }
 
+guint32
+ves_icall_System_Reflection_AssemblyName_GetAssemblyCount (void)
+{
+	return mono_assembly_get_count ();
+}
+
 static gboolean
 mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
 {
