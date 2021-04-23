@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="FileSystemTest.Browser.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer_fo_as.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
