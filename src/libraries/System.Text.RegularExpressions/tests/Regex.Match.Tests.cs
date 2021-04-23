@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -619,7 +620,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Match_Timeout_Repetition_Throws(RegexOptions options)
         {
             int repetitionCount = 800_000_000;
-            var regex = new Regex(@"a\s{" + repetitionCount+ "}", options, TimeSpan.FromSeconds(1));
+            var regex = new Regex(@"a\s{" + repetitionCount + "}", options, TimeSpan.FromSeconds(1));
             string input = @"a" + new string(' ', repetitionCount) + @"b";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
         }
@@ -1183,6 +1184,23 @@ namespace System.Text.RegularExpressions.Tests
 
         [Fact]
         public void Test()
+        {
+
+            // Continue from here. AFAICT the code is complete. Need to start testing it.
+            Debugger.Launch();
+            Regex.CompileToAssembly(new[]
+                {
+                new RegexCompilationInfo("hi.*foo", RegexOptions.None, "hifooabc", "", false),
+                }, new AssemblyName("testregex"));
+
+            var regex = new Regex(@"hi.*foo", RegexOptions.Compiled);
+            var match = regex.Match("hifooabout");
+            Assert.True(match.Success);
+            Assert.Equal("hifoo", match.Value);
+        }
+
+        [Fact]
+        public void TestI()
         {
             Debugger.Launch();
             var regex = new Regex(".*[abc]string");
