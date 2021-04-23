@@ -9273,7 +9273,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD)
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
-        if (pInterfaceMD->HasMethodInstantiation())
+        if (pInterfaceMD->HasMethodInstantiation() || pMethodImpl->HasMethodInstantiation() || HasInstantiation())
         {
             return pMethodImpl->FindOrCreateAssociatedMethodDesc(pMethodImpl, this, FALSE, pInterfaceMD->GetMethodInstantiation(), TRUE);
         }
