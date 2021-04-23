@@ -16,6 +16,10 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # The ABI for passing parameters with 32-byte alignment has changed in GCC 4.6
   add_compile_options(-Wno-psabi)
+endif()
+if (NOT MSVC AND NOT CLR_CMAKE_TARGET_ARCH_ARM64 AND NOT CLR_CMAKE_TARGET_ARCH_ARM)
+  # We need -march=native so we can detect if AVX2 is present.
+  # ARM does not like that option too and it make no sense to have this detection there.
   add_compile_options(-march=native)
 endif()
 set(SOURCES
