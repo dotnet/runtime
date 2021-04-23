@@ -43,6 +43,9 @@ struct _MonoThreadsSync
 	void *data;
 	MonoCoopMutex *entry_mutex;
 	MonoCoopCond *entry_cond;
+#ifdef HOST_WASM
+	gboolean is_interned;
+#endif
 };
 
 /*

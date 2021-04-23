@@ -103,10 +103,6 @@ static MonoCoopMutex ldstr_section;
 /* Used by remoting proxies */
 static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
-#ifdef HOST_WASM
-/* Used for fast 'is string instance interned' checks by wasm interop */
-static MonoGHashTable *instance_intern_table;
-#endif
 
 static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
@@ -6719,6 +6715,14 @@ mono_string_get_pinned (MonoStringHandle str, MonoError *error)
 	return news;
 }
 
+#ifdef HOST_WASM
+void 
+mono_set_string_interned_internal (MonoObject* obj);
+
+gboolean
+mono_is_string_interned_internal (MonoObject* obj);
+#endif
+
 MonoStringHandle
 mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error)
 {
@@ -6752,12 +6756,7 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
 
 #ifdef HOST_WASM
-		if (!instance_intern_table) {
-			MonoGHashTable *table = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Interned Flags");
-			mono_memory_barrier ();
-			instance_intern_table = table;
-		}
-		mono_g_hash_table_insert_internal (instance_intern_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+		mono_set_string_interned_internal ((MonoObject *)MONO_HANDLE_RAW (s));
 #endif
 	}
 	ldstr_unlock ();
@@ -6772,20 +6771,9 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
  * \returns TRUE if the string is interned, FALSE otherwise.
  */
 int
-mono_string_instance_is_interned (MonoString *str_raw)
+mono_string_instance_is_interned (MonoString *str)
 {
-	int result = FALSE;
-	ERROR_DECL (error);
-	HANDLE_FUNCTION_ENTER ();
-	MONO_HANDLE_DCL (MonoString, str);
-	MONO_ENTER_GC_UNSAFE;
-	ldstr_lock ();
-	MonoString * ptr = (MonoString *)mono_g_hash_table_lookup (instance_intern_table, MONO_HANDLE_RAW (str));
-	result = (ptr != 0);
-	ldstr_unlock ();
-	MONO_EXIT_GC_UNSAFE;
-	mono_error_assert_ok (error);
-	HANDLE_FUNCTION_RETURN_VAL (result);
+	return mono_is_string_interned_internal ((MonoObject *)str);
 }
 #endif
 
