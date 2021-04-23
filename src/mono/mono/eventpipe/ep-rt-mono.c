@@ -432,6 +432,9 @@ void
 ep_rt_mono_init (void);
 
 void
+ep_rt_mono_init_finish (void);
+
+void
 ep_rt_mono_fini (void);
 
 bool
