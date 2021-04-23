@@ -6598,7 +6598,7 @@ void CodeGen::genFinalizeFrame()
     // locations on entry to the function.
     compiler->m_pLinearScan->recordVarLocationsAtStartOfBB(compiler->fgFirstBB);
 
-    if (compiler->opts.MinOpts())
+    //if (compiler->opts.MinOpts())
     {
         genSetRegsModifiedForPoisonFrame();
     }
@@ -7377,7 +7377,7 @@ void CodeGen::genFnProlog()
 #endif // TARGET_ARM
 
     // In MinOpts we poison the entire stack with a recognizable value to make detecting uses of uninitialized variables easier.
-    if (compiler->opts.MinOpts())
+    //if (compiler->opts.MinOpts())
     {
         genPoisonFrame();
     }
