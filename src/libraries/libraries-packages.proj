@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
 
   <PropertyGroup>
-    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+    <TraversalGlobalProperties>BuildAllProjects=true;BuildTargetFramework=</TraversalGlobalProperties>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
