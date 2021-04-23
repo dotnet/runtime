@@ -62,7 +62,7 @@
     <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.21221.1</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21221.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21221.1</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21221.1</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21221.6</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21221.1</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21221.1</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21221.1</MicrosoftDotNetVersionToolsTasksVersion>
