@@ -2823,15 +2823,20 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 //
 bool LinearScan::canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation)
 {
-    assert(physRegRecord->assignedInterval != nullptr);
+    if (physRegRecord->assignedInterval == nullptr)
+    {
+        return false;
+    }
+
     RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
 
     if (recentAssignedRef != nullptr)
     {
         // We can't spill a register that's active at the current location.
         // We should already have determined this with isRegBusy before calling this method.
-        assert(!isRefPositionActive(recentAssignedRef, refLocation));
-        return true;
+        //assert(!isRefPositionActive(recentAssignedRef, refLocation));
+        //return true;
+        return !isRefPositionActive(recentAssignedRef, refLocation);
     }
     // recentAssignedRef can only be null if this is a parameter that has not yet been
     // moved to a register (or stack), in which case we can't spill it yet.
@@ -3339,12 +3344,12 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 
     if (spillRefPosition == nullptr)
     {
-        // Note that we can't assert  for the copyReg case
-        //
-        if (assignedInterval->physReg == thisRegNum)
-        {
-            assert(assignedInterval->isActive == false);
-        }
+        //// Note that we can't assert  for the copyReg case
+        ////
+        //if (assignedInterval->physReg == thisRegNum)
+        //{
+        //    assert(assignedInterval->isActive == false);
+        //}
     }
     else
     {
@@ -11499,6 +11504,11 @@ void LinearScan::RegisterSelection::trySpillCost()
         }
     }
 
+    if (lowestCostSpillSet == RBM_NONE)
+    {
+        return;
+    }
+
     // We won't spill if this refPosition is RegOptional() and we have no candidates
     // with a lower spill cost.
     if ((bestSpillWeight >= thisSpillWeight) && refPosition->RegOptional())
@@ -11612,14 +11622,14 @@ void LinearScan::RegisterSelection::tryPrevRegOpt()
             prevRegOptSet = prevRegOptCandidateBit;
         }
 
-#ifdef DEBUG
-        // The assigned should be non-null, and should have a recentRefPosition, however since
-        // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
-        if (!hasAssignedInterval)
-        {
-            assert(!"Spill candidate has no assignedInterval recentRefPosition");
-        }
-#endif
+//#ifdef DEBUG
+//        // The assigned should be non-null, and should have a recentRefPosition, however since
+//        // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
+//        if (!hasAssignedInterval)
+//        {
+//            assert(!"Spill candidate has no assignedInterval recentRefPosition");
+//        }
+//#endif
     }
     found = applySelection(PREV_REG_OPT, prevRegOptSet);
 }
