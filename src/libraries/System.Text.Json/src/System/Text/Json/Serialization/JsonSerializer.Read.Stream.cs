@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -219,9 +220,11 @@ namespace System.Text.Json
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 var bufferState = new ReadAsyncBufferState(options.DefaultBufferSize);
+                // Hardcode the queue converter to avoid accidental use of custom converters
+                JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
+                JsonTypeInfo jsonTypeInfo = new JsonTypeInfo(typeof(Queue<TValue>), converter, typeof(Queue<TValue>), options);
                 ReadStack readStack = default;
-                readStack.Initialize(typeof(Queue<TValue>), options, supportContinuation: true);
-                JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
+                readStack.Initialize(jsonTypeInfo, supportContinuation: true);
                 var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
                 try
@@ -229,8 +232,8 @@ namespace System.Text.Json
                     do
                     {
                         bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
-                        ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
-                        if (readStack.Current.ReturnValue is Queue<TValue> queue)
+                        Queue<TValue>? queue = ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
+                        if (queue is not null)
                         {
                             while (queue.Count > 0)
                             {

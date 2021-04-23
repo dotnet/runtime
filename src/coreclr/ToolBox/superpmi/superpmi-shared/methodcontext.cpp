@@ -5486,15 +5486,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     size_t maxOffset = 0;
     for (UINT32 i = 0; i < (*pCountSchemaItems); i++)
     {
-        // Note >= here; for type histograms the count and handle schema entries have the same offset,
-        // but the handle schema (which comes second) has a larger count.
-        //
-        // The sizeof should really be target pointer size, so cross-bitness replay may not work here.
-        //
-        if (pInSchema[i].Offset >= maxOffset)
-        {
-            maxOffset = pInSchema[i].Offset + pInSchema[i].Count * sizeof(uintptr_t);
-        }
+        maxOffset = max(maxOffset, pInSchema[i].Offset + pInSchema[i].Count * sizeof(uintptr_t));
 
         agnosticSchema[i].Offset              = (DWORDLONG)pInSchema[i].Offset;
         agnosticSchema[i].InstrumentationKind = (DWORD)pInSchema[i].InstrumentationKind;
