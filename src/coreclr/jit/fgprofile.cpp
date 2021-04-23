@@ -1733,6 +1733,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
 

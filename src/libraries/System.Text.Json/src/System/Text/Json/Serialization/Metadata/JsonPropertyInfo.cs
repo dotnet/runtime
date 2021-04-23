@@ -175,7 +175,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
             }
-#pragma warning disable CS0618 // IgnoreNullValues is obsolete
+#pragma warning disable SYSLIB0020 // JsonSerializerOptions.IgnoreNullValues is obsolete
             else if (Options.IgnoreNullValues)
             {
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
@@ -198,7 +198,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(!Options.IgnoreNullValues);
                 IgnoreDefaultValuesOnWrite = true;
             }
-#pragma warning restore CS0618 // IgnoreNullValues is obsolete
+#pragma warning restore SYSLIB0020
         }
 
         internal void DetermineNumberHandlingForTypeInfo(JsonNumberHandling? numberHandling)

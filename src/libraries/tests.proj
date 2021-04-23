@@ -263,7 +263,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50721 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50723 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" />
@@ -312,9 +312,6 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51369 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/50721 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51244 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
