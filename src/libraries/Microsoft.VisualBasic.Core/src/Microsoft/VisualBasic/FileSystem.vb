@@ -36,7 +36,8 @@ Namespace Microsoft.VisualBasic
         Friend Const sTimeFormat As String = "T"
         Friend Const sDateFormat As String = "d"
         Friend Const sDateTimeFormat As String = "F"
-
+        Private Const FileSystemTargetObjectTrimmerMessage As String = "The target object type could not be statically analyzed and may be trimmed"
+        Private Const FileSystemOriginObjectTrimmerMessage As String = "The origin object type could not be statically analyzed and may be trimmed"
         Friend ReadOnly m_WriteDateFormatInfo As DateTimeFormatInfo = InitializeWriteDateFormatInfo() ' Call static initializer due to FxCop InitializeReferenceTypeStaticFieldsInline.
         Private Function InitializeWriteDateFormatInfo() As DateTimeFormatInfo
             Dim dfi As New DateTimeFormatInfo
@@ -569,7 +570,7 @@ Namespace Microsoft.VisualBasic
             End If
         End Sub
 
-        <RequiresUnreferencedCode("Calls VB6File.GetObject")>
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub FileGetObject(ByVal FileNumber As Integer, ByRef Value As Object, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -580,7 +581,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <RequiresUnreferencedCode("VB6File.Get")>
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub FileGet(ByVal FileNumber As Integer, ByRef Value As ValueType, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -591,7 +592,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <RequiresUnreferencedCode("Calls VB6File.Get")>
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub FileGet(ByVal FileNumber As Integer, ByRef Value As System.Array, Optional ByVal RecordNumber As Long = -1,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
             Try
@@ -713,7 +714,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <RequiresUnreferencedCode("Calls VB6File.PutObject")>
+        <RequiresUnreferencedCode(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePutObject(ByVal FileNumber As Integer, ByVal Value As Object, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -724,12 +725,12 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")>
+        <ObsoleteAttribute(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePut(ByVal FileNumber As Object, ByVal Value As Object, Optional ByVal RecordNumber As Object = -1)
             Throw New ArgumentException(SR.UseFilePutObject)
         End Sub
 
-        <RequiresUnreferencedCode("Calls VB6File.Put")>
+        <RequiresUnreferencedCode(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePut(ByVal FileNumber As Integer, ByVal Value As ValueType, Optional ByVal RecordNumber As Long = -1)
             Try
                 ValidateGetPutRecordNumber(RecordNumber)
@@ -740,7 +741,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <RequiresUnreferencedCode("Calls VB6File.Put")>
+        <RequiresUnreferencedCode(FileSystemOriginObjectTrimmerMessage)>
         Public Sub FilePut(ByVal FileNumber As Integer, ByVal Value As System.Array, Optional ByVal RecordNumber As Long = -1,
             Optional ByVal ArrayIsDynamic As Boolean = False, Optional ByVal StringIsFixedLength As Boolean = False)
 
@@ -881,7 +882,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <RequiresUnreferencedCode("Calls Vb6File.Input")>
+        <RequiresUnreferencedCode(FileSystemTargetObjectTrimmerMessage)>
         Public Sub Input(ByVal FileNumber As Integer, ByRef Value As Object)
             Try
                 Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()

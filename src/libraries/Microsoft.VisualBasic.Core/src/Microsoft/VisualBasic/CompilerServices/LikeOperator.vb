@@ -194,7 +194,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
-        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
+        <RequiresUnreferencedCode("The types of source and pattern cannot be statically analyzed so the like operator may be trimmed")>
         Public Shared Function LikeObject(ByVal Source As Object, ByVal Pattern As Object, ByVal CompareOption As CompareMethod) As Object
 
             Dim conv1, conv2 As IConvertible

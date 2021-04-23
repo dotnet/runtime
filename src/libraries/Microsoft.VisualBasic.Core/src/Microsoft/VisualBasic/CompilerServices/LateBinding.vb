@@ -48,8 +48,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        Private Const LateBindingTrimmerMessage As String = "Late binding is dynamic and cannot be statically analyzed, so it may be trimmed"
+
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Uses Object.GetType which cannot be statically Analyzed")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Function LateGet(ByVal o As Object,
                                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
                                 ByVal objType As Type,
@@ -209,7 +211,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Calls InternalLateSet")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateSetComplex(
                 ByVal o As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
@@ -235,7 +237,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Calls InternalLateSet")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateSet(
                 ByVal o As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
@@ -249,7 +251,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Uses Object.GetType which cannot be statically analyzed.")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Friend Shared Sub InternalLateSet(ByVal o As Object,
                                    <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
                                    ByRef objType As Type,
@@ -489,7 +491,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Uses Object.GetType which cannot be statically analyzed.")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Function LateIndexGet(ByVal o As Object, ByVal args() As Object, ByVal paramnames() As String) As Object
 
             Dim objType As Type
@@ -710,7 +712,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Calls LateIndexSet")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateIndexSetComplex(ByVal o As Object, ByVal args() As Object, ByVal paramnames() As String,
                                        ByVal OptimisticSet As Boolean, ByVal RValueBase As Boolean)
 
@@ -726,7 +728,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Uses Object.GetType which cannot be statically analyzed.")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateIndexSet(ByVal o As Object, ByVal args() As Object, ByVal paramnames() As String)
 
             Dim objType As Type
@@ -915,7 +917,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Calls InternalLateCall")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateCall(
                 ByVal o As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
@@ -929,7 +931,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        <RequiresUnreferencedCode("Calling Object.GetType which can not be statically analyzed.")>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Friend Shared Function InternalLateCall(
                 ByVal o As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>

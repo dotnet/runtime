@@ -140,7 +140,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return operatorMethod
             End Function
 
-            <RequiresUnreferencedCode("Cannot statically analyze which targetType will be.")>
+            <RequiresUnreferencedCode("The types of the parameters cannot be statically analyzed and may be trimmed")>
             Public Shared Function ForLoopInitObj(ByVal Counter As Object, ByVal Start As Object, ByVal Limit As Object, ByVal StepValue As Object, ByRef LoopForResult As Object, ByRef CounterResult As Object) As Boolean
                 Dim loopFor As ForLoopControl
 
@@ -247,7 +247,7 @@ NotEnumType:
                 Return CheckContinueLoop(loopFor)
             End Function
 
-            <RequiresUnreferencedCode("Cannot statically analyze which targetType will be.")>
+            <RequiresUnreferencedCode("The types of the parameters cannot be statically analyzed and may be trimmed")>
             Public Shared Function ForNextCheckObj(ByVal Counter As Object, ByVal LoopObj As Object, ByRef CounterResult As Object) As Boolean
 
                 Dim loopFor As ForLoopControl

@@ -18,6 +18,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
     <EditorBrowsable(EditorBrowsableState.Never)>
     Public NotInheritable Class Conversions
+        Private Const ConversionsTrimmerMessage As String = "The Expression origin object cannot be statically analyzed and may be trimmed"
 
         Private Sub New()
         End Sub
@@ -2483,7 +2484,7 @@ MisMatch:
 
         End Function
 
-        <RequiresUnreferencedCode("Calls ChangeType")>
+        <RequiresUnreferencedCode(ConversionsTrimmerMessage)>
         Public Shared Function ChangeType(
                 ByVal Expression As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)>
@@ -2560,7 +2561,7 @@ MisMatch:
         <Obsolete("do not use this method", True)>
         <DebuggerHidden()>
         <DebuggerStepThrough()>
-        <RequiresUnreferencedCode("Calls ObjectUserDefinedConversion")>
+        <RequiresUnreferencedCode(ConversionsTrimmerMessage)>
         Public Shared Function FallbackUserDefinedConversion(
                 ByVal Expression As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)>

@@ -501,7 +501,7 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         <SupportedOSPlatform("windows")>
-        <RequiresUnreferencedCode("Calls Activator.CreateInstane on a type that cannot be statically analyzed.")>
+        <RequiresUnreferencedCode("The COM object to be created cannot be statically analyzed and may be trimmed")>
         Public Function CreateObject(ByVal ProgId As String, Optional ByVal ServerName As String = "") As Object
             'Creates local or remote COM2 objects.  Should not be used to create COM+ objects.
             'Applications that need to be STA should set STA either on their Sub Main via STAThreadAttribute
@@ -547,7 +547,7 @@ Namespace Microsoft.VisualBasic
         End Function
 
         <SupportedOSPlatform("windows")>
-        <RequiresUnreferencedCode("Calls Activator.CreateInstane on a type that cannot be statically analyzed.")>
+        <RequiresUnreferencedCode("The COM component to be returned cannot be statically analyzed and may be trimmed")>
         Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
             'Only works for Com2 objects, not for COM+ objects.
 
@@ -584,7 +584,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
         ' Object/latebound functions.
         '============================================================================
-        <RequiresUnreferencedCode("Calls InternalLateSet, LateGet and InternalLateCall")>
+        <RequiresUnreferencedCode("The procedure name cannot be statically analyzed and may be trimmed.")>
         Public Function CallByName(ByVal ObjectRef As System.Object, ByVal ProcName As String, ByVal UseCallType As CallType, ByVal ParamArray Args() As Object) As Object
             Select Case UseCallType
 

@@ -600,7 +600,7 @@ EmptyMatchString:
             Return Expression.Length
         End Function
 
-        <RequiresUnreferencedCode("Calls StructUtils.GetRecordLength")>
+        <RequiresUnreferencedCode("The object in the expression cannot be statically analyzed and may be trimmed")>
         Public Function Len(ByVal Expression As Object) As Integer
             If Expression Is Nothing Then
                 Return 0

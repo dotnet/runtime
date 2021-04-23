@@ -48,6 +48,7 @@ Namespace Microsoft.VisualBasic
         Private Const TYPE_INDICATOR_INT32 As Char = "&"c
         Private Const TYPE_INDICATOR_SINGLE As Char = "!"c
         Private Const TYPE_INDICATOR_DECIMAL As Char = "@"c
+        Private Const ConversionTrimmerMessage As String = "The Expression origin object cannot be statically analyzed and may be trimmed."
 
         '============================================================================
         ' Error message functions.
@@ -1097,7 +1098,7 @@ NextOctCharacter:
             End Select
         End Function
 
-        <RequiresUnreferencedCode("Calls Conversions.ChangeType")>
+        <RequiresUnreferencedCode(ConversionTrimmerMessage)>
         Public Function CTypeDynamic(
                 ByVal Expression As Object,
                 <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)>
@@ -1105,7 +1106,7 @@ NextOctCharacter:
             Return Conversions.ChangeType(Expression, TargetType, True)
         End Function
 
-        <RequiresUnreferencedCode("Calls Conversions.ChangeType")>
+        <RequiresUnreferencedCode(ConversionTrimmerMessage)>
         Public Function CTypeDynamic(Of TargetType)(ByVal Expression As Object) As TargetType
             Return DirectCast(Conversions.ChangeType(Expression, GetType(TargetType), True), TargetType)
         End Function

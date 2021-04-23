@@ -14,7 +14,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Sub New()
         End Sub
 
-        <RequiresUnreferencedCode("Calls LateSet, IDOSet, LateGet, and LateCall which are unsafe")>
+        <RequiresUnreferencedCode("The method name cannot and type cannot be statically analyzed so it may be trimmed")>
         Public Shared Function CallByName(ByVal Instance As System.Object, ByVal MethodName As String, ByVal UseCallType As CallType, ByVal ParamArray Arguments() As Object) As Object
 
             Select Case UseCallType
