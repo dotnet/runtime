@@ -41,7 +41,7 @@ function(add_pgo TargetName)
         # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
         if(NOT EXISTS ${ProfilePath})
             message("PGO data file NOT found: ${ProfilePath}")
-        else
+        else(NOT EXISTS ${ProfilePath})
             if(CLR_CMAKE_HOST_WIN32)
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")
@@ -59,6 +59,6 @@ function(add_pgo TargetName)
                     endif((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6))
                 endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
             endif(CLR_CMAKE_HOST_WIN32)
-        endif
+        endif(NOT EXISTS ${ProfilePath})
     endif(CLR_CMAKE_PGO_INSTRUMENT)
 endfunction(add_pgo)
