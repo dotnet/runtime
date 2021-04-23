@@ -157,7 +157,9 @@ namespace System.IO
         ///  -or-
         ///  The stream has been closed.
         ///  -or-
-        ///  The disk was full (when <paramref name="allocationSize" /> was provided and <paramref name="allocationSize" /> was pointing to a regular file).</exception>
+        ///  The disk was full (when <paramref name="allocationSize" /> was provided and <paramref name="allocationSize" /> was pointing to a regular file).
+        ///  -or-
+        ///  The file was too large (when <paramref name="allocationSize" /> was provided and <paramref name="allocationSize" /> was pointing to a regular file).</exception>
         /// <exception cref="T:System.Security.SecurityException">The caller does not have the required permission.</exception>
         /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid, such as being on an unmapped drive.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException">The <paramref name="access" /> requested is not permitted by the operating system for the specified <paramref name="path" />, such as when <paramref name="access" /> is <see langword="Write" /> or <see langword="ReadWrite" /> and the file or directory is set for read-only access.

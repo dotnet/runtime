@@ -89,7 +89,7 @@ namespace System.IO.Strategies
                         throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
                     }
 
-                    // NtCreateFile has failed for some other reason than a full disk.
+                    // NtCreateFile has failed for some other reason than a full disk or too large file.
                     // Instead of implementing the mapping for every NS Status value (there are plenty of them: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55)
                     // or using RtlNtStatusToDosError & GetExceptionForWin32Error
                     // the code falls back to CreateFileW that just throws the right exception.

@@ -108,13 +108,21 @@ namespace System.IO.Strategies
             // If allocationSize has been provided for a creatable and writeable file
             if (allocationSize > 0 && (_access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
             {
-                const int ENOSPC = 28; // != Interop.Error.ENOSPC
-                if (Interop.Sys.FAllocate(_fileHandle, 0, allocationSize) == ENOSPC)
+                int fallocateResult = Interop.Sys.PosixFAllocate(_fileHandle, 0, allocationSize);
+                if (fallocateResult != 0)
                 {
                     _fileHandle.Dispose();
                     Interop.Sys.Unlink(_path!); // remove the file to mimic Windows behaviour (atomic operation)
 
-                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, _path, allocationSize));
+                    if (fallocateResult == -1)
+                    {
+                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, _path, allocationSize));
+                    }
+                    else
+                    {
+                        Debug.Assert(fallocateResult == -2);
+                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
+                    }
                 }
                 // ignore not supported and other failures (pipe etc)
             }
