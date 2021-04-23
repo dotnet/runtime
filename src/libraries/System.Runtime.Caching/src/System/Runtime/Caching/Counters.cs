@@ -14,7 +14,7 @@ namespace System.Runtime.Caching
         private const string EVENT_SOURCE_NAME_ROOT = "System.Runtime.Caching.";
         private const int NUM_COUNTERS = 7;
 
-        private PollingCounter[] _counters;
+        private DiagnosticCounter[] _counters;
         private long[] _counterValues;
 
         internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
@@ -33,15 +33,28 @@ namespace System.Runtime.Caching
 
             try
             {
-                _counters = new PollingCounter[NUM_COUNTERS];
+                _counters = new DiagnosticCounter[NUM_COUNTERS];
                 _counterValues = new long[NUM_COUNTERS];
                 _counters[(int)CounterName.Entries] = CreatePollingCounter("entries", "Cache Entries", (int)CounterName.Entries);
                 _counters[(int)CounterName.Hits] = CreatePollingCounter("hits", "Cache Hits", (int)CounterName.Hits);
-                _counters[(int)CounterName.HitRatio] = CreatePollingCounter("hit-ratio", "Cache Hit Ratio", (int)CounterName.HitRatio);
-                _counters[(int)CounterName.HitRatioBase] = CreatePollingCounter("hit-ratio-base", "Cache Hit Ratio Base", (int)CounterName.HitRatioBase);
                 _counters[(int)CounterName.Misses] = CreatePollingCounter("misses", "Cache Misses", (int)CounterName.Misses);
                 _counters[(int)CounterName.Trims] = CreatePollingCounter("trims", "Cache Trims", (int)CounterName.Trims);
-                _counters[(int)CounterName.Turnover] = CreatePollingCounter("turnover", "Cache Turnover Rate", (int)CounterName.Turnover);
+
+                _counters[(int)CounterName.Turnover] = new IncrementingPollingCounter("turnover", this,
+                    () => (double)_counterValues[(int)CounterName.Turnover])
+                {
+                    DisplayName = "Cache Turnover Rate",
+                };
+
+                // This two-step dance with hit-ratio was an old perf-counter artifact. There only needs
+                // to be one polling counter here, rather than the two-part perf counter. Still keeping array
+                // indexes and raw counter values consistent between NetFx and Core code though.
+                _counters[(int)CounterName.HitRatio] = new PollingCounter("hit-ratio", this,
+                    () =>((double)_counterValues[(int)CounterName.HitRatio]/(double)_counterValues[(int)CounterName.HitRatioBase]) * 100d)
+                {
+                    DisplayName = "Cache Hit Ratio",
+                };
+                //_counters[(int)CounterName.HitRatioBase] = n/a;
 
                 dispose = false;
             }
@@ -62,14 +75,14 @@ namespace System.Runtime.Caching
 
         public new void Dispose()
         {
-            PollingCounter[] counters = _counters;
+            DiagnosticCounter[] counters = _counters;
 
             // ensure this only happens once
             if (counters != null && Interlocked.CompareExchange(ref _counters, null, counters) == counters)
             {
                 for (int i = 0; i < NUM_COUNTERS; i++)
                 {
-                    PollingCounter counter = counters[i];
+                    var counter = counters[i];
                     if (counter != null)
                     {
                         counter.Dispose();
