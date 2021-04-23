@@ -10,6 +10,7 @@ namespace System.SpanTests
     public static partial class MemoryMarshalTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50960", TestPlatforms.Browser)]
         public static void GetArrayDataReference_NullInput_ThrowsNullRef()
         {
             Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference((object[])null));
