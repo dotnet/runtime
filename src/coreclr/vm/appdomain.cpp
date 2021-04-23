@@ -3780,6 +3780,14 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     DWORD hash = HashString(libraryName);
 
     CrstHolder lock(&m_DomainCacheCrst);
+    
+    NATIVE_LIBRARY_HANDLE existingHandleMaybe;
+    if (m_unmanagedCache.Lookup(hash, &existingHandleMaybe))
+    {
+        _ASSERTE(existingHandleMaybe == hMod);
+        return;
+    }
+
     m_unmanagedCache.Add(hash, hMod);
 }
 
