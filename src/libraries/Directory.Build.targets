@@ -244,7 +244,7 @@
 
   <!-- Adds ObsoleteAttribute to projects that need to apply downlevel Obsoletions with DiagnosticId and UrlFormat -->
   <Choose>
-    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and ($(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
+    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\ObsoleteAttribute.cs" Link="System\ObsoleteAttribute.cs" />
       </ItemGroup>
