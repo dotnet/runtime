@@ -323,6 +323,12 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
     {
         pDt->Release();
     }
+    
+    if (hDac != NULL)
+    {
+        FreeLibrary(hDac);
+    }
+
 
     return hr;
 }
