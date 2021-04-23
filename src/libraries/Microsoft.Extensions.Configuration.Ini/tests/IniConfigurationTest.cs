@@ -234,7 +234,7 @@ DefaultConnection=TestConnectionString
             var exception = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddIniFile("NotExistingConfig.ini").Build());
 
             // Assert
-            Assert.StartsWith($"The configuration file 'NotExistingConfig.ini' was not found and is not optional. The physical path is '", exception.Message);
+            Assert.StartsWith($"The configuration file 'NotExistingConfig.ini' was not found and is not optional. The expected physical path was '", exception.Message);
         }
 
         [Fact]

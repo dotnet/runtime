@@ -91,18 +91,18 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
+                using Stream stream = OpenRead(file);
                 try
                 {
-                    using Stream stream = OpenRead(file);
                     Load(stream);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
                     if (reload)
                     {
                         Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     }
-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), e);
+                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
                     HandleException(ExceptionDispatchInfo.Capture(exception));
                 }
             }
@@ -113,6 +113,8 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads the contents of the file at <see cref="Path"/>.
         /// </summary>
+        /// <exception cref="DirectoryNotFoundException">If Optional is <c>false</c> on the source and part of a file or
+        /// or directory cannot be found at the specified Path.</exception>
         /// <exception cref="FileNotFoundException">If Optional is <c>false</c> on the source and a
         /// file does not exist at specified Path.</exception>
         /// <exception cref="InvalidDataException">Wrapping any exception thrown by the concrete implementation of the

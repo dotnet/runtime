@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.Configuration.Test;
 using Microsoft.Extensions.FileProviders;
@@ -32,10 +33,66 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.Empty(changeToken.Callbacks);
         }
 
+        public static readonly IEnumerable<object[]> ProviderThrowsInvalidDataExceptionInput = new[]
+        {
+            new object[] { @$"C:{Path.DirectorySeparatorChar}{Guid.NewGuid()}{Path.DirectorySeparatorChar}configuration.txt" },
+            new object[] { @$"{Path.DirectorySeparatorChar}{Guid.NewGuid()}{Path.DirectorySeparatorChar}configuration.txt" }
+        };
+
+        [Fact]
+        public void ProviderThrowsInvalidDataExceptionWhenLoadFails()
+        {
+            var tempFile = Path.GetTempFileName();
+
+            try
+            {
+                File.WriteAllText(tempFile, "Test::FileData");
+
+                var fileProviderMock = new Mock<IFileProvider>();
+                fileProviderMock.Setup(fp => fp.Watch(It.IsAny<string>())).Returns(new ConfigurationRootTest.ChangeToken());
+                fileProviderMock.Setup(fp => fp.GetFileInfo(It.IsAny<string>())).Returns(new FileInfoImpl(tempFile));
+
+                var source = new FileConfigurationSourceImpl
+                {
+                    FileProvider = fileProviderMock.Object,
+                    ReloadOnChange = true,
+                };
+                var provider = new ThrowOnLoadFileConfigurationProviderImpl(source);
+
+                var exception = Assert.Throws<InvalidDataException>(() => provider.Load());
+                Assert.Contains($"Failed to load configuration from file '{tempFile}'", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(@"C:\path\to\configuration.txt")]
-        [InlineData(@"/path/to/configuration.txt")]
-        public void ProviderThrowsInvalidDataExceptionWhenLoadFails(string physicalPath)
+        [MemberData(nameof(ProviderThrowsInvalidDataExceptionInput))]
+        public void ProviderThrowsFileNotFoundExceptionWhenNotFound(string physicalPath)
+        {
+            var fileProviderMock = new Mock<IFileProvider>();
+            fileProviderMock.Setup(fp => fp.Watch(It.IsAny<string>())).Returns(new ConfigurationRootTest.ChangeToken());
+            fileProviderMock.Setup(fp => fp.GetFileInfo(It.IsAny<string>())).Returns(new FileInfoImpl(physicalPath, false));
+
+            var source = new FileConfigurationSourceImpl
+            {
+                FileProvider = fileProviderMock.Object,
+                ReloadOnChange = true,
+            };
+            var provider = new FileConfigurationProviderImpl(source);
+
+            var exception = Assert.Throws<FileNotFoundException>(() => provider.Load());
+            Assert.Contains(physicalPath, exception.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(ProviderThrowsInvalidDataExceptionInput))]
+        public void ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(string physicalPath)
         {
             var fileProviderMock = new Mock<IFileProvider>();
             fileProviderMock.Setup(fp => fp.Watch(It.IsAny<string>())).Returns(new ConfigurationRootTest.ChangeToken());
@@ -48,17 +105,17 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             };
             var provider = new FileConfigurationProviderImpl(source);
 
-            var exception = Assert.Throws<InvalidDataException>(() => provider.Load());
-            Assert.Contains($"'{physicalPath}'", exception.Message);
-            Assert.IsType<DirectoryNotFoundException>(exception.InnerException);
-            Assert.Contains("Could not find a part of the path", exception.InnerException.Message);
+            var exception = Assert.Throws<DirectoryNotFoundException>(() => provider.Load());
+            Assert.Contains(physicalPath, exception.Message);
         }
 
         public class FileInfoImpl : IFileInfo
         {
-            public FileInfoImpl(string physicalPath) => PhysicalPath = physicalPath;
+            public FileInfoImpl(string physicalPath, bool exists = true) =>
+                (PhysicalPath, Exists) = (physicalPath, exists);
+
             public Stream CreateReadStream() => new MemoryStream();
-            public bool Exists => true;
+            public bool Exists { get; set; }
             public bool IsDirectory => false;
             public DateTimeOffset LastModified => default;
             public long Length => default;
@@ -74,6 +131,15 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 
             public override void Load(Stream stream)
             { }
+        }
+
+        public class ThrowOnLoadFileConfigurationProviderImpl : FileConfigurationProvider
+        {
+            public ThrowOnLoadFileConfigurationProviderImpl(FileConfigurationSource source)
+                : base(source)
+            { }
+
+            public override void Load(Stream stream) => throw new Exception("This is a test exception.");
         }
 
         public class FileConfigurationSourceImpl : FileConfigurationSource
