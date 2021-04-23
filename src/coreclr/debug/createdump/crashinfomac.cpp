@@ -15,8 +15,6 @@ CrashInfo::Initialize()
         fprintf(stderr, "task_for_pid(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
         return false;
     }
-    m_auxvEntries.push_back(elf_aux_entry { AT_BASE, { 0 } });
-    m_auxvEntries.push_back(elf_aux_entry { AT_NULL, { 0 } });
     return true;
 }
 
@@ -110,7 +108,7 @@ CrashInfo::EnumerateMemoryRegions()
             TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
             break;
         }
-        TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
+        TRACE_VERBOSE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
@@ -254,9 +252,15 @@ void CrashInfo::VisitModule(MachOModule& module)
     // Save the runtime module path
     if (m_coreclrPath.empty())
     {
-        size_t last = module.Name().rfind(MAKEDLLNAME_A("coreclr"));
+        size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
-            m_coreclrPath = module.Name().substr(0, last);
+            m_coreclrPath = module.Name().substr(0, last + 1);
+
+            uint64_t symbolOffset;
+            if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
+            {
+                TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+            }
         }
     }
     // VisitSegment is called for each segment of the module
@@ -291,9 +295,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             const auto& found = m_moduleMappings.find(moduleRegion);
             if (found == m_moduleMappings.end())
             {
-                TRACE("VisitSegment: ");
-                moduleRegion.Trace();
-
+                if (g_diagnosticsVerbose)
+                {
+                    TRACE_VERBOSE("VisitSegment: ");
+                    moduleRegion.Trace();
+                }
                 // Add this module segment to the module mappings list
                 m_moduleMappings.insert(moduleRegion);
 
@@ -380,9 +386,3 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     *read = numberOfBytesRead;
     return size == 0 || numberOfBytesRead > 0;
 }
-
-// For src/inc/llvm/ELF.h
-Elf64_Ehdr::Elf64_Ehdr()
-{
-}
-

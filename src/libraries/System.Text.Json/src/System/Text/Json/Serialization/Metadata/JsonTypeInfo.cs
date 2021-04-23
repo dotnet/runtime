@@ -160,17 +160,24 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo = null!;
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options) :
+            this(
+                type,
+                GetConverter(
+                    type,
+                    parentClassType: null, // A TypeInfo never has a "parent" class.
+                    memberInfo: null, // A TypeInfo never has a "parent" property.
+                    out Type runtimeType,
+                    options),
+                runtimeType,
+                options)
+        {
+        }
+
+        internal JsonTypeInfo(Type type, JsonConverter converter, Type runtimeType, JsonSerializerOptions options)
         {
             Type = type;
             Options = options;
-
-            JsonConverter converter = GetConverter(
-                Type,
-                parentClassType: null, // A TypeInfo never has a "parent" class.
-                memberInfo: null, // A TypeInfo never has a "parent" property.
-                out Type runtimeType,
-                Options);
 
             JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
 

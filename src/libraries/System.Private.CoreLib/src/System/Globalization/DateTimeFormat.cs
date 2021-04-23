@@ -1265,7 +1265,7 @@ namespace System
             destination[5] = ':';
             WriteTwoDecimalDigits((uint)second, destination, 6);
             destination[8] = '.';
-            WriteDigits((uint)fraction, destination.Slice(9));
+            WriteDigits((uint)fraction, destination.Slice(9, 7));
 
             return true;
         }

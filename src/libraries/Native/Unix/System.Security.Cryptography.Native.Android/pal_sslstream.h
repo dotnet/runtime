@@ -24,6 +24,8 @@ typedef struct SSLStream
     STREAM_WRITER streamWriter;
 } SSLStream;
 
+typedef struct ApplicationProtocolData_t ApplicationProtocolData;
+
 // Matches managed PAL_SSLStreamStatus enum
 enum
 {
@@ -66,12 +68,12 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
     SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize);
 
 /*
-Set configuration parameters
+Set target host
   - targetHost : SNI host name
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream* sslStream, char* targetHost);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost);
 
 /*
 Start or continue the TLS handshake
@@ -130,21 +132,33 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream* sslStream,
 /*
 Get the peer certificate for the current session
 
-Returns 1 on success, 0 otherwise
+Returns the peer certificate or null if there is no peer certificate.
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream,
-                                                                  jobject* /*X509Certificate*/ out);
+PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream);
 
 /*
 Get the peer certificates for the current session
 
 The peer's own certificate will be first, followed by any certificate authorities.
+*/
+PALEXPORT void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
+                                                                jobject** /*X509Certificate[]*/ out,
+                                                                int32_t* outLen);
 
+/*
+Configure the session to request client authentication
+*/
+PALEXPORT void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStream);
+
+/*
+Set application protocols
+  - protocolData : array of application protocols to set
+  - count        : number of elements in protocolData
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
-                                                                   jobject** /*X509Certificate[]*/ out,
-                                                                   int32_t* outLen);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStream,
+                                                                       ApplicationProtocolData* protocolData,
+                                                                       int32_t count);
 
 /*
 Set enabled protocols

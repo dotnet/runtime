@@ -227,6 +227,11 @@ namespace System.Diagnostics.Tracing
     /// }
     /// </code>
     /// </remarks>
+#if !ES_BUILD_STANDALONE
+    // The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
+    // members and the trimmer ensures that these members are preserved.
+    [DynamicallyAccessedMembers(ManifestMemberTypes)]
+#endif
     public partial class EventSource : IDisposable
     {
 
@@ -2765,7 +2770,16 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
+#if !ES_BUILD_STANDALONE
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                    Justification = "Based on the annotation on EventSource class, Trimmer will see from its analysis members " +
+                                    "that are marked with RequiresUnreferencedCode and will warn." +
+                                    "This method will not access any of these members and is safe to call.")]
+                byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
+                m_rawManifest = GetCreateManifestAndDescriptorsViaLocalMethod(Name);
+#else
                 m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+#endif
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern

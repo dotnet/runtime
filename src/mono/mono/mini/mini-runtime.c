@@ -71,11 +71,7 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
-
-#ifdef ENABLE_PERFTRACING
-#include <eventpipe/ep.h>
-#include <eventpipe/ds-server.h>
-#endif
+#include <mono/metadata/components.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -4428,12 +4424,10 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	if (mono_compile_aot)
-		ds_server_disable ();
+		mono_component_diagnostics_server ()->disable ();
 
-	ep_init ();
-#endif
+	mono_component_event_pipe ()->init ();
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
@@ -4500,9 +4494,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 	mono_threads_set_runtime_startup_finished ();
 
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
-	ep_finish_init ();
-#endif
+	mono_component_event_pipe ()->finish_init ();
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	if (!mono_compile_aot) {
@@ -4883,10 +4875,8 @@ mini_cleanup (MonoDomain *domain)
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
 	mini_get_interp_callbacks ()->cleanup ();
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
-	ep_shutdown ();
-	ds_server_shutdown ();
-#endif
+	mono_component_event_pipe ()->shutdown ();
+	mono_component_diagnostics_server ()->shutdown ();
 }
 
 void

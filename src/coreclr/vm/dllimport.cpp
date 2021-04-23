@@ -2529,6 +2529,40 @@ namespace
             return CallConvWinApiSentinel;
         }
     }
+
+    // Convert a CorNativeLinkType into an unambiguous usable value.
+    bool TryRemapLinkType(_In_ CorNativeLinkType value, _Out_ CorNativeLinkType* nlt)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(nlt != NULL);
+
+        // Handle case where the value is not in the defined enumeration.
+        if ((int)value == 0)
+            value = nltAnsi;
+
+        switch (value)
+        {
+        case nltAnsi:
+            *nlt = nltAnsi;
+            break;
+        case nltUnicode:
+            *nlt = nltUnicode;
+            break;
+        case nltAuto:
+#ifdef TARGET_WINDOWS
+            *nlt = nltUnicode;
+#else
+            *nlt = nltAnsi; // We don't have a utf8 charset in metadata so ANSI == UTF-8 off-Windows
+#endif
+            break;
+        default:
+            return false;
+        }
+
+        // Validate we remapped to a usable value.
+        _ASSERTE(*nlt == nltAnsi || *nlt == nltUnicode);
+        return true;
+    }
 }
 
 void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
@@ -2655,35 +2689,20 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
         IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
 
         callConv = (CorPinvokeMap)(args[0].val.u4 << 8);
-        CorNativeLinkType nlt = (CorNativeLinkType)0;
 
-        // XXX Tue 07/19/2005
-        // Keep in sync with the handling of CorPInvokeMap in
-        // PInvokeStaticSigInfo::DllImportInit.
-        switch( namedArgs[MDA_CharSet].val.u4 )
+        CorNativeLinkType nlt;
+        if (!TryRemapLinkType((CorNativeLinkType)namedArgs[MDA_CharSet].val.u4, &nlt))
         {
-        case 0:
-        case nltAnsi:
-            nlt = nltAnsi; break;
-        case nltUnicode:
-            nlt = nltUnicode; break;
-        case nltAuto:
-#ifdef TARGET_WINDOWS
-            nlt = nltUnicode;
-#else
-            nlt = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
-#endif
-        break;
-        default:
-            hr = E_FAIL; goto ErrExit;
+            hr = E_FAIL;
+            goto ErrExit;
         }
+
         SetCharSet ( nlt );
         SetBestFitMapping (namedArgs[MDA_BestFitMapping].val.u1);
         SetThrowOnUnmappableChar (namedArgs[MDA_ThrowOnUnmappableChar].val.u1);
         if (namedArgs[MDA_SetLastError].val.u1)
             SetLinkFlags ((CorNativeLinkFlags)(nlfLastError | GetLinkFlags()));
     }
-
 
 ErrExit:
     if (hr != S_OK)
@@ -2709,7 +2728,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     PreInit(pModule, NULL);
     m_sig = sig;
     SetIsStatic (!(MetaSig::GetCallingConvention(pModule, sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
-    InitCallConv(CorInfoCallConvExtension::Managed, FALSE);
+    InitCallConv(CallConvWinApiSentinel, FALSE);
 
     ReportErrors();
 }
@@ -2749,7 +2768,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
             BestGuessNDirectDefaults(pMD);
 #endif
 
-        InitCallConv(CorInfoCallConvExtension::Managed, pMD->IsVarArg());
+        InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
         return;
     }
 
@@ -2790,26 +2809,29 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     if (mappingFlags & pmNoMangle)
         SetLinkFlags ((CorNativeLinkFlags)(GetLinkFlags() | nlfNoMangle));
 
-    // Keep in sync with the handling of CorNativeLinkType in
-    // PInvokeStaticSigInfo::PInvokeStaticSigInfo.
-
     // charset : CorPinvoke -> CorNativeLinkType
     CorPinvokeMap charSetMask = (CorPinvokeMap)(mappingFlags & (pmCharSetNotSpec | pmCharSetAnsi | pmCharSetUnicode | pmCharSetAuto));
-    if (charSetMask == pmCharSetNotSpec || charSetMask == pmCharSetAnsi)
+    CorNativeLinkType nlt = nltMaxValue; // Initialize to invalid value
+    switch (charSetMask)
     {
-        SetCharSet (nltAnsi);
+        case pmCharSetNotSpec:
+        case pmCharSetAnsi:
+            nlt = nltAnsi;
+            break;
+        case pmCharSetUnicode:
+            nlt = nltUnicode;
+            break;
+        case pmCharSetAuto:
+            nlt = nltAuto;
+            break;
+        default:
+            _ASSERTE("Unknown CharSet mask value");
+            break;
     }
-    else if (charSetMask == pmCharSetUnicode)
+
+    if (TryRemapLinkType(nlt, &nlt))
     {
-        SetCharSet (nltUnicode);
-    }
-    else if (charSetMask == pmCharSetAuto)
-    {
-#ifdef TARGET_WINDOWS
-        SetCharSet(nltUnicode);
-#else
-        SetCharSet(nltAnsi); // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
-#endif
+        SetCharSet(nlt);
     }
     else
     {
@@ -2966,19 +2988,16 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
 {
     STANDARD_VM_CONTRACT;
 
-    CorInfoCallConvExtension sigCallConv = CallConvWinApiSentinel;
-    bool suppressGCTransition;
+    CallConvBuilder builder;
     UINT errorResID;
-    HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &suppressGCTransition, &errorResID);
+    HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
     if (FAILED(hr))
     {
         // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
         SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
-    else if (hr == S_FALSE)
-    {
-        sigCallConv = CallConvWinApiSentinel;
-    }
+
+    CorInfoCallConvExtension sigCallConv = builder.GetCurrentCallConv();
 
     // Validate that either no specific calling convention is provided or that the signature calling convention
     // matches the DllImport calling convention.
@@ -5923,23 +5942,19 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         }
         else
         {
-            CorInfoCallConvExtension callConvMaybe;
+            CallConvBuilder builder;
             UINT errorResID;
-            bool suppressGCTransition = false;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &suppressGCTransition, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
-            if (hr == S_OK)
-            {
-                unmgdCallConv = callConvMaybe;
-            }
-            else
+            unmgdCallConv = builder.GetCurrentCallConv();
+            if (unmgdCallConv == CallConvBuilder::UnsetValue)
             {
                 unmgdCallConv = MetaSig::GetDefaultUnmanagedCallingConvention();
             }
 
-            if (suppressGCTransition)
+            if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
             {
                 dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
             }

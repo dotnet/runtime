@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodDesc method in _instrumentationDataMethods)
             {
                 pgoEmitter.Clear();
-                PgoProcessor.EncodePgoData(_profileDataManager[method].SchemaData, pgoEmitter, false);
+                PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);
 
                 // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
                 EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();

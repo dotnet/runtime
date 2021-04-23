@@ -51,3 +51,8 @@ PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
     RELEASE_LOCALS(loc, env);
     return supported;
 }
+
+bool AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration(void)
+{
+    return g_SSLParametersSetApplicationProtocols != NULL;
+}

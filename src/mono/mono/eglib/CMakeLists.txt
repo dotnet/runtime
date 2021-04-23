@@ -45,3 +45,5 @@ set(eglib_common_sources
     unicode-data.h)
 
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
+
+add_library(eglib_objects OBJECT "${eglib_sources}")

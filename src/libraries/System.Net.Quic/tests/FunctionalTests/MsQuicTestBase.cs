@@ -3,20 +3,30 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Net.Quic.Tests
 {
     // TODO: why do we have 2 base classes with some duplicated methods?
     public class MsQuicTestBase
     {
+        public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+
+        public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
+            return true;
+        }
+
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
-                // TODO: use a cert. MsQuic currently only allows certs that are trusted.
-                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
+                ServerCertificate = ServerCertificate
             };
         }
 
@@ -25,7 +35,7 @@ namespace System.Net.Quic.Tests
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
-                RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => { return true; }
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
             };
         }
 
@@ -41,14 +51,15 @@ namespace System.Net.Quic.Tests
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
-            listener.Start();
-            return listener;
+            return new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
         }
 
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();
+
+            var serverFinished = new ManualResetEventSlim();
+            var clientFinished = new ManualResetEventSlim();
 
             await new[]
             {
@@ -56,12 +67,18 @@ namespace System.Net.Quic.Tests
                 {
                     using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                     await serverFunction(serverConnection);
+                    serverFinished.Set();
+                    clientFinished.Wait();
+                    await serverConnection.CloseAsync(0);
                 }),
                 Task.Run(async () =>
                 {
                     using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                     await clientConnection.ConnectAsync();
                     await clientFunction(clientConnection);
+                    clientFinished.Set();
+                    serverFinished.Wait();
+                    await clientConnection.CloseAsync(0);
                 })
             }.WhenAllOrAnyFailed(millisecondsTimeout);
         }

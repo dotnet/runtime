@@ -104,6 +104,7 @@
     <Compile Include="Mocks\MockServiceProvider.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
+    <Compile Include="ReflectionCachesUpdateHandlerTests.cs" />
     <Compile Include="PropertyDescriptorCollectionTests.cs" />
     <Compile Include="PropertyDescriptorTests.cs" />
     <Compile Include="ProvidePropertyAttributeTests.cs" />
@@ -163,6 +164,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

@@ -209,7 +209,7 @@ namespace System.Net.Http
 
                 if (quicStream == null)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 // 0-byte write to force QUIC to allocate a stream ID.
@@ -224,7 +224,7 @@ namespace System.Net.Http
 
                 if (goAway)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
@@ -238,7 +238,7 @@ namespace System.Net.Http
             {
                 // This will happen if we aborted _connection somewhere.
                 Abort(ex);
-                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ErrorCode), ex, RequestRetryType.RetryOnSameOrNextProxy);
+                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ErrorCode), ex, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {
@@ -281,7 +281,7 @@ namespace System.Net.Http
 
             while (_waitingRequests.TryDequeue(out TaskCompletionSourceWithCancellation<bool>? tcs))
             {
-                tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy));
+                tcs.TrySetException(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure));
             }
         }
 
@@ -480,6 +480,10 @@ namespace System.Net.Http
                     // This process is cleaned up when _connection is disposed, and errors are observed via Abort().
                     _ = ProcessServerStreamAsync(stream);
                 }
+            }
+            catch (QuicOperationAbortedException)
+            {
+                // Shutdown initiated by us, no need to abort.
             }
             catch (Exception ex)
             {
