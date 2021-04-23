@@ -88,7 +88,7 @@ namespace System.Diagnostics.CodeAnalysis
         NonPublicEvents = 0x1000,
 
         /// <summary>
-        /// Specifies all interfaces implementations
+        /// Specifies all interfaces implemented by the type.
         /// </summary>
         Interfaces = 0x2000,
 
