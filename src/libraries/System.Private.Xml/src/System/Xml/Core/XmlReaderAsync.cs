@@ -3,19 +3,15 @@
 
 using System.IO;
 using System.Text;
-using System.Security;
 using System.Diagnostics;
-using System.Collections;
 using System.Globalization;
 using System.Xml.Schema;
-using System.Runtime.Versioning;
-
 using System.Threading.Tasks;
 
 namespace System.Xml
 {
     // Represents a reader that provides fast, non-cached forward only stream access to XML data.
-    [DebuggerDisplay("{debuggerDisplayProxy}")]
+    [DebuggerDisplay("{DebuggerDisplayProxy}")]
     public abstract partial class XmlReader : IDisposable
     {
         public virtual Task<string> GetValueAsync()
@@ -59,20 +55,18 @@ namespace System.Xml
             {
                 return strContentValue;
             }
-            else
+
+            try
             {
-                try
-                {
-                    return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, (namespaceResolver == null ? this as IXmlNamespaceResolver : namespaceResolver));
-                }
-                catch (FormatException e)
-                {
-                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
-                }
-                catch (InvalidCastException e)
-                {
-                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
-                }
+                return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, namespaceResolver ?? this as IXmlNamespaceResolver);
+            }
+            catch (FormatException e)
+            {
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+            }
+            catch (InvalidCastException e)
+            {
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
         }
 
@@ -109,7 +103,7 @@ namespace System.Xml
                 await FinishReadElementContentAsXxxAsync().ConfigureAwait(false);
                 return value;
             }
-            return (returnType == typeof(string)) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
+            return returnType == typeof(string) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
         }
 
         // Moving through the Stream
@@ -168,7 +162,7 @@ namespace System.Xml
         {
             do
             {
-                switch (this.NodeType)
+                switch (NodeType)
                 {
                     case XmlNodeType.Attribute:
                         MoveToElement();
@@ -179,10 +173,10 @@ namespace System.Xml
                     case XmlNodeType.Text:
                     case XmlNodeType.EntityReference:
                     case XmlNodeType.EndEntity:
-                        return this.NodeType;
+                        return NodeType;
                 }
             } while (await ReadAsync().ConfigureAwait(false));
-            return this.NodeType;
+            return NodeType;
         }
 
         // Returns the inner content (including markup) of an element or attribute as a string.
@@ -192,25 +186,25 @@ namespace System.Xml
             {
                 return string.Empty;
             }
-            if ((this.NodeType != XmlNodeType.Attribute) && (this.NodeType != XmlNodeType.Element))
+            if (NodeType != XmlNodeType.Attribute && NodeType != XmlNodeType.Element)
             {
                 await ReadAsync().ConfigureAwait(false);
                 return string.Empty;
             }
 
-            StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
+            StringWriter sw = new(CultureInfo.InvariantCulture);
             XmlWriter xtw = CreateWriterForInnerOuterXml(sw);
 
             try
             {
-                if (this.NodeType == XmlNodeType.Attribute)
+                if (NodeType == XmlNodeType.Attribute)
                 {
-                    ((XmlTextWriter)xtw).QuoteChar = this.QuoteChar;
+                    ((XmlTextWriter)xtw).QuoteChar = QuoteChar;
                     WriteAttributeValue(xtw);
                 }
-                if (this.NodeType == XmlNodeType.Element)
+                if (NodeType == XmlNodeType.Element)
                 {
-                    await this.WriteNodeAsync(xtw, false).ConfigureAwait(false);
+                    await WriteNodeAsync(xtw, false).ConfigureAwait(false);
                 }
             }
             finally
@@ -224,49 +218,49 @@ namespace System.Xml
         private async Task WriteNodeAsync(XmlWriter xtw, bool defattr)
         {
             Debug.Assert(xtw is XmlTextWriter);
-            int d = this.NodeType == XmlNodeType.None ? -1 : this.Depth;
-            while (await this.ReadAsync().ConfigureAwait(false) && (d < this.Depth))
+            int d = NodeType == XmlNodeType.None ? -1 : Depth;
+            while (await ReadAsync().ConfigureAwait(false) && d < Depth)
             {
-                switch (this.NodeType)
+                switch (NodeType)
                 {
                     case XmlNodeType.Element:
-                        xtw.WriteStartElement(this.Prefix, this.LocalName, this.NamespaceURI);
-                        ((XmlTextWriter)xtw).QuoteChar = this.QuoteChar;
+                        xtw.WriteStartElement(Prefix, LocalName, NamespaceURI);
+                        ((XmlTextWriter)xtw).QuoteChar = QuoteChar;
                         xtw.WriteAttributes(this, defattr);
-                        if (this.IsEmptyElement)
+                        if (IsEmptyElement)
                         {
                             xtw.WriteEndElement();
                         }
                         break;
                     case XmlNodeType.Text:
-                        xtw.WriteString(await this.GetValueAsync().ConfigureAwait(false));
+                        xtw.WriteString(await GetValueAsync().ConfigureAwait(false));
                         break;
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        xtw.WriteWhitespace(await this.GetValueAsync().ConfigureAwait(false));
+                        xtw.WriteWhitespace(await GetValueAsync().ConfigureAwait(false));
                         break;
                     case XmlNodeType.CDATA:
-                        xtw.WriteCData(this.Value);
+                        xtw.WriteCData(Value);
                         break;
                     case XmlNodeType.EntityReference:
-                        xtw.WriteEntityRef(this.Name);
+                        xtw.WriteEntityRef(Name);
                         break;
                     case XmlNodeType.XmlDeclaration:
                     case XmlNodeType.ProcessingInstruction:
-                        xtw.WriteProcessingInstruction(this.Name, this.Value);
+                        xtw.WriteProcessingInstruction(Name, Value);
                         break;
                     case XmlNodeType.DocumentType:
-                        xtw.WriteDocType(this.Name, this.GetAttribute("PUBLIC"), this.GetAttribute("SYSTEM"), this.Value);
+                        xtw.WriteDocType(Name, GetAttribute("PUBLIC"), GetAttribute("SYSTEM"), Value);
                         break;
                     case XmlNodeType.Comment:
-                        xtw.WriteComment(this.Value);
+                        xtw.WriteComment(Value);
                         break;
                     case XmlNodeType.EndElement:
                         xtw.WriteFullEndElement();
                         break;
                 }
             }
-            if (d == this.Depth && this.NodeType == XmlNodeType.EndElement)
+            if (d == Depth && NodeType == XmlNodeType.EndElement)
             {
                 await ReadAsync().ConfigureAwait(false);
             }
@@ -279,26 +273,26 @@ namespace System.Xml
             {
                 return string.Empty;
             }
-            if ((this.NodeType != XmlNodeType.Attribute) && (this.NodeType != XmlNodeType.Element))
+            if (NodeType != XmlNodeType.Attribute && NodeType != XmlNodeType.Element)
             {
                 await ReadAsync().ConfigureAwait(false);
                 return string.Empty;
             }
 
-            StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
+            StringWriter sw = new(CultureInfo.InvariantCulture);
             XmlWriter xtw = CreateWriterForInnerOuterXml(sw);
 
             try
             {
-                if (this.NodeType == XmlNodeType.Attribute)
+                if (NodeType == XmlNodeType.Attribute)
                 {
-                    xtw.WriteStartAttribute(this.Prefix, this.LocalName, this.NamespaceURI);
+                    xtw.WriteStartAttribute(Prefix, LocalName, NamespaceURI);
                     WriteAttributeValue(xtw);
                     xtw.WriteEndAttribute();
                 }
                 else
                 {
-                    xtw.WriteNode(this, false);
+                   xtw.WriteNode(this, false);
                 }
             }
             finally
@@ -342,10 +336,10 @@ namespace System.Xml
             StringBuilder? sb = null;
             do
             {
-                switch (this.NodeType)
+                switch (NodeType)
                 {
                     case XmlNodeType.Attribute:
-                        return this.Value;
+                        return Value;
                     case XmlNodeType.Text:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
@@ -353,7 +347,7 @@ namespace System.Xml
                         // merge text content
                         if (value.Length == 0)
                         {
-                            value = await this.GetValueAsync().ConfigureAwait(false);
+                            value = await GetValueAsync().ConfigureAwait(false);
                         }
                         else
                         {
@@ -362,7 +356,7 @@ namespace System.Xml
                                 sb = new StringBuilder();
                                 sb.Append(value);
                             }
-                            sb.Append(await this.GetValueAsync().ConfigureAwait(false));
+                            sb.Append(await GetValueAsync().ConfigureAwait(false));
                         }
                         break;
                     case XmlNodeType.ProcessingInstruction:
@@ -371,46 +365,46 @@ namespace System.Xml
                         // skip comments, pis and end entity nodes
                         break;
                     case XmlNodeType.EntityReference:
-                        if (this.CanResolveEntity)
+                        if (CanResolveEntity)
                         {
-                            this.ResolveEntity();
+                            ResolveEntity();
                             break;
                         }
                         goto default;
-                    case XmlNodeType.EndElement:
                     default:
                         goto ReturnContent;
                 }
-            } while ((this.AttributeCount != 0) ? this.ReadAttributeValue() : await this.ReadAsync().ConfigureAwait(false));
+            } while (AttributeCount != 0 ? ReadAttributeValue() : await ReadAsync().ConfigureAwait(false));
 
         ReturnContent:
-            return (sb == null) ? value : sb.ToString();
+            return sb == null ? value : sb.ToString();
         }
 
         private async Task<bool> SetupReadElementContentAsXxxAsync(string methodName)
         {
-            if (this.NodeType != XmlNodeType.Element)
+            if (NodeType != XmlNodeType.Element)
             {
                 throw CreateReadElementContentAsException(methodName);
             }
 
-            bool isEmptyElement = this.IsEmptyElement;
+            bool isEmptyElement = IsEmptyElement;
 
             // move to content or beyond the empty element
-            await this.ReadAsync().ConfigureAwait(false);
+            await ReadAsync().ConfigureAwait(false);
 
             if (isEmptyElement)
             {
                 return false;
             }
 
-            XmlNodeType nodeType = this.NodeType;
+            XmlNodeType nodeType = NodeType;
             if (nodeType == XmlNodeType.EndElement)
             {
-                await this.ReadAsync().ConfigureAwait(false);
+                await ReadAsync().ConfigureAwait(false);
                 return false;
             }
-            else if (nodeType == XmlNodeType.Element)
+
+            if (nodeType == XmlNodeType.Element)
             {
                 throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
@@ -419,11 +413,11 @@ namespace System.Xml
 
         private Task FinishReadElementContentAsXxxAsync()
         {
-            if (this.NodeType != XmlNodeType.EndElement)
+            if (NodeType != XmlNodeType.EndElement)
             {
-                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString());
+                throw new XmlException(SR.Xml_InvalidNodeType, NodeType.ToString());
             }
-            return this.ReadAsync();
+            return ReadAsync();
         }
     }
 }

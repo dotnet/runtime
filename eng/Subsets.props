@@ -204,15 +204,16 @@
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
                              $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
 
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
       Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj;
-                             $(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
+    <!-- Build crossgen2 that will be used to compile System.Private.CoreLib library for CoreCLR -->
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="!('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64')" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(PgoInstrument)' != 'true'">
