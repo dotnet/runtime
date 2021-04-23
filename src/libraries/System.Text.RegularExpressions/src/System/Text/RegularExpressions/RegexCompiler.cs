@@ -64,6 +64,8 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
+        private static readonly MethodInfo s_stringAsSpanWithStartMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int) })!;
+        private static readonly MethodInfo s_spanLastIndexOfMethod = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_stringIndexOfCharInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int) })!;
@@ -90,6 +92,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _runstackLocal;
         private LocalBuilder? _textInfoLocal;  // cached to avoid extraneous TLS hits from CurrentCulture and virtual calls to TextInfo
         private LocalBuilder? _loopTimeoutCounterLocal; // timeout counter for setrep and setloop
+        private LocalBuilder? _maxBacktrackPositionLocal;
 
         protected RegexOptions _options;                                           // options
         protected RegexCode? _code;                                                // the RegexCode object
@@ -891,6 +894,8 @@ namespace System.Text.RegularExpressions
             Mvfldloc(s_runtrackposField, _runtrackposLocal!);
             Mvfldloc(s_runstackField, _runstackLocal!);
             Mvfldloc(s_runstackposField, _runstackposLocal!);
+            Ldc(-1);
+            Stloc(_maxBacktrackPositionLocal!);
 
             _backpos = -1;
 
@@ -1703,7 +1708,7 @@ namespace System.Text.RegularExpressions
                 // if (!CharInClass(textSpan[i + 2], prefix[2], "...")) goto returnFalse;
                 // ...
                 Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
-                for ( ; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
+                for (; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
                 {
                     Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
@@ -3308,6 +3313,7 @@ namespace System.Text.RegularExpressions
             }
             _runtextbegLocal = DeclareInt32();
             _runtextendLocal = DeclareInt32();
+            _maxBacktrackPositionLocal = DeclareInt32();
 
             InitializeCultureForGoIfNecessary();
 
@@ -4256,7 +4262,63 @@ namespace System.Text.RegularExpressions
                     //:         break Backward;
                     {
                         string str = _strings![Operand(0)];
+                        Label multiCode = DefineLabel();
+                        if (!IsRightToLeft())
+                        {
+                            // if (runtextend - runtextpos < c)
+                            Ldloc(_runtextendLocal!);
+                            Ldloc(_runtextposLocal!);
+                            Sub();
+                            Ldc(str.Length);
+                            BgeFar(multiCode);
+                            // if (!_caseInsensitive && _maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
+                            if (!IsCaseInsensitive())
+                            {
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                Ldc(-1);
+                                BeqFar(_backtrack);
+                                Ldloc(_runtextposLocal);
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                BleFar(_backtrack);
+                                // runtextpos = _maxBacktrackPosition;
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                Stloc(_runtextposLocal!);
+                                // ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition);
+                                Ldloc(_runtextLocal!);
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                using (RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal())
+                                {
+                                    Call(s_stringAsSpanWithStartMethod);
+                                    Stloc(textSpanLocal);
+                                    using (RentedLocalBuilder lastIndexOf = RentInt32Local())
+                                    {
+                                        using (RentedLocalBuilder strAsSpanLocal = RentReadOnlySpanCharLocal())
+                                        {
+                                            // int lastIndexOf = runtextSpan.LastIndexOf(str.AsSpan());
+                                            Ldstr(str);
+                                            Call(s_stringAsSpanMethod);
+                                            Stloc(strAsSpanLocal);
+                                            Ldloc(textSpanLocal);
+                                            Ldloc(strAsSpanLocal);
+                                            Call(s_spanLastIndexOfMethod);
+                                        }
+                                        Stloc(lastIndexOf);
+                                        Ldloc(lastIndexOf);
+                                        Ldc(-1);
+                                        // if (lastIndexOf > -1)
+                                        BleFar(_backtrack);
+                                        // runtextpos = _maxBacktrackPosition + lastIndexOf;
+                                        Ldloc(lastIndexOf);
+                                        Ldloc(_maxBacktrackPositionLocal!);
+                                        Add();
+                                        Stloc(_runtextposLocal!);
+                                        BrFar(_backtrack);
+                                    }
+                                }
+                            }
+                        }
 
+                        MarkLabel(multiCode);
                         Ldc(str.Length);
                         Ldloc(_runtextendLocal!);
                         Ldloc(_runtextposLocal!);
@@ -4596,6 +4658,9 @@ namespace System.Text.RegularExpressions
 
                         using RentedLocalBuilder lenLocal = RentInt32Local();
                         using RentedLocalBuilder iLocal = RentInt32Local();
+                        using RentedLocalBuilder tempMaxBacktrackPositionLocal = RentInt32Local();
+                        Ldloc(_runtextposLocal);
+                        Stloc(tempMaxBacktrackPositionLocal);
 
                         if (!IsRightToLeft())
                         {
@@ -4845,6 +4910,12 @@ namespace System.Text.RegularExpressions
                             DoPush();
 
                             Track();
+                            // if (_operator == RegexCode.Notoneloop) maxBacktrackPosition = tempMaxBacktrackPosition
+                            if (_regexopcode == RegexCode.Notoneloop)
+                            {
+                                Ldloc(tempMaxBacktrackPositionLocal);
+                                Stloc(_maxBacktrackPositionLocal!);
+                            }
                         }
                         break;
                     }
@@ -4868,28 +4939,74 @@ namespace System.Text.RegularExpressions
                     //: if (i > 0)
                     //:     Track(i - 1, pos - 1);
                     //: Advance(2);
-                    PopTrack();
-                    Stloc(_runtextposLocal!);
+                    Label noBacktrackPositionBranch = DefineLabel();
                     PopTrack();
                     using (RentedLocalBuilder posLocal = RentInt32Local())
                     {
                         Stloc(posLocal);
-                        Ldloc(posLocal);
-                        Ldc(0);
-                        BleFar(AdvanceLabel());
+                        PopTrack();
+                        using (RentedLocalBuilder iBacktrackLocal = RentInt32Local())
+                        {
+                            Stloc(iBacktrackLocal);
+                            // if (!_caseInsensitive && maxBacktrackPosition != -1 && pos > maxBacktrackPosition && runtextpos < pos && _operator == (RegexCode.Notoneloop | RegexCode.Back) && !_rightToLeft)
+                            if (!IsCaseInsensitive() && _regexopcode == (RegexCode.Notoneloop | RegexCode.Back) && !IsRightToLeft())
+                            {
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                Ldc(-1);
+                                Beq(noBacktrackPositionBranch);
+                                Ldloc(posLocal);
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                Ble(noBacktrackPositionBranch);
+                                Ldloc(_runtextposLocal!);
+                                Ldloc(posLocal);
+                                Bge(noBacktrackPositionBranch);
+                                /*
+                                    int difference = pos - maxBacktrackPosition;
+                                    pos = runtextpos;
+                                    i -= difference;
+                                    maxBacktrackPosition = -1;
+                                 */
+                                // int difference = pos - maxBacktrackPosition;
+                                Ldloc(posLocal);
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                Sub();
+                                using (RentedLocalBuilder differenceLocal = RentInt32Local())
+                                {
+                                    Stloc(differenceLocal);
+                                    // pos = runtextpos;
+                                    Ldloc(_runtextposLocal!);
+                                    Stloc(posLocal);
+                                    // i -= difference;
+                                    Ldloc(iBacktrackLocal);
+                                    Ldloc(differenceLocal);
+                                    Sub();
+                                    Stloc(iBacktrackLocal);
+                                    // maxBacktrackPosition = -1;
+                                    Ldc(-1);
+                                    Stloc(_maxBacktrackPositionLocal!);
+                                }
+                            }
+
+                            MarkLabel(noBacktrackPositionBranch);
+                            Ldloc(posLocal);
+                            Stloc(_runtextposLocal!);
+                            Ldloc(iBacktrackLocal);
+                            Ldc(0);
+                            BleFar(AdvanceLabel());
+                            ReadyPushTrack();
+                            Ldloc(iBacktrackLocal);
+                        }
+                        Ldc(1);
+                        Sub();
+                        DoPush();
                         ReadyPushTrack();
-                        Ldloc(posLocal);
+                        Ldloc(_runtextposLocal!);
+                        Ldc(1);
+                        Sub(IsRightToLeft());
+                        DoPush();
+                        Trackagain();
+                        Advance();
                     }
-                    Ldc(1);
-                    Sub();
-                    DoPush();
-                    ReadyPushTrack();
-                    Ldloc(_runtextposLocal!);
-                    Ldc(1);
-                    Sub(IsRightToLeft());
-                    DoPush();
-                    Trackagain();
-                    Advance();
                     break;
 
                 case RegexCode.Onelazy:
