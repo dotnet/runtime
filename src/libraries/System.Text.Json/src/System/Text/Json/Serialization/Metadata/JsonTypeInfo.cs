@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
-    [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
+    [DebuggerDisplay("ConverterStrategy.{PropertyInfoForTypeInfo.ConverterStrategy}, {Type.Name}")]
     public partial class JsonTypeInfo
     {
         internal delegate object? ConstructorDelegate();
@@ -50,6 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
                         PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
 
                     _elementTypeInfo = Options.GetOrAddClass(ElementType);
+                    NumberHandlingIsApplicableToElementType = _elementTypeInfo.PropertyInfoForTypeInfo.NumberHandingIsApplicable();
                 }
 
                 return _elementTypeInfo;
@@ -58,9 +59,13 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Set by JsonMetadataServices.
                 Debug.Assert(_elementTypeInfo == null);
+                Debug.Assert(value is not null);
                 _elementTypeInfo = value;
+                NumberHandlingIsApplicableToElementType = _elementTypeInfo.PropertyInfoForTypeInfo.NumberHandingIsApplicable();
             }
         }
+
+        internal bool NumberHandlingIsApplicableToElementType { get; private set; }
 
         internal Type? ElementType { get; set; }
 

@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool NumberHandingIsApplicable()
+        internal bool NumberHandingIsApplicable()
         {
             if (ConverterBase.IsInternalConverterForNumberType)
             {
