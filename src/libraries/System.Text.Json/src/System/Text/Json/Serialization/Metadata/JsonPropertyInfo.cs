@@ -208,7 +208,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
 
-            if (NumberHandingIsApplicable())
+            if (NumberHandlingIsApplicable())
             {
                 // This logic is to honor JsonNumberHandlingAttribute placed on
                 // custom collections e.g. public class MyNumberList : List<int>.
@@ -228,7 +228,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonNumberHandling? propertyNumberHandling,
             JsonNumberHandling? declaringTypeNumberHandling)
         {
-            bool numberHandlingIsApplicable = NumberHandingIsApplicable();
+            bool numberHandlingIsApplicable = NumberHandlingIsApplicable();
 
             if (numberHandlingIsApplicable)
             {
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal bool NumberHandingIsApplicable()
+        internal bool NumberHandlingIsApplicable()
         {
             if (ConverterBase.IsInternalConverterForNumberType)
             {

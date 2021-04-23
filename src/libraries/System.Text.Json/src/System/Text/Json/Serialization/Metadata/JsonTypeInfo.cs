@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
                         PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
 
                     _elementTypeInfo = Options.GetOrAddClass(ElementType);
-                    NumberHandlingIsApplicableToElementType = _elementTypeInfo.PropertyInfoForTypeInfo.NumberHandingIsApplicable();
+                    NumberHandlingIsApplicableToElementType = _elementTypeInfo.PropertyInfoForTypeInfo.NumberHandlingIsApplicable();
                 }
 
                 return _elementTypeInfo;
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(_elementTypeInfo == null);
                 Debug.Assert(value is not null);
                 _elementTypeInfo = value;
-                NumberHandlingIsApplicableToElementType = _elementTypeInfo.PropertyInfoForTypeInfo.NumberHandingIsApplicable();
+                NumberHandlingIsApplicableToElementType = _elementTypeInfo.PropertyInfoForTypeInfo.NumberHandlingIsApplicable();
             }
         }
 
