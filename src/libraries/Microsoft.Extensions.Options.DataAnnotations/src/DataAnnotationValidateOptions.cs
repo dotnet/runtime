@@ -35,27 +35,29 @@ namespace Microsoft.Extensions.Options
         public ValidateOptionsResult Validate(string name, TOptions options)
         {
             // Null name is used to configure all named options.
-            if (Name == null || name == Name)
+            if (Name != null && !string.Equals(name, Name))
             {
-                var validationResults = new List<ValidationResult>();
-                if (Validator.TryValidateObject(options,
-                    new ValidationContext(options, serviceProvider: null, items: null),
-                    validationResults,
-                    validateAllProperties: true))
-                {
-                    return ValidateOptionsResult.Success;
-                }
-
-                var errors = new List<string>();
-                foreach (ValidationResult r in validationResults)
-                {
-                    errors.Add($"DataAnnotation validation failed for members: '{string.Join(",", r.MemberNames)}' with the error: '{r.ErrorMessage}'.");
-                }
-                return ValidateOptionsResult.Fail(errors);
+                // Ignored if not validating this instance.
+                return ValidateOptionsResult.Skip;
             }
 
-            // Ignored if not validating this instance.
-            return ValidateOptionsResult.Skip;
+            var validationResults = new List<ValidationResult>();
+            if (Validator.TryValidateObject(options,
+                new ValidationContext(options, serviceProvider: null, items: null),
+                validationResults,
+                validateAllProperties: true))
+            {
+                return ValidateOptionsResult.Success;
+            }
+
+            string typeName = options.GetType().Name;
+            var errors = new List<string>();
+            foreach (var result in validationResults)
+            {
+                errors.Add($"DataAnnotation validation failed for {typeName}'s members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
+            }
+
+            return ValidateOptionsResult.Fail(errors);
         }
     }
 }
