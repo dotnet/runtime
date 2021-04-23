@@ -333,7 +333,9 @@ HANDLES(MPROP_4, "get_property_info", ves_icall_RuntimePropertyInfo_get_property
 HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
-HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))
+NOHANDLES(ICALL(RUNH_1, "GetILBytesJitted", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetILBytesJitted))
+NOHANDLES(ICALL(RUNH_1a, "GetMethodsJittedCount", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodsJittedCount))
+HANDLES(RUNH_1b, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))
 HANDLES(RUNH_2, "GetUninitializedObjectInternal", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectInternal, MonoObject, 1, (MonoType_ptr))
 HANDLES(RUNH_3, "InitializeArray", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray, void, 2, (MonoArray, MonoClassField_ptr))
 HANDLES(RUNH_7, "InternalGetHashCode", mono_object_hash_icall, int, 1, (MonoObject))

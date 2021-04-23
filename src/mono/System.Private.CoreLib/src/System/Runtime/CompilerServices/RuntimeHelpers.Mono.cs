@@ -170,5 +170,11 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SufficientExecutionStack();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern long GetILBytesJitted();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetMethodsJittedCount();
     }
 }

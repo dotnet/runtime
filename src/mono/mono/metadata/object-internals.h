@@ -641,6 +641,7 @@ typedef struct {
 	void     (*metadata_update_init) (MonoError *error);
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
+	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size, gint64 *native_code_size);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
