@@ -329,6 +329,10 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
         FreeLibrary(hDac);
     }
 
+    if (hDbi != NULL)
+    {
+        FreeLibrary(hDbi);
+    }
 
     return hr;
 }
