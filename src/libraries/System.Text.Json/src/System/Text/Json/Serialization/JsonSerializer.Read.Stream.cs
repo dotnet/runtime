@@ -220,7 +220,7 @@ namespace System.Text.Json
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 var bufferState = new ReadAsyncBufferState(options.DefaultBufferSize);
-                // hardcode the queue converter to avoid accidental use of custom converters
+                // Hardcode the queue converter to avoid accidental use of custom converters
                 JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
                 JsonTypeInfo jsonTypeInfo = new JsonTypeInfo(typeof(Queue<TValue>), converter, typeof(Queue<TValue>), options);
                 ReadStack readStack = default;
