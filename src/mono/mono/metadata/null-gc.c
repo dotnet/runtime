@@ -79,7 +79,7 @@ mono_gc_get_generation  (MonoObject *object)
 	return 0;
 }
 
-int
+int64_t
 mono_gc_get_generation_size (int generation)
 {
 	return 0;
@@ -658,13 +658,13 @@ mono_gc_get_gcmemoryinfo (
 }
 
 void mono_gc_get_gctimeinfo (
-	guint64 *total_last,
-	guint64 *total_since_last,
-	guint64 *max)
+	guint64 *total_time_last_gc_100ns,
+	guint64 *total_time_since_last_gc_100ns,
+	guint64 *total_time_max_gc_100ns)
 {
-	*total_last = 0;
-	*total_since_last = 0;
-	*max = 0;
+	*total_time_last_gc_100ns = 0;
+	*total_time_since_last_gc_100ns = 0;
+	*total_time_max_gc_100ns = 0;
 }
 
 #else

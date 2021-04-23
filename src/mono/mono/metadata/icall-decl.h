@@ -147,7 +147,7 @@ ICALL_EXPORT gint64 ves_icall_System_Threading_Timer_GetTimeMonotonic (void);
 ICALL_EXPORT gpointer ves_icall_System_GCHandle_GetAddrOfPinnedObject (MonoGCHandle handle);
 ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int);
 ICALL_EXPORT int ves_icall_System_GC_GetCollectionCount (int);
-ICALL_EXPORT int ves_icall_System_GC_GetGenerationSize (int);
+ICALL_EXPORT guint64 ves_icall_System_GC_GetGenerationSize (int);
 ICALL_EXPORT int ves_icall_System_GC_GetLastGCPercentTimeInGC(void);
 ICALL_EXPORT int ves_icall_System_GC_GetMaxGeneration (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void);
@@ -239,5 +239,7 @@ ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int
 #ifdef ENABLE_METADATA_UPDATE
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 #endif
+
+ICALL_EXPORT guint32 ves_icall_System_Exception_GetCount (void);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

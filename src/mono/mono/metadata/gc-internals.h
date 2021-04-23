@@ -331,9 +331,9 @@ void mono_gc_get_gcmemoryinfo (
 	gint64 *fragmented_bytes);
 
 void mono_gc_get_gctimeinfo (
-	guint64 *time_total_last,
-	guint64 *time_total_since_last,
-	guint64 *time_max);
+	guint64 *total_time_last_gc_100ns,
+	guint64 *total_time_since_last_gc_100ns,
+	guint64 *total_time_max_gc_100ns);
 
 guint8* mono_gc_get_card_table (int *shift_bits, gpointer *card_mask);
 guint8* mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *card_mask);

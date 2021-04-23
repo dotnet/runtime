@@ -149,6 +149,5 @@ namespace System
         private static string? SerializationWatsonBuckets => null;
         private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
         private string? SerializationStackTraceString => GetStackTrace(true);
-
     }
 }

@@ -2592,15 +2592,15 @@ mono_gc_collection_count (int generation)
 	return sgen_gc_collection_count (generation);
 }
 
-int
+int64_t
 mono_gc_get_generation_size (int generation)
 {
 	if (generation == GENERATION_NURSERY)
-		return sgen_gc_info.total_nursery_size;
+		return (int64_t)sgen_gc_info.total_nursery_size_bytes;
 	else if (generation == GENERATION_OLD)
-		return sgen_gc_info.total_major_size;
+		return (int64_t)sgen_gc_info.total_major_size_bytes;
 	else if (generation == 3)
-		return sgen_gc_info.total_los_size;
+		return (int64_t)sgen_gc_info.total_los_size_bytes;
 	else
 		return 0;
 }
@@ -2637,11 +2637,11 @@ mono_gc_get_gcmemoryinfo (
 }
 
 void mono_gc_get_gctimeinfo (
-	guint64 *total_last,
-	guint64 *total_since_last,
-	guint64 *max)
+	guint64 *total_time_last_gc_100ns,
+	guint64 *total_time_since_last_gc_100ns,
+	guint64 *total_time_max_gc_100ns)
 {
-	sgen_gc_get_gctimeinfo (total_last, total_since_last, max);
+	sgen_gc_get_gctimeinfo (total_time_last_gc_100ns, total_time_since_last_gc_100ns, total_time_max_gc_100ns);
 }
 
 MonoGCDescriptor

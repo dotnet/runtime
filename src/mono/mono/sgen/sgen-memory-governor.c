@@ -147,10 +147,10 @@ update_gc_info (mword used_slots_size)
 	sgen_gc_info.memory_load_bytes = mono_determine_physical_ram_available_size ();
 	sgen_gc_info.total_committed_bytes = major_size_in_use + sgen_los_memory_usage;
 	sgen_gc_info.total_promoted_bytes = sgen_total_promoted_size - total_promoted_size_start;
-	sgen_gc_info.total_major_size = major_size;
-	sgen_gc_info.total_major_size_in_use = major_size_in_use;
-	sgen_gc_info.total_los_size = sgen_los_memory_usage_total;
-	sgen_gc_info.total_los_size_in_use = sgen_los_memory_usage;
+	sgen_gc_info.total_major_size_bytes = major_size;
+	sgen_gc_info.total_major_size_in_use_bytes = major_size_in_use;
+	sgen_gc_info.total_los_size_bytes = sgen_los_memory_usage_total;
+	sgen_gc_info.total_los_size_in_use_bytes = sgen_los_memory_usage;
 }
 
 gboolean
@@ -222,10 +222,10 @@ sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow)
 		log_entry->is_overflow = is_overflow;
 		log_entry->time = SGEN_TV_ELAPSED (last_minor_start, current_time);
 		log_entry->promoted_size = sgen_gc_info.total_promoted_bytes;
-		log_entry->major_size = sgen_gc_info.total_major_size;
-		log_entry->major_size_in_use = sgen_gc_info.total_major_size_in_use;
-		log_entry->los_size = sgen_gc_info.total_los_size;
-		log_entry->los_size_in_use = sgen_gc_info.total_los_size_in_use;
+		log_entry->major_size = sgen_gc_info.total_major_size_bytes;
+		log_entry->major_size_in_use = sgen_gc_info.total_major_size_in_use_bytes;
+		log_entry->los_size = sgen_gc_info.total_los_size_bytes;
+		log_entry->los_size_in_use = sgen_gc_info.total_los_size_in_use_bytes;
 
 		sgen_add_log_entry (log_entry);
 	}
@@ -251,8 +251,8 @@ sgen_memgov_major_post_sweep (mword used_slots_size)
 		SgenLogEntry *log_entry = (SgenLogEntry*)sgen_alloc_internal (INTERNAL_MEM_LOG_ENTRY);
 
 		log_entry->type = SGEN_LOG_MAJOR_SWEEP_FINISH;
-		log_entry->major_size = sgen_gc_info.total_major_size;
-		log_entry->major_size_in_use = sgen_gc_info.total_major_size_in_use;
+		log_entry->major_size = sgen_gc_info.total_major_size_bytes;
+		log_entry->major_size_in_use = sgen_gc_info.total_major_size_in_use_bytes;
 
 		sgen_add_log_entry (log_entry);
 	}
@@ -515,7 +515,7 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_LOG_ENTRY, sizeof (SgenLogEntry));
 
-	sgen_gc_info.total_nursery_size = sgen_get_nursery_end () - sgen_get_nursery_start ();
+	sgen_gc_info.total_nursery_size_bytes = sgen_get_nursery_end () - sgen_get_nursery_start ();
 
 	if (max_heap == 0) {
 		sgen_gc_info.total_available_memory_bytes = mono_determine_physical_ram_size ();

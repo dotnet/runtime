@@ -1109,23 +1109,23 @@ gint64
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetILBytesJitted (void)
 {
 	gint64 methods_compiled = 0;
-	gint64 cil_code_size = 0;
-	gint64 native_code_size = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size, &native_code_size);
-	return cil_code_size;
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
+	return cil_code_size_bytes;
 }
 
 gint32
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodsJittedCount (void)
 {
 	gint64 methods_compiled = 0;
-	gint64 cil_code_size = 0;
-	gint64 native_code_size = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size, &native_code_size);
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
 	return (gint32)methods_compiled;
 }
 

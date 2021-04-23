@@ -546,15 +546,15 @@ ves_icall_System_GC_InternalCollect (int generation)
 int
 ves_icall_System_GC_GetLastGCPercentTimeInGC (void)
 {
-	guint64 time_total_last_gc = 0;
-	guint64 time_total_since_last_gc = 0;
-	guint64 time_max_gc = 0;
-	mono_gc_get_gctimeinfo (&time_total_last_gc, &time_total_since_last_gc, &time_max_gc);
+	guint64 total_time_last_gc_100ns = 0;
+	guint64 total_time_since_last_gc_100ns = 0;
+	guint64 total_time_max_gc_100ns = 0;
+	mono_gc_get_gctimeinfo (&total_time_last_gc_100ns, &total_time_since_last_gc_100ns, &total_time_max_gc_100ns);
 
 	// Calculate percent of time spend in this GC since end of last GC.
 	int percent_time_in_gc_since_last_gc = 0;
-	if (time_total_since_last_gc != 0)
-		percent_time_in_gc_since_last_gc = (int)(time_total_last_gc * 100 / time_total_since_last_gc);
+	if (total_time_since_last_gc_100ns != 0)
+		percent_time_in_gc_since_last_gc = (int)(total_time_last_gc_100ns * 100 / total_time_since_last_gc_100ns);
 	return percent_time_in_gc_since_last_gc;
 }
 
@@ -566,9 +566,9 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 	return mono_gc_get_used_size ();
 }
 
-int ves_icall_System_GC_GetGenerationSize (int generation)
+guint64 ves_icall_System_GC_GetGenerationSize (int generation)
 {
-	return mono_gc_get_generation_size (generation);
+	return (guint64)mono_gc_get_generation_size (generation);
 }
 
 void
