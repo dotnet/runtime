@@ -235,7 +235,7 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
-        public static void CaseSensitivity_Remove()
+        public static void CaseSensitive_Remove()
         {
             var options = new JsonSerializerOptions() { PropertyNameCaseInsensitive = false };
             JsonObject obj = JsonSerializer.Deserialize<JsonObject>("{\"MYPROPERTY\":42,\"myproperty\":43}", options);

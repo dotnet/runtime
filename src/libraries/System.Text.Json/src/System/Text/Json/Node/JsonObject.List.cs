@@ -175,7 +175,7 @@ namespace System.Text.Json.Node
             for (int i = 0; i < _list.Count; i++)
             {
                 KeyValuePair<string, JsonNode?> current = _list[i];
-                if (_stringComparer.Compare(propertyName, current.Key) == 0)
+                if (_stringComparer.Equals(propertyName, current.Key))
                 {
                     return i;
                 }
@@ -224,7 +224,7 @@ namespace System.Text.Json.Node
             foreach (KeyValuePair<string, JsonNode?> item in this)
             {
                 Debug.Assert(_stringComparer != null);
-                if (ReferenceEquals(item.Value, node.Value) && _stringComparer.Compare(item.Key, node.Key) == 0)
+                if (ReferenceEquals(item.Value, node.Value) && _stringComparer.Equals(item.Key, node.Key))
                 {
                     return true;
                 }
@@ -273,7 +273,7 @@ namespace System.Text.Json.Node
             foreach (string item in GetKeyCollection(this))
             {
                 Debug.Assert(_stringComparer != null);
-                if (_stringComparer.Compare(item, propertyName) == 0)
+                if (_stringComparer.Equals(item, propertyName))
                 {
                     return true;
                 }
@@ -303,7 +303,7 @@ namespace System.Text.Json.Node
             {
                 KeyValuePair<string, JsonNode?> current = _list[i];
 
-                if (_stringComparer.Compare(current.Key, propertyName) == 0)
+                if (_stringComparer.Equals(current.Key, propertyName))
                 {
                     _list.RemoveAt(i);
                     existing = current.Value;
@@ -346,7 +346,7 @@ namespace System.Text.Json.Node
             {
                 foreach (KeyValuePair<string, JsonNode?> item in _list)
                 {
-                    if (_stringComparer.Compare(propertyName, item.Key) == 0)
+                    if (_stringComparer.Equals(propertyName, item.Key))
                     {
                         property = item.Value;
                         _lastKey = propertyName;
