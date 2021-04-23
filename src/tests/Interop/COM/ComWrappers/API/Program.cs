@@ -455,6 +455,7 @@ namespace ComWrappersTests
                 Marshal.Release(trackerObjRaw);
             }
 
+            int refCount;
             IntPtr refTrackerTarget;
 
             {
@@ -466,14 +467,14 @@ namespace ComWrappersTests
                 // Ownership has been transferred to the IReferenceTrackerTarget instance.
                 // The COM reference count should be 0 and indicates to the GC the managed object
                 // can be collected.
-                int count = Marshal.Release(testWrapper);
-                Assert.AreEqual(0, count);
+                refCount = Marshal.Release(testWrapper);
+                Assert.AreEqual(0, refCount);
             }
 
             ForceGC();
 
-            // Calling QueryInterface on an IReferenceTrackerTarget instance is permitted if
-            // when wrapper lifetime has been extended. However, the QueryInterface may fail
+            // Calling QueryInterface on an IReferenceTrackerTarget instance is permitted when
+            // the wrapper lifetime has been extended. However, the QueryInterface may fail
             // if the associated managed object was collected. The failure here is an important
             // part of the contract for a Reference Tracker runtime.
             var iid = typeof(ITest).GUID;
@@ -484,7 +485,8 @@ namespace ComWrappersTests
             Assert.AreEqual(COR_E_ACCESSING_CCW, hr);
 
             // Release the IReferenceTrackerTarget instance.
-            MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
+            refCount = MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
+            Assert.AreEqual(0, refCount);
 
             static IntPtr CreateWrapper(TestComWrappers cw)
             {

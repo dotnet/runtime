@@ -546,10 +546,10 @@ extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceT
     return nullptr;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceTracker(API::IReferenceTrackerTarget *target)
+extern "C" DLL_EXPORT LONG STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceTracker(API::IReferenceTrackerTarget *target)
 {
     assert(target != nullptr);
-    (void)target->ReleaseFromReferenceTracker();
+    return (LONG)target->ReleaseFromReferenceTracker();
 }
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown *obj, int i, IUnknown **out)

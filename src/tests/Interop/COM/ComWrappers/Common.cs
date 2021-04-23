@@ -155,7 +155,7 @@ namespace ComWrappersTests.Common
         extern public static IntPtr TrackerTarget_AddRefFromReferenceTrackerAndReturn(IntPtr ptr);
 
         [DllImport(nameof(MockReferenceTrackerRuntime))]
-        extern public static void TrackerTarget_ReleaseFromReferenceTracker(IntPtr ptr);
+        extern public static int TrackerTarget_ReleaseFromReferenceTracker(IntPtr ptr);
     }
 
     [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
