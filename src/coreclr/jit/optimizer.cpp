@@ -7644,8 +7644,8 @@ void Compiler::optOptimizeBoolsCondBlock(OptBoolsDsc* pOptBoolsDsc, bool* change
 {
     // Check if b1 and b2 jump to the same target and get back pointers to t1 and t2 tree nodes
 
-    pOptBoolsDsc->t3 = nullptr;
-    pOptBoolsDsc->sameTarget = false;   // Do b1 and b2 have the same bbJumpDest?
+    pOptBoolsDsc->t3         = nullptr;
+    pOptBoolsDsc->sameTarget = false; // Do b1 and b2 have the same bbJumpDest?
 
     Statement* s1;
     s1 = optOptimizeBoolsChkBlkCond(pOptBoolsDsc);
@@ -7787,10 +7787,10 @@ void Compiler::optOptimizeBoolsCondBlock(OptBoolsDsc* pOptBoolsDsc, bool* change
 //
 Statement* Compiler::optOptimizeBoolsChkBlkCond(OptBoolsDsc* pOptBoolsDsc)
 {
-    BasicBlock* b1 = pOptBoolsDsc->b1;
-    BasicBlock* b2 = pOptBoolsDsc->b2;
-    BasicBlock* b3 = pOptBoolsDsc->b3;
-    bool* sameTarget = &pOptBoolsDsc->sameTarget;
+    BasicBlock* b1         = pOptBoolsDsc->b1;
+    BasicBlock* b2         = pOptBoolsDsc->b2;
+    BasicBlock* b3         = pOptBoolsDsc->b3;
+    bool*       sameTarget = &pOptBoolsDsc->sameTarget;
 
     bool optReturnBlock = false;
     if (b3)
@@ -7924,12 +7924,13 @@ Statement* Compiler::optOptimizeBoolsChkBlkCond(OptBoolsDsc* pOptBoolsDsc)
 //                                  if cost to fold is not too expensive.
 //
 // Arguments:
-//      pOptBoolsDsc    The descriptor for boolean optimization with pointers to tree compare nodes and its first operand,
-//                      where,
+//      pOptBoolsDsc    The descriptor for boolean optimization with pointers to tree compare nodes
+//                      and its first operand, where
 //                          t1CompPtr:  The first tree pointing to GT_NE or GT_EQ GenTree node
 //                          t2CompPtr:  The second tree pointing to GT_NE or GT_EQ GenTree node
 //                          c1:         The first operand of t1CompPtr
 //                          c2:         The first operand of t2CompPtr
+
 // Return:
 //      True if it meets type conditions and cost conditions.	Else false.
 //
@@ -8033,8 +8034,8 @@ void Compiler::optOptimizeBoolsUpdateTrees(OptBoolsDsc* pOptBoolsDsc)
     {
         // Update tree when b1: BBJ_COND and b2: GT_RETURN (BBJ_RETURN)
         t1CompPtr->AsOp()->gtOp2->AsIntCon()->gtIconVal = 0;
-        b1->lastStmt()->GetRootNode()->gtOper    = GT_RETURN;
-        b1->lastStmt()->GetRootNode()->gtType    = b2->lastStmt()->GetRootNode()->gtType;
+        pOptBoolsDsc->t1->gtOper                        = GT_RETURN;
+        pOptBoolsDsc->t1->gtType                        = pOptBoolsDsc->t2->gtType;
     }
 
 #if FEATURE_SET_FLAGS
@@ -8220,7 +8221,7 @@ void Compiler::optOptimizeBoolsReturnBlock(OptBoolsDsc* pOptBoolsDsc, bool* chan
 
     // Get the fold operator and the comparison operator
 
-    var_types  foldType = c1->TypeGet();
+    var_types foldType = c1->TypeGet();
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -8228,7 +8229,7 @@ void Compiler::optOptimizeBoolsReturnBlock(OptBoolsDsc* pOptBoolsDsc, bool* chan
     pOptBoolsDsc->foldType = foldType;
 
     pOptBoolsDsc->foldOp = GT_NONE;
-    pOptBoolsDsc->cmpOp = GT_NONE;
+    pOptBoolsDsc->cmpOp  = GT_NONE;
 
     optReturnGetFoldAndCompOper(pOptBoolsDsc);
     if (pOptBoolsDsc->foldOp == GT_NONE || pOptBoolsDsc->cmpOp == GT_NONE)
