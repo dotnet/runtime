@@ -230,6 +230,17 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
         }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            const GenTreeLclVar* lclVar = src->AsLclVar();
+            const LclVarDsc*     varDsc = comp->lvaGetDesc(src->AsLclVar());
+            if (!varDsc->lvDoNotEnregister)
+            {
+                // TODO-1stClassStructs: delete this pessimization, support LCL_VAR in a reg as STORE_BLK source.
+                comp->lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUG_ARG(Compiler::DNER_BlockOp));
+            }
+            assert(src->isContained());
+        }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {

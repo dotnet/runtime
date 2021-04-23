@@ -2107,6 +2107,14 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
         shouldPromote = false;
     }
+    else if (compiler->compEnregStructLocals() && (structPromotionInfo.fieldCnt > 1) && !varDsc->lvFieldAccessed &&
+             varDsc->IsEnregisterable())
+    {
+        JITDUMP("Not promoting promotable struct local V%02u: #fields = %d because can put the whole struct into a "
+                "register\n",
+                lclNum, structPromotionInfo.fieldCnt);
+        shouldPromote = false;
+    }
 #if defined(DEBUG)
     else if (compiler->compPromoteFewerStructs(lclNum))
     {
@@ -2114,7 +2122,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         JITDUMP("Not promoting promotable struct local V%02u, because of STRESS_PROMOTE_FEWER_STRUCTS\n", lclNum);
         shouldPromote = false;
     }
-#endif
+#endif // DEBUG
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
@@ -3827,6 +3835,57 @@ var_types LclVarDsc::lvaArgType()
 #endif // TARGET_AMD64
 
     return type;
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Arguments:
+//    tree - node that uses the local, its type is checked first.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
+{
+    var_types targetType = tree->gtType;
+
+#ifdef DEBUG
+    // Ensure that lclVar nodes are typed correctly.
+    if (tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+    {
+        // TODO: update that assert to work with TypeGet() == TYP_STRUCT case.
+        // assert(targetType == genActualType(TypeGet()));
+    }
+#endif
+
+    if (targetType != TYP_STRUCT)
+    {
+        return targetType;
+    }
+    return GetLayout()->GetRegisterType();
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType() const
+{
+    if (TypeGet() != TYP_STRUCT)
+    {
+#if !defined(TARGET_64BIT)
+        if (TypeGet() == TYP_LONG)
+        {
+            return TYP_UNDEF;
+        }
+#endif
+        return TypeGet();
+    }
+    assert(m_layout != nullptr);
+    return m_layout->GetRegisterType();
 }
 
 //----------------------------------------------------------------------------------------------
@@ -7336,6 +7395,11 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
 
         printf(" (%3u,%*s)", varDsc->lvRefCnt(), (int)refCntWtdWidth, refCntWtd2str(varDsc->lvRefCntWtd()));
+
+        if (varTypeIsStruct(type) && varDsc->lvRegStruct)
+        {
+            printf("reg ");
+        }
 
         printf(" %7s ", varTypeName(type));
         if (genTypeSize(type) == 0)

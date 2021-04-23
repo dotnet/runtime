@@ -1396,10 +1396,10 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
         }
 
-        if ((srcAddrOrFill == nullptr) && (srcRegMask != RBM_NONE))
+        if ((srcAddrOrFill == nullptr) && (srcRegMask != RBM_NONE) && src->isContained())
         {
             // This is a local source; we'll use a temp register for its address.
-            assert(src->isContained() && src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+            assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
             buildInternalIntRegisterDefForNode(blkNode, srcRegMask);
         }
     }
@@ -1433,6 +1433,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             useCount += BuildAddrUses(srcAddrOrFill);
         }
+    }
+    else if (!src->isContained())
+    {
+        useCount++;
+        BuildUse(src, srcRegMask);
     }
 
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
@@ -1568,7 +1573,18 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildSimple(putArgStk);
     }
 
-    ClassLayout* layout = src->AsObj()->GetLayout();
+    ClassLayout* layout;
+    if (src->OperIs(GT_OBJ))
+    {
+        layout = src->AsObj()->GetLayout();
+    }
+    else
+    {
+        assert(src->OperIs(GT_LCL_VAR));
+        const GenTreeLclVar* lclVar = src->AsLclVar();
+        const LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+        layout                      = varDsc->GetLayout();
+    }
 
     ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)

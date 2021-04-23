@@ -539,7 +539,7 @@ public:
                             !m_compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
                         {
                             LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-                            if (varDsc->lvFieldCnt > 1)
+                            if ((varDsc->lvFieldCnt > 1) && !varDsc->lvRegStruct)
                             {
                                 m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
                             }

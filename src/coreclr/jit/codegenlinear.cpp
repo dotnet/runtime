@@ -864,14 +864,14 @@ void CodeGen::genSpillVar(GenTree* tree)
         // therefore be store-normalized (rather than load-normalized). In fact, not performing store normalization
         // can lead to problems on architectures where a lclVar may be allocated to a register that is not
         // addressable at the granularity of the lclVar's defined type (e.g. x86).
-        var_types lclTyp = genActualType(varDsc->TypeGet());
-        emitAttr  size   = emitTypeSize(lclTyp);
+        var_types spillType = genActualType(varDsc->GetRegisterType(tree->AsLclVar()));
+        emitAttr  size      = emitTypeSize(spillType);
 
         // If this is a write-thru variable, we don't actually spill at a use, but we will kill the var in the reg
         // (below).
         if (!varDsc->lvLiveInOutOfHndlr)
         {
-            instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
+            instruction storeIns = ins_Store(spillType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
             inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
         }
@@ -1181,7 +1181,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 
             GenTreeLclVar* lcl       = unspillTree->AsLclVar();
             LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl->GetLclNum());
-            var_types      spillType = unspillTree->TypeGet();
+            var_types      spillType = varDsc->GetRegisterType(lcl);
+            assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #ifdef TARGET_XARCH
@@ -1196,11 +1197,12 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // later used as a long, we will have incorrectly truncated the long.
             // In the normalizeOnLoad case ins_Load will return an appropriate sign- or zero-
             // extending load.
-
-            if (spillType != genActualType(varDsc->lvType) && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
+            var_types lclActualType = genActualType(varDsc->GetRegisterType());
+            assert(lclActualType != TYP_UNDEF);
+            if (spillType != lclActualType && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
             {
                 assert(!varTypeIsGC(varDsc));
-                spillType = genActualType(varDsc->lvType);
+                spillType = lclActualType;
             }
 #elif defined(TARGET_ARM64)
             var_types targetType = unspillTree->gtType;
@@ -2060,8 +2062,9 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.
-        GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
-                                  varNum, 0);
+        var_types spillType = genActualType(varDsc->GetRegisterType(lclNode));
+        GetEmitter()->emitIns_S_R(ins_Store(spillType, compiler->isSIMDTypeLocalAligned(varNum)),
+                                  emitTypeSize(spillType), regNum, varNum, 0);
     }
 }
 

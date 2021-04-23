@@ -3166,9 +3166,12 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             }
 #endif // !WINDOWS_AMD64_ABI
         }
-        else if (!src->OperIs(GT_LCL_VAR) || (varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF))
+        else if (!src->OperIs(GT_LCL_VAR) || !varDsc->IsEnregisterable())
         {
-            GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(lclStore->GetLclNum(), TYP_BYREF);
+            const unsigned lclNum = lclStore->GetLclNum();
+            GenTreeLclVar* addr   = comp->gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+            // TODO-1stClassStructs: always keep it as a STORE_LCL_VAR.
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
 
             addr->gtFlags |= GTF_VAR_DEF;
             assert(!addr->IsPartialLclFld(comp));

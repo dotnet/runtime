@@ -2018,8 +2018,10 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         // field instead. It will be loaded in registers with putarg_reg tree in lower.
         if (passedAsPrimitive)
         {
+            // TODO-1stClassStructs: delete this pessimization, keep the struct type.
             arg->ChangeOper(GT_LCL_FLD);
             arg->gtType = type;
+            lvaSetVarDoNotEnregister(tmpVarNum DEBUG_ARG(DNER_LocalField));
         }
         else
         {
@@ -3987,18 +3989,23 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         }
                         else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
                         {
-                            // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD
+                            assert(varDsc->GetRegisterType() != TYP_UNDEF);
+                            // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD.
+                            // TODO-1stClassStructs: delete this pessimization, keep the struct type.
                             argObj->ChangeOper(GT_LCL_FLD);
                             argObj->gtType = structBaseType;
+                            lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LocalField));
                         }
+                        assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
+                               ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)) ||
+                               varDsc->IsEnregisterable());
                     }
                     else
                     {
                         // Not a GT_LCL_VAR, so we can just change the type on the node
                         argObj->gtType = structBaseType;
+                        assert(varTypeIsEnregisterable(argObj->TypeGet()));
                     }
-                    assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
-                           ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
 
 #if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH)
@@ -10263,6 +10270,14 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
             {
                 lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
             }
+#if !defined(TARGET_64BIT)
+            else if (!destDoFldAsg && destLclVar->lvRegStruct && !dest->IsLocal() && blockSize == 8)
+            {
+                // TODO-1stClassStructs: it is a double lclVar init, using a struct init block, will support it later.
+                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+            }
+
+#endif // !defined(TARGET_64BIT)
         }
 
         if (!destDoFldAsg)
@@ -10769,12 +10784,13 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 
         if (lclNode != nullptr)
         {
-            LclVarDsc* varDsc = &(lvaTable[lclNode->GetLclNum()]);
+            const unsigned   lclNum = lclNode->GetLclNum();
+            const LclVarDsc* varDsc = lvaGetDesc(lclNum);
             if (varTypeIsStruct(varDsc) && (varDsc->lvExactSize == blockWidth) && (varDsc->lvType == asgType))
             {
                 if (effectiveVal != lclNode)
                 {
-                    JITDUMP("Replacing block node [%06d] with lclVar V%02u\n", dspTreeID(tree), lclNode->GetLclNum());
+                    JITDUMP("Replacing block node [%06d] with lclVar V%02u\n", dspTreeID(tree), lclNum);
                     effectiveVal = lclNode;
                 }
                 needsIndirection = false;
@@ -10783,6 +10799,8 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             {
                 // This may be a lclVar that was determined to be address-exposed.
                 effectiveVal->gtFlags |= (lclNode->gtFlags & GTF_ALL_EFFECT);
+                // TODO-1stClassStructs: get rid of IND(ADDR()).
+                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_BlockOp));
             }
         }
         if (needsIndirection)
@@ -11127,8 +11145,12 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         bool srcSingleLclVarAsg  = false;
         bool destSingleLclVarAsg = false;
 
-        // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock.
-        if ((destLclVar != nullptr && destLclVar->lvRegStruct) || (srcLclVar != nullptr && srcLclVar->lvRegStruct))
+        // If either src or dest is a reg-sized non-field-addressed SIMD struct, keep the copyBlock.
+        if ((destLclVar != nullptr) && destLclVar->lvRegStruct && destLclVar->lvIsUsedInSIMDIntrinsic())
+        {
+            requiresCopyBlock = true;
+        }
+        else if ((srcLclVar != nullptr) && srcLclVar->lvRegStruct && srcLclVar->lvIsUsedInSIMDIntrinsic())
         {
             requiresCopyBlock = true;
         }
@@ -11737,6 +11759,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                             {
                                 srcLclVarTree->gtFlags |= GTF_VAR_CAST;
                                 srcLclVarTree->ChangeOper(GT_LCL_FLD);
+                                // TODO-1stClassStructs: delete this pessimization.
+                                lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DNER_BlockOp));
                                 srcLclVarTree->gtType = destType;
                                 srcLclVarTree->AsLclFld()->SetFieldSeq(curFieldSeq);
                                 srcFld = srcLclVarTree;
@@ -18168,10 +18192,9 @@ void Compiler::fgPromoteStructs()
             promotedVar = structPromotionHelper->TryPromoteStructVar(lclNum);
         }
 
-        if (!promotedVar && varDsc->lvIsSIMDType() && !varDsc->lvFieldAccessed)
+        if (!promotedVar && !varDsc->lvFieldAccessed && varDsc->IsEnregisterable())
         {
-            // Even if we have not used this in a SIMD intrinsic, if it is not being promoted,
-            // we will treat it as a reg struct.
+            // There were no field accesses and the struct can be put into a register.
             varDsc->lvRegStruct = true;
         }
     }
