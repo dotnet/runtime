@@ -50,9 +50,9 @@
     <MicrosoftCodeAnalysisVersion>3.8.0</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21168.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview5.21219.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21221.1</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21221.1</MicrosoftDotNetBuildTasksFeedVersion>
