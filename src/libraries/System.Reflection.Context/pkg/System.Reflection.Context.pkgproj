@@ -17,9 +17,6 @@
       <Value>UAP</Value>
     </ValidatePackageSuppression>
   </ItemGroup>
-  <!-- TODO: Re-enable support check after the 6.0 version of the package is released. -->
-  <PropertyGroup>
-    <SkipSupportCheck>true</SkipSupportCheck>
-  </PropertyGroup>
+  
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
