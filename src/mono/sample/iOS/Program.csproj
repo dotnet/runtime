@@ -73,7 +73,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="HelloiOS"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"

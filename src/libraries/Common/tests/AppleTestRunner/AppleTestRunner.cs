@@ -17,11 +17,11 @@ using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
     // to be wired once https://github.com/dotnet/xharness/pull/46 is merged
-//    [DllImport("__Internal")]
-//    public extern static void Console.WriteLine (string value);
+    [DllImport("__Internal")]
+    public extern static void mono_ios_append_output (string value);
 
-//    [DllImport("__Internal")]
-//    public extern static void Console.WriteLine (string value);
+    [DllImport("__Internal")]
+    public extern static void mono_ios_set_summary (string value);
 
     private static List<string> s_testLibs = new List<string>();
     private static string? s_MainTestName;
@@ -63,11 +63,11 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         Console.WriteLine(".");
         s_MainTestName = Path.GetFileNameWithoutExtension(s_testLibs[0]);
 
-        Console.WriteLine($"Starting tests...");
+        mono_ios_set_summary($"Starting tests...");
         var simpleTestRunner = new SimpleTestRunner(verbose);
         simpleTestRunner.TestStarted += (target, e) =>
         {
-            Console.WriteLine($"[STARTING] {e}\n");
+            mono_ios_append_output($"[STARTING] {e}\n");
         };
 
         int failed = 0, passed = 0, skipped = 0;
@@ -85,11 +85,11 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
             {
                 skipped++;
             }
-            Console.WriteLine($"{s_MainTestName}\nPassed:{passed}, Failed: {failed}, Skipped:{skipped}");
+            mono_ios_set_summary($"{s_MainTestName}\nPassed:{passed}, Failed: {failed}, Skipped:{skipped}");
         };
 
         await simpleTestRunner.RunAsync();
-        Console.WriteLine($"\nDone.\n");
+        mono_ios_append_output($"\nDone.\n");
         Console.WriteLine("----- Done -----");
         return 0;
     }

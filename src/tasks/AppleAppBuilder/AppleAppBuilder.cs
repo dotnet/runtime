@@ -44,10 +44,10 @@ public class AppleAppBuilderTask : Task
     public string AppDir { get; set; } = ""!;
 
     /// <summary>
-    /// Path to Mono public headers (*.h)
+    /// Path to public headers (*.h)
     /// </summary>
     [Required]
-    public string MonoRuntimeHeaders { get; set; } = ""!;
+    public string RuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
@@ -146,6 +146,11 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool EnableRuntimeLogging { get; set; }
 
+    /// <summary>
+    /// Specifies whether to try and use Mono or CoreCLR runtime
+    /// </summary>
+    public string? RuntimeFlavor { get; set; }
+
     public override bool Execute()
     {
         Utils.Logger = Log;
@@ -204,7 +209,7 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
 
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, StaticLinkedComponentNames, NativeMainSource);
+                AppDir, binDir, RuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, StaticLinkedComponentNames, NativeMainSource, RuntimeFlavor);
 
             if (BuildAppBundle)
             {

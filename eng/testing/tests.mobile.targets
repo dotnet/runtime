@@ -10,6 +10,7 @@
     <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
     <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">mono</RuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
@@ -190,7 +191,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
+        RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"
@@ -202,7 +203,8 @@
         Optimized="$(Optimized)"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(BundleDir)"
-        AppDir="$(PublishDir)">
+        AppDir="$(PublishDir)"
+        RuntimeFlavor="$(RuntimeFlavor)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>

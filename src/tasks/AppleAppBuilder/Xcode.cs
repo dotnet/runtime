@@ -46,7 +46,7 @@ internal class Xcode
         IEnumerable<string> asmFiles,
         string workspace,
         string binDir,
-        string monoInclude,
+        string runtimeInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
         bool forceAOT,
@@ -54,8 +54,14 @@ internal class Xcode
         bool invariantGlobalization,
         bool stripDebugSymbols,
         string? staticLinkedComponentNames=null,
-        string? nativeMainSource = null)
+        string? nativeMainSource = null,
+        string? runtimeFlavor = "mono")
     {
+        var runtimedotm = "coreclr".Equals(runtimeFlavor, StringComparison.OrdinalIgnoreCase) ? "runtime-coreclr.m" : "runtime.m";
+        if ("mono".Equals(runtimeFlavor, StringComparison.OrdinalIgnoreCase))
+        {
+            runtimeInclude = Path.Combine (runtimeInclude, "mono-2.0");
+        }
         // bundle everything as resources excluding native files
         var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
         if (stripDebugSymbols)
@@ -100,8 +106,9 @@ internal class Xcode
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + r)))
             .Replace("%MainSource%", nativeMainSource)
-            .Replace("%MonoInclude%", monoInclude)
-            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
+            .Replace("%RuntimeInclude%", runtimeInclude)
+            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE")
+            .Replace("%RuntimeDotM%", runtimedotm);
 
         string toLink = "";
 
@@ -167,6 +174,12 @@ internal class Xcode
             }
         }
 
+        if ("coreclr".Equals(runtimeFlavor, StringComparison.OrdinalIgnoreCase))
+        {
+            var libcoreclrpath = Array.Find (dylibs, element => element.EndsWith("libcoreclr.dylib"));
+            toLink += $"    \"{libcoreclrpath}\"{Environment.NewLine}";
+        }
+
         string aotSources = "";
         foreach (string asm in asmFiles)
         {
@@ -186,6 +199,7 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
+        cmakeLists = cmakeLists.Replace("%RpathResources%", "coreclr".Equals(runtimeFlavor, StringComparison.OrdinalIgnoreCase) ? "TRUE" : "FALSE");
 
         var defines = new StringBuilder();
         if (forceInterpreter)
@@ -274,8 +288,8 @@ internal class Xcode
 
         dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
 
-        File.WriteAllText(Path.Combine(binDir, "runtime.m"),
-            Utils.GetEmbeddedResource("runtime.m")
+        File.WriteAllText(Path.Combine(binDir, runtimedotm),
+            Utils.GetEmbeddedResource(runtimedotm)
                 .Replace("//%DllMap%", dllMap.ToString())
                 .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));

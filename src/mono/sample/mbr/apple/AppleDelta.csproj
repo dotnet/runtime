@@ -63,7 +63,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="AppleDelta"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include"
         Assemblies="@(BundleAssemblies)"
 	NativeMainSource="$(MSBuildThisFileDirectory)\main.m"
         MainLibraryFileName="AppleDelta.dll"

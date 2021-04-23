@@ -14,13 +14,19 @@
 #define CORECLR_CALLING_CONVENTION
 #endif
 
+#ifndef __OBJC__
+#define CORECLR_EXTERN_C extern "C"
+#else
+#define CORECLR_EXTERN_C
+#endif
+
 #include <stdint.h>
 
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
 #define CORECLR_HOSTING_API(function, ...) \
-    extern "C" int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
+    CORECLR_EXTERN_C int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
     typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
 
 //

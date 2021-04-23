@@ -11,7 +11,7 @@ add_executable(
     %ProjectName%
     %MainSource%
     runtime.h
-    runtime.m
+    %RuntimeDotM%
     %AotModulesSource%
     ${APP_RESOURCES}
 )
@@ -20,7 +20,7 @@ add_executable(
 
 %Defines%
 
-include_directories("%MonoInclude%")
+include_directories("%RuntimeInclude%")
 
 set_target_properties(%ProjectName% PROPERTIES
     MACOSX_BUNDLE TRUE
@@ -35,6 +35,10 @@ set(HARDENED_RUNTIME
 %HardenedRuntime%
 )
 
+set(RPATH_RESOURCES
+%RpathResources%
+)
+
 set(HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE
 %HardenedRuntimeUseEntitlementsFile%
 )
@@ -45,6 +49,12 @@ if("${HARDENED_RUNTIME}")
     set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
   endif()
 endif()
+
+
+if("${RPATH_RESOURCES}")
+  set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@loader_path/../Resources")
+endif()
+
 
 # FIXME: `XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING` should not be NO
 
