@@ -118,14 +118,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
             VerifyForLoopWidestTypeInDebugMode()
 #End If
         End Sub
-
+        
+#If DEBUG Then
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification:="This method only gets called in DEBUG mode.")>
         Private Shared Sub VerifyForLoopWidestTypeInDebugMode()
             VerifyForLoopWidestType()
         End Sub
 
-#If DEBUG Then
         <System.Diagnostics.ConditionalAttribute("DEBUG")>
         <RequiresUnreferencedCode("Calls Operators.AddObject")>
         Private Shared Sub VerifyForLoopWidestType()
