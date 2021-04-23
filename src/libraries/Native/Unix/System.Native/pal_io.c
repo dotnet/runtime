@@ -1058,7 +1058,7 @@ int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
             return 0;
         case EINVAL:
             // We control the offset and length so they are correct.
-            assert_msg(offset != 0, "Invalid offset value", (int)offset);
+            assert_msg(offset == 0, "Invalid offset value", (int)offset);
             assert_msg(length >= 0, "Invalid length value", (int)length);
             // But if the underlying filesystem does not support the operation, we just ignore it and treat as a hint.
             return 0;
