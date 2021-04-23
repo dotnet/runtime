@@ -121,7 +121,7 @@ namespace System.IO.Strategies
                     else
                     {
                         Debug.Assert(fallocateResult == -2);
-                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
+                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, _path, allocationSize));
                     }
                 }
                 // ignore not supported and other failures (pipe etc)
