@@ -136,9 +136,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("{}")]
         public static async Task DeserializeAsyncEnumerable_NotARootLevelJsonArray_ThrowsJsonException(string json)
         {
-            var utf8Json = new Utf8MemoryStream(json);
+            using var utf8Json = new Utf8MemoryStream(json);
             IAsyncEnumerable<int> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json);
-            var enumerator = asyncEnumerable.GetAsyncEnumerator();
+            await using IAsyncEnumerator<int> enumerator = asyncEnumerable.GetAsyncEnumerator();
             await Assert.ThrowsAsync<JsonException>(async () => await enumerator.MoveNextAsync());
         }
 
