@@ -264,7 +264,7 @@ private:
 
             // See man page of proc to get format for /proc/self/mountinfo file
             int sscanfRet = sscanf(separatorChar,
-                                     " - %s %*s %s",
+                                   " - %s %*s %s",
                                    filesystemType,
                                    options);
             if (sscanfRet != 2)
@@ -289,23 +289,23 @@ private:
                 if (isSubsystemMatch)
                 {
                         mountpath = (char*)malloc(lineLen+1);
-                    if (mountpath == nullptr)
-                        goto done;
+                        if (mountpath == nullptr)
+                            goto done;
                         mountroot = (char*)malloc(lineLen+1);
-                    if (mountroot == nullptr)
-                        goto done;
+                        if (mountroot == nullptr)
+                            goto done;
 
                         sscanfRet = sscanf(line,
-                                        "%*s %*s %*s %s %s ",
+                                           "%*s %*s %*s %s %s ",
                                            mountroot,
                                            mountpath);
-                    if (sscanfRet != 2)
+                        if (sscanfRet != 2)
                             assert(!"Failed to parse mount info file contents with sscanf.");
 
-                    // assign the output arguments and clear the locals so we don't free them.
-                    *pmountpath = mountpath;
-                    *pmountroot = mountroot;
-                    mountpath = mountroot = nullptr;
+                        // assign the output arguments and clear the locals so we don't free them.
+                        *pmountpath = mountpath;
+                        *pmountroot = mountroot;
+                        mountpath = mountroot = nullptr;
                 }
             }
         }
@@ -353,7 +353,7 @@ private:
             {
                 // See man page of proc to get format for /proc/self/cgroup file
                 int sscanfRet = sscanf(line,
-                                         "%*[^:]:%[^:]:%s",
+                                       "%*[^:]:%[^:]:%s",
                                        subsystem_list,
                                        cgroup_path);
                 if (sscanfRet != 2)
@@ -379,7 +379,7 @@ private:
                 // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
                 // Look for a "0::/some/path"
                 int sscanfRet = sscanf(line,
-                                         "0::%s",
+                                       "0::%s",
                                        cgroup_path);
                 if (sscanfRet == 1)
                 {
@@ -625,7 +625,7 @@ private:
         result = ReadLongLongValueFromFile(filename, &val);
         free(filename);
         if (!result)
-            return -1;
+             return -1;
 
         return val;
     }
@@ -754,15 +754,15 @@ bool GetPhysicalMemoryUsed(size_t* val)
 
         errno = 0;
         *val = strtoull(strTok, nullptr, 0);
-        if(errno == 0)
+        if (errno == 0)
         {
             long pageSize = sysconf(_SC_PAGE_SIZE);
             if (pageSize != -1)
             {
                 *val = *val * pageSize;
-            result = true;
+                result = true;
+            }
         }
-    }
     }
 
     if (file)
