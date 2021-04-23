@@ -54,8 +54,10 @@ class CGroup
 
     static const char *s_active_file_key_name;
     static const char *s_inactive_file_key_name;
+    static const char *s_dirty_file_key_name;
     static size_t s_active_file_key_length;
     static size_t s_inactive_file_key_length;
+    static size_t s_dirty_file_key_length;
 
 public:
     static void Initialize()
@@ -65,8 +67,10 @@ public:
         s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
         s_active_file_key_name = s_cgroup_version == 1 ? "total_active_file " : "active_file ";
         s_inactive_file_key_name = s_cgroup_version == 1 ? "total_inactive_file " : "inactive_file ";
+        s_dirty_file_key_name = s_cgroup_version == 1 ? "total_dirty " : "file_dirty ";
         s_active_file_key_length = strlen(s_active_file_key_name);
         s_inactive_file_key_length = strlen(s_inactive_file_key_name);
+        s_dirty_file_key_length = strlen(s_dirty_file_key_name);
     }
 
     static void Cleanup()
@@ -433,9 +437,10 @@ private:
         size_t readValues = 0;
         size_t active_file = 0;
         size_t inactive_file = 0;
+        size_t dirty_file = 0;
         char* endptr;
 
-        while (readValues != 2 && getline(&line, &lineLen, stat_file) != -1)
+        while (getline(&line, &lineLen, stat_file) != -1)
         {
             if (strncmp(line, s_active_file_key_name, s_active_file_key_length) == 0)
             {
@@ -457,12 +462,22 @@ private:
 
                 readValues++;
             }
+            else if (strncmp(line, s_dirty_file_key_name, s_dirty_file_key_length) == 0)
+            {
+                errno = 0;
+                const char* startptr = line + s_dirty_file_key_length;
+                dirty_file = strtoll(startptr, &endptr, 10);
+                if (endptr == startptr || errno != 0)
+                    continue;
+
+                readValues++;
+            }
         }
 
         fclose(stat_file);
         free(line);
 
-        if (readValues == 2)
+        if (readValues == 3)
         {
             if (usage > std::numeric_limits<size_t>::max())
             {
@@ -472,7 +487,7 @@ private:
             {
                 // Since file cache pages can be easily evicted and re-used
                 // they should not be considered as used memory.
-                *val = (size_t)usage - active_file - inactive_file;
+                *val = (size_t)usage - (active_file + inactive_file - dirty_file);
             }
 
             return true;
@@ -645,8 +660,10 @@ char *CGroup::s_cpu_cgroup_path = nullptr;
 
 const char *CGroup::s_active_file_key_name = nullptr;
 const char *CGroup::s_inactive_file_key_name = nullptr;
+const char *CGroup::s_dirty_file_key_name = nullptr;
 size_t CGroup::s_active_file_key_length = 0;
 size_t CGroup::s_inactive_file_key_length = 0;
+size_t CGroup::s_dirty_file_key_length = 0;
 
 void InitializeCGroup()
 {

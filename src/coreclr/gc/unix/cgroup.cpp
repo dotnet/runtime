@@ -67,8 +67,10 @@ class CGroup
     static char *s_cpu_cgroup_path;
     static const char *s_active_file_key_name;
     static const char *s_inactive_file_key_name;
+    static const char *s_dirty_file_key_name;
     static size_t s_active_file_key_length;
     static size_t s_inactive_file_key_length;
+    static size_t s_dirty_file_key_length;
 
 public:
     static void Initialize()
@@ -78,8 +80,10 @@ public:
         s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
         s_active_file_key_name = s_cgroup_version == 1 ? "total_active_file " : "active_file ";
         s_inactive_file_key_name = s_cgroup_version == 1 ? "total_inactive_file " : "inactive_file ";
+        s_dirty_file_key_name = s_cgroup_version == 1 ? "total_dirty " : "file_dirty ";
         s_active_file_key_length = strlen(s_active_file_key_name);
         s_inactive_file_key_length = strlen(s_inactive_file_key_name);
+        s_dirty_file_key_length = strlen(s_dirty_file_key_name);
     }
 
     static void Cleanup()
@@ -260,7 +264,7 @@ private:
 
             // See man page of proc to get format for /proc/self/mountinfo file
             int sscanfRet = sscanf(separatorChar,
-                                   " - %s %*s %s",
+                                     " - %s %*s %s",
                                    filesystemType,
                                    options);
             if (sscanfRet != 2)
@@ -285,23 +289,23 @@ private:
                 if (isSubsystemMatch)
                 {
                         mountpath = (char*)malloc(lineLen+1);
-                        if (mountpath == nullptr)
-                            goto done;
+                    if (mountpath == nullptr)
+                        goto done;
                         mountroot = (char*)malloc(lineLen+1);
-                        if (mountroot == nullptr)
-                            goto done;
+                    if (mountroot == nullptr)
+                        goto done;
 
                         sscanfRet = sscanf(line,
-                                           "%*s %*s %*s %s %s ",
+                                        "%*s %*s %*s %s %s ",
                                            mountroot,
                                            mountpath);
-                        if (sscanfRet != 2)
+                    if (sscanfRet != 2)
                             assert(!"Failed to parse mount info file contents with sscanf.");
 
-                        // assign the output arguments and clear the locals so we don't free them.
-                        *pmountpath = mountpath;
-                        *pmountroot = mountroot;
-                        mountpath = mountroot = nullptr;
+                    // assign the output arguments and clear the locals so we don't free them.
+                    *pmountpath = mountpath;
+                    *pmountroot = mountroot;
+                    mountpath = mountroot = nullptr;
                 }
             }
         }
@@ -349,7 +353,7 @@ private:
             {
                 // See man page of proc to get format for /proc/self/cgroup file
                 int sscanfRet = sscanf(line,
-                                       "%*[^:]:%[^:]:%s",
+                                         "%*[^:]:%[^:]:%s",
                                        subsystem_list,
                                        cgroup_path);
                 if (sscanfRet != 2)
@@ -375,7 +379,7 @@ private:
                 // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
                 // Look for a "0::/some/path"
                 int sscanfRet = sscanf(line,
-                                       "0::%s",
+                                         "0::%s",
                                        cgroup_path);
                 if (sscanfRet == 1)
                 {
@@ -445,9 +449,10 @@ private:
         size_t readValues = 0;
         size_t active_file = 0;
         size_t inactive_file = 0;
+        size_t dirty_file = 0;
         char* endptr;
 
-        while (getline(&line, &lineLen, stat_file) != -1 && readValues != 2)
+        while (getline(&line, &lineLen, stat_file) != -1)
         {
             if (strncmp(line, s_active_file_key_name, s_active_file_key_length) == 0)
             {
@@ -469,12 +474,22 @@ private:
 
                 readValues++;
             }
+            else if (strncmp(line, s_dirty_file_key_name, s_dirty_file_key_length) == 0)
+            {
+                errno = 0;
+                const char* startptr = line + s_dirty_file_key_length;
+                dirty_file = strtoll(startptr, &endptr, 10);
+                if (endptr == startptr || errno != 0)
+                    continue;
+
+                readValues++;
+            }
         }
 
         fclose(stat_file);
         free(line);
 
-        if (readValues == 2)
+        if (readValues == 3)
         {
             if (usage > std::numeric_limits<size_t>::max())
             {
@@ -484,7 +499,7 @@ private:
             {
                 // Since file cache pages can be easily evicted and re-used
                 // they should not be considered as used memory.
-                *val = (size_t)usage - active_file - inactive_file;
+                *val = (size_t)usage - (active_file + inactive_file - dirty_file);
             }
 
             return true;
@@ -610,7 +625,7 @@ private:
         result = ReadLongLongValueFromFile(filename, &val);
         free(filename);
         if (!result)
-             return -1;
+            return -1;
 
         return val;
     }
@@ -652,8 +667,10 @@ char *CGroup::s_cpu_cgroup_path = nullptr;
 
 const char *CGroup::s_active_file_key_name = nullptr;
 const char *CGroup::s_inactive_file_key_name = nullptr;
+const char *CGroup::s_dirty_file_key_name = nullptr;
 size_t CGroup::s_active_file_key_length = 0;
 size_t CGroup::s_inactive_file_key_length = 0;
+size_t CGroup::s_dirty_file_key_length = 0;
 
 void InitializeCGroup()
 {
@@ -737,15 +754,15 @@ bool GetPhysicalMemoryUsed(size_t* val)
 
         errno = 0;
         *val = strtoull(strTok, nullptr, 0);
-        if (errno == 0)
+        if(errno == 0)
         {
             long pageSize = sysconf(_SC_PAGE_SIZE);
             if (pageSize != -1)
             {
                 *val = *val * pageSize;
-                result = true;
-            }
+            result = true;
         }
+    }
     }
 
     if (file)
