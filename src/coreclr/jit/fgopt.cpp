@@ -174,7 +174,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 // Arguments:
 //    computeDoms -- `true` if we should recompute dominators
 //
-void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
+void Compiler::fgUpdateChangedFlowGraph(const bool computePreds, const bool computeDoms)
 {
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
@@ -182,7 +182,10 @@ void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
     JITDUMP("\nRenumbering the basic blocks for fgUpdateChangeFlowGraph\n");
     fgRenumberBlocks();
 
-    fgComputePreds();
+    if (computePreds) // This condition is only here until all phases don't require it.
+    {
+        fgComputePreds();
+    }
     fgComputeEnterBlocksSet();
     fgComputeReachabilitySets();
     if (computeDoms)
