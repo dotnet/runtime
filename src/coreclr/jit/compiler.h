@@ -6315,25 +6315,38 @@ public:
     void optOptimizeBools();
 
 private:
-    void optOptimizeBoolsCondBlock(BasicBlock* b1, BasicBlock* b2, bool* change);
-    Statement* optOptimizeBoolsChkBlkCond(
-        BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, GenTree** t1, GenTree** t2, GenTree** t3, bool* sameTarget);
-    GenTree* optIsBoolComp(GenTree* tree, GenTree** compPtr, bool* boolPtr);
-    bool optOptimizeBoolsChkTypeCostCond(GenTree* t1, GenTree* t2, GenTree* c1, GenTree* c2);
-    void optOptimizeBoolsUpdateTrees(BasicBlock* b1,
-                                     BasicBlock* b2,
-                                     BasicBlock* b3,
-                                     GenTree*    t1,
-                                     GenTree*    t2,
-                                     genTreeOps  foldOp,
-                                     var_types   foldType,
-                                     genTreeOps  cmpOp,
-                                     bool        bool1,
-                                     bool        bool2,
-                                     bool        sameTarget);
-    void optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, bool* change);
-    void optReturnGetFoldAndCompOper(
-        GenTree* tree1, GenTree* tree2, ssize_t it3val, bool bool1, bool bool2, genTreeOps* foldOp, genTreeOps* cmpOp);
+    struct OptBoolsDsc
+    {
+        BasicBlock* b1;         // The first Basic Block with the BBJ_COND conditional jump type
+        BasicBlock* b2;         // The next basic block of b1
+        BasicBlock* b3;         // The next basic block of b2
+
+        GenTree*    t1;         // The root node of b1
+        GenTree*    t2;         // The root node of b2
+        GenTree*    t3;         // The root node of b3
+
+        GenTree*    t1CompPtr;  // The compare node (i.e. GT_EQ or GT_NE node) of t1
+        GenTree*    t2CompPtr;  // The compare node (i.e. GT_EQ or GT_NE node) of t2
+
+        GenTree*    c1;         // The first operand of t1CompPtr
+        GenTree*    c2;         // The first operand of t2CompPtr
+
+        bool        sameTarget; // if b1 and b2 jumps to the same destination
+
+        genTreeOps  foldOp;     // The fold operator (e.g., GT_AND or GT_OR)
+        var_types   foldType;   // The type of the folded tree
+        genTreeOps  cmpOp;      // The comparison operator (e.g., GT_EQ or GT_NE)
+        bool        bool1;      // If tree t1CompPtr is boolean comparison
+        bool        bool2;      // If tree t2CompPtr is boolean comparison
+    };
+
+    void       optOptimizeBoolsCondBlock(OptBoolsDsc* pOptBoolsDsc, bool* change);
+    void       optOptimizeBoolsReturnBlock(OptBoolsDsc* pOptBoolsDsc, bool* change);
+    Statement* optOptimizeBoolsChkBlkCond(OptBoolsDsc* pOptBoolsDsc);
+    GenTree*   optIsBoolComp(GenTree* tree, GenTree** compPtr, bool* boolPtr);
+    bool       optOptimizeBoolsChkTypeCostCond(OptBoolsDsc* pOptBoolsDsc);
+    void       optOptimizeBoolsUpdateTrees(OptBoolsDsc* pOptBoolsDsc);
+    void       optReturnGetFoldAndCompOper(OptBoolsDsc* pOptBoolsDsc);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif
