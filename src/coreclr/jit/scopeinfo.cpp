@@ -452,7 +452,16 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 //    Called for every psiScope in "psiScopeList" codegen.h
 CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed)
 {
-    var_types type = genActualType(varDsc->TypeGet());
+    var_types regType = varDsc->GetRegisterType();
+    var_types type;
+    if (regType == TYP_UNDEF)
+    {
+        type = genActualType(varDsc->TypeGet());
+    }
+    else
+    {
+        type = genActualType(regType);
+    }
 
     if (varDsc->lvIsInReg())
     {

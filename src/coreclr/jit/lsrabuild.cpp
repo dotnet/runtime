@@ -2145,8 +2145,9 @@ void LinearScan::buildIntervals()
 
         if (isCandidateVar(argDsc))
         {
-            Interval* interval = getIntervalForLocalVar(varIndex);
-            regMaskTP mask     = allRegs(TypeGet(argDsc));
+            Interval*       interval = getIntervalForLocalVar(varIndex);
+            const var_types regType  = argDsc->GetRegisterType();
+            regMaskTP       mask     = allRegs(regType);
             if (argDsc->lvIsRegArg)
             {
                 // Set this interval as currently assigned to that register
@@ -3207,7 +3208,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     }
 
     regMaskTP defCandidates = RBM_NONE;
-    var_types type          = varDsc->TypeGet();
+    var_types type          = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
     if (varTypeIsByte(type))

@@ -3845,6 +3845,57 @@ var_types LclVarDsc::lvaArgType()
     return type;
 }
 
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Arguments:
+//    tree - node that uses the local, its type is checked first.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
+{
+    var_types targetType = tree->gtType;
+
+#ifdef DEBUG
+    // Ensure that lclVar nodes are typed correctly.
+    if (tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+    {
+        // TODO: update that assert to work with TypeGet() == TYP_STRUCT case.
+        // assert(targetType == genActualType(TypeGet()));
+    }
+#endif
+
+    if (targetType != TYP_STRUCT)
+    {
+        return targetType;
+    }
+    return GetLayout()->GetRegisterType();
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType() const
+{
+    if (TypeGet() != TYP_STRUCT)
+    {
+#if !defined(TARGET_64BIT)
+        if (TypeGet() == TYP_LONG)
+        {
+            return TYP_UNDEF;
+        }
+#endif
+        return TypeGet();
+    }
+    assert(m_layout != nullptr);
+    return m_layout->GetRegisterType();
+}
+
 //----------------------------------------------------------------------------------------------
 // CanBeReplacedWithItsField: check if a whole struct reference could be replaced by a field.
 //
