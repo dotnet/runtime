@@ -366,6 +366,12 @@
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
+/* Disable perf counters */
+#cmakedefine DISABLE_PERF_COUNTERS
+
+/* Disable MONO_LOG_DEST */
+#cmakedefine DISABLE_LOG_DEST
+
 /* GC description */
 #cmakedefine DEFAULT_GC_NAME 1
 
