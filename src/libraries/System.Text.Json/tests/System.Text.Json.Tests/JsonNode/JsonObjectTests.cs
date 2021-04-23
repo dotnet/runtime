@@ -219,6 +219,41 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
+        public static void CaseInsensitive_Remove()
+        {
+            var options = new JsonSerializerOptions() { PropertyNameCaseInsensitive = true };
+            JsonObject obj = JsonSerializer.Deserialize<JsonObject>("{\"MyProperty\":42}", options);
+
+            Assert.True(obj.ContainsKey("MyProperty"));
+            Assert.True(obj.ContainsKey("myproperty"));
+            Assert.True(obj.ContainsKey("MYPROPERTY"));
+
+            Assert.True(obj.Remove("myproperty"));
+            Assert.False(obj.Remove("myproperty"));
+            Assert.False(obj.Remove("MYPROPERTY"));
+            Assert.False(obj.Remove("MyProperty"));
+        }
+
+        [Fact]
+        public static void CaseSensitivity_Remove()
+        {
+            var options = new JsonSerializerOptions() { PropertyNameCaseInsensitive = false };
+            JsonObject obj = JsonSerializer.Deserialize<JsonObject>("{\"MYPROPERTY\":42,\"myproperty\":43}", options);
+
+            Assert.False(obj.ContainsKey("MyProperty"));
+            Assert.True(obj.ContainsKey("MYPROPERTY"));
+            Assert.True(obj.ContainsKey("myproperty"));
+
+            Assert.False(obj.Remove("MyProperty"));
+
+            Assert.True(obj.Remove("MYPROPERTY"));
+            Assert.False(obj.Remove("MYPROPERTY"));
+
+            Assert.True(obj.Remove("myproperty"));
+            Assert.False(obj.Remove("myproperty"));
+        }
+
+        [Fact]
         public static void CaseSensitivity_EditMode()
         {
             var jArray = new JsonArray();
@@ -664,8 +699,7 @@ namespace System.Text.Json.Node.Tests
             {
                 string key = i.ToString();
 
-                // Contains which does a reference comparison on the value so it
-                // needs to be done before modifying.
+                // Contains does a reference comparison on JsonNode so it needs to be done before modifying.
                 Assert.True(jObject.Contains(new KeyValuePair<string, JsonNode?>(key, jObject[key])));
 
                 jObject[key] = JsonValue.Create(i);

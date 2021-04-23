@@ -16,9 +16,9 @@ namespace System.Text.Json.Node
             return _valueCollection ??= new ValueCollection(jsonObject);
         }
 
-        private class ValueCollection : ICollection<JsonNode?>
+        private sealed class ValueCollection : ICollection<JsonNode?>
         {
-            private JsonObject _jObject;
+            private readonly JsonObject _jObject;
 
             public ValueCollection(JsonObject jsonObject)
             {

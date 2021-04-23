@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Node
 {
@@ -17,9 +16,9 @@ namespace System.Text.Json.Node
             return _keyCollection ??= new KeyCollection(jsonObject);
         }
 
-        private class KeyCollection : ICollection<string>
+        private sealed class KeyCollection : ICollection<string>
         {
-            private JsonObject _jObject;
+            private readonly JsonObject _jObject;
 
             public KeyCollection(JsonObject jsonObject)
             {

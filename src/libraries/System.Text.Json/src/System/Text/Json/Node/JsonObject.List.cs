@@ -13,20 +13,13 @@ namespace System.Text.Json.Node
 
         private Dictionary<string, JsonNode?>? _dictionary;
         private List<KeyValuePair<string, JsonNode?>>? _list;
+
+        /// We defer creating the comparer as long as possible in case no options were specified during creation.
+        /// In that case if later we are added to a parent with a non-null options, we use the parent options.
         private StringComparer? _stringComparer;
 
         private string? _lastKey;
         private JsonNode? _lastValue;
-
-        /// <summary>
-        /// We defer creating the comparer as long as possible in case no options were specified during creation.
-        /// In that case if later we are added to a parent with a non-null options, we use the parent options.
-        /// </summary>
-        private StringComparer GetStringComparer()
-        {
-            Debug.Assert(_stringComparer != null);
-            return _stringComparer;
-        }
 
         private void CreateStringComparer()
         {
@@ -113,6 +106,8 @@ namespace System.Text.Json.Node
             CreateList();
             Debug.Assert(_list != null);
 
+            CreateDictionaryIfThreshold();
+
             JsonNode? existing = null;
 
             if (_dictionary != null)
@@ -121,7 +116,6 @@ namespace System.Text.Json.Node
                 if (JsonHelpers.TryAdd(_dictionary, propertyName, node))
                 {
                     node?.AssignParent(this);
-                    CreateDictionaryIfThreshold();
                     _list.Add(new KeyValuePair<string, JsonNode?>(propertyName, node));
                     return null;
                 }
@@ -157,13 +151,11 @@ namespace System.Text.Json.Node
                 }
 
                 node?.AssignParent(this);
-                CreateDictionaryIfThreshold();
                 _list[i] = new KeyValuePair<string, JsonNode?>(propertyName, node);
             }
             else
             {
                 node?.AssignParent(this);
-                CreateDictionaryIfThreshold();
                 _dictionary?.Add(propertyName, node);
                 _list.Add(new KeyValuePair<string, JsonNode?>(propertyName, node));
                 Debug.Assert(existing == null);
@@ -178,11 +170,12 @@ namespace System.Text.Json.Node
         private int FindNodeIndex(string propertyName)
         {
             Debug.Assert(_list != null);
+            Debug.Assert(_stringComparer != null);
 
             for (int i = 0; i < _list.Count; i++)
             {
                 KeyValuePair<string, JsonNode?> current = _list[i];
-                if (GetStringComparer().Compare(propertyName, current.Key) == 0)
+                if (_stringComparer.Compare(propertyName, current.Key) == 0)
                 {
                     return i;
                 }
@@ -194,18 +187,11 @@ namespace System.Text.Json.Node
         private void CreateDictionaryIfThreshold()
         {
             Debug.Assert(_list != null);
+            Debug.Assert(_stringComparer != null);
 
             if (_dictionary == null && _list.Count > ListToDictionaryThreshold)
             {
-                var dict = new Dictionary<string, JsonNode?>(GetStringComparer());
-
-                // 'foreach' has the advantage over a 'for(;;)' loop since it detects modifications.
-                foreach (KeyValuePair<string, JsonNode?> item in _list)
-                {
-                    dict.Add(item.Key, item.Value);
-                }
-
-                _dictionary = dict;
+                _dictionary = JsonHelpers.CreateDictionaryFromCollection(_list, _stringComparer);
             }
         }
 
@@ -213,6 +199,8 @@ namespace System.Text.Json.Node
         {
             if (_jsonElement != null)
             {
+                Debug.Assert(_list == null);
+                Debug.Assert(_dictionary == null);
                 _jsonElement = null;
                 return;
             }
@@ -233,11 +221,10 @@ namespace System.Text.Json.Node
         /// </summary>
         private bool ContainsNode(KeyValuePair<string, JsonNode?> node)
         {
-            CreateList();
-
             foreach (KeyValuePair<string, JsonNode?> item in this)
             {
-                if (ReferenceEquals(item.Value, node.Value) && GetStringComparer().Compare(item.Key, node.Key) == 0)
+                Debug.Assert(_stringComparer != null);
+                if (ReferenceEquals(item.Value, node.Value) && _stringComparer.Compare(item.Key, node.Key) == 0)
                 {
                     return true;
                 }
@@ -278,8 +265,6 @@ namespace System.Text.Json.Node
 
         private bool ContainsNode(string propertyName)
         {
-            CreateList();
-
             if (_dictionary != null)
             {
                 return _dictionary.ContainsKey(propertyName);
@@ -287,7 +272,8 @@ namespace System.Text.Json.Node
 
             foreach (string item in GetKeyCollection(this))
             {
-                if (GetStringComparer().Compare(item, propertyName) == 0)
+                Debug.Assert(_stringComparer != null);
+                if (_stringComparer.Compare(item, propertyName) == 0)
                 {
                     return true;
                 }
@@ -300,6 +286,7 @@ namespace System.Text.Json.Node
         {
             CreateList();
             Debug.Assert(_list != null);
+            Debug.Assert(_stringComparer != null);
 
             if (_dictionary != null)
             {
@@ -315,7 +302,8 @@ namespace System.Text.Json.Node
             for (int i = 0; i < _list.Count; i++)
             {
                 KeyValuePair<string, JsonNode?> current = _list[i];
-                if (GetStringComparer().Compare(propertyName, current.Key) == 0)
+
+                if (_stringComparer.Compare(current.Key, propertyName) == 0)
                 {
                     _list.RemoveAt(i);
                     existing = current.Value;
@@ -332,6 +320,7 @@ namespace System.Text.Json.Node
         {
             CreateList();
             Debug.Assert(_list != null);
+            Debug.Assert(_stringComparer != null);
 
             if (propertyName == _lastKey)
             {
@@ -342,10 +331,9 @@ namespace System.Text.Json.Node
                 return true;
             }
 
-            bool success;
             if (_dictionary != null)
             {
-                success = _dictionary.TryGetValue(propertyName, out property);
+                bool success = _dictionary.TryGetValue(propertyName, out property);
                 if (success)
                 {
                     _lastKey = propertyName;
@@ -358,7 +346,7 @@ namespace System.Text.Json.Node
             {
                 foreach (KeyValuePair<string, JsonNode?> item in _list)
                 {
-                    if (GetStringComparer().Compare(propertyName, item.Key) == 0)
+                    if (_stringComparer.Compare(propertyName, item.Key) == 0)
                     {
                         property = item.Value;
                         _lastKey = propertyName;

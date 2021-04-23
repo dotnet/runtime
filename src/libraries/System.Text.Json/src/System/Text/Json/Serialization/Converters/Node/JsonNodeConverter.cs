@@ -17,9 +17,9 @@ namespace System.Text.Json.Serialization.Converters
         private JsonValueConverter? _valueConverter;
 
         public static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
-        public JsonArrayConverter ArrayConverter => _arrayConverter ?? (_arrayConverter = new JsonArrayConverter());
-        public JsonObjectConverter ObjectConverter => _objectConverter ?? (_objectConverter = new JsonObjectConverter());
-        public JsonValueConverter ValueConverter => _valueConverter ?? (_valueConverter = new JsonValueConverter());
+        public JsonArrayConverter ArrayConverter => _arrayConverter ??= new JsonArrayConverter();
+        public JsonObjectConverter ObjectConverter => _objectConverter ??= new JsonObjectConverter();
+        public JsonValueConverter ValueConverter => _valueConverter ??= new JsonValueConverter();
 
         public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {

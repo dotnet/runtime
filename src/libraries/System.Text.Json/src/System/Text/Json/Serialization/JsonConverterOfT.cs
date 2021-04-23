@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization
                 {
                     if (state.Current.NumberHandling != null)
                     {
-                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, JsonSerializerOptions options);
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }
                     else
                     {
