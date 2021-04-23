@@ -3777,18 +3777,21 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     }
     CONTRACTL_END;
 
-    DWORD hash = HashString(libraryName);
-
     CrstHolder lock(&m_DomainCacheCrst);
     
-    NATIVE_LIBRARY_HANDLE existingHandleMaybe;
-    if (m_unmanagedCache.Lookup(hash, &existingHandleMaybe))
+    const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
+    if (existingEntry != NULL)
     {
-        _ASSERTE(existingHandleMaybe == hMod);
+        _ASSERTE(existingEntry->Handle == hMod);
         return;
     }
 
-    m_unmanagedCache.Add(hash, hMod);
+    size_t len = (wcslen(libraryName) + 1) * sizeof(WCHAR);
+    AllocMemHolder<WCHAR> copiedName(GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
+    memcpy(copiedName, libraryName, len);
+
+    m_unmanagedCache.Add(UnmanagedImageCacheEntry{ copiedName, hMod });
+    copiedName.SuppressRelease();
 }
 
 NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
@@ -3804,14 +3807,12 @@ NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
     }
     CONTRACT_END;
 
-    DWORD hash = HashString(libraryName);
-    
     CrstHolder lock(&m_DomainCacheCrst);
-    NATIVE_LIBRARY_HANDLE handle;
-    if (m_unmanagedCache.Lookup(hash, &handle))
-        RETURN handle;
+    const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
+    if (existingEntry == NULL)
+        RETURN NULL;
 
-    RETURN NULL;
+    RETURN existingEntry->Handle;
 }
 
 BOOL AppDomain::RemoveFileFromCache(PEAssembly *pFile)
