@@ -9005,4 +9005,95 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
 }
 
+//-----------------------------------------------------------------------------
+// genSetRegsModifiedForPoisonFrame: Mark which registers are modified by frame poisoning.
+void CodeGen::genSetRegsModifiedForPoisonFrame()
+{
+    // We are going to use rep stosd which uses EDI, ECX and EAX. Of these
+    // EDI/RDI is always callee preserved.
+    regSet.rsSetRegsModified(RBM_EDI);
+
+    const regMaskTP argMask = intRegState.rsCalleeRegArgMaskLiveIn;
+
+#ifdef UNIX_AMD64_ABI
+    // RCX and RDI may be used for args.
+    if (argMask & RBM_RCX)
+    {
+        regSet.rsSetRegsModified(RBM_R12);
+    }
+
+    if (argMask & RBM_RDI)
+    {
+        regSet.rsSetRegsModified(RBM_R13);
+    }
+#else
+    // ECX is used for args in __fastcall (x86) and __thiscall (x86/x64) on Windows.
+    if (argMask & RBM_ECX)
+    {
+        regSet.rsSetRegsModified(RBM_ESI);
+    }
+
+    assert((argMask & RBM_EDI) == 0);
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// genPoisonFrame: Generate code that places a recognizable value into the entire stack frame.
+//
+// Remarks:
+//    We use the same sequence as VC++ which uses rep stosd with 0xcccccccc.
+void CodeGen::genPoisonFrame()
+{
+    const regMaskTP argMask = intRegState.rsCalleeRegArgMaskLiveIn;
+
+#ifdef UNIX_AMD64_ABI
+    if (argMask & RBM_RCX)
+    {
+        noway_assert(regSet.rsRegsModified(RBM_R12));
+        inst_RV_RV(INS_mov, REG_R12, REG_RCX);
+        regSet.verifyRegUsed(REG_R12);
+    }
+
+    if (argMask & RBM_RDI)
+    {
+        noway_assert(regSet.rsRegsModified(RBM_R13));
+        inst_RV_RV(INS_mov, REG_R13, REG_RDI);
+        regSet.verifyRegUsed(REG_R13);
+    }
+#else
+    if (argMask & RBM_ECX)
+    {
+        noway_assert(regSet.rsRegsModified(RBM_ESI));
+        inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
+        regSet.verifyRegUsed(REG_ESI);
+    }
+#endif
+
+    noway_assert(regSet.rsRegsModified(RBM_EDI));
+    noway_assert((argMask & RBM_EAX) == 0);
+
+    inst_RV_RV(INS_mov, REG_EDI, REG_ESP);
+    regSet.verifyRegUsed(REG_EDI);
+    assert(compiler->compLclFrameSize % 4 == 0);
+    inst_RV_IV(INS_mov, REG_ECX, compiler->compLclFrameSize / 4, EA_4BYTE);
+    inst_RV_IV(INS_mov, REG_EAX, (target_ssize_t)0xcccccccc, EA_4BYTE);
+    instGen(INS_r_stosd);
+
+#ifdef UNIX_AMD64_ABI
+    if (argMask & RBM_RCX)
+    {
+        inst_RV_RV(INS_mov, REG_RCX, REG_R12);
+    }
+    if (argMask & RBM_RDI)
+    {
+        inst_RV_RV(INS_mov, REG_RDI, REG_R13);
+    }
+#else
+    if (argMask & RBM_ECX)
+    {
+        inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
+    }
+#endif
+} 
+
 #endif // TARGET_XARCH

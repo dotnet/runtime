@@ -5494,36 +5494,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
 #endif // TARGET*
 
-//-----------------------------------------------------------------------------
-// genPoisonFrame: Generate code that places a recognizable value into the entire stack frame.
-//
-// Remarks:
-//    We use the same value as VC++, i.e. 0xcccccccc.
-void CodeGen::genPoisonFrame()
-{
-#ifdef TARGET_XARCH
-    noway_assert(regSet.rsRegsModified(RBM_EDI));
-    if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-    {
-        noway_assert(regSet.rsRegsModified(RBM_ESI));
-        inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
-        regSet.verifyRegUsed(REG_ESI);
-    }
-
-    noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
-    inst_RV_RV(INS_mov, REG_EDI, REG_ESP);
-    regSet.verifyRegUsed(REG_EDI);
-    inst_RV_IV(INS_mov, REG_ECX, compiler->compLclFrameSize / 4, EA_4BYTE);
-    inst_RV_IV(INS_mov, REG_EAX, (target_ssize_t)0xcccccccc, EA_4BYTE);
-    instGen(INS_r_stosd);
-
-    if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-    {
-        inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
-    }
-#endif
-} 
-
 // We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegZeroed if so.
 // Return the register to use. On ARM64, we never touch the initReg, and always just return REG_ZR.
 regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
@@ -6630,18 +6600,7 @@ void CodeGen::genFinalizeFrame()
 
     if (compiler->opts.MinOpts())
     {
-#ifdef TARGET_XARCH
-        regSet.rsSetRegsModified(RBM_EDI);
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-        {
-            regSet.rsSetRegsModified(RBM_ESI);
-        }
-
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX)
-        {
-            regSet.rsSetRegsModified(RBM_EBX);
-        }
-#endif
+        genSetRegsModifiedForPoisonFrame();
     }
 
     genCheckUseBlockInit();

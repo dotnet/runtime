@@ -348,6 +348,9 @@ protected:
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
+    void genSetRegsModifiedForPoisonFrame();
+    void genPoisonFrame();
+
 #if defined(TARGET_ARM)
 
     bool genInstrWithConstant(
@@ -433,8 +436,6 @@ protected:
 #endif // TARGET_XARCH
 
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
-
-    void genPoisonFrame();
 
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 

@@ -4239,4 +4239,20 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // TARGET_ARM64
 }
 
+//-----------------------------------------------------------------------------
+// genSetRegsModifiedForPoisonFrame: Mark which registers are modified by frame poisoning.
+void CodeGen::genSetRegsModifiedForPoisonFrame()
+{
+}
+
+//-----------------------------------------------------------------------------
+// genPoisonFrame: Generate code that places a recognizable value into the entire stack frame.
+//
+// Remarks:
+//    We use the same sequence as VC++ which uses rep stosd with 0xcccccccc.
+void CodeGen::genPoisonFrame()
+{
+} 
+
+
 #endif // TARGET_ARMARCH
