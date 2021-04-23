@@ -9,7 +9,8 @@ class CILJit : public ICorJitCompiler
                                CORINFO_METHOD_INFO* methodInfo,      /* IN */
                                unsigned             flags,           /* IN */
                                uint8_t**            nativeEntry,     /* OUT */
-                               uint32_t*            nativeSizeOfCode /* OUT */
+                               uint32_t*            nativeSizeOfCode, /* OUT */
+                               double*              perfScore = nullptr   /* OUT */
                                );
 
     void ProcessShutdownWork(ICorStaticInfo* statInfo);

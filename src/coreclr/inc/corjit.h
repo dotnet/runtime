@@ -175,7 +175,8 @@ public:
             struct CORINFO_METHOD_INFO  *info,               /* IN */
             unsigned /* code:CorJitFlag */   flags,          /* IN */
             uint8_t                        **nativeEntry,       /* OUT */
-            uint32_t                       *nativeSizeOfCode    /* OUT */
+            uint32_t                       *nativeSizeOfCode,   /* OUT */
+            double                         *perfScore /* OUT */
             ) = 0;
 
     // Do any appropriate work at process shutdown.  Default impl is to do nothing.

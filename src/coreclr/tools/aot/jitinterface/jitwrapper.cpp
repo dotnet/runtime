@@ -16,7 +16,9 @@ DLL_EXPORT int JitCompileMethod(
     CORINFO_METHOD_INFO* methodInfo,
     unsigned flags,
     uint8_t** entryAddress,
-    uint32_t* nativeSizeOfCode)
+    uint32_t* nativeSizeOfCode,
+    double* perfScore
+)
 {
     *ppException = nullptr;
 
@@ -33,7 +35,7 @@ DLL_EXPORT int JitCompileMethod(
     try
     {
         JitInterfaceWrapper jitInterfaceWrapper(thisHandle, callbacks);
-        return pJit->compileMethod(&jitInterfaceWrapper, methodInfo, flags, entryAddress, nativeSizeOfCode);
+        return pJit->compileMethod(&jitInterfaceWrapper, methodInfo, flags, entryAddress, nativeSizeOfCode, perfScore);
     }
     catch (CorInfoExceptionClass *pException)
     {

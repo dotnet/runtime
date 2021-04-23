@@ -14,7 +14,8 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
                                              struct CORINFO_METHOD_INFO* info,     /* IN */
                                              unsigned /* code:CorJitFlag */ flags, /* IN */
                                              uint8_t** nativeEntry,                /* OUT */
-                                             uint32_t* nativeSizeOfCode            /* OUT */
+                                             uint32_t* nativeSizeOfCode,            /* OUT */
+                                             double*                        perfScore        /* OUT */
                                              )
 {
     interceptor_ICJI our_ICorJitInfo;
@@ -60,7 +61,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     }
 
     CorJitResult temp =
-        original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
+        original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode, perfScore);
 
     if (temp == CORJIT_OK)
     {

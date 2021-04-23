@@ -776,6 +776,7 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          CORINFO_METHOD_INFO*  methodInfo,
                          void**                methodCodePtr,
                          uint32_t*             methodCodeSize,
+                         double*               perfScore,
                          JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
 

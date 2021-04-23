@@ -276,7 +276,10 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     return true;
 }
 
-JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput)
+JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile,
+                                               int            mcIndex,
+                                               bool           collectThroughput,
+                                               double*        perfScore)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
@@ -286,12 +289,14 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         unsigned            flags;
         int                 mcIndex;
         bool                collectThroughput;
+        double              perfScore;
     } param;
     param.pThis             = this;
     param.result            = RESULT_SUCCESS; // assume success
     param.flags             = 0;
     param.mcIndex           = mcIndex;
     param.collectThroughput = collectThroughput;
+    param.perfScore         = 0.0;
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
@@ -307,12 +312,13 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         uint32_t NCodeSizeBlock = 0;
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags);
+        double perfScore = 0.0;
         if (pParam->collectThroughput)
         {
             pParam->pThis->lt.Start();
         }
         CorJitResult jitResult = pParam->pThis->pJitInstance->compileMethod(pParam->pThis->icji, &pParam->info,
-                                                                       pParam->flags, &NEntryBlock, &NCodeSizeBlock);
+                                                                       pParam->flags, &NEntryBlock, &NCodeSizeBlock, &perfScore);
         if (pParam->collectThroughput)
         {
             pParam->pThis->lt.Stop();
@@ -363,6 +369,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog("Successful Compile");
+            pParam->perfScore = perfScore;
         }
         else
         {
@@ -397,6 +404,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     }
 
     mc->cr->secondsToCompile = stj.GetSeconds();
+    *perfScore               = param.perfScore;
 
     return param.result;
 }
@@ -414,8 +422,9 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
     {
         delete mc->cr;
         mc->cr = new CompileResult();
+        double perfScore;
         lt.Start();
-        pJitInstance->compileMethod(icji, &info, flags, &NEntryBlock, &NCodeSizeBlock);
+        pJitInstance->compileMethod(icji, &info, flags, &NEntryBlock, &NCodeSizeBlock, &perfScore);
         lt.Stop();
         time = lt.GetCycles();
         if (times[1] == 0)

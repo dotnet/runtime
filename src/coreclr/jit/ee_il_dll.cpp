@@ -255,7 +255,8 @@ CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
                                    CORINFO_METHOD_INFO* methodInfo,
                                    unsigned             flags,
                                    uint8_t**            entryAddress,
-                                   uint32_t*            nativeSizeOfCode)
+                                   uint32_t*            nativeSizeOfCode,
+                                   double*              perfScore)
 {
     JitFlags jitFlags;
 
@@ -274,7 +275,7 @@ CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
     assert(methodInfo->ILCode);
 
     result = jitNativeCode(methodHandle, methodInfo->scope, compHnd, methodInfo, &methodCodePtr, nativeSizeOfCode,
-                           &jitFlags, nullptr);
+                           perfScore, &jitFlags, nullptr);
 
     if (result == CORJIT_OK)
     {

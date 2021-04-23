@@ -95,7 +95,7 @@ public:
 enum IssueType
 {
     ISSUE_ASSERT,
-    ISSUE_ASM_DIFF
+    ISSUE_ASM_DIFF,
 };
 
 //
