@@ -377,6 +377,9 @@
      <_WasmRuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a"/>
 
      <_WasmPInvokeModules Include="@(_WasmRuntimePackSystemLibs->'%(FileName)')" />
+     <!-- libSystem.Globalization.Native is built in but we still need the module so add it explicitly -->
+     <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+
      <_WasmObjectsToBuild Include="$(_WasmRuntimePackSrcDir)\*.c" />
      <_WasmObjectsToBuild OutputPath="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
