@@ -3787,7 +3787,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     }
 
     size_t len = (wcslen(libraryName) + 1) * sizeof(WCHAR);
-    AllocMemHolder<WCHAR> copiedName(GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
+    AllocMemHolder<WCHAR> copiedName(GetLowFrequencyHeap()->AllocMem(S_SIZE_T(len)));
     memcpy(copiedName, libraryName, len);
 
     m_unmanagedCache.Add(UnmanagedImageCacheEntry{ copiedName, hMod });
