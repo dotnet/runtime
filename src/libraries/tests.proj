@@ -228,6 +228,9 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/51037 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections/tests/System.Collections.Tests.csproj" />
 
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50957 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
+
     <!-- Issue: https://github.com/dotnet/runtime/issues/50705 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
 
