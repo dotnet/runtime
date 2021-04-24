@@ -24,6 +24,8 @@ namespace System
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
+        public static bool IsBrowserInterpreter => IsBrowser && GetCodeGenMode() == "interpreter";
+        public static bool IsBrowserAOT => IsBrowser && GetCodeGenMode() == "aot";
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -402,11 +404,20 @@ namespace System
             return false;
         }
 
+        private static string GetCodeGenMode()
+        {
+            // This is a temporary solution because mono does not support interpreter detection
+            // within the runtime.
+            var val = Environment.GetEnvironmentVariable("CODE_GEN_MODE");
+            if (string.IsNullOrEmpty(val))
+                return "interpreter";
+            return val;
+        }
+
         private static bool GetIsRunningOnMonoInterpreter()
         {
-            // Browser is always using interpreter right now
-            if (IsBrowser)
-                return true;
+            if (IsBrowserAOT)
+                return false;
 
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.

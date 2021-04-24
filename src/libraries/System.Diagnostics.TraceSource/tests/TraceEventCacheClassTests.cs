@@ -48,7 +48,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50958", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50958", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserAOT))]
         public void CallstackTest_NotEmpty()
         {
             var cache = new TraceEventCache();
@@ -56,7 +56,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50958", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50958", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserAOT))]
         public void CallstackTest_ContainsExpectedFrames()
         {
             var cache = new TraceEventCache();

@@ -30,8 +30,10 @@
 
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
-    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
-    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
+    <_MonoArgs Condition="'$(RunAOTCompilation)' == 'true'">--setenv=CODE_GEN_MODE=aot</_MonoArgs>
+
+    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24WasmXHarnessArgs -- $(_MonoArgs) $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %WasmXHarnessArgs%  -- $(_MonoArgs) $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">

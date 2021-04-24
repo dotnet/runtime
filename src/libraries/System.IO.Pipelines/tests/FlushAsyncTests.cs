@@ -22,7 +22,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", typeof(PlatformDetection), nameof(PlatformDetectionIsBrowserAOT))]
         public async Task FlushAsync_ThrowsIfWriterReaderWithException()
         {
             void ThrowTestException()
