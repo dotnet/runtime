@@ -14,6 +14,7 @@
 #include "mono-compiler.h"
 #include "mono-sigcontext.h"
 #include "mono-machine.h"
+#include <stdlib.h>
 #include <signal.h>
 
 #define MONO_CONTEXT_OFFSET(field, index, field_type) \
@@ -22,12 +23,12 @@
 #if defined(TARGET_X86)
 #if defined(__APPLE__)
 #define MONO_HAVE_SIMD_REG
-typedef struct __darwin_xmm_reg MonoContextSimdReg;
+typedef _STRUCT_XMM_REG MonoContextSimdReg;
 #endif
 #elif defined(TARGET_AMD64)
 #if defined(__APPLE__)
 #define MONO_HAVE_SIMD_REG
-typedef struct __darwin_xmm_reg MonoContextSimdReg;
+typedef _STRUCT_XMM_REG MonoContextSimdReg;
 #elif defined(__linux__) && defined(__GLIBC__)
 #define MONO_HAVE_SIMD_REG
 typedef struct _libc_xmmreg MonoContextSimdReg;
