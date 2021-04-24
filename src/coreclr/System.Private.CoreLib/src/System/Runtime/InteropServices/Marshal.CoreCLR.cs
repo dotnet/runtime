@@ -429,8 +429,18 @@ namespace System.Runtime.InteropServices
         public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
 
         [SupportedOSPlatform("windows")]
+        public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            return CreateAggregatedObjectNative(pOuter, o);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern IntPtr CreateAggregatedObject(IntPtr pOuter, object o);
+        private static extern IntPtr CreateAggregatedObjectNative(IntPtr pOuter, object o);
 
         [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
@@ -648,8 +658,18 @@ namespace System.Runtime.InteropServices
         public static extern bool IsTypeVisibleFromCom(Type t);
 
         [SupportedOSPlatform("windows")]
+        public static void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            GetNativeVariantForObjectNative(obj, pDstNativeVariant);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
+        private static extern void GetNativeVariantForObjectNative(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
@@ -663,8 +683,18 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        public static object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            return GetObjectForNativeVariantNative(pSrcNativeVariant);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
+        private static extern object? GetObjectForNativeVariantNative(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         [SupportedOSPlatform("windows")]
         public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
@@ -678,8 +708,18 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        public static object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            return GetObjectsForNativeVariantsNative(aSrcNativeVariant, cVars);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
+        private static extern object?[] GetObjectsForNativeVariantsNative(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
         [SupportedOSPlatform("windows")]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
