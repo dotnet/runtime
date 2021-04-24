@@ -8293,6 +8293,8 @@ calli_end:
 		case MONO_CEE_LDIND_REF:
 			--sp;
 
+			MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
+
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (ldind_to_type (il_op)), sp [0], 0, ins_flag);
 			*sp++ = ins;
 			ins_flag = 0;
