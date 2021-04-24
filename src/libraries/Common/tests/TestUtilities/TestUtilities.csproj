@@ -8,6 +8,7 @@
       and instead use runtime checks.
     -->
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <DefineConstants Condition="'$(EnableAggressiveTrimming)' == 'true'">$(DefineConstants);BUILT_WITH_EAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\AdminHelpers.cs" />

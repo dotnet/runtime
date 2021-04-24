@@ -136,6 +136,12 @@ namespace System
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
+#if BUILT_WITH_EAT
+        public static bool IsBuiltWithAggressiveTrimming => true;
+#else
+        public static bool IsBuiltWithAggressiveTrimming => false;
+#endif
+
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
