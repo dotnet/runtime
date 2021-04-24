@@ -708,6 +708,7 @@ namespace System.Numerics
             // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
             // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
             // when we encounter very large components to avoid intermediate infinities.
+            bool rescale = false;
             double realCopy = value.m_real;
             double imaginaryCopy = value.m_imaginary;
             if ((Math.Abs(realCopy) >= s_sqrtRescaleThreshold) || (Math.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
@@ -722,6 +723,7 @@ namespace System.Numerics
 
                 realCopy *= 0.25;
                 imaginaryCopy *= 0.25;
+                rescale = true;
             }
 
             // This is the core of the algorithm. Everything else is special case handling.
@@ -738,8 +740,11 @@ namespace System.Numerics
                 x = imaginaryCopy / (2.0 * y);
             }
 
-            x *= 2.0;
-            y *= 2.0;
+            if (rescale)
+            {
+                x *= 2.0;
+                y *= 2.0;
+            }
 
             return new Complex(x, y);
         }
