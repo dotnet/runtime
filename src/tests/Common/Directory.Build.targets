@@ -16,6 +16,7 @@
     <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
     <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
+    <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
@@ -169,6 +170,11 @@
         <RunTimeDependencyCopyLocal
           Include="@(MonoCrossFiles)"
           TargetDir="runtimepack/native/cross/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(EmSdkDir)"
+          TargetDir="emsdk/"/>
+
     </ItemGroup>
 
     <ItemGroup>
