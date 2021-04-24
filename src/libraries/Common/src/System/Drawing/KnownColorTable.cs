@@ -238,7 +238,7 @@ namespace System.Drawing
         };
 
         // All known color kinds (in order of definition in the KnownColor enum).
-        public static readonly byte[] s_colorKindTable = new byte[]
+        public static ReadOnlySpan<byte> ColorKindTable => new byte[]
         {
             // "not a known color"
             KnownColorKindUnknown,
@@ -466,11 +466,11 @@ namespace System.Drawing
         internal static Color ArgbToKnownColor(uint argb)
         {
             Debug.Assert((argb & Color.ARGBAlphaMask) == Color.ARGBAlphaMask);
-            Debug.Assert(s_colorValueTable.Length == s_colorKindTable.Length);
+            Debug.Assert(s_colorValueTable.Length == ColorKindTable.Length);
 
             for (int index = 1; index < s_colorValueTable.Length; ++index)
             {
-                if (s_colorKindTable[index] == KnownColorKindWeb && s_colorValueTable[index] == argb)
+                if (ColorKindTable[index] == KnownColorKindWeb && s_colorValueTable[index] == argb)
                 {
                     return Color.FromKnownColor((KnownColor)index);
                 }
@@ -484,7 +484,7 @@ namespace System.Drawing
         {
             Debug.Assert(color > 0 && color <= KnownColor.RebeccaPurple);
 
-            return s_colorKindTable[(int)color] == KnownColorKindSystem
+            return ColorKindTable[(int)color] == KnownColorKindSystem
                  ? GetSystemColorArgb(color)
                  : s_colorValueTable[(int)color];
         }
