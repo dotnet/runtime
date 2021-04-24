@@ -693,6 +693,8 @@ namespace
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
+        STRESS_LOG4(LF_INTEROP, LL_INFO1000, "Get or Create EOC: (Identity: 0x%p) (Flags: %x) (Maybe: 0x%p) (ID: %lld)\n", identity, flags, OBJECTREFToObject(wrapperMaybe), wrapperId);
+
         gc.implRef = impl;
         gc.wrapperMaybeRef = wrapperMaybe;
 
@@ -724,6 +726,8 @@ namespace
                 }
             }
         }
+
+        STRESS_LOG2(LF_INTEROP, LL_INFO1000, "EOC: 0x%p or Handle: 0x%p\n", extObjCxt, handle);
 
         if (extObjCxt != NULL)
         {
@@ -794,6 +798,8 @@ namespace
                     extObjCxt = cache->FindOrAdd(cacheKey, resultHolder.GetContext());
                 }
 
+                STRESS_LOG2(LF_INTEROP, LL_INFO100, "EOC cache insert: 0x%p == 0x%p\n", extObjCxt, resultHolder.GetContext());
+
                 // If the returned context matches the new context it means the
                 // new context was inserted or a unique instance was requested.
                 if (extObjCxt == resultHolder.GetContext())
@@ -836,6 +842,8 @@ namespace
                 _ASSERTE(extObjCxt->IsActive());
             }
         }
+
+        STRESS_LOG3(LF_INTEROP, LL_INFO1000, "EOC: 0x%p, 0x%p => 0x%p\n", extObjCxt, identity, OBJECTREFToObject(gc.objRefMaybe));
 
         GCPROTECT_END();
 
@@ -1016,6 +1024,29 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         DestroyHandleCommon(static_cast<::OBJECTHANDLE>(handle), InstanceHandleType);
+    }
+
+    bool HasValidTarget(_In_ InteropLib::OBJECTHANDLE handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(handle != NULL);
+        }
+        CONTRACTL_END;
+
+        bool isValid = false;
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        {
+            // Switch to cooperative mode so the handle can be safely inspected.
+            GCX_COOP_THREAD_EXISTS(GET_THREAD());
+            isValid = ObjectFromHandle(objectHandle) != NULL;
+        }
+
+        return isValid;
     }
 
     bool GetGlobalPeggingState() noexcept

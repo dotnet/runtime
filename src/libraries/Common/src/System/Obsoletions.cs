@@ -59,5 +59,11 @@ namespace System
 
         internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
         internal const string GetContextInfoDiagId = "SYSLIB0016";
+
+        internal const string RuntimeEnvironmentMessage = "RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException.";
+        internal const string RuntimeEnvironmentDiagId = "SYSLIB0019";
+
+        internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
+        internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
     }
 }

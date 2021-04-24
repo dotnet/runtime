@@ -4700,7 +4700,9 @@ public:
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
 
+#ifdef FEATURE_JIT_METHOD_PERF
     unsigned fgMeasureIR();
+#endif // FEATURE_JIT_METHOD_PERF
 
     bool fgModified;         // True if the flow graph has been modified recently
     bool fgComputePredsDone; // Have we computed the bbPreds list
@@ -5266,7 +5268,7 @@ protected:
 
     // When the flow graph changes, we need to update the block numbers, predecessor lists, reachability sets, and
     // dominators.
-    void fgUpdateChangedFlowGraph(bool computeDoms = true);
+    void fgUpdateChangedFlowGraph(const bool computePreds = true, const bool computeDoms = true);
 
 public:
     // Compute the predecessors of the blocks in the control flow graph.
@@ -5376,13 +5378,9 @@ public:
 
     flowList* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, flowList*** ptrToPred);
 
-    flowList* fgSpliceOutPred(BasicBlock* block, BasicBlock* blockPred);
-
     flowList* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
 
     flowList* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
-
-    flowList* fgRemoveAllRefPreds(BasicBlock* block, flowList** ptrToPred);
 
     void fgRemoveBlockAsPred(BasicBlock* block);
 
@@ -6536,8 +6534,9 @@ protected:
     void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
     // Updates the successors of "blk": if "blk2" is a successor of "blk", and there is a mapping for "blk2->blk3" in
-    // "redirectMap", change "blk" so that "blk3" is this successor. Note that the predecessor lists are not updated.
-    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap);
+    // "redirectMap", change "blk" so that "blk3" is this successor. If `addPreds` is true, add predecessor edges
+    // for the block based on its new target, whether redirected or not.
+    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool addPreds = false);
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);

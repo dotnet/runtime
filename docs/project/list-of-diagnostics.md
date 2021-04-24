@@ -36,7 +36,7 @@ The acceptance criteria for adding an obsoletion includes:
 * Register the `SYSLIB0###` URL in `aka.ms`
     * The vanity name will be `dotnet-warnings/syslib0###`
     * Ensure the link's group owner matches the group owner of `dotnet-warnings/syslib0001`
-    * Connect with `@jeffhandley`, `@levib`, or `@gewarren` with any questions
+    * Connect with `@jeffhandley`, `@GrabYourPitchforks`, or `@gewarren` with any questions
 
 An example obsoletion PR that can be referenced where each of the above criteria was met is:
 
@@ -66,6 +66,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0014`__ | WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. |
 |  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications. |
 |  __`SYSLIB0016`__ | Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations. |
+|  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException. |
+|  __`SYSLIB0020`__ | JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull. |
 
 ## Analyzer Warnings
 
