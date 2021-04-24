@@ -78,6 +78,9 @@ typedef struct {
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
+MONO_API int
+mono_string_instance_is_interned (MonoString *str_raw);
+
 void
 mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 
