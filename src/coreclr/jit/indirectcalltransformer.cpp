@@ -565,7 +565,10 @@ private:
         //
         virtual void CreateCheck()
         {
-            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+            // There's no need for a new block here. We can just append to currBlock.
+            //
+            checkBlock             = currBlock;
+            checkBlock->bbJumpKind = BBJ_COND;
 
             // Fetch method table from object arg to call.
             GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
@@ -606,16 +609,13 @@ private:
         virtual void FixupRetExpr()
         {
             // If call returns a value, we need to copy it to a temp, and
-            // update the associated GT_RET_EXPR to refer to the temp instead
+            // bash the associated GT_RET_EXPR to refer to the temp instead
             // of the call.
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            //
-            // Todo: make sure we understand how this interacts with return type
-            // munging for small structs.
-            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
-            GenTree*             retExpr    = inlineInfo->retExpr;
+            InlineCandidateInfo* const inlineInfo = origCall->gtInlineCandidateInfo;
+            GenTree* const             retExpr    = inlineInfo->retExpr;
 
             // Sanity check the ret expr if non-null: it should refer to the original call.
             if (retExpr != nullptr)
@@ -671,23 +671,22 @@ private:
 
                 GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
 
-                JITDUMP("Updating GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
                         returnTemp);
-                retExpr->AsRetExpr()->gtInlineCandidate = tempTree;
+
+                retExpr->ReplaceWith(tempTree, compiler);
             }
             else if (retExpr != nullptr)
             {
                 // We still oddly produce GT_RET_EXPRs for some void
-                // returning calls. Just patch the ret expr to a NOP.
+                // returning calls. Just bash the ret expr to a NOP.
                 //
                 // Todo: consider bagging creation of these RET_EXPRs. The only possible
                 // benefit they provide is stitching back larger trees for failed inlines
                 // of void-returning methods. But then the calls likely sit in commas and
                 // the benefit of a larger tree is unclear.
-                JITDUMP("Updating GT_RET_EXPR [%06u] for VOID return to refer to a NOP\n",
-                        compiler->dspTreeID(retExpr));
-                GenTree* nopTree                        = compiler->gtNewNothingNode();
-                retExpr->AsRetExpr()->gtInlineCandidate = nopTree;
+                JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
+                retExpr->gtBashToNOP();
             }
             else
             {
