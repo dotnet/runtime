@@ -18,6 +18,8 @@
              Link="tests\DI.Common\Common\src\TestLogger.cs" />
     <Compile Include="..\DI.Common\Common\src\TestLoggerFactory.cs"
              Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
 
   <ItemGroup>
