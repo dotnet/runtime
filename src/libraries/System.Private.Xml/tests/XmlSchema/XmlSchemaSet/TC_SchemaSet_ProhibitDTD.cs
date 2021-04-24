@@ -208,7 +208,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v5.2- Test Default value of ProhibitDTD for Add(TextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd", 0 })]
         [InlineData("bug356711_a.xsd", 0)]
         //[Variation(Desc = "v5.1- Test Default value of ProhibitDTD for Add(TextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd", 0 })]
-        [InlineData("bug356711.xsd", 0)]
+        [InlineData("bug356711.xsd", 2)]
         public void v5(object param0, object param1)
         {
             Initialize();
@@ -234,10 +234,10 @@ namespace System.Xml.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30107")]
         //[Variation(Desc = "v6.2- Test Default value of ProhibitDTD for Add(XmlTextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd" })]
-        [InlineData("bug356711_a.xsd")]
+        [InlineData("bug356711_a.xsd", 0)]
         //[Variation(Desc = "v6.1- Test Default value of ProhibitDTD for Add(XmlTextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd" })]
-        [InlineData("bug356711.xsd")]
-        public void v6(object param0)
+        [InlineData("bug356711.xsd", 1)]
+        public void v6(object param0, object param1)
         {
             Initialize();
             XmlSchemaSet xss = new XmlSchemaSet();
@@ -253,7 +253,7 @@ namespace System.Xml.Tests
             xss.Add(schema);
 
             // expect a validation warning for unresolvable schema location
-            CError.Compare(warningCount, 0, "Warning Count mismatch");
+            CError.Compare(warningCount, (int)param1, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
         }
 
