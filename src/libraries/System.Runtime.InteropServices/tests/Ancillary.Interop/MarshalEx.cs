@@ -23,9 +23,15 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Set the last platform invoke error on the thread 
         /// </summary>
-        public static void SetLastWin32Error(int error)
+        public static void SetLastPInvokeError(int error)
         {
-            typeof(Marshal).GetMethod("SetLastWin32Error", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, new object[] { error });
+            MethodInfo? method = typeof(Marshal).GetMethod("SetLastWin32Error", BindingFlags.NonPublic | BindingFlags.Static);
+            if (method == null)
+            {
+                method = typeof(Marshal).GetMethod("SetLastPInvokeError", BindingFlags.Public | BindingFlags.Static);
+            }
+
+            method!.Invoke(null, new object[] { error });
         }
 
         /// <summary>

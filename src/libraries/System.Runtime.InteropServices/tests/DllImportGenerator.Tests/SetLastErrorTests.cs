@@ -18,7 +18,7 @@ namespace DllImportGenerator.IntegrationTests
         public int ToManaged()
         {
             // Explicity set the last error to something else on unmarshalling
-            MarshalEx.SetLastWin32Error(val * 2);
+            MarshalEx.SetLastPInvokeError(val * 2);
             return val;
         }
     }
@@ -54,12 +54,12 @@ namespace DllImportGenerator.IntegrationTests
             Assert.Equal(errorString, ret);
 
             // Clear the last error
-            MarshalEx.SetLastWin32Error(0);
+            MarshalEx.SetLastPInvokeError(0);
 
             NativeExportsNE.SetLastError.SetError(error, shouldSetError: 1);
             Assert.Equal(error, Marshal.GetLastWin32Error());
 
-            MarshalEx.SetLastWin32Error(0);
+            MarshalEx.SetLastPInvokeError(0);
 
             // Custom marshalling sets the last error on unmarshalling.
             // Last error should reflect error from native call, not unmarshalling.
@@ -71,7 +71,7 @@ namespace DllImportGenerator.IntegrationTests
         public void ClearPreviousError()
         {
             int error = 100;
-            MarshalEx.SetLastWin32Error(error);
+            MarshalEx.SetLastPInvokeError(error);
 
             // Don't actually set the error in the native call. SetLastError=true should clear any existing error.
             string errorString = error.ToString();
@@ -79,7 +79,7 @@ namespace DllImportGenerator.IntegrationTests
             Assert.Equal(0, Marshal.GetLastWin32Error());
             Assert.Equal(errorString, ret);
 
-            MarshalEx.SetLastWin32Error(error);
+            MarshalEx.SetLastPInvokeError(error);
 
             // Don't actually set the error in the native call. SetLastError=true should clear any existing error.
             NativeExportsNE.SetLastError.SetError(error, shouldSetError: 0);

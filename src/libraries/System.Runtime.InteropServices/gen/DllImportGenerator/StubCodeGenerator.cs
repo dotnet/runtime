@@ -321,13 +321,13 @@ namespace Microsoft.Interop
 
             if (this.dllImportData.SetLastError && !options.GenerateForwarders())
             {
-                // Marshal.SetLastWin32Error(<lastError>);
+                // Marshal.SetLastPInvokeError(<lastError>);
                 allStatements.Add(ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
                             ParseName(TypeNames.MarshalEx(options)),
-                            IdentifierName("SetLastWin32Error")),
+                            IdentifierName("SetLastPInvokeError")),
                         ArgumentList(SingletonSeparatedList(
                             Argument(IdentifierName(LastErrorIdentifier)))))));
             }
