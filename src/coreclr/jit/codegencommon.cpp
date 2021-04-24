@@ -2296,7 +2296,7 @@ void CodeGen::genEmitMachineCode()
 
 #if DISPLAY_SIZES
 
-    size_t dataSize = GetEmitter()->emitDataSize();
+    dataSize = GetEmitter()->emitDataSize();
 
 #endif // DISPLAY_SIZES
 
