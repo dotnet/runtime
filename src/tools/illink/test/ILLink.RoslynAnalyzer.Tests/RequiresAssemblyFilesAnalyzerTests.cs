@@ -352,5 +352,52 @@ class C
 
 			return VerifyRequiresAssemblyFilesAnalyzer (src);
 		}
+
+		[Fact]
+		public Task LazyDelegateWithRequiresAssemblyFiles ()
+		{
+			const string src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+class C
+{
+    public static Lazy<C> _default = new Lazy<C>(InitC);
+    public static C Default => _default.Value;
+
+    [RequiresAssemblyFiles]
+    public static C InitC() {
+        C cObject = new C();
+        return cObject;
+    }
+}";
+
+			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (6,50): warning IL3002: Using member 'C.InitC()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (6, 50, 6, 55).WithArguments ("C.InitC()", "", ""));
+		}
+
+		[Fact]
+		public Task ActionDelegateWithRequiresAssemblyFiles ()
+		{
+			const string src = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+class C
+{
+    [RequiresAssemblyFiles]
+    public static void M1() { }
+    public static void M2()
+    {
+        Action a = M1;
+        Action b = () => M1();
+    }
+}";
+
+			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (10,20): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (10, 20, 10, 22).WithArguments ("C.M1()", "", ""),
+				// (11,26): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (11, 26, 11, 30).WithArguments ("C.M1()", "", ""));
+		}
 	}
 }
