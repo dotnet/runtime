@@ -197,9 +197,9 @@ namespace Microsoft.VisualBasic
     public sealed partial class Conversion
     {
         internal Conversion() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression origin object cannot be statically analyzed and may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression's underlying type cannot be statically analyzed and its members may be trimmed")]
         public static object CTypeDynamic(object? Expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type TargetType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression origin object cannot be statically analyzed and may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression's underlying type cannot be statically analyzed and its members may be trimmed")]
         public static TargetType CTypeDynamic<TargetType>(object? Expression) { throw null; }
         public static string ErrorToString() { throw null; }
         public static string ErrorToString(int ErrorNumber) { throw null; }
@@ -509,7 +509,7 @@ namespace Microsoft.VisualBasic
         public static void AppActivate(string Title) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Beep() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The procedure name cannot be statically analyzed and may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The type of ObjectRef cannot be statically analyzed and its members may be trimmed.")]
         public static object? CallByName(object? ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object?[] Args) { throw null; }
         public static object? Choose(double Index, params object?[] Choice) { throw null; }
         public static string Command() { throw null; }
@@ -643,7 +643,7 @@ namespace Microsoft.VisualBasic
         public static int Len(short Expression) { throw null; }
         public static int Len(int Expression) { throw null; }
         public static int Len(long Expression) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object in the expression cannot be statically analyzed and may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object's type cannot be statically analyzed and its members may be trimmed")]
         public static int Len(object? Expression) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Len(sbyte Expression) { throw null; }
@@ -905,31 +905,31 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal LateBinding() { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateCall(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateGet(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateIndexGet(object o, object?[]? args, string?[]? paramnames) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSet(object o, object?[] args, string?[]? paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSetComplex(object o, object?[] args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSet(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSetComplex(object? o, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -953,57 +953,57 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal NewLateBinding() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackCall(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackGet(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackIndexSet(object Instance, object[] Arguments, string[] ArgumentNames) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackIndexSetComplex(object Instance, object[] Arguments, string[] ArgumentNames, bool OptimisticSet, bool RValueBase) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackInvokeDefault1(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackInvokeDefault2(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackSet(object Instance, string MemberName, object[] Arguments) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackSetComplex(object Instance, string MemberName, object[] Arguments, bool OptimisticSet, bool RValueBase) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateCall(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateCallInvokeDefault(object? Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateGet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateGetInvokeDefault(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? LateIndexGet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateIndexSetComplex(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool OptimisticSet, bool RValueBase) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase, Microsoft.VisualBasic.CallType CallType) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed, so it may be trimmed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void LateSetComplex(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

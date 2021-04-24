@@ -134,11 +134,8 @@ Namespace Microsoft.VisualBasic
             Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
         End Function
 
-        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2035:UnresolvedAssembly",
-                Justification:="This references Microsoft.VisualBasic.Forms assembly which is outside of the shared framework.")>
         <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2075:UnrecognizedReflectionPattern",
-                Justification:="DynamicDependency will preserve the required properties in order for the call to be safe.")>
-        <DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Microsoft.VisualBasic._Interaction", "Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")>
+                Justification:="Trimmer warns because it can't see Microsoft.VisualBasic.Forms. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
         Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
             Dim type As Type = Type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
             Dim method As MethodInfo = type?.GetMethod(methodName)
@@ -584,7 +581,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
         ' Object/latebound functions.
         '============================================================================
-        <RequiresUnreferencedCode("The procedure name cannot be statically analyzed and may be trimmed.")>
+        <RequiresUnreferencedCode("The type of ObjectRef cannot be statically analyzed and its members may be trimmed.")>
         Public Function CallByName(ByVal ObjectRef As System.Object, ByVal ProcName As String, ByVal UseCallType As CallType, ByVal ParamArray Args() As Object) As Object
             Select Case UseCallType
 

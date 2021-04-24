@@ -18,6 +18,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
     ' Implements VB late binder for IDynamicMetaObjectProvider.
     Friend Class IDOBinder
 
+        Friend Const UnsafeSubclassCtorMessage As String = "This subclass is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe."
+        Friend Const SuppressionJustification As String = "The constructor of this subclass has been annotated."
+
         Private Sub New()
             Throw New InternalErrorException()
         End Sub
@@ -287,7 +290,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _ignoreReturn As Boolean
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String,
                 ByVal callInfo As CallInfo,
                 ByVal ignoreReturn As Boolean)
@@ -297,7 +300,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvokeMember(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -344,7 +347,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -369,14 +372,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBGetBinder
         Inherits InvokeMemberBinder
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String,
                 ByVal callInfo As CallInfo)
             MyBase.New(memberName, True, callInfo)
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvokeMember(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -422,7 +425,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -452,14 +455,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' True if this is coming from LateCall, false if it's for LateGet
         Private ReadOnly _lateCall As Boolean
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal lateCall As Boolean)
             MyBase.New(callInfo)
             _lateCall = lateCall
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -526,14 +529,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _reportErrors As Boolean
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal reportErrors As Boolean)
             MyBase.New(callInfo)
             Me._reportErrors = reportErrors
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs As DynamicMetaObject(),
@@ -595,14 +598,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _reportErrors As Boolean
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal reportErrors As Boolean)
             MyBase.New(callInfo)
             Me._reportErrors = reportErrors
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackGetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs As DynamicMetaObject(),
@@ -662,13 +665,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBSetBinder
         Inherits SetMemberBinder
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String)
             MyBase.New(name:=memberName, ignoreCase:=True)
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackSetMember(
                     ByVal target As DynamicMetaObject,
                     ByVal value As DynamicMetaObject,
@@ -717,7 +720,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private ReadOnly _optimisticSet As Boolean
         Private ReadOnly _rValueBase As Boolean
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String, ByVal optimisticSet As Boolean, ByVal rValueBase As Boolean)
             MyBase.New(name:=memberName, ignoreCase:=True)
             Me._optimisticSet = optimisticSet
@@ -725,7 +728,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackSetMember(
                     ByVal target As DynamicMetaObject,
                     ByVal value As DynamicMetaObject,
@@ -814,13 +817,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBConversionBinder
         Inherits ConvertBinder
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal t As Type)
             MyBase.New(t, True)
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackConvert(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject
@@ -862,14 +865,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _Op As UserDefinedOperator
 
-        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Public Sub New(ByVal op As UserDefinedOperator, ByVal linqOp As ExpressionType)
             MyBase.New(linqOp)
             _Op = op
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackUnaryOperation(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject
@@ -910,14 +913,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _Op As UserDefinedOperator
 
-        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Public Sub New(ByVal op As UserDefinedOperator, ByVal linqOp As ExpressionType)
             MyBase.New(linqOp)
             _Op = op
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackBinaryOperation(
                 ByVal target As DynamicMetaObject,
                 ByVal arg As DynamicMetaObject,
@@ -959,13 +962,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBIndexSetBinder
         Inherits SetIndexBinder
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo)
             MyBase.New(callInfo)
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackSetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedIndexes As DynamicMetaObject(),
@@ -1030,7 +1033,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private ReadOnly _optimisticSet As Boolean
         Private ReadOnly _rValueBase As Boolean
 
-        <RequiresUnreferencedCode("This subclass of SetIndexBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal optimisticSet As Boolean, ByVal rValueBase As Boolean)
             MyBase.New(callInfo)
             Me._optimisticSet = optimisticSet
@@ -1038,7 +1041,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification:="The constructor of this subclass has been anotated.")>
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackSetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedIndexes As DynamicMetaObject(),

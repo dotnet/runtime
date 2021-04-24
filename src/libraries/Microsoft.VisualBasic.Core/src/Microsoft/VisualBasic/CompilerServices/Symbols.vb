@@ -922,7 +922,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' itself. So GetMembers calls here to find the member in all the collection interfaces that this object 
             ' implements.
             <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
-                Justification:="_type is annotated with .All, so it's Interfaces will be annotated as well and it is safe to call GetMember on the Interfaces")>
+                Justification:="_type is annotated with .All, so it's Interfaces will be annotated as well and it is safe to call GetMember on the Interfaces.
+                    We should be able to remove once https://github.com/mono/linker/issues/1731 is fixed.")>
             Friend Function LookupWinRTCollectionInterfaceMembers(ByVal memberName As String) As List(Of MemberInfo)
                 Debug.Assert(Me.IsWindowsRuntimeObject(), "Expected a Windows Runtime Object")
 
@@ -940,7 +941,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Function
 
             <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification:="_type is annotated with .All, so it's BaseType will be annotated as well and it is safe to call GetMember on the BaseType")>
+                Justification:="_type is annotated with .All, so it's BaseType will be annotated as well and it is safe to call GetMember on the BaseType.
+                    We should be able to remove once https://github.com/mono/linker/issues/1731 is fixed.")>
             Friend Function LookupNamedMembers(ByVal memberName As String) As MemberInfo()
                 'Returns an array of members matching MemberName sorted by inheritance (most derived first).
                 'If no members match MemberName, returns an empty array.

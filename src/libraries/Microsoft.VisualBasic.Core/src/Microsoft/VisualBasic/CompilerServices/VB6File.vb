@@ -78,9 +78,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
         [Single] = tagVT.VT_R4
         [Double] = tagVT.VT_R8
         [String] = tagVT.VT_BSTR
-        [ByteArray] = tagVT.VT_UI1 Or
+        [ByteArray] = tagVT.VT_UI1 Or _
                       tagVT.VT_ARRAY
-        [CharArray] = tagVT.VT_UI2 Or
+        [CharArray] = tagVT.VT_UI2 Or _
                       tagVT.VT_ARRAY
         [Date] = tagVT.VT_DATE
         [Long] = tagVT.VT_I8
@@ -93,7 +93,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         [Currency] = tagVT.VT_CY
     End Enum
 
-    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
+    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)> _
     Friend NotInheritable Class PutHandler
         Implements IRecordEnum
         Public m_oFile As VB6File

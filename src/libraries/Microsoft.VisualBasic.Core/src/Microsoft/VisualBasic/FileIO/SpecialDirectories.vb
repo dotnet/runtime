@@ -120,11 +120,8 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' will work with Roaming User as well.
         ''' </remarks>
         Public Shared ReadOnly Property CurrentUserApplicationData() As String
-            <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2035:UnresolvedAssembly",
-                Justification:="This references System.Windows.Forms assembly which is outside of the shared framework.")>
             <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2026:RequiresUnreferencedCode",
-                Justification:="DynamicDependency will preserve the required properties in order for the call to be safe.")>
-            <DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, "System.Windows.Forms.Application", "System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")>
+                Justification:="Trimmer warns because it can't see System.Windows.Forms.Application. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
             Get
                 Return GetDirectoryPath(GetWindowsFormsDirectory("System.Windows.Forms.Application", "UserAppDataPath"), SR.IO_SpecialDirectory_UserAppData)
             End Get
@@ -142,11 +139,8 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' See above for reason why we don't use System.Environment.GetFolderPath(*).
         ''' </remarks>
         Public Shared ReadOnly Property AllUsersApplicationData() As String
-            <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2035:UnresolvedAssembly",
-                Justification:="This references System.Windows.Forms assembly which is outside of the shared framework.")>
             <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2026:RequiresUnreferencedCode",
-                Justification:="DynamicDependency will preserve the required properties in order for the call to be safe.")>
-            <DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, "System.Windows.Forms.Application", "System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")>
+                Justification:="Trimmer warns because it can't see System.Windows.Forms.Application. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
             Get
                 Return GetDirectoryPath(GetWindowsFormsDirectory("System.Windows.Forms.Application", "CommonAppDataPath"), SR.IO_SpecialDirectory_AllUserAppData)
             End Get

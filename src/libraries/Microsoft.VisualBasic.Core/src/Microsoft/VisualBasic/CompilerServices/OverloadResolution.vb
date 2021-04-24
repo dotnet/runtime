@@ -1701,7 +1701,7 @@ skipargument:
 
         'may not want Method as TargetProcedure - may instead want to pass the required information in separately.
         'this means that for the simple case of only one method we do not need to allocate a Method object.
-        <RequiresUnreferencedCode("Cannot statically analyze the paremetr types of the targetProcedure")>
+        <RequiresUnreferencedCode("Cannot statically analyze the parameter types of the targetProcedure")>
         Friend Shared Sub MatchArguments(
             ByVal targetProcedure As Method,
             ByVal arguments As Object(),

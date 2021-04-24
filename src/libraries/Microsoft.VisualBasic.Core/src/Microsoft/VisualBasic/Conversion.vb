@@ -48,7 +48,7 @@ Namespace Microsoft.VisualBasic
         Private Const TYPE_INDICATOR_INT32 As Char = "&"c
         Private Const TYPE_INDICATOR_SINGLE As Char = "!"c
         Private Const TYPE_INDICATOR_DECIMAL As Char = "@"c
-        Private Const ConversionTrimmerMessage As String = "The Expression origin object cannot be statically analyzed and may be trimmed."
+        Private Const ConversionTrimmerMessage As String = "The Expression's underlying type cannot be statically analyzed and its members may be trimmed"
 
         '============================================================================
         ' Error message functions.

@@ -19,7 +19,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
     ' Implements VB late binder.
     <ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)>
     Public NotInheritable Class NewLateBinding
-        Private Const LateBindingTrimMessage As String = "Late binding is dynamic and cannot be statically analyzed, so it may be trimmed"
+        Private Const LateBindingTrimMessage As String = "Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed"
         ' Prevent creation.
         Private Sub New()
         End Sub

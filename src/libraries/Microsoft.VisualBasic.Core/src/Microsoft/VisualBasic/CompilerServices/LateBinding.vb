@@ -48,7 +48,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
-        Private Const LateBindingTrimmerMessage As String = "Late binding is dynamic and cannot be statically analyzed, so it may be trimmed"
+        Private Const LateBindingTrimmerMessage As String = "Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed"
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
