@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.Tests
         private const string ValueName = "Value";
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50717", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(2)]
