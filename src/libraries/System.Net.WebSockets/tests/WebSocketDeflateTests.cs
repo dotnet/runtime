@@ -277,83 +277,6 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50235")]
-        public async Task LargeMessageSplitInMultipleFramesActiveIssue()
-        {
-            // This test is exactly the same as LargeMessageSplitInMultipleFrames, but
-            // for the data seed it uses Random(0) where the other uses Random(10). This is done
-            // only because it was found that there is a bug in the deflate somewhere and it only appears
-            // so far when using 10 window bits and data generated using Random(0). Once
-            // the issue is resolved this test can be deleted and LargeMessageSplitInMultipleFrames should be
-            // updated to use Random(0).
-            WebSocketTestStream stream = new();
-            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
-            {
-                IsServer = true,
-                DangerousDeflateOptions = new()
-                {
-                    ClientMaxWindowBits = 10
-                }
-            });
-            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
-            {
-                DangerousDeflateOptions = new()
-                {
-                    ClientMaxWindowBits = 10
-                }
-            });
-
-            Memory<byte> testData = new byte[ushort.MaxValue];
-            Memory<byte> receivedData = new byte[testData.Length];
-
-            // Make the data incompressible to make sure that the output is larger than the input
-            var rng = new Random(0);
-            rng.NextBytes(testData.Span);
-
-            // Test it a few times with different frame sizes
-            for (var i = 0; i < 10; ++i)
-            {
-                var frameSize = rng.Next(1024, 2048);
-                var position = 0;
-
-                while (position < testData.Length)
-                {
-                    var currentFrameSize = Math.Min(frameSize, testData.Length - position);
-                    var eof = position + currentFrameSize == testData.Length;
-
-                    await server.SendAsync(testData.Slice(position, currentFrameSize), WebSocketMessageType.Binary, eof, CancellationToken);
-                    position += currentFrameSize;
-                }
-
-                Assert.True(testData.Length < stream.Remote.Available, "The compressed data should be bigger.");
-                Assert.Equal(testData.Length, position);
-
-                // Receive the data from the client side
-                receivedData.Span.Clear();
-                position = 0;
-
-                // Intentionally receive with a frame size that is less than what the sender used
-                frameSize /= 3;
-
-                while (true)
-                {
-                    int currentFrameSize = Math.Min(frameSize, testData.Length - position);
-                    ValueWebSocketReceiveResult result = await client.ReceiveAsync(receivedData.Slice(position, currentFrameSize), CancellationToken);
-
-                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
-                    position += result.Count;
-
-                    if (result.EndOfMessage)
-                        break;
-                }
-
-                Assert.Equal(0, stream.Remote.Available);
-                Assert.Equal(testData.Length, position);
-                Assert.True(testData.Span.SequenceEqual(receivedData.Span));
-            }
-        }
-
         [Theory]
         [MemberData(nameof(SupportedWindowBits))]
         public async Task LargeMessageSplitInMultipleFrames(int windowBits)
@@ -379,7 +302,7 @@ namespace System.Net.WebSockets.Tests
             Memory<byte> receivedData = new byte[testData.Length];
 
             // Make the data incompressible to make sure that the output is larger than the input
-            var rng = new Random(10);
+            var rng = new Random(0);
             rng.NextBytes(testData.Span);
 
             // Test it a few times with different frame sizes
@@ -445,12 +368,12 @@ namespace System.Net.WebSockets.Tests
             // We should be able to handle the situation where even if we have
             // deflate compression enabled, uncompressed messages are OK
             WebSocketTestStream stream = new();
-            WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 IsServer = true,
                 DangerousDeflateOptions = null
             });
-            WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
@@ -479,7 +402,7 @@ namespace System.Net.WebSockets.Tests
         public async Task ReceiveInvalidCompressedData()
         {
             WebSocketTestStream stream = new();
-            WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            using WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
@@ -499,7 +422,7 @@ namespace System.Net.WebSockets.Tests
         public async Task PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(int windowBits)
         {
             MemoryStream stream = new();
-            WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            using WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
@@ -540,7 +463,7 @@ namespace System.Net.WebSockets.Tests
         public async Task SendReceiveWithDifferentWindowBits(int clientWindowBits, int serverWindowBits)
         {
             WebSocketTestStream stream = new();
-            WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 IsServer = true,
                 DangerousDeflateOptions = new()
@@ -551,7 +474,7 @@ namespace System.Net.WebSockets.Tests
                     ServerMaxWindowBits = serverWindowBits
                 }
             });
-            WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 DangerousDeflateOptions = new()
                 {
@@ -581,6 +504,101 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(data.Length, result.Count);
             Assert.True(result.EndOfMessage);
             Assert.True(data.Span.SequenceEqual(buffer.Span));
+        }
+
+        [Fact]
+        public async Task AutobahnTestCase13_3_1()
+        {
+            // When running Autobahn Test Suite some tests failed with zlib error "invalid distance too far back".
+            // Further investigation lead to a bug fix in zlib intel's implementation - https://github.com/dotnet/runtime/issues/50235.
+            // This test replicates one of the Autobahn tests to make sure this issue doesn't appear again.
+            byte[][] messages = new[]
+            {
+                new byte[] { 0x7B, 0x0A, 0x20, 0x20, 0x20, 0x22, 0x41, 0x75, 0x74, 0x6F, 0x62, 0x61, 0x68, 0x6E, 0x50, 0x79 },
+                new byte[] { 0x74, 0x68, 0x6F, 0x6E, 0x2F, 0x30, 0x2E, 0x36, 0x2E, 0x30, 0x22, 0x3A, 0x20, 0x7B, 0x0A, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x31, 0x2E, 0x31, 0x2E, 0x31, 0x22, 0x3A, 0x20, 0x7B, 0x0A },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69 },
+                new byte[] { 0x6F, 0x72, 0x22, 0x3A, 0x20, 0x22, 0x4F, 0x4B, 0x22, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x22, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6F, 0x72, 0x43, 0x6C, 0x6F },
+                new byte[] { 0x73, 0x65, 0x22, 0x3A, 0x20, 0x22, 0x4F, 0x4B, 0x22, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x22, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6F, 0x6E, 0x22, 0x3A, 0x20 },
+                new byte[] { 0x32, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x72, 0x65, 0x6D },
+                new byte[] { 0x6F, 0x74, 0x65, 0x43, 0x6C, 0x6F, 0x73, 0x65, 0x43, 0x6F, 0x64, 0x65, 0x22, 0x3A, 0x20, 0x31 },
+                new byte[] { 0x30, 0x30, 0x30, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x72 },
+                new byte[] { 0x65, 0x70, 0x6F, 0x72, 0x74, 0x66, 0x69, 0x6C, 0x65, 0x22, 0x3A, 0x20, 0x22, 0x61, 0x75, 0x74 },
+                new byte[] { 0x6F, 0x62, 0x61, 0x68, 0x6E, 0x70, 0x79, 0x74, 0x68, 0x6F, 0x6E, 0x5F, 0x30, 0x5F, 0x36, 0x5F },
+                new byte[] { 0x30, 0x5F, 0x63, 0x61, 0x73, 0x65, 0x5F, 0x31, 0x5F, 0x31, 0x5F, 0x31, 0x2E, 0x6A, 0x73, 0x6F },
+                new byte[] { 0x6E, 0x22, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x7D, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x22, 0x31, 0x2E, 0x31, 0x2E, 0x32, 0x22, 0x3A, 0x20, 0x7B, 0x0A, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6F, 0x72, 0x22 },
+                new byte[] { 0x3A, 0x20, 0x22, 0x4F, 0x4B, 0x22, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x22, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6F, 0x72, 0x43, 0x6C, 0x6F, 0x73, 0x65, 0x22 },
+                new byte[] { 0x3A, 0x20, 0x22, 0x4F, 0x4B, 0x22, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x22, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6F, 0x6E, 0x22, 0x3A, 0x20, 0x32, 0x2C, 0x0A },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x72, 0x65, 0x6D, 0x6F, 0x74, 0x65 },
+                new byte[] { 0x43, 0x6C, 0x6F, 0x73, 0x65, 0x43, 0x6F, 0x64, 0x65, 0x22, 0x3A, 0x20, 0x31, 0x30, 0x30, 0x30 },
+                new byte[] { 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x72, 0x65, 0x70, 0x6F },
+                new byte[] { 0x72, 0x74, 0x66, 0x69, 0x6C, 0x65, 0x22, 0x3A, 0x20, 0x22, 0x61, 0x75, 0x74, 0x6F, 0x62, 0x61 },
+                new byte[] { 0x68, 0x6E, 0x70, 0x79, 0x74, 0x68, 0x6F, 0x6E, 0x5F, 0x30, 0x5F, 0x36, 0x5F, 0x30, 0x5F, 0x63 },
+                new byte[] { 0x61, 0x73, 0x65, 0x5F, 0x31, 0x5F, 0x31, 0x5F, 0x32, 0x2E, 0x6A, 0x73, 0x6F, 0x6E, 0x22, 0x0A },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x7D, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22 },
+                new byte[] { 0x31, 0x2E, 0x31, 0x2E, 0x33, 0x22, 0x3A, 0x20, 0x7B, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x22, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6F, 0x72, 0x22, 0x3A, 0x20, 0x22 },
+                new byte[] { 0x4F, 0x4B, 0x22, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x62 },
+                new byte[] { 0x65, 0x68, 0x61, 0x76, 0x69, 0x6F, 0x72, 0x43, 0x6C, 0x6F, 0x73, 0x65, 0x22, 0x3A, 0x20, 0x22 },
+                new byte[] { 0x4F, 0x4B, 0x22, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x64 },
+                new byte[] { 0x75, 0x72, 0x61, 0x74, 0x69, 0x6F, 0x6E, 0x22, 0x3A, 0x20, 0x32, 0x2C, 0x0A, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x72, 0x65, 0x6D, 0x6F, 0x74, 0x65, 0x43, 0x6C, 0x6F },
+                new byte[] { 0x73, 0x65, 0x43, 0x6F, 0x64, 0x65, 0x22, 0x3A, 0x20, 0x31, 0x30, 0x30, 0x30, 0x2C, 0x0A, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x72, 0x65, 0x70, 0x6F, 0x72, 0x74, 0x66 },
+                new byte[] { 0x69, 0x6C, 0x65, 0x22, 0x3A, 0x20, 0x22, 0x61, 0x75, 0x74, 0x6F, 0x62, 0x61, 0x68, 0x6E, 0x70 },
+                new byte[] { 0x79, 0x74, 0x68, 0x6F, 0x6E, 0x5F, 0x30, 0x5F, 0x36, 0x5F, 0x30, 0x5F, 0x63, 0x61, 0x73, 0x65 },
+                new byte[] { 0x5F, 0x31, 0x5F, 0x31, 0x5F, 0x33, 0x2E, 0x6A, 0x73, 0x6F, 0x6E, 0x22, 0x0A, 0x20, 0x20, 0x20 },
+                new byte[] { 0x20, 0x20, 0x20, 0x7D, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x31, 0x2E, 0x31 },
+                new byte[] { 0x2E, 0x34, 0x22, 0x3A, 0x20, 0x7B, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 },
+                new byte[] { 0x22, 0x62, 0x65, 0x68, 0x61, 0x76, 0x69, 0x6F, 0x72, 0x22, 0x3A, 0x20, 0x22, 0x4F, 0x4B, 0x22 },
+                new byte[] { 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x62, 0x65, 0x68, 0x61 },
+                new byte[] { 0x76, 0x69, 0x6F, 0x72, 0x43, 0x6C, 0x6F, 0x73, 0x65, 0x22, 0x3A, 0x20, 0x22, 0x4F, 0x4B, 0x22 },
+                new byte[] { 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x22, 0x64, 0x75, 0x72, 0x61 },
+                new byte[] { 0x74, 0x69, 0x6F, 0x6E, 0x22, 0x3A, 0x20, 0x32, 0x2C, 0x0A, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 }
+            };
+
+            WebSocketTestStream stream = new();
+            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = TimeSpan.Zero,
+                DangerousDeflateOptions = new()
+                {
+                    ClientMaxWindowBits = 9,
+                    ServerMaxWindowBits = 9
+                }
+            });
+            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                KeepAliveInterval = TimeSpan.Zero,
+                DangerousDeflateOptions = new()
+                {
+                    ClientMaxWindowBits = 9,
+                    ServerMaxWindowBits = 9
+                }
+            });
+
+            foreach (var message in messages)
+            {
+                await server.SendAsync(message, WebSocketMessageType.Text, true, CancellationToken);
+            }
+
+            Memory<byte> buffer = new byte[32];
+
+            for (int i = 0; i < messages.Length; ++i)
+            {
+                ValueWebSocketReceiveResult result = await client.ReceiveAsync(buffer, CancellationToken);
+
+                Assert.True(result.EndOfMessage);
+                Assert.Equal(messages[i].Length, result.Count);
+                Assert.True(buffer.Span.Slice(0, result.Count).SequenceEqual(messages[i]));
+            }
         }
 
         private ValueTask SendTextAsync(string text, WebSocket websocket, bool disableCompression = false)
