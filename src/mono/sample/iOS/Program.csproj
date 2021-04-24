@@ -58,14 +58,14 @@
 
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(RuntimeIdentifier)\mono-aot-cross"
+        CompilerBinaryPath="$(MonoArtifactsPath)\cross\$(RuntimeIdentifier)\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(RuntimeIdentifier)">
+        LLVMPath="$(MonoArtifactsPath)\cross\$(RuntimeIdentifier)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 

@@ -47,7 +47,7 @@
 
   <PropertyGroup>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidDir), 'native', 'cross', $(RuntimeIdentifier), 'mono-aot-cross'))</MonoAotCrossCompilerPath>
+    <MonoAotCrossCompilerPath>$([MSBuild]::NormalizeDirectory($(MonoArtifactsPath), 'cross', $(RuntimeIdentifier))</MonoAotCrossCompilerPath>
     <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
 
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>

@@ -109,8 +109,6 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
-        Include="$(MonoArtifactsPath)\cross\**\*.*" />
       <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
