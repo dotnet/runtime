@@ -410,13 +410,21 @@ static void display_usage()
         W("Execute the managed assembly with the passed in arguments\n")
         W("\n")
         W("Options:\n")
-        W("    -c, --clr-path - path to CoreCLR binary and managed CLR assemblies\n")
-        W("    -p, --property - Property to pass to runtime during initialization (e.g., -p System.GC.Concurrent=true)\n")
-        W("    -d, --debug - causes corerun to wait for a debugger to attach before executing\n")
-        W("    -?, -h, --help - show this help\n")
+        W("  -c, --clr-path - path to CoreCLR binary and managed CLR assemblies.\n")
+        W("  -p, --property - Property to pass to runtime during initialization.\n")
+        W("                   If property value contains spaces quote the entire argument.\n")
+        W("                   May be supplied multiple times. \n")
+        W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
+        W("  -?, -h, --help - show this help.\n")
         W("\n")
-        W("CoreCLR is searched for in %%CORE_ROOT%%, then in the directory\n")
-        W("the corerun binary is located.\n"));
+        W("The runtime binary is searched for in --clr-path, CORE_ROOT environment variable, then\n")
+        W("in the directory the corerun binary is located.\n")
+        W("\n")
+        W("Example:\n")
+        W("Wait for a debugger to attach, provide 2 additional properties for .NET\n")
+        W("runtime initialization, and pass an argument to the HelloWorld.dll assembly.\n")
+        W("  corerun -d -p System.GC.Concurrent=true -p \"FancyProp=/usr/first last/root\" HelloWorld.dll arg1\n")
+        );
 }
 
 // Parse the command line arguments
