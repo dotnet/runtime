@@ -686,7 +686,7 @@ void Compiler::fgRemovePreds()
 //
 void Compiler::fgComputePreds()
 {
-    noway_assert(fgFirstBB);
+    noway_assert(fgFirstBB != nullptr);
 
     BasicBlock* block;
 
@@ -696,6 +696,14 @@ void Compiler::fgComputePreds()
         printf("\n*************** In fgComputePreds()\n");
         fgDispBasicBlocks();
         printf("\n");
+    }
+
+    // Check that the block numbers are increasing order.
+    unsigned lastBBnum = fgFirstBB->bbNum;
+    for (BasicBlock* block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
+    {
+        assert(lastBBnum < block->bbNum);
+        lastBBnum = block->bbNum;
     }
 #endif // DEBUG
 

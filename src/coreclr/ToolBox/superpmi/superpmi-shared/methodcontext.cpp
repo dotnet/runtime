@@ -180,24 +180,24 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 // (and sets *ppmc with new MethodContext), false on failure.
 //
 // static
-bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
-    mc->index         = loadedCount;
+    mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(loadedCount, buff, size);
+    return mc->Initialize(mcIndex, buff, size);
 }
 
 // static
-bool MethodContext::Initialize(int loadedCount, HANDLE hFile, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
-    mc->index         = loadedCount;
+    mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(loadedCount, hFile);
+    return mc->Initialize(mcIndex, hFile);
 }
 
-bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
 {
     bool result = true;
 
@@ -217,7 +217,7 @@ bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size)
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
-        LogError("Method %d is of low integrity.", loadedCount);
+        LogError("Method %d is of low integrity.", mcIndex);
         result = false;
     }
     PAL_ENDTRY
@@ -225,7 +225,7 @@ bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size)
     return result;
 }
 
-bool MethodContext::Initialize(int loadedCount, HANDLE hFile)
+bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
 {
     bool result = true;
 
@@ -243,7 +243,7 @@ bool MethodContext::Initialize(int loadedCount, HANDLE hFile)
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
-        LogError("Method %d is of low integrity.", loadedCount);
+        LogError("Method %d is of low integrity.", mcIndex);
         result = false;
     }
     PAL_ENDTRY
