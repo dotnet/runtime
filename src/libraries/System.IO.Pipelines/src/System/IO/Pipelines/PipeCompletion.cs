@@ -16,9 +16,9 @@ namespace System.IO.Pipelines
         private object? _state;
         private List<PipeCompletionCallback>? _callbacks;
 
-        public bool readonly IsCompleted => _state != null;
+        public readonly bool IsCompleted => _state != null;
 
-        public bool readonly IsFaulted => _state is ExceptionDispatchInfo;
+        public readonly bool IsFaulted => _state is ExceptionDispatchInfo;
 
         public PipeCompletionCallbacks? TryComplete(Exception? exception = null)
         {
