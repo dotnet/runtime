@@ -87,7 +87,7 @@ namespace Internal.Cryptography.Pal
             }
 
             certHandle.Dispose();
-            return new AppleCertificatePal(identityHandle);
+            return new AppleCertificatePal(identityHandle, keychain as SafeTemporaryKeychainHandle);
         }
 
         private sealed class Pkcs12SmallExport : UnixExportProvider

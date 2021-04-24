@@ -45,7 +45,7 @@ namespace Internal.Cryptography.Pal
                 if (certHandle.IsInvalid)
                 {
                     certHandle.Dispose();
-                    return new AppleCertificatePal(identityHandle);
+                    return new AppleCertificatePal(identityHandle, null);
                 }
 
                 identityHandle.Dispose();
@@ -111,20 +111,7 @@ namespace Internal.Cryptography.Pal
 
                 using (keychain)
                 {
-                    AppleCertificatePal ret = ImportPkcs12(rawData, password, exportable, keychain);
-                    if (!persist)
-                    {
-                        // If we used temporary keychain we need to prevent deletion.
-                        // on 10.15+ if keychain is unlinked, certain certificate operations may fail.
-                        bool success = false;
-                        keychain.DangerousAddRef(ref success);
-                        if (success)
-                        {
-                            ret._tempKeychain = keychain;
-                        }
-                    }
-
-                    return ret;
+                    return ImportPkcs12(rawData, password, exportable, keychain);
                 }
             }
 
@@ -165,12 +152,24 @@ namespace Internal.Cryptography.Pal
             _certHandle = certHandle;
         }
 
-        internal AppleCertificatePal(SafeSecIdentityHandle identityHandle)
+        internal AppleCertificatePal(SafeSecIdentityHandle identityHandle, SafeTemporaryKeychainHandle? temporaryKeychainHandle)
         {
             Debug.Assert(!identityHandle.IsInvalid);
 
             _identityHandle = identityHandle;
             _certHandle = Interop.AppleCrypto.X509GetCertFromIdentity(identityHandle);
+
+            if (temporaryKeychainHandle != null)
+            {
+                // If we used temporary keychain we need to prevent deletion.
+                // on 10.15+ if keychain is unlinked, certain certificate operations may fail.
+                bool success = false;
+                temporaryKeychainHandle.DangerousAddRef(ref success);
+                if (success)
+                {
+                    _tempKeychain = temporaryKeychainHandle;
+                }
+            }
         }
 
         public void Dispose()
@@ -592,7 +591,7 @@ namespace Internal.Cryptography.Pal
 
             if (identity != null)
             {
-                return new AppleCertificatePal(identity);
+                return new AppleCertificatePal(identity, keychain as SafeTemporaryKeychainHandle);
             }
 
             return null;
@@ -659,7 +658,8 @@ namespace Internal.Cryptography.Pal
                     keyPair.PrivateKey,
                     keychain);
 
-                AppleCertificatePal newPal = new AppleCertificatePal(identityHandle);
+                AppleCertificatePal newPal = new AppleCertificatePal(identityHandle, keychain as SafeTemporaryKeychainHandle);
+
                 return newPal;
             }
         }

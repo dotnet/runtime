@@ -202,9 +202,6 @@ internal static partial class Interop
                 out identityHandle,
                 out osStatus);
 
-            SafeTemporaryKeychainHandle.TrackItem(certHandle);
-            SafeTemporaryKeychainHandle.TrackItem(identityHandle);
-
             if (ret == 1)
             {
                 return certHandle;
@@ -309,8 +306,6 @@ internal static partial class Interop
             SafeSecCertificateHandle cert;
             int osStatus = AppleCryptoNative_X509CopyCertFromIdentity(identity, out cert);
 
-            SafeTemporaryKeychainHandle.TrackItem(cert);
-
             if (osStatus != 0)
             {
                 cert.Dispose();
@@ -330,8 +325,6 @@ internal static partial class Interop
         {
             SafeSecKeyRefHandle key;
             int osStatus = AppleCryptoNative_X509CopyPrivateKeyFromIdentity(identity, out key);
-
-            SafeTemporaryKeychainHandle.TrackItem(key);
 
             if (osStatus != 0)
             {
@@ -353,8 +346,6 @@ internal static partial class Interop
             SafeSecKeyRefHandle publicKey;
             int osStatus;
             int ret = AppleCryptoNative_X509GetPublicKey(cert, out publicKey, out osStatus);
-
-            SafeTemporaryKeychainHandle.TrackItem(publicKey);
 
             if (ret == 1)
             {
@@ -378,9 +369,6 @@ internal static partial class Interop
             out SafeSecIdentityHandle identityHandle)
         {
             int result = AppleCryptoNative_X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle);
-
-            SafeTemporaryKeychainHandle.TrackItem(certHandle);
-            SafeTemporaryKeychainHandle.TrackItem(identityHandle);
 
             switch (result)
             {

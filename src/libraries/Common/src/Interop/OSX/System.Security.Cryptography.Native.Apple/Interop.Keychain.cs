@@ -259,7 +259,6 @@ internal static partial class Interop
             }
 
             CryptographicOperations.ZeroMemory(utf8Passphrase);
-            SafeTemporaryKeychainHandle.TrackKeychain(keychain);
 
             if (osStatus == 0)
             {
@@ -298,7 +297,6 @@ namespace System.Security.Cryptography.Apple
 
         protected override bool ReleaseHandle()
         {
-            SafeTemporaryKeychainHandle.UntrackItem(handle);
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
             return true;
@@ -331,20 +329,12 @@ namespace System.Security.Cryptography.Apple
 
     internal sealed class SafeTemporaryKeychainHandle : SafeKeychainHandle
     {
-        private static readonly Dictionary<IntPtr, SafeTemporaryKeychainHandle> s_lookup =
-            new Dictionary<IntPtr, SafeTemporaryKeychainHandle>();
-
         internal SafeTemporaryKeychainHandle()
         {
         }
 
         protected override bool ReleaseHandle()
         {
-            lock (s_lookup)
-            {
-                s_lookup.Remove(handle);
-            }
-
             Interop.AppleCrypto.SecKeychainDelete(handle, throwOnError: false);
             return base.ReleaseHandle();
         }
@@ -361,66 +351,5 @@ namespace System.Security.Cryptography.Apple
 
         public static SafeTemporaryKeychainHandle InvalidHandle =>
             SafeHandleCache<SafeTemporaryKeychainHandle>.GetInvalidHandle(() => new SafeTemporaryKeychainHandle());
-
-        internal static void TrackKeychain(SafeTemporaryKeychainHandle toTrack)
-        {
-            if (toTrack.IsInvalid)
-            {
-                return;
-            }
-
-            lock (s_lookup)
-            {
-                Debug.Assert(!s_lookup.ContainsKey(toTrack.handle));
-
-                s_lookup[toTrack.handle] = toTrack;
-            }
-        }
-
-        internal static void TrackItem(SafeKeychainItemHandle keychainItem)
-        {
-            if (keychainItem.IsInvalid)
-                return;
-
-            using (SafeKeychainHandle keychain = Interop.AppleCrypto.SecKeychainItemCopyKeychain(keychainItem))
-            {
-                if (keychain.IsInvalid)
-                {
-                    return;
-                }
-
-                lock (s_lookup)
-                {
-                    SafeTemporaryKeychainHandle? temporaryHandle;
-
-                    if (s_lookup.TryGetValue(keychain.DangerousGetHandle(), out temporaryHandle))
-                    {
-                        bool ignored = false;
-                        temporaryHandle.DangerousAddRef(ref ignored);
-                    }
-                }
-            }
-        }
-
-        internal static void UntrackItem(IntPtr keychainItem)
-        {
-            using (SafeKeychainHandle keychain = Interop.AppleCrypto.SecKeychainItemCopyKeychain(keychainItem))
-            {
-                if (keychain.IsInvalid)
-                {
-                    return;
-                }
-
-                lock (s_lookup)
-                {
-                    SafeTemporaryKeychainHandle? temporaryHandle;
-
-                    if (s_lookup.TryGetValue(keychain.DangerousGetHandle(), out temporaryHandle))
-                    {
-                        temporaryHandle.DangerousRelease();
-                    }
-                }
-            }
-        }
     }
 }

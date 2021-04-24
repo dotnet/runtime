@@ -186,7 +186,7 @@ namespace Internal.Cryptography.Pal
                     if (certHandle.IsInvalid)
                     {
                         certHandle.Dispose();
-                        cert = new X509Certificate2(new AppleCertificatePal(identityHandle));
+                        cert = new X509Certificate2(new AppleCertificatePal(identityHandle, null));
                     }
                     else
                     {
