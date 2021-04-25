@@ -5,15 +5,17 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.Tracing;
 
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
     public partial class Exception
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern uint GetExceptionCount();
+        internal static uint GetExceptionCount()
+        {
+            return (uint)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.EXCEPTION_COUNT);
+        }
 
         internal readonly struct DispatchState
         {

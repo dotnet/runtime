@@ -3067,7 +3067,7 @@ mono_handle_exception (MonoContext *ctx, gpointer void_obj)
 }
 
 guint32
-ves_icall_System_Exception_GetCount (void)
+mono_get_exception_count (void)
 {
 	return (guint32)exceptions_thrown;
 }

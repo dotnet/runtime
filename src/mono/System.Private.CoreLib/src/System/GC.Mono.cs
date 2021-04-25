@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
+using System.Diagnostics.Tracing;
 
 namespace System
 {
@@ -29,12 +30,6 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern ulong GetGenerationSize(int generation);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int GetLastGCPercentTimeInGC();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InternalCollect(int generation);
@@ -293,6 +288,25 @@ namespace System
             }
 
             return new T[length];
+        }
+
+        internal static ulong GetGenerationSize(int generation)
+        {
+            switch (generation) {
+            case 0 :
+                return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_NURSERY_SIZE_BYTES);
+            case 1 :
+                return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_MAJOR_SIZE_BYTES);
+            case 3 :
+                return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LARGE_OBJECT_SIZE_BYTES);
+            default:
+                return 0;
+            }
+        }
+
+        internal static int GetLastGCPercentTimeInGC()
+        {
+            return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LAST_PERCENT_TIME_IN_GC);
         }
     }
 }

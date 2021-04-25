@@ -1105,30 +1105,6 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 #endif
 }
 
-gint64
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetILBytesJitted (void)
-{
-	gint64 methods_compiled = 0;
-	gint64 cil_code_size_bytes = 0;
-	gint64 native_code_size_bytes = 0;
-
-	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
-	return cil_code_size_bytes;
-}
-
-gint32
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodsJittedCount (void)
-{
-	gint64 methods_compiled = 0;
-	gint64 cil_code_size_bytes = 0;
-	gint64 native_code_size_bytes = 0;
-
-	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
-	return (gint32)methods_compiled;
-}
-
 gint
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void)
 {
@@ -5276,12 +5252,6 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	mono_image_close (image);
 	g_free (filename);
-}
-
-guint32
-ves_icall_System_Reflection_AssemblyName_GetAssemblyCount (void)
-{
-	return mono_assembly_get_count ();
 }
 
 static gboolean

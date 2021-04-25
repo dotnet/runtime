@@ -63,7 +63,6 @@ typedef enum {
 
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
-ICALL_EXPORT guint32 ves_icall_System_Reflection_AssemblyName_GetAssemblyCount (void);
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
 ICALL_EXPORT MonoBoolean ves_icall_System_Environment_GetIs64BitOperatingSystem (void);
@@ -133,8 +132,6 @@ ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, doub
 ICALL_EXPORT gint32 ves_icall_System_MathF_ILogB (float);
 ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
 ICALL_EXPORT float ves_icall_System_MathF_FusedMultiplyAdd (float, float, float);
-ICALL_EXPORT gint64 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetILBytesJitted (void);
-ICALL_EXPORT gint32 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodsJittedCount (void);
 ICALL_EXPORT gint ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_ProcessorCount (void);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_TickCount (void);
@@ -147,8 +144,6 @@ ICALL_EXPORT gint64 ves_icall_System_Threading_Timer_GetTimeMonotonic (void);
 ICALL_EXPORT gpointer ves_icall_System_GCHandle_GetAddrOfPinnedObject (MonoGCHandle handle);
 ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int);
 ICALL_EXPORT int ves_icall_System_GC_GetCollectionCount (int);
-ICALL_EXPORT guint64 ves_icall_System_GC_GetGenerationSize (int);
-ICALL_EXPORT int ves_icall_System_GC_GetLastGCPercentTimeInGC(void);
 ICALL_EXPORT int ves_icall_System_GC_GetMaxGeneration (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void);
 ICALL_EXPORT int ves_icall_System_Threading_Thread_SystemMaxStackSize (void);
@@ -201,6 +196,7 @@ ICALL_EXPORT uint64_t ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Ena
 ICALL_EXPORT int32_t ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (uint32_t control_code, uint8_t *activity_id);
 ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent (uint64_t session_id, void *instance);
 ICALL_EXPORT intptr_t ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider (const_gunichar2_ptr provider_name);
+ICALL_EXPORT guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue (gint32 counter);
 ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (uint64_t session_id, void *session_info);
 ICALL_EXPORT intptr_t ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (intptr_t event_handle, void *event_data, uint32_t event_data_len, const uint8_t *activity_id, const uint8_t *related_activity_id);
@@ -239,7 +235,5 @@ ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int
 #ifdef ENABLE_METADATA_UPDATE
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 #endif
-
-ICALL_EXPORT guint32 ves_icall_System_Exception_GetCount (void);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

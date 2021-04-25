@@ -3,6 +3,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Internal.Runtime.CompilerServices;
+using System.Diagnostics.Tracing;
 
 namespace System.Runtime.CompilerServices
 {
@@ -153,6 +154,16 @@ namespace System.Runtime.CompilerServices
             return GetUninitializedObjectInternal(new RuntimeTypeHandle(rt).Value);
         }
 
+        internal static long GetILBytesJitted()
+        {
+            return (long)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_IL_BYTES_JITTED);
+        }
+
+        internal static int GetMethodsJittedCount()
+        {
+            return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_METHODS_JITTED);
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void PrepareMethod(IntPtr method, IntPtr* instantiations, int ninst);
 
@@ -170,11 +181,5 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SufficientExecutionStack();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long GetILBytesJitted();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodsJittedCount();
     }
 }

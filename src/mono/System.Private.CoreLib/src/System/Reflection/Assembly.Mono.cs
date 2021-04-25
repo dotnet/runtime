@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
+using System.Diagnostics.Tracing;
 
 namespace System.Reflection
 {
@@ -87,6 +88,11 @@ namespace System.Reflection
             return assembly;
         }
 
+        internal static uint GetAssemblyCount()
+        {
+            return (uint)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.ASSEMBLY_COUNT);
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Assembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder);
 
@@ -95,8 +101,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalGetAssemblyName(string assemblyFile, out Mono.MonoAssemblyName aname, out string codebase);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern uint GetAssemblyCount();
     }
 }

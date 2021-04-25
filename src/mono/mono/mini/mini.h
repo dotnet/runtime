@@ -1729,6 +1729,15 @@ get_jit_stats (gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *na
 	*native_code_size_bytes = mono_jit_stats.native_code_size;
 }
 
+guint32
+mono_get_exception_count (void);
+
+static inline void
+get_exception_stats (guint32 *exception_count)
+{
+	*exception_count = mono_get_exception_count ();
+}
+
 /* opcodes: value assigned after all the CIL opcodes */
 #ifdef MINI_OP
 #undef MINI_OP
