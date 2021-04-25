@@ -296,9 +296,13 @@ namespace System
             case 0 :
                 return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_NURSERY_SIZE_BYTES);
             case 1 :
+            case 2 :
                 return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_MAJOR_SIZE_BYTES);
             case 3 :
                 return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LARGE_OBJECT_SIZE_BYTES);
+            case 4:
+                // Pinned object heap.
+                return 0;
             default:
                 return 0;
             }
