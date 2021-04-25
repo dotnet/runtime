@@ -2805,7 +2805,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     genConsumeAddress(addr);
     genConsumeRegs(data);
 
-    emitAttr dataSize = emitActualTypeSize(data);
+    emitAttr eDataSize = emitActualTypeSize(data);
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
@@ -2814,23 +2814,23 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         switch (treeNode->gtOper)
         {
             case GT_XORR:
-                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                GetEmitter()->emitIns_R_R_R(INS_ldsetal, eDataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
                 break;
             case GT_XAND:
             {
                 // Grab a temp reg to perform `MVN` for dataReg first.
                 regNumber tempReg = treeNode->GetSingleTempReg();
-                GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
-                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                GetEmitter()->emitIns_R_R(INS_mvn, eDataSize, tempReg, dataReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldclral, eDataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
                 break;
             }
             case GT_XCHG:
-                GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_swpal, eDataSize, dataReg, targetReg, addrReg);
                 break;
             case GT_XADD:
-                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                GetEmitter()->emitIns_R_R_R(INS_ldaddal, eDataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
                 break;
             default:
@@ -2888,7 +2888,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         genDefineTempLabel(labelRetry);
 
         // The following instruction includes a acquire half barrier
-        GetEmitter()->emitIns_R_R(INS_ldaxr, dataSize, loadReg, addrReg);
+        GetEmitter()->emitIns_R_R(INS_ldaxr, eDataSize, loadReg, addrReg);
 
         switch (treeNode->OperGet())
         {
@@ -2897,12 +2897,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 {
                     // Even though INS_add is specified here, the encoder will choose either
                     // an INS_add or an INS_sub and encode the immediate as a positive value
-                    genInstrWithConstant(INS_add, dataSize, storeDataReg, loadReg, data->AsIntConCommon()->IconValue(),
+                    genInstrWithConstant(INS_add, eDataSize, storeDataReg, loadReg, data->AsIntConCommon()->IconValue(),
                                          REG_NA);
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_R_R(INS_add, dataSize, storeDataReg, loadReg, dataReg);
+                    GetEmitter()->emitIns_R_R_R(INS_add, eDataSize, storeDataReg, loadReg, dataReg);
                 }
                 break;
             case GT_XCHG:
@@ -2914,7 +2914,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         }
 
         // The following instruction includes a release half barrier
-        GetEmitter()->emitIns_R_R_R(INS_stlxr, dataSize, exResultReg, storeDataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(INS_stlxr, eDataSize, exResultReg, storeDataReg, addrReg);
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
@@ -2954,18 +2954,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
-        emitAttr dataSize = emitActualTypeSize(data);
+        emitAttr eDataSize = emitActualTypeSize(data);
 
         // casal use the comparand as the target reg
         if (targetReg != comparandReg)
         {
-            GetEmitter()->emitIns_R_R(INS_mov, dataSize, targetReg, comparandReg);
+            GetEmitter()->emitIns_R_R(INS_mov, eDataSize, targetReg, comparandReg);
 
             // Catch case we destroyed data or address before use
             noway_assert(addrReg != targetReg);
             noway_assert(dataReg != targetReg);
         }
-        GetEmitter()->emitIns_R_R_R(INS_casal, dataSize, targetReg, dataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(INS_casal, eDataSize, targetReg, dataReg, addrReg);
     }
     else
     {
