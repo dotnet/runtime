@@ -4849,15 +4849,13 @@ struct GenTreeJitIntrinsic : public GenTreeOp
 private:
     ClassLayout* m_layout;
 
-    union {
-        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
-    };
+    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
+
+    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
+    unsigned char gtSimdSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
 
 public:
-    var_types     gtSIMDBaseType; // SIMD vector base type
-    unsigned char gtSIMDSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
-
 #if defined(FEATURE_SIMD)
     union {
         SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
@@ -4882,34 +4880,64 @@ public:
     {
         return (regNumber)gtOtherReg;
     }
+
     void SetOtherReg(regNumber reg)
     {
         gtOtherReg = (regNumberSmall)reg;
         assert(gtOtherReg == reg);
     }
 
-    var_types GetAuxiliaryType() const
+    CorInfoType GetAuxiliaryJitType() const
     {
-        return gtAuxiliaryType;
+        return (CorInfoType)gtAuxiliaryJitType;
     }
 
-    void SetAuxiliaryType(var_types type)
+    void SetAuxiliaryJitType(CorInfoType auxiliaryJitType)
     {
-        gtAuxiliaryType = type;
+        gtAuxiliaryJitType = (unsigned char)auxiliaryJitType;
+        assert(gtAuxiliaryJitType == auxiliaryJitType);
     }
 
-    GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)
+    var_types GetAuxiliaryType() const;
+
+    CorInfoType GetSimdBaseJitType() const
+    {
+        return (CorInfoType)gtSimdBaseJitType;
+    }
+
+    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
+    {
+        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
+        assert(gtSimdBaseJitType == simdBaseJitType);
+    }
+
+    var_types GetSimdBaseType() const;
+
+    unsigned char GetSimdSize() const
+    {
+        return gtSimdSize;
+    }
+
+    void SetSimdSize(unsigned simdSize)
+    {
+        gtSimdSize = (unsigned char)simdSize;
+        assert(gtSimdSize == simdSize);
+    }
+
+    GenTreeJitIntrinsic(
+        genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeOp(oper, type, op1, op2)
-        , gtSIMDBaseType(baseType)
-        , gtSIMDSize((unsigned char)size)
+        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
-        assert(gtSIMDSize == size);
+        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdSize == simdSize);
     }
 
     bool isSIMD() const
     {
-        return gtSIMDSize != 0;
+        return gtSimdSize != 0;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4925,15 +4953,20 @@ public:
 struct GenTreeSIMD : public GenTreeJitIntrinsic
 {
 
-    GenTreeSIMD(var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, baseType, size)
+    GenTreeSIMD(
+        var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
-    GenTreeSIMD(
-        var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, baseType, size)
+    GenTreeSIMD(var_types       type,
+                GenTree*        op1,
+                GenTree*        op2,
+                SIMDIntrinsicID simdIntrinsicID,
+                CorInfoType     simdBaseJitType,
+                unsigned        simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
@@ -4952,14 +4985,15 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
-    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, baseType, size)
+    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
     }
 
-    GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, baseType, size)
+    GenTreeHWIntrinsic(
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
         if (OperIsMemoryStore())
@@ -4968,9 +5002,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    GenTreeHWIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, baseType, size)
+    GenTreeHWIntrinsic(var_types      type,
+                       GenTree*       op1,
+                       GenTree*       op2,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
         if (OperIsMemoryStore())
@@ -6960,7 +6998,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
     if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit) &&
         gtGetOp1()->IsIntegralConst(constVal))
     {
-        assert(varTypeIsIntegral(AsSIMD()->gtSIMDBaseType));
+        assert(varTypeIsIntegral(AsSIMD()->GetSimdBaseType()));
         assert(gtGetOp2IfPresent() == nullptr);
         return true;
     }
@@ -6971,7 +7009,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
     {
         GenTreeHWIntrinsic* node = AsHWIntrinsic();
 
-        if (!varTypeIsIntegral(node->gtSIMDBaseType))
+        if (!varTypeIsIntegral(node->GetSimdBaseType()))
         {
             // Can't be an integral constant
             return false;

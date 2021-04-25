@@ -90,7 +90,7 @@ jobs:
           artifactName: 'CoreCLRProduct__${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
           displayName: 'Coreclr product build (x64)'
 
-    # # Download and unzip managed test artifacts
+    # Download and unzip managed test artifacts
     - ${{ if eq(parameters.collectionName, 'tests') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -98,6 +98,23 @@ jobs:
           artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
           artifactName: '$(managedGenericTestArtifactName)'
           displayName: 'generic managed test artifacts'
+
+    # Download and unzip libraries test artifacts
+    - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)'
+          artifactFileName: 'libraries_test_assets_${{ parameters.osGroup }}_x64_Release$(archiveExtension)'
+          artifactName: ${{ format('libraries_test_assets_{0}_x64_Release', parameters.osGroup) }}
+          displayName: 'generic libraries test artifacts'
+
+    - task: ExtractFiles@1
+      displayName: 'Unzip Tests.zip'
+      inputs:
+        archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)/**/*.zip'
+        destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+        cleanDestinationFolder: true
+        overwriteExistingFiles: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

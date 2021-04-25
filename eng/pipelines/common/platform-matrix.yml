@@ -116,7 +116,7 @@ jobs:
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
-        image: ubuntu-18.04-cross-arm-alpine-20200818211451-14441ae
+        image: ubuntu-16.04-cross-arm-alpine-20210409142327-044d5b9
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -219,7 +219,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20210223133559-4800846
+        image: ubuntu-18.04-webassembly-20210309143118-005aab4
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !NETCOREAPP
 using System.Diagnostics;
+#endif
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -13,12 +15,6 @@ namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        internal const string JsonMediaType = "application/json";
-        internal const string JsonType = "application";
-        internal const string JsonSubtype = "json";
-        private static MediaTypeHeaderValue DefaultMediaType
-            => new MediaTypeHeaderValue(JsonMediaType) { CharSet = "utf-8" };
-
         internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
@@ -39,7 +35,7 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             ObjectType = inputType;
-            Headers.ContentType = mediaType ?? DefaultMediaType;
+            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
             _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
@@ -60,7 +56,7 @@ namespace System.Net.Http.Json
 
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
@@ -125,35 +121,6 @@ namespace System.Net.Http.Json
 #endif
                 }
             }
-        }
-
-        internal static Encoding? GetEncoding(string? charset)
-        {
-            Encoding? encoding = null;
-
-            if (charset != null)
-            {
-                try
-                {
-                    // Remove at most a single set of quotes.
-                    if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"')
-                    {
-                        encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
-                    }
-                    else
-                    {
-                        encoding = Encoding.GetEncoding(charset);
-                    }
-                }
-                catch (ArgumentException e)
-                {
-                    throw new InvalidOperationException(SR.CharSetInvalid, e);
-                }
-
-                Debug.Assert(encoding != null);
-            }
-
-            return encoding;
         }
     }
 }

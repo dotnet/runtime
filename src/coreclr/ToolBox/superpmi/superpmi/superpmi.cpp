@@ -293,7 +293,8 @@ int __cdecl main(int argc, char* argv[])
         // Now read the data into a MethodContext. This could throw if the method context data is corrupt.
 
         loadedCount++;
-        if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, &mc))
+        const int mcIndex = reader->GetMethodContextIndex();
+        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
         }

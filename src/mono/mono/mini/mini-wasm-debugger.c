@@ -53,6 +53,8 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, 
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_value_on_object (int object_id, const char* name, const char* value);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -553,6 +555,8 @@ static void
 handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame)
 {
 	ERROR_DECL (error);
+	const char *default_error_message = "Failed to get exception message.";
+
 	PRINT_DEBUG_MSG (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
 	
     //normal mono_runtime_try_invoke does not capture the exception and this is a temporary workaround.
@@ -564,16 +568,16 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 		return;
 
 	int obj_id = get_object_id ((MonoObject *)exc);
-	const char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
-
-	if (!is_ok (error))
-		error_message = "Failed to get exception message.";
+	char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
 
 	const char *class_name = mono_class_full_name (mono_object_class (exc));
-	PRINT_DEBUG_MSG (2, "handle exception - calling mono_wasm_fire_exc(): %d - message - %s, class_name: %s\n", obj_id,  error_message, class_name);
+	PRINT_DEBUG_MSG (2, "handle exception - calling mono_wasm_fire_exc(): %d - message - %s, class_name: %s\n", obj_id,  !is_ok (error) ? error_message : default_error_message, class_name);
 
-	mono_wasm_fire_exception (obj_id, error_message, class_name, !catch_ctx);
+	mono_wasm_fire_exception (obj_id, !is_ok (error) ? error_message : default_error_message, class_name, !catch_ctx);
 
+	if (error_message != NULL)
+		g_free (error_message);
+	
 	PRINT_DEBUG_MSG (2, "handle exception - done\n");
 }
 
@@ -861,6 +865,16 @@ typedef struct {
 	int *pos;
 	gboolean found;
 } FrameDescData;
+
+
+typedef struct {
+	int cur_frame;
+	int target_frame;
+	int pos;
+	const char* new_value;
+	gboolean found;
+	gboolean error;
+} SetVariableValueData;
 
 /*
  * this returns a string formatted like
@@ -1515,6 +1529,194 @@ describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *hea
 }
 
 static gboolean
+decode_value (MonoType *t, guint8 *addr, const char* variableValue)
+{
+	char* endptr;
+	errno = 0;
+	switch (t->type) {
+		case MONO_TYPE_BOOLEAN:
+			if (!strcasecmp (variableValue, "True"))
+				*(guint8*)addr = 1;
+			else if (!strcasecmp (variableValue, "False"))
+				*(guint8*)addr = 0;
+			else 
+				return FALSE;
+			break;
+		case MONO_TYPE_CHAR:
+			if (strlen (variableValue) > 1)
+				return FALSE;
+			*(gunichar2*)addr = variableValue [0];
+			break;
+		case MONO_TYPE_I1: {
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			if (val >= -128 && val <= 127)
+				*(gint8*)addr = val;
+			else 
+				return FALSE;
+			break;
+		}
+		case MONO_TYPE_U1: {
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			if (val >= 0 && val <= 255)
+				*(guint8*)addr = val;
+			else 
+				return FALSE;
+			break;
+		}
+		case MONO_TYPE_I2: {
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			if (val >= -32768 && val <= 32767)
+				*(gint16*)addr = val;
+			else 
+				return FALSE;
+			break;
+		}
+		case MONO_TYPE_U2: {
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			if (val >= 0 && val <= 65535)
+				*(guint16*)addr = val;
+			else 
+				return FALSE;
+			break;
+		}
+		case MONO_TYPE_I4: {
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			if (val >= -2147483648 && val <= 2147483647)
+				*(gint32*)addr = val;
+			else 
+				return FALSE;
+			break;
+		}
+		case MONO_TYPE_U4: {
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			if (val >= 0 && val <= 4294967295)				
+				*(guint32*)addr = val;
+			else 
+				return FALSE;
+			break;
+		}
+		case MONO_TYPE_I8: {
+			long long val = strtoll (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(gint64*)addr = val;
+			break;
+		}
+		case MONO_TYPE_U8: {
+			long long val = strtoll (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(guint64*)addr = val;
+			break;
+		}
+		case MONO_TYPE_R4: {
+			gfloat val = strtof (variableValue, &endptr);
+			if (errno != 0)
+				return FALSE;
+			*(gfloat*)addr = val;
+			break;
+		}
+		case MONO_TYPE_R8: {
+			gdouble val = strtof (variableValue, &endptr);
+			if (errno != 0)
+				return FALSE;
+			*(gdouble*)addr = val;
+			break;
+		}
+		default:
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
+set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+{
+	ERROR_DECL (error);
+	SetVariableValueData *data = (SetVariableValueData*)ud;
+	gboolean is_arg = FALSE;
+	MonoType *t = NULL;
+	guint8 *val_buf = NULL;
+
+	++data->cur_frame;
+
+	//skip wrappers
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
+		return FALSE;
+	}
+
+	if (data->cur_frame != data->target_frame)
+		return FALSE;
+
+	data->found = TRUE;
+
+	InterpFrame *frame = (InterpFrame*)info->interp_frame;
+	MonoMethod *method = frame->imethod->method;
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	
+	if (!header) {
+		mono_error_cleanup(error);
+		data->error = TRUE;
+		return TRUE;
+	}
+
+	if (!sig)
+		goto exit_with_error;
+
+	int pos = data->pos;
+	
+	if (pos < 0) {
+		pos = - pos - 1;
+		if (pos >= sig->param_count) 
+			goto exit_with_error;
+		is_arg = TRUE;
+		t = sig->params [pos];
+	}
+	else {
+		if (pos >= header->num_locals)
+			goto exit_with_error;
+		t = header->locals [pos];
+	}
+	
+	guint8 *addr;
+	if (is_arg)
+		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
+	else
+		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame, pos);
+	
+	val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
+	
+	if (!decode_value(t, val_buf, data->new_value))
+		goto exit_with_error;
+
+	DbgEngineErrorCode errorCode = mono_de_set_interp_var (t, addr, val_buf);
+	if (errorCode != ERR_NONE) {
+		goto exit_with_error;
+	}
+
+	mono_metadata_free_mh (header);
+	return TRUE;
+
+exit_with_error:	
+	data->error = TRUE;
+	mono_metadata_free_mh (header);
+	return TRUE;
+}
+
+static gboolean
 describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 {
 	ERROR_DECL (error);
@@ -1551,6 +1753,24 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 
 	mono_metadata_free_mh (header);
 	return TRUE;
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value)
+{
+	if (scope < 0)
+		return FALSE;
+
+	SetVariableValueData data;
+	data.target_frame = scope;
+	data.cur_frame = -1;
+	data.pos = index;
+	data.found = FALSE;
+	data.new_value = value;
+	data.error = FALSE;
+
+	mono_walk_stack_with_ctx (set_variable_value_on_frame, NULL, MONO_UNWIND_NONE, &data);
+	return !data.error;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
@@ -1609,6 +1829,75 @@ mono_wasm_invoke_getter_on_object (int object_id, const char* name)
 		return FALSE;
 
 	return invoke_getter (obj, mono_object_class (obj), name);
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_set_value_on_object (int object_id, const char* name, const char* value)
+{
+	PRINT_DEBUG_MSG (1,  "mono_wasm_set_value_on_object %d, name: %s, value: %s\n", object_id, name, value);
+	MonoObject *obj = get_object_from_id (object_id);
+	
+	if (!obj || !name) {
+		PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object: none of the arguments can be null");
+		return FALSE;
+	}
+	MonoClass* klass = mono_object_class (obj);
+
+	gpointer iter;
+handle_parent:
+	iter = NULL;
+	MonoClassField *f;
+	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (!f->name || strcasecmp (f->name, name) != 0)
+			continue;
+		guint8 *val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
+	
+		if (!decode_value(f->type, val_buf, value)) {
+			return FALSE;
+		}		
+		DbgEngineErrorCode errorCode = mono_de_set_interp_var (f->type, (guint8*)obj + f->offset, val_buf);
+		if (errorCode != ERR_NONE) {
+			return FALSE;
+		}
+		return TRUE;
+	}
+
+	iter = NULL;
+	MonoProperty *p;
+	MonoObject *exc;
+	ERROR_DECL (error);
+	while ((p = mono_class_get_properties (klass, &iter))) {
+		if (!p->name || strcasecmp (p->name, name) != 0)
+			continue;
+		if (!p->set)
+			break;
+		MonoType *type = mono_method_signature_internal (p->set)->params [0];
+		guint8 *val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (type)));
+	
+		if (!decode_value(type, val_buf, value)) {
+			return FALSE;
+		}					
+		mono_runtime_try_invoke (p->set, obj, (void **)&val_buf, &exc, error);
+		if (!is_ok (error) && exc == NULL)
+			exc = (MonoObject*) mono_error_convert_to_exception (error);
+		if (exc) {
+			char *error_message = mono_string_to_utf8_checked_internal (((MonoException *)exc)->message, error);
+			if (is_ok (error)) {
+				PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception: %s\n", error_message);
+				g_free (error_message);
+				mono_error_cleanup (error);			
+			}
+			else {
+				PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception\n");
+			}
+			return FALSE;
+		}
+		return TRUE;
+	}
+
+	if ((klass = m_class_get_parent(klass)))
+		goto handle_parent;
+	return FALSE;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean

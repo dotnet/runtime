@@ -208,7 +208,7 @@ namespace System.Dynamic.Utils
                 // been boxed or not.
                 if (targetType.IsInterface)
                 {
-                    foreach (Type interfaceType in instanceType.GetTypeInfo().ImplementedInterfaces)
+                    foreach (Type interfaceType in instanceType.GetInterfaces())
                     {
                         if (AreReferenceAssignable(targetType, interfaceType))
                         {
@@ -808,7 +808,7 @@ namespace System.Dynamic.Utils
 
                 if (definition.IsInterface)
                 {
-                    foreach (Type itype in type.GetTypeInfo().ImplementedInterfaces)
+                    foreach (Type itype in type.GetInterfaces())
                     {
                         Type? found = FindGenericType(definition, itype);
                         if (found != null)

@@ -192,6 +192,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(var_ids)})");
         }
 
+        public static MonoCommands SetVariableValue(int scopeId, int index, string name, string newValue)
+        {
+            return new MonoCommands($"MONO.mono_wasm_set_variable_value({scopeId}, {index}, '{name}', '{newValue}')");
+        }
+
         public static MonoCommands EvaluateMemberAccess(int scopeId, string expr, params VarInfo[] vars)
         {
             var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();

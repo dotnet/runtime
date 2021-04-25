@@ -155,6 +155,8 @@ jobs:
     buildConfig: release
     platforms:
     - windows_x64
+    - windows_x86
+    - Linux_x64
     jobParameters:
       testGroup: innerloop
       pgoType: 'PGO'
@@ -730,6 +732,8 @@ jobs:
       pgoType: 'PGO'
     platforms:
     - windows_x64
+    - windows_x86
+    - Linux_x64
 
 #
 # Crossgen-comparison jobs

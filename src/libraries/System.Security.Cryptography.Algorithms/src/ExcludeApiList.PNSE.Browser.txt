@@ -1,3 +1,4 @@
+T:System.Security.Cryptography.CryptoConfig
 T:System.Security.Cryptography.RandomNumberGenerator
 T:System.Security.Cryptography.IncrementalHash
 T:System.Security.Cryptography.SHA1
