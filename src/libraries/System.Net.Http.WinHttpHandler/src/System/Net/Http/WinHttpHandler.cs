@@ -40,6 +40,7 @@ namespace System.Net.Http
         // 'netstandard' so we need to add these definitions here.
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
+        internal static readonly bool BidirectionalStreamingOSSupport = Environment.OSVersion.Version >= new Version(10, 0, 22357, 0);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
@@ -683,6 +684,7 @@ namespace System.Net.Http
         }
 
         private static bool SupportsAutomaticChunking(HttpRequestMessage requestMessage) =>
+            BidirectionalStreamingOSSupport &&
             requestMessage.Version >= HttpVersion20;
 
         private static void AddRequestHeaders(
@@ -962,15 +964,33 @@ namespace System.Net.Http
 
                         await InternalSendRequestAsync(state);
 
-                        // Start waiting to receive response headers before sending request body.
-                        // This order is important because the response could be returned immediately
-                        // with END_STREAM flag on headers. Trying to send request body after that
-                        // can cause the request to go into a bad state.
-                        var receivedResponseTask = InternalReceiveResponseHeadersAsync(state);
+                        RendezvousAwaitable<int> receivedResponseTask;
 
-                        if (state.RequestMessage.Content != null)
+                        if (chunkedModeForSend == WinHttpChunkMode.Automatic)
                         {
-                            sendRequestBodyTask = InternalSendRequestBodyAsync(state, chunkedModeForSend);
+                            // Start waiting to receive response headers before sending request body.
+                            // This order is important because the response could be returned immediately
+                            // with END_STREAM flag on headers. Trying to send request body after that
+                            // can cause the request to go into a bad state.
+                            //
+                            // We only use this order if chunk mode is automatic because Windows versions
+                            // prior to AUTOMATIC_CHUNKING didn't support it.
+                            receivedResponseTask = InternalReceiveResponseHeadersAsync(state);
+
+                            if (state.RequestMessage.Content != null)
+                            {
+                                sendRequestBodyTask = InternalSendRequestBodyAsync(state, chunkedModeForSend);
+                            }
+                        }
+                        else
+                        {
+                            if (state.RequestMessage.Content != null)
+                            {
+                                sendRequestBodyTask = InternalSendRequestBodyAsync(state, chunkedModeForSend);
+                                await sendRequestBodyTask.ConfigureAwait(false);
+                            }
+
+                            receivedResponseTask = InternalReceiveResponseHeadersAsync(state);
                         }
 
                         bool receivedResponse = await receivedResponseTask != 0;

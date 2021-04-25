@@ -21,11 +21,10 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         { }
 
         // Build number suggested by the WinHttp team.
-        // It can be reduced after the backport of WINHTTP_QUERY_FLAG_TRAILERS is finished,
-        // and the patches are rolled out to CI machines.
-        public static bool OsSupportsWinHttpTrailingHeaders => Environment.OSVersion.Version >= new Version(10, 0, 19622, 0);
+        // It can be reduced if bidirectional streaming is backported.
+        public static bool OsSupportsWinHttpBidirectionalStreaming => Environment.OSVersion.Version >= new Version(10, 0, 22357, 0);
 
-        public static bool TestsEnabled => OsSupportsWinHttpTrailingHeaders && PlatformDetection.SupportsAlpn;
+        public static bool TestsEnabled => OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
 
         protected override Version UseVersion => new Version(2, 0);
 
