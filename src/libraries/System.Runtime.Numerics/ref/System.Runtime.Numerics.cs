@@ -174,10 +174,10 @@ namespace System.Numerics
         public static readonly System.Numerics.Complex One;
         public static readonly System.Numerics.Complex Zero;
         public Complex(double real, double imaginary) { throw null; }
-        public readonly double Imaginary { get { throw null; } }
-        public readonly double Magnitude { get { throw null; } }
-        public readonly double Phase { get { throw null; } }
-        public readonly double Real { get { throw null; } }
+        public double Imaginary { get { throw null; } }
+        public double Magnitude { get { throw null; } }
+        public double Phase { get { throw null; } }
+        public double Real { get { throw null; } }
         public static double Abs(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Acos(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Add(double left, System.Numerics.Complex right) { throw null; }
@@ -191,11 +191,11 @@ namespace System.Numerics
         public static System.Numerics.Complex Divide(double dividend, System.Numerics.Complex divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, double divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, System.Numerics.Complex divisor) { throw null; }
-        public readonly bool Equals(System.Numerics.Complex value) { throw null; }
-        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Numerics.Complex value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Complex Exp(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex FromPolarCoordinates(double magnitude, double phase) { throw null; }
-        public override readonly int GetHashCode() { throw null; }
+        public override int GetHashCode() { throw null; }
         public static bool IsFinite(System.Numerics.Complex value) { throw null; }
         public static bool IsInfinity(System.Numerics.Complex value) { throw null; }
         public static bool IsNaN(System.Numerics.Complex value) { throw null; }
@@ -248,9 +248,9 @@ namespace System.Numerics
         public static System.Numerics.Complex Subtract(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
-        public override readonly string ToString() { throw null; }
-        public readonly string ToString(System.IFormatProvider? provider) { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
     }
 }

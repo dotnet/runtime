@@ -42,11 +42,11 @@ namespace System.Numerics
             m_imaginary = imaginary;
         }
 
-        public readonly double Real { get { return m_real; } }
-        public readonly double Imaginary { get { return m_imaginary; } }
+        public double Real { get { return m_real; } }
+        public double Imaginary { get { return m_imaginary; } }
 
-        public readonly double Magnitude { get { return Abs(this); } }
-        public readonly double Phase { get { return Math.Atan2(m_imaginary, m_real); } }
+        public double Magnitude { get { return Abs(this); } }
+        public double Phase { get { return Math.Atan2(m_imaginary, m_real); } }
 
         public static Complex FromPolarCoordinates(double magnitude, double phase)
         {
@@ -368,18 +368,18 @@ namespace System.Numerics
             return left.m_real != right.m_real || left.m_imaginary != right.m_imaginary;
         }
 
-        public override readonly bool Equals([NotNullWhen(true)] object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Complex)) return false;
             return Equals((Complex)obj);
         }
 
-        public readonly bool Equals(Complex value)
+        public bool Equals(Complex value)
         {
             return m_real.Equals(value.m_real) && m_imaginary.Equals(value.m_imaginary);
         }
 
-        public override readonly int GetHashCode()
+        public override int GetHashCode()
         {
             int n1 = 99999997;
             int realHash = m_real.GetHashCode() % n1;
@@ -388,13 +388,13 @@ namespace System.Numerics
             return finalHash;
         }
 
-        public override readonly string ToString() => $"({m_real}, {m_imaginary})";
+        public override string ToString() => $"({m_real}, {m_imaginary})";
 
-        public readonly string ToString(string? format) => ToString(format, null);
+        public string ToString(string? format) => ToString(format, null);
 
-        public readonly string ToString(IFormatProvider? provider) => ToString(null, provider);
+        public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
-        public readonly string ToString(string? format, IFormatProvider? provider)
+        public string ToString(string? format, IFormatProvider? provider)
         {
             return string.Format(provider, "({0}, {1})", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
         }
