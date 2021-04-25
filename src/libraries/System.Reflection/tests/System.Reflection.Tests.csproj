@@ -75,6 +75,8 @@
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
   <ItemGroup>
+    <TrimmerRootAssembly Include="TestAssembly" />
+
     <!-- Assemblies that should be excluded from the bundle -->
     <__ExcludeFromBundle Include="TestAssembly.dll" />
   </ItemGroup>
