@@ -43,7 +43,7 @@ namespace System.Buffers
         public struct ReadOnlySequenceDebugViewSegments
         {
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public ReadOnlyMemory<T>[] Segments { readonly get; set; }
+            public ReadOnlyMemory<T>[] Segments { get; set; }
         }
     }
 }
