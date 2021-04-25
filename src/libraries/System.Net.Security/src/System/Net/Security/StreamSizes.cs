@@ -7,19 +7,19 @@ namespace System.Net
     {
         public int Header
         {
-            readonly get;
+            get;
             private set;
         }
 
         public int Trailer
         {
-            readonly get;
+            get;
             private set;
         }
 
         public int MaximumMessage
         {
-            readonly get;
+            get;
             private set;
         }
     }
