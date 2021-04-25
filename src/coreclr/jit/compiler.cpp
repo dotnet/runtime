@@ -342,6 +342,7 @@ size_t gcHeaderISize; // GC header      size: interruptible methods
 size_t gcPtrMapISize; // GC pointer map size: interruptible methods
 size_t gcHeaderNSize; // GC header      size: non-interruptible methods
 size_t gcPtrMapNSize; // GC pointer map size: non-interruptible methods
+size_t dataSize;
 
 #endif // DISPLAY_SIZES
 
