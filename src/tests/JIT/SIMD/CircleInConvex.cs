@@ -264,13 +264,13 @@ namespace ClassLibrary
             convex_hull(points);
             Point O;
             float r;
-            FindCircle(points, out O, out r);
+            bool result = FindCircle(points, out O, out r);
 
-            float expRes = 75656240.0F;
-            float ulp    =        8.0F;
-            if (Math.Abs(r - expRes) <= ulp)
+            // Check that we found a circle, our radius is greater than 0
+            if(result && r > 0)
                 return 100;
-            return 0;
+            else 
+                return 0;
         }
     }
 }
