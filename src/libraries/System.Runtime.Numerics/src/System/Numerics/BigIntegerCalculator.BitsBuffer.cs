@@ -166,17 +166,17 @@ namespace System.Numerics
                 _length = value != 0 ? 1 : 0;
             }
 
-            public readonly uint[] GetBits()
+            public uint[] GetBits()
             {
                 return _bits;
             }
 
-            public readonly int GetSize()
+            public int GetSize()
             {
                 return _bits.Length;
             }
 
-            public readonly int GetLength()
+            public int GetLength()
             {
                 return _length;
             }
