@@ -40,7 +40,6 @@ namespace Span
     {
         const int Iterations = 1000000;
         const int DefaultLength = 1024;
-        const byte Expected = 70;
         static bool HasFailure = false;
 
         [Benchmark(InnerIterationCount = Iterations)]
@@ -880,10 +879,11 @@ namespace Span
                 double timeInMs = sw.Elapsed.TotalMilliseconds;
                 Console.Write("{0,25}: {1,7:F2}ms", name, timeInMs);
 
-                bool failed = (check != Expected);
+                // Validate that check is just not 0, as this means our random data was not correct.
+                bool failed = (check == 0);
                 if (failed)
                 {
-                    Console.Write(" -- failed to validate, got {0} expected {1}", check, Expected);
+                    Console.Write(" -- failed to validate, check was 0 but should not have been");
                     HasFailure = true;
                 }
                 Console.WriteLine();
