@@ -208,7 +208,6 @@ protected:
     void**    codePtr;
     uint32_t* nativeSizeOfCode;
     unsigned  codeSize;
-    size_t    dataSize;
     void*     coldCodePtr;
     void*     consPtr;
 
