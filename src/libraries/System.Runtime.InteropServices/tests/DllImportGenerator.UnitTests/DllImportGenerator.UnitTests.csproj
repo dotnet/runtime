@@ -26,8 +26,4 @@
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\DllImportGenerator\DllImportGenerator.csproj" />
   </ItemGroup>
-  
-  <PropertyGroup>
-    <RestoreAdditionalProjectSources>https://dotnet.myget.org/F/roslyn-analyzers/api/v3/index.json ;$(RestoreAdditionalProjectSources)</RestoreAdditionalProjectSources>
-  </PropertyGroup>
 </Project>
