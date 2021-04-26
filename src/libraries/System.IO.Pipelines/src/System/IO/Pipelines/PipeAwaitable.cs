@@ -22,7 +22,7 @@ namespace System.IO.Pipelines
         private readonly CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
 #else
         private CancellationToken _cancellationToken;
-        private CancellationToken CancellationToken => _cancellationToken;
+        private readonly CancellationToken CancellationToken => _cancellationToken;
 #endif
 
         public PipeAwaitable(bool completed, bool useSynchronizationContext)
