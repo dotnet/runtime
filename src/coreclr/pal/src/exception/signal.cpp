@@ -62,6 +62,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 using namespace CorUnix;
 
+extern bool g_enableDumpOnSigTerm;
+
 /* local type definitions *****************************************************/
 
 typedef void (*SIGFUNC)(int, siginfo_t *, void *);
@@ -72,7 +74,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
 #endif
-#if !HAVE_MACH_EXCEPTIONS
+
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
 static void sigfpe_handler(int code, siginfo_t *siginfo, void *context);
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context);
@@ -80,10 +82,9 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
 static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
+static void sigabrt_handler(int code, siginfo_t *siginfo, void *context);
 
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
-
-#endif // !HAVE_MACH_EXCEPTIONS
 
 static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0, bool skipIgnored = false);
 static void restore_signal(int signal_id, struct sigaction *previousAction);
@@ -91,8 +92,8 @@ static void restore_signal_and_resend(int code, struct sigaction* action);
 
 /* internal data declarations *********************************************/
 
-#if !HAVE_MACH_EXCEPTIONS
 bool g_registered_signal_handlers = false;
+#if !HAVE_MACH_EXCEPTIONS
 bool g_enable_alternate_stack_check = false;
 #endif // !HAVE_MACH_EXCEPTIONS
 
@@ -104,7 +105,6 @@ struct sigaction g_previous_sigterm;
 struct sigaction g_previous_activation;
 #endif
 
-#if !HAVE_MACH_EXCEPTIONS
 struct sigaction g_previous_sigill;
 struct sigaction g_previous_sigtrap;
 struct sigaction g_previous_sigfpe;
@@ -112,6 +112,9 @@ struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
+struct sigaction g_previous_sigabrt;
+
+#if !HAVE_MACH_EXCEPTIONS
 
 // Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
 // This offset is relative to the frame pointer.
@@ -141,13 +144,13 @@ Return :
 --*/
 BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 {
-    TRACE("Initializing signal handlers\n");
+    TRACE("Initializing signal handlers %04x\n", flags);
 
 #if !HAVE_MACH_EXCEPTIONS
-
     char* enableAlternateStackCheck = getenv("COMPlus_EnableAlternateStackCheck");
 
     g_enable_alternate_stack_check = enableAlternateStackCheck && (strtoul(enableAlternateStackCheck, NULL, 10) != 0);
+#endif
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)
     {
@@ -167,16 +170,21 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
            see sigaction man page for more details
            */
         handle_signal(SIGILL, sigill_handler, &g_previous_sigill);
-        handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
         handle_signal(SIGFPE, sigfpe_handler, &g_previous_sigfpe);
         handle_signal(SIGBUS, sigbus_handler, &g_previous_sigbus);
-        // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
-        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
+        handle_signal(SIGABRT, sigabrt_handler, &g_previous_sigabrt);
         // We don't setup a handler for SIGINT/SIGQUIT when those signals are ignored.
         // Otherwise our child processes would reset to the default on exec causing them
         // to terminate on these signals.
         handle_signal(SIGINT, sigint_handler, &g_previous_sigint, 0 /* additionalFlags */, true /* skipIgnored */);
         handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
+
+#if HAVE_MACH_EXCEPTIONS
+        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
+#else
+        handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
+        // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
+        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
 
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
@@ -206,8 +214,10 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         }
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
+#endif // HAVE_MACH_EXCEPTIONS
     }
 
+#if !HAVE_MACH_EXCEPTIONS
     /* The default action for SIGPIPE is process termination.
        Since SIGPIPE can be signaled when trying to write on a socket for which
        the connection has been dropped, we need to tell the system we want
@@ -253,18 +263,18 @@ void SEHCleanupSignals()
 {
     TRACE("Restoring default signal handlers\n");
 
-#if !HAVE_MACH_EXCEPTIONS
     if (g_registered_signal_handlers)
     {
         restore_signal(SIGILL, &g_previous_sigill);
+#if !HAVE_MACH_EXCEPTIONS
         restore_signal(SIGTRAP, &g_previous_sigtrap);
+#endif
         restore_signal(SIGFPE, &g_previous_sigfpe);
         restore_signal(SIGBUS, &g_previous_sigbus);
         restore_signal(SIGSEGV, &g_previous_sigsegv);
         restore_signal(SIGINT, &g_previous_sigint);
         restore_signal(SIGQUIT, &g_previous_sigquit);
     }
-#endif // !HAVE_MACH_EXCEPTIONS
 
 #ifdef INJECT_ACTIVATION_SIGNAL
     if (g_registered_activation_handler)
@@ -281,8 +291,6 @@ void SEHCleanupSignals()
 
 /* internal function definitions **********************************************/
 
-#if !HAVE_MACH_EXCEPTIONS
-
 /*++
 Function :
     IsRunningOnAlternateStack
@@ -298,6 +306,9 @@ Return :
 --*/
 bool IsRunningOnAlternateStack(void *context)
 {
+#if HAVE_MACH_EXCEPTIONS
+    return false;
+#else
     bool isRunningOnAlternateStack;
     if (g_enable_alternate_stack_check)
     {
@@ -317,6 +328,7 @@ bool IsRunningOnAlternateStack(void *context)
     }
 
     return isRunningOnAlternateStack;
+#endif // HAVE_MACH_EXCEPTIONS
 }
 
 /*++
@@ -429,6 +441,8 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
+#if !HAVE_MACH_EXCEPTIONS
+
 /*++
 Function :
     signal_handler_worker
@@ -506,6 +520,8 @@ static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *con
     return pReturnPoint->returnFromHandler;
 }
 
+#endif // !HAVE_MACH_EXCEPTIONS
+
 /*++
 Function :
     sigsegv_handler
@@ -519,6 +535,7 @@ Parameters :
 --*/
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {
+#if !HAVE_MACH_EXCEPTIONS
     if (PALIsInitialized())
     {
         // First check if we have a stack overflow
@@ -578,6 +595,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             }
         }
     }
+#endif // !HAVE_MACH_EXCEPTIONS
 
     invoke_previous_action(&g_previous_sigsegv, code, siginfo, context);
 }
@@ -636,6 +654,22 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 
 /*++
 Function :
+    sigabrt_handler
+
+    handle SIGABRT signal - abort() API
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+
+    (no return value)
+--*/
+static void sigabrt_handler(int code, siginfo_t *siginfo, void *context)
+{
+    invoke_previous_action(&g_previous_sigabrt, code, siginfo, context);
+}
+
+/*++
+Function :
     sigint_handler
 
     handle SIGINT signal
@@ -669,7 +703,6 @@ static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
 
     restore_signal_and_resend(code, &g_previous_sigquit);
 }
-#endif // !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :
@@ -690,6 +723,11 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         _ASSERTE(g_pSynchronizationManager != nullptr);
 
         g_pSynchronizationManager->SendTerminationRequestToWorkerThread();
+
+        if (g_enableDumpOnSigTerm)
+        {
+            PROCCreateCrashDumpIfEnabled();
+        }
     }
     else
     {
@@ -795,8 +833,8 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 #endif
 }
 
-#if !HAVE_MACH_EXCEPTIONS
 
+#if !HAVE_MACH_EXCEPTIONS
 /*++
 Function :
     signal_ignore_handler
@@ -811,6 +849,7 @@ Parameters :
 static void signal_ignore_handler(int code, siginfo_t *siginfo, void *context)
 {
 }
+#endif // !HAVE_MACH_EXCEPTIONS
 
 
 void PAL_IgnoreProfileSignal(int signalNum)
@@ -854,6 +893,7 @@ Note:
 __attribute__((noinline))
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
 {
+#if !HAVE_MACH_EXCEPTIONS
     sigset_t signal_set;
     CONTEXT signalContextRecord;
     EXCEPTION_RECORD exceptionRecord;
@@ -919,10 +959,9 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
         CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
         return true;
     }
-
+#endif // !HAVE_MACH_EXCEPTIONS
     return false;
 }
-#endif // !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :

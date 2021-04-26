@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/stackstring.hpp"
+#include "pal/signal.hpp"
 
 #include <errno.h>
 #if HAVE_POLL
@@ -232,6 +233,7 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 char* g_argvCreateDump[8] = { nullptr };
+bool g_enableDumpOnSigTerm = false;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -3253,13 +3255,16 @@ PROCAbortInitialize()
     char* enabled = getenv("COMPlus_DbgEnableMiniDump");
     if (enabled != nullptr && _stricmp(enabled, "1") == 0)
     {
+        char* sigterm = getenv("COMPlus_EnableDumpOnSigTerm");
+        g_enableDumpOnSigTerm = sigterm != nullptr && strcmp(sigterm, "1") == 0;
+
         char* dumpName = getenv("COMPlus_DbgMiniDumpName");
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
+
         char* program = nullptr;
         char* pidarg = nullptr;
-
         if (!PROCBuildCreateDumpCommandLine((const char **)g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag))
         {
             return FALSE;
@@ -3358,6 +3363,8 @@ PROCAbort()
     PROCNotifyProcessShutdown();
 
     PROCCreateCrashDumpIfEnabled();
+
+    SEHCleanupSignals();
 
     // Abort the process after waiting for the core dump to complete
     abort();
