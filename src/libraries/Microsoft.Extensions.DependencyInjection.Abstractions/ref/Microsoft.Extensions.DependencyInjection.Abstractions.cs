@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ActivatorUtilitiesConstructorAttribute() { }
     }
-    public struct AsyncServiceScope : Microsoft.Extensions.DependencyInjection.IServiceScope, System.IAsyncDisposable
+    public readonly struct AsyncServiceScope : Microsoft.Extensions.DependencyInjection.IServiceScope, System.IAsyncDisposable
     {
         public AsyncServiceScope(Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
         {
