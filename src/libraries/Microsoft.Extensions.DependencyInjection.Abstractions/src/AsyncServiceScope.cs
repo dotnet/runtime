@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// A <see cref="IServiceScope" /> implementation that implements <see cref="IAsyncDisposable" />.
     /// </summary>
-    public struct AsyncServiceScope : IServiceScope, IAsyncDisposable
+    public readonly struct AsyncServiceScope : IServiceScope, IAsyncDisposable
     {
         private readonly IServiceScope _serviceScope;
 
