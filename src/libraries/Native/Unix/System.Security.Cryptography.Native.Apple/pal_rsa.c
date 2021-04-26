@@ -47,128 +47,6 @@ int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
     return ret;
 }
 
-int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
-                                         uint8_t* pbData,
-                                         int32_t cbData,
-                                         PAL_HashAlgorithm mgfAlgorithm,
-                                         CFDataRef* pDecryptedOut,
-                                         CFErrorRef* pErrorOut)
-{
-    if (pDecryptedOut != NULL)
-        *pDecryptedOut = NULL;
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (privateKey == NULL || pbData == NULL || cbData < 0 || pDecryptedOut == NULL || pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
-
-    int32_t ret = kErrorSeeError;
-    CFDataRef cfData = NULL;
-    SecKeyAlgorithm algorithm;
-
-    switch (mgfAlgorithm)
-    {
-        case PAL_SHA1: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA1; break;
-        case PAL_SHA256: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA256; break;
-        case PAL_SHA384: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA384; break;
-        case PAL_SHA512: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA512; break;
-        default:
-            return kErrorUnknownAlgorithm;
-    }
-
-    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
-    *pDecryptedOut = SecKeyCreateDecryptedData(privateKey, algorithm, cfData, pErrorOut);
-    CFRelease(cfData);
-
-    return *pDecryptedOut == NULL ? kErrorSeeError : 1;
-}
-
-int32_t AppleCryptoNative_RsaDecryptPkcs(
-    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
-{
-    if (pDecryptedOut != NULL)
-        *pDecryptedOut = NULL;
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (privateKey == NULL || pbData == NULL || cbData < 0 || pDecryptedOut == NULL || pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
-
-    int32_t ret = kErrorSeeError;
-    CFDataRef cfData = NULL;
-
-    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
-    *pDecryptedOut = SecKeyCreateDecryptedData(privateKey, kSecKeyAlgorithmRSAEncryptionPKCS1, cfData, pErrorOut);
-    CFRelease(cfData);
-
-    return *pDecryptedOut == NULL ? kErrorSeeError : 1;
-}
-
-int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
-                                         uint8_t* pbData,
-                                         int32_t cbData,
-                                         PAL_HashAlgorithm mgfAlgorithm,
-                                         CFDataRef* pEncryptedOut,
-                                         CFErrorRef* pErrorOut)
-{
-    if (pEncryptedOut != NULL)
-        *pEncryptedOut = NULL;
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (publicKey == NULL || pbData == NULL || cbData < 0 || pEncryptedOut == NULL || pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
-
-    int32_t ret = kErrorSeeError;
-    CFDataRef cfData = NULL;
-    SecKeyAlgorithm algorithm;
-
-    switch (mgfAlgorithm)
-    {
-        case PAL_SHA1: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA1; break;
-        case PAL_SHA256: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA256; break;
-        case PAL_SHA384: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA384; break;
-        case PAL_SHA512: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA512; break;
-        default:
-            return kErrorUnknownAlgorithm;
-    }
-
-    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
-    *pEncryptedOut = SecKeyCreateEncryptedData(publicKey, algorithm, cfData, pErrorOut);
-    CFRelease(cfData);
-
-    return *pEncryptedOut == NULL ? kErrorSeeError : 1;
-}
-
-int32_t AppleCryptoNative_RsaEncryptPkcs(
-    SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut)
-{
-    if (pEncryptedOut != NULL)
-        *pEncryptedOut = NULL;
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (publicKey == NULL || pbData == NULL || cbData < 0 || pEncryptedOut == NULL || pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
-
-    int32_t ret = kErrorSeeError;
-    CFDataRef cfData = NULL;
-
-    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
-    *pEncryptedOut = SecKeyCreateEncryptedData(publicKey, kSecKeyAlgorithmRSAEncryptionPKCS1, cfData, pErrorOut);
-    CFRelease(cfData);
-
-    return *pEncryptedOut == NULL ? kErrorSeeError : 1;
-}
-
 static int32_t RsaPrimitive(SecKeyRef key,
                             uint8_t* pbData,
                             int32_t cbData,
@@ -210,6 +88,71 @@ static int32_t RsaPrimitive(SecKeyRef key,
 
     *pDataOut = output;
     return 1;
+}
+
+static int32_t RsaOaepPrimitive(SecKeyRef key,
+                                uint8_t* pbData,
+                                int32_t cbData,
+                                CFDataRef* pDataOut,
+                                CFErrorRef* pErrorOut,
+                                PAL_HashAlgorithm mgfAlgorithm,
+                                CFDataRef func(SecKeyRef, SecKeyAlgorithm, CFDataRef, CFErrorRef*))
+{
+    if (pDataOut != NULL)
+        *pDataOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
+
+    SecKeyAlgorithm algorithm;
+    switch (mgfAlgorithm)
+    {
+        case PAL_SHA1: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA1; break;
+        case PAL_SHA256: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA256; break;
+        case PAL_SHA384: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA384; break;
+        case PAL_SHA512: algorithm = kSecKeyAlgorithmRSAEncryptionOAEPSHA512; break;
+        default:
+            return kErrorUnknownAlgorithm;
+    }
+
+    return RsaPrimitive(
+        key, pbData, cbData, pDataOut, pErrorOut, algorithm, func);
+
+}
+
+int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
+                                         uint8_t* pbData,
+                                         int32_t cbData,
+                                         PAL_HashAlgorithm mgfAlgorithm,
+                                         CFDataRef* pDecryptedOut,
+                                         CFErrorRef* pErrorOut)
+{
+    return RsaOaepPrimitive(
+        privateKey, pbData, cbData, pDecryptedOut, pErrorOut, mgfAlgorithm, SecKeyCreateDecryptedData);
+}
+
+int32_t AppleCryptoNative_RsaDecryptPkcs(
+    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
+{
+    return RsaPrimitive(
+        privateKey, pbData, cbData, pDecryptedOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionPKCS1, SecKeyCreateDecryptedData);
+}
+
+int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
+                                         uint8_t* pbData,
+                                         int32_t cbData,
+                                         PAL_HashAlgorithm mgfAlgorithm,
+                                         CFDataRef* pEncryptedOut,
+                                         CFErrorRef* pErrorOut)
+{
+    return RsaOaepPrimitive(
+        publicKey, pbData, cbData, pEncryptedOut, pErrorOut, mgfAlgorithm, SecKeyCreateEncryptedData);
+}
+
+int32_t AppleCryptoNative_RsaEncryptPkcs(
+    SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut)
+{
+    return RsaPrimitive(
+        publicKey, pbData, cbData, pEncryptedOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionPKCS1, SecKeyCreateEncryptedData);
 }
 
 int32_t AppleCryptoNative_RsaSignaturePrimitive(
