@@ -1698,6 +1698,32 @@ interp_get_ldind_for_mt (int mt)
 	return -1;
 }
 
+static int
+interp_get_stind_for_mt (int mt)
+{
+	switch (mt) {
+		case MINT_TYPE_I1:
+		case MINT_TYPE_U1:
+			return MINT_STIND_I1;
+		case MINT_TYPE_I2:
+		case MINT_TYPE_U2:
+			return MINT_STIND_I2;
+		case MINT_TYPE_I4:
+			return MINT_STIND_I4;
+		case MINT_TYPE_I8:
+			return MINT_STIND_I8;
+		case MINT_TYPE_R4:
+			return MINT_STIND_R4;
+		case MINT_TYPE_R8:
+			return MINT_STIND_R8;
+		case MINT_TYPE_O:
+			return MINT_STIND_REF;
+		default:
+			g_assert_not_reached ();
+	}
+	return -1;
+}
+
 static void
 interp_emit_ldobj (TransformData *td, MonoClass *klass)
 {
@@ -1731,33 +1757,7 @@ interp_emit_stobj (TransformData *td, MonoClass *klass)
 		interp_add_ins (td, MINT_STOBJ_VT);
 		td->last_ins->data [0] = get_data_item_index (td, klass);
 	} else {
-		int opcode;
-		switch (mt) {
-			case MINT_TYPE_I1:
-			case MINT_TYPE_U1:
-				opcode = MINT_STIND_I1;
-				break;
-			case MINT_TYPE_I2:
-			case MINT_TYPE_U2:
-				opcode = MINT_STIND_I2;
-				break;
-			case MINT_TYPE_I4:
-				opcode = MINT_STIND_I4;
-				break;
-			case MINT_TYPE_I8:
-				opcode = MINT_STIND_I8;
-				break;
-			case MINT_TYPE_R4:
-				opcode = MINT_STIND_R4;
-				break;
-			case MINT_TYPE_R8:
-				opcode = MINT_STIND_R8;
-				break;
-			case MINT_TYPE_O:
-				opcode = MINT_STIND_REF;
-				break;
-			default: g_assert_not_reached (); break;
-		}
+		int opcode = interp_get_stind_for_mt (mt);
 		interp_add_ins (td, opcode);
 	}
 	td->sp -= 2;
@@ -3995,7 +3995,7 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 		mono_error_assert_ok (error);
 		g_assert (offset);
 
-		interp_add_ins (td, MINT_LDSSFLDA);
+		interp_add_ins (td, MINT_LDTSFLDA);
 		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 		WRITE32_INS(td->last_ins, 0, &offset);
 	} else {
@@ -4065,49 +4065,33 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 	if (mono_class_field_is_special_static (field)) {
 		guint32 offset = GPOINTER_TO_UINT (mono_special_static_field_get_offset (field, error));
 		mono_error_assert_ok (error);
-		g_assert (offset);
+		g_assert (offset && (offset & 0x80000000) == 0);
 
-		// Offset is SpecialStaticOffset
-		if ((offset & 0x80000000) == 0 && mt != MINT_TYPE_VT) {
-			// This field is thread static
-			if (is_load) {
-				interp_add_ins (td, MINT_LDTSFLD_I1 + mt);
-				WRITE32_INS(td->last_ins, 0, &offset);
-				push_type (td, stack_type [mt], field_class);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			} else {
-				interp_add_ins (td, MINT_STTSFLD_I1 + mt);
-				WRITE32_INS(td->last_ins, 0, &offset);
-				td->sp--;
-				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			}
+		// Load address of thread static field
+		push_simple_type (td, STACK_TYPE_MP);
+		interp_add_ins (td, MINT_LDTSFLDA);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+		WRITE32_INS (td->last_ins, 0, &offset);
+
+		// Do a load/store to this address
+		if (is_load) {
+			int opcode = (mt == MINT_TYPE_VT) ? MINT_LDOBJ_VT : interp_get_ldind_for_mt (mt);
+			interp_add_ins (td, opcode);
+			interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+			td->sp--;
+			push_simple_type (td, stack_type [mt]);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			if (mt == MINT_TYPE_VT)
+				td->last_ins->data [0] = get_data_item_index (td, field_class);
 		} else {
+			int opcode = (mt == MINT_TYPE_VT) ? MINT_STOBJ_VT : interp_get_stind_for_mt (mt);
+			interp_add_ins (td, opcode);
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
 			if (mt == MINT_TYPE_VT) {
 				int size = mono_class_value_size (field_class, NULL);
 				g_assert (size < G_MAXUINT16);
-				if (is_load) {
-					interp_add_ins (td, MINT_LDSSFLD_VT);
-					push_type_vt (td, field_class, size);
-					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-				} else {
-					interp_add_ins (td, MINT_STSSFLD_VT);
-					td->sp--;
-					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				}
-				WRITE32_INS(td->last_ins, 0, &offset);
-				td->last_ins->data [2] = size;
-			} else {
-				if (is_load) {
-					interp_add_ins (td, MINT_LDSSFLD);
-					push_type (td, stack_type [mt], field_class);
-					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-				} else {
-					interp_add_ins (td, MINT_STSSFLD);
-					td->sp--;
-					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				}
-				td->last_ins->data [0] = get_data_item_index (td, field);
-				WRITE32_INS(td->last_ins, 1, &offset);
+				td->last_ins->data [0] = size;
 			}
 		}
 	} else {
