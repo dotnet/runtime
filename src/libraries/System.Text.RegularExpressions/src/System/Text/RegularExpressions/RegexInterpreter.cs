@@ -215,6 +215,23 @@ namespace System.Text.RegularExpressions
             return _caseInsensitive ? _textInfo.ToLower(ch) : ch;
         }
 
+        private void OptimizeRuntextposBacktracking(string str)
+        {
+            // If called after a greedy op such as a .*, we would have zipped runtextpos to the end without really examining any characters. Reset to maxBacktrackPos here as an optimization
+            if (_maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
+            {
+                // If lastIndexOf is -1, we backtrack to the max extent possible.
+                runtextpos = _maxBacktrackPosition;
+                ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition);
+                int lastIndexOf = runtextSpan.LastIndexOf(str);
+                if (lastIndexOf > -1)
+                {
+                    // Found the next position to match. Move runtextpos here
+                    runtextpos = _maxBacktrackPosition + lastIndexOf;
+                }
+            }
+        }
+
         private bool MatchString(string str)
         {
             int c = str.Length;
@@ -224,20 +241,7 @@ namespace System.Text.RegularExpressions
             {
                 if (runtextend - runtextpos < c)
                 {
-                    // If MatchString was called after a greedy op such as a .*, we would have zipped runtextpos to the end without really examining any characters. Reset to maxBacktrackPos here as an optimization
-                    if (_maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
-                    {
-                        // If lastIndexOf is -1, we backtrack to the max extent possible.
-                        runtextpos = _maxBacktrackPosition;
-                        ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition);
-                        int lastIndexOf = runtextSpan.LastIndexOf(str);
-                        if (lastIndexOf > -1)
-                        {
-                            // Found the next position to match. Move runtextpos here
-                            runtextpos = _maxBacktrackPosition + lastIndexOf;
-                        }
-                    }
-
+                    OptimizeRuntextposBacktracking(str);
                     return false;
                 }
 
@@ -1041,8 +1045,10 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexCode.One:
-                        if (Forwardchars() < 1 || Forwardcharnext() != (char)Operand(0))
+                        char chOne = (char)Operand(0);
+                        if (Forwardchars() < 1 || Forwardcharnext() != chOne)
                         {
+                            OptimizeRuntextposBacktracking(chOne.ToString());
                             break;
                         }
                         advance = 1;
@@ -1233,6 +1239,7 @@ namespace System.Text.RegularExpressions
                             if (len > i && _operator == RegexCode.Notoneloop)
                             {
                                 TrackPush(len - i - 1, runtextpos - Bump());
+                                Debug.Assert(_maxBacktrackPosition == -1, $"maxBacktrackPosition = {_maxBacktrackPosition}, runtext = {runtext}, runtextpos = {runtextpos}, ch = {ch}, code = {_code}, runregex = {runregex}");
                                 _maxBacktrackPosition = tempMaxBacktrackPosition;
                             }
                         }
