@@ -8,22 +8,22 @@ your changes to other people since dotnet.exe and NuGet insure that you end up w
 set of binaries that can work together.
 
 However, packing and unpacking the runtime binaries adds extra steps to the deployment process and when
-you are in the tight code-build-debug loop these extra steps are cumbersome.
+working in a tight edit-build-debug loop these extra steps become cumbersome.
 
-For this situation there is an alternative host to `dotnet` called `corerun` that is well suited
-for this. It does not know about NuGet at all, and has very simple rules.  It needs to find the
-.NET runtime (for example, `coreclr.dll`) and additionally any class library assemblies (for example, `System.Runtime.dll`, `System.IO.dll`, etc).
+For this situation there is an alternative host to `dotnet` called `corerun` that is well suited. It does not
+know about NuGet at all, and has very simple rules.  It needs to find the .NET runtime (for example, `coreclr.dll`)
+and additionally any class library assemblies (for example, `System.Runtime.dll`, `System.IO.dll`, etc).
 
 It does this using heuristics in the following order:
 
-1. Check if a the `--clr-path` argument is set.
-1. See if the `CORE_ROOT` environment variable is defined.
+1. Check if the user passed the `--clr-path` argument.
+1. Check if the `CORE_ROOT` environment variable is defined.
 1. Check if the .NET runtime binary is in the same directory as the `corerun` binary.
 
-However, the .NET runtime binary is discovered its location is defined as "Core Root". The Core Root directory
-is used to discover not only the .NET runtime binary but also all class library assemblies. Additional
-directories to be included in the set of class library assemblies can be provided using the `CORE_LIBRARIES`
-environment variable.
+Regardless of which method the is used to discover the .NET runtime binary, its location is defined as "Core Root".
+The Core Root directory is not only used to discover the .NET runtime binary but also all base class library
+assemblies. Additional directories can be included in the set of class library assemblies by defining the
+`CORE_LIBRARIES` environment variable.
 
 The above rules can be used in a number of ways.
 
@@ -41,16 +41,17 @@ set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\1.0.0
 corerun HelloWorld.dll
 ```
 
-On non-Windows platforms, setting environment variables is different but the logic is identical. For example, on Linux use `/usr/share` for `%Program Files%`.
+On non-Windows platforms, setting environment variables is different but the logic is identical. For example, on macOS use `/usr/local/share` for `%Program Files%`.
 
-The `%CoreCLR%` represents the base of your dotnet/runtime repository. The first line puts the build output directory (your OS, architecture, and buildType
-may be different) and thus the `corerun` binary on your path.
-The second line tells `corerun` where to find class library assemblies, in this case we tell it
-to find them where the installation of `dotnet` placed its copy. Note the version number in the path above may change depending on what is currently installed on your system.
+The `%CoreCLR%` represents the base of your dotnet/runtime repository. The first line puts the build output directory
+(your OS, architecture, and buildType may be different) and thus the `corerun` binary on your path.
+The second line tells `corerun` where to find class library assemblies, in this case we tell it to find them where
+the installation of `dotnet` placed its copy. Note the version number in the path above may change depending on what
+is currently installed on your system.
 
 Thus when you run `corerun HelloWorld.dll`, `corerun` knows where to get the assemblies it needs.
-Notice that once you set up the path and the `CORE_LIBRARIES` environment, after a rebuild you can simply use `corerun` to run your
-application &ndash; you don't have to move any binaries around.
+Notice that once you set the path and `CORE_LIBRARIES` environment variable, after a rebuild you can simply use
+`corerun` to run your application &ndash; you don't have to move any binaries around.
 
 ## Using `corerun` to Execute a Published Application
 
@@ -69,24 +70,24 @@ It places this runtime in the directory
 `artifacts\tests\coreclr\<OS>.<Arch>.<BuildType>\Tests\Core_Root`
  starting at the repository root. The way the tests are expected to work is that you can set the environment
 variable `CORE_ROOT` to this directory &ndash; you don't have to set `CORE_LIBRARIES` since the test environment has copied all base class libraries assemblies to this `Core_Root` directory &ndash; and you can run any test. For example, after building the tests
-(running `src\tests\build` from the repository base) and running `src\tests\run`) you can do the following on Windows:
+(running `src\tests\build` from the repository base) and running `src\tests\run`) you can do the following on Windows to set up an environment where `corerun` can run any tests.
 
 ```cmd
 set PATH=%PATH%;%CoreCLR%\artifacts\Product\windows.x64.Debug
 set CORE_ROOT=%CoreCLR%\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
 ```
-sets you up so that `corerun` can run any of the tests. For example, the following runs the finalizerio test on Windows.
+For example, the following runs the finalizerio test on Windows.
 
 ```cmd
-corerun artifacts\tests\coreclr\windows.X64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
+corerun artifacts\tests\coreclr\windows.x64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
 ```
 
 ## Additional `corerun` options
 
-The `corerun` binary is designed to be a platform agnostic tool for quick testing of a locally build .NET runtime.
-This means the `corerun` binary must be able to feasibly exercise any scenario the official `dotnet` binary is capable of.
-It must also be able to help facilitate .NET runtime development and investigation of test failures.
-See `corerun -h` for usage details.
+The `corerun` binary is designed to be a platform agnostic tool for quick testing of a locally built .NET runtime.
+This means the `corerun` binary must be able to feasibly exercise any scenario the official `dotnet` binary is capable
+of. It must also be able to help facilitate .NET runtime development and investigation of test failures.
+See `corerun --help` for additional details.
 
 **Options**
 
