@@ -7026,7 +7026,7 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock);
-    bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock);
+    bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
 
 #if ASSERTION_PROP
     /**************************************************************************

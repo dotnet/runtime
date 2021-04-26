@@ -11,7 +11,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Internal.TypeSystem;
 
-namespace Microsoft.Diagnostics.Tools.Pgo
+namespace Internal.TypeSystem
 {
     class TypeSystemMetadataEmitter
     {
@@ -134,10 +134,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             EntityHandle typeHandle;
 
-            if (type.IsTypeDefinition)
+            if (type.IsTypeDefinition && type is MetadataType metadataType)
             {
-                MetadataType metadataType = (MetadataType)type;
-
                 // Make a typeref
                 StringHandle typeName = _metadataBuilder.GetOrAddString(metadataType.Name);
                 StringHandle typeNamespace = metadataType.Namespace != null ? _metadataBuilder.GetOrAddString(metadataType.Namespace) : default(StringHandle);
@@ -293,9 +291,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 var arrayType = (ArrayType)type;
                 blobBuilder.WriteByte((byte)SignatureTypeCode.Array);
                 EncodeType(blobBuilder, type.GetParameterType(), signatureDataEmitter);
-                var shapeEncoder = new ArrayShapeEncoder(blobBuilder);
-                // TODO Add support for non-standard array shapes
-                shapeEncoder.Shape(arrayType.Rank, default(ImmutableArray<int>), default(ImmutableArray<int>));
+
+                signatureDataEmitter.EmitArrayShapeAtCurrentIndexStack(blobBuilder, arrayType.Rank);
             }
             else if (type.IsPointer)
             {
@@ -386,6 +383,51 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
 
+            public void EmitArrayShapeAtCurrentIndexStack(BlobBuilder signatureBuilder, int rank)
+            {
+                var shapeEncoder = new ArrayShapeEncoder(signatureBuilder);
+
+                bool emittedWithShape = false;
+
+                if (!Complete)
+                {
+                    if (_embeddedDataIndex < _embeddedData.Length)
+                    {
+                        if (_embeddedData[_embeddedDataIndex].kind == EmbeddedSignatureDataKind.ArrayShape)
+                        {
+                            string indexData = string.Join(".", _indexStack);
+
+                            var arrayShapePossibility = _embeddedData[_embeddedDataIndex].index.Split('|');
+                            if (arrayShapePossibility[0] == indexData)
+                            {
+                                string[] boundsStr = arrayShapePossibility[1].Split(',', StringSplitOptions.RemoveEmptyEntries);
+                                string[] loBoundsStr = arrayShapePossibility[2].Split(',', StringSplitOptions.RemoveEmptyEntries);
+                                int[] bounds = new int[boundsStr.Length];
+                                int[] loBounds = new int[loBoundsStr.Length];
+
+                                for (int i = 0; i < boundsStr.Length; i++)
+                                {
+                                    bounds[i] = Int32.Parse(boundsStr[i]);
+                                }
+                                for (int i = 0; i < loBoundsStr.Length; i++)
+                                {
+                                    loBounds[i] = Int32.Parse(loBoundsStr[i]);
+                                }
+
+                                shapeEncoder.Shape(rank, ImmutableArray.Create(bounds), ImmutableArray.Create(loBounds));
+                                _embeddedDataIndex++;
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                if (!emittedWithShape)
+                {
+                    shapeEncoder.Shape(rank, ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
+                }
+            }
+
             public void EmitAtCurrentIndexStack(BlobBuilder signatureBuilder)
             {
                 if (!Complete)
@@ -412,6 +454,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                         signatureBuilder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(handle));
                                     }
                                     break;
+
+                                case EmbeddedSignatureDataKind.ArrayShape:
+                                    return;
 
                                 default:
                                     throw new NotImplementedException();
@@ -472,7 +517,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             signatureEncoder.MethodSignature(sigCallingConvention, genericParameterCount, isInstanceMethod);
             signatureBuilder.WriteCompressedInteger(sig.Length);
-            // TODO Process custom modifiers in some way
             EncodeType(signatureBuilder, sig.ReturnType, signatureDataEmitter);
             for (int i = 0; i < sig.Length; i++)
                 EncodeType(signatureBuilder, sig[i], signatureDataEmitter);

@@ -155,7 +155,7 @@ namespace System.Text.Json
             return WriteAsyncCore(
                 utf8Json,
                 value!,
-                JsonHelpers.GetTypeInfo(context, runtimeType),
+                GetTypeInfo(context, runtimeType),
                 cancellationToken);
         }
 

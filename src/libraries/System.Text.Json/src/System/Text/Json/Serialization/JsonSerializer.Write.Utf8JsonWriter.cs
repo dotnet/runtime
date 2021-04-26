@@ -122,7 +122,7 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteUsingMetadata(writer, value, JsonHelpers.GetTypeInfo(context, runtimeType));
+            WriteUsingMetadata(writer, value, GetTypeInfo(context, runtimeType));
         }
 
         private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type runtimeType, JsonSerializerOptions? options)
