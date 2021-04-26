@@ -37,5 +37,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>
