@@ -71,9 +71,10 @@ NOHANDLES(ICALL(EVENTPIPE_5, "Enable", ves_icall_System_Diagnostics_Tracing_Even
 NOHANDLES(ICALL(EVENTPIPE_6, "EventActivityIdControl", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl))
 NOHANDLES(ICALL(EVENTPIPE_7, "GetNextEvent", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent))
 NOHANDLES(ICALL(EVENTPIPE_8, "GetProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider))
-NOHANDLES(ICALL(EVENTPIPE_9, "GetSessionInfo", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo))
-NOHANDLES(ICALL(EVENTPIPE_10, "GetWaitHandle", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle))
-NOHANDLES(ICALL(EVENTPIPE_11, "WriteEventData", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData))
+NOHANDLES(ICALL(EVENTPIPE_9, "GetRuntimeCounterValue", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue))
+NOHANDLES(ICALL(EVENTPIPE_10, "GetSessionInfo", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo))
+NOHANDLES(ICALL(EVENTPIPE_11, "GetWaitHandle", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle))
+NOHANDLES(ICALL(EVENTPIPE_12, "WriteEventData", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData))
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, MonoBoolean, 3, (MonoReflectionType, MonoArrayOut, MonoArrayOut))

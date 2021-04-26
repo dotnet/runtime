@@ -1282,6 +1282,8 @@ ep_finish_init (void)
 {
 	ep_requires_lock_not_held ();
 
+	ep_rt_init_finish ();
+
 	// Enable streaming for any deferred sessions
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;

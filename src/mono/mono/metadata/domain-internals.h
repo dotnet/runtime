@@ -101,7 +101,7 @@ mono_get_runtime_info (void);
 void
 mono_runtime_set_no_exec (gboolean val);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_runtime_get_no_exec (void);
 
 gboolean

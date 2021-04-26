@@ -129,7 +129,7 @@
     <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreFxVersion>
     <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreCLRVersion>
     <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreCLRVersion>
-    <optimizationPGOCoreCLRVersion>99.99.99-master-20210415.12</optimizationPGOCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20210420.2</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
@@ -165,7 +165,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21222.2</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21226.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.5.21219.2</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
