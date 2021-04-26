@@ -91,8 +91,10 @@ namespace System.Linq
         /// In query expression syntax, a `group by` (Visual C#) or `Group By Into` (Visual Basic) clause translates to an invocation of <see cref="O:Enumerable.GroupBy" />. The translation of the query expression in the following example is equivalent to the query in the example above.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet122":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet122":::
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  In a Visual C# or Visual Basic query expression, the element and key selection expressions occur in the reverse order from their argument positions in a call to the <see cref="GroupBy{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3})" /> method.</example>
+        /// ]]></format>
         /// <related type="Article" href="/dotnet/csharp/language-reference/keywords/group-clause">group clause (C# Reference)</related>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/group-by-clause">Group By Clause (Visual Basic)</related>
         public static IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector) =>

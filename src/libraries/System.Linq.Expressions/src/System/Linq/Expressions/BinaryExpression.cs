@@ -1470,6 +1470,7 @@ namespace System.Linq.Expressions
         /// -   If the <see cref="O:System.Linq.Expressions.Expression.Type" /> property of either <paramref name="left" /> or <paramref name="right" /> represents a user-defined type that overloads the bitwise `AND` operator, the <see cref="System.Reflection.MethodInfo" /> that represents that method is the implementing method.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
+        /// >  The conditional `AND` operator cannot be overloaded in C# or Visual Basic. However, the conditional `AND` operator is evaluated by using the bitwise `AND` operator. Thus, a user-defined overload of the bitwise `AND` operator can be the implementing method for this node type.
         /// ]]></format>
         /// -   Otherwise, if <paramref name="left" />.Type and <paramref name="right" />.Type are Boolean types, the implementing method is <see langword="null" />.
         /// #### Node Type and Lifted versus Non-Lifted
@@ -1508,6 +1509,7 @@ namespace System.Linq.Expressions
         /// -   Otherwise, if the <see cref="O:System.Linq.Expressions.Expression.Type" /> property of either <paramref name="left" /> or <paramref name="right" /> represents a user-defined type that overloads the bitwise `AND` operator, the <see cref="System.Reflection.MethodInfo" /> that represents that method is the implementing method.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
+        /// >  The conditional `AND` operator cannot be overloaded in C# or Visual Basic. However, the conditional `AND` operator is evaluated by using the bitwise `AND` operator. Thus, a user-defined overload of the bitwise `AND` operator can be the implementing method for this node type.
         /// ]]></format>
         /// -   Otherwise, if <paramref name="left" />.Type and <paramref name="right" />.Type are Boolean types, the implementing method is <see langword="null" />.
         /// #### Node Type and Lifted versus Non-Lifted
@@ -1567,6 +1569,7 @@ namespace System.Linq.Expressions
         /// -   If the <see cref="O:System.Linq.Expressions.Expression.Type" /> property of either <paramref name="left" /> or <paramref name="right" /> represents a user-defined type that overloads the bitwise `OR` operator, the <see cref="System.Reflection.MethodInfo" /> that represents that method is the implementing method.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
+        /// >  The conditional `OR` operator cannot be overloaded in C# or Visual Basic. However, the conditional `OR` operator is evaluated by using the bitwise `OR` operator. Thus, a user-defined overload of the bitwise `OR` operator can be the implementing method for this node type.
         /// ]]></format>
         /// -   Otherwise, if <paramref name="left" />.Type and <paramref name="right" />.Type are Boolean types, the implementing method is <see langword="null" />.
         /// #### Node Type and Lifted versus Non-Lifted
@@ -1605,6 +1608,7 @@ namespace System.Linq.Expressions
         /// -   Otherwise, if the <see cref="O:System.Linq.Expressions.Expression.Type" /> property of either <paramref name="left" /> or <paramref name="right" /> represents a user-defined type that overloads the bitwise `OR` operator, the <see cref="System.Reflection.MethodInfo" /> that represents that method is the implementing method.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
+        /// >  The conditional `OR` operator cannot be overloaded in C# or Visual Basic. However, the conditional `OR` operator is evaluated by using the bitwise `OR` operator. Thus, a user-defined overload of the bitwise `OR` operator can be the implementing method for this node type.
         /// ]]></format>
         /// -   Otherwise, if <paramref name="left" />.Type and <paramref name="right" />.Type are Boolean types, the implementing method is <see langword="null" />.
         /// #### Node Type and Lifted versus Non-Lifted
