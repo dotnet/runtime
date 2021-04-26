@@ -37,7 +37,7 @@ namespace Sample
         BenchTask Task
         {
             get { return task; }
-            set { task = value; task.Initialize(); }
+            set { task = value; measurementIdx = 0; task.Initialize(); }
         }
         List<BenchTask.Result> results = new List<BenchTask.Result> ();
         bool resultsReturned;
@@ -61,16 +61,17 @@ namespace Sample
                 if (measurementIdx >= Task.Measurements.Length)
                 {
                     taskCounter++;
+
+                    if (taskCounter > tasks.Length)
+                    {
+                        resultsReturned = true;
+
+                        return ResultsSummary();
+                    }
+
+                    Task = tasks[taskCounter - 1];
                 }
 
-                if (taskCounter > tasks.Length)
-                {
-                    resultsReturned = true;
-
-                    return ResultsSummary ();
-                }
-
-                Task = tasks[taskCounter - 1];
             }
 
             runIdx++;
