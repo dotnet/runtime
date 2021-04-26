@@ -335,7 +335,35 @@ jobs:
       timeoutInMinutes: 120
 
 #
-# CoreCLR Build for running Catalyst & Apple Silicon libraries-innerloop
+# CoreCLR Build for running Mac Catalyst libraries-innerloop
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: release
+    platforms:
+    - MacCatalyst_x64
+    jobParameters:
+      testGroup: innerloop
+#
+# Libraries Build for running Mac Catalyst libraries-innerloop
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - MacCatalyst_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+      isFullMatrix: ${{ variables['isFullMatrix'] }}
+      runTests: true
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+
+#
+# CoreCLR Build for running Apple Silicon libraries-innerloop
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -344,11 +372,10 @@ jobs:
     platforms:
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - OSX_arm64
-      - MacCatalyst_x64
     jobParameters:
       testGroup: innerloop
 #
-# Libraries Build for running Catalyst & Apple Silicon libraries-innerloop
+# Libraries Build for running Apple Silicon libraries-innerloop
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -357,7 +384,6 @@ jobs:
     platforms:
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - OSX_arm64
-      - MacCatalyst_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: ${{ variables['isOfficialBuild'] }}
