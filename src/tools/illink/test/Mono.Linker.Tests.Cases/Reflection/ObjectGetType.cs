@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			SealedType.Test ();
 			UnsealedType.Test ();
+			TypeOfGenericParameters.Test ();
 
 			BasicAnnotationWithNoDerivedClasses.Test ();
 			MultipleValuesWithAnnotations.Test (0);
@@ -100,6 +101,128 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				// GetType call on an unsealed type is not recognized and produces a warning
 				s_unsealedClassField.GetType ().GetMethod ("Method");
+			}
+		}
+
+		[Kept]
+		class TypeOfGenericParameters
+		{
+			[Kept]
+			class MethodWithRequirementsTest
+			{
+				[Kept]
+				[KeptMember (".ctor()")]
+				class TestType
+				{
+					[Kept] // Due to the annotation on the generic parameter
+					public static void PublicMethod () { }
+				}
+
+				[Kept]
+				[ExpectedWarning ("IL2075", "GetMethod")]
+				static void MethodWithRequirements<
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TWithMethods> (TWithMethods instance)
+				{
+					instance.GetType ().GetMethod ("PublicMethod");
+				}
+
+				[Kept]
+				public static void Test ()
+				{
+					MethodWithRequirements<TestType> (new TestType ());
+				}
+			}
+
+			[Kept]
+			class MethodWithRequirementsAndDerivedTypeTest
+			{
+				[Kept]
+				[KeptMember (".ctor()")]
+				class Base
+				{
+					[Kept]
+					public static void PublicMethodOnBase () { }
+				}
+
+				[Kept]
+				[KeptBaseType (typeof (Base))]
+				[KeptMember (".ctor()")]
+				class Derived : Base
+				{
+					// This should not be kept
+					public static void PublicMethodOnDerived () { }
+				}
+
+				[Kept]
+				[ExpectedWarning ("IL2075", "GetMethod")]
+				static void MethodWithRequirements<
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				TWithMethods>
+					(TWithMethods instance)
+				{
+					instance.GetType ().GetMethod ("PublicMethod");
+				}
+
+				[Kept]
+				public static void Test ()
+				{
+					MethodWithRequirements<Base> (new Derived ());
+				}
+			}
+
+			[Kept]
+			class GenericWithRequirements
+			{
+				[Kept]
+				[KeptMember (".ctor()")]
+				class TestType
+				{
+				}
+
+				[Kept]
+				[KeptMember (".cctor()")]
+				class Generic<
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				TWithMethods> where TWithMethods : new()
+				{
+					[Kept]
+					static TWithMethods ReturnAnnotated () { return new TWithMethods (); }
+
+					[Kept]
+					static TWithMethods _fieldAnnotated = new TWithMethods ();
+
+					[Kept]
+					[ExpectedWarning ("IL2075", "GetMethod")]
+					public static void TestReturn ()
+					{
+						ReturnAnnotated ().GetType ().GetMethod ("Test");
+					}
+
+					[Kept]
+					[ExpectedWarning ("IL2075", "GetMethod")]
+					public static void TestField ()
+					{
+						_fieldAnnotated.GetType ().GetMethod ("Test");
+					}
+				}
+
+				[Kept]
+				public static void Test ()
+				{
+					Generic<TestType>.TestReturn ();
+					Generic<TestType>.TestField ();
+				}
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				MethodWithRequirementsTest.Test ();
+				MethodWithRequirementsAndDerivedTypeTest.Test ();
+				GenericWithRequirements.Test ();
 			}
 		}
 

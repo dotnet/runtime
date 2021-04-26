@@ -957,6 +957,21 @@ namespace Mono.Linker.Dataflow
 				//
 				case IntrinsicId.Object_GetType: {
 						foreach (var valueNode in methodParams[0].UniqueValues ()) {
+							// Note that valueNode can be statically typed in IL as some generic argument type.
+							// For example:
+							//   void Method<T>(T instance) { instance.GetType().... }
+							// Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
+							// But it could be that T is annotated with for example PublicMethods:
+							//   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
+							// In this case it's in theory possible to handle it, by treating the T basically as a base class
+							// for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
+							// has to happen on the callsite, which doesn't know that GetType() will be used...).
+							// For now we're intentionally ignoring this case - it will produce a warning.
+							// The counter example is:
+							//   Method<Base>(new Derived);
+							// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
+							// currently it won't do.
+
 							TypeDefinition staticType = valueNode.StaticType;
 							if (staticType is null) {
 								// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
