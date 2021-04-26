@@ -640,17 +640,10 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
             }
         }
 
-        CallConvBuilder::CallConvModifiers modifiers;
-        callConvBuilder.GetCurrentCallConv(callConvLocal, modifiers);
-
-        if (callConvLocal == CallConvBuilder::DefaultValue)
+        callConvLocal = callConvBuilder.GetCurrentCallConv();
+        if (callConvLocal == CallConvBuilder::UnsetValue)
         {
             callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
-        }
-
-        if (modifiers & CallConvBuilder::CALL_CONV_MOD_MEMBERFUNCTION)
-        {
-            callConvLocal = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(callConvLocal);
         }
     }
     *pCallConv = callConvLocal;

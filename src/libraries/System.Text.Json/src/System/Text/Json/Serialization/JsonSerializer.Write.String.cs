@@ -76,7 +76,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            return SerializeUsingMetadata(value, jsonTypeInfo);
+            return WriteUsingMetadata(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -106,18 +106,16 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return SerializeUsingMetadata(value, JsonHelpers.GetTypeInfo(context, runtimeType));
+            return WriteUsingMetadata(value, GetTypeInfo(context, runtimeType));
         }
 
         private static string Write<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-            JsonTypeInfo typeInfo = options.GetOrAddClassForRootType(runtimeType);
-            return SerializeUsingMetadata(value, typeInfo);
+            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
+            return WriteUsingMetadata(value, typeInfo);
         }
 
-        private static string SerializeUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
         {
             if (jsonTypeInfo == null)
             {

@@ -63,7 +63,7 @@ internal class Xcode
             runtimeInclude = Path.Combine (runtimeInclude, "mono-2.0");
         }
         // bundle everything as resources excluding native files
-        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
+        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
         if (stripDebugSymbols)
         {
             excludes.Add(".pdb");

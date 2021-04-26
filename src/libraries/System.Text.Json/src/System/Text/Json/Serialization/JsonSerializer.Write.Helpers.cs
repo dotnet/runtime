@@ -85,12 +85,5 @@ namespace System.Text.Json
 
             return inputType;
         }
-
-        private static JsonTypeInfo GetTypeInfo(Type runtimeType, JsonSerializerOptions? options)
-        {
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-            return options.GetOrAddClassForRootType(runtimeType);
-        }
     }
 }

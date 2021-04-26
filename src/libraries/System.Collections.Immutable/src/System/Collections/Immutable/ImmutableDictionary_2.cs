@@ -963,6 +963,7 @@ namespace System.Collections.Immutable
             var newRoot = origin.Root;
             foreach (var pair in items)
             {
+                Requires.NotNullAllowStructs(pair.Key, nameof(pair.Key));
                 int hashCode = origin.KeyComparer.GetHashCode(pair.Key);
                 HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
                 OperationResult result;

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Utf8MemoryStream = System.Text.Json.Tests.Serialization.CollectionTests.Utf8MemoryStream;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -74,9 +75,71 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static async Task DeserializeAsyncEnumerable_ShouldTolerateCustomQueueConverters()
+        {
+            const int expectedCount = 20;
+
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                Converters = { new DegenerateQueueConverterFactory() }
+            };
+
+            byte[] data = JsonSerializer.SerializeToUtf8Bytes(Enumerable.Repeat(Enumerable.Repeat(1,3), expectedCount));
+
+            using var stream = new MemoryStream(data);
+
+            int callbackCount = 0;
+            await foreach (Queue<int> nestedQueue in JsonSerializer.DeserializeAsyncEnumerable<Queue<int>>(stream, options))
+            {
+                Assert.Equal(1, nestedQueue.Count);
+                Assert.Equal(0, nestedQueue.Peek());
+                callbackCount++;
+            }
+
+            Assert.Equal(expectedCount, callbackCount);
+        }
+
+        private class DegenerateQueueConverterFactory : JsonConverterFactory
+        {
+            public override bool CanConvert(Type typeToConvert) => typeToConvert.IsGenericType && typeof(Queue<>) == typeToConvert.GetGenericTypeDefinition();
+            public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            {
+                Type queueElement = typeToConvert.GetGenericArguments()[0];
+                Type converterType = typeof(DegenerateQueueConverter<>).MakeGenericType(queueElement);
+                return (JsonConverter)Activator.CreateInstance(converterType, nonPublic: true);
+            }
+
+            private class DegenerateQueueConverter<T> : JsonConverter<Queue<T>>
+            {
+                public override bool CanConvert(Type typeToConvert) => typeof(Queue<T>).IsAssignableFrom(typeToConvert);
+                public override Queue<T>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndArray);
+                    var queue = new Queue<T>();
+                    queue.Enqueue(default);
+                    return queue;
+                }
+
+                public override void Write(Utf8JsonWriter writer, Queue<T> value, JsonSerializerOptions options) => throw new NotImplementedException();
+            }
+        }
+
+        [Fact]
         public static void DeserializeAsyncEnumerable_NullStream_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: null));
+        }
+
+        [Theory]
+        [InlineData("42")]
+        [InlineData("\"\"")]
+        [InlineData("{}")]
+        public static async Task DeserializeAsyncEnumerable_NotARootLevelJsonArray_ThrowsJsonException(string json)
+        {
+            using var utf8Json = new Utf8MemoryStream(json);
+            IAsyncEnumerable<int> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json);
+            await using IAsyncEnumerator<int> enumerator = asyncEnumerable.GetAsyncEnumerator();
+            await Assert.ThrowsAsync<JsonException>(async () => await enumerator.MoveNextAsync());
         }
 
         [Fact]

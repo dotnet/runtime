@@ -422,8 +422,10 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestRuntimes.Mono)]
         [InlineData(GCLatencyMode.Batch)]
         [InlineData(GCLatencyMode.Interactive)]
-        [InlineData(GCLatencyMode.LowLatency)]
-        [InlineData(GCLatencyMode.SustainedLowLatency)]
+        // LowLatency does not roundtrip for server GC
+        // [InlineData(GCLatencyMode.LowLatency)]
+        // SustainedLowLatency does not roundtrip without background GC
+        // [InlineData(GCLatencyMode.SustainedLowLatency)]
         public static void LatencyRoundtrips(GCLatencyMode value)
         {
             GCLatencyMode orig = GCSettings.LatencyMode;
