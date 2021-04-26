@@ -9760,7 +9760,8 @@ void Compiler::optRemoveRedundantZeroInits()
                                 if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
                                     (lclDsc->lvIsStructField &&
                                      BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
-                                    (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                                    ((!lclDsc->lvTracked || !isEntire) &&
+                                     !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
                                 {
                                     // We are guaranteed to have a zero initialization in the prolog or a
                                     // dominating explicit zero initialization and the local hasn't been redefined

@@ -971,7 +971,7 @@ public:
     var_types lvaArgType();
 
     // Returns true if this variable contains GC pointers (including being a GC pointer itself).
-    bool HasGCPtr()
+    bool HasGCPtr() const
     {
         return varTypeIsGC(lvType) || ((lvType == TYP_STRUCT) && m_layout->HasGCPtr());
     }
