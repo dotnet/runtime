@@ -1,0 +1,5 @@
+<linker>
+     <assembly fullname="System.Private.CoreLib">
+       <type fullname="System.Collections.ArrayList" />
+   </assembly>
+</linker>
