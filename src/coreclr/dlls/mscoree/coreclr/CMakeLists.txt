@@ -243,6 +243,9 @@ if(CLR_CMAKE_TARGET_WIN32)
         add_custom_target(inject_debug_resources_singlefilehost ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_singlefilehost.timestamp)
         add_dependencies(runtime inject_debug_resources_singlefilehost)
     endif()
+else()
+    add_custom_target(inject_debug_resources_coreclr DEPENDS coreclr)
+    add_custom_target(inject_debug_resources_singlefilehost DEPENDS singlefilehost)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets

@@ -48,25 +48,17 @@ bool Compiler::fgHaveProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgComputeProfileScale: determine how much scaling to apply
-//   to raw profile count data.
+// fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
-// Notes:
-//   Scaling is only needed for inlinees, and the results of this
-//   computation are recorded in fields of impInlineInfo.
-//
-void Compiler::fgComputeProfileScale()
+void Compiler::fgApplyProfileScale()
 {
     // Only applicable to inlinees
-    assert(compIsForInlining());
-
-    // Have we already determined the scale?
-    if (impInlineInfo->profileScaleState != InlineInfo::ProfileScaleState::UNDETERMINED)
+    //
+    if (!compIsForInlining())
     {
         return;
     }
 
-    // No, not yet -- try and compute the scale.
     JITDUMP("Computing inlinee profile scale:\n");
 
     // Callee has profile data?
@@ -85,18 +77,15 @@ void Compiler::fgComputeProfileScale()
     //
     // Note when/if we early do normalization this may need to change.
     //
-    BasicBlock::weight_t const calleeWeight = fgFirstBB->bbWeight;
+    BasicBlock::weight_t calleeWeight = fgFirstBB->bbWeight;
 
     // Callee entry weight is nonzero?
-    //
-    // If callee entry profile count is zero, perhaps we should discard
-    // the profile data.
+    // If so, just choose the smallest plausible weight.
     //
     if (calleeWeight == BB_ZERO_WEIGHT)
     {
-        JITDUMP("   ... callee entry count is zero\n");
-        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
-        return;
+        calleeWeight = fgHaveProfileData() ? 1.0f : BB_UNITY_WEIGHT;
+        JITDUMP("   ... callee entry has weight zero, will use weight of " FMT_WT " to scale\n", calleeWeight);
     }
 
     // Call site has profile weight?
@@ -136,12 +125,16 @@ void Compiler::fgComputeProfileScale()
     //
     // Hence, scale can be somewhat arbitrary...
     //
-    const double scale                = ((double)callSiteWeight) / calleeWeight;
-    impInlineInfo->profileScaleFactor = scale;
-    impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
+    const BasicBlock::weight_t scale = callSiteWeight / calleeWeight;
 
     JITDUMP("   call site count " FMT_WT " callee entry count " FMT_WT " scale " FMT_WT "\n", callSiteWeight,
             calleeWeight, scale);
+    JITDUMP("Scaling inlinee blocks\n");
+
+    for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
+    {
+        bb->scaleBBWeight(scale);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1689,12 +1682,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         JITDUMP("JitStress -- incorporating random profile data\n");
         fgIncorporateBlockCounts();
-
-        if (compIsForInlining())
-        {
-            fgComputeProfileScale();
-        }
-
+        fgApplyProfileScale();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -1702,6 +1690,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     //
     if (!fgHaveProfileData())
     {
+        // No...
+        //
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
             JITDUMP("BBOPT set, but no profile data available (hr=%08x)\n", fgPgoQueryResult);
@@ -1711,12 +1701,11 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             JITDUMP("BBOPT not set\n");
         }
 
-        if (compIsForInlining())
-        {
-            fgComputeProfileScale();
-        }
+        // Scale the "synthetic" block weights.
+        //
+        fgApplyProfileScale();
 
-        return PhaseStatus::MODIFIED_NOTHING;
+        return compIsForInlining() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Summarize profile data
@@ -1744,6 +1733,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
 
@@ -1777,13 +1767,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgIncorporateEdgeCounts();
     }
 
-    // Now that we have profile data, compute the profile scale for inlinees,
-    // if we haven'd done so already.
+    // Scale data as appropriate
     //
-    if (compIsForInlining())
-    {
-        fgComputeProfileScale();
-    }
+    fgApplyProfileScale();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -1801,17 +1787,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 //
 void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profileWeight)
 {
-    // Scale count appropriately for inlinees.
-    //
-    if (compIsForInlining())
-    {
-        if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
-        {
-            double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
-            profileWeight       = (BasicBlock::weight_t)scaledWeight;
-        }
-    }
-
     block->setBBProfileWeight(profileWeight);
 
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
@@ -1830,8 +1805,6 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profil
 //   and set block weights
 //
 // Notes:
-//   Count data for inlinees is scaled (usually down).
-//
 //   Since we are now running before the importer, we do not know which
 //   blocks will be imported, and we should not see any internal blocks.
 //
@@ -2039,6 +2012,7 @@ private:
     bool m_mismatch;
     bool m_negativeCount;
     bool m_failedToConverge;
+    bool m_allWeightsZero;
 
 public:
     EfficientEdgeCountReconstructor(Compiler* comp)
@@ -2056,6 +2030,7 @@ public:
         , m_mismatch(false)
         , m_negativeCount(false)
         , m_failedToConverge(false)
+        , m_allWeightsZero(true)
     {
     }
 
@@ -2186,49 +2161,49 @@ void EfficientEdgeCountReconstructor::Prepare()
                 // Optimization TODO: if profileCount is zero, we can just ignore this edge
                 // and the right things will happen.
                 //
-                uint32_t const profileCount = *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+                uint32_t const             profileCount = *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+                BasicBlock::weight_t const weight       = (BasicBlock::weight_t)profileCount;
+
+                m_allWeightsZero &= (profileCount == 0);
+
+                // Find the blocks.
+                //
+                BasicBlock* sourceBlock = nullptr;
+
+                if (!m_keyToBlockMap.Lookup(schemaEntry.ILOffset, &sourceBlock))
                 {
-                    BasicBlock::weight_t const weight = (BasicBlock::weight_t)profileCount;
-
-                    // Find the blocks.
-                    //
-                    BasicBlock* sourceBlock = nullptr;
-
-                    if (!m_keyToBlockMap.Lookup(schemaEntry.ILOffset, &sourceBlock))
-                    {
-                        JITDUMP("Could not find source block for schema entry %d (IL offset/key %08x\n", iSchema,
-                                schemaEntry.ILOffset);
-                    }
-
-                    BasicBlock* targetBlock = nullptr;
-
-                    if (!m_keyToBlockMap.Lookup(schemaEntry.Other, &targetBlock))
-                    {
-                        JITDUMP("Could not find target block for schema entry %d (IL offset/key %08x\n", iSchema,
-                                schemaEntry.ILOffset);
-                    }
-
-                    if ((sourceBlock == nullptr) || (targetBlock == nullptr))
-                    {
-                        // Looks like there is skew between schema and graph.
-                        //
-                        Mismatch();
-                        continue;
-                    }
-
-                    Edge* const edge = new (m_allocator) Edge(sourceBlock, targetBlock);
-
-                    JITDUMP("... adding known edge " FMT_BB " -> " FMT_BB ": weight " FMT_WT "\n",
-                            edge->m_sourceBlock->bbNum, edge->m_targetBlock->bbNum, weight);
-
-                    edge->m_weightKnown = true;
-                    edge->m_weight      = weight;
-
-                    EdgeKey edgeKey(schemaEntry.ILOffset, schemaEntry.Other);
-                    m_edgeKeyToEdgeMap.Set(edgeKey, edge);
-
-                    m_edges++;
+                    JITDUMP("Could not find source block for schema entry %d (IL offset/key %08x\n", iSchema,
+                            schemaEntry.ILOffset);
                 }
+
+                BasicBlock* targetBlock = nullptr;
+
+                if (!m_keyToBlockMap.Lookup(schemaEntry.Other, &targetBlock))
+                {
+                    JITDUMP("Could not find target block for schema entry %d (IL offset/key %08x\n", iSchema,
+                            schemaEntry.ILOffset);
+                }
+
+                if ((sourceBlock == nullptr) || (targetBlock == nullptr))
+                {
+                    // Looks like there is skew between schema and graph.
+                    //
+                    Mismatch();
+                    continue;
+                }
+
+                Edge* const edge = new (m_allocator) Edge(sourceBlock, targetBlock);
+
+                JITDUMP("... adding known edge " FMT_BB " -> " FMT_BB ": weight " FMT_WT "\n",
+                        edge->m_sourceBlock->bbNum, edge->m_targetBlock->bbNum, weight);
+
+                edge->m_weightKnown = true;
+                edge->m_weight      = weight;
+
+                EdgeKey edgeKey(schemaEntry.ILOffset, schemaEntry.Other);
+                m_edgeKeyToEdgeMap.Set(edgeKey, edge);
+
+                m_edges++;
             }
             break;
 
@@ -2245,9 +2220,10 @@ void EfficientEdgeCountReconstructor::Solve()
 {
     // If issues arose earlier, then don't try solving.
     //
-    if (m_badcode || m_mismatch)
+    if (m_badcode || m_mismatch || m_allWeightsZero)
     {
-        JITDUMP("... not solving because of the %s\n", m_badcode ? "badcode" : "mismatch")
+        JITDUMP("... not solving because of the %s\n",
+                m_badcode ? "badcode" : m_allWeightsZero ? "zero counts" : "mismatch");
         return;
     }
 
@@ -2432,23 +2408,65 @@ void EfficientEdgeCountReconstructor::Solve()
         }
     }
 
-    if (m_unknownBlocks == 0)
-    {
-        JITDUMP("\nSolver: converged in %u passes\n", nPasses);
-    }
-    else
+    if (m_unknownBlocks != 0)
     {
         JITDUMP("\nSolver: failed to converge in %u passes, %u blocks and %u edges remain unsolved\n", nPasses,
                 m_unknownBlocks, m_unknownEdges);
         FailedToConverge();
+        return;
+    }
+
+    JITDUMP("\nSolver: converged in %u passes\n", nPasses);
+
+    // If, after solving, the entry weight ends up as zero, set it to
+    // the max of the weight of successor edges or join-free successor
+    // block weight. We do this so we can determine a plausible scale
+    // count.
+    //
+    // This can happen for methods that do not return (say they always
+    // throw, or had not yet returned when we snapped the counts).
+    //
+    // Note we know there are nonzero counts elsewhere in the method, otherwise
+    // m_allWeightsZero would be true and we would have bailed out above.
+    //
+    BlockInfo* const firstInfo = BlockToInfo(m_comp->fgFirstBB);
+    if (firstInfo->m_weight == BB_ZERO_WEIGHT)
+    {
+        assert(!m_allWeightsZero);
+
+        BasicBlock::weight_t newWeight = BB_ZERO_WEIGHT;
+
+        for (Edge* edge = firstInfo->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
+        {
+            if (edge->m_weightKnown)
+            {
+                newWeight = max(newWeight, edge->m_weight);
+            }
+
+            BlockInfo* const targetBlockInfo  = BlockToInfo(edge->m_targetBlock);
+            Edge* const      targetBlockEdges = targetBlockInfo->m_incomingEdges;
+
+            if (targetBlockInfo->m_weightKnown && (targetBlockEdges->m_nextIncomingEdge == nullptr))
+            {
+                newWeight = max(newWeight, targetBlockInfo->m_weight);
+            }
+        }
+
+        if (newWeight == BB_ZERO_WEIGHT)
+        {
+            JITDUMP("Entry block weight and neighborhood was zero\n");
+        }
+        else
+        {
+            JITDUMP("Entry block weight was zero, setting entry weight to neighborhood max " FMT_WT "\n", newWeight);
+        }
+
+        firstInfo->m_weight = newWeight;
     }
 }
 
 //------------------------------------------------------------------------
 // EfficientEdgeCountReconstructor::Propagate: actually set block weights.
-//
-// Notes:
-//    For inlinees, weights are scaled appropriately.
 //
 void EfficientEdgeCountReconstructor::Propagate()
 {
@@ -2462,32 +2480,21 @@ void EfficientEdgeCountReconstructor::Propagate()
 
     // If any issues arose during reconstruction, don't set weights.
     //
-    if (m_badcode || m_mismatch || m_failedToConverge)
+    if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
         JITDUMP("... discarding profile data because of %s\n",
-                m_badcode ? "badcode" : m_mismatch ? "mismatch" : "failed to converge");
+                m_badcode ? "badcode" : m_mismatch ? "mismatch" : m_allWeightsZero ? "zero counts"
+                                                                                   : "failed to converge");
 
         // Make sure nothing else in the jit looks at the profile data.
         //
         m_comp->fgPgoSchema     = nullptr;
-        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction error";
+        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction problem";
 
         return;
     }
 
-    if (m_comp->compIsForInlining())
-    {
-        // Tentatively set first block's profile to compute inlinee profile scale.
-        //
-        BlockInfo* const info = BlockToInfo(m_comp->fgFirstBB);
-        assert(info->m_weightKnown);
-
-        m_comp->fgSetProfileWeight(m_comp->fgFirstBB, info->m_weight);
-        m_comp->fgComputeProfileScale();
-    }
-
-    // Set weight on all blocks (will reset entry weight for inlinees based
-    // on above computed scale).
+    // Set weight on all blocks.
     //
     for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
     {
@@ -2558,7 +2565,7 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                if (flEdgeWeightMax != 0)
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will raise flEdgeWeightMin and Max towards newWeight
                     flEdgeWeightMin = flEdgeWeightMax;
@@ -2579,10 +2586,11 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                assert(flEdgeWeightMax != 0);
-
-                // We will lower flEdgeWeightMin towards newWeight
-                flEdgeWeightMin = newWeight;
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
+                {
+                    // We will lower flEdgeWeightMin towards newWeight
+                    flEdgeWeightMin = newWeight;
+                }
 
                 if (wbUsedSlop != nullptr)
                 {
@@ -2657,7 +2665,7 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                if (flEdgeWeightMax != 0)
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
                 {
                     // We will allow this to raise flEdgeWeightMax towards newWeight
                     flEdgeWeightMax = newWeight;
@@ -2677,11 +2685,12 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
             {
                 result = true;
 
-                assert(flEdgeWeightMax != 0);
-
-                // We will allow this to lower flEdgeWeightMin and Max towards newWeight
-                flEdgeWeightMax = flEdgeWeightMin;
-                flEdgeWeightMin = newWeight;
+                if (flEdgeWeightMax != BB_ZERO_WEIGHT)
+                {
+                    // We will allow this to lower flEdgeWeightMin and Max towards newWeight
+                    flEdgeWeightMax = flEdgeWeightMin;
+                    flEdgeWeightMin = newWeight;
+                }
 
                 if (wbUsedSlop != nullptr)
                 {
@@ -2922,21 +2931,18 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
-    // Do we have an internal block as our first Block?
-    if (firstILBlock->bbFlags & BBF_INTERNAL)
+    // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+    //
+    while (firstILBlock->bbFlags & BBF_INTERNAL)
     {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
-        {
-            firstILBlock = firstILBlock->bbNext;
-        }
-        // The 'firstILBlock' is now expected to have a profile-derived weight
-        assert(firstILBlock->hasProfileWeight());
+        firstILBlock = firstILBlock->bbNext;
     }
 
-    // If the first block only has one ref then we use it's weight for fgCalledCount.
-    // Otherwise we have backedge's into the first block, so instead we use the sum
+    // The 'firstILBlock' is now expected to have a profile-derived weight
+    assert(firstILBlock->hasProfileWeight());
+
+    // If the first block only has one ref then we use its weight for fgCalledCount.
+    // Otherwise we have backedges into the first block, so instead we use the sum
     // of the return block weights for fgCalledCount.
     //
     // If the profile data has a 0 for the returnWeight
@@ -2945,7 +2951,6 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
     //
     if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
     {
-        assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
         fgCalledCount = firstILBlock->bbWeight;
     }
     else

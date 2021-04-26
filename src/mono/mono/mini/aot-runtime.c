@@ -3397,6 +3397,7 @@ sort_methods (MonoAotModule *amodule)
 	msort_method_addresses (methods, method_indexes, methods_len);
 	for (int i = 0; i < methods_len -1; ++i)
 		g_assert (methods [i] <= methods [i + 1]);
+
 	amodule->sorted_methods_len = methods_len;
 	if (mono_atomic_cas_ptr ((gpointer*)&amodule->sorted_methods, methods, NULL) != NULL)
 		/* Somebody got in before us */

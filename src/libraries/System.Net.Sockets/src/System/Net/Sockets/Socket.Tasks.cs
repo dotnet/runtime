@@ -264,6 +264,29 @@ namespace System.Net.Sockets
         }
 
         /// <summary>
+        /// Disconnects a connected socket from the remote host.
+        /// </summary>
+        /// <param name="reuseSocket">Indicates whether the socket should be available for reuse after disconnect.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the socket is disconnected.</returns>
+        public ValueTask DisconnectAsync(bool reuseSocket, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            saea.DisconnectReuseSocket = reuseSocket;
+            saea.WrapExceptionsForNetworkStream = false;
+
+            return saea.DisconnectAsync(this, cancellationToken);
+        }
+
+        /// <summary>
         /// Receives data from a connected socket.
         /// </summary>
         /// <param name="buffer">The buffer for the received data.</param>
@@ -1025,6 +1048,25 @@ namespace System.Net.Sockets
 
                 return error == SocketError.Success ?
                     default :
+                    ValueTask.FromException(CreateException(error));
+            }
+
+            public ValueTask DisconnectAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+
+                if (socket.DisconnectAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask(this, _token);
+                }
+
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    ValueTask.CompletedTask :
                     ValueTask.FromException(CreateException(error));
             }
 

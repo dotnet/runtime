@@ -7,10 +7,12 @@
 #ifndef _MONO_METADATA_ENVIRONMENT_INTERNALS_H_
 #define _MONO_METADATA_ENVIRONMENT_INTERNALS_H_
 
+#include <mono/utils/mono-compiler.h>
+
 void
 mono_set_os_args (int argc, char **argv);
 
-char *
+MONO_COMPONENT_API char *
 mono_get_os_cmd_line (void);
 
 #endif /* _MONO_METADATA_ENVIRONMENT_INTERNALS_H_ */

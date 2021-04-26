@@ -14,8 +14,7 @@ namespace System.Net.Security
             string protocolString = Interop.AndroidCrypto.SSLStreamGetProtocol(sslContext);
             SslProtocols protocol = protocolString switch
             {
-#pragma warning disable 0618 // Ssl2 and Ssl3 are deprecated.
-                "SSLv2" => SslProtocols.Ssl2,
+#pragma warning disable 0618 // 'SslProtocols.Ssl3' is obsolete
                 "SSLv3" => SslProtocols.Ssl3,
 #pragma warning restore
                 "TLSv1" => SslProtocols.Tls,

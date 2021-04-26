@@ -337,6 +337,13 @@ ep_system_time_get (EventPipeSystemTime *system_time)
 	ep_rt_system_time_get (system_time);
 }
 
+/*
+ * EventPipeIpcStreamFactoryCallback.
+ */
+
+void
+ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback);
+
 #else /* ENABLE_PERFTRACING */
 
 static

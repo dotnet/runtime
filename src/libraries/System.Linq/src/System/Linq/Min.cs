@@ -399,12 +399,15 @@ namespace System.Linq
             return value;
         }
 
-        public static TSource? Min<TSource>(this IEnumerable<TSource> source)
+        public static TSource? Min<TSource>(this IEnumerable<TSource> source) => Min(source, comparer: null);
+        public static TSource? Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
+
+            comparer ??= Comparer<TSource>.Default;
 
             TSource? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -422,13 +425,12 @@ namespace System.Linq
                     }
                     while (value == null);
 
-                    Comparer<TSource> comparer = Comparer<TSource>.Default;
                     while (e.MoveNext())
                     {
-                        TSource x = e.Current;
-                        if (x != null && comparer.Compare(x, value) < 0)
+                        TSource next = e.Current;
+                        if (next != null && comparer.Compare(next, value) < 0)
                         {
-                            value = x;
+                            value = next;
                         }
                     }
                 }
@@ -440,12 +442,111 @@ namespace System.Linq
                     }
 
                     value = e.Current;
+                    if (comparer == Comparer<TSource>.Default)
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource next = e.Current;
+                            if (Comparer<TSource>.Default.Compare(next, value) < 0)
+                            {
+                                value = next;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource next = e.Current;
+                            if (comparer.Compare(next, value) < 0)
+                            {
+                                value = next;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return value;
+        }
+
+        public static TSource? MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) => MinBy(source, keySelector, comparer: null);
+        public static TSource? MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (keySelector == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            comparer ??= Comparer<TKey>.Default;
+
+            TKey? key = default;
+            TSource? value = default;
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+            {
+                if (key == null)
+                {
+                    do
+                    {
+                        if (!e.MoveNext())
+                        {
+                            return value;
+                        }
+
+                        value = e.Current;
+                        key = keySelector(value);
+                    }
+                    while (key == null);
+
                     while (e.MoveNext())
                     {
-                        TSource x = e.Current;
-                        if (Comparer<TSource>.Default.Compare(x, value) < 0)
+                        TSource nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (nextKey != null && comparer.Compare(nextKey, key) < 0)
                         {
-                            value = x;
+                            key = nextKey;
+                            value = nextValue;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!e.MoveNext())
+                    {
+                        ThrowHelper.ThrowNoElementsException();
+                    }
+
+                    value = e.Current;
+                    key = keySelector(value);
+                    if (comparer == Comparer<TKey>.Default)
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource nextValue = e.Current;
+                            TKey nextKey = keySelector(nextValue);
+                            if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
+                            {
+                                key = nextKey;
+                                value = nextValue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource nextValue = e.Current;
+                            TKey nextKey = keySelector(nextValue);
+                            if (comparer.Compare(nextKey, key) < 0)
+                            {
+                                key = nextKey;
+                                value = nextValue;
+                            }
                         }
                     }
                 }

@@ -41,6 +41,8 @@ namespace System
         {
             _id = id;
 
+            HasIanaId = true;
+
             // Handle UTC and its aliases
             if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
             {

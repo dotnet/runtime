@@ -115,7 +115,7 @@ mono_mem_account_type_name (MonoMemAccountType type)
 	static const char *names[] = {
 		"code",
 		"hazard pointers",
-		"domain",
+		"mem manager",
 		"SGen internal",
 		"SGen nursery",
 		"SGen LOS",
