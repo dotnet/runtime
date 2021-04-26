@@ -5,8 +5,8 @@ namespace System.Net.Sockets
 {
     public struct SocketInformation
     {
-        public byte[] ProtocolInformation { readonly get; set; }
-        public SocketInformationOptions Options { readonly get; set; }
+        public byte[] ProtocolInformation { get; set; }
+        public SocketInformationOptions Options { get; set; }
 
         internal void SetOption(SocketInformationOptions option, bool value)
         {

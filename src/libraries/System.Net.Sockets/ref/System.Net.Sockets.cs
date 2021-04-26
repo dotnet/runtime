@@ -489,8 +489,8 @@ namespace System.Net.Sockets
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.Net.Sockets.SocketInformationOptions Options { readonly get { throw null; } set { } }
-        public byte[] ProtocolInformation { readonly get { throw null; } set { } }
+        public System.Net.Sockets.SocketInformationOptions Options { get { throw null; } set { } }
+        public byte[] ProtocolInformation { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum SocketInformationOptions
