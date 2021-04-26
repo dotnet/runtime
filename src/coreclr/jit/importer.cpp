@@ -6546,7 +6546,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                         INDEBUG(assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
                                                                "hasValue")));
 
-                                        GenTree* objToBox  = impPopStack().val;
+                                        GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
                                         objToBox =
@@ -6558,6 +6558,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                     }
                                     else if (castResult == TypeCompareState::MustNot)
                                     {
+                                        impPopStack();
                                         impPushOnStack(gtNewIconNode(0), typeInfo(TI_INT));
                                         return 1 + sizeof(mdToken);
                                     }
