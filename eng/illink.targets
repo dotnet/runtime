@@ -30,6 +30,8 @@
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
 
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
+
+    <ILLinkLinkAttributesXmlLibraryBuildXml Condition="'$(ILLinkLinkAttributesXmlLibraryBuildXml)' == '' and Exists('$(ILLinkDirectory)ILLink.LinkAttributes.LibraryBuild.xml')">$(ILLinkDirectory)ILLink.LinkAttributes.LibraryBuild.xml</ILLinkLinkAttributesXmlLibraryBuildXml>
     <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
 
     <ILLinkSuppressionsXmlFilePrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFilePrefix>
@@ -232,6 +234,7 @@
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkLinkAttributesXmlLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "$(ILLinkLinkAttributesXmlLibraryBuildXml)"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C

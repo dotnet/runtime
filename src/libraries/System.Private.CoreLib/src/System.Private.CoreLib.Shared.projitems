@@ -46,6 +46,7 @@
   </ItemGroup>
   <PropertyGroup>
     <ILLinkDescriptorsLibraryBuildXml>$(ILLinkSharedDirectory)ILLink.Descriptors.LibraryBuild.xml</ILLinkDescriptorsLibraryBuildXml>
+    <ILLinkLinkAttributesXmlLibraryBuildXml>$(ILLinkSharedDirectory)ILLink.LinkAttributes.LibraryBuild.xml</ILLinkLinkAttributesXmlLibraryBuildXml>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\AssemblyAttributes.cs" />
