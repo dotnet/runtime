@@ -156,4 +156,8 @@ jobs:
       - name: osArg
         value: -os FreeBSD
 
+    - ${{ if eq(parameters.osGroup, 'MacCatalyst') }}:
+      - name: osArg
+        value: -os MacCatalyst
+
     steps: ${{ parameters.steps }}
