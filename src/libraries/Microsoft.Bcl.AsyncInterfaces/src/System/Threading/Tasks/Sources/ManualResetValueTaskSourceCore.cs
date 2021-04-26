@@ -47,7 +47,7 @@ namespace System.Threading.Tasks.Sources
 
         /// <summary>Gets or sets whether to force continuations to run asynchronously.</summary>
         /// <remarks>Continuations may run asynchronously if this is false, but they'll never run synchronously if this is true.</remarks>
-        public bool RunContinuationsAsynchronously { readonly get; set; }
+        public bool RunContinuationsAsynchronously { get; set; }
 
         /// <summary>Resets to prepare for the next operation.</summary>
         public void Reset()

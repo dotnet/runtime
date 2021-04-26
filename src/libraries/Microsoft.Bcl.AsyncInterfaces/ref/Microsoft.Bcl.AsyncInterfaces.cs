@@ -84,7 +84,7 @@ namespace System.Threading.Tasks.Sources
         private TResult _result;
         private object _dummy;
         private int _dummyPrimitive;
-        public bool RunContinuationsAsynchronously { readonly get { throw null; } set { } }
+        public bool RunContinuationsAsynchronously { get { throw null; } set { } }
         public readonly short Version { get { throw null; } }
         public readonly TResult GetResult(short token) { throw null; }
         public readonly System.Threading.Tasks.Sources.ValueTaskSourceStatus GetStatus(short token) { throw null; }
