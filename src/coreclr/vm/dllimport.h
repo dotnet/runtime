@@ -9,10 +9,7 @@
 
 #include "util.hpp"
 
-class ILStubHashBlob;
-class NDirectStubParameters;
 struct PInvokeStaticSigInfo;
-class LoadLibErrorTracker;
 
 // This structure groups together data that describe the signature for which a marshaling stub is being generated.
 struct StubSigDesc
@@ -58,8 +55,6 @@ public:
 //=======================================================================
 class NDirect
 {
-    friend class NDirectMethodDesc;
-
 public:
     //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
@@ -69,17 +64,6 @@ public:
     // FAILED  = unknown because something failed.
     //---------------------------------------------------------
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
-
-    static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
-                                                   BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
-                                                   BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
-    static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
-    static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
-
-    static VOID NDirectLink(NDirectMethodDesc *pMD);
 
     // Either MD or signature & module must be given.
     static BOOL MarshalingRequired(
@@ -114,14 +98,8 @@ public:
                              MethodDesc* pMD);
 
     static MethodDesc*      GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwNGenStubFlags);
-    static MethodDesc*      GetStubMethodDesc(MethodDesc *pTargetMD, NDirectStubParameters* pParams, ILStubHashBlob* pHashParams, AllocMemTracker* pamTracker, bool& bILStubCreator, MethodDesc* pLastMD);
-    static void             AddMethodDescChunkWithLockTaken(NDirectStubParameters* pParams, MethodDesc *pMD);
-    static void             RemoveILStubCacheEntry(NDirectStubParameters* pParams, ILStubHashBlob* pHashParams);
-    static ILStubHashBlob*  CreateHashBlob(NDirectStubParameters* pParams);
     static PCODE            GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
-
-    inline static ILStubCache*     GetILStubCache(NDirectStubParameters* pParams);
 
 private:
     NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
@@ -565,53 +543,6 @@ protected:
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget);
 DWORD STDMETHODCALLTYPE FalseGetLastError();
 
-class NDirectStubParameters
-{
-public:
-
-    NDirectStubParameters(Signature                sig,
-                          SigTypeContext*          pTypeContext,
-                          Module*                  pModule,
-                          Module*                  pLoaderModule,
-                          CorNativeLinkType        nlType,
-                          CorNativeLinkFlags       nlFlags,
-                          CorInfoCallConvExtension unmgdCallConv,
-                          DWORD                    dwStubFlags,  // NDirectStubFlags
-                          int                      nParamTokens,
-                          mdParamDef*              pParamTokenArray,
-                          int                      iLCIDArg,
-                          MethodTable*             pMT
-                          ) :
-        m_sig(sig),
-        m_pTypeContext(pTypeContext),
-        m_pModule(pModule),
-        m_pLoaderModule(pLoaderModule),
-        m_pParamTokenArray(pParamTokenArray),
-        m_unmgdCallConv(unmgdCallConv),
-        m_nlType(nlType),
-        m_nlFlags(nlFlags),
-        m_dwStubFlags(dwStubFlags),
-        m_iLCIDArg(iLCIDArg),
-        m_nParamTokens(nParamTokens),
-        m_pMT(pMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    Signature                m_sig;
-    SigTypeContext*          m_pTypeContext;
-    Module*                  m_pModule;
-    Module*                  m_pLoaderModule;
-    mdParamDef*              m_pParamTokenArray;
-    CorInfoCallConvExtension m_unmgdCallConv;
-    CorNativeLinkType        m_nlType;
-    CorNativeLinkFlags       m_nlFlags;
-    DWORD                    m_dwStubFlags;
-    int                      m_iLCIDArg;
-    int                      m_nParamTokens;
-    MethodTable*             m_pMT;
-};
-
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
 
 MethodDesc *GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
@@ -635,104 +566,5 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 //
 #define ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE      (1024)
 #define ETW_IL_STUB_EVENT_CODE_STRING_FIELD_MAXSIZE (1024*32)
-
-class SString;
-
-//
-// Truncates a SString by first converting it to unicode and truncate it
-// if it is larger than size. "..." will be appened if it is truncated.
-//
-void TruncateUnicodeString(SString &string, COUNT_T bufSize);
-
-//=======================================================================
-// ILStubCreatorHelper
-// The class is used as a helper class in CreateInteropILStub. It mainly
-// puts two methods NDirect::GetStubMethodDesc and NDirect::RemoveILStubCacheEntry
-// into a holder. See CreateInteropILStub for more information
-//=======================================================================
-class ILStubCreatorHelper
-{
-public:
-    ILStubCreatorHelper(MethodDesc *pTargetMD,
-                        NDirectStubParameters* pParams
-                        ) :
-        m_pTargetMD(pTargetMD),
-        m_pParams(pParams),
-        m_pStubMD(NULL),
-        m_bILStubCreator(false)
-    {
-        STANDARD_VM_CONTRACT;
-        m_pHashParams = NDirect::CreateHashBlob(m_pParams);
-    }
-
-    ~ILStubCreatorHelper()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        RemoveILStubCacheEntry();
-    }
-
-    inline void GetStubMethodDesc()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        m_pStubMD = NDirect::GetStubMethodDesc(m_pTargetMD, m_pParams, m_pHashParams, &m_amTracker, m_bILStubCreator, m_pStubMD);
-    }
-
-    inline void RemoveILStubCacheEntry()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_bILStubCreator)
-        {
-            NDirect::RemoveILStubCacheEntry(m_pParams, m_pHashParams);
-            m_bILStubCreator = false;
-        }
-    }
-
-    inline MethodDesc* GetStubMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pStubMD;
-    }
-
-    inline void SuppressRelease()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_bILStubCreator = false;
-        m_amTracker.SuppressRelease();
-    }
-
-    DEBUG_NOINLINE static void HolderEnter(ILStubCreatorHelper *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        pThis->GetStubMethodDesc();
-    }
-
-    DEBUG_NOINLINE static void HolderLeave(ILStubCreatorHelper *pThis)
-    {
-        WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-        pThis->RemoveILStubCacheEntry();
-    }
-
-private:
-    MethodDesc*                      m_pTargetMD;
-    NDirectStubParameters*           m_pParams;
-    NewArrayHolder<ILStubHashBlob>   m_pHashParams;
-    AllocMemTracker*                 m_pAmTracker;
-    MethodDesc*                      m_pStubMD;
-    AllocMemTracker                  m_amTracker;
-    bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
-};  //ILStubCreatorHelper
-
-typedef Wrapper<ILStubCreatorHelper*, ILStubCreatorHelper::HolderEnter, ILStubCreatorHelper::HolderLeave> ILStubCreatorHelperHolder;
 
 #endif // __dllimport_h__

@@ -230,7 +230,7 @@ private:
         void CreateRemainder()
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | BBF_INTERNAL;
+            remainderBlock->bbFlags |= BBF_INTERNAL;
         }
 
         virtual void CreateCheck() = 0;
@@ -565,7 +565,10 @@ private:
         //
         virtual void CreateCheck()
         {
-            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+            // There's no need for a new block here. We can just append to currBlock.
+            //
+            checkBlock             = currBlock;
+            checkBlock->bbJumpKind = BBJ_COND;
 
             // Fetch method table from object arg to call.
             GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
@@ -606,16 +609,13 @@ private:
         virtual void FixupRetExpr()
         {
             // If call returns a value, we need to copy it to a temp, and
-            // update the associated GT_RET_EXPR to refer to the temp instead
+            // bash the associated GT_RET_EXPR to refer to the temp instead
             // of the call.
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            //
-            // Todo: make sure we understand how this interacts with return type
-            // munging for small structs.
-            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
-            GenTree*             retExpr    = inlineInfo->retExpr;
+            InlineCandidateInfo* const inlineInfo = origCall->gtInlineCandidateInfo;
+            GenTree* const             retExpr    = inlineInfo->retExpr;
 
             // Sanity check the ret expr if non-null: it should refer to the original call.
             if (retExpr != nullptr)
@@ -625,8 +625,44 @@ private:
 
             if (origCall->TypeGet() != TYP_VOID)
             {
-                returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
-                JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+                // If there's a spill temp already associated with this inline candidate,
+                // use that instead of allocating a new temp.
+                //
+                returnTemp = inlineInfo->preexistingSpillTemp;
+
+                if (returnTemp != BAD_VAR_NUM)
+                {
+                    JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", returnTemp);
+
+                    // We will be introducing multiple defs for this temp, so make sure
+                    // it is no longer marked as single def.
+                    //
+                    // Otherwise, we could make an incorrect type deduction. Say the
+                    // original call site returns a B, but after we devirtualize along the
+                    // GDV happy path we see that method returns a D. We can't then assume that
+                    // the return temp is type D, because we don't know what type the fallback
+                    // path returns. So we have to stick with the current type for B as the
+                    // return type.
+                    //
+                    // Note local vars always live in the root method's symbol table. So we
+                    // need to use the root compiler for lookup here.
+                    //
+                    LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(returnTemp);
+
+                    if (returnTempLcl->lvSingleDef == 1)
+                    {
+                        // In this case it's ok if we already updated the type assuming single def,
+                        // we just don't want any further updates.
+                        //
+                        JITDUMP("Return temp V%02u is no longer a single def temp\n", returnTemp);
+                        returnTempLcl->lvSingleDef = 0;
+                    }
+                }
+                else
+                {
+                    returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
+                    JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+                }
 
                 if (varTypeIsStruct(origCall))
                 {
@@ -635,23 +671,22 @@ private:
 
                 GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
 
-                JITDUMP("Updating GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
                         returnTemp);
-                retExpr->AsRetExpr()->gtInlineCandidate = tempTree;
+
+                retExpr->ReplaceWith(tempTree, compiler);
             }
             else if (retExpr != nullptr)
             {
                 // We still oddly produce GT_RET_EXPRs for some void
-                // returning calls. Just patch the ret expr to a NOP.
+                // returning calls. Just bash the ret expr to a NOP.
                 //
                 // Todo: consider bagging creation of these RET_EXPRs. The only possible
                 // benefit they provide is stitching back larger trees for failed inlines
                 // of void-returning methods. But then the calls likely sit in commas and
                 // the benefit of a larger tree is unclear.
-                JITDUMP("Updating GT_RET_EXPR [%06u] for VOID return to refer to a NOP\n",
-                        compiler->dspTreeID(retExpr));
-                GenTree* nopTree                        = compiler->gtNewNothingNode();
-                retExpr->AsRetExpr()->gtInlineCandidate = nopTree;
+                JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
+                retExpr->gtBashToNOP();
             }
             else
             {
@@ -701,11 +736,12 @@ private:
             assert(!call->IsVirtual());
 
             // Re-establish this call as an inline candidate.
-            GenTree* oldRetExpr = inlineInfo->retExpr;
-            // Todo -- pass this back from impdevirt...?
-            inlineInfo->clsHandle       = compiler->info.compCompHnd->getMethodClass(methodHnd);
-            inlineInfo->exactContextHnd = context;
-            call->gtInlineCandidateInfo = inlineInfo;
+            //
+            GenTree* oldRetExpr              = inlineInfo->retExpr;
+            inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
+            inlineInfo->exactContextHnd      = context;
+            inlineInfo->preexistingSpillTemp = returnTemp;
+            call->gtInlineCandidateInfo      = inlineInfo;
 
             // Add the call.
             compiler->fgNewStmtAtEnd(thenBlock, call);

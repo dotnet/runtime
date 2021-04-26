@@ -21,7 +21,13 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
         )
     endif()
 
-    if (CLR_CMAKE_TARGET_UNIX)
+    if(CLR_CMAKE_TARGET_OSX AND ARCH_TARGET_NAME STREQUAL arm64)
+        install_clr (TARGETS
+            clrjit_unix_osx_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME}
+            DESTINATIONS . sharedFramework
+            COMPONENT crosscomponents
+        )
+    elseif (CLR_CMAKE_TARGET_UNIX)
         install_clr (TARGETS
             clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME}
             DESTINATIONS . sharedFramework

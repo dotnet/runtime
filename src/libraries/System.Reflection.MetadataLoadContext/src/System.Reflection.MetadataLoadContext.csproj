@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,10 +6,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <!-- We conditionally apply net5.0+ obsoletions -->
-  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
-    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />

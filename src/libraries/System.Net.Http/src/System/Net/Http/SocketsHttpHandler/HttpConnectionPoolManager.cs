@@ -163,17 +163,20 @@ namespace System.Net.Http
 
             // Monitor network changes to invalidate Alt-Svc headers.
             // A weak reference is used to avoid NetworkChange.NetworkAddressChanged keeping a non-disposed connection pool alive.
-            var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
-            NetworkAddressChangedEventHandler networkChangedDelegate = delegate
-            {
-                if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? pools))
+            NetworkAddressChangedEventHandler networkChangedDelegate;
+            { // scope to avoid closure if _networkChangeCleanup != null
+                var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
+                networkChangedDelegate = delegate
                 {
-                    foreach (HttpConnectionPool pool in pools.Values)
+                    if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? pools))
                     {
-                        pool.OnNetworkChanged();
+                        foreach (HttpConnectionPool pool in pools.Values)
+                        {
+                            pool.OnNetworkChanged();
+                        }
                     }
-                }
-            };
+                };
+            }
 
             var cleanup = new NetworkChangeCleanup(networkChangedDelegate);
 
@@ -279,8 +282,20 @@ namespace System.Net.Http
 
             if (proxyUri != null)
             {
-                Debug.Assert(HttpUtilities.IsSupportedNonSecureScheme(proxyUri.Scheme));
-                if (sslHostName == null)
+                Debug.Assert(HttpUtilities.IsSupportedProxyScheme(proxyUri.Scheme));
+                if (HttpUtilities.IsSocksScheme(proxyUri.Scheme))
+                {
+                    // Socks proxy
+                    if (sslHostName != null)
+                    {
+                        return new HttpConnectionKey(HttpConnectionKind.SslSocksTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
+                    }
+                    else
+                    {
+                        return new HttpConnectionKey(HttpConnectionKind.SocksTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
+                    }
+                }
+                else if (sslHostName == null)
                 {
                     if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
                     {
@@ -391,7 +406,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception from {_proxy.GetType().Name}.GetProxy({request.RequestUri}): {ex}");
             }
 
-            if (proxyUri != null && proxyUri.Scheme != UriScheme.Http)
+            if (proxyUri != null && !HttpUtilities.IsSupportedProxyScheme(proxyUri.Scheme))
             {
                 throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }

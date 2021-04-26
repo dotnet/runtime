@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -48,7 +49,7 @@ namespace System.Text.Json.Serialization
 
             Type? baseTypeToCheck = type;
 
-            while (baseTypeToCheck != null && baseTypeToCheck != JsonClassInfo.ObjectType)
+            while (baseTypeToCheck != null && baseTypeToCheck != JsonTypeInfo.ObjectType)
             {
                 if (baseTypeToCheck.IsGenericType)
                 {
