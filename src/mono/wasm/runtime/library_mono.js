@@ -1154,14 +1154,15 @@ var MonoSupportLib = {
 			if (culture == null || culture.length < 2) {
 				icu_files = [dictionary.complete];
 			} else {
-				var parent_culture = culture.split('-')[0];
+				var parent_culture = culture.includes('-') ? culture.split('-')[0] : culture;
+				console.log(parent_culture)
 				var files = dictionary[parent_culture];
 				if (!feature_shards) {
 					icu_files = [files.full];
 				} else {
-					icu_files = files.essentials;
-					icu_files.push(this._get_shard_name(files.coll));
+					icu_files.push(...files.essentials.reverse());
 					icu_files.push(this._get_shard_name(files.locales));
+					icu_files.push(this._get_shard_name(files.coll));
 				}
 			}
 
@@ -1564,7 +1565,6 @@ var MonoSupportLib = {
 
 			var virtualName = asset.virtual_path || asset.name;
 			var offset = null;
-
 			switch (asset.behavior) {
 				case "resource":
 				case "assembly":

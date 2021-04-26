@@ -259,10 +259,9 @@ public class WasmAppBuilder : Task
             }
             catch (Exception e)
             {
-                Log.LogError($"Error with opening ICU Dictionary");
+                Log.LogError($"Error with opening ICU Dictionary {e.Message}");
                 return false;
             }
-            
         }
 
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");

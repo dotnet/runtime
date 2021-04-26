@@ -3,7 +3,6 @@
 // Run runtime tests under a JS shell or a browser
 //
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
-
 var is_browser = typeof window != "undefined";
 
 // if the engine doesn't provide a console
@@ -151,7 +150,6 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
-enable_sharding = false;
 working_dir='/';
 while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
@@ -177,10 +175,6 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0].startsWith ("--working-dir=")) {
 		var arg = args [0].substring ("--working-dir=".length);
 		working_dir = arg;
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--enable-sharding=")) {
-		var arg = args [0].substring ("--enable-sharding=".length);
-		enable_sharding = arg;
 		args = args.slice (1);
 	} else {
 		break;
@@ -284,9 +278,13 @@ var Module = {
 				})
 			}
 		};
-		if (enable_sharding)
-			config.application_culture = Intl.DateTimeFormat().resolvedOptions().locale;
-
+		if (config.enable_sharding) {
+			if (config.default_culture != null) {
+				config.application_culture = config.default_culture;
+			} else {
+				config.application_culture = Intl.DateTimeFormat().resolvedOptions().locale;
+			}
+		}
 		MONO.mono_load_runtime_and_bcl_args (config);
 	},
 };

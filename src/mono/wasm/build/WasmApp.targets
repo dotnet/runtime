@@ -351,6 +351,7 @@
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
+      <ICUDefaultCulture Condition="'$(EnableSharding)' == 'true' and '$(WasmBuildNative)' == ''" >en-us</ICUDefaultCulture>
     </PropertyGroup>
   </Target>
 
@@ -372,6 +373,11 @@
 
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.dat" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <WasmExtraConfig Include="enable_sharding" Value="true" Condition="'$(EnableSharding)' == 'true'" />
+      <WasmExtraConfig Include="default_culture" Value="&quot;$(ICUDefaultCulture)&quot;" Condition="'$(EnableSharding)' == 'true'" />
     </ItemGroup>
 
     <WasmAppBuilder
