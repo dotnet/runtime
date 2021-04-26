@@ -5872,20 +5872,33 @@ void Compiler::compCompileFinish()
         // mdMethodDef __stdcall CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-        unsigned profCallCount = 0;
+        uint64_t profCallCount = 0;
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
             bool foundEntrypointBasicBlockCount = false;
             for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
             {
-                if ((fgPgoSchema[iSchema].InstrumentationKind ==
-                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-                    (fgPgoSchema[iSchema].ILOffset == 0))
+                const ICorJitInfo::PgoInstrumentationSchema& entry = fgPgoSchema[iSchema];
+                if (entry.ILOffset != 0)
                 {
-                    foundEntrypointBasicBlockCount = true;
-                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
-                    break;
+                    continue;
                 }
+
+                if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
+                {
+                    profCallCount = *(uint32_t*)(fgPgoData + entry.Offset);
+                }
+                else if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount)
+                {
+                    profCallCount = *(uint64_t*)(fgPgoData + entry.Offset);
+                }
+                else
+                {
+                    continue;
+                }
+
+                foundEntrypointBasicBlockCount = true;
+                break;
             }
             assert(foundEntrypointBasicBlockCount);
         }
@@ -5908,15 +5921,15 @@ void Compiler::compCompileFinish()
         {
             if (profCallCount <= 9999)
             {
-                printf("%4d | ", profCallCount);
+                printf("%4llu | ", profCallCount);
             }
             else if (profCallCount <= 999500)
             {
-                printf("%3dK | ", (profCallCount + 500) / 1000);
+                printf("%3lluK | ", (profCallCount + 500) / 1000);
             }
             else
             {
-                printf("%3dM | ", (profCallCount + 500000) / 1000000);
+                printf("%3lluM | ", (profCallCount + 500000) / 1000000);
             }
         }
         else

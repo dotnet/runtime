@@ -194,10 +194,20 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 
     for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
     {
-        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-            ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
+        if ((IL_OFFSET)fgPgoSchema[i].ILOffset != offset)
+        {
+            continue;
+        }
+
+        if (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
         {
             *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
+            return true;
+        }
+
+        if (fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount)
+        {
+            *weightWB = (BasicBlock::weight_t) * (uint64_t*)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }
@@ -1738,10 +1748,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
                 fgPgoBlockCounts++;
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                 fgPgoEdgeCounts++;
                 break;
 
