@@ -188,6 +188,7 @@ clear_cached_object (MonoMemoryManager *mem_manager, gpointer o, MonoClass *klas
 
 	if (mono_conc_g_hash_table_lookup_extended (mem_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
 		mono_conc_g_hash_table_remove (mem_manager->refobject_hash, &pe);
+		// FIXME: These are mempool allocated, so they are not really freed
 		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
 

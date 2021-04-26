@@ -155,6 +155,15 @@ unregister_vtable_reflection_type (MonoVTable *vtable)
 		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
 }
 
+static void
+free_weak_hash (MonoWeakHashTable **hash)
+{
+	if (*hash) {
+		mono_weak_hash_table_destroy (*hash);
+		*hash = NULL;
+	}
+}
+
 // First phase of deletion
 static void
 memory_manager_delete_objects (MonoMemoryManager *memory_manager)
@@ -180,7 +189,10 @@ memory_manager_delete_objects (MonoMemoryManager *memory_manager)
 		mono_g_hash_table_destroy (memory_manager->type_init_exception_hash);
 		memory_manager->type_init_exception_hash = NULL;
 	} else {
-		// FIXME: Free weak hashes
+		free_weak_hash (&memory_manager->weak_type_hash);
+		free_weak_hash (&memory_manager->weak_type_init_exception_hash);
+		// FIXME: Call cleanup_refobject_hash
+		free_weak_hash (&memory_manager->weak_refobject_hash);
 	}
 }
 
