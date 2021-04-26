@@ -43,6 +43,6 @@
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
 
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptors.ModuleCore.xml" />
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.ModuleCore.xml" />
   </ItemGroup>
 </Project>
