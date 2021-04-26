@@ -6080,6 +6080,7 @@
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
+        "net6.0": "6.0.0.0",
         "uap10.0.16299": "4.3.1.0",
         "xamarinios10": "Any",
         "xamarinmac20": "Any",
