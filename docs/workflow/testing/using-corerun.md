@@ -20,12 +20,11 @@ It does this using heuristics in the following order:
 1. Check if the `CORE_ROOT` environment variable is defined.
 1. Check if the .NET runtime binary is in the same directory as the `corerun` binary.
 
-Regardless of which method is used to discover the .NET runtime binary, its location is defined as "Core Root".
-The Core Root directory is used to discover both the .NET runtime binary and all base class library
-assemblies. Additional directories can be included in the set of class library assemblies by defining the
-`CORE_LIBRARIES` environment variable.
+Regardless of which method is used to discover the .NET runtime binary, its location is used to discover
+both the .NET runtime binary and all base class library assemblies. Additional directories can be included
+in the set of class library assemblies by defining the `CORE_LIBRARIES` environment variable.
 
-The above rules can be used in a number of ways.
+The above heuristics can be used in a number of ways.
 
 ## Getting the class library from the shared system-wide runtime
 
@@ -35,7 +34,7 @@ You could make such an assembly by using an officially installed .NET runtime wi
 If you execute the following on Windows, the `HelloWorld` assembly will be run.
 
 ```cmd
-set PATH=%PATH%;<CoreCLR>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\
+set PATH=%PATH%;<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\
 set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\1.0.0
 
 corerun HelloWorld.dll
@@ -43,7 +42,7 @@ corerun HelloWorld.dll
 
 On non-Windows platforms, setting environment variables is different but the logic is identical. For example, on macOS use `/usr/local/share` for `%ProgramFiles%`.
 
-The `<CoreCLR>` represents the base of your dotnet/runtime repository. The first line puts the build output directory
+The `<repo_root>` represents the base of your dotnet/runtime repository. The first line puts the build output directory
 (your OS, architecture, and buildType may be different) and thus the `corerun` binary on your path.
 The second line tells `corerun` where to find class library assemblies. In this case we tell it to find them where
 the installation of `dotnet` placed its copy. The version number in the path may be different depending on what
@@ -73,8 +72,8 @@ variable `CORE_ROOT` to this directory &ndash; you don't have to set `CORE_LIBRA
 (running `src\tests\build` from the repository base), you can do the following on Windows to set up an environment where `corerun` can run any test.
 
 ```cmd
-set PATH=%PATH%;<CoreCLR>\artifacts\Product\windows.x64.Debug
-set CORE_ROOT=<CoreCLR>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
+set PATH=%PATH%;<repo_root>\artifacts\Product\windows.x64.Debug
+set CORE_ROOT=<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
 ```
 For example, the following runs the finalizerio test on Windows.
 
