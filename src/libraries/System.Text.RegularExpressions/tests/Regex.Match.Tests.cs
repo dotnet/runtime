@@ -204,6 +204,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
             yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
+            yield return new object[] { @"[^a]+\.[^z]+", "zzzzz", RegexOptions.None, 0, 5, false, string.Empty };
 
             // RightToLeft
             yield return new object[] { @"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12" };
