@@ -896,6 +896,67 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncCallsDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            await (scope as IAsyncDisposable).DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncPrefersDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            await (scope as IAsyncDisposable).DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposePrefersServiceDispose()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            (scope as IDisposable).Dispose();
+
+            Assert.True(disposable.DisposeCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposeThrowsWhenOnlyDisposeAsyncImplemented()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            var exception = Assert.Throws<InvalidOperationException>(() => (scope as IDisposable).Dispose());
+            Assert.Equal(
+                "'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderContainerTests+AsyncDisposable' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.",
+                exception.Message);
+        }
+
+        [Fact]
         public void SingletonServiceCreatedFromFactoryIsDisposedWhenContainerIsDisposed()
         {
             // Arrange
