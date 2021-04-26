@@ -40,7 +40,7 @@ struct configuration
     int entry_assembly_argc;
     const char_t** entry_assembly_argv;
 
-    // Collection of user defined key/value pairs that will be appended
+    // Collection of user-defined key/value pairs that will be appended
     // to the initialization of the runtime.
     std::vector<string_t> user_defined_keys;
     std::vector<string_t> user_defined_values;
@@ -324,7 +324,7 @@ static int run(const configuration& config)
     propertyKeys.push_back("NATIVE_DLL_SEARCH_DIRECTORIES");
     propertyValues.push_back(native_search_dirs_utf8.c_str());
 
-    // Sanity check before adding user defined
+    // Sanity check before adding user-defined properties
     assert(propertyKeys.size() == propertyValues.size());
 
     // Insert user defined properties
@@ -412,8 +412,8 @@ static void display_usage()
         W("Options:\n")
         W("  -c, --clr-path - path to CoreCLR binary and managed CLR assemblies.\n")
         W("  -p, --property - Property to pass to runtime during initialization.\n")
-        W("                   If property value contains spaces quote the entire argument.\n")
-        W("                   May be supplied multiple times. \n")
+        W("                   If a property value contains spaces, quote the entire argument.\n")
+        W("                   May be supplied multiple times. Format: <key>=<value>.\n")
         W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
         W("  -?, -h, --help - show this help.\n")
         W("\n")
