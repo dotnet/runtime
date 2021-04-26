@@ -9,8 +9,10 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dlfcn.h>
 
 static char *bundle_path;
+static char *tpa_list;
 
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
@@ -29,6 +31,28 @@ get_bundle_path (void)
     bundle_path = strdup ([path UTF8String]);
 
     return bundle_path;
+}
+
+const char *
+get_tpa_list (const char *bundle)
+{
+    if (tpa_list)
+        return tpa_list;
+    NSString *path = @(bundle_path);
+    NSArray *dirs = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:NULL];
+    NSMutableArray *assemblies = [[NSMutableArray alloc] init];
+    [dirs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        NSString *filename = (NSString *)obj;
+        NSString *extension = [[filename pathExtension] lowercaseString];
+        if ([extension isEqualToString:@"dll"]) {
+            [assemblies addObject:[path stringByAppendingPathComponent:filename]];
+        }
+    }];
+
+    NSString *ns_tpa_list = [assemblies componentsJoinedByString:@":"];
+    tpa_list = strdup ([ns_tpa_list UTF8String]);
+
+    return tpa_list;
 }
 
 char *
@@ -52,6 +76,17 @@ log_callback (const char *log_domain, const char *log_level, const char *message
     }
 }
 
+void *
+pinvoke_override (const char *libraryName, const char *entrypointName)
+{
+    void *symbol = NULL;
+
+    if (strcmp (libraryName, "__Internal") == 0) {
+        symbol = dlsym (RTLD_DEFAULT, entrypointName);
+    }
+    return symbol;
+}
+
 void
 mono_ios_runtime_init (void)
 {
@@ -70,6 +105,8 @@ mono_ios_runtime_init (void)
 
     const char* bundle = get_bundle_path ();
     chdir (bundle);
+
+    const char* tpa = get_tpa_list (bundle);
 
     char icu_dat_path [1024];
     int res;
@@ -93,13 +130,17 @@ mono_ios_runtime_init (void)
 #endif
     };
 
+    char *pinvokeOverride = strdup_printf ("%p", &pinvoke_override);
+
     void* hostHandle;
     unsigned int domainId;
     const char* propertyKeys[] = {
+        "PINVOKE_OVERRIDE",
         "TRUSTED_PLATFORM_ASSEMBLIES"
     };
     const char* propertyValues[] = {
-        ""
+        pinvokeOverride,
+        tpa
     };
 
     coreclr_initialize (
