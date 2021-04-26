@@ -24,14 +24,14 @@ namespace System.Runtime.Serialization
         [DataMember(Name = "DateTime", IsRequired = true)]
         public DateTime UtcDateTime
         {
-            get { return _utcDateTime; }
+            readonly get { return _utcDateTime; }
             set { _utcDateTime = value; }
         }
 
         [DataMember(Name = "OffsetMinutes", IsRequired = true)]
         public short OffsetMinutes
         {
-            get { return _offsetMinutes; }
+            readonly get { return _offsetMinutes; }
             set { _offsetMinutes = value; }
         }
 
@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization
             return new DateTimeOffsetAdapter(value.UtcDateTime, (short)value.Offset.TotalMinutes);
         }
 
-        public string ToString(IFormatProvider provider)
+        public readonly string ToString(IFormatProvider provider)
         {
             return "DateTime: " + this.UtcDateTime + ", Offset: " + this.OffsetMinutes;
         }

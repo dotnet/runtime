@@ -15,7 +15,7 @@ internal static partial class Interop
             internal IntPtr pbData;
             internal int cUnusedBits;
 
-            internal byte[] ToByteArray()
+            internal readonly byte[] ToByteArray()
             {
                 int numBytes = cbData;
                 byte[] data = new byte[numBytes];

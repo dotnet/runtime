@@ -85,9 +85,9 @@ namespace System.Threading.Tasks.Sources
         private object _dummy;
         private int _dummyPrimitive;
         public bool RunContinuationsAsynchronously { readonly get { throw null; } set { } }
-        public short Version { get { throw null; } }
-        public TResult GetResult(short token) { throw null; }
-        public System.Threading.Tasks.Sources.ValueTaskSourceStatus GetStatus(short token) { throw null; }
+        public readonly short Version { get { throw null; } }
+        public readonly TResult GetResult(short token) { throw null; }
+        public readonly System.Threading.Tasks.Sources.ValueTaskSourceStatus GetStatus(short token) { throw null; }
         public void OnCompleted(System.Action<object> continuation, object state, short token, System.Threading.Tasks.Sources.ValueTaskSourceOnCompletedFlags flags) { }
         public void Reset() { }
         public void SetException(System.Exception error) { }

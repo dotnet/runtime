@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             _queriedMembers = queriedMembers;
         }
 
-        public QueryResultEnumerator GetEnumerator() => new QueryResultEnumerator(this);
+        public readonly QueryResultEnumerator GetEnumerator() => new QueryResultEnumerator(this);
 
         /// <summary>
         /// Returns the number of matching results.
@@ -92,7 +92,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         /// <summary>
         /// Returns a single member, null or throws AmbigousMatchException, for the Type.Get*(string name,...) family of apis.
         /// </summary>
-        public M? Disambiguate()
+        public readonly M? Disambiguate()
         {
             if (_queriedMembers == null)
                 return null; // This is an uninitialized QueryResult<M>, which is supported and represents a 0-length list of matches.
@@ -127,7 +127,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return match;
         }
 
-        private int UnfilteredCount => ((_bindingAttr & BindingFlags.DeclaredOnly) != 0) ? _queriedMembers!.DeclaredOnlyCount : _queriedMembers!.TotalCount;
+        private readonly int UnfilteredCount => ((_bindingAttr & BindingFlags.DeclaredOnly) != 0) ? _queriedMembers!.DeclaredOnlyCount : _queriedMembers!.TotalCount;
 
         private readonly BindingFlags _bindingAttr;
         private int _lazyCount; // Intentionally not marking as volatile. QueryResult is for short-term use within a single method call - no aspiration to be thread-safe.

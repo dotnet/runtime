@@ -202,13 +202,13 @@ namespace System.Text.Unicode
                 CurrentCodeUnitOffset = 0;
             }
 
-            public int CurrentCodeUnitOffset { get; private set; }
+            public int CurrentCodeUnitOffset { readonly get; private set; }
 
             /// <summary>
             /// Will be <see cref="GraphemeClusterBreakType.Other"/> if invalid data or EOF reached.
             /// Caller shouldn't need to special-case this since the normal rules will halt on this condition.
             /// </summary>
-            public GraphemeClusterBreakType CurrentType { get; private set; }
+            public GraphemeClusterBreakType CurrentType { readonly get; private set; }
 
             public void MoveNext()
             {

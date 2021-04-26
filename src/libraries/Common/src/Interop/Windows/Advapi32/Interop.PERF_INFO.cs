@@ -97,7 +97,7 @@ internal partial class Interop
             internal short wSecond;
             internal short wMilliseconds;
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 return "[SYSTEMTIME: "
                 + wDay.ToString(CultureInfo.CurrentCulture) + "/" + wMonth.ToString(CultureInfo.CurrentCulture) + "/" + wYear.ToString(CultureInfo.CurrentCulture)

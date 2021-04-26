@@ -23,13 +23,13 @@ namespace System
 
         public bool IsNegative
         {
-            get { return (Flags & SignMask) != 0; }
+            readonly get { return (Flags & SignMask) != 0; }
             set { Flags = (Flags & ~SignMask) | (value ? SignMask : 0); }
         }
 
         public int Scale
         {
-            get { return (byte)(Flags >> ScaleShift); }
+            readonly get { return (byte)(Flags >> ScaleShift); }
             set { Flags = (Flags & ~ScaleMask) | ((uint)value << ScaleShift); }
         }
 

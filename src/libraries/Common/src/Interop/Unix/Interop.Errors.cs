@@ -130,7 +130,7 @@ internal static partial class Interop
             _rawErrno = -1;
         }
 
-        internal Error Error
+        internal readonly Error Error
         {
             get { return _error; }
         }

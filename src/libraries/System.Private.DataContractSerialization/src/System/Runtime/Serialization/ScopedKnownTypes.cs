@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization
             _count--;
         }
 
-        internal DataContract? GetDataContract(XmlQualifiedName qname)
+        internal readonly DataContract? GetDataContract(XmlQualifiedName qname)
         {
             for (int i = (_count - 1); i >= 0; i--)
             {

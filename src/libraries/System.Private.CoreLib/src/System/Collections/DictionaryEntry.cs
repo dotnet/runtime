@@ -24,18 +24,18 @@ namespace System.Collections
 
         public object Key
         {
-            get => _key;
+            readonly get => _key;
             set => _key = value;
         }
 
         public object? Value
         {
-            get => _value;
+            readonly get => _value;
             set => _value = value;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public void Deconstruct(out object key, out object? value)
+        public readonly void Deconstruct(out object key, out object? value)
         {
             key = Key;
             value = Value;

@@ -50,16 +50,16 @@ namespace System
         public readonly T GetValueOrDefault(T defaultValue) =>
             hasValue ? value : defaultValue;
 
-        public override bool Equals(object? other)
+        public override readonly bool Equals(object? other)
         {
             if (!hasValue) return other == null;
             if (other == null) return false;
             return value.Equals(other);
         }
 
-        public override int GetHashCode() => hasValue ? value.GetHashCode() : 0;
+        public override readonly int GetHashCode() => hasValue ? value.GetHashCode() : 0;
 
-        public override string? ToString() => hasValue ? value.ToString() : "";
+        public override readonly string? ToString() => hasValue ? value.ToString() : "";
 
         [NonVersionable]
         public static implicit operator Nullable<T>(T value) =>

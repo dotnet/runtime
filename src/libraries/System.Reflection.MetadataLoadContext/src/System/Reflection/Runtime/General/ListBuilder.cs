@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.General
 #endif // DEBUG
         }
 
-        public T this[int index]
+        public readonly T this[int index]
         {
             get
             {
@@ -65,7 +65,7 @@ namespace System.Reflection.Runtime.General
             Array.Copy(_items!, 0, array, index, _count);
         }
 
-        public int Count
+        public readonly int Count
         {
             get
             {

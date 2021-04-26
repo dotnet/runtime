@@ -86,26 +86,26 @@ namespace System.Runtime.Serialization
         [DataMember(IsRequired = true)]
         public K Key
         {
-            get { return _key; }
+            readonly get { return _key; }
             set { _key = value; }
         }
 
         [DataMember(IsRequired = true)]
         public V Value
         {
-            get { return _value; }
+            readonly get { return _value; }
             set { _value = value; }
         }
 
         object? IKeyValue.Key
         {
-            get { return _key; }
+            readonly get { return _key; }
             set { _key = (K)value!; }
         }
 
         object? IKeyValue.Value
         {
-            get { return _value; }
+            readonly get { return _value; }
             set { _value = (V)value!; }
         }
     }

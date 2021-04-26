@@ -84,7 +84,7 @@ namespace System.Runtime.Serialization
             _count--;
         }
 
-        internal bool Contains(object obj)
+        internal readonly bool Contains(object obj)
         {
             int currentCount = _count;
             if (currentCount > MaximumArraySize)

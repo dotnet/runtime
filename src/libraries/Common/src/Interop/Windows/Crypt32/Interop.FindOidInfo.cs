@@ -21,7 +21,7 @@ internal static partial class Interop
             public int cbData;
             public IntPtr pbData;
 
-            public string? OID
+            public readonly string? OID
             {
                 get
                 {
@@ -29,7 +29,7 @@ internal static partial class Interop
                 }
             }
 
-            public string? Name
+            public readonly string? Name
             {
                 get
                 {

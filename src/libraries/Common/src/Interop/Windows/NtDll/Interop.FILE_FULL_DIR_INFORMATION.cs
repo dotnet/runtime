@@ -54,7 +54,7 @@ internal partial class Interop
             public uint EaSize;
 
             private char _fileName;
-            public unsafe ReadOnlySpan<char> FileName { get { fixed (char* c = &_fileName) { return new ReadOnlySpan<char>(c, (int)FileNameLength / sizeof(char)); } } }
+            public unsafe readonly ReadOnlySpan<char> FileName { get { fixed (char* c = &_fileName) { return new ReadOnlySpan<char>(c, (int)FileNameLength / sizeof(char)); } } }
 
             /// <summary>
             /// Gets the next info pointer or null if there are no more.

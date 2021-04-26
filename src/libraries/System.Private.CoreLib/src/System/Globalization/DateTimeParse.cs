@@ -5243,7 +5243,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal int Index;
 
         // The length of Value string.
-        internal int Length => Value.Length;
+        internal readonly int Length => Value.Length;
 
         // The current character to be looked at.
         internal char m_current;
@@ -5270,7 +5270,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             m_checkDigitToken = ((dtfi.FormatFlags & DateTimeFormatFlags.UseDigitPrefixInTokens) != 0);
         }
 
-        internal CompareInfo CompareInfo => m_info;
+        internal readonly CompareInfo CompareInfo => m_info;
 
         //
         // Advance the Index.
@@ -5292,7 +5292,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        internal bool AtEnd()
+        internal readonly bool AtEnd()
         {
             return Index < Length ? false : true;
         }
@@ -5430,13 +5430,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool MatchSpecifiedWord(string target) =>
+        internal readonly bool MatchSpecifiedWord(string target) =>
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
         private static readonly char[] WhiteSpaceChecks = new char[] { ' ', '\u00A0' };
 
-        internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
+        internal readonly bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
@@ -5622,7 +5622,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         // Get the current character.
         //
-        internal char GetChar()
+        internal readonly char GetChar()
         {
             Debug.Assert(Index >= 0 && Index < Length, "Index >= 0 && Index < len");
             return Value[Index];
@@ -5631,7 +5631,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         // Convert the current character to a digit, and return it.
         //
-        internal int GetDigit()
+        internal readonly int GetDigit()
         {
             Debug.Assert(Index >= 0 && Index < Length, "Index >= 0 && Index < len");
             Debug.Assert(DateTimeParse.IsDigit(Value[Index]), "IsDigit(Value[Index])");
@@ -5842,7 +5842,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal DTSubStringType type;
         internal int value;
 
-        internal char this[int relativeIndex] => s[index + relativeIndex];
+        internal readonly char this[int relativeIndex] => s[index + relativeIndex];
     }
 
     //
@@ -5887,7 +5887,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             num[numCount++] = value;
         }
 
-        internal int GetNumber(int index)
+        internal readonly int GetNumber(int index)
         {
             return num[index];
         }

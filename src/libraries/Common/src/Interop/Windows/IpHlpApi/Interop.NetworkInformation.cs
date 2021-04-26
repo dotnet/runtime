@@ -58,7 +58,7 @@ internal static partial class Interop
             internal IntPtr address;
             internal int addressLength;
 
-            internal IPAddress MarshalIPAddress()
+            internal readonly IPAddress MarshalIPAddress()
             {
                 // Determine the address family used to create the IPAddress.
                 AddressFamily family = (addressLength > Internals.SocketAddress.IPv4AddressSize)

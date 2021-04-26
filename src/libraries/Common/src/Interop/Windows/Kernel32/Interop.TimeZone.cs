@@ -18,7 +18,7 @@ internal static partial class Interop
             internal ushort Second;
             internal ushort Milliseconds;
 
-            internal bool Equals(in SYSTEMTIME other) =>
+            internal readonly bool Equals(in SYSTEMTIME other) =>
                     Year == other.Year &&
                     Month == other.Month &&
                     DayOfWeek == other.DayOfWeek &&
@@ -42,7 +42,7 @@ internal static partial class Interop
             internal fixed char TimeZoneKeyName[128];
             internal byte DynamicDaylightTimeDisabled;
 
-            internal string GetTimeZoneKeyName()
+            internal readonly string GetTimeZoneKeyName()
             {
                 fixed (char* p = TimeZoneKeyName)
                     return new string(p);
@@ -68,13 +68,13 @@ internal static partial class Interop
                     *pTo = *(TIME_ZONE_INFORMATION*)pFrom;
             }
 
-            internal string GetStandardName()
+            internal readonly string GetStandardName()
             {
                 fixed (char* p = StandardName)
                     return new string(p);
             }
 
-            internal string GetDaylightName()
+            internal readonly string GetDaylightName()
             {
                 fixed (char* p = DaylightName)
                     return new string(p);

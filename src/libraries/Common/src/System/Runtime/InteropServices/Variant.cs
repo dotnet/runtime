@@ -230,7 +230,7 @@ namespace System.Runtime.InteropServices
         /// Get the managed object representing the Variant.
         /// </summary>
         /// <returns></returns>
-        public object? ToObject()
+        public readonly object? ToObject()
         {
             // Check the simple case upfront
             if (IsEmpty)
@@ -316,13 +316,13 @@ namespace System.Runtime.InteropServices
 
         public VarEnum VariantType
         {
-            get => (VarEnum)_typeUnion._vt;
+            readonly get => (VarEnum)_typeUnion._vt;
             set => _typeUnion._vt = (ushort)value;
         }
 
-        public bool IsEmpty => _typeUnion._vt == ((ushort)VarEnum.VT_EMPTY);
+        public readonly bool IsEmpty => _typeUnion._vt == ((ushort)VarEnum.VT_EMPTY);
 
-        public bool IsByRef => (_typeUnion._vt & ((ushort)VarEnum.VT_BYREF)) != 0;
+        public readonly bool IsByRef => (_typeUnion._vt & ((ushort)VarEnum.VT_BYREF)) != 0;
 
         public void SetAsNULL()
         {
@@ -334,7 +334,7 @@ namespace System.Runtime.InteropServices
 
         public sbyte AsI1
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_I1);
                 return _typeUnion._unionTypes._i1;
@@ -351,7 +351,7 @@ namespace System.Runtime.InteropServices
 
         public short AsI2
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_I2);
                 return _typeUnion._unionTypes._i2;
@@ -368,7 +368,7 @@ namespace System.Runtime.InteropServices
 
         public int AsI4
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_I4);
                 return _typeUnion._unionTypes._i4;
@@ -385,7 +385,7 @@ namespace System.Runtime.InteropServices
 
         public long AsI8
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_I8);
                 return _typeUnion._unionTypes._i8;
@@ -402,7 +402,7 @@ namespace System.Runtime.InteropServices
 
         public byte AsUi1
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UI1);
                 return _typeUnion._unionTypes._ui1;
@@ -419,7 +419,7 @@ namespace System.Runtime.InteropServices
 
         public ushort AsUi2
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UI2);
                 return _typeUnion._unionTypes._ui2;
@@ -436,7 +436,7 @@ namespace System.Runtime.InteropServices
 
         public uint AsUi4
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UI4);
                 return _typeUnion._unionTypes._ui4;
@@ -453,7 +453,7 @@ namespace System.Runtime.InteropServices
 
         public ulong AsUi8
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UI8);
                 return _typeUnion._unionTypes._ui8;
@@ -470,7 +470,7 @@ namespace System.Runtime.InteropServices
 
         public int AsInt
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_INT);
                 return _typeUnion._unionTypes._int;
@@ -487,7 +487,7 @@ namespace System.Runtime.InteropServices
 
         public uint AsUint
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UINT);
                 return _typeUnion._unionTypes._uint;
@@ -504,7 +504,7 @@ namespace System.Runtime.InteropServices
 
         public bool AsBool
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_BOOL);
                 return _typeUnion._unionTypes._bool != 0;
@@ -523,7 +523,7 @@ namespace System.Runtime.InteropServices
 
         public int AsError
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_ERROR);
                 return _typeUnion._unionTypes._error;
@@ -540,7 +540,7 @@ namespace System.Runtime.InteropServices
 
         public float AsR4
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_R4);
                 return _typeUnion._unionTypes._r4;
@@ -557,7 +557,7 @@ namespace System.Runtime.InteropServices
 
         public double AsR8
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_R8);
                 return _typeUnion._unionTypes._r8;
@@ -574,7 +574,7 @@ namespace System.Runtime.InteropServices
 
         public decimal AsDecimal
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_DECIMAL);
                 // The first byte of Decimal is unused, but usually set to 0
@@ -596,7 +596,7 @@ namespace System.Runtime.InteropServices
 
         public decimal AsCy
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_CY);
                 return decimal.FromOACurrency(_typeUnion._unionTypes._cy);
@@ -613,7 +613,7 @@ namespace System.Runtime.InteropServices
 
         public DateTime AsDate
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_DATE);
                 return DateTime.FromOADate(_typeUnion._unionTypes._date);
@@ -630,7 +630,7 @@ namespace System.Runtime.InteropServices
 
         public string AsBstr
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_BSTR);
                 return (string)Marshal.PtrToStringBSTR(this._typeUnion._unionTypes._bstr);
@@ -647,7 +647,7 @@ namespace System.Runtime.InteropServices
 
         public object? AsUnknown
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UNKNOWN);
                 if (_typeUnion._unionTypes._unknown == IntPtr.Zero)
@@ -675,7 +675,7 @@ namespace System.Runtime.InteropServices
 
         public object? AsDispatch
         {
-            get
+            readonly get
             {
                 Debug.Assert(VariantType == VarEnum.VT_DISPATCH);
                 if (_typeUnion._unionTypes._dispatch == IntPtr.Zero)
@@ -699,7 +699,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public IntPtr AsByRefVariant
+        public readonly IntPtr AsByRefVariant
         {
             get
             {

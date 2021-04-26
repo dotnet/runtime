@@ -22,6 +22,6 @@ internal partial class Interop
         internal long TicksSince1601;
 #pragma warning restore CS0649
 
-        internal DateTimeOffset ToDateTimeOffset() => new DateTimeOffset(DateTime.FromFileTimeUtc(TicksSince1601));
+        internal readonly DateTimeOffset ToDateTimeOffset() => new DateTimeOffset(DateTime.FromFileTimeUtc(TicksSince1601));
     }
 }

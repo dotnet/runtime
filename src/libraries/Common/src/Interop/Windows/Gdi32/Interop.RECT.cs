@@ -16,7 +16,7 @@ internal static partial class Interop
             public int right;
             public int bottom;
 
-            public Size Size => new Size(right - left, bottom - top);
+            public readonly Size Size => new Size(right - left, bottom - top);
         }
     }
 }

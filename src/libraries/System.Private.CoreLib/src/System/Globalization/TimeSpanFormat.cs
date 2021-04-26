@@ -492,12 +492,12 @@ namespace System.Globalization
 
             private string[] _literals;
 
-            internal string Start => _literals[0];
-            internal string DayHourSep => _literals[1];
-            internal string HourMinuteSep => _literals[2];
-            internal string MinuteSecondSep => _literals[3];
-            internal string SecondFractionSep => _literals[4];
-            internal string End => _literals[5];
+            internal readonly string Start => _literals[0];
+            internal readonly string DayHourSep => _literals[1];
+            internal readonly string HourMinuteSep => _literals[2];
+            internal readonly string MinuteSecondSep => _literals[3];
+            internal readonly string SecondFractionSep => _literals[4];
+            internal readonly string End => _literals[5];
 
             /* factory method for static invariant FormatLiterals */
             internal static FormatLiterals InitInvariant(bool isNegative)

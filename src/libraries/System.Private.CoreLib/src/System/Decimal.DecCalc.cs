@@ -13,15 +13,15 @@ namespace System
     public partial struct Decimal
     {
         // Low level accessors used by a DecCalc and formatting
-        internal uint High => _hi32;
-        internal uint Low => (uint)_lo64;
-        internal uint Mid => (uint)(_lo64 >> 32);
+        internal readonly uint High => _hi32;
+        internal readonly uint Low => (uint)_lo64;
+        internal readonly uint Mid => (uint)(_lo64 >> 32);
 
-        internal bool IsNegative => _flags < 0;
+        internal readonly bool IsNegative => _flags < 0;
 
-        internal int Scale => (byte)(_flags >> ScaleShift);
+        internal readonly int Scale => (byte)(_flags >> ScaleShift);
 
-        private ulong Low64 => _lo64;
+        private readonly ulong Low64 => _lo64;
 
         private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
 
@@ -65,29 +65,29 @@ namespace System
 
             private uint High
             {
-                get => uhi;
+                readonly get => uhi;
                 set => uhi = value;
             }
 
             private uint Low
             {
-                get => ulo;
+                readonly get => ulo;
                 set => ulo = value;
             }
 
             private uint Mid
             {
-                get => umid;
+                readonly get => umid;
                 set => umid = value;
             }
 
-            private bool IsNegative => (int)uflags < 0;
+            private readonly bool IsNegative => (int)uflags < 0;
 
-            private int Scale => (byte)(uflags >> ScaleShift);
+            private readonly int Scale => (byte)(uflags >> ScaleShift);
 
             private ulong Low64
             {
-                get => ulomid;
+                readonly get => ulomid;
                 set => ulomid = value;
             }
 

@@ -43,10 +43,10 @@ namespace System.Text
             _highChar = highChar;
         }
 
-        public char LowChar { get { return _lowChar; } }
-        public char HighChar { get { return _highChar; } }
+        public readonly char LowChar { get { return _lowChar; } }
+        public readonly char HighChar { get { return _highChar; } }
 
-        public int Char
+        public readonly int Char
         {
             get
             {

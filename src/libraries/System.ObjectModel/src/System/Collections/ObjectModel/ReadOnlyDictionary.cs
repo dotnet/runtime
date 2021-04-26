@@ -247,16 +247,16 @@ namespace System.Collections.ObjectModel
                 _enumerator = _dictionary.GetEnumerator();
             }
 
-            public DictionaryEntry Entry
+            public readonly DictionaryEntry Entry
             {
                 get => new DictionaryEntry(_enumerator.Current.Key, _enumerator.Current.Value);
             }
 
-            public object Key => _enumerator.Current.Key;
+            public readonly object Key => _enumerator.Current.Key;
 
-            public object? Value => _enumerator.Current.Value;
+            public readonly object? Value => _enumerator.Current.Value;
 
-            public object Current => Entry;
+            public readonly object Current => Entry;
 
             public bool MoveNext() => _enumerator.MoveNext();
 

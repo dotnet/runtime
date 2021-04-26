@@ -582,7 +582,7 @@ namespace System.Text
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
             /// </summary>
             [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
-            public ChunkEnumerator GetEnumerator() { return this; }
+            public readonly ChunkEnumerator GetEnumerator() { return this; }
 
             /// <summary>
             /// Implements the IEnumerator pattern.
@@ -613,7 +613,7 @@ namespace System.Text
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
-            public ReadOnlyMemory<char> Current
+            public readonly ReadOnlyMemory<char> Current
             {
                 get
                 {

@@ -148,7 +148,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Lazily instantiate the Task in a non-thread-safe manner.</summary>
-        private Task Task => _builder.Task;
+        private readonly Task Task => _builder.Task;
 
         /// <summary>
         /// Gets an object that may be used to uniquely identify this builder to the debugger.
@@ -157,6 +157,6 @@ namespace System.Runtime.CompilerServices
         /// This property lazily instantiates the ID in a non-thread-safe manner.
         /// It must only be used by the debugger and AsyncCausalityTracer in a single-threaded manner.
         /// </remarks>
-        internal object ObjectIdForDebugger => _builder.ObjectIdForDebugger;
+        internal readonly object ObjectIdForDebugger => _builder.ObjectIdForDebugger;
     }
 }

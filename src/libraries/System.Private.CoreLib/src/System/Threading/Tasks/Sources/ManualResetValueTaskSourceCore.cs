@@ -39,7 +39,7 @@ namespace System.Threading.Tasks.Sources
 
         /// <summary>Gets or sets whether to force continuations to run asynchronously.</summary>
         /// <remarks>Continuations may run asynchronously if this is false, but they'll never run synchronously if this is true.</remarks>
-        public bool RunContinuationsAsynchronously { get; set; }
+        public bool RunContinuationsAsynchronously { readonly get; set; }
 
         /// <summary>Resets to prepare for the next operation.</summary>
         public void Reset()
@@ -72,11 +72,11 @@ namespace System.Threading.Tasks.Sources
         }
 
         /// <summary>Gets the operation version.</summary>
-        public short Version => _version;
+        public readonly short Version => _version;
 
         /// <summary>Gets the status of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
-        public ValueTaskSourceStatus GetStatus(short token)
+        public readonly ValueTaskSourceStatus GetStatus(short token)
         {
             ValidateToken(token);
             return
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Gets the result of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         [StackTraceHidden]
-        public TResult GetResult(short token)
+        public readonly TResult GetResult(short token)
         {
             ValidateToken(token);
             if (!_completed)
@@ -189,7 +189,7 @@ namespace System.Threading.Tasks.Sources
 
         /// <summary>Ensures that the specified token matches the current version.</summary>
         /// <param name="token">The token supplied by <see cref="ValueTask"/>.</param>
-        private void ValidateToken(short token)
+        private readonly void ValidateToken(short token)
         {
             if (token != _version)
             {
@@ -235,7 +235,7 @@ namespace System.Threading.Tasks.Sources
             }
         }
 
-        private void InvokeContinuationWithContext()
+        private readonly void InvokeContinuationWithContext()
         {
             // This is in a helper as the error handling causes the generated asm
             // for the surrounding code to become less efficent (stack spills etc)
@@ -310,7 +310,7 @@ namespace System.Threading.Tasks.Sources
         /// This assumes that if <see cref="_continuation"/> is not null we're already
         /// running within that <see cref="ExecutionContext"/>.
         /// </summary>
-        private void InvokeSchedulerContinuation()
+        private readonly void InvokeSchedulerContinuation()
         {
             Debug.Assert(_capturedContext != null);
             Debug.Assert(_continuation != null);

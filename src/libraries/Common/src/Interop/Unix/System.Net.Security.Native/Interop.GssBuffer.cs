@@ -16,7 +16,7 @@ internal static partial class Interop
             internal ulong _length;
             internal IntPtr _data;
 
-            internal int Copy(byte[] destination, int offset)
+            internal readonly int Copy(byte[] destination, int offset)
             {
                 Debug.Assert(destination != null, "target destination cannot be null");
                 Debug.Assert((offset >= 0 && offset < destination.Length) || destination.Length == 0, "invalid offset " + offset);
@@ -38,7 +38,7 @@ internal static partial class Interop
                 return sourceLength;
             }
 
-            internal byte[] ToByteArray()
+            internal readonly byte[] ToByteArray()
             {
                 if (_data == IntPtr.Zero || _length == 0)
                 {
@@ -51,7 +51,7 @@ internal static partial class Interop
                 return destination;
             }
 
-            internal unsafe ReadOnlySpan<byte> Span => (_data != IntPtr.Zero && _length != 0) ?
+            internal unsafe readonly ReadOnlySpan<byte> Span => (_data != IntPtr.Zero && _length != 0) ?
                 new ReadOnlySpan<byte>(_data.ToPointer(), checked((int)_length)) :
                 default;
 

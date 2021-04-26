@@ -23,7 +23,7 @@ internal static partial class Interop
             private IntPtr dwLower;
             private IntPtr dwUpper;
 
-            public bool IsZero
+            public readonly bool IsZero
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -38,7 +38,7 @@ internal static partial class Interop
                 dwUpper = IntPtr.Zero;
             }
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 { return dwLower.ToString("x") + ":" + dwUpper.ToString("x"); }
             }

@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices
         // Target property - allows getting / updating of the handle's referent.
         public object? Target
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
                 ThrowIfInvalid(handle);
@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>Determine whether this handle has been allocated or not.</summary>
-        public bool IsAllocated => _handle != IntPtr.Zero;
+        public readonly bool IsAllocated => _handle != IntPtr.Zero;
 
         /// <summary>
         /// Used to create a GCHandle from an int.  This is intended to
@@ -161,9 +161,9 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ToIntPtr(GCHandle value) => value._handle;
 
-        public override int GetHashCode() => _handle.GetHashCode();
+        public override readonly int GetHashCode() => _handle.GetHashCode();
 
-        public override bool Equals([NotNullWhen(true)] object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
+        public override readonly bool Equals([NotNullWhen(true)] object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
 
         public static bool operator ==(GCHandle a, GCHandle b) => a._handle == b._handle;
 

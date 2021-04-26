@@ -59,7 +59,7 @@ internal static partial class Interop
             public uint grfStateBits;
             public uint reserved;
 
-            public string? GetName() => Marshal.PtrToStringUni(pwcsName);
+            public readonly string? GetName() => Marshal.PtrToStringUni(pwcsName);
 
             /// <summary>
             /// Caller is responsible for freeing the name memory.

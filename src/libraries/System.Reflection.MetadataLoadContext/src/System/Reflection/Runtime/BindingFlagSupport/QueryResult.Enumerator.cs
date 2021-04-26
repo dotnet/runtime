@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return false;
             }
 
-            public M Current
+            public readonly M Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
