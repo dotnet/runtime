@@ -517,7 +517,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Avoid a reference to typeof(JsonNode) to support trimming.
                     (declaredPropertyType.FullName == JsonObjectTypeName && ReferenceEquals(declaredPropertyType.Assembly, GetType().Assembly)))
                 {
-                    converter = Options.GetConverter(declaredPropertyType);
+                    converter = Options.GetConverterInternal(declaredPropertyType);
                     Debug.Assert(converter != null);
                 }
 

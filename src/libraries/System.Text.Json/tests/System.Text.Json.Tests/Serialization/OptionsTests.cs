@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Encodings.Web;
@@ -736,6 +737,27 @@ namespace System.Text.Json.Serialization.Tests
                     throw ex;
                 }
             }
+        }
+
+        [Fact]
+        public static void GetConverterRootsBuiltInConverters()
+        {
+            JsonSerializerOptions options = new();
+            RunTest<DateTime>();
+            RunTest<Point_2D>();
+
+            void RunTest<TConverterReturn>()
+            {
+                JsonConverter converter = options.GetConverter(typeof(TConverterReturn));
+                Assert.NotNull(converter);
+                Assert.True(converter is JsonConverter<TConverterReturn>);
+            }
+        }
+
+        [Fact]
+        public static void GetConverterTypeToConvertNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => (new JsonSerializerOptions()).GetConverter(typeToConvert: null!));
         }
     }
 }

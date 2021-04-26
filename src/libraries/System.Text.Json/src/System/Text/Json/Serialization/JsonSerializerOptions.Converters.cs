@@ -29,6 +29,15 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal void RootBuiltInConvertersAndTypeInfoCreator()
         {
+            RootBuiltInConverters();
+            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
+        }
+
+        internal void RootBuiltInConverters()
+        {
             s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
             s_defaultFactoryConverters ??= new JsonConverter[]
             {
@@ -45,11 +54,6 @@ namespace System.Text.Json
                 // Object should always be last since it converts any type.
                 new ObjectConverterFactory()
             };
-
-            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
-
-            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
         }
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
@@ -119,7 +123,7 @@ namespace System.Text.Json
 
             if (converter == null)
             {
-                converter = GetConverter(runtimePropertyType);
+                converter = GetConverterInternal(runtimePropertyType);
                 Debug.Assert(converter != null);
             }
 
@@ -162,6 +166,19 @@ namespace System.Text.Json
         /// </exception>
         public JsonConverter GetConverter(Type typeToConvert)
         {
+            if (typeToConvert == null)
+            {
+                throw new ArgumentNullException(nameof(typeToConvert));
+            }
+
+            RootBuiltInConverters();
+            return GetConverterInternal(typeToConvert);
+        }
+
+        internal JsonConverter GetConverterInternal(Type typeToConvert)
+        {
+            Debug.Assert(typeToConvert != null);
+
             if (_converters.TryGetValue(typeToConvert, out JsonConverter? converter))
             {
                 Debug.Assert(converter != null);

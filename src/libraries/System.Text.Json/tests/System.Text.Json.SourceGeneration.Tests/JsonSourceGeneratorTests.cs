@@ -466,5 +466,19 @@ namespace System.Text.Json.SourceGeneration.Tests
             public DayOfWeek Day { get; set; }
             public DayOfWeek? NullableDay { get; set; }
         }
+
+        [Fact]
+        public static void PolymorphicSerializationTypeNotIndicated()
+        {
+            MyStruct myStruct = new();
+            // Metadata not generated for MyStruct without JsonSerializableAttribute.
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(
+                () => JsonSerializer.Serialize(new object[] { myStruct }, JsonContext.Default.ObjectArray));
+            string exAsStr = ex.ToString();
+            Assert.Contains(typeof(MyStruct).ToString(), exAsStr);
+            Assert.Contains("JsonSerializerOptions", exAsStr);
+        }
+
+        internal struct MyStruct { }
     }
 }
