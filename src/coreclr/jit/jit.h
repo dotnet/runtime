@@ -891,6 +891,13 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
+extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
+                                                      UINT32                                 countSchemaItems,
+                                                      BYTE*                                  pInstrumentationData,
+                                                      int32_t                                ilOffset,
+                                                      UINT32*                                pLikelihood,
+                                                      UINT32*                                pNumberOfClasses);
+
 /*****************************************************************************/
 #endif //_JIT_H_
 /*****************************************************************************/

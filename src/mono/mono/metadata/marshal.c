@@ -4785,19 +4785,19 @@ mono_marshal_clear_last_error (void)
 #endif
 }
 
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void)
 {
 	return GPOINTER_TO_INT (mono_native_tls_get_value (last_error_tls_id));
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err)
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err)
 {
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (err));
 }
 
-guint32 
+guint32
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (rtype)) {

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
 
         // Event source doesn't support large payloads so we chunk formatted call site tree
-        private int MaxChunkSize = 10 * 1024;
+        private const int MaxChunkSize = 10 * 1024;
 
 
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
@@ -54,6 +54,21 @@ namespace Microsoft.Extensions.DependencyInjection
         public void DynamicMethodBuilt(string serviceType, int methodSize)
         {
             WriteEvent(4, serviceType, methodSize);
+        }
+
+        [Event(5, Level = EventLevel.Verbose)]
+        public void ScopeDisposed(int serviceProviderHashCode, int scopedServicesResolved, int disposableServices)
+        {
+            WriteEvent(5, serviceProviderHashCode, scopedServicesResolved, disposableServices);
+        }
+
+        [NonEvent]
+        public void ScopeDisposed(ServiceProviderEngine engine, ScopeState state)
+        {
+            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                ScopeDisposed(engine.GetHashCode(), state.ResolvedServicesCount, state.DisposableServicesCount);
+            }
         }
 
         [NonEvent]

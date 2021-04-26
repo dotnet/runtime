@@ -14,10 +14,18 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        internal const int ERROR_BROKEN_PIPE = 109;
-        internal const int ERROR_NO_DATA = 232;
-        private const int ERROR_HANDLE_EOF = 38;
-        private const int ERROR_IO_PENDING = 997;
+        // Async completion/return codes shared by:
+        // - AsyncWindowsFileStreamStrategy.ValueTaskSource
+        // - Net5CompatFileStreamStrategy.CompletionSource
+        internal static class TaskSourceCodes
+        {
+            internal const long NoResult = 0;
+            internal const long ResultSuccess = (long)1 << 32;
+            internal const long ResultError = (long)2 << 32;
+            internal const long RegisteringCancellation = (long)4 << 32;
+            internal const long CompletedCallback = (long)8 << 32;
+            internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
+        }
 
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
@@ -219,7 +227,7 @@ namespace System.IO.Strategies
             return ret;
         }
 
-        private static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
+        internal static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
         {
             int errorCode = Marshal.GetLastWin32Error();
 
@@ -332,7 +340,6 @@ namespace System.IO.Strategies
             }
         }
 
-        // __ConsoleStream also uses this code.
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert(handle != null, "handle != null");
@@ -481,11 +488,11 @@ namespace System.IO.Strategies
                         {
                             switch (errorCode)
                             {
-                                case ERROR_IO_PENDING:
+                                case Interop.Errors.ERROR_IO_PENDING:
                                     // Async operation in progress.
                                     break;
-                                case ERROR_BROKEN_PIPE:
-                                case ERROR_HANDLE_EOF:
+                                case Interop.Errors.ERROR_BROKEN_PIPE:
+                                case Interop.Errors.ERROR_HANDLE_EOF:
                                     // We're at or past the end of the file, and the overlapped callback
                                     // won't be raised in these cases. Mark it as completed so that the await
                                     // below will see it as such.
@@ -503,8 +510,8 @@ namespace System.IO.Strategies
                         {
                             case 0: // success
                                 break;
-                            case ERROR_BROKEN_PIPE: // logically success with 0 bytes read (write end of pipe closed)
-                            case ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
+                            case Interop.Errors.ERROR_BROKEN_PIPE: // logically success with 0 bytes read (write end of pipe closed)
+                            case Interop.Errors.ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
                                 Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
                                 break;
                             case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled

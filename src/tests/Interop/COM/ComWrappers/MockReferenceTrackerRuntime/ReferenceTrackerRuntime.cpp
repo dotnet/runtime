@@ -204,6 +204,13 @@ namespace
             {
                 assert(c != nullptr && id != nullptr);
 
+                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
+                if (S_OK == c->QueryInterface(&mowMaybe))
+                {
+                    (void)mowMaybe->AddRefFromReferenceTracker();
+                    c = mowMaybe.p;
+                }
+
                 try
                 {
                     *id = _elementId;
@@ -216,10 +223,6 @@ namespace
                 {
                     return E_OUTOFMEMORY;
                 }
-
-                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-                if (S_OK == c->QueryInterface(&mowMaybe))
-                    (void)mowMaybe->AddRefFromReferenceTracker();
 
                 return S_OK;
             }
@@ -523,6 +526,30 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReleaseAllTrackerObjects()
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTrackingOnThread()
 {
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
+}
+
+extern "C" DLL_EXPORT void* STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTrackerAndReturn(IUnknown *obj)
+{
+    assert(obj != nullptr);
+
+    API::IReferenceTrackerTarget* targetMaybe;
+    if (S_OK == obj->QueryInterface(&targetMaybe))
+    {
+        (void)targetMaybe->AddRefFromReferenceTracker();
+        (void)targetMaybe->Release();
+
+        // The IReferenceTrackerTarget instance is returned even after calling Release since
+        // the Reference Tracker count is now extending the lifetime of the object.
+        return targetMaybe;
+    }
+
+    return nullptr;
+}
+
+extern "C" DLL_EXPORT LONG STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceTracker(API::IReferenceTrackerTarget *target)
+{
+    assert(target != nullptr);
+    return (LONG)target->ReleaseFromReferenceTracker();
 }
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown *obj, int i, IUnknown **out)
