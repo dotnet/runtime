@@ -65,7 +65,6 @@
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.c"
-        OutputDir="$(PublishDir)"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
