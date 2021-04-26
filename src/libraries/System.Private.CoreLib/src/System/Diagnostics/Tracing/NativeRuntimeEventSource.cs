@@ -17,11 +17,6 @@ namespace System.Diagnostics.Tracing
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         internal const string EventSourceName = "Microsoft-Windows-DotNETRuntime";
-        public static readonly NativeRuntimeEventSource Log = new NativeRuntimeEventSource();
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private NativeRuntimeEventSource(int _) { }
 
 #if FEATURE_PERFTRACING
         /// <summary>
