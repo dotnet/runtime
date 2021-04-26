@@ -583,6 +583,9 @@ namespace System.Text.Json.Serialization.Tests
             string serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride());
             Assert.Equal(@"{}", serialized);
 
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredNewSlotVirtual());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
             serialized = JsonSerializer.Serialize(new DerivedClass_WithVisibleProperty_Of_DerivedClass_With_IgnoredOverride());
             Assert.Equal(@"{""MyProp"":false}", serialized);
 
@@ -625,6 +628,16 @@ namespace System.Text.Json.Serialization.Tests
 
             serialized = JsonSerializer.Serialize(new FurtherDerivedClass_With_IgnoredOverride());
             Assert.Equal(@"{""MyProp"":null}", serialized);
+        }
+
+        [Fact]
+        public static void OverriddenPropertiesIgnored_WhenRenamed()
+        {
+            string serialized = JsonSerializer.Serialize(new DerivedClass_WithRenamedOverride());
+            Assert.Equal(@"{""Renamed"":true}", serialized);
+
+            serialized = JsonSerializer.Serialize(new FurtherDerivedClass_WithRenamedOverride());
+            Assert.Equal(@"{""MyProp"":true}", serialized);
         }
 
         public class ClassWithInternalField
@@ -852,6 +865,12 @@ namespace System.Text.Json.Serialization.Tests
             public virtual bool MyProp { get; set; }
         }
 
+        private class DerivedClass_With_IgnoredNewSlotVirtual : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public new virtual bool MyProp { get; set; }
+        }
+
         private class DerivedClass_With_IgnoredOverride : Class_With_VirtualProperty
         {
             [JsonIgnore]
@@ -950,6 +969,17 @@ namespace System.Text.Json.Serialization.Tests
         private class FurtherDerivedClass_With_IgnoredOverride : DerivedClass_WithConflictingPropertyName
         {
             [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithRenamedOverride : Class_With_VirtualProperty
+        {
+            [JsonPropertyName("Renamed")]
+            public override bool MyProp { get; set; } = true;
+        }
+
+        private class FurtherDerivedClass_WithRenamedOverride : DerivedClass_WithRenamedOverride
+        {
             public override bool MyProp { get; set; }
         }
 

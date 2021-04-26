@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -124,6 +125,20 @@ namespace System.Text.Json
 #else
             return dictionary.TryAdd(key, value);
 #endif
+        }
+
+        /// <summary>
+        /// Adds a <paramref name="value"/> to the <paramref name="dictionary"/> or returns the <paramref name="existing"/> value.
+        /// </summary>
+        public static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, in TKey key, in TValue value, [MaybeNullWhen(true)] out TValue existing) where TKey : notnull
+        {
+            if (!dictionary.TryGetValue(key, out existing))
+            {
+                dictionary[key] = value;
+                return true;
+            }
+
+            return false;
         }
 
         public static bool IsFinite(double value)
