@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
+    <DnneGenRollForward>Major</DnneGenRollForward>
   </PropertyGroup>
 
   <ItemGroup>
