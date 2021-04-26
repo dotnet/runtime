@@ -276,7 +276,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.Add("--llvm");
 
             if (!string.IsNullOrEmpty(LLVMDebug))
-                aotArgs.Add("nodebug");
+                aotArgs.Add(LLVMDebug);
 
             aotArgs.Add($"llvm-path={LLVMPath}");
         }
