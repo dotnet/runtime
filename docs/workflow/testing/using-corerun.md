@@ -1,18 +1,18 @@
 
 # Using `corerun` To Run a .NET Application
 
-In page [Using your .NET Runtime Build with dotnet cli](../using-dotnet-cli.md), it gives detailed instructions on using the standard
-command line host (that is, `dotnet.exe` or `dotnet`), and SDK to run an application with the modified local build of the
+The page [Using your .NET Runtime Build with dotnet cli](../using-dotnet-cli.md) gives detailed instructions on using the standard
+command line host (that is, `dotnet.exe` or `dotnet`), and SDK to run an application with a local build of the
 .NET Runtime. This is the preferred mechanism for you to officially deploy
-your changes to other people since dotnet.exe and NuGet insure that you end up with a consistent
+your changes to other people since dotnet.exe and NuGet ensure that you end up with a consistent
 set of binaries that can work together.
 
-However, packing and unpacking the runtime binaries adds extra steps to the deployment process and when
-working in a tight edit-build-debug loop these extra steps become cumbersome.
+However, packing and unpacking the runtime binaries adds extra steps to the deployment process. When
+working in a tight edit-build-debug loop, these extra steps become cumbersome.
 
-For this situation there is an alternative host to `dotnet` called `corerun` that is well suited. It does not
-know about NuGet at all, and has very simple rules.  It needs to find the .NET runtime (for example, `coreclr.dll`)
-and additionally any class library assemblies (for example, `System.Runtime.dll`, `System.IO.dll`, etc).
+For this tight edit-build-debug loop, there is a simplified alternative to `dotnet` called `corerun` which
+does not know about NuGet at all. It just needs to find the .NET runtime (for example, `coreclr.dll`)
+and any class library assemblies (for example, `System.Runtime.dll`, `System.IO.dll`, etc).
 
 It does this using heuristics in the following order:
 
@@ -20,8 +20,8 @@ It does this using heuristics in the following order:
 1. Check if the `CORE_ROOT` environment variable is defined.
 1. Check if the .NET runtime binary is in the same directory as the `corerun` binary.
 
-Regardless of which method the is used to discover the .NET runtime binary, its location is defined as "Core Root".
-The Core Root directory is not only used to discover the .NET runtime binary but also all base class library
+Regardless of which method is used to discover the .NET runtime binary, its location is defined as "Core Root".
+The Core Root directory is used to discover both the .NET runtime binary and all base class library
 assemblies. Additional directories can be included in the set of class library assemblies by defining the
 `CORE_LIBRARIES` environment variable.
 
@@ -45,19 +45,19 @@ On non-Windows platforms, setting environment variables is different but the log
 
 The `%CoreCLR%` represents the base of your dotnet/runtime repository. The first line puts the build output directory
 (your OS, architecture, and buildType may be different) and thus the `corerun` binary on your path.
-The second line tells `corerun` where to find class library assemblies, in this case we tell it to find them where
-the installation of `dotnet` placed its copy. Note the version number in the path above may change depending on what
+The second line tells `corerun` where to find class library assemblies. In this case we tell it to find them where
+the installation of `dotnet` placed its copy. The version number in the path may be different depending on what
 is currently installed on your system.
 
 Thus when you run `corerun HelloWorld.dll`, `corerun` knows where to get the assemblies it needs.
-Notice that once you set the path and `CORE_LIBRARIES` environment variable, after a rebuild you can simply use
+Once you set the path and `CORE_LIBRARIES` environment variable, after a rebuild you can simply use
 `corerun` to run your application &ndash; you don't have to move any binaries around.
 
 ## Using `corerun` to Execute a Published Application
 
-When `dotnet publish` publishes an application it deploys all the class libraries needed as well.
+When `dotnet publish` publishes an application, it deploys all the class libraries needed as well.
 Thus if you simply change the `CORE_LIBRARIES` definition in the previous instructions to point at
-that publication directory but run the `corerun` from your build output the effect will be that you
+that publication directory, but run the `corerun` from your build output, the effect will be that you
 run your new runtime getting all the other code needed from that deployed application. This is
 very convenient because you don't need to modify the deployed application in order to test
 your new runtime.
@@ -70,7 +70,7 @@ It places this runtime in the directory
 `artifacts\tests\coreclr\<OS>.<Arch>.<BuildType>\Tests\Core_Root`
  starting at the repository root. The way the tests are expected to work is that you can set the environment
 variable `CORE_ROOT` to this directory &ndash; you don't have to set `CORE_LIBRARIES` since the test environment has copied all base class libraries assemblies to this `Core_Root` directory &ndash; and you can run any test. For example, after building the tests
-(running `src\tests\build` from the repository base) and running `src\tests\run`) you can do the following on Windows to set up an environment where `corerun` can run any tests.
+(running `src\tests\build` from the repository base), you can do the following on Windows to set up an environment where `corerun` can run any test.
 
 ```cmd
 set PATH=%PATH%;%CoreCLR%\artifacts\Product\windows.x64.Debug
@@ -79,7 +79,7 @@ set CORE_ROOT=%CoreCLR%\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Roo
 For example, the following runs the finalizerio test on Windows.
 
 ```cmd
-corerun artifacts\tests\coreclr\windows.x64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
+corerun artifacts\tests\coreclr\windows.x64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.dll
 ```
 
 ## Additional `corerun` options
