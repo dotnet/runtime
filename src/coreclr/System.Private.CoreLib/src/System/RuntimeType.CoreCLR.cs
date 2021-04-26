@@ -2426,27 +2426,8 @@ namespace System
                 return;
             }
 
-            // Loop until the cache is successfully zero'd out.
-            do
-            {
-                // If the GCHandle doesn't wrap a cache yet, there's nothing more to do.
-                RuntimeTypeCache? existingCache = (RuntimeTypeCache?)GCHandle.InternalGet(m_cache);
-                if (existingCache is null)
-                {
-                    return;
-                }
-
-                // Create a new, empty cache to replace the old one and try to substitute it in.
-                var newCache = new RuntimeTypeCache(this);
-                if (ReferenceEquals(GCHandle.InternalCompareExchange(m_cache, newCache, existingCache), existingCache))
-                {
-                    // We were successful, so there's nothing more to do.
-                    return;
-                }
-
-                // We raced with someone else to initialize the cache.  Try again.
-            }
-            while (true);
+            // Set the GCHandle to null. The cache will be re-created next time it is needed.
+            GCHandle.InternalSet(m_cache, null);
         }
 
         private string? GetDefaultMemberName()

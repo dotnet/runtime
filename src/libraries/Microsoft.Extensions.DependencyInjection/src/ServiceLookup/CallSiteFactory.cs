@@ -40,14 +40,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     if (implementationType == null || !implementationType.IsGenericTypeDefinition)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, descriptor.ServiceType),
+                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, serviceType),
                             "descriptors");
                     }
 
                     if (implementationType.IsAbstract || implementationType.IsInterface)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
+                            SR.Format(SR.TypeCannotBeActivated, implementationType, serviceType));
+                    }
+
+                    if (serviceType.GetGenericArguments().Length != implementationType.GetGenericArguments().Length)
+                    {
+                        throw new ArgumentException(
+                            SR.Format(SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation, serviceType, implementationType), "descriptors");
                     }
                 }
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
@@ -60,11 +66,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         implementationType.IsInterface)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
+                            SR.Format(SR.TypeCannotBeActivated, implementationType, serviceType));
                     }
                 }
 
-                Type cacheKey = descriptor.ServiceType;
+                Type cacheKey = serviceType;
                 _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem cacheItem);
                 _descriptorLookup[cacheKey] = cacheItem.Add(descriptor);
             }

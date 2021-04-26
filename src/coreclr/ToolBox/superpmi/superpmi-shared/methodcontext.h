@@ -49,7 +49,8 @@ enum EXTRA_JIT_FLAGS
 {
     HAS_PGO = 63,
     HAS_EDGE_PROFILE = 62,
-    HAS_CLASS_PROFILE = 61
+    HAS_CLASS_PROFILE = 61,
+    HAS_LIKELY_CLASS = 60
 };
 
 // Asserts to catch changes in corjit flags definitions.
@@ -57,6 +58,7 @@ enum EXTRA_JIT_FLAGS
 static_assert((int)EXTRA_JIT_FLAGS::HAS_PGO == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED36, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED35, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED34, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED33, "Jit Flags Mismatch");
 
 class MethodContext
 {
@@ -70,14 +72,14 @@ private:
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
     void MethodInitHelperFile(HANDLE hFile);
 
-    bool Initialize(int loadedCount, unsigned char* buff, DWORD size);
-    bool Initialize(int loadedCount, HANDLE hFile);
+    bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
+    bool Initialize(int mcIndex, HANDLE hFile);
 
     int dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
-    static bool Initialize(int loadedCount, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int loadedCount, HANDLE hFile, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
@@ -97,7 +99,7 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
-    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile);
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -118,6 +120,10 @@ public:
     void recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs);
     void dmpGetClassAttribs(DWORDLONG key, DWORD value);
     DWORD repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle);
+
+    void recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpIsJitIntrinsic(DWORDLONG key, DWORD value);
+    bool repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
@@ -697,10 +703,6 @@ public:
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
     HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
 
-    void recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE classHnd, UINT32* pLikelihood, UINT32* pNumberOfClasses);
-    void dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value);
-    CORINFO_CLASS_HANDLE repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses);
-
     void recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result);
     void dmpMergeClasses(DLDL key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
@@ -898,7 +900,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 191
+// Highest packet number: 192
 // *************************************************************************************
 enum mcPackets
 {
@@ -998,8 +1000,9 @@ enum mcPackets
     Packet_GetJitFlags                                   = 154, // Added 2/3/2016
     Packet_GetJitTimeLogFilename                         = 67,
     Packet_GetJustMyCodeHandle                           = 68,
-    Packet_GetLikelyClass                                = 182, // Added 9/27/2020
+    Retired10                                            = 182, // Added 9/27/2020 // was Packet_GetLikelyClass
     Packet_GetLocationOfThisType                         = 69,
+    Packet_IsJitIntrinsic                                = 192,
     Packet_GetMethodAttribs                              = 70,
     Packet_GetMethodClass                                = 71,
     Packet_GetMethodModule                               = 181, // Added 11/20/2020

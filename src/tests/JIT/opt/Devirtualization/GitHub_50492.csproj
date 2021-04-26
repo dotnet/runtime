@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- This test requires tiered compilation and PGO -->
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set DOTNET_TieredCompilation=1
+set DOTNET_TieredPGO=1
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export DOTNET_TieredCompilation=1
+export DOTNET_TieredPGO=1
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GitHub_50492.cs" />
+  </ItemGroup>
+</Project>

@@ -29,7 +29,8 @@ int verbJitFlags::DoWork(const char* nameOfInput)
         //
         bool hasEdgeProfile = false;
         bool hasClassProfile = false;
-        if (mc->hasPgoData(hasEdgeProfile, hasClassProfile))
+        bool hasLikelyClass = false;
+        if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass))
         {
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
 
@@ -41,6 +42,11 @@ int verbJitFlags::DoWork(const char* nameOfInput)
             if (hasClassProfile)
             {
                 rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
+            }
+
+            if (hasLikelyClass)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
             }
         }
 

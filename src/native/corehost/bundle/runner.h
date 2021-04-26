@@ -27,7 +27,7 @@ namespace bundle
         const pal::string_t& extraction_path() const { return m_extraction_path; }
         bool has_base(const pal::string_t& base) const { return base.compare(base_path()) == 0; }
 
-        bool probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size) const;
+        bool probe(const pal::string_t& relative_path, int64_t* offset, int64_t* size, int64_t* compressedSize) const;
         const file_entry_t* probe(const pal::string_t& relative_path) const;
         bool locate(const pal::string_t& relative_path, pal::string_t& full_path, bool& extracted_to_disk) const;
         bool locate(const pal::string_t& relative_path, pal::string_t& full_path) const

@@ -1006,9 +1006,9 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SocketsHttpHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
+    public sealed class SocketsHttpHandlerTest_RequestRetry : HttpClientHandlerTest_RequestRetry
     {
-        public SocketsHttpHandler_HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

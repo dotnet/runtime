@@ -18,6 +18,14 @@ namespace System.Net
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
         private const int InitialBufferSize = 2048;
+        private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[]
+        {
+            SslProtocols.Tls,
+            SslProtocols.Tls11,
+            SslProtocols.Tls12,
+            SslProtocols.Tls13,
+        };
+        private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
         private readonly Interop.AndroidCrypto.SSLReadCallback _readCallback;
@@ -194,12 +202,18 @@ namespace System.Net
             SafeFreeSslCredentials credential,
             SslAuthenticationOptions authOptions)
         {
+            switch (credential.Policy)
+            {
+                case EncryptionPolicy.RequireEncryption:
+                case EncryptionPolicy.AllowNoEncryption:
+                    break;
+                default:
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+            }
+
             bool isServer = authOptions.IsServer;
 
-            if (authOptions.ApplicationProtocols != null
-                || authOptions.CipherSuitesPolicy != null
-                || credential.Protocols != SslProtocols.None
-                || (isServer && authOptions.RemoteCertRequired))
+            if (authOptions.CipherSuitesPolicy != null)
             {
                 // TODO: [AndroidCrypto] Handle non-system-default options
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
@@ -207,9 +221,32 @@ namespace System.Net
 
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize);
 
+            if (credential.Protocols != SslProtocols.None)
+            {;
+                SslProtocols protocolsToEnable = credential.Protocols & s_supportedSslProtocols.Value;
+                if (protocolsToEnable == 0)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_security_sslprotocol_notsupported, credential.Protocols));
+                }
+
+                (int minIndex, int maxIndex) = protocolsToEnable.ValidateContiguous(s_orderedSslProtocols);
+                Interop.AndroidCrypto.SSLStreamSetEnabledProtocols(handle, s_orderedSslProtocols.AsSpan(minIndex, maxIndex - minIndex + 1));
+            }
+
+            if (authOptions.ApplicationProtocols != null && Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
+            {
+                // Set application protocols if the platform supports it. Otherwise, we will silently ignore the option.
+                Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
+            }
+
+            if (isServer && authOptions.RemoteCertRequired)
+            {
+                Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
+            }
+
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
-                Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
+                Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }
         }
     }

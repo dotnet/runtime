@@ -687,14 +687,6 @@ public:
             uint8_t**pInstrumentationData /* OUT */
             ) override final;
 
-    CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            uint32_t              ilOffset,
-            uint32_t *            pLikelihood,
-            uint32_t *            pNumberOfClasses
-            ) override final;
-
     void recordCallSite(
             uint32_t                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */

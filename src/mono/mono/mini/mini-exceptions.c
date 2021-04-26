@@ -61,6 +61,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/handle.h>
+#include <mono/metadata/icall-decl.h>
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -3040,6 +3041,8 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	}
 }
 
+static gint32 exceptions_thrown;
+
 /**
  * mono_handle_exception:
  * \param ctx saved processor state
@@ -3058,8 +3061,15 @@ mono_handle_exception (MonoContext *ctx, gpointer void_obj)
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_inc_i32 (&mono_perfcounters->exceptions_thrown);
 #endif
+	mono_atomic_inc_i32 (&exceptions_thrown);
 
 	return mono_handle_exception_internal (ctx, obj, FALSE, NULL);
+}
+
+guint32
+mono_get_exception_count (void)
+{
+	return (guint32)exceptions_thrown;
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -3445,7 +3455,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 
 #if HOST_WASM
-	mono_runtime_printf_err ("%s", text->str); //to print the native callstack
+	mono_runtime_printf_err ("%s\n", text->str); //to print the native callstack
 #else
 	mono_runtime_printf ("%s", text->str);
 #endif	

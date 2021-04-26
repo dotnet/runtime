@@ -114,6 +114,11 @@
           Include="$(CoreCLRArtifactsPath)x64/crossgen2/jitinterface_*"
           TargetDir="crossgen2/" />
 
+      <RunTimeDependencyCopyLocal
+          Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetOS)' == 'windows'"
+          Include="$(CoreCLRArtifactsPath)x64/crossgen2/Microsoft.DiaSymReader.Native.amd64.dll"
+          TargetDir="crossgen2/" />
+
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
