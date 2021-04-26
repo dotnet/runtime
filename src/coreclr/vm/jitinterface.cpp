@@ -5189,6 +5189,7 @@ void CEEInfo::getCallInfo(
         MethodDesc * directMethod = constrainedType.GetMethodTable()->TryResolveConstraintMethodApprox(
             exactType,
             pMD,
+            TRUE, /* allowInstParam, At compile time the exact destination cannot reliably be known */ 
             &fForceUseRuntimeLookup);
         if (directMethod
 #ifdef FEATURE_DEFAULT_INTERFACES
@@ -5401,9 +5402,20 @@ void CEEInfo::getCallInfo(
             {
                 pResult->kind = CORINFO_CALL_CODE_POINTER;
 
-                // For reference types, the constrained type does not affect method resolution
-                DictionaryEntryKind entryKind = (!constrainedType.IsNull() && constrainedType.IsValueType()) ? ConstrainedMethodEntrySlot : MethodEntrySlot;
-
+                DictionaryEntryKind entryKind;
+                if (constrainedType.IsNull() || ((flags & CORINFO_CALLINFO_CALLVIRT) && !constrainedType.IsValueType()))
+                {
+                    // For reference types, the constrained type does not affect method resolution on a callvirt, and if there is no
+                    // constraint, it doesn't effect it either
+                    entryKind = MethodEntrySlot;
+                }
+                else
+                {
+                    // constrained. callvirt case where the constraint type is a valuetype
+                    // OR
+                    // constrained. call or constrained. ldftn case
+                    entryKind = ConstrainedMethodEntrySlot;
+                }
                 ComputeRuntimeLookupForSharedGenericToken(entryKind,
                                                             pResolvedToken,
                                                             pConstrainedResolvedToken,
