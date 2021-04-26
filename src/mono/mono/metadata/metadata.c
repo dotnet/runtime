@@ -2375,7 +2375,8 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 }
 
 static MonoMethodSignature*
-mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig, size_t padding)
+mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager,
+									  MonoMethodSignature *sig, size_t padding)
 {
 	int sigsize, sig_header_size;
 	MonoMethodSignature *ret;
@@ -2387,6 +2388,8 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 		ret = (MonoMethodSignature *)mono_image_alloc (image, sigsize);
 	} else if (mp) {
 		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, sigsize);
+	} else if (mem_manager) {
+		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, sigsize);
 	} else {
 		ret = (MonoMethodSignature *)g_malloc (sigsize);
 	}
@@ -2404,11 +2407,6 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 	return ret;
 }
 
-static MonoMethodSignature*
-mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig)
-{
-	return mono_metadata_signature_dup_internal_with_padding (image, mp, sig, 0);
-}
 /*
  * signature_dup_add_this:
  *
@@ -2418,7 +2416,7 @@ MonoMethodSignature*
 mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass)
 {
 	MonoMethodSignature *ret;
-	ret = mono_metadata_signature_dup_internal_with_padding (image, NULL, sig, sizeof (MonoType *));
+	ret = mono_metadata_signature_dup_internal (image, NULL, NULL, sig, sizeof (MonoType *));
 
 	ret->param_count = sig->param_count + 1;
 	ret->hasthis = FALSE;
@@ -2434,15 +2432,13 @@ mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig
 	return ret;
 }
 
-
-
 MonoMethodSignature*
 mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
 {
-	MonoMethodSignature *ret = mono_metadata_signature_dup_internal (image, NULL, sig);
+	MonoMethodSignature *ret = mono_metadata_signature_dup_internal (image, NULL, NULL, sig, 0);
 
 	for (int i = 0 ; i < sig->param_count; i ++)
-		g_assert(ret->params [i]->type == sig->params [i]->type);
+		g_assert (ret->params [i]->type == sig->params [i]->type);
 	g_assert (ret->ret->type == sig->ret->type);
 
 	return ret;
@@ -2452,7 +2448,13 @@ mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
 MonoMethodSignature*
 mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig)
 {
-	return mono_metadata_signature_dup_internal (NULL, mp, sig);
+	return mono_metadata_signature_dup_internal (NULL, mp, NULL, sig, 0);
+}
+
+MonoMethodSignature*
+mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
+{
+	return mono_metadata_signature_dup_internal (NULL, NULL, mem_manager, sig, 0);
 }
 
 /**
