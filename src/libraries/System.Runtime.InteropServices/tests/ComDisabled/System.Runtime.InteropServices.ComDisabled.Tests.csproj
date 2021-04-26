@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
-    <TestRuntime>true</TestRuntime>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>    
+    <!-- COM tests are currently only supported only in windows -->
+    <IgnoreForCI Condition="'$(TargetOS)' != 'Windows'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>    
     <Compile Include="System\Runtime\InteropServices\Marshal\MarshalComDisabledTests.cs" />
