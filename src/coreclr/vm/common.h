@@ -291,7 +291,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
     RtlRestoreContext(ContextRecord, NULL);
 }
 #endif // TARGET_WINDOWS && TARGET_AMD64
-#endif // !DACCESS_COMPILE && CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 // src/inc
 #include "utilcode.h"
