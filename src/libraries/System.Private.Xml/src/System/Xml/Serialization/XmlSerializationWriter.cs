@@ -924,7 +924,11 @@ namespace System.Xml.Serialization
                     if (ns == XmlReservedNs.NsXml)
                     {
                         string? prefix = _w.LookupPrefix(ns);
-                        if (prefix == null || prefix.Length == 0) prefix = "xml";
+
+                        if (prefix == null || prefix.Length == 0)
+                        {
+                            prefix = "xml";
+                        }
                         _w.WriteAttributeString(prefix, localName, ns, value);
                     }
                     else
@@ -953,7 +957,11 @@ namespace System.Xml.Serialization
                     if (ns == XmlReservedNs.NsXml)
                     {
                         string? prefix = _w.LookupPrefix(ns);
-                        if (prefix == null || prefix.Length == 0) prefix = "xml";
+
+                        if (prefix == null || prefix.Length == 0)
+                        {
+                            prefix = "xml";
+                        }
                         _w.WriteStartAttribute("xml", localName, ns);
                     }
                     else
