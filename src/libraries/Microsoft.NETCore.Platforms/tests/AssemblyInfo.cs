@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("MSBuild is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "MSBuild is not supported on Browser")]

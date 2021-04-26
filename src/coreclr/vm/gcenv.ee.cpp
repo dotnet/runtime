@@ -157,7 +157,22 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
 static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 {
-    TailCallArgBuffer* argBuffer = pThread->GetTailCallTls()->GetArgBuffer();
+    TailCallTls* tls = pThread->GetTailCallTls();
+    // Keep loader associated with CallTailCallTarget alive.
+    if (sc->promotion)
+    {
+#ifndef DACCESS_COMPILE
+        const PortableTailCallFrame* frame = tls->GetFrame();
+        if (frame->NextCall != NULL)
+        {
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)frame->NextCall);
+            if (pMD != NULL)
+                GcReportLoaderAllocator(fn, sc, pMD->GetLoaderAllocator());
+        }
+#endif
+    }
+
+    TailCallArgBuffer* argBuffer = tls->GetArgBuffer();
     if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 

@@ -3,7 +3,7 @@
 
 namespace System.Security.Policy
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed partial class Zone : EvidenceBase, IIdentityPermissionFactory

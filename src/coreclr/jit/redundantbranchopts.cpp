@@ -135,8 +135,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
                     BasicBlock* const falseSuccessor = domBlock->bbNext;
-                    const bool        trueReaches    = optReachable(trueSuccessor, block);
-                    const bool        falseReaches   = optReachable(falseSuccessor, block);
+                    const bool        trueReaches    = optReachable(trueSuccessor, block, domBlock);
+                    const bool        falseReaches   = optReachable(falseSuccessor, block, domBlock);
 
                     if (trueReaches && falseReaches)
                     {
@@ -383,9 +383,9 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         }
 
         const bool isTruePred =
-            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock);
+            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock, domBlock);
         const bool isFalsePred =
-            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock);
+            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock, domBlock);
 
         if (isTruePred == isFalsePred)
         {
@@ -501,9 +501,9 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         }
 
         const bool isTruePred =
-            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock);
+            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock, domBlock);
         const bool isFalsePred =
-            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock);
+            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock, domBlock);
 
         if (isTruePred == isFalsePred)
         {
@@ -557,7 +557,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             assert(predBlock->bbNext != block);
             if (isTruePred)
             {
-                assert(!optReachable(falseSuccessor, predBlock));
+                assert(!optReachable(falseSuccessor, predBlock, domBlock));
                 JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                         " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                         predBlock->bbNum, block->bbNum, predBlock->bbNum, trueTarget->bbNum);
@@ -576,7 +576,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
                 fgRemoveRefPred(block, predBlock);
                 fgReplaceJumpTarget(predBlock, falseTarget, block);
                 fgAddRefPred(falseTarget, predBlock);
-                falseTarget->bbFlags |= BBF_JMP_TARGET;
             }
         }
     }
@@ -594,6 +593,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 // Arguments:
 //    fromBlock - staring block
 //    toBlock   - ending block
+//    excludedBlock - ignore paths that flow through this block
 //
 // Returns:
 //    true if there is a path, false if there is no path
@@ -605,7 +605,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 //    This may overstate "true" reachability in methods where there are
 //    finallies with multiple continuations.
 //
-bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock)
+bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock)
 {
     if (fromBlock == toBlock)
     {
@@ -625,6 +625,11 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
         BasicBlock* const nextBlock = stack.Pop();
         nextBlock->bbFlags |= BBF_VISITED;
         assert(nextBlock != toBlock);
+
+        if (nextBlock == excludedBlock)
+        {
+            continue;
+        }
 
         for (BasicBlock* succ : nextBlock->GetAllSuccs(this))
         {

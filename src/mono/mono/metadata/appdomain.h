@@ -121,7 +121,7 @@ mono_domain_has_type_resolve (MonoDomain *domain);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_domain_owns_vtable_slot (MonoDomain *domain, void* vtable_slot);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
@@ -139,7 +139,7 @@ mono_context_get_id         (MonoAppContext *context);
 MONO_API MONO_RT_EXTERNAL_ONLY int32_t
 mono_context_get_domain_id  (MonoAppContext *context);
 
-MONO_API MonoJitInfo *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoJitInfo *
 mono_jit_info_table_find   (MonoDomain *domain, void* addr);
 
 /* MonoJitInfo accessors */

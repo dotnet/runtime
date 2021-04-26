@@ -151,7 +151,6 @@
       System.IO.Pipes.AccessControl;
       System.Security.AccessControl;
       System.Security.Cryptography.Cng;
-      System.Security.Cryptography.OpenSsl;
       System.Security.Principal.Windows;
     </NetCoreAppLibraryNoReference>
   </PropertyGroup>

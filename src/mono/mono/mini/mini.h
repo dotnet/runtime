@@ -1721,6 +1721,23 @@ typedef struct {
 
 extern MonoJitStats mono_jit_stats;
 
+static inline void
+get_jit_stats (gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes)
+{
+	*methods_compiled = mono_jit_stats.methods_compiled;
+	*cil_code_size_bytes = mono_jit_stats.cil_code_size;
+	*native_code_size_bytes = mono_jit_stats.native_code_size;
+}
+
+guint32
+mono_get_exception_count (void);
+
+static inline void
+get_exception_stats (guint32 *exception_count)
+{
+	*exception_count = mono_get_exception_count ();
+}
+
 /* opcodes: value assigned after all the CIL opcodes */
 #ifdef MINI_OP
 #undef MINI_OP
@@ -2298,8 +2315,8 @@ void              mono_emit_unwind_op (MonoCompile *cfg, int when,
 									   int val);
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops);
 void              mono_tramp_info_free (MonoTrampInfo *info);
-void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
-void              mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
+void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
+void              mono_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
 int mini_exception_id_by_name (const char *name);
 gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 

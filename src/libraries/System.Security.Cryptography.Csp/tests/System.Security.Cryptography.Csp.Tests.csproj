@@ -3,7 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="CspParametersTests.cs" />
     <Compile Include="RSAImportExportCspBlobTests.cs" />

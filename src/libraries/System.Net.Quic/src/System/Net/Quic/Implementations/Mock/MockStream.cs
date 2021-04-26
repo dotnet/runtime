@@ -178,6 +178,14 @@ namespace System.Net.Quic.Implementations.Mock
             return default;
         }
 
+
+        internal override ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
+        {
+            CheckDisposed();
+
+            return default;
+        }
+
         internal override void Shutdown()
         {
             CheckDisposed();

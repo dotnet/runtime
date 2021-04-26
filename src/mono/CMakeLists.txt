@@ -11,6 +11,14 @@ set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
+if(NOT MONO_LIB_NAME)
+  set(MONO_LIB_NAME "monosgen-2.0")
+endif()
+
+if(NOT MONO_SHARED_LIB_NAME)
+  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+endif()
+
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -106,7 +114,6 @@ if(DISABLE_INTERPRETER)
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)
-add_definitions(-DMONO_DLL_EXPORT)
 
 if(GCC)
   add_definitions(-g)  # TODO: should this really be on by default?
@@ -178,7 +185,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
-    set(HOST_MACCATALYST 1)
+    set(HOST_MACCAT 1)
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
@@ -188,6 +195,13 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(HOST_IOS 1)
   if(CMAKE_SYSTEM_NAME STREQUAL "tvOS")
     set(HOST_TVOS 1)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
+    add_compile_options(-fembed-bitcode)
+    add_link_options(-fembed-bitcode)
   endif()
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
@@ -206,6 +220,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
   add_definitions(-D_THREAD_SAFE)
+  add_compile_options(-Wl,-z,now)
+  add_compile_options(-Wl,-z,relro)
+  add_compile_options(-Wl,-z,noexecstack)
   # The normal check fails because it uses --isystem <ndk root>/sysroot/usr/include
   set(HAVE_USR_INCLUDE_MALLOC_H 1)
   set(HOST_ANDROID 1)
@@ -643,6 +660,18 @@ endif()
 ### End of debug build checks
 
 ######################################
+# COMPONENT BUILD CHECKS
+######################################
+if(DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+
+if(DISABLE_LINK_STATIC_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+### End of component build checks
+
+######################################
 # OTHER CHECKS
 ######################################
 if(HOST_WIN32)
@@ -706,8 +735,9 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCATALYST)
-  add_subdirectory(dbi)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
+  add_subdirectory(dlls/mscordbi)
+  add_subdirectory(dlls/dbgshim)
 endif()
 
 configure_file(cmake/config.h.in config.h)

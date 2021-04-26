@@ -647,14 +647,21 @@ LEADINGWHITE:
 
         size_t cchLen = pLast - pFirst + 1;
         WCHAR * szArgCopy = new WCHAR[cchLen];
-        if (!szArgCopy || FAILED(StringCchCopyW(szArgCopy, cchLen, pFirst)))
+        if (!szArgCopy)
         {
+            SetErrorMessage(W("Out of memory."));
+            break;
+        }
+        if (FAILED(StringCchCopyW(szArgCopy, cchLen, pFirst)))
+        {
+            delete[] szArgCopy;
             SetErrorMessage(W("Out of memory."));
             break;
         }
         WStrList * listArgNew = new WStrList( szArgCopy, (*argLast));
         if (!listArgNew)
         {
+            delete[] szArgCopy;
             SetErrorMessage(W("Out of memory."));
             break;
         }

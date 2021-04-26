@@ -686,7 +686,7 @@ FCFuncStart(gArrayFuncs)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
     FCFuncElement("CopySlow", ArrayNative::CopySlow)
     FCFuncElement("InternalCreate", ArrayNative::CreateInstance)
-    FCFuncElement("InternalGetReference", ArrayNative::GetReference)
+    FCFuncElement("InternalGetValue", ArrayNative::GetValue)
     FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
@@ -742,8 +742,8 @@ FCFuncStart(gGCSettingsFuncs)
 FCFuncEnd()
 
 FCFuncStart(gInteropMarshalFuncs)
-    FCFuncElement("GetLastWin32Error", MarshalNative::GetLastWin32Error)
-    FCFuncElement("SetLastWin32Error", MarshalNative::SetLastWin32Error)
+    FCFuncElement("GetLastPInvokeError", MarshalNative::GetLastPInvokeError)
+    FCFuncElement("SetLastPInvokeError", MarshalNative::SetLastPInvokeError)
     FCFuncElement("SizeOfHelper", MarshalNative::SizeOfClass)
     FCFuncElement("StructureToPtr", MarshalNative::StructureToPtr)
     FCFuncElement("PtrToStructureHelper", MarshalNative::PtrToStructureHelper)
@@ -751,7 +751,9 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("IsPinnable", MarshalNative::IsPinnable)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
+#ifdef TARGET_WINDOWS
     QCFuncElement("GetHINSTANCE", COMModule::GetHINSTANCE)
+#endif // TARGET_WINDOWS
 
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
 
