@@ -17,6 +17,7 @@
     <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
     <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
@@ -125,6 +126,12 @@
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
 
+
+        <RunTimeDependencyCopyLocal
+          Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.*"
+          TargetDir="runtimepack/"/>
+          
+
         <!-- This throws everything in 'native', include many non-native assemblies.
              This is done because LibrariesRuntimeFiles includes some .js files that
              WasmAppBuilder expects in native/-->
@@ -172,8 +179,8 @@
           TargetDir="runtimepack/native/cross/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(EmSdkDir)"
-          TargetDir="emsdk/"/>
+          Include="$(EmSdkDir)\**"
+          TargetDir="runtimepack/native/emsdk/"/>
 
     </ItemGroup>
 
