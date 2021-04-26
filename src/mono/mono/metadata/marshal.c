@@ -2384,6 +2384,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	char *name;
 	const char *param_names [16];
 	WrapperInfo *info;
+	MonoMemoryManager *mem_manager = NULL;
 	MonoWrapperMethodCacheKey *method_key;
 	MonoWrapperMethodCacheKey method_key_lookup_only;
 	memset (&method_key_lookup_only, 0, sizeof (method_key_lookup_only));
@@ -2410,7 +2411,10 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	res = mono_marshal_find_in_cache (method_cache, method_key);
 	if (res)
 		return res;
-		
+
+	if (need_direct_wrapper || virtual_)
+		mem_manager = m_method_get_mem_manager (method);
+
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature_internal (method));
 		if (!callsig)
@@ -2488,6 +2492,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	name = mono_signature_to_name (callsig, virtual_ ? "runtime_invoke_virtual" : (need_direct_wrapper ? "runtime_invoke_direct" : "runtime_invoke"));
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
+	mb->mem_manager = mem_manager;
 
 	param_names [0] = "this";
 	param_names [1] = "params";
@@ -2504,7 +2509,6 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		info = mono_wrapper_info_create (mb, virtual_ ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
 		info->d.runtime_invoke.method = method;
 		res = mono_mb_create_and_cache_full (method_cache, method_key, mb, csig, sig->param_count + 16, info, NULL);
-		((MonoMethodWrapper*)res)->mem_manager = m_method_get_mem_manager (method);
 	} else {
 		MonoWrapperSignatureCacheKey *sig_key = g_new0 (MonoWrapperSignatureCacheKey, 1);
 		sig_key->signature = callsig;
@@ -2522,7 +2526,6 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		if (!res) {
 			MonoMethod *newm;
 			newm = mono_mb_create (mb, csig, sig->param_count + 16, info);
-			((MonoMethodWrapper*)newm)->mem_manager = m_method_get_mem_manager (method);
 
 			mono_marshal_lock ();
 			res = (MonoMethod *)g_hash_table_lookup (sig_cache, sig_key);
