@@ -8,9 +8,10 @@
       and instead use runtime checks.
     -->
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
-    <DefineConstants Condition="'$(EnableAggressiveTrimming)' == 'true'">$(DefineConstants);BUILT_WITH_EAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.xml" LogicalName="ILLink.Substitutions.xml" />
+
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\AssertExtensions.cs" />
     <Compile Include="System\IO\StreamExtensions.cs" />
