@@ -276,9 +276,9 @@
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' == 'true'">
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PNSE.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.PNSE.cs" />
-    <Compile Include="System\Net\Security\NegotiateStreamPal.PNSE.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
