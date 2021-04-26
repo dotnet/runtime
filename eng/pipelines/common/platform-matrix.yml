@@ -381,7 +381,7 @@ jobs:
       targetRid: maccatalyst-x64
       platform: MacCatalyst_x64
       jobParameters:
-        runtimeFlavor: mono
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -402,7 +402,7 @@ jobs:
       targetRid: maccatalyst-arm64
       platform: MacCatalyst_arm64
       jobParameters:
-        runtimeFlavor: mono
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
