@@ -281,6 +281,7 @@ namespace Loader
     } LoadFlag;
 }
 
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
 #elif !(defined(TARGET_WINDOWS) && defined(TARGET_X86)) // !(TARGET_WINDOWS && TARGET_AMD64) && !(TARGET_WINDOWS && TARGET_X86)
@@ -290,6 +291,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
     RtlRestoreContext(ContextRecord, NULL);
 }
 #endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // !DACCESS_COMPILE && CROSSGEN_COMPILE
 
 // src/inc
 #include "utilcode.h"
