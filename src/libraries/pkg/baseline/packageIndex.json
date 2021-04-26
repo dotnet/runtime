@@ -6167,7 +6167,9 @@
         "5.0.0"
       ],
       "BaselineVersion": "5.0.0",
-      "InboxOn": {},
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
