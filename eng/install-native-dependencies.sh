@@ -28,7 +28,7 @@ if [ "$1" = "Linux" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
+elif [ "$1" = "OSX" ] || [ "$1" = "MacCatalyst" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
 
     if [ "$3" = "azDO" ]; then
@@ -47,7 +47,7 @@ elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
         exit 1;
     fi
 else
-    echo "Must pass \"Linux\", \"tvOS\", \"iOS\" or \"OSX\" as first argument."
+    echo "Must pass \"Linux\", \"tvOS\", \"iOS\", \"MacCatalyst\" or \"OSX\" as first argument."
     exit 1
 fi
 
