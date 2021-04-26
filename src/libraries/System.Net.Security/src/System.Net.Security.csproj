@@ -254,8 +254,6 @@
              Link="Common\System\Net\ContextFlagsAdapterPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs"
              Link="Common\System\Net\Http\TlsCertificateExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
@@ -266,12 +264,23 @@
              Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
-    <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
     <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PNSE.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.PNSE.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.PNSE.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
