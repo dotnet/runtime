@@ -141,6 +141,49 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<AggregateException>(() => hostBuilder.Build());
         }
 
+        [Theory]
+        [InlineData("Beta-Testing"), InlineData("Another-Random-Env")]
+        public void UseEnvironmentIsOverwrittenByAdditionalCalls(string environment)
+        {
+            var expectedEnvironment = "SomeOtherEnvironment";
+            using var host = new HostBuilder()
+                .UseEnvironment(environment)
+                .ConfigureHostConfiguration(configBuilder =>
+                {
+                    configBuilder.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>(
+                            HostDefaults.EnvironmentKey, expectedEnvironment)
+                    });
+                }) // This overwrites the call to UseEnvironment
+                .Build();
+
+            var hostEnv = host.Services.GetRequiredService<IHostEnvironment>();
+            Assert.Equal(expectedEnvironment, hostEnv.EnvironmentName);
+        }
+
+        [Theory]
+        [InlineData("Beta-Testing"), InlineData("Another-Random-Env")]
+        public void LastCallToUseEnvironmentWins(string environment)
+        {
+            var willBeOverwritten = "SomeOtherEnvironment";
+            using var host = new HostBuilder()
+                .ConfigureHostConfiguration(configBuilder =>
+                {
+                    configBuilder.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>(
+                            HostDefaults.EnvironmentKey, willBeOverwritten)
+                    });
+                })
+                .UseEnvironment(Guid.NewGuid().ToString())
+                .UseEnvironment(environment) // Last one wins...
+                .Build();
+
+            var hostEnv = host.Services.GetRequiredService<IHostEnvironment>();
+            Assert.Equal(environment, hostEnv.EnvironmentName);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48696")]

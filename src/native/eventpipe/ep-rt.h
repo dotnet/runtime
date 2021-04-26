@@ -194,6 +194,10 @@ ep_rt_init (void);
 
 static
 void
+ep_rt_init_finish (void);
+
+static
+void
 ep_rt_shutdown (void);
 
 static

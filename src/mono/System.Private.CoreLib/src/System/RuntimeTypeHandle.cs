@@ -308,7 +308,9 @@ namespace System
                 Assembly a;
                 try
                 {
+#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
                     a = Assembly.ReflectionOnlyLoad(an);
+#pragma warning restore SYSLIB0018
                 }
                 catch
                 {

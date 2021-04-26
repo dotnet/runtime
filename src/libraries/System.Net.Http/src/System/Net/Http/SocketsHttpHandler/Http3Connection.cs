@@ -481,6 +481,10 @@ namespace System.Net.Http
                     _ = ProcessServerStreamAsync(stream);
                 }
             }
+            catch (QuicOperationAbortedException)
+            {
+                // Shutdown initiated by us, no need to abort.
+            }
             catch (Exception ex)
             {
                 Abort(ex);
