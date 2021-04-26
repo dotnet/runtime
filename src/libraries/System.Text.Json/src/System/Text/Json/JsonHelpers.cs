@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -144,14 +142,6 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
-            IsInRangeInclusive((int)handling, 0,
-                (int)(
-                JsonNumberHandling.Strict |
-                JsonNumberHandling.AllowReadingFromString |
-                JsonNumberHandling.WriteAsString |
-                JsonNumberHandling.AllowNamedFloatingPointLiterals));
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
@@ -159,20 +149,6 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
-        }
-
-        public static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)
-        {
-            Debug.Assert(context != null);
-            Debug.Assert(type != null);
-
-            JsonTypeInfo? info = context.GetTypeInfo(type);
-            if (info == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type);
-            }
-
-            return info;
         }
     }
 }

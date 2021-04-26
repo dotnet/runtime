@@ -25,19 +25,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
-        {
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-
-            var readerState = new JsonReaderState(options.GetReaderOptions());
-            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-
-            return ReadCore<TValue>(ref reader, typeof(TValue), options);
-        }
+            => ReadUsingOptions<TValue>(utf8Json, typeof(TValue), options);
 
         /// <summary>
         /// Parse the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
@@ -65,17 +53,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-
-            var readerState = new JsonReaderState(options.GetReaderOptions());
-            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-
-            return ReadCore<object>(ref reader, returnType, options);
+            return ReadUsingOptions<object>(utf8Json, returnType, options);
         }
 
         /// <summary>
@@ -100,15 +78,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            var readerState = new JsonReaderState(options.GetReaderOptions());
-            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-
-            ReadStack state = default;
-            state.Initialize(jsonTypeInfo);
-
-            return ReadCore<TValue>(jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase, ref reader, options, ref state);
+            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -146,16 +116,14 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            JsonTypeInfo jsonTypeInfo = JsonHelpers.GetTypeInfo(context, returnType);
-            JsonSerializerOptions options = jsonTypeInfo.Options;
+            return ReadUsingMetadata<object?>(utf8Json, GetTypeInfo(context, returnType));
+        }
 
-            var readerState = new JsonReaderState(options.GetReaderOptions());
-            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-
-            ReadStack state = default;
-            state.Initialize(jsonTypeInfo);
-
-            return ReadCore<object?>(jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase, ref reader, options, ref state);
+        private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
+        {
+            options ??= JsonSerializerOptions.s_defaultOptions;
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+            return ReadUsingMetadata<TValue>(utf8Json, GetTypeInfo(returnType, options));
         }
     }
 }
