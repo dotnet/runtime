@@ -1,7 +1,7 @@
 {
   "version": 1,
   "workloads": {
-    "microsoft-net-runtime-mono-browser-build": {
+    "microsoft-net-runtime-bowser-native": {
       "description": "Browser Runtime native performance tools",
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
@@ -203,7 +203,7 @@
       "alias-to": {
         "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.win-x64",
         "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64",
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Node.osx-x64"
       }
     },
     "Microsoft.NET.Runtime.Emscripten.Python" : {
@@ -211,7 +211,7 @@
       "version": "${EmscriptenVersion}",
       "alias-to": {
         "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.win-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64",
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Python.osx-x64"
       }
     },
     "Microsoft.NET.Runtime.Emscripten.Sdk" : {
@@ -220,7 +220,7 @@
       "alias-to": {
         "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.win-x64",
         "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64",
+        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.12.Sdk.osx-x64"
       }
     }
   }
