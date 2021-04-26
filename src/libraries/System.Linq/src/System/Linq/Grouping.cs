@@ -93,8 +93,9 @@ namespace System.Linq
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet122":::
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
-        /// >  In a Visual C# or Visual Basic query expression, the element and key selection expressions occur in the reverse order from their argument positions in a call to the <see cref="GroupBy{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3})" /> method.</example>
+        /// >  In a Visual C# or Visual Basic query expression, the element and key selection expressions occur in the reverse order from their argument positions in a call to the <see cref="GroupBy{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3})" /> method.
         /// ]]></format>
+        /// </example>
         /// <related type="Article" href="/dotnet/csharp/language-reference/keywords/group-clause">group clause (C# Reference)</related>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/group-by-clause">Group By Clause (Visual Basic)</related>
         public static IEnumerable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector) =>
