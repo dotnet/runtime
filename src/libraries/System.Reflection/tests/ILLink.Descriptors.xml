@@ -3,4 +3,5 @@
     <type fullname="System.Collections.ArrayList" />
   </assembly>
   <assembly fullname="ForwardedTypesAssembly" />
+  <assembly fullname="TestAssembly" />
 </linker>
