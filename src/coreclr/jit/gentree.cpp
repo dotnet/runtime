@@ -6759,9 +6759,9 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     }
     dst->gtFlags |= GTF_DONT_CSE;
 
-/* Create the assignment node */
+#if defined(FEATURE_SIMD) && !defined(TARGET_X86)
+    // TODO-CQ: x86 Windows supports multi-reg returns but not SIMD multi-reg returns
 
-#if FEATURE_SIMD
     if (varTypeIsSIMD(dst->gtType))
     {
         // We want to track SIMD assignments as being intrinsics since they
@@ -6772,6 +6772,8 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
         SetOpLclRelatedToSIMDIntrinsic(src);
     }
 #endif // FEATURE_SIMD
+
+    /* Create the assignment node */
 
     GenTreeOp* asg = gtNewOperNode(GT_ASG, dst->TypeGet(), dst, src)->AsOp();
 
