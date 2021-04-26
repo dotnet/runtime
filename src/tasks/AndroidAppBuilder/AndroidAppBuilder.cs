@@ -33,6 +33,11 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public bool ForceAOT { get; set; }
 
+    /// <summary>
+    /// List of components to static link, if available
+    /// </summary>
+    public string? StaticLinkedComponentNames { get; set; } = ""!;
+
     [Required]
     public string RuntimeIdentifier { get; set; } = ""!;
 
@@ -90,6 +95,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
+        apkBuilder.StaticLinkedComponentNames = StaticLinkedComponentNames;
         apkBuilder.Assemblies = Assemblies;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
 

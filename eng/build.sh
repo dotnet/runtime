@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch                          Target platform: x86, x64, arm, armel, arm64 or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armel, arm64 or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -199,7 +199,7 @@ while [[ $# > 0 ]]; do
       fi
       ;;
 
-     -arch)
+     -arch|-a)
       if [ -z ${2+x} ]; then
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1

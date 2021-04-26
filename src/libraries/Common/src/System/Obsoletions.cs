@@ -7,6 +7,11 @@ namespace System
     {
         internal const string SharedUrlFormat = "https://aka.ms/dotnet-warnings/{0}";
 
+        // Please see docs\project\list-of-diagnostics.md for instructions on the steps required
+        // to introduce a new obsoletion, apply it to downlevel builds, claim a diagnostic id,
+        // and ensure the "aka.ms/dotnet-warnings/{0}" URL points to documentation for the obsoletion
+        // The diagnostic ids reserved for obsoletions are SYSLIB0### (SYSLIB0001 - SYSLIB0999).
+
         internal const string SystemTextEncodingUTF7Message = "The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.";
         internal const string SystemTextEncodingUTF7DiagId = "SYSLIB0001";
 
@@ -46,7 +51,7 @@ namespace System
         internal const string EscapeUriStringMessage = "Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.";
         internal const string EscapeUriStringDiagId = "SYSLIB0013";
 
-        internal const string WebRequestMessage = "Use HttpClient instead.";
+        internal const string WebRequestMessage = "WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.";
         internal const string WebRequestDiagId = "SYSLIB0014";
 
         internal const string DisablePrivateReflectionAttributeMessage = "DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications.";
@@ -54,5 +59,17 @@ namespace System
 
         internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
         internal const string GetContextInfoDiagId = "SYSLIB0016";
+
+        internal const string StrongNameKeyPairMessage = "Strong name signing is not supported and throws PlatformNotSupportedException.";
+        internal const string StrongNameKeyPairDiagId = "SYSLIB0017";
+
+        internal const string ReflectionOnlyLoadingMessage = "ReflectionOnly loading is not supported and throws PlatformNotSupportedException.";
+        internal const string ReflectionOnlyLoadingDiagId = "SYSLIB0018";
+
+        internal const string RuntimeEnvironmentMessage = "RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException.";
+        internal const string RuntimeEnvironmentDiagId = "SYSLIB0019";
+
+        internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
+        internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
     }
 }

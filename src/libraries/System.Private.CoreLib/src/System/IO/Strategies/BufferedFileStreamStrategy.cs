@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -216,7 +217,7 @@ namespace System.IO.Strategies
                 }
 
                 EnsureBufferAllocated();
-                n = _strategy.Read(_buffer!, 0, _bufferSize);
+                n = _strategy.Read(_buffer, 0, _bufferSize);
 
                 if (n == 0)
                 {
@@ -232,7 +233,7 @@ namespace System.IO.Strategies
             {
                 n = destination.Length;
             }
-            new ReadOnlySpan<byte>(_buffer!, _readPos, n).CopyTo(destination);
+            new ReadOnlySpan<byte>(_buffer, _readPos, n).CopyTo(destination);
             _readPos += n;
 
             // We may have read less than the number of bytes the user asked
@@ -291,7 +292,7 @@ namespace System.IO.Strategies
             }
 
             EnsureBufferAllocated();
-            _readLen = _strategy.Read(_buffer!, 0, _bufferSize);
+            _readLen = _strategy.Read(_buffer, 0, _bufferSize);
             _readPos = 0;
 
             if (_readLen == 0)
@@ -299,7 +300,7 @@ namespace System.IO.Strategies
                 return -1;
             }
 
-            return _buffer![_readPos++];
+            return _buffer[_readPos++];
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -463,7 +464,7 @@ namespace System.IO.Strategies
                 // If there was anything in the write buffer, clear it.
                 if (_writePos > 0)
                 {
-                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                 }
 
@@ -475,7 +476,7 @@ namespace System.IO.Strategies
 
                 // Ok. We can fill the buffer:
                 EnsureBufferAllocated();
-                _readLen = await _strategy.ReadAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
+                _readLen = await _strategy.ReadAsync(new Memory<byte>(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
 
                 bytesFromBuffer = Math.Min(_readLen, buffer.Length);
                 _buffer.AsSpan(0, bytesFromBuffer).CopyTo(buffer.Span);
@@ -578,7 +579,7 @@ namespace System.IO.Strategies
 
             // Copy remaining bytes into buffer, to write at a later date.
             EnsureBufferAllocated();
-            source.CopyTo(_buffer!.AsSpan(_writePos));
+            source.CopyTo(_buffer.AsSpan(_writePos));
             _writePos = source.Length;
         }
 
@@ -721,19 +722,19 @@ namespace System.IO.Strategies
                     {
                         if (spaceLeft >= source.Length)
                         {
-                            source.Span.CopyTo(_buffer!.AsSpan(_writePos));
+                            source.Span.CopyTo(_buffer.AsSpan(_writePos));
                             _writePos += source.Length;
                             return;
                         }
                         else
                         {
-                            source.Span.Slice(0, spaceLeft).CopyTo(_buffer!.AsSpan(_writePos));
+                            source.Span.Slice(0, spaceLeft).CopyTo(_buffer.AsSpan(_writePos));
                             _writePos += spaceLeft;
                             source = source.Slice(spaceLeft);
                         }
                     }
 
-                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                 }
 
@@ -751,7 +752,7 @@ namespace System.IO.Strategies
 
                 // Copy remaining bytes into buffer, to write at a later date.
                 EnsureBufferAllocated();
-                source.Span.CopyTo(_buffer!.AsSpan(_writePos));
+                source.Span.CopyTo(_buffer.AsSpan(_writePos));
                 _writePos = source.Length;
             }
             finally
@@ -834,7 +835,7 @@ namespace System.IO.Strategies
             {
                 if (_writePos > 0)
                 {
-                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                     Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
                     return;
@@ -888,13 +889,13 @@ namespace System.IO.Strategies
                 {
                     // If there's any read data in the buffer, write it all to the destination stream.
                     Debug.Assert(_writePos == 0, "Write buffer must be empty if there's data in the read buffer");
-                    await destination.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, _readPos, readBytes), cancellationToken).ConfigureAwait(false);
+                    await destination.WriteAsync(new ReadOnlyMemory<byte>(_buffer, _readPos, readBytes), cancellationToken).ConfigureAwait(false);
                     _readPos = _readLen = 0;
                 }
                 else if (_writePos > 0)
                 {
                     // If there's write data in the buffer, flush it back to the underlying stream, as does ReadAsync.
-                    await _strategy.WriteAsync(MemoryMarshal.CreateFromPinnedArray(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
                 }
 
@@ -1059,19 +1060,21 @@ namespace System.IO.Strategies
             }
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void EnsureBufferAllocated()
         {
-            // BufferedFileStreamStrategy is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
-            if (_buffer == null)
+            if (_buffer is null)
             {
                 AllocateBuffer();
             }
+        }
 
-            void AllocateBuffer() // logic kept in a separate method to get EnsureBufferAllocated() inlined
-            {
-                _buffer = GC.AllocateUninitializedArray<byte>(_bufferSize,
-                    pinned: true); // this allows us to avoid pinning when the buffer is used for the syscalls
-            }
+        // TODO https://github.com/dotnet/roslyn/issues/47896: should be local function in EnsureBufferAllocated above.
+        [MemberNotNull(nameof(_buffer))]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllocateBuffer()
+        {
+            Interlocked.CompareExchange(ref _buffer, GC.AllocateUninitializedArray<byte>(_bufferSize), null);
         }
 
         [Conditional("DEBUG")]

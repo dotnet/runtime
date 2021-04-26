@@ -116,7 +116,7 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 	EP_ASSERT (server_volatile_load_shutting_down_state () || ds_ipc_stream_factory_has_active_ports ());
 
 	if (!ds_ipc_stream_factory_has_active_ports ()) {
-#ifndef DS_IPC_PAL_TCP
+#ifndef DS_IPC_DISABLE_LISTEN_PORTS
 		DS_LOG_ERROR_0 ("Diagnostics IPC listener was undefined");
 #endif
 		return 1;

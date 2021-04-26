@@ -57,9 +57,8 @@ REM __PassThroughArgs is a set of things that will be passed through to nested c
 REM when using "all".
 set __PassThroughArgs=
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
-set "__args= %*"
-set processedArgs=
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:OfficialBuildId=value)
+set "__remainingArgs=%*"
 set __UnprocessedBuildArgs=
 set __CommonMSBuildArgs=
 
@@ -78,6 +77,7 @@ set __RequestedBuildComponents=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
+set "__remainingArgs=!__remainingArgs:*%1=!"
 
 if /i "%1" == "/?"     goto Usage
 if /i "%1" == "-?"     goto Usage
@@ -87,29 +87,29 @@ if /i "%1" == "/help"  goto Usage
 if /i "%1" == "-help"  goto Usage
 if /i "%1" == "--help" goto Usage
 
-if /i "%1" == "-all"                 (set __BuildAll=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-x64"                 (set __BuildArchX64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-x86"                 (set __BuildArchX86=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-arm"                 (set __BuildArchArm=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-arm64"               (set __BuildArchArm64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-all"                 (set __BuildAll=1&shift&goto Arg_Loop)
+if /i "%1" == "-x64"                 (set __BuildArchX64=1&shift&goto Arg_Loop)
+if /i "%1" == "-x86"                 (set __BuildArchX86=1&shift&goto Arg_Loop)
+if /i "%1" == "-arm"                 (set __BuildArchArm=1&shift&goto Arg_Loop)
+if /i "%1" == "-arm64"               (set __BuildArchArm64=1&shift&goto Arg_Loop)
 
-if /i "%1" == "-debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
+if /i "%1" == "-checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
+if /i "%1" == "-release"             (set __BuildTypeRelease=1&shift&goto Arg_Loop)
 
-if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
-if /i "%1" == "all"                 (set __BuildAll=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "x64"                 (set __BuildArchX64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "x86"                 (set __BuildArchX86=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                 (set __BuildArchArm=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm64"               (set __BuildArchArm64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "all"                 (set __BuildAll=1&shift&goto Arg_Loop)
+if /i "%1" == "x64"                 (set __BuildArchX64=1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                 (set __BuildArchX86=1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                 (set __BuildArchArm=1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"               (set __BuildArchArm64=1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
+if /i "%1" == "checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
+if /i "%1" == "release"             (set __BuildTypeRelease=1&shift&goto Arg_Loop)
 
 REM Explicitly block -Rebuild.
 if /i "%1" == "Rebuild" (
@@ -125,51 +125,44 @@ if /i "%1" == "-Rebuild" (
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
 if [!__PassThroughArgs!]==[] (
-    set __PassThroughArgs=%1
+    set "__PassThroughArgs=%1"
 ) else (
-    set __PassThroughArgs=%__PassThroughArgs% %1
+    set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=alpine&shift&goto Arg_Loop)
+if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __CrossOS=1&set __TargetOS=Linux&shift&goto Arg_Loop)
 
-if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
+if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
+if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
+if /i "%1" == "-skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
+if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
+if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
+if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
 REM -ninja is a no-op option since Ninja is now the default generator on Windows.
-if /i "%1" == "-ninja"               (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-msbuild"             (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
+if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
+if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
+if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
+if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
+if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
-if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-REM TODO remove this once it's no longer used in buildpipeline
-if /i "%1" == "--"                  (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
+if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
+if /i "%1" == "skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
+if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&shift&goto Arg_Loop)
+if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&shift&goto Arg_Loop)
+if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&shift&goto Arg_Loop)
+if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
+if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&shift&goto Arg_Loop)
+if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 
-if [!processedArgs!]==[] (
-    set __UnprocessedBuildArgs=%__args%
-) else (
-    set __UnprocessedBuildArgs=%__args%
-    for %%t in (!processedArgs!) do (
-        set __UnprocessedBuildArgs=!__UnprocessedBuildArgs:*%%t=!
-    )
-)
+REM Preserve the equal sign for MSBuild properties
+if "!__remainingArgs:~0,1!" == "="  (set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1=%2"&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
+set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! %1"&shift&goto Arg_Loop
 
 :ArgsDone
 
@@ -363,8 +356,9 @@ if %__PgoOptimize% EQU 1 (
 
     REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"^
-        /bl:!__BinLog!
+        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath^
+        /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"^
+        %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!

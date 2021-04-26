@@ -205,57 +205,10 @@ ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoErr
 	return result;
 }
 
-MonoObjectHandle
-ves_icall_System_Array_GetValue (MonoArrayHandle arr, MonoArrayHandle indices, MonoError *error)
-{
-	MONO_CHECK_ARG_NULL_HANDLE (indices, NULL_HANDLE);
-
-	MonoClass * const indices_class = mono_handle_class (indices);
-	MonoClass * const array_class = mono_handle_class (arr);
-
-	g_assert (m_class_get_rank (indices_class) == 1);
-
-	if (MONO_HANDLE_GETVAL (indices, bounds) || MONO_HANDLE_GETVAL (indices, max_length) != m_class_get_rank (array_class)) {
-		mono_error_set_argument (error, NULL, NULL);
-		return NULL_HANDLE;
-	}
-
-	gint32 index = 0;
-
-	if (!MONO_HANDLE_GETVAL (arr, bounds)) {
-		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, 0);
-		if (index < 0 || index >= MONO_HANDLE_GETVAL (arr, max_length)) {
-			mono_error_set_index_out_of_range (error);
-			return NULL_HANDLE;
-		}
-
-		return ves_icall_System_Array_GetValueImpl (arr, index, error);
-	}
-	
-	for (gint32 i = 0; i < m_class_get_rank (array_class); i++) {
-		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, i);
-		if ((index < MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound)) ||
-		    (index >= (mono_array_lower_bound_t)MONO_HANDLE_GETVAL (arr, bounds [i].length) + MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound))) {
-			mono_error_set_index_out_of_range (error);
-			return NULL_HANDLE;
-		}
-	}
-
-	MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, 0);
-	gint32 pos = index - MONO_HANDLE_GETVAL (arr, bounds [0].lower_bound);
-	for (gint32 i = 1; i < m_class_get_rank (array_class); i++) {
-		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, i);
-		pos = pos * MONO_HANDLE_GETVAL (arr, bounds [i].length) + index -
-			MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound);
-	}
-
-	return ves_icall_System_Array_GetValueImpl (arr, pos, error);
-}
-
 void
 ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	array_set_value_impl (arr, value, pos, FALSE, TRUE, error);
+	array_set_value_impl (arr, value, pos, TRUE, TRUE, error);
 }
 
 static inline void
@@ -724,67 +677,6 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 leave:
 	return;
-}
-
-void
-ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
-				 MonoArrayHandle idxs, MonoError *error)
-{
-	icallarray_print ("%s\n", __func__);
-
-	MonoArrayBounds dim;
-	MonoClass *ac, *ic;
-	gint32 idx;
-	gint32 i, pos;
-
-	error_init (error);
-
-	if (MONO_HANDLE_IS_NULL (idxs)) {
-		mono_error_set_argument_null (error, "indices", "");
-		return;
-	}
-
-	ic = mono_handle_class (idxs);
-	ac = mono_handle_class (arr);
-
-	g_assert (m_class_get_rank (ic) == 1);
-	if (mono_handle_array_has_bounds (idxs) || MONO_HANDLE_GETVAL (idxs, max_length) != m_class_get_rank (ac)) {
-		mono_error_set_argument (error, NULL, "");
-		return;
-	}
-
-	if (!mono_handle_array_has_bounds (arr)) {
-		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, 0);
-		if (idx < 0 || idx >= MONO_HANDLE_GETVAL (arr, max_length)) {
-			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
-			return;
-		}
-
-		array_set_value_impl (arr, value, idx, TRUE, TRUE, error);
-		return;
-	}
-	
-	gint32 ac_rank = m_class_get_rank (ac);
-	for (i = 0; i < ac_rank; i++) {
-		mono_handle_array_get_bounds_dim (arr, i, &dim);
-		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
-		if ((idx < dim.lower_bound) ||
-		    (idx >= (mono_array_lower_bound_t)dim.length + dim.lower_bound)) {
-			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
-			return;
-		}
-	}
-
-	MONO_HANDLE_ARRAY_GETVAL  (idx, idxs, gint32, 0);
-	mono_handle_array_get_bounds_dim (arr, 0, &dim);
-	pos = idx - dim.lower_bound;
-	for (i = 1; i < ac_rank; i++) {
-		mono_handle_array_get_bounds_dim (arr, i, &dim);
-		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
-		pos = pos * dim.length + idx - dim.lower_bound;
-	}
-
-	array_set_value_impl (arr, value, pos, TRUE, TRUE, error);
 }
 
 void

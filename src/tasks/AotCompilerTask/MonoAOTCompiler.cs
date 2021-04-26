@@ -126,6 +126,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? DedupAssembly { get; set; }
 
+    /// Debug option in llvm aot mode
+    /// defaults to "nodebug" since some targes can't generate debug info
+    /// </summary>
+    public string? LLVMDebug { get; set; } = "nodebug";
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -270,7 +275,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             processArgs.Add("--llvm");
 
-            aotArgs.Add($"nodebug"); // can't use debug symbols with LLVM
+            if (!string.IsNullOrEmpty(LLVMDebug))
+                aotArgs.Add("nodebug");
+
             aotArgs.Add($"llvm-path={LLVMPath}");
         }
         else

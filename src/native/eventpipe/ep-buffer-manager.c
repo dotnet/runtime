@@ -1371,6 +1371,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	}
 
 ep_on_exit:
+	ep_rt_thread_session_state_array_fini(&session_states_to_delete);
 	return;
 ep_on_error:
 	ep_exit_error_handler ();

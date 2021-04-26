@@ -30,8 +30,8 @@ public:
     static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);
 
     static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
-    static FCDECL0(int, GetLastWin32Error);
-    static FCDECL1(void, SetLastWin32Error, int error);
+    static FCDECL0(int, GetLastPInvokeError);
+    static FCDECL1(void, SetLastPInvokeError, int error);
 
     static FCDECL3(VOID, StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld);
     static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);

@@ -278,7 +278,7 @@ mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 MonoAssembly*
 mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
-GPtrArray*
+MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
 
 MONO_API void

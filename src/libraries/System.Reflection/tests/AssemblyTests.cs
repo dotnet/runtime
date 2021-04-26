@@ -728,6 +728,7 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
         }
 
+#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
         [Fact]
         public void AssemblyReflectionOnlyLoadFromString()
         {
@@ -750,6 +751,7 @@ namespace System.Reflection.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(string.Empty));
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad((byte[])null));
         }
+#pragma warning restore SYSLIB0018
 
         public static IEnumerable<object[]> GetModules_TestData()
         {
