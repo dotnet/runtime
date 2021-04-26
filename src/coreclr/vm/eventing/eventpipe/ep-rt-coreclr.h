@@ -1267,6 +1267,14 @@ ep_rt_init (void)
 static
 inline
 void
+ep_rt_init_finish (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+}
+
+static
+inline
+void
 ep_rt_shutdown (void)
 {
 	STATIC_CONTRACT_NOTHROW;

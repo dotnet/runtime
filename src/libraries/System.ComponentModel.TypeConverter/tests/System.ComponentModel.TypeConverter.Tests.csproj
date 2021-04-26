@@ -164,6 +164,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

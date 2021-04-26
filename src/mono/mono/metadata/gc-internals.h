@@ -322,11 +322,18 @@ guint64 mono_gc_get_allocated_bytes_for_current_thread (void);
 
 guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise);
 
-void mono_gc_get_gcmemoryinfo (gint64* fragmented_bytes,
-						       gint64* heap_size_bytes,
-						       gint64* high_memory_load_threshold_bytes,
-						       gint64* memory_load_bytes,
- 						       gint64* total_available_memory_bytes);
+void mono_gc_get_gcmemoryinfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes);
+
+void mono_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns);
 
 guint8* mono_gc_get_card_table (int *shift_bits, gpointer *card_mask);
 guint8* mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *card_mask);

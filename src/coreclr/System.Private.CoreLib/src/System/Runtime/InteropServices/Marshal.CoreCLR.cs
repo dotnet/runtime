@@ -163,11 +163,23 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Get the last platform invoke error on the current thread
+        /// </summary>
+        /// <returns>The last platform invoke error</returns>
+        /// <remarks>
+        /// The last platform invoke error corresponds to the error set by either the most recent platform
+        /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetLastWin32Error();
+        public static extern int GetLastPInvokeError();
 
+        /// <summary>
+        /// Set the last platform invoke error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastWin32Error(int error);
+        public static extern void SetLastPInvokeError(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {

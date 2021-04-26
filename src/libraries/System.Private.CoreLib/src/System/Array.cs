@@ -355,7 +355,7 @@ namespace System
 
         void IList.Clear()
         {
-            Array.Clear(this, this.GetLowerBound(0), this.Length);
+            Array.Clear(this);
         }
 
         int IList.IndexOf(object? value)

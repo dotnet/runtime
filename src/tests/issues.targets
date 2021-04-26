@@ -11,6 +11,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/49881</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_49826/test49826/*">
+            <Issue>https://github.com/dotnet/runtime/issues/51542</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -1295,6 +1298,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/**">
             <Issue>https://github.com/dotnet/runtime/issues/48084</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51600</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/Invalid/InvalidParamIndex/**">
             <Issue>needs triage</Issue>

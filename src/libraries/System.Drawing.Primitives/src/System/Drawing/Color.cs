@@ -374,7 +374,7 @@ namespace System.Drawing
         public bool IsSystemColor => IsKnownColor && IsKnownColorSystem((KnownColor)knownColor);
 
         internal static bool IsKnownColorSystem(KnownColor knownColor)
-            => KnownColorTable.s_colorKindTable[(int)knownColor] == KnownColorTable.KnownColorKindSystem;
+            => KnownColorTable.ColorKindTable[(int)knownColor] == KnownColorTable.KnownColorKindSystem;
 
         // Used for the [DebuggerDisplay]. Inlining in the attribute is possible, but
         // against best practices as the current project language parses the string with
