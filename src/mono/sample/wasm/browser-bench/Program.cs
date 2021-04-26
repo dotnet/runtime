@@ -16,6 +16,7 @@ namespace Sample
 
         BenchTask[] tasks =
         {
+            new ExceptionsTask(),
             new JsonTask ()
         };
 
@@ -104,7 +105,14 @@ namespace Sample
             sb.Append("<h4>.md</h4><tt>| measurement | time |<br>|-:|-:|<br>");
             foreach (var key in minTimes.Keys)
             {
-                sb.Append($"| {key,32} | {minTimes[key],10:F4}ms |<br>".Replace (" ", "&nbsp;"));
+                var time = minTimes[key];
+                var unit = "ms";
+                if (time < 0.001)
+                {
+                    time *= 1000;
+                    unit = "us";
+                }
+                sb.Append($"| {key,32} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
             }
             sb.Append("</tt>");
 
