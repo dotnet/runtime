@@ -15,6 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\TestExe\System.Reflection.TestExe.csproj" />
 
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)..\ILLink.Descriptors.CoreCLR.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.CoreCLR.xml" />
   </ItemGroup>
 </Project>
