@@ -5125,35 +5125,6 @@ call:
 			MINT_IN_BREAK;
 		}
 
-// FIXME squash to load directly field type, LDFLD_VT is just a LDLOC
-#define LDFLD_VT_UNALIGNED(datatype, fieldtype, unaligned) do { \
-	if (unaligned) \
-		memcpy (locals + ip [1], (char *)locals + ip [2] + ip [3], sizeof (fieldtype)); \
-	else \
-		LOCAL_VAR (ip [1], datatype) = LOCAL_VAR (ip [2] + ip [3], fieldtype); \
-	ip += 4; \
-} while (0)
-
-#define LDFLD_VT(datatype, fieldtype) LDFLD_VT_UNALIGNED(datatype, fieldtype, FALSE)
-
-		MINT_IN_CASE(MINT_LDFLD_VT_I1) LDFLD_VT(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_U1) LDFLD_VT(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I2) LDFLD_VT(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_U2) LDFLD_VT(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I4) LDFLD_VT(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I8) LDFLD_VT(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R4) LDFLD_VT(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R8) LDFLD_VT(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_O) LDFLD_VT(gpointer, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I8_UNALIGNED) LDFLD_VT_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R8_UNALIGNED) LDFLD_VT_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_LDFLD_VT_VT) {
-			memmove (locals + ip [1], locals + ip [2] + ip [3], ip [4]);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
-
 #define LDFLD_UNALIGNED(datatype, fieldtype, unaligned) do { \
 	MonoObject *o = LOCAL_VAR (ip [2], MonoObject*); \
 	NULL_CHECK (o); \
@@ -6481,6 +6452,10 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 
+		MINT_IN_CASE(MINT_MOV_OFF)
+			// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
 
 #define MOV(argtype1,argtype2) \
 	LOCAL_VAR (ip [1], argtype1) = LOCAL_VAR (ip [2], argtype2); \

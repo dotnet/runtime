@@ -44,19 +44,6 @@ OPDEF(MINT_LDC_R8, "ldc.r8", 6, 1, 0, MintOpDouble)
 
 OPDEF(MINT_INIT_ARGLIST, "init_arglist", 3, 1, 0, MintOpNoArgs)
 
-OPDEF(MINT_LDFLD_VT_I1, "ldfld.vt.i1", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_U1, "ldfld.vt.u1", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_I2, "ldfld.vt.i2", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_U2, "ldfld.vt.u2", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_I4, "ldfld.vt.i4", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_I8, "ldfld.vt.i8", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_R4, "ldfld.vt.r4", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_R8, "ldfld.vt.r8", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_O, "ldfld.vt.o", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_VT, "ldfld.vt.vt", 5, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_I8_UNALIGNED, "ldfld.vt.i8.unaligned", 4, 1, 1, MintOpShortInt)
-OPDEF(MINT_LDFLD_VT_R8_UNALIGNED, "ldfld.vt.r8.unaligned", 4, 1, 1, MintOpShortInt)
-
 OPDEF(MINT_LDFLD_I1, "ldfld.i1", 4, 1, 1, MintOpUShortInt)
 OPDEF(MINT_LDFLD_U1, "ldfld.u1", 4, 1, 1, MintOpUShortInt)
 OPDEF(MINT_LDFLD_I2, "ldfld.i2", 4, 1, 1, MintOpUShortInt)
@@ -110,6 +97,8 @@ OPDEF(MINT_STSFLD_O, "stsfld.o", 4, 0, 1, MintOpUShortInt)
 OPDEF(MINT_STSFLD_VT, "stsfld.vt", 5, 0, 1, MintOpTwoShorts)
 OPDEF(MINT_LDSFLDA, "ldsflda", 4, 1, 0, MintOpTwoShorts)
 OPDEF(MINT_LDTSFLDA, "ldtsflda", 4, 1, 0, MintOpInt)
+
+OPDEF(MINT_MOV_OFF, "mov.off", 6, 1, 1, MintOpTwoShorts)
 
 OPDEF(MINT_MOV_I1, "mov.i1", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_U1, "mov.u1", 3, 1, 1, MintOpNoArgs)

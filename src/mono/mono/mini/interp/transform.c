@@ -5896,23 +5896,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
+					int size = 0;
 					/* First we pop the vt object from the stack. Then we push the field */
-					int opcode = MINT_LDFLD_VT_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if (field->offset % SIZEOF_VOID_P != 0) {
-						if (mt == MINT_TYPE_I8)
-							opcode = MINT_LDFLD_VT_I8_UNALIGNED;
-						else if (mt == MINT_TYPE_R8)
-							opcode = MINT_LDFLD_VT_R8_UNALIGNED;
+						if (mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8)
+							size = 8;
 					}
 #endif
-					interp_add_ins (td, opcode);
+					interp_add_ins (td, MINT_MOV_OFF);
 					g_assert (m_class_is_valuetype (klass));
 					td->sp--;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					td->last_ins->data [0] = field->offset - MONO_ABI_SIZEOF (MonoObject);
+					td->last_ins->data [1] = mt;
 					if (mt == MINT_TYPE_VT)
-						td->last_ins->data [1] = field_size;
+						size = field_size;
+					td->last_ins->data [2] = size;
+
 					if (mt == MINT_TYPE_VT)
 						push_type_vt (td, field_klass, field_size);
 					else
@@ -7605,6 +7606,23 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 
 		cbb->seq_points = g_slist_prepend_mempool (td->mempool, cbb->seq_points, seqp);
 		cbb->last_seq_point = seqp;
+	} else if (opcode == MINT_MOV_OFF) {
+		int foff = ins->data [0];
+		int mt = ins->data [1];
+		int fsize = ins->data [2];
+
+		int dest_off = td->locals [ins->dreg].offset;
+		int src_off = td->locals [ins->sregs [0]].offset + foff;
+		if (mt == MINT_TYPE_VT || fsize)
+			opcode = MINT_MOV_VT;
+		else
+			opcode = get_mov_for_type (mt, TRUE);
+		// Replace MINT_MOV_OFF with the real instruction
+		ip [-1] = opcode;
+		*ip++ = dest_off;
+		*ip++ = src_off;
+		if (opcode == MINT_MOV_VT)
+			*ip++ = fsize;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	} else if (ins->flags & INTERP_INST_FLAG_RECORD_CALL_PATCH) {
 		g_assert (MINT_IS_PATCHABLE_CALL (opcode));
