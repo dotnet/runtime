@@ -9208,6 +9208,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
     IMDInternalImport* pMDInternalImport = GetMDImport();
     HENUMInternalMethodImplHolder hEnumMethodImpl(pMDInternalImport);
     hr = hEnumMethodImpl.EnumMethodImplInitNoThrow(GetCl());
+    SigTypeContext sigTypeContext(this);
 
     if (FAILED(hr))
     {
@@ -9242,16 +9243,17 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
         MethodTable *pInterfaceMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
             GetModule(),
             tkParent,
-            NULL /*SigTypeContext*/)
+            &sigTypeContext)
             .GetMethodTable();
-        if (pInterfaceMT != pInterfaceMD->GetMethodTable())
+        if (pInterfaceMT != pInterfaceMD->GetMethodTable() &&
+            pInterfaceMT->GetCanonicalMethodTable() != pInterfaceMD->GetMethodTable())
         {
             continue;
         }
         MethodDesc *pMethodDecl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
             GetModule(),
             methodDecl,
-            NULL /*SigTypeContext*/,
+            &sigTypeContext,
             /* strictMetadataChecks */ FALSE,
             /* allowInstParam */ FALSE);
         if (pMethodDecl == nullptr)
@@ -9265,7 +9267,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
             GetModule(),
             methodBody,
-            NULL /*SigTypeContext*/,
+            &sigTypeContext,
             /* strictMetadataChecks */ FALSE,
             /* allowInstParam */ FALSE);
         if (pMethodImpl == nullptr)
