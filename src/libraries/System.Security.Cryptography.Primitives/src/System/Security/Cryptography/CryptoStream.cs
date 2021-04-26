@@ -162,9 +162,9 @@ namespace System.Security.Cryptography
 
             // zeroize plain text material before returning
             if (_inputBuffer != null)
-                Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
+                Array.Clear(_inputBuffer);
             if (_outputBuffer != null)
-                Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
+                Array.Clear(_outputBuffer);
         }
 
         public override void Flush()
@@ -803,9 +803,9 @@ namespace System.Security.Cryptography
                     _finalBlockTransformed = true;
                     // we need to clear all the internal buffers
                     if (_inputBuffer != null)
-                        Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
+                        Array.Clear(_inputBuffer);
                     if (_outputBuffer != null)
-                        Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
+                        Array.Clear(_outputBuffer);
 
                     _inputBuffer = null;
                     _outputBuffer = null;
@@ -850,12 +850,12 @@ namespace System.Security.Cryptography
                 // we need to clear all the internal buffers
                 if (_inputBuffer != null)
                 {
-                    Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
+                    Array.Clear(_inputBuffer);
                 }
 
                 if (_outputBuffer != null)
                 {
-                    Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
+                    Array.Clear(_outputBuffer);
                 }
 
                 _inputBuffer = null;

@@ -133,8 +133,8 @@ namespace Internal.Cryptography
                 InitializeState();
 
                 // Zeroize potentially sensitive information.
-                Array.Clear(_buffer, 0, _buffer.Length);
-                Array.Clear(_W, 0, _W.Length);
+                Array.Clear(_buffer);
+                Array.Clear(_W);
             }
 
             private void InitializeState()
@@ -405,8 +405,8 @@ namespace Internal.Cryptography
                 InitializeState();
 
                 // Zeroize potentially sensitive information.
-                Array.Clear(_buffer, 0, _buffer.Length);
-                Array.Clear(_W, 0, _W.Length);
+                Array.Clear(_buffer);
+                Array.Clear(_W);
             }
 
             private void InitializeState()
@@ -692,8 +692,8 @@ namespace Internal.Cryptography
                 InitializeState();
 
                 // Zeroize potentially sensitive information.
-                Array.Clear(_buffer, 0, _buffer.Length);
-                Array.Clear(_W, 0, _W.Length);
+                Array.Clear(_buffer);
+                Array.Clear(_W);
             }
 
             private void InitializeState()

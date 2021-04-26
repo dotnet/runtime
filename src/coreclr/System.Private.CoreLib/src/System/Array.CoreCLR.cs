@@ -266,7 +266,12 @@ namespace System
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
-        internal static unsafe void Clear(Array array)
+        /// <summary>
+        /// Clears the contents of an array.
+        /// </summary>
+        /// <param name="array">The array to clear.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="array"/> is null.</exception>
+        public static unsafe void Clear(Array array)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);

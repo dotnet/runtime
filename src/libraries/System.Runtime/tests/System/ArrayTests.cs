@@ -831,20 +831,43 @@ namespace System.Tests
         {
             if (index == 0 && length == array.Length)
             {
-                // Use IList.Clear()
+                // Use Array.Clear()
                 Array arrayClone1 = (Array)array.Clone();
-                ((IList)arrayClone1).Clear();
+                Array.Clear(arrayClone1);
                 Assert.Equal(expected, arrayClone1);
+
+                // Use IList.Clear()
+                Array arrayClone2 = (Array)array.Clone();
+                ((IList)arrayClone2).Clear();
+                Assert.Equal(expected, arrayClone2);
             }
-            Array arrayClone2 = (Array)array.Clone();
-            Array.Clear(arrayClone2, index, length);
-            Assert.Equal(expected, arrayClone2);
+
+            Array arrayClone3 = (Array)array.Clone();
+            Array.Clear(arrayClone3, index, length);
+            Assert.Equal(expected, arrayClone3);
         }
 
         [Fact]
         public static void Clear_Struct_WithReferenceAndValueTypeFields_Array()
         {
             var array = new NonGenericStruct[]
+            {
+            new NonGenericStruct { x = 1, s = "Hello", z = 2 },
+            new NonGenericStruct { x = 2, s = "Hello", z = 3 },
+            new NonGenericStruct { x = 3, s = "Hello", z = 4 },
+            new NonGenericStruct { x = 4, s = "Hello", z = 5 },
+            new NonGenericStruct { x = 5, s = "Hello", z = 6 }
+            };
+
+            Array.Clear(array);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.Equal(0, array[i].x);
+                Assert.Null(array[i].s);
+                Assert.Equal(0, array[i].z);
+            }
+
+            array = new NonGenericStruct[]
             {
             new NonGenericStruct { x = 1, s = "Hello", z = 2 },
             new NonGenericStruct { x = 2, s = "Hello", z = 3 },
@@ -891,6 +914,7 @@ namespace System.Tests
         [Fact]
         public static void Clear_Invalid()
         {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null)); // Array is null
             AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null, 0, 0)); // Array is null
 
             Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], -1, 0)); // Index < 0
@@ -4675,8 +4699,14 @@ namespace System.Tests
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
-            a[1, 1_999_999_999] = 0x1234;
 
+            // Test 1: use Array.Clear
+            a[1, 1_999_999_999] = 0x1234;
+            Array.Clear(a);
+            Assert.Equal(0, a[1, 1_999_999_999]);
+
+            // Test 2: use IList.Clear
+            a[1, 1_999_999_999] = 0x1234;
             ((IList)a).Clear();
             Assert.Equal(0, a[1, 1_999_999_999]);
         }

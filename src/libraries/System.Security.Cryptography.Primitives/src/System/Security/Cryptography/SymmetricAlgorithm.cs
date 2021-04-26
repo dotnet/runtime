@@ -199,12 +199,12 @@ namespace System.Security.Cryptography
             {
                 if (KeyValue != null)
                 {
-                    Array.Clear(KeyValue, 0, KeyValue.Length);
+                    Array.Clear(KeyValue);
                     KeyValue = null;
                 }
                 if (IVValue != null)
                 {
-                    Array.Clear(IVValue, 0, IVValue.Length);
+                    Array.Clear(IVValue);
                     IVValue = null;
                 }
             }
