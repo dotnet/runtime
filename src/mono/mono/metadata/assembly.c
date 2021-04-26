@@ -70,6 +70,7 @@ static char **assemblies_path = NULL;
 
 /* keeps track of loaded assemblies, excluding dynamic ones */
 static GList *loaded_assemblies = NULL;
+static guint32 loaded_assembly_count = 0;
 static MonoAssembly *corlib;
 
 static char* unquote (const char *str);
@@ -2387,6 +2388,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		image->assembly = ass;
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
+	loaded_assembly_count++;
 	mono_assemblies_unlock ();
 
 #ifdef HOST_WIN32
@@ -3285,6 +3287,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 
 	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
+	loaded_assembly_count--;
 	mono_assemblies_unlock ();
 
 	assembly->image->assembly = NULL;
@@ -3722,4 +3725,10 @@ mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
 
 	return disable_opts;
 
+}
+
+guint32
+mono_assembly_get_count (void)
+{
+	return loaded_assembly_count;
 }
