@@ -1233,7 +1233,6 @@ namespace System.Text.RegularExpressions
                             if (len > i && _operator == RegexCode.Notoneloop)
                             {
                                 TrackPush(len - i - 1, runtextpos - Bump());
-                                Debug.Assert(_maxBacktrackPosition == -1, $"maxBacktrackPosition = {_maxBacktrackPosition}, runtext = {runtext}, runtextpos = {runtextpos}, ch = {ch}, code = {_code}, runregex = {runregex}");
                                 _maxBacktrackPosition = tempMaxBacktrackPosition;
                             }
                         }
