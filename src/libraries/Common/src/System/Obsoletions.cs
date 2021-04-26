@@ -60,6 +60,12 @@ namespace System
         internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
         internal const string GetContextInfoDiagId = "SYSLIB0016";
 
+        internal const string StrongNameKeyPairMessage = "Strong name signing is not supported and throws PlatformNotSupportedException.";
+        internal const string StrongNameKeyPairDiagId = "SYSLIB0017";
+
+        internal const string ReflectionOnlyLoadingMessage = "ReflectionOnly loading is not supported and throws PlatformNotSupportedException.";
+        internal const string ReflectionOnlyLoadingDiagId = "SYSLIB0018";
+
         internal const string RuntimeEnvironmentMessage = "RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException.";
         internal const string RuntimeEnvironmentDiagId = "SYSLIB0019";
 
