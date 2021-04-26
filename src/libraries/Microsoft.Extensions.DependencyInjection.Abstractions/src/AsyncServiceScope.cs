@@ -20,12 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         public AsyncServiceScope(IServiceScope serviceScope)
         {
-            if (serviceScope is null)
-            {
-                throw new ArgumentNullException(nameof(serviceScope));
-            }
-
-            _serviceScope = serviceScope;
+            _serviceScope = serviceScope ?? throw new ArgumentNullException(nameof(serviceScope));
         }
 
         /// <inheritdoc />
