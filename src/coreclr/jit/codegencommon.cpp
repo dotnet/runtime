@@ -6598,15 +6598,15 @@ void CodeGen::genFinalizeFrame()
     // locations on entry to the function.
     compiler->m_pLinearScan->recordVarLocationsAtStartOfBB(compiler->fgFirstBB);
 
-    //if (compiler->opts.MinOpts())
-    {
-        genSetRegsModifiedForPoisonFrame();
-    }
-
     genCheckUseBlockInit();
 
     // Set various registers as "modified" for special code generation scenarios: Edit & Continue, P/Invoke calls, etc.
     CLANG_FORMAT_COMMENT_ANCHOR;
+
+    if (genShouldPoisonFrame())
+    {
+        genSetRegsModifiedForPoisonFrame();
+    }
 
 #if defined(TARGET_X86)
 
@@ -7376,8 +7376,7 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
-    // In MinOpts we poison the entire stack with a recognizable value to make detecting uses of uninitialized variables easier.
-    //if (compiler->opts.MinOpts())
+    if (genShouldPoisonFrame())
     {
         genPoisonFrame();
     }

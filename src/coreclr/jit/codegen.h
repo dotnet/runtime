@@ -348,6 +348,11 @@ protected:
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
+    bool genShouldPoisonFrame()
+    {
+        return !compiler->info.compInitMem && compiler->opts.MinOpts() && compiler->opts.compDbgCode;
+    }
+
     void genSetRegsModifiedForPoisonFrame();
     void genPoisonFrame();
 

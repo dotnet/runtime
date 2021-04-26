@@ -9010,7 +9010,10 @@ void CodeGen::genPushCalleeSavedRegisters()
 void CodeGen::genSetRegsModifiedForPoisonFrame()
 {
     // We are going to use rep stosd which uses EDI, ECX and EAX. Of these
-    // EDI/RDI is always callee preserved.
+    // EDI/RDI is always callee preserved. This means we always end up saving
+    // EDI in the prolog. This is not that big of a deal as we only poison
+    // debug code and those functions always have non-empty frames due to the
+    // CORINFO_HELP_DBG_IS_JUST_MY_CODE call.
     regSet.rsSetRegsModified(RBM_EDI);
 
     const regMaskTP argMask = intRegState.rsCalleeRegArgMaskLiveIn;
@@ -9044,6 +9047,16 @@ void CodeGen::genSetRegsModifiedForPoisonFrame()
 //    We use the same sequence as VC++ which uses rep stosd with 0xcccccccc.
 void CodeGen::genPoisonFrame()
 {
+    if (compiler->compLclFrameSize == 0)
+        return;
+
+    // Generate
+    // mov rdi, rsp
+    // mov ecx, compLclFrameSize/4
+    // mov eax, 0xcccccccc
+    // rep stosd
+    //
+    // saving rcx and rdi as necessary.
     const regMaskTP argMask = intRegState.rsCalleeRegArgMaskLiveIn;
 
 #ifdef UNIX_AMD64_ABI
