@@ -741,14 +741,11 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (AddressFamily == AddressFamily.InterNetworkV6)
-                {
-                    SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
-                }
-                else if (value)
+                if (AddressFamily != AddressFamily.InterNetworkV6)
                 {
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
+                SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
             }
         }
 
