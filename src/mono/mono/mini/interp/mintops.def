@@ -165,7 +165,6 @@ OPDEF(MINT_RETHROW, "rethrow", 2, 0, 0, MintOpUShortInt)
 OPDEF(MINT_ENDFINALLY, "endfinally", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_MONO_RETHROW, "mono_rethrow", 2, 0, 1, MintOpNoArgs)
 
-OPDEF(MINT_CHECKPOINT, "checkpoint", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_SAFEPOINT, "safepoint", 1, 0, 0, MintOpNoArgs)
 
 OPDEF(MINT_BRFALSE_I4, "brfalse.i4", 4, 0, 1, MintOpBranch)

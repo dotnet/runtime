@@ -789,8 +789,6 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 	if (offset < 0) {
 		if (mono_threads_are_safepoints_enabled ())
 			interp_add_ins (td, MINT_SAFEPOINT);
-		else
-			interp_add_ins (td, MINT_CHECKPOINT);
 	}
 
 	InterpBasicBlock *target_bb = td->offset_to_bb [target];
