@@ -6153,6 +6153,31 @@
         "4.0.1.0": "4.3.0"
       }
     },
+    "System.Security.Cryptography.OpenSsl": {
+      "StableVersions": [
+        "4.0.0",
+        "4.0.1",
+        "4.3.0",
+        "4.3.1",
+        "4.4.0",
+        "4.5.0",
+        "4.5.1",
+        "4.6.0",
+        "4.7.0",
+        "5.0.0"
+      ],
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.0.0",
+        "4.0.1.0": "4.3.0",
+        "4.1.0.0": "4.4.0",
+        "4.1.1.0": "4.5.0",
+        "4.1.1.1": "4.5.1",
+        "4.1.2.0": "4.6.0",
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "System.Security.Cryptography.Pkcs": {
       "StableVersions": [
         "4.0.0",
