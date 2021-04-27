@@ -163,11 +163,23 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Get the last platform invoke error on the current thread
+        /// </summary>
+        /// <returns>The last platform invoke error</returns>
+        /// <remarks>
+        /// The last platform invoke error corresponds to the error set by either the most recent platform
+        /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetLastWin32Error();
+        public static extern int GetLastPInvokeError();
 
+        /// <summary>
+        /// Set the last platform invoke error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastWin32Error(int error);
+        public static extern void SetLastPInvokeError(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {
@@ -182,6 +194,9 @@ namespace System.Runtime.InteropServices
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(RuntimeMethodHandleInternal m);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern bool IsComSupportedInternal();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
@@ -220,6 +235,10 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object? obj);
+
+        internal static bool IsComSupported { get; } = InitializeIsComSupported();
+
+        private static bool InitializeIsComSupported() => IsComSupportedInternal();
 
 #if TARGET_WINDOWS
         /// <summary>
@@ -277,6 +296,11 @@ namespace System.Runtime.InteropServices
         // on Marshal for more consistent API surface.
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             // Note: "throwOnError" is a vacuous parameter. Any errors due to the CLSID not being registered or the server not being found will happen
             // on the Activator.CreateInstance() call. GetTypeFromCLSID() merely wraps the data in a Type object without any validation.
 
@@ -417,12 +441,27 @@ namespace System.Runtime.InteropServices
         public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
 
         [SupportedOSPlatform("windows")]
+        public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            return CreateAggregatedObjectNative(pOuter, o);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern IntPtr CreateAggregatedObject(IntPtr pOuter, object o);
+        private static extern IntPtr CreateAggregatedObjectNative(IntPtr pOuter, object o);
 
         [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             return CreateAggregatedObject(pOuter, (object)o);
         }
 
@@ -445,6 +484,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             if (o is null)
             {
                 // Match .NET Framework behaviour.
@@ -468,6 +512,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static int FinalReleaseComObject(object o)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             if (o is null)
             {
                 throw new ArgumentNullException(nameof(o));
@@ -487,6 +536,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
@@ -513,6 +567,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static bool SetComObjectData(object obj, object key, object? data)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
@@ -538,6 +597,11 @@ namespace System.Runtime.InteropServices
         [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             if (t is null)
             {
                 throw new ArgumentNullException(nameof(t));
@@ -588,6 +652,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
 
@@ -601,32 +670,77 @@ namespace System.Runtime.InteropServices
         public static extern bool IsTypeVisibleFromCom(Type t);
 
         [SupportedOSPlatform("windows")]
+        public static void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            GetNativeVariantForObjectNative(obj, pDstNativeVariant);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
+        private static extern void GetNativeVariantForObjectNative(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         [SupportedOSPlatform("windows")]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             GetNativeVariantForObject((object?)obj, pDstNativeVariant);
         }
 
         [SupportedOSPlatform("windows")]
+        public static object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            return GetObjectForNativeVariantNative(pSrcNativeVariant);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
+        private static extern object? GetObjectForNativeVariantNative(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         [SupportedOSPlatform("windows")]
         public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             return (T?)GetObjectForNativeVariant(pSrcNativeVariant);
         }
 
         [SupportedOSPlatform("windows")]
+        public static object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars)
+        {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
+            return GetObjectsForNativeVariantsNative(aSrcNativeVariant, cVars);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
+        private static extern object?[] GetObjectsForNativeVariantsNative(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
         [SupportedOSPlatform("windows")]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             object?[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
 
             T[] result = new T[objects.Length];
@@ -653,6 +767,11 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object BindToMoniker(string monikerName)
         {
+            if (!IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             CreateBindCtx(0, out IBindCtx bindctx);
 
             MkParseDisplayName(bindctx, monikerName, out _, out IMoniker pmoniker);

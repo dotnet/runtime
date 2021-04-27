@@ -59,12 +59,3 @@ For ECC the value should not be used.
 0 is returned for invalid inputs.
 */
 PALEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
-
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
-/*
-Export a key and re-import it to the NULL keychain.
-
-Only internal callers are expected.
-*/
-OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type);
-#endif

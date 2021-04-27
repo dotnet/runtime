@@ -198,7 +198,7 @@ namespace OLEDB.Test.ModuleCore
                     default:
                         Common.Assert(false, "Unhandled State " + Common.ToString(state));
                         break;
-                };
+                }
             }
             return keywords;
         }

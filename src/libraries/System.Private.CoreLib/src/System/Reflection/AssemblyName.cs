@@ -19,8 +19,6 @@ namespace System.Reflection
         private string? _codeBase;
         private Version? _version;
 
-        private StrongNameKeyPair? _strongNameKeyPair;
-
         private AssemblyHashAlgorithm _hashAlgorithm;
 
         private AssemblyVersionCompatibility _versionCompatibility;
@@ -200,10 +198,11 @@ namespace System.Reflection
             set => _versionCompatibility = value;
         }
 
+        [Obsolete(Obsoletions.StrongNameKeyPairMessage, DiagnosticId = Obsoletions.StrongNameKeyPairDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public StrongNameKeyPair? KeyPair
         {
-            get => _strongNameKeyPair;
-            set => _strongNameKeyPair = value;
+            get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
+            set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
         }
 
         public string FullName

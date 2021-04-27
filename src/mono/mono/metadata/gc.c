@@ -552,13 +552,15 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 }
 
 void
-ves_icall_System_GC_GetGCMemoryInfo (gint64* high_memory_load_threshold_bytes,
-									gint64* memory_load_bytes,
-									gint64* total_available_memory_bytes,
-									gint64* heap_size_bytes,
-									gint64* fragmented_bytes)
+ves_icall_System_GC_GetGCMemoryInfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
-	mono_gc_get_gcmemoryinfo (high_memory_load_threshold_bytes, memory_load_bytes, total_available_memory_bytes, heap_size_bytes,  fragmented_bytes);
+	mono_gc_get_gcmemoryinfo (high_memory_load_threshold_bytes, memory_load_bytes, total_available_memory_bytes, total_committed_bytes, heap_size_bytes, fragmented_bytes);
 }
 
 void
