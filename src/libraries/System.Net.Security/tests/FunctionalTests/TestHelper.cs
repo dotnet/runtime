@@ -42,8 +42,8 @@ namespace System.Net.Security.Tests
         private static readonly X509BasicConstraintsExtension s_eeConstraints =
             new X509BasicConstraintsExtension(false, false, 0, false);
 
-        private static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
-        private static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
+        public static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
+        public static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
 
         public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
         {

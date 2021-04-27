@@ -830,6 +830,15 @@ namespace System.Net.Security
             return status;
         }
 
+        internal SecurityStatusPal Renegotiate(out byte[]? output)
+        {
+            return SslStreamPal.Renegotiate(
+                                      ref _credentialsHandle!,
+                                      ref _securityContext,
+                                      _sslAuthenticationOptions,
+                                      out output);
+        }
+
         /*++
             ProcessHandshakeSuccess -
                Called on successful completion of Handshake -

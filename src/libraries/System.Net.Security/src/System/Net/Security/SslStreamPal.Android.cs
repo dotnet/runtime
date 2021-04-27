@@ -45,6 +45,11 @@ namespace System.Net.Security
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
+        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static SafeFreeCredentials AcquireCredentialsHandle(
             SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
