@@ -6533,10 +6533,7 @@ protected:
     // loop nested in "loopInd" that shares the same head as "loopInd".
     void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
-    // Updates the successors of "blk": if "blk2" is a successor of "blk", and there is a mapping for "blk2->blk3" in
-    // "redirectMap", change "blk" so that "blk3" is this successor. If `addPreds` is true, add predecessor edges
-    // for the block based on its new target, whether redirected or not.
-    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool addPreds = false);
+    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap);
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
