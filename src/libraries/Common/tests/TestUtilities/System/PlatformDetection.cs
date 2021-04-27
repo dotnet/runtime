@@ -408,9 +408,8 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
-            // Browser isn't using fullaot currently
             if (IsBrowser)
-                return true;
+                return RuntimeFeature.IsDynamicCodeSupported;
 
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.
