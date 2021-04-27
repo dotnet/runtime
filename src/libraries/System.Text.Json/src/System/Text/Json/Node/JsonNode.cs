@@ -9,8 +9,8 @@ namespace System.Text.Json.Node
     /// <summary>
     ///   The base class that represents a single node within a mutable JSON document.
     /// </summary>
-    /// <seealso cref="JsonSerializerOptions.UnknownTypeHandling"/> to specify how a type
-    /// declared as an <see cref="object"/> can be deserialized as a <see cref="JsonNode"/>.
+    /// <seealso cref="JsonSerializerOptions.UnknownTypeHandling"/> to specify that a type
+    /// declared as an <see cref="object"/> should be deserialized as a <see cref="JsonNode"/>.
     public abstract partial class JsonNode
     {
         private JsonNode? _parent;

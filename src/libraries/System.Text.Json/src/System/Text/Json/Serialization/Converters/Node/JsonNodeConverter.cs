@@ -12,14 +12,15 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class JsonNodeConverter : JsonConverter<object?>
     {
-        private JsonArrayConverter? _arrayConverter;
-        private JsonObjectConverter? _objectConverter;
-        private JsonValueConverter? _valueConverter;
+        private static JsonNodeConverter? s_nodeConverter;
+        private static JsonArrayConverter? s_arrayConverter;
+        private static JsonObjectConverter? s_objectConverter;
+        private static JsonValueConverter? s_valueConverter;
 
-        public static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
-        public JsonArrayConverter ArrayConverter => _arrayConverter ??= new JsonArrayConverter();
-        public JsonObjectConverter ObjectConverter => _objectConverter ??= new JsonObjectConverter();
-        public JsonValueConverter ValueConverter => _valueConverter ??= new JsonValueConverter();
+        public static JsonNodeConverter Instance => s_nodeConverter ??= new JsonNodeConverter();
+        public static JsonArrayConverter ArrayConverter => s_arrayConverter ??= new JsonArrayConverter();
+        public static JsonObjectConverter ObjectConverter => s_objectConverter ??= new JsonObjectConverter();
+        public static JsonValueConverter ValueConverter => s_valueConverter ??= new JsonValueConverter();
 
         public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {

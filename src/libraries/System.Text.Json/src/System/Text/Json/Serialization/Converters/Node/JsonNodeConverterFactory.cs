@@ -13,17 +13,17 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (typeof(JsonValue).IsAssignableFrom(typeToConvert))
             {
-                return JsonNodeConverter.Instance.ValueConverter;
+                return JsonNodeConverter.ValueConverter;
             }
 
             if (typeof(JsonObject) == typeToConvert)
             {
-                return JsonNodeConverter.Instance.ObjectConverter;
+                return JsonNodeConverter.ObjectConverter;
             }
 
             if (typeof(JsonArray) == typeToConvert)
             {
-                return JsonNodeConverter.Instance.ArrayConverter;
+                return JsonNodeConverter.ArrayConverter;
             }
 
             Debug.Assert(typeof(JsonNode) == typeToConvert);

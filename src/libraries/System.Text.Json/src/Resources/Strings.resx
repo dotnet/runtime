@@ -617,4 +617,7 @@
   <data name="NodeArrayTooSmall" xml:space="preserve">
     <value>Destination array was not long enough.</value>
   </data>
+  <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
+    <value>A custom converter for JsonObject is not allowed on an extension property.</value>
+  </data>
 </root>

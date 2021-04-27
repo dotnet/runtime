@@ -505,7 +505,8 @@ namespace System.Text.Json.Serialization.Metadata
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
                 if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
                     typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) ||
-                    declaredPropertyType.FullName == JsonObjectTypeName) // Avoid a reference to the JsonNode type for trimming
+                    // Avoid a reference to typeof(JsonNode) to support trimming.
+                    (declaredPropertyType.FullName == JsonObjectTypeName && ReferenceEquals(declaredPropertyType.Assembly, GetType().Assembly)))
                 {
                     converter = Options.GetConverter(declaredPropertyType);
                     Debug.Assert(converter != null);

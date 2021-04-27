@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Node;
+using System.Text.Json.Serialization;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -487,8 +488,10 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new JsonObjectOverflowConverter());
 
             // A custom converter for JsonObject is not allowed on an extension property.
-            Assert.Throws<InvalidOperationException>(() =>
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
                 JsonSerializer.Deserialize<ClassWithExtensionData<JsonObject>>(@"{""TestKey"":""TestValue""}", options));
+
+            Assert.Contains("JsonObject", ex.ToString());
         }
 
         private static void ExtensionProperty_IgnoresCustomSerializerWithOptionsInternal<TDictionary, TOverflowItem, TConverter>()
@@ -1269,8 +1272,10 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new JsonObjectConverter());
 
             // A custom converter for JsonObject is not allowed on an extension property.
-            Assert.Throws<InvalidOperationException>(() =>
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
                 JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(Json, options));
+
+            Assert.Contains("JsonObject", ex.ToString());
         }
 
         private class JsonObjectConverter : JsonConverter<JsonObject>

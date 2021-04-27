@@ -45,7 +45,6 @@ namespace System.Text.Json.Node
 
             public bool Contains(JsonNode? jsonNode) => _jObject.ContainsNode(jsonNode);
 
-
             public void CopyTo(JsonNode?[] nodeArray, int index)
             {
                 if (index < 0)
