@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Options
 
             string typeName = options.GetType().Name;
             var errors = new List<string>();
-            foreach (var result in validationResults)
+            foreach (ValidationResult result in validationResults)
             {
                 errors.Add($"DataAnnotation validation failed for '{typeName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
             }
