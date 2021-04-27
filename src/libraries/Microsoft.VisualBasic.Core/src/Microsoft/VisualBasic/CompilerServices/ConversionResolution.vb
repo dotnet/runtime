@@ -115,19 +115,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
             VerifyTypeCodeEnum()
 
 #If DEBUG Then
-            VerifyForLoopWidestTypeInDebugMode()
+            VerifyForLoopWidestType()
 #End If
         End Sub
-        
+
 #If DEBUG Then
+        <System.Diagnostics.ConditionalAttribute("DEBUG")>
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification:="This method only gets called in DEBUG mode.")>
-        Private Shared Sub VerifyForLoopWidestTypeInDebugMode()
-            VerifyForLoopWidestType()
-        End Sub
-
-        <System.Diagnostics.ConditionalAttribute("DEBUG")>
-        <RequiresUnreferencedCode("Calls Operators.AddObject")>
         Private Shared Sub VerifyForLoopWidestType()
             Const Max As Integer = TypeCode.String
 
