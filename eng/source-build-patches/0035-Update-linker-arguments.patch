@@ -1,0 +1,52 @@
+From b3247ebbe75d304a8660b970b27cc781082f7fbe Mon Sep 17 00:00:00 2001
+From: Dan Seefeldt <dseefeld@microsoft.com>
+Date: Thu, 22 Apr 2021 13:01:19 -0500
+Subject: [PATCH] Update linker arguments
+
+source-build is building version 6.0.100-preview.2.21174.1 of linker while
+runtime has a dependency on version 6.0.100-preview.2.21118.4.  The newer
+version doesn't support -c or -u.  See https://github.com/dotnet/runtime/pull/48780.
+Once runtime is building with this commit, this patch can be removed.
+---
+ eng/illink.targets                           | 10 +++++-----
+ src/libraries/illink-sharedframework.targets |  3 ---
+ 2 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/eng/illink.targets b/eng/illink.targets
+index 4d48845507a..a617537e6fa 100644
+--- a/eng/illink.targets
++++ b/eng/illink.targets
+@@ -232,12 +232,12 @@
+           Condition="'$(ILLinkTrimAssembly)' == 'true'"
+           DependsOnTargets="SetCommonILLinkArgs">
+     <PropertyGroup>
+-      <!-- default action for core assemblies -->
+-      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
+-      <!-- default action for non-core assemblies -->
+-      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
++      <!-- default action for assemblies with IsTrimmable attribute -->
++      <ILLinkArgs>$(ILLinkArgs) --trim-mode skip</ILLinkArgs>
++      <!-- default action for assemblies without IsTrimmable attribute -->
++      <ILLinkArgs>$(ILLinkArgs) --action skip</ILLinkArgs>
+       <!-- trim the target assembly -->
+-      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
++      <ILLinkArgs>$(ILLinkArgs) --action link $(TargetName)</ILLinkArgs>
+       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
+       <!-- pass the non-embedded root xml file on the command line -->
+       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
+diff --git a/src/libraries/illink-sharedframework.targets b/src/libraries/illink-sharedframework.targets
+index 264c03533ba..c2a716bccaa 100644
+--- a/src/libraries/illink-sharedframework.targets
++++ b/src/libraries/illink-sharedframework.targets
+@@ -11,9 +11,6 @@
+     </PropertyGroup>
+ 
+     <PropertyGroup>
+-      <!-- Link all assemblies -->
+-      <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
+-      <ILLinkArgs>$(ILLinkArgs) -u link</ILLinkArgs>
+       <!-- update debug symbols -->
+       <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
+       <!-- suppress warnings with the following codes:
+-- 
+2.29.2
