@@ -6544,7 +6544,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
 
                                         assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
                                         assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
-                                                               "hasValue"));
+                                                       "hasValue"));
 
                                         GenTree* objToBox = impPopStack().val;
 
@@ -6554,7 +6554,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
 
                                         impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
                                                        typeInfo(TI_INT));
-                                                       
+
                                         JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                         return 1 + sizeof(mdToken);
                                     }
