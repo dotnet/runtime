@@ -111,7 +111,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 
 ## Package Support Errors
 
-The id values reserved for .NET Library packages which error on unsupported platforms are `SYSLIB9000` through `SYSLIB9999`. 
+The id values reserved for .NET Library packages which error on unsupported platforms are `SYSLIB9000` through `SYSLIB9999`.
 
 ### Package Error codes (`SYSLIB9000` - `SYSLIB9999`)
 
