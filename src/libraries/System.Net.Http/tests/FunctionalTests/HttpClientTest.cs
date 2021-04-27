@@ -19,6 +19,53 @@ using static System.Net.Test.Common.Configuration.Http;
 
 namespace System.Net.Http.Functional.Tests
 {
+    public class LargeFileBenchmark
+    {
+        private const string HostName = "10.194.114.94";
+
+        private readonly ITestOutputHelper _output;
+
+        public LargeFileBenchmark(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [Fact]
+        public Task Download11() => TestHandler("SocketsHttpHandler HTTP 1.1", false, 5);
+
+        [Fact]
+        public Task Download20() => TestHandler("SocketsHttpHandler HTTP 2.0", true, 5);
+
+        private async Task TestHandler(string info, bool http2, int lengthMb)
+        {
+            using var client = new HttpClient();
+            var message = GenerateRequestMessage(HostName, http2, lengthMb);
+            _output.WriteLine($"{info} / {lengthMb} MB from {HostName}");
+            Stopwatch sw = Stopwatch.StartNew();
+            var response = await client.SendAsync(message);
+            long elapsedMs = sw.ElapsedMilliseconds;
+
+            _output.WriteLine($"{info}: {response.StatusCode} in {elapsedMs} ms");
+        }
+
+        static HttpRequestMessage GenerateRequestMessage(string hostName, bool http2, int lengthMb = 25)
+        {
+            string url = $"http://{hostName}:{(http2 ? "5001" : "5000")}?lengthMb={lengthMb}";
+            var msg = new HttpRequestMessage(HttpMethod.Get, url)
+            {
+                Version = new Version(1, 1)
+            };
+
+            if (http2)
+            {
+                msg.Version = new Version(2, 0);
+                msg.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            }
+
+            return msg;
+        }
+    }
+
     public sealed class HttpClientTest : HttpClientHandlerTestBase
     {
         public HttpClientTest(ITestOutputHelper output) : base(output) { }
