@@ -22,11 +22,9 @@
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
 #include "domainfile.h"
-#include "objectlist.h"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
-#include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
 
 #ifdef FEATURE_MULTICOREJIT
