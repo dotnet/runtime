@@ -130,7 +130,6 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
 		MonoType *type = (MonoType*)l->data;
 		if (mb->mem_manager) {
-			// FIXME: Copy cmods etc.
 			/* Allocated in mono_mb_add_local () */
 			int size = mono_sizeof_type (type);
 			header->locals [i] = mono_mem_manager_alloc0 (mb->mem_manager, size);

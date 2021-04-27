@@ -1981,6 +1981,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	MonoMethod *orig_method = method;
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
+	MonoMemoryManager *mem_manager = NULL;
 	gboolean found;
 
 	g_assert (method && m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class &&
@@ -2091,8 +2092,12 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		cache_key = sig;
 	}
 
+	if (subtype == WRAPPER_SUBTYPE_NONE)
+		/* FIXME: Other subtypes */
+		mem_manager = m_method_get_mem_manager (method);
+
 	if (!static_method_with_first_arg_bound) {
-		invoke_sig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		invoke_sig = mono_metadata_signature_dup_mem_manager (mem_manager, sig);
 		invoke_sig->hasthis = 0;
 	}
 
@@ -2109,6 +2114,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	else
 		mb = mono_mb_new (get_wrapper_target_class (get_method_image (method)), name, MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
+	mb->mem_manager = mem_manager;
+
+	if (subtype == WRAPPER_SUBTYPE_NONE)
+		/* FIXME: Other subtypes */
+		mb->mem_manager = m_method_get_mem_manager (method);
 
 	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
 
@@ -2412,8 +2422,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	if (res)
 		return res;
 
-	if (need_direct_wrapper || virtual_)
-		mem_manager = m_method_get_mem_manager (method);
+	mem_manager = m_method_get_mem_manager (method);
 
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature_internal (method));
@@ -2464,9 +2473,9 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 			return res;
 		}
 
-		/* Make a copy of the signature from the image mempool */
+		/* Make a copy of the signature */
 		tmp_sig = callsig;
-		callsig = mono_metadata_signature_dup_full (m_class_get_image (target_klass), callsig);
+		callsig = mono_metadata_signature_dup_mem_manager (mem_manager, callsig);
 		g_free (tmp_sig);
 	}
 
@@ -5765,12 +5774,13 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 
 	mb = mono_mb_new_no_dup_name (klass, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
+	mb->mem_manager = m_method_get_mem_manager (method);
 
 	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |
 		METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_HIDE_BY_SIG | METHOD_ATTRIBUTE_FINAL;
 
 	sig = mono_method_signature_internal (method);
-	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+	csig = mono_metadata_signature_dup_mem_manager (mb->mem_manager, sig);
 	csig->generic_param_count = 0;
 
 	get_marshal_cb ()->emit_generic_array_helper (mb, method, csig);

@@ -56,7 +56,6 @@ static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, 
 						    gboolean signature_only);
 static void free_generic_inst (MonoGenericInst *ginst);
 static void free_generic_class (MonoGenericClass *ginst);
-static void free_inflated_method (MonoMethodInflated *method);
 static void free_inflated_signature (MonoInflatedMethodSignature *sig);
 static void free_aggregate_modifiers (MonoAggregateModContainer *amods);
 static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
@@ -3175,20 +3174,6 @@ check_gmethod (gpointer key, gpointer value, gpointer data)
 		g_assert (!ginst_in_image (method->context.method_inst, image));
 	if (((MonoMethod*)method)->signature)
 		g_assert (!signature_in_image (mono_method_signature_internal ((MonoMethod*)method), image));
-}
-
-static void
-free_inflated_method (MonoMethodInflated *imethod)
-{
-	MonoMethod *method = (MonoMethod*)imethod;
-
-	if (method->signature)
-		mono_metadata_free_inflated_signature (method->signature);
-
-	if (method->wrapper_type)
-		g_free (((MonoMethodWrapper*)method)->method_data);
-
-	g_free (method);
 }
 
 static void
