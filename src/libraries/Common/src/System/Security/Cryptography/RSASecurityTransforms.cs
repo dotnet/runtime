@@ -523,10 +523,11 @@ namespace System.Security.Cryptography
                                 hashAlgorithm.Name));
                     }
 
-                    return Interop.AppleCrypto.GenerateSignature(
+                    return Interop.AppleCrypto.CreateSignature(
                         keys.PrivateKey,
                         hash,
-                        palAlgId);
+                        palAlgId,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1);
                 }
 
                 // A signature will always be the keysize (in ceiling-bytes) in length.
@@ -600,11 +601,12 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    return Interop.AppleCrypto.TryGenerateSignature(
+                    return Interop.AppleCrypto.TryCreateSignature(
                         keys.PrivateKey,
                         hash,
                         destination,
                         palAlgId,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
                         out bytesWritten);
                 }
 
@@ -666,7 +668,12 @@ namespace System.Security.Cryptography
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
-                    return Interop.AppleCrypto.VerifySignature(GetKeys().PublicKey, hash, signature, palAlgId);
+                    return Interop.AppleCrypto.VerifySignature(
+                        GetKeys().PublicKey,
+                        hash,
+                        signature,
+                        palAlgId,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1);
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
