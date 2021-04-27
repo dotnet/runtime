@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Drawing.Common.cs" />
+    <Compile Include="System.Drawing.Common.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System.Drawing.Common.Forwards.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System.Drawing.Common.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
@@ -38,8 +39,5 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
   </ItemGroup>
 </Project>

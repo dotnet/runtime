@@ -388,7 +388,4 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
-  </ItemGroup>
 </Project>
