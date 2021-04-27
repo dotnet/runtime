@@ -1,6 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.targets" />
-  <PropertyGroup>
-    <AssemblyVersion Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">4.0.1.0</AssemblyVersion>
-  </PropertyGroup>
-</Project>

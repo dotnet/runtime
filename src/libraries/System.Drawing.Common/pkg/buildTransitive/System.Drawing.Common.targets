@@ -1,7 +1,7 @@
-<Project InitialTargets="_ValidateSystemDrawingCommonNotNetCoreApp2x">
-  <Target Name="_ValidateSystemDrawingCommonNotNetCoreApp2x"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $(TargetFrameworkVersion.StartsWith('v2.'))">
-    <Error Condition="'$(SuppressTfmSupportBuildWarnings)' == ''"
-           Code="SYSLIB9001" Text="System.Drawing.Common doesn't support $(TargetFramework). Consider updating your TargetFramework to netcoreapp3.0 or later." />
+<Project InitialTargets="_ErrorForSystemDrawingCommonOnNetCoreApp2x">
+  <Target Name="_ErrorForSystemDrawingCommonOnNetCoreApp2x"
+          Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
+    <Error Text="System.Drawing.Common doesn't support $(TargetFramework). Consider updating your TargetFramework to netcoreapp3.0 or later."
+           Code="SYSLIB9001" />
   </Target>
 </Project>
