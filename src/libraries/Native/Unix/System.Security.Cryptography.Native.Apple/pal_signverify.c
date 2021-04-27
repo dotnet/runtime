@@ -7,8 +7,7 @@
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErrorOut);
 
-static int32_t ConfigureSignVerifyTransform(
-    SecTransformRef xform, CFDataRef cfDataHash, CFErrorRef* pErrorOut);
+static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfDataHash, CFErrorRef* pErrorOut);
 
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
 {
@@ -78,9 +77,7 @@ static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErr
     return ret;
 }
 
-static int32_t ConfigureSignVerifyTransform(SecTransformRef xform,
-                                            CFDataRef cfDataHash,
-                                            CFErrorRef* pErrorOut)
+static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfDataHash, CFErrorRef* pErrorOut)
 {
     if (!SecTransformSetAttribute(xform, kSecInputIsAttributeName, kSecInputIsDigest, pErrorOut))
     {
@@ -99,7 +96,8 @@ static int32_t ConfigureSignVerifyTransform(SecTransformRef xform,
 // Legacy algorithm identifiers
 const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
 
-static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorithm, PAL_SignatureAlgorithm signatureAlgorithm)
+static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorithm,
+                                                   PAL_SignatureAlgorithm signatureAlgorithm)
 {
     if (signatureAlgorithm == PAL_SignatureAlgorithm_EC)
     {
@@ -112,11 +110,16 @@ static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorit
     {
         switch (hashAlgorithm)
         {
-            case PAL_MD5: return kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5;
-            case PAL_SHA1: return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1;
-            case PAL_SHA256: return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256;
-            case PAL_SHA384: return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384;
-            case PAL_SHA512: return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512;
+            case PAL_MD5:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5;
+            case PAL_SHA1:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1;
+            case PAL_SHA256:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256;
+            case PAL_SHA384:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384;
+            case PAL_SHA512:
+                return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512;
         }
     }
 
@@ -153,8 +156,7 @@ int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
     if (pSignatureOut != NULL)
         *pSignatureOut = NULL;
 
-    if (privateKey == NULL || pbDataHash == NULL || cbDataHash < 0 ||
-        pErrorOut == NULL || pSignatureOut == NULL)
+    if (privateKey == NULL || pbDataHash == NULL || cbDataHash < 0 || pErrorOut == NULL || pSignatureOut == NULL)
     {
         return kErrorBadInput;
     }
@@ -191,7 +193,7 @@ int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
     else
     {
         CFStringRef algorithm = GetSignatureAlgorithmIdentifier(hashAlgorithm, signatureAlgorithm);
- 
+
         if (algorithm == NULL)
         {
             CFRelease(dataHash);
