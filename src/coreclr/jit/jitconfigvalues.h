@@ -515,11 +515,12 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-#if defined(TARGET_AMD64)
-CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
-#else                                                              // !TARGET_AMD64
-CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0) // Allow to enregister locals with struct type.
-#endif                                                             // !TARGET_AMD64
+// Allow to enregister locals with struct type.
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1)
+#else  // !TARGET_AMD64 && !UNIX_AMD64_ABI
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0)
+#endif // !TARGET_AMD64 && !UNIX_AMD64_ABI
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

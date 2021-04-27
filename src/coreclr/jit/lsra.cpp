@@ -1496,7 +1496,8 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterable())
+    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterable() ||
+        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
         Compiler::DoNotEnregisterReason dner;
