@@ -4847,7 +4847,7 @@ struct GenTreeIntrinsic : public GenTreeOp
 struct GenTreeJitIntrinsic : public GenTreeOp
 {
 private:
-    ClassLayout* m_layout;
+    ClassLayout* gtLayout;
 
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
     regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
@@ -4867,13 +4867,13 @@ public:
 
     ClassLayout* GetLayout() const
     {
-        return m_layout;
+        return gtLayout;
     }
 
     void SetLayout(ClassLayout* layout)
     {
         assert(layout != nullptr);
-        m_layout = layout;
+        gtLayout = layout;
     }
 
     regNumber GetOtherReg() const
@@ -4927,6 +4927,9 @@ public:
     GenTreeJitIntrinsic(
         genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeOp(oper, type, op1, op2)
+        , gtLayout(nullptr)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtOtherReg(REG_NA)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
