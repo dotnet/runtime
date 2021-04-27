@@ -15,6 +15,7 @@ static const int32_t kErrorBadInput = -1;
 static const int32_t kErrorSeeError = -2;
 static const int32_t kErrorUnknownAlgorithm = -3;
 static const int32_t kErrorUnknownState = -4;
+static const int32_t kPlatformNotSupported = -5;
 
 #if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
