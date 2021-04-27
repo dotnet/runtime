@@ -13,13 +13,24 @@
   </ItemGroup>
 
   <Target Name="PublishBuilder"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
+          AfterTargets="Build">
+
+    <!-- needed for publishing with multi-targeting. We are publishing essentially to get the SR.MetadataLoadContext.dll :/ -->
+    <ItemGroup>
+      <_PublishFramework Include="$(TargetFrameworks)" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity)" />
+  </Target>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
-      <FilesToPackage Include="$(PublishDir)System.Reflection.MetadataLoadContext.dll" TargetPath="tasks" />
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\publish\System.Reflection.MetadataLoadContext.dll"
+                      TargetPath="tasks\%(_PublishFramework.Identity)" />
     </ItemGroup>
   </Target>
 
