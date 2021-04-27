@@ -124,7 +124,7 @@ namespace System.IO.Strategies
                         throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, _path, allocationSize));
                     }
                 }
-                // ignore not supported and other failures (pipe etc)
+                // ignore not supported and other failures (pipe, etc)
             }
         }
 

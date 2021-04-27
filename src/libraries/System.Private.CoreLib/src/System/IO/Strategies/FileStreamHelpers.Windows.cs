@@ -118,7 +118,9 @@ namespace System.IO.Strategies
                 flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
 
                 SafeFileHandle safeFileHandle = ValidateFileHandle(
-                    Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero), path, (options & FileOptions.Asynchronous) != 0);
+                    Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero),
+                    path,
+                    (options & FileOptions.Asynchronous) != 0);
 
                 if (ntStatus == NT_STATUS_INVALID_PARAMETER)
                 {
