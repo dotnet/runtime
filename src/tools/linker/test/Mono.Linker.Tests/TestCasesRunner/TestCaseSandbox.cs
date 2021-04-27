@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static NPath GetArtifactsTestPath ()
 		{
-			// Converts paths like /root-folder/linker/artifacts/bin/Mono.Linker.Tests/Debug/net5.0/illink.dll
+			// Converts paths like /root-folder/linker/artifacts/bin/Mono.Linker.Tests/Debug/net6.0/illink.dll
 			// to /root-folder/linker/artifacts/testcases/
 			string artifacts = Path.GetFullPath (Path.Combine (Path.GetDirectoryName (_linkerAssemblyPath), "..", "..", "..", ".."));
 			string tests = Path.Combine (artifacts, "testcases");
