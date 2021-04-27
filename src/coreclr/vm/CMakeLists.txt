@@ -643,6 +643,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
+        ${ARCH_SOURCES_DIR}/Context.asm
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
