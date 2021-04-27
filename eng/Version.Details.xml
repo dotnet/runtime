@@ -210,9 +210,9 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>e51b2a920817aec200d7306b95f616f9451d47a3</Sha>
     </Dependency>
-    <Dependency Name="hotreload-delta-gen" Version="1.0.0-alpha.0.21222.4">
+    <Dependency Name="hotreload-delta-gen" Version="1.0.0-alpha.0.21226.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>983e314f23442e6912276a7ae16d3738840dce53</Sha>
+      <Sha>9d2b13ee8e94bd921d08c1e36fba12171cd6bbd3</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

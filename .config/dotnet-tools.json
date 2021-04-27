@@ -27,7 +27,7 @@
       ]
     },
     "hotreload-delta-gen": {
-      "version": "1.0.0-alpha.0.21222.4",
+      "version": "1.0.0-alpha.0.21226.1",
       "commands": [
         "hotreload-delta-gen"
       ]
