@@ -114,33 +114,27 @@ mono_ios_runtime_init (void)
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
     assert (res > 0);
 
-    // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    const char *appctx_keys [] = {
-        "RUNTIME_IDENTIFIER", 
-        "APP_CONTEXT_BASE_DIRECTORY",
-#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
-        "ICU_DAT_FILE_PATH"
-#endif
-    };
-    const char *appctx_values [] = {
-        APPLE_RUNTIME_IDENTIFIER,
-        bundle,
-#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
-        icu_dat_path
-#endif
-    };
-
     char *pinvokeOverride = strdup_printf ("%p", &pinvoke_override);
 
     void* hostHandle;
     unsigned int domainId;
     const char* propertyKeys[] = {
         "PINVOKE_OVERRIDE",
-        "TRUSTED_PLATFORM_ASSEMBLIES"
+        "TRUSTED_PLATFORM_ASSEMBLIES",
+        "RUNTIME_IDENTIFIER", 
+        "APP_CONTEXT_BASE_DIRECTORY",
+#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
+        "ICU_DAT_FILE_PATH"
+#endif
     };
     const char* propertyValues[] = {
         pinvokeOverride,
-        tpa
+        tpa,
+        APPLE_RUNTIME_IDENTIFIER,
+        bundle,
+#if !defined(INVARIANT_GLOBALIZATION) && !TARGET_OS_MACCATALYST
+        icu_dat_path
+#endif
     };
 
     coreclr_initialize (
