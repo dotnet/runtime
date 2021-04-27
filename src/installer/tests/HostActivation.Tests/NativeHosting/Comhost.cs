@@ -156,7 +156,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             public string ComHostPath { get; }
 
-            public readonly string ClsidString = "{438968CE-5950-4FBC-90B0-E64691350DF5}";
+            public const string ClsidString = "{438968CE-5950-4FBC-90B0-E64691350DF5}";
             public TestProjectFixture ComLibraryFixture { get; }
 
             public string ClsidMapPath { get; }

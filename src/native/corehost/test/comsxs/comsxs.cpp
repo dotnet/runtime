@@ -33,7 +33,7 @@ int activation(const pal::char_t* clsidStr)
     return S_OK;
 }
 
-// comsxs.exe (typelibid_lookup | activation) guid
+// comsxs.exe (typelib_lookup | activation) guid
 int __cdecl wmain(const int argc, const pal::char_t *argv[])
 {
     HRESULT hr;

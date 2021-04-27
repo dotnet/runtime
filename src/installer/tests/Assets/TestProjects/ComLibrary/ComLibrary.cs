@@ -16,7 +16,6 @@ namespace ComLibrary
     [Guid("27293cc8-7933-4fdf-9fde-653cbf9b55df")]
     public interface IServer
     {
-        void MethodCall();
     }
 
     [UserDefined]
@@ -27,11 +26,6 @@ namespace ComLibrary
         public Server()
         {
             Console.WriteLine($"New instance of {nameof(Server)} created");
-        }
-
-        public void MethodCall()
-        {
-            Console.WriteLine($"Method {nameof(MethodCall)} on {nameof(Server)} called");
         }
     }
 
