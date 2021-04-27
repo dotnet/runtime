@@ -1167,6 +1167,11 @@ namespace Internal.JitInterface
                 return false;
             }
 
+            TypeDesc owningType = impl.OwningType;
+
+            // RyuJIT expects to get the canonical form back
+            impl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
             if (impl.OwningType.IsValueType)
             {
                 impl = getUnboxingThunk(impl);
@@ -1174,7 +1179,7 @@ namespace Internal.JitInterface
 
             info->devirtualizedMethod = ObjectToHandle(impl);
             info->requiresInstMethodTableArg = false;
-            info->exactContext = contextFromType(impl.OwningType);
+            info->exactContext = contextFromType(owningType);
 
             return true;
         }
