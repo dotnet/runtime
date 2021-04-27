@@ -88,12 +88,13 @@ namespace System.Net.Http
             private const int StreamWindowSize = DefaultInitialWindowSize;
 
             // See comment on ConnectionWindowThreshold.
-            private const int StreamWindowThreshold = StreamWindowSize / 8;
+            private const int StreamWindowThreshold = StreamWindowSize / WindowUpdateRatio;
 
             public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
                 _request = request;
                 _connection = connection;
+                Trace($"StreamWindowSize: {StreamWindowSize}, StreamWindowThreshold: {StreamWindowThreshold}");
 
                 _requestCompletionState = StreamCompletionState.InProgress;
                 _responseCompletionState = StreamCompletionState.InProgress;
