@@ -4,7 +4,7 @@
   <!-- Have to be careful about AfterTargets. If we happen to go after a design-time target, we could get into an infinite loop. -->
   <Target Name="CompileDiff" AfterTargets="Build" Condition="'$(DeltaScript)' != ''">
     <PropertyGroup>
-      <HotreloadDeltaGenCommand Condition="'$(HotreloadDeltaGenFullPath)' == ''">dotnet tool run hotreload-delta-gen</HotreloadDeltaGenCommand>
+      <HotreloadDeltaGenCommand>"$(DotNetTool)" hotreload-delta-gen</HotreloadDeltaGenCommand>
       <HotreloadDeltaGenArgs>-msbuild:$(MSBuildProjectFullPath)</HotreloadDeltaGenArgs>
       <!-- HACK: have to pass config and RID  so that this target works for a 'dotnet publish' run.
            What other properties do  I need to pass? Maybe hotreload-delta-gen should just expose an MSBuild task so we can pass everything -->
