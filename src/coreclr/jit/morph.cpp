@@ -3989,7 +3989,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         }
                         else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
                         {
-                            assert(varDsc->GetRegisterType() != TYP_UNDEF);
                             // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD.
                             // TODO-1stClassStructs: delete this pessimization, keep the struct type.
                             argObj->ChangeOper(GT_LCL_FLD);
