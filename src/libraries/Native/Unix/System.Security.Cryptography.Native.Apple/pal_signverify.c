@@ -97,7 +97,7 @@ static int32_t ConfigureSignVerifyTransform(SecTransformRef xform,
 #endif
 
 // Legacy algorithm identifiers
-extern const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5; // = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
+const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
 
 static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorithm, PAL_SignatureAlgorithm signatureAlgorithm)
 {
@@ -107,6 +107,7 @@ static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorit
         // will always pre-hash data before getting here.
         return kSecKeyAlgorithmECDSASignatureDigestX962;
     }
+
     if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Pkcs1)
     {
         switch (hashAlgorithm)
@@ -118,6 +119,7 @@ static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorit
             case PAL_SHA512: return kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512;
         }
     }
+
     // Requires macOS 10.13+ or iOS 11+
     /*if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Pss)
     {
@@ -129,6 +131,7 @@ static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorit
             case PAL_SHA512: return kSecKeyAlgorithmRSASignatureDigestPSSSHA512;
         }
     }*/
+
     if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Raw)
     {
         return kSecKeyAlgorithmRSASignatureRaw;
@@ -158,8 +161,11 @@ int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
 
     int32_t ret = kErrorSeeError;
     CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
+
     if (dataHash == NULL)
+    {
         return kErrorUnknownState;
+    }
 
     if (signatureAlgorithm == PAL_SignatureAlgorithm_DSA)
     {
@@ -179,12 +185,13 @@ int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
             CFRelease(signer);
         }
 #else
-        return kPlatformNotSupported;
+        ret = kPlatformNotSupported;
 #endif
     }
     else
     {
         CFStringRef algorithm = GetSignatureAlgorithmIdentifier(hashAlgorithm, signatureAlgorithm);
+ 
         if (algorithm == NULL)
         {
             CFRelease(dataHash);
@@ -192,6 +199,7 @@ int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
         }
 
         CFDataRef sig = SecKeyCreateSignature(privateKey, algorithm, dataHash, pErrorOut);
+
         if (sig != NULL)
         {
             *pSignatureOut = sig;
@@ -224,7 +232,9 @@ int32_t AppleCryptoNative_SecKeyVerifySignature(SecKeyRef publicKey,
     int32_t ret = kErrorSeeError;
     CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
     if (dataHash == NULL)
+    {
         return kErrorUnknownState;
+    }
 
     CFDataRef signature = CFDataCreateWithBytesNoCopy(NULL, pbSignature, cbSignature, kCFAllocatorNull);
     if (signature == NULL)
@@ -251,12 +261,13 @@ int32_t AppleCryptoNative_SecKeyVerifySignature(SecKeyRef publicKey,
             CFRelease(verifier);
         }
 #else
-        return kPlatformNotSupported;
+        ret = kPlatformNotSupported;
 #endif
     }
     else
     {
         CFStringRef algorithm = GetSignatureAlgorithmIdentifier(hashAlgorithm, signatureAlgorithm);
+
         if (algorithm == NULL)
         {
             CFRelease(dataHash);

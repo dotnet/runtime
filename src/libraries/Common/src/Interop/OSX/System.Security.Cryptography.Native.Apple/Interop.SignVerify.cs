@@ -109,18 +109,24 @@ internal static partial class Interop
 
             using (errorHandle)
             {
-                return result switch
+                switch (result)
                 {
-                    Valid => true,
-                    Invalid => false,
-                    kErrorSeeError => throw CreateExceptionForCFError(errorHandle),
-                    kPlatformNotSupported => throw new PlatformNotSupportedException(),
-                    _ => throw new CryptographicException { HResult = result }
-                };
+                    case Valid:
+                        return true;
+                    case Invalid:
+                        return false;
+                    case kErrorSeeError:
+                        throw CreateExceptionForCFError(errorHandle);
+                    case kPlatformNotSupported:
+                        throw new PlatformNotSupportedException();
+                    default:
+                        Debug.Fail($"verify signature returned {result}");
+                        throw new CryptographicException();
+                }
             }
         }
 
-        internal static byte[] CreateSignature(
+        private static SafeCFDataHandle NativeCreateSignature(
             SafeSecKeyRefHandle privateKey,
             ReadOnlySpan<byte> dataHash,
             PAL_HashAlgorithm hashAlgorithm,
@@ -135,15 +141,31 @@ internal static partial class Interop
                 out SafeCFErrorHandle errorHandle);
 
             using (errorHandle)
-            using (signature)
             {
-                return result switch
+                switch (result)
                 {
-                    kSuccess => CoreFoundation.CFGetData(signature),
-                    kErrorSeeError => throw CreateExceptionForCFError(errorHandle),
-                    kPlatformNotSupported => throw new PlatformNotSupportedException(),
-                    _ => throw new CryptographicException { HResult = result }
-                };
+                    case kSuccess:
+                        return signature;
+                    case kErrorSeeError:
+                        throw CreateExceptionForCFError(errorHandle);
+                    case kPlatformNotSupported:
+                        throw new PlatformNotSupportedException();
+                    default:
+                        Debug.Fail($"create signature returned {result}");
+                        throw new CryptographicException();
+                }
+            }
+        }
+
+        internal static byte[] CreateSignature(
+            SafeSecKeyRefHandle privateKey,
+            ReadOnlySpan<byte> dataHash,
+            PAL_HashAlgorithm hashAlgorithm,
+            PAL_SignatureAlgorithm signatureAlgorithm)
+        {
+            using (SafeCFDataHandle signature = NativeCreateSignature(privateKey, dataHash, hashAlgorithm, signatureAlgorithm))
+            {
+                return CoreFoundation.CFGetData(signature);
             }
         }
 
@@ -155,24 +177,9 @@ internal static partial class Interop
             PAL_SignatureAlgorithm signatureAlgorithm,
             out int bytesWritten)
         {
-            int result = AppleCryptoNative_SecKeyCreateSignature(
-                privateKey,
-                dataHash,
-                hashAlgorithm,
-                signatureAlgorithm,
-                out SafeCFDataHandle signature,
-                out SafeCFErrorHandle errorHandle);
-
-            using (errorHandle)
-            using (signature)
+            using (SafeCFDataHandle signature = NativeCreateSignature(privateKey, dataHash, hashAlgorithm, signatureAlgorithm))
             {
-                return result switch
-                {
-                    kSuccess => CoreFoundation.TryCFWriteData(signature, destination, out bytesWritten),
-                    kErrorSeeError => throw CreateExceptionForCFError(errorHandle),
-                    kPlatformNotSupported => throw new PlatformNotSupportedException(),
-                    _ => throw new CryptographicException { HResult = result }
-                };
+                return CoreFoundation.TryCFWriteData(signature, destination, out bytesWritten);
             }
         }
     }
