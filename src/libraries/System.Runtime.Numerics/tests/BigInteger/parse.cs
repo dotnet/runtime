@@ -856,9 +856,10 @@ namespace System.Numerics.Tests
                 x = -x;
             }
 
+            string actual;
             if (x == 0)
             {
-                Assert.Equal("0", expected);
+                actual = "0";
             }
             else
             {
@@ -869,10 +870,9 @@ namespace System.Numerics.Tests
                     x = x / 10;
                 }
                 number.Reverse();
-                string actual = new string(number.ToArray());
-
-                Assert.Equal(expected, actual);
+                actual = new string(number.ToArray());
             }
+            Assert.Equal(expected, actual);
         }
     }
 }
