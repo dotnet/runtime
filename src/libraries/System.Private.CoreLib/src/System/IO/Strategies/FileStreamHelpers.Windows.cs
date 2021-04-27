@@ -72,10 +72,17 @@ namespace System.IO.Strategies
                 Debug.Assert(path != null);
 
                 uint ntStatus = 0;
-                if (allocationSize > 0 && (access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
+                if (IsNonIgnorable(allocationSize, access, mode))
                 {
-                    string prefixedAbsolutePath = PathInternal.IsExtended(path) ? path : @"\??\" + Path.GetFullPath(path); // we might consider getting rid of this managed allocation
+                    GetPathForNtCreateFile(path, out ReadOnlySpan<char> prefixedAbsolutePath, out char[]? rentedArray);
+
                     (ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(prefixedAbsolutePath, mode, access, share, options, allocationSize);
+
+                    if (rentedArray is not null)
+                    {
+                        ArrayPool<char>.Shared.Return(rentedArray);
+                    }
+
                     if (ntStatus == 0)
                     {
                         return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
@@ -471,6 +478,37 @@ namespace System.IO.Strategies
             {
                 errorCode = 0;
                 return numBytesWritten;
+            }
+        }
+
+        private static void GetPathForNtCreateFile(string fullPath, out ReadOnlySpan<char> prefixedAbsolutePath, out char[]? rentedArray)
+        {
+            Debug.Assert(fullPath == Path.GetFullPath(fullPath));
+
+            const string mandatoryNtPrefix = @"\??\";
+
+            if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
+            {
+                prefixedAbsolutePath = fullPath;
+                rentedArray = null;
+            }
+            else if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
+            {
+                rentedArray = ArrayPool<char>.Shared.Rent(fullPath.Length);
+
+                fullPath.CopyTo(rentedArray);
+                rentedArray[1] = '?';
+
+                prefixedAbsolutePath = new ReadOnlySpan<char>(rentedArray, 0, fullPath.Length);
+            }
+            else
+            {
+                rentedArray = ArrayPool<char>.Shared.Rent(mandatoryNtPrefix.Length + fullPath.Length);
+
+                mandatoryNtPrefix.CopyTo(rentedArray);
+                fullPath.CopyTo(rentedArray.AsSpan(mandatoryNtPrefix.Length));
+
+                prefixedAbsolutePath = new ReadOnlySpan<char>(rentedArray, 0, mandatoryNtPrefix.Length + fullPath.Length);
             }
         }
 

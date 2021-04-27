@@ -35,5 +35,8 @@ namespace System.IO.Strategies
             e is UnauthorizedAccessException ||
             e is NotSupportedException ||
             (e is ArgumentException && !(e is ArgumentNullException));
+
+        internal static bool IsNonIgnorable(long allocationSize, FileAccess access, FileMode mode)
+            => allocationSize > 0 && (access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append;
     }
 }

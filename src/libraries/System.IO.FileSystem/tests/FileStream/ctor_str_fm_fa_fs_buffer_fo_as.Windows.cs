@@ -24,7 +24,22 @@ namespace System.IO.Tests
             return info.AllocationSize;
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(@"\\?\")]
+        [InlineData(@"\??\")]
+        [InlineData("")]
+        public void ExtendedPathsAreSupported(string prefix)
+        {
+            const long allocationSize = 123;
+
+            string filePath = prefix + Path.GetFullPath(GetPathToNonExistingFile());
+
+            using (var fs = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, allocationSize))
+            {
+                Assert.True(GetActualAllocationSize(fs) >= allocationSize, $"Provided {allocationSize}, actual: {GetActualAllocationSize(fs)}");
+            }
+        }
+
         [ConditionalTheory(nameof(IsFat32))]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
@@ -37,7 +52,6 @@ namespace System.IO.Tests
             Assert.StartsWith(Path.GetTempPath(), filePath); // this is what IsFat32 method relies on
 
             IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, tooMuch));
-            Assert.Contains("file was too large", ex.Message);
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 

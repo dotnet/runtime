@@ -122,7 +122,6 @@ namespace System.IO.Tests
             string filePath = GetPathToNonExistingFile();
 
             IOException ex = Assert.Throws<IOException>(() => new FileStream(filePath, mode, FileAccess.Write, FileShare.None, c_DefaultBufferSize, FileOptions.None, tooMuch));
-            Assert.Contains("disk was full", ex.Message);
             Assert.Contains(filePath, ex.Message);
             Assert.Contains(tooMuch.ToString(), ex.Message);
 

@@ -106,7 +106,7 @@ namespace System.IO.Strategies
             }
 
             // If allocationSize has been provided for a creatable and writeable file
-            if (allocationSize > 0 && (_access & FileAccess.Write) != 0 && mode != FileMode.Open && mode != FileMode.Append)
+            if (FileStreamHelpers.IsNonIgnorable(allocationSize, _access, mode))
             {
                 int fallocateResult = Interop.Sys.PosixFAllocate(_fileHandle, 0, allocationSize);
                 if (fallocateResult != 0)

@@ -993,6 +993,8 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 
 int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
 {
+    assert_msg(offset == 0, "Invalid offset value", (int)offset);
+
     int fileDescriptor = ToFileDescriptor(fd);
     int32_t result;
 #if HAVE_POSIX_FALLOCATE64 // 64-bit Linux
@@ -1040,7 +1042,7 @@ int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
     }
     else
     {
-        // align the behaviour with what posix_fallocate does
+        // align the behaviour with what posix_fallocate does (change reported file size)
         ftruncate(fileDescriptor, length);
     }
 #endif
@@ -1058,7 +1060,6 @@ int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
             return 0;
         case EINVAL:
             // We control the offset and length so they are correct.
-            assert_msg(offset == 0, "Invalid offset value", (int)offset);
             assert_msg(length >= 0, "Invalid length value", (int)length);
             // But if the underlying filesystem does not support the operation, we just ignore it and treat as a hint.
             return 0;
