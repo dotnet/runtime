@@ -200,7 +200,7 @@ namespace System.IO.Strategies
                 if (!completionSource._strategy._fileHandle.IsInvalid &&
                     !Interop.Kernel32.CancelIoEx(completionSource._strategy._fileHandle, completionSource._overlapped))
                 {
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = Marshal.GetLastPInvokeError();
 
                     // ERROR_NOT_FOUND is returned if CancelIoEx cannot find the request to cancel.
                     // This probably means that the IO operation has completed.

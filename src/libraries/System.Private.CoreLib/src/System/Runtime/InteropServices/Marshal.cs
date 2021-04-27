@@ -1173,7 +1173,7 @@ namespace System.Runtime.InteropServices
 
         public static int GetHRForLastWin32Error()
         {
-            int dwLastError = GetLastWin32Error();
+            int dwLastError = GetLastPInvokeError();
             if ((dwLastError & 0x80000000) == 0x80000000)
             {
                 return dwLastError;
@@ -1278,11 +1278,6 @@ namespace System.Runtime.InteropServices
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
             safeHandle.SetHandle(handle);
-        }
-
-        public static int GetLastWin32Error()
-        {
-            return GetLastPInvokeError();
         }
     }
 }
