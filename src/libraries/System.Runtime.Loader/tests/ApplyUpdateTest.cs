@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata
     /// script that applies one or more updates to Foo.dll The ApplyUpdateTest
     /// testusuite runs each test in sequence, loading the corresponding
     /// assembly, applying an update to it and observing the results.
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(ApplyUpdateUtil.NoParallelTests))]
     [ConditionalClass(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
     public class ApplyUpdateTest
     {
@@ -21,18 +21,22 @@ namespace System.Reflection.Metadata
         [Fact]
         void StaticMethodBodyUpdate()
         {
-            var r = ApplyUpdate.Test.MethodBody1.StaticMethod1 ();
-            Assert.Equal ("OLD STRING", r);
+            ApplyUpdateUtil.TestCase(static () => {
+                var assm = typeof (ApplyUpdate.Test.MethodBody1).Assembly;
 
-            ApplyUpdateUtil.ApplyUpdate(typeof (ApplyUpdate.Test.MethodBody1).Assembly);
+                var r = ApplyUpdate.Test.MethodBody1.StaticMethod1();
+                Assert.Equal("OLD STRING", r);
 
-            r = ApplyUpdate.Test.MethodBody1.StaticMethod1 ();
-            Assert.Equal ("NEW STRING", r);
+                ApplyUpdateUtil.ApplyUpdate(assm);
 
-            ApplyUpdateUtil.ApplyUpdate(typeof (ApplyUpdate.Test.MethodBody1).Assembly);
+                r = ApplyUpdate.Test.MethodBody1.StaticMethod1();
+                Assert.Equal("NEW STRING", r);
 
-            r = ApplyUpdate.Test.MethodBody1.StaticMethod1 ();
-            Assert.Equal ("NEWEST STRING", r);
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = ApplyUpdate.Test.MethodBody1.StaticMethod1 ();
+                Assert.Equal ("NEWEST STRING", r);
+            });
         }
         
     }
