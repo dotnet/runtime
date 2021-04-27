@@ -7659,6 +7659,9 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
                 // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
                 // to temp locals over and over.
+                //
+                // Also allow casts on the RHSs of the assignments, and blocks with GT_NOPs.
+                //
                 if (nextNextBlock->bbJumpKind != BBJ_RETURN)
                 {
                     // Make sure the block has a single statement
@@ -7673,9 +7676,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     {
                         assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
                         asgNode = nextNextBlock->firstStmt()->GetRootNode();
-                        assert(asgNode->OperIs(GT_ASG));
-                        assert(lcl == asgNode->gtGetOp2()->AsLclVarCommon()->GetLclNum());
-                        lcl           = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        if (!asgNode->OperIs(GT_NOP))
+                        {
+                            assert(asgNode->OperIs(GT_ASG));
+
+                            GenTree* rhs = asgNode->gtGetOp2();
+                            while (rhs->OperIs(GT_CAST))
+                            {
+                                assert(!rhs->gtOverflow());
+                                rhs = rhs->gtGetOp1();
+                            }
+
+                            assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
+                            lcl = rhs->AsLclVarCommon()->GetLclNum();
+                        }
                         nextNextBlock = nextNextBlock->GetUniqueSucc();
                     }
                 }
