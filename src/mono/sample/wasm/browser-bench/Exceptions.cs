@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Sample
@@ -17,6 +18,7 @@ namespace Sample
                 new TryCatch(),
                 new TryCatchThrow(),
                 new TryCatchFilter(),
+                new TryCatchFilterInline(),
                 //new TryCatchFilterThrow(),
                 //new TryCatchFilterThrowApplies(),
             };
@@ -53,6 +55,7 @@ namespace Sample
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             void DoNothing ()
             {
             }
@@ -72,6 +75,7 @@ namespace Sample
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             void DoThrow()
             {
                 throw new System.Exception("Reached DoThrow and throwed");
@@ -92,6 +96,27 @@ namespace Sample
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void DoNothing()
+            {
+            }
+        }
+
+        class TryCatchFilterInline : ExcMeasurement
+        {
+            public override string Name => "TryCatchFilterInline";
+            public override void RunStep()
+            {
+                try
+                {
+                    DoNothing();
+                }
+                catch (Exception e) when (e.Message == "message")
+                {
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void DoNothing()
             {
             }
@@ -114,6 +139,7 @@ namespace Sample
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             void DoThrow()
             {
                 throw new System.Exception("Reached DoThrow and throwed");
@@ -134,6 +160,7 @@ namespace Sample
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             void DoThrow()
             {
                 throw new System.Exception("Reached DoThrow and throwed");
