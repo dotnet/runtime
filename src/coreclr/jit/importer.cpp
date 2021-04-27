@@ -6522,6 +6522,50 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                         return 1 + sizeof(mdToken);
                                     }
                                 }
+                                else if (boxHelper == CORINFO_HELP_BOX_NULLABLE)
+                                {
+                                    // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
+                                    // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
+                                    // the target type.
+                                    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+                                    impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                                    CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
+                                    CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
+
+                                    TypeCompareState castResult =
+                                        info.compCompHnd->compareTypesForCast(underlyingCls,
+                                                                              isInstResolvedToken.hClass);
+
+                                    if (castResult == TypeCompareState::Must)
+                                    {
+                                        const CORINFO_FIELD_HANDLE hasValueFldHnd =
+                                            info.compCompHnd->getFieldInClass(nullableCls, 0);
+
+                                        assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
+                                        assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
+                                                       "hasValue"));
+
+                                        GenTree* objToBox = impPopStack().val;
+
+                                        // Spill struct to get its address (to access hasValue field)
+                                        objToBox =
+                                            impGetStructAddr(objToBox, nullableCls, (unsigned)CHECK_SPILL_ALL, true);
+
+                                        impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
+                                                       typeInfo(TI_INT));
+
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
+                                        return 1 + sizeof(mdToken);
+                                    }
+                                    else if (castResult == TypeCompareState::MustNot)
+                                    {
+                                        impPopStack();
+                                        impPushOnStack(gtNewIconNode(0), typeInfo(TI_INT));
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
+                                        return 1 + sizeof(mdToken);
+                                    }
+                                }
                             }
                         }
                         break;
