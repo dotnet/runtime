@@ -85,7 +85,9 @@
       <RuntimeFiles
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
-          $(CoreCLRSharedFrameworkPdbDir)*.dbg;
+          $(CoreCLRSharedFrameworkPdbDir)*.dbg" IsNative="true" />
+      <RuntimeFiles Condition="'$(TargetsMobile)' != 'true'"
+        Include="
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
       <RuntimeFiles
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
