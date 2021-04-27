@@ -40,7 +40,6 @@ namespace System.Net.Http
         // 'netstandard' so we need to add these definitions here.
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
-        internal static readonly bool BidirectionalStreamingOSSupport = Environment.OSVersion.Version >= new Version(10, 0, 22357, 0);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
@@ -658,17 +657,18 @@ namespace System.Net.Http
                     if (chunkedMode == WinHttpChunkMode.None)
                     {
                         // Neither 'Content-Length' nor 'Transfer-Encoding: chunked' semantics was given.
-                        // Current .NET Desktop HttpClientHandler uses 'Content-Length' semantics and
-                        // buffers the content as well in some cases.  But the WinHttpHandler can't access
-                        // the protected internal TryComputeLength() method of the content.  So, it
-                        // will use'Transfer-Encoding: chunked' semantics.
 
-                        if (SupportsAutomaticChunking(requestMessage))
+                        if (requestMessage.Version >= HttpVersion20)
                         {
+                            // HTTP/2 supports automatic chunking (streaming the request body without a length).
                             chunkedMode = WinHttpChunkMode.Automatic;
                         }
                         else
                         {
+                            // Current .NET Desktop HttpClientHandler uses 'Content-Length' semantics and
+                            // buffers the content as well in some cases.  But the WinHttpHandler can't access
+                            // the protected internal TryComputeLength() method of the content.  So, it
+                            // will use'Transfer-Encoding: chunked' semantics.
                             chunkedMode = WinHttpChunkMode.Manual;
                             requestMessage.Headers.TransferEncodingChunked = true;
                         }
@@ -682,10 +682,6 @@ namespace System.Net.Http
 
             return chunkedMode;
         }
-
-        private static bool SupportsAutomaticChunking(HttpRequestMessage requestMessage) =>
-            BidirectionalStreamingOSSupport &&
-            requestMessage.Version >= HttpVersion20;
 
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
@@ -907,31 +903,8 @@ namespace System.Net.Http
                     httpVersion = "HTTP/1.1";
                 }
 
-                WinHttpChunkMode chunkedModeForSend = GetChunkedModeForSend(state.RequestMessage);
-
-                // Turn off additional URI reserved character escaping (percent-encoding). This matches
-                // .NET Framework behavior. System.Uri establishes the baseline rules for percent-encoding
-                // of reserved characters.
-                uint flags = Interop.WinHttp.WINHTTP_FLAG_ESCAPE_DISABLE;
-                if (state.RequestMessage.RequestUri.Scheme == UriScheme.Https)
-                {
-                    flags |= Interop.WinHttp.WINHTTP_FLAG_SECURE;
-                }
-                if (chunkedModeForSend == WinHttpChunkMode.Automatic)
-                {
-                    flags |= Interop.WinHttp.WINHTTP_FLAG_AUTOMATIC_CHUNKING;
-                }
-
-                // Create an HTTP request handle.
-                state.RequestHandle = Interop.WinHttp.WinHttpOpenRequest(
-                    connectHandle,
-                    state.RequestMessage.Method.Method,
-                    state.RequestMessage.RequestUri.PathAndQuery,
-                    httpVersion,
-                    Interop.WinHttp.WINHTTP_NO_REFERER,
-                    Interop.WinHttp.WINHTTP_DEFAULT_ACCEPT_TYPES,
-                    flags);
-                ThrowOnInvalidHandle(state.RequestHandle, nameof(Interop.WinHttp.WinHttpOpenRequest));
+                OpenRequestHandle(state, connectHandle, httpVersion, out WinHttpChunkMode chunkedModeForSend, out SafeWinHttpHandle requestHandle);
+                state.RequestHandle = requestHandle;
                 state.RequestHandle.SetParentHandle(connectHandle);
 
                 // Set callback function.
@@ -1055,6 +1028,65 @@ namespace System.Net.Http
                 {
                     state.ClearSendRequestState();
                 }
+            }
+        }
+
+        private void OpenRequestHandle(WinHttpRequestState state, SafeWinHttpHandle connectHandle, string httpVersion, out WinHttpChunkMode chunkedModeForSend, out SafeWinHttpHandle requestHandle)
+        {
+            chunkedModeForSend = GetChunkedModeForSend(state.RequestMessage);
+
+            // Create an HTTP request handle.
+            requestHandle = Interop.WinHttp.WinHttpOpenRequest(
+                connectHandle,
+                state.RequestMessage.Method.Method,
+                state.RequestMessage.RequestUri.PathAndQuery,
+                httpVersion,
+                Interop.WinHttp.WINHTTP_NO_REFERER,
+                Interop.WinHttp.WINHTTP_DEFAULT_ACCEPT_TYPES,
+                GetRequestFlags(state, chunkedModeForSend));
+
+            if (requestHandle.IsInvalid)
+            {
+                int lastError = Marshal.GetLastWin32Error();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
+                if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
+                {
+                    ThrowOnInvalidHandle(requestHandle, nameof(Interop.WinHttp.WinHttpOpenRequest));
+                }
+
+                // Platform doesn't support WINHTTP_FLAG_AUTOMATIC_CHUNKING. Revert to manual chunking.
+                // Note that WinHttp downgrades HTTP/2 requests to HTTP/1.1 with manual chunking.
+                chunkedModeForSend = WinHttpChunkMode.Manual;
+                state.RequestMessage.Headers.TransferEncodingChunked = true;
+
+                requestHandle = Interop.WinHttp.WinHttpOpenRequest(
+                    connectHandle,
+                    state.RequestMessage.Method.Method,
+                    state.RequestMessage.RequestUri.PathAndQuery,
+                    httpVersion,
+                    Interop.WinHttp.WINHTTP_NO_REFERER,
+                    Interop.WinHttp.WINHTTP_DEFAULT_ACCEPT_TYPES,
+                    GetRequestFlags(state, chunkedModeForSend));
+
+                ThrowOnInvalidHandle(requestHandle, nameof(Interop.WinHttp.WinHttpOpenRequest));
+            }
+
+            static uint GetRequestFlags(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
+            {
+                // Turn off additional URI reserved character escaping (percent-encoding). This matches
+                // .NET Framework behavior. System.Uri establishes the baseline rules for percent-encoding
+                // of reserved characters.
+                uint flags = Interop.WinHttp.WINHTTP_FLAG_ESCAPE_DISABLE;
+                if (state.RequestMessage.RequestUri.Scheme == UriScheme.Https)
+                {
+                    flags |= Interop.WinHttp.WINHTTP_FLAG_SECURE;
+                }
+                if (chunkedModeForSend == WinHttpChunkMode.Automatic)
+                {
+                    flags |= Interop.WinHttp.WINHTTP_FLAG_AUTOMATIC_CHUNKING;
+                }
+
+                return flags;
             }
         }
 
