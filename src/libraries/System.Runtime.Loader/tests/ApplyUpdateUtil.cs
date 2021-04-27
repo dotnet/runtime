@@ -40,7 +40,9 @@ namespace System.Reflection.Metadata
         {
 #if FEATURE_MONO_APPLY_UPDATE
             // crude check for interp mode
-            return System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported && !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled;
+	    // TODO: invoke API from https://github.com/dotnet/runtime/issues/50111 to check if mono is built with hot reload support.
+            // return System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported && !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled;
+	    return false;
 #else
             return false;
 #endif
