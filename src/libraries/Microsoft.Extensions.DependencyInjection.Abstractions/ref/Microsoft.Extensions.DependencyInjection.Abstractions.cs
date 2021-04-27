@@ -19,11 +19,11 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ActivatorUtilitiesConstructorAttribute() { }
     }
-    public readonly struct AsyncServiceScope : Microsoft.Extensions.DependencyInjection.IServiceScope, System.IAsyncDisposable
+    public readonly partial struct AsyncServiceScope : Microsoft.Extensions.DependencyInjection.IServiceScope, System.IAsyncDisposable, System.IDisposable
     {
-        public AsyncServiceScope(Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
-        {
-        }
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public AsyncServiceScope(Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope) { throw null; }
         public System.IServiceProvider ServiceProvider { get { throw null; } }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
