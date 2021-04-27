@@ -34,22 +34,13 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
 
         [ConditionalFact(nameof(TestsEnabled))]
-        public Task WriteRequestAfterReadResponse_SendLength() =>
-            WriteRequestAfterReadResponseCore(sendLength: true);
-
-        [ConditionalFact(nameof(TestsEnabled))]
-        public Task WriteRequestAfterReadResponse_NoLength() =>
-            WriteRequestAfterReadResponseCore(sendLength: false);
-
-        private async Task WriteRequestAfterReadResponseCore(bool sendLength)
+        public async Task WriteRequestAfterReadResponse()
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
-                int? length = sendLength ? 100 : (int?)null;
-
                 HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, server.Address);
                 message.Version = new Version(2, 0);
                 message.Content = new StreamingContent(async s =>
@@ -59,7 +50,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     await tcs.Task;
 
                     await s.WriteAsync(new byte[50]);
-                }, length);
+                }, length: null);
 
                 Task<HttpResponseMessage> sendTask = client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
 
