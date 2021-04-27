@@ -62,4 +62,13 @@
       <method signature="System.Void Initialize()" />
     </type>
   </assembly>
+
+  <!-- methods used by hot reload.
+       TODO: once there's a feature flag, add it to the linker descriptor
+  -->
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Reflection.Metadata.AssemblyExtensions">
+      <method name="GetApplyUpdateCapabilities" />
+    </type>
+  </assembly>
 </linker>
