@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Functional.Tests.Socks
+namespace System.Net.Http.Functional.Tests
 {
     /// <summary>
     /// Provides a test-only SOCKS4/5 proxy.
