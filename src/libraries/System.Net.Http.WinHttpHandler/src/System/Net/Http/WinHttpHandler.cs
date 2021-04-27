@@ -1045,6 +1045,8 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_DEFAULT_ACCEPT_TYPES,
                 GetRequestFlags(state, chunkedModeForSend));
 
+            // It is possible the request was made with the WINHTTP_FLAG_AUTOMATIC_CHUNKING flag
+            // and the platform doesn't support that flag.
             if (requestHandle.IsInvalid)
             {
                 int lastError = Marshal.GetLastWin32Error();
@@ -1055,7 +1057,7 @@ namespace System.Net.Http
                 }
 
                 // Platform doesn't support WINHTTP_FLAG_AUTOMATIC_CHUNKING. Revert to manual chunking.
-                // Note that WinHttp downgrades HTTP/2 requests to HTTP/1.1 with manual chunking.
+                // Note that manual chunking with WinHttp downgrades HTTP/2 requests to HTTP/1.1.
                 chunkedModeForSend = WinHttpChunkMode.Manual;
                 state.RequestMessage.Headers.TransferEncodingChunked = true;
 

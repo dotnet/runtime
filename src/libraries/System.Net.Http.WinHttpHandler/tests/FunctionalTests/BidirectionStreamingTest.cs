@@ -67,7 +67,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
                 int streamId = await connection.ReadRequestHeaderAsync(expectEndOfStream: false);
 
-                var frame = await connection.ReadDataFrameAsync();
+                Frame frame = await connection.ReadDataFrameAsync();
 
                 // Response header.
                 await connection.SendDefaultResponseHeadersAsync(streamId);
@@ -81,7 +81,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 using Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 // Read response data.
-                var buffer = new byte[1024];
+                byte[] buffer = new byte[1024];
                 int readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
                 Assert.Equal(DataBytes.Length, readCount);
 
@@ -129,7 +129,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
                 int streamId = await connection.ReadRequestHeaderAsync(expectEndOfStream: false);
 
-                var frame = await connection.ReadDataFrameAsync();
+                Frame frame = await connection.ReadDataFrameAsync();
 
                 // Response header.
                 await connection.SendDefaultResponseHeadersAsync(streamId);
@@ -140,11 +140,11 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                var responseStream = await response.Content.ReadAsStreamAsync();
+                Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 // Read response data.
-                var buffer = new byte[1024];
-                var readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
+                byte[] buffer = new byte[1024];
+                int readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
                 Assert.Equal(DataBytes.Length, readCount);
 
                 // Server sends RST_STREAM.
@@ -181,7 +181,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
                 int streamId = await connection.ReadRequestHeaderAsync(expectEndOfStream: false);
 
-                var frame = await connection.ReadDataFrameAsync();
+                Frame frame = await connection.ReadDataFrameAsync();
 
                 // Response header.
                 await connection.SendDefaultResponseHeadersAsync(streamId);
@@ -192,11 +192,11 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                var responseStream = await response.Content.ReadAsStreamAsync();
+                Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 // Read response data.
-                var buffer = new byte[1024];
-                var readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
+                byte[] buffer = new byte[1024];
+                int readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
                 Assert.Equal(DataBytes.Length, readCount);
 
                 // Server sends RST_STREAM.
@@ -233,7 +233,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
                 int streamId = await connection.ReadRequestHeaderAsync(expectEndOfStream: false);
 
-                var frame = await connection.ReadDataFrameAsync();
+                Frame frame = await connection.ReadDataFrameAsync();
 
                 // Response header.
                 await connection.SendDefaultResponseHeadersAsync(streamId);
@@ -244,11 +244,11 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                var responseStream = await response.Content.ReadAsStreamAsync();
+                Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 // Read response data.
-                var buffer = new byte[1024];
-                var readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
+                byte[] buffer = new byte[1024];
+                int readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
                 Assert.Equal(DataBytes.Length, readCount);
 
                 // Client sends DATA with END_STREAM
@@ -290,21 +290,21 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     await completeStreamTcs.Task;
                 });
 
-                var serverActions = RunServer();
+                Task serverActions = RunServer();
 
                 HttpResponseMessage response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 await serverActions;
 
-                var requestStream = await requestStreamTcs.Task;
-                var responseStream = await response.Content.ReadAsStreamAsync();
+                Stream requestStream = await requestStreamTcs.Task;
+                Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 // Successfully because endstream hasn't been read yet.
                 await requestStream.WriteAsync(new byte[50]);
 
-                var buffer = new byte[50];
-                var readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
+                byte[] buffer = new byte[50];
+                int readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
                 Assert.Equal(DataBytes.Length, readCount);
 
                 readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
