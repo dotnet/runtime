@@ -102,8 +102,6 @@
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
         <IsNative>true</IsNative>
       </CoreCLRCrossTargetFiles>
-      <RuntimeIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
-        Include="$(CoreCLRArtifactsPath)\..\..\..\..\src\coreclr\hosts\inc\**\*.*" />
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" />
@@ -113,7 +111,7 @@
 
       <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\cross\**\*.*" />
-      <RuntimeIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 

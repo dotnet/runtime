@@ -67,8 +67,6 @@
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeIncludeFiles)"
-                               DestinationSubDirectory="include/%(RecursiveDir)" />
     </ItemGroup>
     <ItemGroup Condition="'$(SwapNativeForIL)' == 'true'">
       <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)\IL\*.*" />
@@ -88,7 +86,7 @@
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
                                DestinationSubDirectory="cross/%(RecursiveDir)" />
-      <ReferenceCopyLocalPaths Include="@(RuntimeIncludeFiles)"
+      <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
                                DestinationSubDirectory="include/%(RecursiveDir)" />
     </ItemGroup>
   </Target>

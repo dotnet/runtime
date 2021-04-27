@@ -7,3 +7,4 @@ else(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_subdirectory(corerun)
+add_subdirectory(inc)
