@@ -271,7 +271,8 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.LoadFromResolveHandler' will return a null assembly for assemblies embedded in a single-file app")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "requestingAssembly contains a path to the assembly location outside of the single file application")]
         private static Assembly? LoadFromResolveHandler(object? sender, ResolveEventArgs args)
         {
             Assembly? requestingAssembly = args.RequestingAssembly;

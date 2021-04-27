@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContext
     {
-        private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
+        private static bool _isDefaultContextInitialized;
+
+        private static DependencyContext _defaultContext;
 
         public DependencyContext(TargetInfo target,
             CompilationOptions compilationOptions,
@@ -47,7 +49,19 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeGraph = runtimeGraph.ToArray();
         }
 
-        public static DependencyContext Default => _defaultContext.Value;
+        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        public static DependencyContext Default
+        {
+            get
+            {
+                if (_isDefaultContextInitialized == false) {
+                    _defaultContext = LoadDefault();
+                    _isDefaultContextInitialized = true;
+                }
+                return _defaultContext;
+            }
+        }
+
 
         public TargetInfo Target { get; }
 
@@ -75,7 +89,7 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-        [RequiresAssemblyFiles(Message = "The use of DependencyContextLoader is not supported when publishing as single-file")]
+        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
@@ -87,7 +101,7 @@ namespace Microsoft.Extensions.DependencyModel
             return Load(entryAssembly);
         }
 
-        [RequiresAssemblyFiles(Message = "The use of DependencyContextLoader is not supported when publishing as single-file")]
+        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static DependencyContext Load(Assembly assembly)
         {
             return DependencyContextLoader.Default.Load(assembly);
