@@ -80,7 +80,7 @@ namespace System.Net.Http
         private const int InitialConnectionBufferSize = 4096;
 #endif
 
-        private const int DefaultInitialWindowSize = 8 * 1024 * 1024;
+        private const int DefaultInitialWindowSize = 65535;
         private const int WindowUpdateRatio = 8;
 
         // We don't really care about limiting control flow at the connection level.
