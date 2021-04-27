@@ -383,6 +383,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void WriteISetTOfISetT()
         {
             ISet<ISet<int>> input = new HashSet<ISet<int>>
@@ -431,6 +432,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void WriteISetTOfHashSetT()
         {
             ISet<HashSet<int>> input = new HashSet<HashSet<int>>
@@ -694,6 +696,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void WriteArrayOfHashSetT()
         {
             HashSet<int>[] input = new HashSet<int>[2];
