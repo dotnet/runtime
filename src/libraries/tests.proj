@@ -251,6 +251,12 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51676 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51960 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51961 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
