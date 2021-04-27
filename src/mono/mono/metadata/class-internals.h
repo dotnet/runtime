@@ -1288,7 +1288,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error);
 MonoClass *
 mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
 MonoClass *
@@ -1430,7 +1430,7 @@ mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);
 GSList*
 mono_class_get_dim_conflicts (MonoClass *klass);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
 gboolean

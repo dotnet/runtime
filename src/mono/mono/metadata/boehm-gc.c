@@ -289,6 +289,12 @@ mono_gc_collection_count (int generation)
 	return GC_get_gc_no ();
 }
 
+int64_t
+mono_gc_get_generation_size (int generation)
+{
+	return 0;
+}
+
 void
 mono_stop_world (MonoThreadInfoFlags flags)
 {
@@ -1637,17 +1643,30 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 }
 
 void
-mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
-						  gint64* memory_load_bytes,
-						  gint64* total_available_memory_bytes,
-						  gint64* heap_size_bytes,
-						  gint64* fragmented_bytes)
+mono_gc_get_gcmemoryinfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
 	*high_memory_load_threshold_bytes = 0;
 	*memory_load_bytes = 0;
 	*total_available_memory_bytes = 0;
+	*total_committed_bytes = 0;
 	*heap_size_bytes = 0;
 	*fragmented_bytes = 0;
+}
+
+void mono_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
+{
+	*time_last_gc_100ns = 0;
+	*time_since_last_gc_100ns = 0;
+	*time_max_gc_100ns = 0;
 }
 
 #else

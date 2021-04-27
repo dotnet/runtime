@@ -130,7 +130,14 @@ namespace ILCompiler.IBC
                                     fixed (byte* pb = &paramSignatureEntry.Signature[0])
                                     {
                                         BlobReader br = new BlobReader(pb, paramSignatureEntry.Signature.Length);
-                                        associatedMethod = GetSigMethodInstantiationFromIBCMethodSpec(ibcModule, br);
+                                        try
+                                        {
+                                            associatedMethod = GetSigMethodInstantiationFromIBCMethodSpec(ibcModule, br);
+                                        }
+                                        catch
+                                        {
+                                            associatedMethod = null;
+                                        }
                                     }
                                 }
                             }

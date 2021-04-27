@@ -9,7 +9,7 @@
     <IsGeneratorProject Condition="'$(_projectDirName)' == 'gen'">true</IsGeneratorProject>
 
     <!-- Set OutDirName to change BaseOutputPath and BaseIntermediateOutputPath to include the ref subfolder. -->
-    <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$(_sepChar)ref</OutDirName>
+    <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref</OutDirName>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
