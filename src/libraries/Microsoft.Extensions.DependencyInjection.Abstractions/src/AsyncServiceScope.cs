@@ -40,6 +40,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 return ad.DisposeAsync();
             }
             _serviceScope.Dispose();
+
+            // ValueTask.CompletedTask is only available in net5.0 and later.
             return default;
         }
     }
