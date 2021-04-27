@@ -88,11 +88,11 @@ jobs:
       - name: runtimeFlavorArgs
         value: '-excludemonofailures'
 
-    - name: runtimeRuntimeVariantArg
+    - name: runtimeVariantArg
       value: ''
 
     - ${{ if not(eq(parameters.runtimeVariant, '')) }}:
-      - name: runtimeRuntimeVariantArg
+      - name: runtimeVariantArg
         value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
 
     - name: crossgenArg
