@@ -1439,7 +1439,15 @@ namespace System.Net.Http
             stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
 
             Http2Connection http2Connection = new Http2Connection(this, stream);
-            await http2Connection.SetupAsync().ConfigureAwait(false);
+            try
+            {
+                await http2Connection.SetupAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                // Note, SetupAsync will dispose the connection if there is an exception.
+                throw new HttpRequestException(SR.net_http_client_execution_error, e);
+            }
 
             AddHttp2Connection(http2Connection);
 
