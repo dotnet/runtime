@@ -18,27 +18,19 @@ using Microsoft.Build.Utilities;
 
 public class WasmAppBuilder : Task
 {
-#if NETCOREAPP
     [NotNull]
-#endif
     [Required]
     public string? AppDir { get; set; }
 
-#if NETCOREAPP
     [NotNull]
-#endif
     [Required]
     public string? MainJS { get; set; }
 
-#if NETCOREAPP
     [NotNull]
-#endif
     [Required]
     public string[]? Assemblies { get; set; }
 
-#if NETCOREAPP
     [NotNull]
-#endif
     [Required]
     public ITaskItem[]? NativeAssets { get; set; }
 
@@ -167,7 +159,7 @@ public class WasmAppBuilder : Task
             }
         }
 
-        foreach (ITaskItem item in NativeAssets!)
+        foreach (ITaskItem item in NativeAssets)
         {
             string dest = Path.Combine(AppDir!, Path.GetFileName(item.ItemSpec));
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
@@ -294,7 +286,7 @@ public class WasmAppBuilder : Task
         // Try parsing as a quoted string
         if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![rawValue!.Length - 1] == '"')
         {
-            valueObject = rawValue!.Substring(1, rawValue!.Length -2);
+            valueObject = rawValue!.Substring(1, rawValue!.Length - 2);
             return true;
         }
 

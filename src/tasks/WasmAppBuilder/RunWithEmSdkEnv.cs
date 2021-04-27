@@ -11,9 +11,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 {
     public class RunWithEmSdkEnv : Exec
     {
-#if NETCOREAPP
         [NotNull]
-#endif
         [Required]
         public string? EmSdkPath { get; set; }
 

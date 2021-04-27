@@ -42,9 +42,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Directory where the AOT'ed files will be emitted
     /// </summary>
-#if NETCOREAPP
     [NotNull]
-#endif
     [Required]
     public string? OutputDir { get; set; }
 
@@ -278,7 +276,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.Add("--llvm");
 
             if (!string.IsNullOrEmpty(LLVMDebug))
-                aotArgs.Add(LLVMDebug!);
+                aotArgs.Add(LLVMDebug);
 
             aotArgs.Add($"llvm-path={LLVMPath}");
         }
