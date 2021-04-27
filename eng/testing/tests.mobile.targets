@@ -11,6 +11,8 @@
     <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">mono</RuntimeFlavor>
+    <HeadersPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</HeadersPath>
+    <HeadersPath Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(RuntimeArtifactsPath)' != ''">$(CoreCLRArtifactsPath)inc</HeadersPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
@@ -191,7 +193,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
-        RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include"
+        RuntimeHeaders="$(HeadersPath)"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"
