@@ -1443,10 +1443,10 @@ namespace System.Net.Http
             {
                 await http2Connection.SetupAsync().ConfigureAwait(false);
             }
-            catch
+            catch (Exception e)
             {
-                http2Connection.Dispose();
-                throw;
+                // Note, SetupAsync will dispose the connection if there is an exception.
+                throw new HttpRequestException(SR.net_http_client_execution_error, e);
             }
 
             AddHttp2Connection(http2Connection);
