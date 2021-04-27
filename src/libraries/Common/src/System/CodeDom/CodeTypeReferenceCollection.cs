@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization
 #if !FEATURE_SERIALIZATION
     public class CodeTypeReferenceCollection : CollectionBase
 #else
-    internal class CodeTypeReferenceCollection : CollectionBase
+    internal sealed class CodeTypeReferenceCollection : CollectionBase
 #endif
     {
         public CodeTypeReferenceCollection() { }
@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference this[int index]
         {
-            get { return ((CodeTypeReference)(List[index])); }
+            get { return ((CodeTypeReference)(List[index]!)); }
             set { List[index] = value; }
         }
 

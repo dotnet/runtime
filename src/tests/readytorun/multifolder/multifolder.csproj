@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
+    <GCStressIncompatible>true</GCStressIncompatible> <!-- https://github.com/dotnet/runtime/issues/39933 -->
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
 
@@ -58,7 +59,7 @@ $(CLRTestBatchPreCommands)
     dir %scriptPath%
     dir %scriptPath%\multifolder
 
-    set ExePath=%scriptPath%\multifolder\multifolder.dll
+    set ExePath=multifolder\multifolder.dll
     set COMPlus_NativeImageSearchPaths=%scriptPath%
 
 ]]></CLRTestBatchPreCommands>
@@ -96,7 +97,7 @@ $(BashCLRTestPreCommands)
     echo Running crossgen2: $__Command
     $__Command
 
-    ExePath=$__OutputDir/multifolder/multifolder.dll
+    ExePath=multifolder/multifolder.dll
     export COMPlus_NativeImageSearchPaths=$__OutputDir
 
 ]]></BashCLRTestPreCommands>

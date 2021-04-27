@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices
     /// of the unmanaged function. However, avoiding this transition removes some of the guarantees the runtime
     /// provides through a normal P/Invoke. When exiting the managed runtime to enter an unmanaged function the
     /// GC must transition from Cooperative mode into Preemptive mode. Full details on these modes can be found at
-    /// https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/clr-code-guide.md#2.1.8.
+    /// https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/clr-code-guide.md#2.1.8.
     /// Suppressing the GC transition is an advanced scenario and should not be done without fully understanding
     /// potential consequences.
     ///
@@ -41,6 +41,9 @@ namespace System.Runtime.InteropServices
     /// has been marked with this attribute. A workaround is to switch to native debugging and set a breakpoint in the native function.
     /// In general, usage of this attribute is not recommended if debugging the P/Invoke is important, for example
     /// stepping through the native code or diagnosing an exception thrown from the native code.
+    ///
+    /// The runtime may load the native library for method marked with this attribute in advance before the method is called for the first time.
+    /// Usage of this attribute is not recommended for platform neutral libraries with conditional platform specific code.
     ///
     /// The P/Invoke method that this attribute is applied to must have all of the following properties:
     ///   * Native function always executes for a trivial amount of time (less than 1 microsecond).
@@ -55,7 +58,12 @@ namespace System.Runtime.InteropServices
     ///   * Data corruption.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class SuppressGCTransitionAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class SuppressGCTransitionAttribute : Attribute
     {
         public SuppressGCTransitionAttribute()
         {

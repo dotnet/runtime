@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySiteLinkBridge this[int index]
         {
-            get => (ActiveDirectorySiteLinkBridge)InnerList[index];
+            get => (ActiveDirectorySiteLinkBridge)InnerList[index]!;
         }
 
         public bool Contains(ActiveDirectorySiteLinkBridge bridge)
@@ -19,12 +19,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (bridge == null)
                 throw new ArgumentNullException(nameof(bridge));
 
-            string dn = (string)PropertyManager.GetPropertyValue(bridge.context, bridge.cachedEntry, PropertyManager.DistinguishedName);
+            string? dn = (string?)PropertyManager.GetPropertyValue(bridge.context, bridge.cachedEntry!, PropertyManager.DistinguishedName);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLinkBridge tmp = (ActiveDirectorySiteLinkBridge)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLinkBridge tmp = (ActiveDirectorySiteLinkBridge)InnerList[i]!;
+                string? tmpDn = (string?)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry!, PropertyManager.DistinguishedName);
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
@@ -39,12 +39,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (bridge == null)
                 throw new ArgumentNullException(nameof(bridge));
 
-            string dn = (string)PropertyManager.GetPropertyValue(bridge.context, bridge.cachedEntry, PropertyManager.DistinguishedName);
+            string? dn = (string?)PropertyManager.GetPropertyValue(bridge.context, bridge.cachedEntry!, PropertyManager.DistinguishedName);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLinkBridge tmp = (ActiveDirectorySiteLinkBridge)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLinkBridge tmp = (ActiveDirectorySiteLinkBridge)InnerList[i]!;
+                string? tmpDn = (string?)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry!, PropertyManager.DistinguishedName);
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {

@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
     ///
     /// On any normal event log the event with activityTracker.CurrentActivityId
     /// </summary>
-    internal class ActivityTracker
+    internal sealed class ActivityTracker
     {
         /// <summary>
         /// Called on work item begins.  The activity name = providerName + activityName without 'Start' suffix.
@@ -227,10 +227,8 @@ namespace System.Diagnostics.Tracing
                 }
                 catch (NotImplementedException)
                 {
-#if (!ES_BUILD_PCL)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
-#endif
                 }
             }
         }
@@ -302,7 +300,7 @@ namespace System.Diagnostics.Tracing
         /// the 'list of live parents' which indicate of those ancestors, which are alive (if they
         /// are not marked dead they are alive).
         /// </summary>
-        private class ActivityInfo
+        private sealed class ActivityInfo
         {
             public ActivityInfo(string name, long uniqueId, ActivityInfo? creator, Guid activityIDToRestore, EventActivityOptions options)
             {
@@ -511,7 +509,7 @@ namespace System.Diagnostics.Tracing
                 uint* sumPtr = (uint*)outPtr;
                 // We set the last DWORD the sum of the first 3 DWORDS in the GUID.   This
                 // This last number is a random number (it identifies us as us)  the process ID to make it unique per process.
-                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ EventSource.s_currentPid;
+                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ (uint)Environment.ProcessId;
 
                 return (int)(ptr - ((byte*)outPtr));
             }
@@ -620,9 +618,9 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     ///
     [EventSource(Name = "Microsoft.Tasks.Nuget")]
-    internal class TplEventSource : EventSource
+    internal sealed class TplEventSource : EventSource
     {
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
             public const EventKeywords Debug = (EventKeywords)0x20000;
@@ -636,27 +634,4 @@ namespace System.Diagnostics.Tracing
         public void SetActivityId(Guid Id) { WriteEvent(3, Id); }
     }
 #endif
-
-#if ES_BUILD_AGAINST_DOTNET_V35 || ES_BUILD_PCL || NO_ASYNC_LOCAL
-    // In these cases we don't have any Async local support.   Do nothing.
-    internal sealed class AsyncLocalValueChangedArgs<T>
-    {
-        public T PreviousValue { get { return default(T); } }
-        public T CurrentValue { get { return default(T); } }
-
-    }
-
-    internal sealed class AsyncLocal<T>
-    {
-        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) {
-            throw new NotImplementedException("AsyncLocal only available on V4.6 and above");
-        }
-        public T Value
-        {
-            get { return default(T); }
-            set { }
-        }
-    }
-#endif
-
 }

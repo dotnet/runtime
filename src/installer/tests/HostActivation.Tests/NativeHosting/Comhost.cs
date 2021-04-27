@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build.Framework;
-using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel.ComHost;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
@@ -117,6 +120,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void LoadTypeLibraries()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // COM activation is only supported on Windows
+                return;
+            }
+
+            using (var fixture = sharedState.ComLibraryFixture.Copy())
+            {
+                var comHost = Path.Combine(
+                    fixture.TestProject.BuiltApp.Location,
+                    $"{ fixture.TestProject.AssemblyName }.comhost.dll");
+
+                string[] args = {
+                    "comhost",
+                    "typelib",
+                    "2",
+                    comHost,
+                    sharedState.ClsidString
+                };
+                CommandResult result = sharedState.CreateNativeHostCommand(args, fixture.BuiltDotnet.BinPath)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("Loading default type library succeeded.")
+                    .And.HaveStdOutContaining("Loading type library 1 succeeded.")
+                    .And.HaveStdOutContaining("Loading type library 2 succeeded.");
+            }
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string ComHostPath { get; }
@@ -133,29 +168,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
 
                 ComLibraryFixture = new TestProjectFixture("ComLibrary", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
-                // [TODO] BEGIN - Remove once using .NET Core 3.0 to build tests
+                // Create a .clsidmap from the assembly
+                string clsidMapPath = Path.Combine(BaseDirectory, $"{ ComLibraryFixture.TestProject.AssemblyName }.clsidmap");
+                using (var assemblyStream = new FileStream(ComLibraryFixture.TestProject.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
+                using (var peReader = new System.Reflection.PortableExecutable.PEReader(assemblyStream))
+                {
+                    if (peReader.HasMetadata)
+                    {
+                        MetadataReader reader = peReader.GetMetadataReader();
+                        ClsidMap.Create(reader, clsidMapPath);
+                    }
+                }
+
+                // Use the locally built comhost to create a comhost with the embedded .clsidmap
                 ComHostPath = Path.Combine(
                     ComLibraryFixture.TestProject.BuiltApp.Location,
                     $"{ ComLibraryFixture.TestProject.AssemblyName }.comhost.dll");
 
-                File.Copy(Path.Combine(RepoDirectories.CorehostPackages, "comhost.dll"), ComHostPath);
-
-                RuntimeConfig.FromFile(ComLibraryFixture.TestProject.RuntimeConfigJson)
-                    .WithFramework(new RuntimeConfig.Framework("Microsoft.NETCore.App", RepoDirectories.MicrosoftNETCoreAppVersion))
-                    .Save();
-
-                JObject clsidMap = new JObject()
+                // Include the test type libraries in the ComHost tests.
+                var typeLibraries = new Dictionary<int, string>
                 {
-                    {
-                        ClsidString,
-                        new JObject() { {"assembly", "ComLibrary" }, {"type", "ComLibrary.Server" } }
-                    }
+                    { 1, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Server.tlb") },
+                    { 2, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Nested.tlb") }
                 };
-                File.WriteAllText($"{ ComHostPath }.clsidmap", clsidMap.ToString());
-                // [TODO] END - Remove once using .NET Core 3.0 to build tests
+
+                ComHost.Create(
+                    Path.Combine(RepoDirectories.HostArtifacts, "comhost.dll"),
+                    ComHostPath,
+                    clsidMapPath,
+                    typeLibraries);
             }
 
             protected override void Dispose(bool disposing)

@@ -29,6 +29,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class PKCS1MaskGenerationMethodTest
     {
         [Fact]

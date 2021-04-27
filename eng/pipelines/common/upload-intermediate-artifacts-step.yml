@@ -1,0 +1,20 @@
+parameters:
+  name: ''
+
+steps:
+- task: CopyFiles@2
+  displayName: Prepare job-specific intermediate artifacts subdirectory
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
+    Contents: |
+      Shipping/**/*
+      NonShipping/**/*
+    TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
+    CleanTargetFolder: true
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish intermediate artifacts
+  inputs:
+    pathToPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
+    artifactName: IntermediateArtifacts
+    artifactType: container

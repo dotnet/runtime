@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
+    internal sealed class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
     {
         internal static readonly MethodInfo InvokeFactoryMethodInfo = GetMethodInfo<Action<Func<IServiceProvider, object>, IServiceProvider>>((a, b) => a.Invoke(b));
         internal static readonly MethodInfo CaptureDisposableMethodInfo = GetMethodInfo<Func<ServiceProviderEngineScope, object, object>>((a, b) => a.CaptureDisposable(b));
@@ -21,14 +21,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal static readonly MethodInfo MonitorEnterMethodInfo = GetMethodInfo<Action<object, bool>>((lockObj, lockTaken) => Monitor.Enter(lockObj, ref lockTaken));
         internal static readonly MethodInfo MonitorExitMethodInfo = GetMethodInfo<Action<object>>(lockObj => Monitor.Exit(lockObj));
 
-        internal static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
+        private static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
 
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));
 
         private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(IDictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
+        private static readonly ParameterExpression Sync = Expression.Variable(typeof(object), ScopeParameter.Name + "sync");
         private static readonly BinaryExpression ResolvedServicesVariableAssignment =
             Expression.Assign(ResolvedServices,
-                Expression.Property(ScopeParameter, nameof(ServiceProviderEngineScope.ResolvedServices)));
+                Expression.Property(
+                    ScopeParameter,
+                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)));
+
+        private static readonly BinaryExpression SyncVariableAssignment =
+            Expression.Assign(Sync,
+                Expression.Property(
+                    ScopeParameter,
+                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic)));
 
         private static readonly ParameterExpression CaptureDisposableParameter = Expression.Parameter(typeof(object));
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
@@ -71,7 +80,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
-#if NETCOREAPP
+#if NETSTANDARD2_1
                 return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
 #else
                 return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, key => _buildTypeDelegate(key, callSite));
@@ -94,13 +103,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
                     Expression.Block(
-                        new[] { ResolvedServices },
+                        new[] { ResolvedServices, Sync },
                         ResolvedServicesVariableAssignment,
+                        SyncVariableAssignment,
                         BuildScopedExpression(callSite)),
                     ScopeParameter);
             }
 
-            return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(VisitCallSite(callSite, null), ScopeParameter);
+            return Expression.Lambda<Func<ServiceProviderEngineScope, object>>(
+                Convert(VisitCallSite(callSite, null), typeof(object), forceValueTypeConversion: true),
+                ScopeParameter);
         }
 
         protected override Expression VisitRootCache(ServiceCallSite singletonCallSite, object context)
@@ -132,8 +144,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (callSite.ServiceCallSites.Length == 0)
             {
-                return Expression.Constant(ArrayEmptyMethodInfo
-                    .MakeGenericMethod(callSite.ItemType)
+                return Expression.Constant(
+                    GetArrayEmptyMethodInfo(callSite.ItemType)
                     .Invoke(obj: null, parameters: Array.Empty<object>()));
             }
 
@@ -153,6 +165,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ScopeParameter,
                 VisitCallSiteMain(callSite, context));
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "Calling Array.Empty<T>() is safe since the T doesn't have trimming annotations.")]
+        internal static MethodInfo GetArrayEmptyMethodInfo(Type itemType) =>
+            ArrayEmptyMethodInfo.MakeGenericMethod(itemType);
 
         private Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
         {
@@ -183,10 +200,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return Expression.New(callSite.ConstructorInfo, parameterExpressions);
         }
 
-        private static Expression Convert(Expression expression, Type type)
+        private static Expression Convert(Expression expression, Type type, bool forceValueTypeConversion = false)
         {
             // Don't convert if the expression is already assignable
-            if (type.GetTypeInfo().IsAssignableFrom(expression.Type.GetTypeInfo()))
+            if (type.IsAssignableFrom(expression.Type)
+                && (!expression.Type.IsValueType || !forceValueTypeConversion))
             {
                 return expression;
             }
@@ -203,7 +221,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // Move off the main stack
         private Expression BuildScopedExpression(ServiceCallSite callSite)
         {
-
             ConstantExpression keyExpression = Expression.Constant(
                 callSite.Cache.Key,
                 typeof(ServiceCacheKey));
@@ -247,9 +264,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // The C# compiler would copy the lock object to guard against mutation.
             // We don't, since we know the lock object is readonly.
             ParameterExpression lockWasTaken = Expression.Variable(typeof(bool), "lockWasTaken");
+            ParameterExpression sync = Sync;
 
-            MethodCallExpression monitorEnter = Expression.Call(MonitorEnterMethodInfo, resolvedServices, lockWasTaken);
-            MethodCallExpression monitorExit = Expression.Call(MonitorExitMethodInfo, resolvedServices);
+            MethodCallExpression monitorEnter = Expression.Call(MonitorEnterMethodInfo, sync, lockWasTaken);
+            MethodCallExpression monitorExit = Expression.Call(MonitorExitMethodInfo, sync);
 
             BlockExpression tryBody = Expression.Block(monitorEnter, blockExpression);
             ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
@@ -270,7 +288,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (scope != ScopeParameter)
             {
-                throw new NotSupportedException("GetCaptureDisposable call is supported only for main scope");
+                throw new NotSupportedException(SR.GetCaptureDisposableNotSupported);
             }
             return CaptureDisposable;
         }

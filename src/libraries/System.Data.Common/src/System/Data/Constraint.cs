@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data
@@ -15,9 +16,9 @@ namespace System.Data
     {
         private string _schemaName = string.Empty;
         private bool _inCollection;
-        private DataSet _dataSet;
+        private DataSet? _dataSet;
         internal string _name = string.Empty;
-        internal PropertyCollection _extendedProperties;
+        internal PropertyCollection? _extendedProperties;
 
         internal Constraint() { }
 
@@ -25,6 +26,7 @@ namespace System.Data
         /// The name of this constraint within the <see cref='System.Data.ConstraintCollection'/>.
         /// </summary>
         [DefaultValue("")]
+        [AllowNull]
         public virtual string ConstraintName
         {
             get { return _name; }
@@ -76,14 +78,14 @@ namespace System.Data
             set
             {
                 _inCollection = value;
-                _dataSet = value ? Table.DataSet : null;
+                _dataSet = value ? Table!.DataSet : null;
             }
         }
 
         /// <summary>
         /// Gets the <see cref='System.Data.DataTable'/> to which the constraint applies.
         /// </summary>
-        public abstract DataTable Table { get; }
+        public abstract DataTable? Table { get; }
 
         /// <summary>
         /// Gets the collection of customized user information.
@@ -94,8 +96,8 @@ namespace System.Data
         internal abstract bool ContainsColumn(DataColumn column);
         internal abstract bool CanEnableConstraint();
 
-        internal abstract Constraint Clone(DataSet destination);
-        internal abstract Constraint Clone(DataSet destination, bool ignoreNSforTableLookup);
+        internal abstract Constraint? Clone(DataSet destination);
+        internal abstract Constraint? Clone(DataSet destination, bool ignoreNSforTableLookup);
 
         internal void CheckConstraint()
         {
@@ -127,7 +129,7 @@ namespace System.Data
         /// Gets the <see cref='System.Data.DataSet'/> to which this constraint belongs.
         /// </summary>
         [CLSCompliant(false)]
-        protected virtual DataSet _DataSet => _dataSet;
+        protected virtual DataSet? _DataSet => _dataSet;
 
         /// <summary>
         /// Sets the constraint's <see cref='System.Data.DataSet'/>.

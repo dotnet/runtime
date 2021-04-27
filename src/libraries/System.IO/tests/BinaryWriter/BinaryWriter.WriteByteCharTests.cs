@@ -302,9 +302,9 @@ namespace System.IO.Tests
             for (int iLoop = 0; iLoop < iArrLargeValues.Length; iLoop++)
             {
                 // [] Offset out of range
-                AssertExtensions.Throws<ArgumentException>(null, () => dw2.Write(bArr, iArrLargeValues[iLoop], 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dw2.Write(bArr, iArrLargeValues[iLoop], 0));
                 // [] Invalid count value
-                AssertExtensions.Throws<ArgumentException>(null, () => dw2.Write(bArr, 0, iArrLargeValues[iLoop]));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dw2.Write(bArr, 0, iArrLargeValues[iLoop]));
             }
             dw2.Dispose();
             mstr.Dispose();
@@ -579,13 +579,13 @@ namespace System.IO.Tests
 
                     char testChar;
 
-                    testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
+                    testChar = (char)((ushort)baseStream.ReadByte() + ((ushort)baseStream.ReadByte() << 8));
                     Assert.Equal('a', testChar);
 
-                    testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
+                    testChar = (char)((ushort)baseStream.ReadByte() + ((ushort)baseStream.ReadByte() << 8));
                     Assert.Equal('7', testChar);
 
-                    testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
+                    testChar = (char)((ushort)baseStream.ReadByte() + ((ushort)baseStream.ReadByte() << 8));
                     Assert.Equal(char.MaxValue, testChar);
                 }
             }

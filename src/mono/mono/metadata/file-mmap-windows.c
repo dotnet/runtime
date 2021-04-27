@@ -16,12 +16,14 @@
 #include <config.h>
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
-
-#include <glib.h>
-
+#ifdef HOST_WIN32
+#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-error-internals.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/file-mmap.h>
+#include <mono/utils/w32subset.h>
 
+#if HAVE_API_SUPPORT_WIN32_FILE_MAPPING
 // These control the retry behaviour when lock violation errors occur during Flush:
 #define MAX_FLUSH_WAITS 15  // must be <=30
 #define MAX_FLUSH_RETIRES_PER_WAIT 20
@@ -448,11 +450,11 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 }
 
 MonoBoolean
-mono_mmap_unmap (void *mmap_handle, MonoError *error)
+mono_mmap_unmap (void *base_address, MonoError *error)
 {
-	g_assert (mmap_handle);
+	g_assert (base_address);
 
-	MmapInstance *h = (MmapInstance *) mmap_handle;
+	MmapInstance *h = (MmapInstance *) base_address;
 
 	gboolean result;
 	MONO_ENTER_GC_SAFE;
@@ -462,9 +464,70 @@ mono_mmap_unmap (void *mmap_handle, MonoError *error)
 	g_free (h);
 	return result;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_FILE_MAPPING
+void *
+mono_mmap_open_file (const gunichar2 *path, gint path_length, int mode, const gunichar2 *mapName, gint mapName_length, gint64 *capacity, int access, int options, int *ioerror, MonoError *error)
+{
+	g_unsupported_api ("MapViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "MapViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
 
-#else
+void *
+mono_mmap_open_handle (void *handle, const gunichar2 *mapName, gint mapName_length, gint64 *capacity, int access, int options, int *ioerror, MonoError *error)
+{
+	g_unsupported_api ("MapViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "MapViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
 
-MONO_EMPTY_SOURCE_FILE (file_mmap_windows);
+void
+mono_mmap_close (void *mmap_handle, MonoError *error)
+{
+	g_unsupported_api ("MapViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "MapViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return;
+}
 
-#endif
+void
+mono_mmap_configure_inheritability (void *mmap_handle, gint32 inheritability, MonoError *error)
+{
+	g_unsupported_api ("MapViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "MapViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return;
+}
+
+void
+mono_mmap_flush (void *mmap_handle, MonoError *error)
+{
+	g_unsupported_api ("FlushViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "FlushViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return;
+}
+
+int
+mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mmap_handle, void **base_address, MonoError *error)
+{
+	g_unsupported_api ("MapViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "MapViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return 0;
+}
+
+MonoBoolean
+mono_mmap_unmap (void *base_address, MonoError *error)
+{
+	g_unsupported_api ("UnmapViewOfFile");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "UnmapViewOfFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_FILE_MAPPING */
+#endif /* HOST_WIN32 */
+
+MONO_EMPTY_SOURCE_FILE (file_mmap_windows)

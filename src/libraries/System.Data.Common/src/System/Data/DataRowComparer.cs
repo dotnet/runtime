@@ -17,15 +17,15 @@ namespace System.Data
         /// </summary>
         public static DataRowComparer<DataRow> Default { get { return DataRowComparer<DataRow>.Default; } }
 
-        internal static bool AreEqual(object a, object b)
+        internal static bool AreEqual(object? a, object? b)
         {
             if (ReferenceEquals(a, b))
             {
                 // same reference or (null, null) or (DBNull.Value, DBNull.Value)
                 return true;
             }
-            if (ReferenceEquals(a, null) || ReferenceEquals(a, DBNull.Value) ||
-                ReferenceEquals(b, null) || ReferenceEquals(b, DBNull.Value))
+            if (a is null || ReferenceEquals(a, DBNull.Value) ||
+                b is null || ReferenceEquals(b, DBNull.Value))
             {
                 // (null, non-null) or (null, DBNull.Value) or vice versa
                 return false;
@@ -33,15 +33,15 @@ namespace System.Data
             return (a.Equals(b) || (a.GetType().IsArray && CompareArray((Array)a, b as Array)));
         }
 
-        private static bool AreElementEqual(object a, object b)
+        private static bool AreElementEqual(object? a, object? b)
         {
             if (ReferenceEquals(a, b))
             {
                 // same reference or (null, null) or (DBNull.Value, DBNull.Value)
                 return true;
             }
-            if (ReferenceEquals(a, null) || ReferenceEquals(a, DBNull.Value) ||
-                ReferenceEquals(b, null) || ReferenceEquals(b, DBNull.Value))
+            if (a is null || ReferenceEquals(a, DBNull.Value) ||
+                b is null || ReferenceEquals(b, DBNull.Value))
             {
                 // (null, non-null) or (null, DBNull.Value) or vice versa
                 return false;
@@ -49,7 +49,7 @@ namespace System.Data
             return a.Equals(b);
         }
 
-        private static bool CompareArray(Array a, Array b)
+        private static bool CompareArray(Array a, Array? b)
         {
             if ((null == b) ||
                 (1 != a.Rank) ||
@@ -74,8 +74,10 @@ namespace System.Data
                         return CompareEquatableArray((int[])a, (int[])b);
                     case TypeCode.Int64:
                         return CompareEquatableArray((long[])a, (long[])b);
+#nullable disable
                     case TypeCode.String:
                         return CompareEquatableArray((string[])a, (string[])b);
+#nullable enable
                 }
             }
 
@@ -134,15 +136,15 @@ namespace System.Data
         /// <param name="leftRow">The first input DataRow</param>
         /// <param name="rightRow">The second input DataRow</param>
         /// <returns>True if rows are equal, false if not.</returns>
-        public bool Equals(TRow leftRow, TRow rightRow)
+        public bool Equals(TRow? leftRow, TRow? rightRow)
         {
             if (ReferenceEquals(leftRow, rightRow))
             {
                 return true;
             }
 
-            if (ReferenceEquals(leftRow, null) ||
-                ReferenceEquals(rightRow, null))
+            if (leftRow is null ||
+                rightRow is null)
             {
                 return false;
             }
@@ -192,7 +194,7 @@ namespace System.Data
                 Type valueType = value.GetType();
                 if (valueType.IsArray)
                 {
-                    Array array = value as Array;
+                    Array array = (Array)value;
 
                     if (array.Rank > 1)
                     {
@@ -200,7 +202,7 @@ namespace System.Data
                     }
                     else if (array.Length > 0)
                     {
-                        hash = array.GetValue(array.GetLowerBound(0)).GetHashCode();
+                        hash = array.GetValue(array.GetLowerBound(0))!.GetHashCode();
                     }
                 }
                 else

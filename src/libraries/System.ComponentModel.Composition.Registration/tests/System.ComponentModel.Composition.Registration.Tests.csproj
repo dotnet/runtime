@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InternalCalls.cs" />
@@ -18,5 +19,8 @@
     <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderExportFuncTests.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderTests.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\RegistrationContextUnitTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.Composition.Registration.csproj" />
   </ItemGroup>
 </Project>

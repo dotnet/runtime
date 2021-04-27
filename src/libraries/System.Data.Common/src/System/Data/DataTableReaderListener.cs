@@ -7,7 +7,7 @@ namespace System.Data
 {
     internal sealed class DataTableReaderListener
     {
-        private DataTable _currentDataTable;
+        private DataTable? _currentDataTable;
         private bool _isSubscribed;
         private readonly WeakReference _readerWeak;
 
@@ -86,7 +86,7 @@ namespace System.Data
 
         private void DataTableCleared(object sender, DataTableClearEventArgs e)
         {
-            DataTableReader reader = (DataTableReader)_readerWeak.Target;
+            DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
             if (reader != null)
             {
                 reader.DataTableCleared();
@@ -99,7 +99,7 @@ namespace System.Data
 
         private void SchemaChanged(object sender, CollectionChangeEventArgs e)
         {
-            DataTableReader reader = (DataTableReader)_readerWeak.Target;
+            DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
             if (reader != null)
             {
                 reader.SchemaChanged();
@@ -112,7 +112,7 @@ namespace System.Data
 
         private void DataChanged(object sender, DataRowChangeEventArgs args)
         {
-            DataTableReader reader = (DataTableReader)_readerWeak.Target;
+            DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
             if (reader != null)
             {
                 reader.DataChanged(args);

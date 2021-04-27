@@ -120,10 +120,42 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
 
-        [Fact]
-        public void ListSeparator_EnUS()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData("ar-SA", ";")]
+        [InlineData("as-IN", ",")]
+        [InlineData("ba-RU", ";")]
+        [InlineData("bs-cyrl-BA", ";")]
+        [InlineData("de-DE", ";")]
+        [InlineData("dv-MV", "\u060C")]
+        [InlineData("en-GB", ",")]
+        [InlineData("en-US", ",")]
+        [InlineData("es-ES", ";")]
+        [InlineData("es-MX", ",")]
+        [InlineData("fa-IR", "\u061B")]
+        [InlineData("fr-FR", ";")]
+        [InlineData("hr-HR", ";")]
+        [InlineData("it-IT", ";")]
+        [InlineData("ko-KR", ",")]
+        [InlineData("ku-arab-iq", "\u061B")]
+        [InlineData("nl-NL", ";")]
+        [InlineData("pl-pl", ";")]
+        [InlineData("pt-PT", ";")]
+        [InlineData("ru-RU", ";")]
+        [InlineData("sv-SE", ";")]
+        [InlineData("th-TH", ",")]
+        [InlineData("ja-jp", ",")]
+        [InlineData("zh-CN", ",")]
+        [InlineData("", ",")]
+        public void ListSeparatorTest(string cultureName, string separator)
         {
-            Assert.NotEqual(string.Empty, new CultureInfo("en-US").TextInfo.ListSeparator);
+            try
+            {
+                Assert.Equal(separator, CultureInfo.GetCultureInfo(cultureName).TextInfo.ListSeparator);
+            }
+            catch (CultureNotFoundException)
+            {
+                // Ignore the cultures we cannot create on downlevel versions.
+            }
         }
 
         [Theory]
@@ -171,7 +203,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        private static readonly string [] s_cultureNames = new string[] { "", "en-US", "fr", "fr-FR" };
+        private static readonly string [] s_cultureNames = new string[] { "en-US", "fr", "fr-FR" };
 
         // ToLower_TestData_netcore has the data which is specific to netcore framework
         public static IEnumerable<object[]> ToLower_TestData_netcore()
@@ -180,6 +212,24 @@ namespace System.Globalization.Tests
             {
                 // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
                 yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+            }
+
+            if (!PlatformDetection.IsNlsGlobalization)
+            {
+                yield return new object[] { "", "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+            }
+        }
+
+        public static IEnumerable<string> GetTestLocales()
+        {
+            yield return "tr";
+            yield return "tr-TR";
+
+            if (PlatformDetection.IsNotUsingLimitedCultures)
+            {
+                // Mobile / Browser ICU doesn't contain these locales
+                yield return "az";
+                yield return "az-Latn-AZ";
             }
         }
 
@@ -226,7 +276,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
             }
 
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in GetTestLocales())
             {
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
@@ -238,7 +288,7 @@ namespace System.Globalization.Tests
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
             // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
             // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows && PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "en-US-POSIX", "I", "i" };
             }
@@ -349,7 +399,7 @@ namespace System.Globalization.Tests
             }
 
             // Turkish i
-            foreach (string cultureName in new string[] { "tr", "tr-TR", "az", "az-Latn-AZ" })
+            foreach (string cultureName in GetTestLocales())
             {
                 yield return new object[] { cultureName, "i", "\u0130" };
                 yield return new object[] { cultureName, "\u0130", "\u0130" };
@@ -361,7 +411,7 @@ namespace System.Globalization.Tests
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
             // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
             // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows && PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "en-US-POSIX", "i", "I" };
             }

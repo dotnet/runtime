@@ -13,12 +13,6 @@ namespace System.IO.Tests
     public class FileStream_Dispose : FileSystemTest
     {
         [Fact]
-        public void CanDispose()
-        {
-            new FileStream(GetTestFilePath(), FileMode.Create).Dispose();
-        }
-
-        [Fact]
         public void DisposeClosesHandle()
         {
             SafeFileHandle handle;
@@ -28,16 +22,6 @@ namespace System.IO.Tests
             }
 
             Assert.True(handle.IsClosed);
-        }
-
-        [Fact]
-        public void HandlesMultipleDispose()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                fs.Dispose();
-                fs.Dispose();
-            }  // disposed as we leave using
         }
 
         private class MyFileStream : FileStream
@@ -193,7 +177,7 @@ namespace System.IO.Tests
 
             Action act = () => // separate method to avoid JIT lifetime-extension issues
             {
-                var fs2 = new MyFileStream(GetTestFilePath(), FileMode.Create)
+                new MyFileStream(GetTestFilePath(), FileMode.Create)
                 {
                     DisposeMethod = (disposing) =>
                     {

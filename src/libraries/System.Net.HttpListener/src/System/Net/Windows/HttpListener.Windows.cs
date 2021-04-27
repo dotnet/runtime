@@ -41,15 +41,15 @@ namespace System.Net
             (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
         };
 
-        private HttpListenerSession _currentSession;
+        private HttpListenerSession? _currentSession;
 
         private bool _unsafeConnectionNtlmAuthentication;
 
-        private HttpServerSessionHandle _serverSessionHandle;
+        private HttpServerSessionHandle? _serverSessionHandle;
         private ulong _urlGroupId;
 
         private bool _V2Initialized;
-        private Dictionary<ulong, DisconnectAsyncResult> _disconnectResults;
+        private Dictionary<ulong, DisconnectAsyncResult>? _disconnectResults;
 
         private void ValidateV2Property()
         {
@@ -220,8 +220,6 @@ namespace System.Net
 
         public void Start()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             // Make sure there are no race conditions between Start/Stop/Abort/Close/Dispose and
             // calls to SetupV2Config: Start needs to setup all resources (esp. in V2 where besides
             // the request handle, there is also a server session and a Url group. Abort/Stop must
@@ -269,10 +267,6 @@ namespace System.Net
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Start {exception}");
                     throw;
                 }
-                finally
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-                }
             }
         }
 
@@ -318,7 +312,7 @@ namespace System.Net
             // get delivered to this request queue.
             Interop.HttpApi.HTTP_BINDING_INFO info = default;
             info.Flags = Interop.HttpApi.HTTP_FLAGS.HTTP_PROPERTY_FLAG_PRESENT;
-            info.RequestQueueHandle = _currentSession.RequestQueueHandle.DangerousGetHandle();
+            info.RequestQueueHandle = _currentSession!.RequestQueueHandle.DangerousGetHandle();
 
             IntPtr infoptr = new IntPtr(&info);
 
@@ -355,7 +349,6 @@ namespace System.Net
 
         public void Stop()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             try
             {
                 lock (_internalLock)
@@ -383,10 +376,6 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Stop {exception}");
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
         }
 
         private unsafe void CreateRequestQueueHandle()
@@ -407,8 +396,6 @@ namespace System.Net
 
         public void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             lock (_internalLock)
             {
                 try
@@ -435,15 +422,12 @@ namespace System.Net
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
 
         private void Dispose()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             lock (_internalLock)
             {
                 try
@@ -464,7 +448,6 @@ namespace System.Net
                 finally
                 {
                     _state = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 }
             }
         }
@@ -506,10 +489,8 @@ namespace System.Net
 
         public HttpListenerContext GetContext()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
-            SyncRequestContext memoryBlob = null;
-            HttpListenerContext httpContext = null;
+            SyncRequestContext? memoryBlob = null;
+            HttpListenerContext? httpContext = null;
             bool stoleBlob = false;
 
             try
@@ -527,7 +508,7 @@ namespace System.Net
                 uint size = 4096;
                 ulong requestId = 0;
                 memoryBlob = new SyncRequestContext((int)size);
-                HttpListenerSession session = _currentSession;
+                HttpListenerSession session = _currentSession!;
 
                 while (true)
                 {
@@ -612,7 +593,6 @@ namespace System.Net
                     memoryBlob.ReleasePins();
                     memoryBlob.Close();
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, "RequestTraceIdentifier: " + (httpContext != null ? httpContext.Request.RequestTraceIdentifier.ToString() : "<null>"));
             }
         }
 
@@ -627,10 +607,9 @@ namespace System.Net
             return true;
         }
 
-        public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
+        public IAsyncResult BeginGetContext(AsyncCallback? callback, object? state)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            ListenerAsyncResult asyncResult = null;
+            ListenerAsyncResult? asyncResult = null;
             try
             {
                 CheckDisposed();
@@ -641,7 +620,7 @@ namespace System.Net
                 // prepare the ListenerAsyncResult object (this will have it's own
                 // event that the user can wait on for IO completion - which means we
                 // need to signal it when IO completes)
-                asyncResult = new ListenerAsyncResult(_currentSession, state, callback);
+                asyncResult = new ListenerAsyncResult(_currentSession!, state, callback);
                 uint statusCode = asyncResult.QueueBeginGetContext();
                 if (statusCode != Interop.HttpApi.ERROR_SUCCESS &&
                     statusCode != Interop.HttpApi.ERROR_IO_PENDING)
@@ -656,18 +635,13 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"BeginGetContext {exception}");
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
 
             return asyncResult;
         }
 
         public HttpListenerContext EndGetContext(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            HttpListenerContext httpContext = null;
+            HttpListenerContext? httpContext = null;
             try
             {
                 CheckDisposed();
@@ -689,7 +663,7 @@ namespace System.Net
                 if (httpContext == null)
                 {
                     Debug.Assert(castedAsyncResult.Result is Exception, "EndGetContext|The result is neither a HttpListenerContext nor an Exception.");
-                    ExceptionDispatchInfo.Throw(castedAsyncResult.Result as Exception);
+                    ExceptionDispatchInfo.Throw((castedAsyncResult.Result as Exception)!);
                 }
             }
             catch (Exception exception)
@@ -697,23 +671,18 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"EndGetContext {exception}");
                 throw;
             }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, "EndGetContext " + httpContext == null ? "<no context>" : "HttpListenerContext" + httpContext.ToString() + " RequestTraceIdentifier#" + httpContext.Request.RequestTraceIdentifier);
-            }
             return httpContext;
         }
 
-        internal HttpListenerContext HandleAuthentication(HttpListenerSession session, RequestContextBase memoryBlob, out bool stoleBlob)
+        internal HttpListenerContext? HandleAuthentication(HttpListenerSession session, RequestContextBase memoryBlob, out bool stoleBlob)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
 
-            string challenge = null;
+            string? challenge = null;
             stoleBlob = false;
 
             // Some things we need right away.  Lift them out now while it's convenient.
-            string verb = Interop.HttpApi.GetVerb(memoryBlob.RequestBlob);
-            string authorizationHeader = Interop.HttpApi.GetKnownHeader(memoryBlob.RequestBlob, (int)HttpRequestHeader.Authorization);
+            string? authorizationHeader = Interop.HttpApi.GetKnownHeader(memoryBlob.RequestBlob, (int)HttpRequestHeader.Authorization);
             ulong connectionId = memoryBlob.RequestBlob->ConnectionId;
             ulong requestId = memoryBlob.RequestBlob->RequestId;
             bool isSecureConnection = memoryBlob.RequestBlob->pSslInfo != null;
@@ -725,13 +694,13 @@ namespace System.Net
             // previously authenticated.
             // assurance that we do this only for NTLM/Negotiate is not here, but in the
             // code that caches WindowsIdentity instances in the Dictionary.
-            DisconnectAsyncResult disconnectResult;
+            DisconnectAsyncResult? disconnectResult;
             DisconnectResults.TryGetValue(connectionId, out disconnectResult);
             if (UnsafeConnectionNtlmAuthentication)
             {
                 if (authorizationHeader == null)
                 {
-                    WindowsPrincipal principal = disconnectResult?.AuthenticatedConnection;
+                    WindowsPrincipal? principal = disconnectResult?.AuthenticatedConnection;
                     if (principal != null)
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Principal: {principal} principal.Identity.Name: {principal.Identity.Name} creating request");
@@ -755,10 +724,10 @@ namespace System.Net
 
             // Figure out what schemes we're allowing, what context we have.
             stoleBlob = true;
-            HttpListenerContext httpContext = null;
-            NTAuthentication oldContext = null;
-            NTAuthentication newContext = null;
-            NTAuthentication context = null;
+            HttpListenerContext? httpContext = null;
+            NTAuthentication? oldContext = null;
+            NTAuthentication? newContext = null;
+            NTAuthentication? context = null;
             AuthenticationSchemes headerScheme = AuthenticationSchemes.None;
             AuthenticationSchemes authenticationScheme = AuthenticationSchemes;
             ExtendedProtectionPolicy extendedProtectionPolicy = _extendedProtectionPolicy;
@@ -779,7 +748,7 @@ namespace System.Net
 
                 httpContext = new HttpListenerContext(session, memoryBlob);
 
-                AuthenticationSchemeSelector authenticationSelector = _authenticationDelegate;
+                AuthenticationSchemeSelector? authenticationSelector = _authenticationDelegate;
                 if (authenticationSelector != null)
                 {
                     try
@@ -809,7 +778,7 @@ namespace System.Net
                     stoleBlob = false;
                 }
 
-                ExtendedProtectionSelector extendedProtectionSelector = _extendedProtectionSelectorDelegate;
+                ExtendedProtectionSelector? extendedProtectionSelector = _extendedProtectionSelectorDelegate;
                 if (extendedProtectionSelector != null)
                 {
                     extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request);
@@ -887,12 +856,13 @@ namespace System.Net
                 else
                 {
                     // Perform Authentication
-                    byte[] bytes = null;
-                    byte[] decodedOutgoingBlob = null;
-                    string outBlob = null;
+                    byte[]? bytes = null;
+                    byte[]? decodedOutgoingBlob = null;
+                    string? outBlob = null;
 
                     // Find the beginning of the blob.  Trust that HTTP.SYS parsed out just our header ok.
-                    for (index++; index < authorizationHeader.Length; index++)
+                    Debug.Assert(authorizationHeader != null);
+                    for (index++; index < authorizationHeader!.Length; index++)
                     {
                         if (authorizationHeader[index] != ' ' && authorizationHeader[index] != '\t' &&
                             authorizationHeader[index] != '\r' && authorizationHeader[index] != '\n')
@@ -902,9 +872,9 @@ namespace System.Net
                     }
                     string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
 
-                    IPrincipal principal = null;
+                    IPrincipal? principal = null;
                     SecurityStatusPal statusCodeNew;
-                    ChannelBinding binding;
+                    ChannelBinding? binding;
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Performing Authentication headerScheme: {headerScheme}");
                     switch (headerScheme)
                     {
@@ -956,16 +926,14 @@ namespace System.Net
                             if (decodedOutgoingBlob != null)
                             {
                                 // Prefix SPNEGO token/NTLM challenge with scheme per RFC 4559, MS-NTHT
-                                outBlob = string.Format("{0} {1}",
-                                    headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate,
-                                    Convert.ToBase64String(decodedOutgoingBlob));
+                                outBlob = $"{(headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate)} {Convert.ToBase64String(decodedOutgoingBlob)}";
                             }
 
                             if (!error)
                             {
                                 if (context.IsCompleted)
                                 {
-                                    SecurityContextTokenHandle userContext = null;
+                                    SecurityContextTokenHandle? userContext = null;
                                     try
                                     {
                                         if (!CheckSpn(context, isSecureConnection, extendedProtectionPolicy))
@@ -976,7 +944,7 @@ namespace System.Net
                                         {
                                             httpContext.Request.ServiceName = context.ClientSpecifiedSpn;
 
-                                            SafeDeleteContext securityContext = context.GetContext(out statusCodeNew);
+                                            SafeDeleteContext securityContext = context.GetContext(out statusCodeNew)!;
                                             if (statusCodeNew.ErrorCode != SecurityStatusPalErrorCode.OK)
                                             {
                                                 if (NetEventSource.Log.IsEnabled())
@@ -1094,7 +1062,7 @@ namespace System.Net
                     {
                         if (NetEventSource.Log.IsEnabled())
                         {
-                            NetEventSource.Info(this, $"Got principal: {principal}, IdentityName: {principal.Identity.Name} for creating request.");
+                            NetEventSource.Info(this, $"Got principal: {principal}, IdentityName: {principal!.Identity!.Name} for creating request.");
                         }
 
                         httpContext.SetIdentity(principal, outBlob);
@@ -1111,7 +1079,7 @@ namespace System.Net
                 }
 
                 // if we're not giving a request to the application, we need to send an error
-                ArrayList challenges = null;
+                ArrayList? challenges = null;
                 if (httpContext == null)
                 {
                     // If we already have a challenge, just use it.  Otherwise put a challenge for each acceptable scheme.
@@ -1197,9 +1165,11 @@ namespace System.Net
                         context = null;
                     }
 
-                    NTAuthentication toClose = oldContext;
+                    NTAuthentication? toClose = oldContext;
                     oldContext = newContext;
-                    disconnectResult.Session = newContext;
+                    // TODO: Can disconnectResult be null here?
+                    Debug.Assert(disconnectResult != null);
+                    disconnectResult!.Session = newContext;
 
                     if (toClose != null)
                     {
@@ -1280,7 +1250,7 @@ namespace System.Net
             }
         }
 
-        private static void FreeContext(ref HttpListenerContext httpContext, RequestContextBase memoryBlob)
+        private static void FreeContext(ref HttpListenerContext? httpContext, RequestContextBase memoryBlob)
         {
             if (httpContext != null)
             {
@@ -1301,8 +1271,8 @@ namespace System.Net
             HttpListenerResponse response = context.Response;
 
             // We use the cached results from the delegates so that we don't have to call them again here.
-            NTAuthentication newContext;
-            ArrayList challenges = BuildChallenge(context.AuthenticationSchemes, request._connectionId,
+            NTAuthentication? newContext;
+            ArrayList? challenges = BuildChallenge(context.AuthenticationSchemes, request._connectionId,
                 out newContext, context.ExtendedProtectionPolicy, request.IsSecureConnection);
 
             // Setting 401 without setting WWW-Authenticate is a protocol violation
@@ -1317,7 +1287,7 @@ namespace System.Net
             }
         }
 
-        private ChannelBinding GetChannelBinding(HttpListenerSession session, ulong connectionId, bool isSecureConnection, ExtendedProtectionPolicy policy)
+        private ChannelBinding? GetChannelBinding(HttpListenerSession session, ulong connectionId, bool isSecureConnection, ExtendedProtectionPolicy policy)
         {
             if (policy.PolicyEnforcement == PolicyEnforcement.Never)
             {
@@ -1337,7 +1307,7 @@ namespace System.Net
                 return null;
             }
 
-            ChannelBinding result = GetChannelBindingFromTls(session, connectionId);
+            ChannelBinding? result = GetChannelBindingFromTls(session, connectionId);
 
             if (NetEventSource.Log.IsEnabled() && result != null)
                 NetEventSource.Info(this, "GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
@@ -1376,7 +1346,7 @@ namespace System.Net
                 return true;
             }
 
-            string clientSpn = context.ClientSpecifiedSpn;
+            string? clientSpn = context.ClientSpecifiedSpn;
 
             // An empty SPN is only allowed in the WhenSupported case
             if (string.IsNullOrEmpty(clientSpn))
@@ -1543,7 +1513,7 @@ namespace System.Net
                 error == SecurityStatusPalErrorCode.UnsupportedPreauth;
         }
 
-        private static void AddChallenge(ref ArrayList challenges, string challenge)
+        private static void AddChallenge(ref ArrayList? challenges, string challenge)
         {
             if (challenge != null)
             {
@@ -1560,11 +1530,11 @@ namespace System.Net
             }
         }
 
-        private ArrayList BuildChallenge(AuthenticationSchemes authenticationScheme, ulong connectionId,
-            out NTAuthentication newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
+        private ArrayList? BuildChallenge(AuthenticationSchemes authenticationScheme, ulong connectionId,
+            out NTAuthentication? newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "AuthenticationScheme:" + authenticationScheme.ToString());
-            ArrayList challenges = null;
+            ArrayList? challenges = null;
             newContext = null;
 
             if ((authenticationScheme & AuthenticationSchemes.Negotiate) != 0)
@@ -1585,7 +1555,7 @@ namespace System.Net
             return challenges;
         }
 
-        private static void RegisterForDisconnectNotification(HttpListenerSession session, ulong connectionId, ref DisconnectAsyncResult disconnectResult)
+        private static void RegisterForDisconnectNotification(HttpListenerSession session, ulong connectionId, ref DisconnectAsyncResult? disconnectResult)
         {
             Debug.Assert(disconnectResult == null);
 
@@ -1624,7 +1594,7 @@ namespace System.Net
             }
         }
 
-        private static void SendError(HttpListenerSession session, ulong requestId, HttpStatusCode httpStatusCode, ArrayList challenges)
+        private static void SendError(HttpListenerSession session, ulong requestId, HttpStatusCode httpStatusCode, ArrayList? challenges)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(session.Listener, $"RequestId: {requestId}");
             Interop.HttpApi.HTTP_RESPONSE httpResponse = default;
@@ -1632,10 +1602,10 @@ namespace System.Net
             httpResponse.Version.MajorVersion = (ushort)1;
             httpResponse.Version.MinorVersion = (ushort)1;
             httpResponse.StatusCode = (ushort)httpStatusCode;
-            string statusDescription = HttpStatusDescription.Get(httpStatusCode);
+            string? statusDescription = HttpStatusDescription.Get(httpStatusCode);
             uint DataWritten = 0;
             uint statusCode;
-            byte[] byteReason = Encoding.Default.GetBytes(statusDescription);
+            byte[] byteReason = Encoding.Default.GetBytes(statusDescription!);
             fixed (byte* pReason = byteReason)
             {
                 httpResponse.pReason = (sbyte*)pReason;
@@ -1648,8 +1618,8 @@ namespace System.Net
                     (&httpResponse.Headers.KnownHeaders)[(int)HttpResponseHeader.ContentLength].RawValueLength = (ushort)byteContentLength.Length;
 
                     httpResponse.Headers.UnknownHeaderCount = checked((ushort)(challenges == null ? 0 : challenges.Count));
-                    GCHandle[] challengeHandles = null;
-                    Interop.HttpApi.HTTP_UNKNOWN_HEADER[] headersArray = null;
+                    GCHandle[]? challengeHandles = null;
+                    Interop.HttpApi.HTTP_UNKNOWN_HEADER[]? headersArray = null;
                     GCHandle headersArrayHandle = default;
                     GCHandle wwwAuthenticateHandle = default;
                     if (httpResponse.Headers.UnknownHeaderCount > 0)
@@ -1663,15 +1633,15 @@ namespace System.Net
                         if (httpResponse.Headers.UnknownHeaderCount > 0)
                         {
                             headersArrayHandle = GCHandle.Alloc(headersArray, GCHandleType.Pinned);
-                            httpResponse.Headers.pUnknownHeaders = (Interop.HttpApi.HTTP_UNKNOWN_HEADER*)Marshal.UnsafeAddrOfPinnedArrayElement(headersArray, 0);
+                            httpResponse.Headers.pUnknownHeaders = (Interop.HttpApi.HTTP_UNKNOWN_HEADER*)Marshal.UnsafeAddrOfPinnedArrayElement(headersArray!, 0);
                             wwwAuthenticateHandle = GCHandle.Alloc(s_wwwAuthenticateBytes, GCHandleType.Pinned);
                             sbyte* wwwAuthenticate = (sbyte*)Marshal.UnsafeAddrOfPinnedArrayElement(s_wwwAuthenticateBytes, 0);
 
-                            for (int i = 0; i < challengeHandles.Length; i++)
+                            for (int i = 0; i < challengeHandles!.Length; i++)
                             {
-                                byte[] byteChallenge = Encoding.Default.GetBytes((string)challenges[i]);
+                                byte[] byteChallenge = Encoding.Default.GetBytes((string)challenges![i]!);
                                 challengeHandles[i] = GCHandle.Alloc(byteChallenge, GCHandleType.Pinned);
-                                headersArray[i].pName = wwwAuthenticate;
+                                headersArray![i].pName = wwwAuthenticate;
                                 headersArray[i].NameLength = (ushort)s_wwwAuthenticateBytes.Length;
                                 headersArray[i].pRawValue = (sbyte*)Marshal.UnsafeAddrOfPinnedArrayElement(byteChallenge, 0);
                                 headersArray[i].RawValueLength = checked((ushort)byteChallenge.Length);
@@ -1739,18 +1709,16 @@ namespace System.Net
             return (int)((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelTokenSize;
         }
 
-        internal static ChannelBinding GetChannelBindingFromTls(HttpListenerSession session, ulong connectionId)
+        internal static ChannelBinding? GetChannelBindingFromTls(HttpListenerSession session, ulong connectionId)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(session.Listener, $"connectionId: {connectionId}");
-
             // +128 since a CBT is usually <128 thus we need to call HRCC just once. If the CBT
             // is >128 we will get ERROR_MORE_DATA and call again
             int size = sizeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS) + 128;
 
             Debug.Assert(size > 0);
 
-            byte[] blob = null;
-            Interop.HttpApi.SafeLocalFreeChannelBinding token = null;
+            byte[]? blob = null;
+            Interop.HttpApi.SafeLocalFreeChannelBinding? token = null;
 
             uint bytesReceived = 0;
             uint statusCode;
@@ -1810,7 +1778,7 @@ namespace System.Net
         }
 
 
-        private class DisconnectAsyncResult : IAsyncResult
+        private sealed class DisconnectAsyncResult : IAsyncResult
         {
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 
@@ -1819,8 +1787,8 @@ namespace System.Net
             private readonly NativeOverlapped* _nativeOverlapped;
             private int _ownershipState;   // 0 = normal, 1 = in HandleAuthentication(), 2 = disconnected, 3 = cleaned up
 
-            private WindowsPrincipal _authenticatedConnection;
-            private NTAuthentication _session;
+            private WindowsPrincipal? _authenticatedConnection;
+            private NTAuthentication? _session;
 
             internal NativeOverlapped* NativeOverlapped
             {
@@ -1915,7 +1883,7 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {((IntPtr)nativeOverlapped).ToString("x")}");
                 // take the DisconnectAsyncResult object from the state
-                DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+                DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
                 IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);
             }
 
@@ -1933,9 +1901,9 @@ namespace System.Net
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
                 // identity caching for unsafe ntlm authentication
 
-                IDisposable identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
+                IDisposable? identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
                 if ((identity != null) &&
-                    (_authenticatedConnection.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&
+                    (_authenticatedConnection!.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&
                     (listener.UnsafeConnectionNtlmAuthentication))
                 {
                     identity.Dispose();
@@ -1945,7 +1913,7 @@ namespace System.Net
                 Debug.Assert(oldValue == 2, $"Expected OwnershipState of 2, saw {oldValue}.");
             }
 
-            internal WindowsPrincipal AuthenticatedConnection
+            internal WindowsPrincipal? AuthenticatedConnection
             {
                 get
                 {
@@ -1959,7 +1927,7 @@ namespace System.Net
                 }
             }
 
-            internal NTAuthentication Session
+            internal NTAuthentication? Session
             {
                 get
                 {

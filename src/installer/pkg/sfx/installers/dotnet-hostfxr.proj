@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <GenerateInstallers>true</GenerateInstallers>
+    <ArchiveName>dotnet-hostfxr-internal</ArchiveName>
+    <InstallerName>dotnet-hostfxr</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-hostfxr-internal</InstallerName>
+    <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>
+    <PlatformPackageType>ToolPack</PlatformPackageType>
+    <VSInsertionShortComponentName>NetCore.HostFXR</VSInsertionShortComponentName>
+    <WixIncludeRegistryKeys>true</WixIncludeRegistryKeys>
+    <RegKeyProductName>hostfxr</RegKeyProductName>
+    <WixDependencyKeyName>Dotnet_CLI_HostFxr</WixDependencyKeyName>
+    <OutputFilesCandleVariable>HostFxrSrc</OutputFilesCandleVariable>
+    <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
+    <MacOSComponentNamePackType>hostfxr</MacOSComponentNamePackType>
+    <MacOSScriptsDirectory>osx_scripts/hostfxr</MacOSScriptsDirectory>
+    <MacOSPackageDescription>The .NET HostFxr</MacOSPackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CandleVariables Include="AuthoredRegistryKeys;RegKeyNugetVersionValue" Value="true" />
+  </ItemGroup>
+
+  <Target Name="PublishToDisk">
+    <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
+
+    <Copy SourceFiles="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)"
+          DestinationFolder="$(OutputPath)/host/fxr/$(Version)" />
+  </Target>
+
+  <Target Name="PublishSymbolsToDisk">
+    <Error Condition="'$(SymbolsOutputPath)' == ''" Text="Publishing to disk requires the SymbolsOutputPath to be set to the root of the path to write to." />
+
+    <Copy SourceFiles="$(DotNetHostBinDir)\hostfxr.pdb"
+          Condition="'$(TargetOS)' == 'windows'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+
+    <Copy SourceFiles="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)$(SymbolsSuffix)"
+          Condition="'$(TargetOS)' != 'windows'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+  </Target>
+
+  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
+    <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
+      <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
+      <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
+    </ItemGroup>
+    <ItemGroup>
+      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/$(VersionedInstallerName)&quot; ]" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1335,9 +1335,8 @@ namespace System.Text.RegularExpressions
                 }
 
                 // ch = runtext[runtextpos];
-                // if (ch == lastChar) goto partialMatch;
                 Rightchar();
-                if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(chLast))
+                if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
@@ -1349,6 +1348,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(chLocal);
                     Ldc(chLast);
 
+                    // if (ch == lastChar) goto partialMatch;
                     BeqFar(lPartialMatch);
 
                     // ch -= lowAscii;
@@ -1368,7 +1368,7 @@ namespace System.Text.RegularExpressions
                     {
                         // Create a string to store the lookup table we use to find the offset.
                         Debug.Assert(_boyerMoorePrefix.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
-                        string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), (span, state) =>
+                        string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), static (span, state) =>
                         {
                             // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
                             // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
@@ -3830,7 +3830,7 @@ namespace System.Text.RegularExpressions
                             // if (count >= 0)
                             PopStack();
                             Stloc(_runtextposLocal!);
-                            PushTrack(count);                       // Tracked(0) is alredy on the track
+                            PushTrack(count);                       // Tracked(0) is already on the track
                             TrackUnique2(Branchcountback2);
                             Advance();
 
@@ -5256,7 +5256,7 @@ namespace System.Text.RegularExpressions
 
             // Generate the lookup table to store 128 answers as bits. We use a const string instead of a byte[] / static
             // data property because it lets IL emit handle all the details for us.
-            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
+            string bitVectorString = string.Create(8, (charClass, invariant), static (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {

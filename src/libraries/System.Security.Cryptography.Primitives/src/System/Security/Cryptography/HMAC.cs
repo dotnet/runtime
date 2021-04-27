@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Security.Cryptography
 {
     public abstract class HMAC : KeyedHashAlgorithm
@@ -16,9 +18,11 @@ namespace System.Security.Cryptography
 
         protected HMAC() { }
 
+        [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static new HMAC Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static new HMAC? Create(string algorithmName) =>
             (HMAC?)CryptoConfigForwarder.CreateFromName(algorithmName);
 

@@ -134,7 +134,7 @@ namespace System.Threading.Tests
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
                 return mres.IsSet;
-            }, 5000);
+            }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 
             Assert.True(mres.IsSet);
         }
@@ -224,6 +224,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43981", TestRuntimes.Mono)]
         public static void RunThreadLocalTest8_Values()
         {
             // Test adding values and updating values
@@ -328,7 +329,7 @@ namespace System.Threading.Tests
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
                     return mres.IsSet;
-                }, 5000);
+                }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 
                 Assert.True(mres.IsSet, "RunThreadLocalTest8_Values: Expected thread local to release the object and for it to be finalized");
             }
@@ -366,7 +367,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
         {

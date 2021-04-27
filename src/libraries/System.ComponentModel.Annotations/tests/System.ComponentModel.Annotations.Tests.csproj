@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
@@ -41,5 +42,8 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationExceptionTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
 </Project>

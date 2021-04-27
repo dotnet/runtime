@@ -17,12 +17,12 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            if (state.Current.JsonClassInfo.CreateObject == null)
+            if (state.Current.JsonTypeInfo.CreateObject == null)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonClassInfo.Type);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
             }
 
-            state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
         }
 
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Converters
             int index = state.Current.EnumeratorIndex;
             JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
 
-            if (elementConverter.CanUseDirectReadOrWrite)
+            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 // Fast path that avoids validation and extra indirection.
                 for (; index < list.Count; index++)

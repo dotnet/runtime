@@ -624,7 +624,8 @@ namespace System
                 //      The divisor is the biggest power of ten that is smaller than integrals
                 while (kappa > 0)
                 {
-                    uint digit = Math.DivRem(integrals, divisor, out integrals);
+                    uint digit;
+                    (digit, integrals) = Math.DivRem(integrals, divisor);
                     Debug.Assert(digit <= 9);
                     buffer[length] = (byte)('0' + digit);
 
@@ -802,7 +803,8 @@ namespace System
                 //      The divisor is the biggest power of ten that is smaller than integrals
                 while (kappa > 0)
                 {
-                    uint digit = Math.DivRem(integrals, divisor, out integrals);
+                    uint digit;
+                    (digit, integrals) = Math.DivRem(integrals, divisor);
                     Debug.Assert(digit <= 9);
                     buffer[length] = (byte)('0' + digit);
 

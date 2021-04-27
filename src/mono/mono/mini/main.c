@@ -35,6 +35,9 @@
 #    include "buildver-boehm.h"
 #  endif
 #endif
+#ifdef TARGET_OSX
+#include <mach-o/loader.h>
+#endif
 
 //#define TEST_ICALL_SYMBOL_MAP 1
 
@@ -179,8 +182,68 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 		goto doclose;
 	if (read (fd, sigbuffer, sizeof (sigbuffer)) == -1)
 		goto doclose;
-	if (memcmp (sigbuffer+sizeof(uint64_t), "xmonkeysloveplay", 16) != 0)
-		goto doclose;
+	// First, see if "xmonkeysloveplay" is at the end of file
+	if (memcmp (sigbuffer + sizeof (uint64_t), "xmonkeysloveplay", 16) == 0)
+		goto found;
+
+#ifdef TARGET_OSX
+	{
+		/*
+		 * If "xmonkeysloveplay" is not at the end of file,
+		 * on Mac OS X, we try a little harder, by actually
+		 * reading the binary's header structure, to see
+		 * if it is located at the end of a LC_SYMTAB section.
+		 *
+		 * This is because Apple code-signing appends a
+		 * LC_CODE_SIGNATURE section to the binary, so
+		 * for a signed binary, "xmonkeysloveplay" is no
+		 * longer at the end of file.
+		 *
+		 * The rest is sanity-checks for the header and section structures.
+		 */
+		struct mach_header_64 bin_header;
+		if ((sigstart = lseek (fd, 0, SEEK_SET)) == -1)
+			goto doclose;
+		// Find and check binary header
+		if (read (fd, &bin_header, sizeof (bin_header)) == -1)
+			goto doclose;
+		if (bin_header.magic != MH_MAGIC_64)
+			goto doclose;
+
+		off_t total = bin_header.sizeofcmds;
+		uint32_t count = bin_header.ncmds;
+		while (total > 0 && count > 0) {
+			struct load_command lc;
+			off_t sig_stored = lseek (fd, 0, SEEK_CUR); // get current offset
+			if (read (fd, &lc, sizeof (lc)) == -1)
+				goto doclose;
+			if (lc.cmd == LC_SYMTAB) {
+				struct symtab_command stc;
+				if ((sigstart = lseek (fd, -sizeof (lc), SEEK_CUR)) == -1)
+					goto doclose;
+				if (read (fd, &stc, sizeof (stc)) == -1)
+					goto doclose;
+
+				// Check the end of the LC_SYMTAB section for "xmonkeysloveplay"
+				if ((sigstart = lseek (fd, -(16 + sizeof (uint64_t)) + stc.stroff + stc.strsize, SEEK_SET)) == -1)
+					goto doclose;
+				if (read (fd, sigbuffer, sizeof (sigbuffer)) == -1)
+					goto doclose;
+				if (memcmp (sigbuffer + sizeof (uint64_t), "xmonkeysloveplay", 16) == 0)
+					goto found;
+			}
+			if ((sigstart = lseek (fd, sig_stored + lc.cmdsize, SEEK_SET)) == -1)
+				goto doclose;
+			total -= sizeof (lc.cmdsize);
+			count--;
+		}
+	}
+#endif
+
+	// did not find "xmonkeysloveplay" at end of file or end of LC_SYMTAB section
+	goto doclose;
+
+found:
 	directory_location = GUINT64_FROM_LE ((*(uint64_t *) &sigbuffer [0]));
 	if (lseek (fd, directory_location, SEEK_SET) == -1)
 		goto doclose;
@@ -229,12 +292,7 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 			if (entry_point == NULL)
 				entry_point = aname;
 		} else if (strncmp (kind, "config:", strlen ("config:")) == 0){
-			char *config = kind + strlen ("config:");
-			char *aname = g_strdup (config);
-			aname [strlen(aname)-strlen(".config")] = 0;
-			mono_register_config_for_assembly (aname, g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "systemconfig:", strlen ("systemconfig:")) == 0){
-			mono_config_parse_memory (g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
 			mono_parse_options_from (g_str_from_file_region (fd, offset, item_size), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -31,7 +30,7 @@ namespace System.Data.Common
                 BaseSchemaName = GetDbColumnValue<string?>(SchemaTableColumn.BaseSchemaName);
                 BaseServerName = GetDbColumnValue<string?>(SchemaTableOptionalColumn.BaseServerName);
                 BaseTableName = GetDbColumnValue<string?>(SchemaTableColumn.BaseTableName);
-                ColumnName = GetDbColumnValue<string>(SchemaTableColumn.ColumnName);
+                ColumnName = GetDbColumnValue<string>(SchemaTableColumn.ColumnName)!;
                 ColumnOrdinal = GetDbColumnValue<int?>(SchemaTableColumn.ColumnOrdinal);
                 ColumnSize = GetDbColumnValue<int?>(SchemaTableColumn.ColumnSize);
                 IsAliased = GetDbColumnValue<bool?>(SchemaTableColumn.IsAliased);
@@ -50,8 +49,7 @@ namespace System.Data.Common
                 DataTypeName = GetDbColumnValue<string?>("DataTypeName");
             }
 
-            // The following may return null, but local methods can't be annotated for that yet ([MaybeNull])
-            private T GetDbColumnValue<T>(string columnName) => _schemaColumns.Contains(columnName) && _schemaRow[columnName] is T value ? value : default!;
+            private T? GetDbColumnValue<T>(string columnName) => _schemaColumns.Contains(columnName) && _schemaRow[columnName] is T value ? value : default;
         }
 
         public static ReadOnlyCollection<DbColumn> GetColumnSchema(this DbDataReader reader)
@@ -75,12 +73,15 @@ namespace System.Data.Common
         private static ReadOnlyCollection<DbColumn> GetColumnSchemaCompatibility(DbDataReader reader)
         {
             var columnSchema = new List<DbColumn>();
-            DataTable schemaTable = reader.GetSchemaTable();
-            DataColumnCollection schemaTableColumns = schemaTable.Columns;
-            foreach (DataRow row in schemaTable.Rows)
+            DataTable? schemaTable = reader.GetSchemaTable();
+            if (schemaTable != null)
             {
-                Debug.Assert(row != null);
-                columnSchema.Add(new DataRowDbColumn(row, schemaTableColumns));
+                DataColumnCollection schemaTableColumns = schemaTable.Columns;
+                foreach (DataRow row in schemaTable.Rows)
+                {
+                    Debug.Assert(row != null);
+                    columnSchema.Add(new DataRowDbColumn(row, schemaTableColumns));
+                }
             }
             return new ReadOnlyCollection<DbColumn>(columnSchema);
         }

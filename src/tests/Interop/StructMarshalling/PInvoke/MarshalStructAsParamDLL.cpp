@@ -1226,7 +1226,7 @@ extern "C" DLL_EXPORT double STDMETHODCALLTYPE ProductDoubleHFA(DoubleHFA hfa)
 
 extern "C" DLL_EXPORT ManyInts STDMETHODCALLTYPE GetMultiplesOf(int value)
 {
-    ManyInts multiples = 
+    ManyInts multiples =
     {
         value * 1,
         value * 2,
@@ -1235,7 +1235,7 @@ extern "C" DLL_EXPORT ManyInts STDMETHODCALLTYPE GetMultiplesOf(int value)
         value * 5,
         value * 6,
         value * 7,
-        value * 8, 
+        value * 8,
         value * 9,
         value * 10,
         value * 11,
@@ -1263,6 +1263,11 @@ extern "C" DLL_EXPORT MultipleBools STDMETHODCALLTYPE GetBools(BOOL b1, BOOL b2)
     return {b1, b2};
 }
 
+extern "C" DLL_EXPORT IntStructPack8Explicit STDMETHODCALLTYPE GetIntStruct(int i, int j)
+{
+	return {i, j};
+}
+
 using IntIntDelegate = int (STDMETHODCALLTYPE*)(int a);
 
 struct DelegateFieldMarshaling
@@ -1286,4 +1291,9 @@ extern "C" DLL_EXPORT void* STDMETHODCALLTYPE GetNativeIntIntFunction()
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE MarshalStructAsParam_DelegateFieldMarshaling(DelegateFieldMarshaling* d)
 {
     // Nothing to do
+}
+
+extern "C" DLL_EXPORT Int32CLongStruct STDMETHODCALLTYPE AddCLongs(Int32CLongStruct lhs, Int32CLongStruct rhs)
+{
+    return { lhs.i + rhs.i, lhs.l + rhs.l };
 }

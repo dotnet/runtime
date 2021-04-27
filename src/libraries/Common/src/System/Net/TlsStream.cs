@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -9,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal class TlsStream : NetworkStream
+    internal sealed class TlsStream : NetworkStream
     {
         private readonly SslStream _sslStream;
         private readonly string _host;

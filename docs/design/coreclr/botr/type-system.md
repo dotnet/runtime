@@ -1,4 +1,4 @@
-﻿Type System Overview
+Type System Overview
 ====================
 
 Author: David Wrighton ([@davidwrighton](https://github.com/davidwrighton)) - 2010

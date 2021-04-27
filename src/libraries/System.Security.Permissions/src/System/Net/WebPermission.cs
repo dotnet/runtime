@@ -8,6 +8,9 @@ using System.Text.RegularExpressions;
 
 namespace System.Net
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class WebPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public WebPermission() { }

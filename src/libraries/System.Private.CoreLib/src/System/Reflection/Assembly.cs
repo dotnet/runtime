@@ -165,6 +165,7 @@ namespace System.Reflection
         /*
           Returns true if the assembly was loaded from the global assembly cache.
         */
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual bool GlobalAssemblyCache => throw NotImplemented.ByDesign;
         public virtual long HostContext => throw NotImplemented.ByDesign;
 
@@ -259,7 +260,7 @@ namespace System.Reflection
                 if (s_loadfile.TryGetValue(normalizedPath, out result))
                     return result;
 
-                AssemblyLoadContext alc = new IndividualAssemblyLoadContext(string.Format("Assembly.LoadFile({0})", normalizedPath));
+                AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
                 s_loadfile.Add(normalizedPath, result);
             }
@@ -371,10 +372,13 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded module depends on might be removed")]
         public virtual Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore) { throw NotImplemented.ByDesign; }
 
+        [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
 

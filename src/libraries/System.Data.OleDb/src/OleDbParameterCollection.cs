@@ -6,6 +6,8 @@ using System.Data.Common;
 
 namespace System.Data.OleDb
 {
+    [Editor("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OleDbParameterCollection : DbParameterCollection
     {
         private int _changeID;
@@ -64,27 +66,27 @@ namespace System.Data.OleDb
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)]
-        public OleDbParameter Add(string parameterName, object value)
+        public OleDbParameter Add(string? parameterName, object? value)
         {
             return Add(new OleDbParameter(parameterName, value));
         }
 
-        public OleDbParameter AddWithValue(string parameterName, object value)
+        public OleDbParameter AddWithValue(string? parameterName, object? value)
         {
             return Add(new OleDbParameter(parameterName, value));
         }
 
-        public OleDbParameter Add(string parameterName, OleDbType oleDbType)
+        public OleDbParameter Add(string? parameterName, OleDbType oleDbType)
         {
             return Add(new OleDbParameter(parameterName, oleDbType));
         }
 
-        public OleDbParameter Add(string parameterName, OleDbType oleDbType, int size)
+        public OleDbParameter Add(string? parameterName, OleDbType oleDbType, int size)
         {
             return Add(new OleDbParameter(parameterName, oleDbType, size));
         }
 
-        public OleDbParameter Add(string parameterName, OleDbType oleDbType, int size, string sourceColumn)
+        public OleDbParameter Add(string? parameterName, OleDbType oleDbType, int size, string? sourceColumn)
         {
             return Add(new OleDbParameter(parameterName, oleDbType, size, sourceColumn));
         }

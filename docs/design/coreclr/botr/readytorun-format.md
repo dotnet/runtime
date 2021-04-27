@@ -5,11 +5,12 @@ Revisions:
 * 1.1 - [Jan Kotas](https://github.com/jkotas) - 2015
 * 3.1 - [Tomas Rylek](https://github.com/trylek) - 2019
 * 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
+* 5.3 - [Tomas Rylek](https://github.com/trylek) - 2021
 
 # Introduction
 
 This document describes ReadyToRun format 3.1 implemented in CoreCLR as of June 2019 and not yet
-implemented proposed extensions 4.1 for the support of composite R2R file format. 
+implemented proposed extensions 4.1 for the support of composite R2R file format.
 **Composite R2R file format** has basically the same structure as the traditional R2R file format
 defined in earlier revisions except that the output file represents a larger number of input MSIL
 assemblies compiled together as a logical unit.
@@ -58,7 +59,7 @@ The limitations of the current format are:
 # Structures
 
 The structures and accompanying constants are defined in the [readytorun.h]
-(https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/readytorun.h) header file.
+(https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h) header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable
 envelope.
@@ -161,6 +162,8 @@ The following section types are defined and described later in this document:
 | InliningInfo2             |   114 | Image (added in V4.1)
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
+| PgoInstrumentationData    |   117 | Image (added in V5.2)
+| ManifestAssemblyMvids     |   118 | Image (added in V5.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -281,7 +284,7 @@ additional data determined by the flags.
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
 For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are
-compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/inc/gcrefmap.h#L157) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
+compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/gcrefmap.h#L158) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
 
 The auxiliary data table contains the exact same number of GC ref map records as there are method entries in the import section. To accelerate GC ref map lookup, the auxiliary data section starts with a lookup table holding the offset of every 1024-th method in the runtime function table within the linearized GC ref map.
 
@@ -294,7 +297,7 @@ The auxiliary data table contains the exact same number of GC ref map records as
 | 4 * (MethodCount / 1024 + 1) |  ... | Serialized GC ref map info
 
 The GCRef map is used to encode GC type of arguments for callsites. Logically, it is a sequence `<pos, token>` where `pos` is
-position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/inc/corcompile.h#L627) values):
+position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/corcompile.h#L633) values):
 
 | CORCOMPILE_GCREFMAP_TOKENS | Value | Stack frame entry interpretation
 |:---------------------------|------:|:--------------------------------
@@ -320,8 +323,8 @@ basic encoding, with extended encoding for large values).
 
 ## ReadyToRunSectionType.RuntimeFunctions
 
-This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info. 
-Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data. 
+This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info.
+Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data.
 The standard Windows xdata/pdata format is used.
 ARM format is used for x86 to compensate for the lack of x86 unwind info standard.
 The unwind info blob is immediately followed by the GC info blob. The encoding slightly differs for amd64
@@ -440,7 +443,7 @@ This section contains a native hashtable of all defined & export types within th
 |         1 | exported type
 
 The version-resilient hashing algorithm used for hashing the type names is implemented in
-[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/vm/versionresilienthashcode.cpp#L75).
+[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/versionresilienthashcode.cpp#L74).
 
 **Note:** This is a per-assembly section. In single-file R2R files, it is pointed to directly by the
 main R2R header; in composite R2R files, each component module has its own available type section pointed to
@@ -451,7 +454,7 @@ by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 This section contains a native hashtable of all generic method instantiations compiled into
 the R2R executable. The key is the method instance signature; the appropriate version-resilient
 hash code calculation is implemented in
-[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/versionresilienthashcode.cpp#L127);
+[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/versionresilienthashcode.cpp#L126);
 the value, represented by the `EntryPointWithBlobVertex` class, stores the method index in the
 runtime function table, the fixups blob and a blob encoding the method signature.
 
@@ -539,6 +542,17 @@ pair; in `Flags`, it has the `READYTORUN_FLAG_COMPONENT` bit set and its section
 the `OwnerCompositeExecutable` section that contains a UTF-8 string encoding the file name of the
 composite R2R executable this MSIL belongs to with extension (without path). Runtime uses this
 information to locate the composite R2R executable with the compiled native code when loading the MSIL.
+
+## ReadyToRunSectionType.PgoInstrumentationData (v5.2+)
+
+**TODO**: document PGO instrumentation data
+
+## ReadyToRunSectionType.ManifestAssemblyMvids (v5.3+)
+
+This section is a binary array of 16-byte MVID records, one for each assembly in the manifest metadata.
+Number of assemblies stored in the manifest metadata is equal to the number of MVID records in the array.
+MVID records are used at runtime to verify that the assemblies loaded match those referenced by the
+manifest metadata representing the versioning bubble.
 
 # Native Format
 

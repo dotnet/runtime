@@ -126,8 +126,26 @@ int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx)
     //
     // But since we have a different object returned for CreateEncryptor
     // and CreateDecryptor we don't need to worry about that.
+    uint8_t* iv = NULL;
 
-    return EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, KEEP_CURRENT_DIRECTION);
+#ifdef NEED_OPENSSL_3_0
+    // OpenSSL 3.0 alpha 13 does not properly reset the IV. Work around that by
+    // asking for the original IV, and giving it back.
+    uint8_t tmpIV[EVP_MAX_IV_LENGTH];
+
+    // If we're direct against 3.0, or we're portable and found 3.0
+    if (API_EXISTS(EVP_CIPHER_CTX_get_original_iv))
+    {
+        if (EVP_CIPHER_CTX_get_original_iv(ctx, tmpIV, sizeof(tmpIV)) != 1)
+        {
+            return 0;
+        }
+
+        iv = tmpIV;
+    }
+#endif
+
+    return EVP_CipherInit_ex(ctx, NULL, NULL, NULL, iv, KEEP_CURRENT_DIRECTION);
 }
 
 int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
@@ -195,6 +213,16 @@ const EVP_CIPHER* CryptoNative_EvpAes128Gcm()
     return EVP_aes_128_gcm();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes128Cfb128()
+{
+    return EVP_aes_128_cfb128();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes128Cfb8()
+{
+    return EVP_aes_128_cfb8();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
 {
     return EVP_aes_128_ccm();
@@ -203,6 +231,16 @@ const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
 const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
 {
     return EVP_aes_192_ecb();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes192Cfb128()
+{
+    return EVP_aes_192_cfb128();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes192Cfb8()
+{
+    return EVP_aes_192_cfb8();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
@@ -225,6 +263,16 @@ const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
     return EVP_aes_256_ecb();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes256Cfb128()
+{
+    return EVP_aes_256_cfb128();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes256Cfb8()
+{
+    return EVP_aes_256_cfb8();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
 {
     return EVP_aes_256_cbc();
@@ -245,6 +293,11 @@ const EVP_CIPHER* CryptoNative_EvpDesEcb()
     return EVP_des_ecb();
 }
 
+const EVP_CIPHER* CryptoNative_EvpDesCfb8()
+{
+    return EVP_des_cfb8();
+}
+
 const EVP_CIPHER* CryptoNative_EvpDesCbc()
 {
     return EVP_des_cbc();
@@ -253,6 +306,16 @@ const EVP_CIPHER* CryptoNative_EvpDesCbc()
 const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
 {
     return EVP_des_ede3();
+}
+
+const EVP_CIPHER* CryptoNative_EvpDes3Cfb8()
+{
+    return EVP_des_ede3_cfb8();
+}
+
+const EVP_CIPHER* CryptoNative_EvpDes3Cfb64()
+{
+    return EVP_des_ede3_cfb64();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDes3Cbc()

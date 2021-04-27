@@ -29,6 +29,7 @@
 #define g_clear_error monoeg_g_clear_error
 #define g_convert monoeg_g_convert
 #define g_convert_error_quark monoeg_g_convert_error_quark
+#define g_fixed_buffer_custom_allocator monoeg_g_fixed_buffer_custom_allocator
 #define g_dir_close monoeg_g_dir_close
 #define g_dir_open monoeg_g_dir_open
 #define g_dir_read_name monoeg_g_dir_read_name
@@ -159,6 +160,7 @@
 #define g_ptr_array_sized_new monoeg_g_ptr_array_sized_new
 #define g_ptr_array_sort monoeg_g_ptr_array_sort
 #define g_ptr_array_sort_with_data monoeg_g_ptr_array_sort_with_data
+#define g_ptr_array_find monoeg_g_ptr_array_find
 #define g_qsort_with_data monoeg_g_qsort_with_data
 #define g_queue_free monoeg_g_queue_free
 #define g_queue_is_empty monoeg_g_queue_is_empty
@@ -260,6 +262,7 @@
 #define g_usleep monoeg_g_usleep
 #define g_utf16_to_ucs4 monoeg_g_utf16_to_ucs4
 #define g_utf16_to_utf8 monoeg_g_utf16_to_utf8
+#define g_utf16_to_utf8_custom_alloc monoeg_g_utf16_to_utf8_custom_alloc
 #define g_utf16_ascii_equal monoeg_g_utf16_ascii_equal
 #define g_utf16_asciiz_equal monoeg_g_utf16_asciiz_equal
 #define g_utf8_jump_table monoeg_g_utf8_jump_table
@@ -271,6 +274,7 @@
 #define g_utf8_strup monoeg_g_utf8_strup
 #define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
+#define g_utf8_to_utf16_custom_alloc monoeg_g_utf8_to_utf16_custom_alloc
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_unichar_to_utf8 monoeg_g_unichar_to_utf8
 #define g_unichar_is_space monoeg_g_unichar_is_space
@@ -311,3 +315,6 @@
 #define g_set_printerr_handler monoeg_set_printerr_handler
 
 #define g_size_to_int monoeg_size_to_int
+#define g_ascii_charcmp monoeg_ascii_charcmp
+#define g_ascii_charcasecmp monoeg_ascii_charcasecmp
+#define g_warning_d monoeg_warning_d

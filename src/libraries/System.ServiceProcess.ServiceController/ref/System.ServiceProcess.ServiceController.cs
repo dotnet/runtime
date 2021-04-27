@@ -57,6 +57,7 @@ namespace System.ServiceProcess
         public void ServiceMainCallback(int argCount, System.IntPtr argPointer) { }
         public void Stop() { }
     }
+    [System.ComponentModel.DesignerAttribute("System.ServiceProcess.Design.ServiceControllerDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ServiceController : System.ComponentModel.Component
     {
         public ServiceController() { }
@@ -130,7 +131,7 @@ namespace System.ServiceProcess
         private readonly int _dummyPrimitive;
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.ServiceProcess.SessionChangeDescription changeDescription) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ServiceProcess.SessionChangeDescription a, System.ServiceProcess.SessionChangeDescription b) { throw null; }

@@ -1,5 +1,5 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Diagnostics;
@@ -39,6 +39,16 @@ namespace Microsoft.NET.HostModel
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool UpdateResource(SafeUpdateHandle hUpdate,
                                                      IntPtr lpType,
+                                                     IntPtr lpName,
+                                                     ushort wLanguage,
+                                                     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5)] byte[] lpData,
+                                                     uint cbData);
+
+            // Update a resource with data from a managed byte[]
+            [DllImport(nameof(Kernel32), SetLastError=true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool UpdateResource(SafeUpdateHandle hUpdate,
+                                                     string lpType,
                                                      IntPtr lpName,
                                                      ushort wLanguage,
                                                      [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5)] byte[] lpData,
@@ -96,7 +106,7 @@ namespace Microsoft.NET.HostModel
                                                  ushort wLang,
                                                  IntPtr lParam);
 
-            [DllImport(nameof(Kernel32),SetLastError=true)]
+            [DllImport(nameof(Kernel32), SetLastError=true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool EnumResourceTypes(IntPtr hModule,
                                                          EnumResTypeProc lpEnumFunc,
@@ -138,6 +148,8 @@ namespace Microsoft.NET.HostModel
             [DllImport(nameof(Kernel32), SetLastError=true)]
             public static extern uint SizeofResource(IntPtr hModule,
                                                      IntPtr hResInfo);
+
+            public const int ERROR_CALL_NOT_IMPLEMENTED = 0x78;
         }
 
         /// <summary>
@@ -148,9 +160,9 @@ namespace Microsoft.NET.HostModel
         /// native resources for the update handle without updating
         /// the target file.
         /// </summary>
-        private class SafeUpdateHandle : SafeHandle
+        private sealed class SafeUpdateHandle : SafeHandle
         {
-            private SafeUpdateHandle() : base(IntPtr.Zero, true)
+            public SafeUpdateHandle() : base(IntPtr.Zero, true)
             {
             }
 
@@ -183,9 +195,12 @@ namespace Microsoft.NET.HostModel
             {
                 // On Nano Server 1709+, `BeginUpdateResource` is exported but returns a null handle with a zero error
                 // Try to call `BeginUpdateResource` with an invalid parameter; the error should be non-zero if supported
+                // On Nano Server 20213, `BeginUpdateResource` fails with ERROR_CALL_NOT_IMPLEMENTED
                 using (var handle = Kernel32.BeginUpdateResource("", false))
                 {
-                    if (handle.IsInvalid && Marshal.GetLastWin32Error() == 0)
+                    int lastWin32Error = Marshal.GetLastWin32Error();
+
+                    if (handle.IsInvalid && (lastWin32Error == 0 || lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED))
                     {
                         return false;
                     }
@@ -272,7 +287,7 @@ namespace Microsoft.NET.HostModel
             return this;
         }
 
-        private static bool IsIntResource(IntPtr lpType)
+        internal static bool IsIntResource(IntPtr lpType)
         {
             return ((uint)lpType >> 16) == 0;
         }
@@ -293,6 +308,32 @@ namespace Microsoft.NET.HostModel
             if (!IsIntResource(lpType) || !IsIntResource(lpName))
             {
                 throw new ArgumentException("AddResource can only be used with integer resource types");
+            }
+
+            if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, Kernel32.LangID_LangNeutral_SublangNeutral, data, (uint)data.Length))
+            {
+                ThrowExceptionForLastWin32Error();
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add a language-neutral integer resource from a byte[] with
+        /// a particular type and name. This will not modify the
+        /// target until Update() is called.
+        /// Throws an InvalidOperationException if Update() was already called.
+        /// </summary>
+        public ResourceUpdater AddResource(byte[] data, string lpType, IntPtr lpName)
+        {
+            if (hUpdate.IsInvalid)
+            {
+                ThrowExceptionForInvalidUpdate();
+            }
+
+            if (!IsIntResource(lpName))
+            {
+                throw new ArgumentException("AddResource can only be used with integer resource names");
             }
 
             if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, Kernel32.LangID_LangNeutral_SublangNeutral, data, (uint)data.Length))

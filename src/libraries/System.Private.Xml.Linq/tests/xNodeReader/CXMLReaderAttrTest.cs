@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Xml;
 using Microsoft.Test.ModuleCore;
 
@@ -526,38 +525,6 @@ namespace CoreXml.Test.XLinq
                         TestLog.Compare(str, DataReader.Value, "Ordinal (" + i + "): Compare MoveToAttribute[i] and string");
                     }
                 }
-
-                //[Variation("GetAttribute(i) NegativeOneOrdinal", Priority = 0)]
-                public void NegativeOneOrdinal()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader.GetAttribute(-1);
-                }
-
-                //[Variation("GetAttribute(i) FieldCountOrdinal")]
-                public void FieldCountOrdinal()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT0");
-                    string str = DataReader.GetAttribute(DataReader.AttributeCount);
-                }
-
-                //[Variation("GetAttribute(i) OrdinalPlusOne", Priority = 0)]
-                public void OrdinalPlusOne()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader.GetAttribute(DataReader.AttributeCount + 1);
-                }
-
-                //[Variation("GetAttribute(i) OrdinalMinusOne")]
-                public void OrdinalMinusOne()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader.GetAttribute(-2);
-                }
             }
 
             //[TestCase(Name = "GetAttributeName", Desc = "GetAttributeName")]
@@ -809,38 +776,6 @@ namespace CoreXml.Test.XLinq
                         TestLog.Compare(DataReader.Value, DataReader[i], "Ordinal (" + i + "): Compare MoveToAttribute[i] and this[i]");
                         TestLog.Compare(str, DataReader.Value, "Ordinal (" + i + "): Compare MoveToAttribute[i] and string");
                     }
-                }
-
-                //[Variation("ThisOrdinal NegativeOneOrdinal", Priority = 0)]
-                public void NegativeOneOrdinal()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader[-1];
-                }
-
-                //[Variation("ThisOrdinal FieldCountOrdinal")]
-                public void FieldCountOrdinal()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT0");
-                    string str = DataReader[DataReader.AttributeCount];
-                }
-
-                //[Variation("ThisOrdinal OrdinalPlusOne", Priority = 0)]
-                public void OrdinalPlusOne()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader[DataReader.AttributeCount + 1];
-                }
-
-                //[Variation("ThisOrdinal OrdinalMinusOne")]
-                public void OrdinalMinusOne()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader[-2];
                 }
             }
 

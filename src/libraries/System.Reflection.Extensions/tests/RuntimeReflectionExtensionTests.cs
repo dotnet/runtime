@@ -235,7 +235,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.Equal(typeof(TestType).GetMethod("Flush"), typeof(TestType).GetRuntimeMethod("Flush", Array.Empty<Type>()));
+            Assert.Equal(typeof(TestType).GetMethod("Flush"), typeof(TestType).GetRuntimeMethod("Flush", Type.EmptyTypes));
         }
 
         [Fact]

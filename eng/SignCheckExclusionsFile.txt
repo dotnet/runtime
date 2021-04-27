@@ -6,10 +6,10 @@
 ;; The apphost and comhost are template files, modified by the SDK to produce the executable for FDE
 ;; and SCD apps. If they are signed, the file that the SDK produces has an invalid signature and
 ;; can't be signed again. More info at https://github.com/dotnet/core-setup/pull/7549.
-*apphost.exe;;Template, https://github.com/dotnet/core-setup/pull/7549
-*singlefilehost.exe;;Template, https://github.com/dotnet/core-setup/pull/7549
-*comhost.dll;;Template, https://github.com/dotnet/core-setup/pull/7549
-*apphosttemplateapphostexe.exe;;Template, https://github.com/dotnet/core-setup/pull/7549
-*comhosttemplatecomhostdll.dll;;Template, https://github.com/dotnet/core-setup/pull/7549
-*staticapphosttemplateapphostexe.exe;;Template, https://github.com/dotnet/core-setup/pull/7549
+*apphost.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*singlefilehost.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*comhost.dll;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*apphosttemplateapphostexe.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*comhosttemplatecomhostdll.dll;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*staticapphosttemplateapphostexe.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
 *dotnet.js;;Workaround, https://github.com/dotnet/core-eng/issues/9933

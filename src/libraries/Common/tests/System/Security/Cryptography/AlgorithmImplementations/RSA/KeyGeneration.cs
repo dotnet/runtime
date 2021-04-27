@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class KeyGeneration
     {
         [Fact]

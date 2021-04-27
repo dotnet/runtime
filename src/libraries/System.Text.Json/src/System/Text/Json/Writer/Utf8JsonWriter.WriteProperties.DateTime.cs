@@ -22,10 +22,8 @@ namespace System.Text.Json
         /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
         /// </remarks>
         public void WriteString(JsonEncodedText propertyName, DateTime value)
-            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, DateTime value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8PropertyName, value);

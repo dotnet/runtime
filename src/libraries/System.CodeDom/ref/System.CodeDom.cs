@@ -875,6 +875,7 @@ namespace System.CodeDom.Compiler
         System.CodeDom.Compiler.CompilerResults System.CodeDom.Compiler.ICodeCompiler.CompileAssemblyFromSource(System.CodeDom.Compiler.CompilerParameters options, string source) { throw null; }
         System.CodeDom.Compiler.CompilerResults System.CodeDom.Compiler.ICodeCompiler.CompileAssemblyFromSourceBatch(System.CodeDom.Compiler.CompilerParameters options, string[] sources) { throw null; }
     }
+    [System.ComponentModel.ToolboxItemAttribute(false)]
     public abstract partial class CodeDomProvider : System.ComponentModel.Component
     {
         protected CodeDomProvider() { }
@@ -993,7 +994,7 @@ namespace System.CodeDom.Compiler
         protected abstract void GenerateSnippetMember(System.CodeDom.CodeSnippetTypeMember e);
         protected virtual void GenerateSnippetStatement(System.CodeDom.CodeSnippetStatement e) { }
         protected void GenerateStatement(System.CodeDom.CodeStatement e) { }
-        protected void GenerateStatements(System.CodeDom.CodeStatementCollection stms) { }
+        protected void GenerateStatements(System.CodeDom.CodeStatementCollection stmts) { }
         protected abstract void GenerateThisReferenceExpression(System.CodeDom.CodeThisReferenceExpression e);
         protected abstract void GenerateThrowExceptionStatement(System.CodeDom.CodeThrowExceptionStatement e);
         protected abstract void GenerateTryCatchFinallyStatement(System.CodeDom.CodeTryCatchFinallyStatement e);

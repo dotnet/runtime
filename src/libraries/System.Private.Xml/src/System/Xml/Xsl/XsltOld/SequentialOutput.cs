@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Collections;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -54,8 +55,8 @@ namespace System.Xml.Xsl.XsltOld
 
         // Instance members
         private readonly Processor _processor;
-        protected Encoding encoding;
-        private ArrayList _outputCache;
+        protected Encoding? encoding;
+        private ArrayList? _outputCache;
         private bool _firstLine = true;
         private bool _secondRoot;
 
@@ -63,18 +64,17 @@ namespace System.Xml.Xsl.XsltOld
         private XsltOutput _output;
         private bool _isHtmlOutput;
         private bool _isXmlOutput;
-        private Hashtable _cdataElements;
+        private Hashtable? _cdataElements;
         private bool _indentOutput;
         private bool _outputDoctype;
         private bool _outputXmlDecl;
         private bool _omitXmlDeclCalled;
 
         // Uri Escaping:
-        private byte[] _byteBuffer;
-        private Encoding _utf8Encoding;
+        private byte[]? _byteBuffer;
+        private Encoding? _utf8Encoding;
 
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
-
+        [MemberNotNull(nameof(_output))]
         private void CacheOuptutProps(XsltOutput output)
         {
             _output = output;
@@ -108,7 +108,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(record.MainNode.NodeType == XmlNodeType.Element);
             BuilderInfo mainNode = record.MainNode;
-            HtmlElementProps htmlProps = null;
+            HtmlElementProps? htmlProps = null;
             if (_isHtmlOutput)
             {
                 if (mainNode.Prefix.Length == 0)
@@ -175,7 +175,7 @@ namespace System.Xml.Xsl.XsltOld
                 Write("<META http-equiv=\"Content-Type\" content=\"");
                 Write(_output.MediaType);
                 Write("; charset=");
-                Write(this.encoding.WebName);
+                Write(this.encoding!.WebName);
                 Write("\">");
             }
         }
@@ -206,7 +206,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             for (int i = 0; i < node.TextInfoCount; i++)
             {
-                string text = node.TextInfo[i];
+                string? text = node.TextInfo[i];
                 if (text == null)
                 { // disableEscaping marker
                     i++;
@@ -312,7 +312,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteEndElement(RecordBuilder record)
         {
-            HtmlElementProps htmlProps = record.Manager.CurrentElementScope.HtmlElementProps;
+            HtmlElementProps? htmlProps = record.Manager.CurrentElementScope.HtmlElementProps;
 
             if (htmlProps != null && htmlProps.Empty)
             {
@@ -372,7 +372,7 @@ namespace System.Xml.Xsl.XsltOld
                 case XmlNodeType.Text:
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    if (_xmlCharType.IsOnlyWhitespace(node.Value))
+                    if (XmlCharType.IsOnlyWhitespace(node.Value))
                     {
                         return false;
                     }
@@ -408,7 +408,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int record = 0; record < _outputCache.Count; record++)
             {
                 Debug.Assert(_outputCache[record] is BuilderInfo);
-                BuilderInfo info = (BuilderInfo)_outputCache[record];
+                BuilderInfo info = (BuilderInfo)_outputCache[record]!;
 
                 OutputRecord(info);
             }
@@ -612,11 +612,11 @@ namespace System.Xml.Xsl.XsltOld
                                 _utf8Encoding = Encoding.UTF8;
                                 _byteBuffer = new byte[_utf8Encoding.GetMaxByteCount(1)];
                             }
-                            int bytes = _utf8Encoding.GetBytes(value, i - 1, 1, _byteBuffer, 0);
+                            int bytes = _utf8Encoding.GetBytes(value, i - 1, 1, _byteBuffer!, 0);
                             for (int j = 0; j < bytes; j++)
                             {
                                 Write("%");
-                                Write(((uint)_byteBuffer[j]).ToString("X2", CultureInfo.InvariantCulture));
+                                Write(((uint)_byteBuffer![j]).ToString("X2", CultureInfo.InvariantCulture));
                             }
                         }
                         else
@@ -685,19 +685,19 @@ namespace System.Xml.Xsl.XsltOld
             Write(value.Replace(s_CDataEnd, s_CDataSplit));
         }
 
-        private void WriteAttributes(ArrayList list, int count, HtmlElementProps htmlElementsProps)
+        private void WriteAttributes(ArrayList list, int count, HtmlElementProps? htmlElementsProps)
         {
             Debug.Assert(count <= list.Count);
             for (int attrib = 0; attrib < count; attrib++)
             {
                 Debug.Assert(list[attrib] is BuilderInfo);
-                BuilderInfo attribute = (BuilderInfo)list[attrib];
+                BuilderInfo attribute = (BuilderInfo)list[attrib]!;
                 string attrValue = attribute.Value;
                 bool abr = false, uri = false;
                 {
                     if (htmlElementsProps != null && attribute.Prefix.Length == 0)
                     {
-                        HtmlAttributeProps htmlAttrProps = attribute.htmlAttrProps;
+                        HtmlAttributeProps? htmlAttrProps = attribute.htmlAttrProps;
                         if (htmlAttrProps == null && attribute.search)
                         {
                             htmlAttrProps = HtmlAttributeProps.GetProps(attribute.LocalName);
@@ -764,7 +764,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         // Abstract methods
         internal abstract void Write(char outputChar);
-        internal abstract void Write(string outputText);
+        internal abstract void Write(string? outputText);
         internal abstract void Close();
     }
 }

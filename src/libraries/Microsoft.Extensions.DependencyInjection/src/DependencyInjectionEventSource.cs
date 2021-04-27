@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
@@ -14,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
 
         // Event source doesn't support large payloads so we chunk formatted call site tree
-        private int MaxChunkSize = 10 * 1024;
+        private const int MaxChunkSize = 10 * 1024;
 
 
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
@@ -29,6 +30,8 @@ namespace Microsoft.Extensions.DependencyInjection
         // - A stop event's event id must be next one after its start event.
         // - Avoid renaming methods or parameters marked with EventAttribute. EventSource uses these to form the event object.
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Parameters to this method are primitive and are trimmer safe.")]
         [Event(1, Level = EventLevel.Verbose)]
         private void CallSiteBuilt(string serviceType, string callSite, int chunkIndex, int chunkCount)
         {
@@ -51,6 +54,21 @@ namespace Microsoft.Extensions.DependencyInjection
         public void DynamicMethodBuilt(string serviceType, int methodSize)
         {
             WriteEvent(4, serviceType, methodSize);
+        }
+
+        [Event(5, Level = EventLevel.Verbose)]
+        public void ScopeDisposed(int serviceProviderHashCode, int scopedServicesResolved, int disposableServices)
+        {
+            WriteEvent(5, serviceProviderHashCode, scopedServicesResolved, disposableServices);
+        }
+
+        [NonEvent]
+        public void ScopeDisposed(ServiceProviderEngine engine, ScopeState state)
+        {
+            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                ScopeDisposed(engine.GetHashCode(), state.ResolvedServicesCount, state.DisposableServicesCount);
+            }
         }
 
         [NonEvent]
@@ -104,7 +122,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private class NodeCountingVisitor : ExpressionVisitor
+        private sealed class NodeCountingVisitor : ExpressionVisitor
         {
             public int NodeCount { get; private set; }
 

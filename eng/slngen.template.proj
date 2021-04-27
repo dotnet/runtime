@@ -1,0 +1,11 @@
+<!-- This file is used by slns.proj. -->
+<Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <IncludeInSolutionFile>false</IncludeInSolutionFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)ref\*.*proj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\*.*proj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)tests\**\*.Tests.*proj" />
+  </ItemGroup>
+</Project>

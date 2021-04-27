@@ -143,6 +143,20 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         /// <summary>
+        /// Tests that the explicit IDictionary.Item[] implementation returns null on a non-existing key.
+        /// </summary>
+        [Fact]
+        public static void IDictionaryItemTests()
+        {
+            KeyValuePair<int, string>[] expectedArr = new KeyValuePair<int, string>[] {
+                new KeyValuePair<int, string>(1, "one")
+            };
+            DummyDictionary<int, string> dummyExpectedDict = new DummyDictionary<int, string>(expectedArr);
+            IDictionary dictionary = new ReadOnlyDictionary<int, string>(dummyExpectedDict);
+            Assert.Null(dictionary[2]);
+        }
+
+        /// <summary>
         /// Tests that items can be retrieved by key from the Dictionary.
         /// </summary>
         [Fact]

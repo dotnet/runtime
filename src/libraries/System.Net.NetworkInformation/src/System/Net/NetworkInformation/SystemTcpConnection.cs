@@ -4,7 +4,7 @@
 namespace System.Net.NetworkInformation
 {
     // Represents an active TCP connection.
-    internal class SystemTcpConnectionInformation : TcpConnectionInformation
+    internal sealed class SystemTcpConnectionInformation : TcpConnectionInformation
     {
         private readonly IPEndPoint _localEndPoint;
         private readonly IPEndPoint _remoteEndPoint;
@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
         }
 
         // IPV6 version of the Tcp row.
-        internal unsafe SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
+        internal SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
         {
             _state = row.state;
 

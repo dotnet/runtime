@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection
+    internal sealed partial class HttpConnection
     {
         private sealed class ChunkedEncodingReadStream : HttpContentReadStream
         {
@@ -56,7 +56,6 @@ namespace System.Net.Http
                     if (_connection == null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
-                        if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                         return 0;
                     }
 
@@ -192,7 +191,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 return
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
@@ -362,7 +361,6 @@ namespace System.Net.Http
                                     cancellationRegistration.Dispose();
                                     CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
@@ -465,10 +463,16 @@ namespace System.Net.Http
                         if (cts == null) // only create the drain timer if we have to go async
                         {
                             TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+
+                            if (drainTime == TimeSpan.Zero)
+                            {
+                                return false;
+                            }
+
                             if (drainTime != Timeout.InfiniteTimeSpan)
                             {
                                 cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                                ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
+                                ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                             }
                         }
 

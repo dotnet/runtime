@@ -18,7 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = Hashtable.Synchronized(tempNameTable);
         }
 
-        public ReplicationNeighbor this[int index] => (ReplicationNeighbor)InnerList[index];
+        public ReplicationNeighbor this[int index] => (ReplicationNeighbor)InnerList[index]!;
 
         public bool Contains(ReplicationNeighbor neighbor)
         {

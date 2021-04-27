@@ -217,7 +217,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
         [Theory]
         [InlineData(false)]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         public static void TestContent(bool fromSpan)
@@ -238,7 +238,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             if (fromSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 cms.Decode(encodedMessage.AsSpan());
 #else
                 throw new Xunit.Sdk.XunitException(
@@ -380,7 +380,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [PlatformSpecific(~TestPlatforms.Windows)] /* Applies to managed PAL only. */
+        [SkipOnPlatform(TestPlatforms.Windows, "Applies to managed PAL only.")]
         public static void FromManagedPal_CompatWithOctetStringWrappedContents_Decrypt()
         {
             byte[] expectedContent = new byte[] { 1, 2, 3 };

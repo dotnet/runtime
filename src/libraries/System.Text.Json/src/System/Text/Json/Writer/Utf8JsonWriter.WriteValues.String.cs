@@ -16,10 +16,8 @@ namespace System.Text.Json
         /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStringValue(JsonEncodedText value)
-            => WriteStringValueHelper(value.EncodedUtf8Bytes);
-
-        private void WriteStringValueHelper(ReadOnlySpan<byte> utf8Value)
         {
+            ReadOnlySpan<byte> utf8Value = value.EncodedUtf8Bytes;
             Debug.Assert(utf8Value.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8Value);
@@ -99,7 +97,11 @@ namespace System.Text.Json
 
         private void WriteStringByOptions(ReadOnlySpan<char> value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteStringIndented(value);
@@ -242,7 +244,11 @@ namespace System.Text.Json
 
         private void WriteStringByOptions(ReadOnlySpan<byte> utf8Value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteStringIndented(utf8Value);
@@ -342,6 +348,20 @@ namespace System.Text.Json
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
+        }
+
+        /// <summary>
+        /// Writes a number as a JSON string. The string value is not escaped.
+        /// </summary>
+        /// <param name="utf8Value"></param>
+        internal void WriteNumberValueAsStringUnescaped(ReadOnlySpan<byte> utf8Value)
+        {
+            // The value has been validated prior to calling this method.
+
+            WriteStringByOptions(utf8Value);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = JsonTokenType.String;
         }
     }
 }

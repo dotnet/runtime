@@ -52,9 +52,10 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all element children with a particular QName.
     /// </summary>
-    internal class XPathDocumentElementChildIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentElementChildIterator : XPathDocumentBaseIterator
     {
-        private readonly string _localName, _namespaceUri;
+        private readonly string? _localName;
+        private readonly string _namespaceUri;
 
         /// <summary>
         /// Create an iterator that ranges over all element children of "parent" having the specified QName.
@@ -109,7 +110,7 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all content children with a particular XPathNodeType.
     /// </summary>
-    internal class XPathDocumentKindChildIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentKindChildIterator : XPathDocumentBaseIterator
     {
         private readonly XPathNodeType _typ;
 
@@ -162,10 +163,11 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all element descendants with a particular QName.
     /// </summary>
-    internal class XPathDocumentElementDescendantIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentElementDescendantIterator : XPathDocumentBaseIterator
     {
-        private readonly XPathDocumentNavigator _end;
-        private readonly string _localName, _namespaceUri;
+        private readonly XPathDocumentNavigator? _end;
+        private readonly string? _localName;
+        private readonly string _namespaceUri;
         private bool _matchSelf;
 
         /// <summary>
@@ -234,9 +236,9 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all content descendants with a particular XPathNodeType.
     /// </summary>
-    internal class XPathDocumentKindDescendantIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentKindDescendantIterator : XPathDocumentBaseIterator
     {
-        private readonly XPathDocumentNavigator _end;
+        private readonly XPathDocumentNavigator? _end;
         private readonly XPathNodeType _typ;
         private bool _matchSelf;
 

@@ -32,7 +32,6 @@ namespace System.Net
         public bool Expired { get { throw null; } set { } }
         public System.DateTime Expires { get { throw null; } set { } }
         public bool HttpOnly { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Path { get { throw null; } set { } }
@@ -43,7 +42,7 @@ namespace System.Net
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Value { get { throw null; } set { } }
         public int Version { get { throw null; } set { } }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -122,7 +121,7 @@ namespace System.Net
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public string Host { get { throw null; } }
         public int Port { get { throw null; } }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -240,8 +239,9 @@ namespace System.Net
         public bool IsIPv6Multicast { get { throw null; } }
         public bool IsIPv6SiteLocal { get { throw null; } }
         public bool IsIPv6Teredo { get { throw null; } }
+        public bool IsIPv6UniqueLocal { get { throw null; } }
         public long ScopeId { get { throw null; } set { } }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static short HostToNetworkOrder(short host) { throw null; }
@@ -253,12 +253,12 @@ namespace System.Net
         public static short NetworkToHostOrder(short network) { throw null; }
         public static int NetworkToHostOrder(int network) { throw null; }
         public static long NetworkToHostOrder(long network) { throw null; }
-        public static System.Net.IPAddress Parse(System.ReadOnlySpan<char> ipString) { throw null; }
+        public static System.Net.IPAddress Parse(System.ReadOnlySpan<char> ipSpan) { throw null; }
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
         public override string ToString() { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> ipString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? address) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? address) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> ipSpan, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial class IPEndPoint : System.Net.EndPoint
@@ -271,14 +271,14 @@ namespace System.Net
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public int Port { get { throw null; } set { } }
         public override System.Net.EndPoint Create(System.Net.SocketAddress socketAddress) { throw null; }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.IPEndPoint Parse(System.ReadOnlySpan<char> s) { throw null; }
         public static System.Net.IPEndPoint Parse(string s) { throw null; }
         public override System.Net.SocketAddress Serialize() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPEndPoint result) { throw null; }
-        public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPEndPoint? result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
+        public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
     }
     public partial interface IWebProxy
     {
@@ -305,7 +305,7 @@ namespace System.Net
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string UserName { get { throw null; } set { } }
         public System.Net.NetworkCredential GetCredential(string? host, int port, string? authenticationType) { throw null; }
-        public System.Net.NetworkCredential GetCredential(System.Uri? uri, string? authType) { throw null; }
+        public System.Net.NetworkCredential GetCredential(System.Uri? uri, string? authenticationType) { throw null; }
     }
     public partial class SocketAddress
     {

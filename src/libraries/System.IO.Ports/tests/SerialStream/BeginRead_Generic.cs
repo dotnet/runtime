@@ -13,13 +13,6 @@ namespace System.IO.Ports.Tests
 {
     public class SerialStream_BeginRead_Generic : PortsTest
     {
-        // Set bounds fore random timeout values.
-        // If the min is to low read will not timeout accurately and the testcase will fail
-        private const int minRandomTimeout = 250;
-
-        // If the max is to large then the testcase will take forever to run
-        private const int maxRandomTimeout = 2000;
-
         // If the percentage difference between the expected timeout and the actual timeout
         // found through Stopwatch is greater then 10% then the timeout value was not correctly
         // to the read method and the testcase fails.
@@ -38,10 +31,6 @@ namespace System.IO.Ports.Tests
         // create an byte array to pass into the method the following is the size of the
         // byte array used in this situation
         private const int defaultByteArraySize = 1;
-
-        private const int NUM_TRYS = 5;
-
-        private const int MAX_WAIT_THREAD = 1000;
 
         #region Test Cases
 
@@ -99,25 +88,6 @@ namespace System.IO.Ports.Tests
                 com1.BaseStream.EndRead(ar);
 
                 Assert.True(mre.WaitOne(200));
-            }
-        }
-
-        private void WriteToCom1()
-        {
-            using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
-            {
-                var rndGen = new Random(-55);
-                var xmitBuffer = new byte[1];
-                int sleepPeriod = rndGen.Next(minRandomTimeout, maxRandomTimeout / 2);
-
-                // Sleep some random period with of a maximum duration of half the largest possible timeout value for a read method on COM1
-                Thread.Sleep(sleepPeriod);
-
-                com2.Open();
-                com2.Write(xmitBuffer, 0, xmitBuffer.Length);
-
-                if (com2.IsOpen)
-                    com2.Close();
             }
         }
 
@@ -236,8 +206,6 @@ namespace System.IO.Ports.Tests
         [ConditionalFact(nameof(HasNullModem))]
         public void BytesToRead_Equal_Buffer_Size()
         {
-            var rndGen = new Random(-55);
-
             VerifyBytesToRead(numRndBytesToRead, new UTF8Encoding());
         }
         #endregion

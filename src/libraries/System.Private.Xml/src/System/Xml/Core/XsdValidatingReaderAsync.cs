@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -16,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
+    internal sealed partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
     {
         // Gets the text value of the current node.
         public override Task<string> GetValueAsync()
@@ -74,7 +73,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             if (!CanReadContentAs(this.NodeType))
             {
@@ -270,7 +269,7 @@ namespace System.Xml
             if (task.IsSuccess())
             {
                 _validationState = ValidatingReaderState.Read;
-                return AsyncHelper.DoneTaskTrue; ;
+                return AsyncHelper.DoneTaskTrue;
             }
             else
             {
@@ -347,7 +346,6 @@ namespace System.Xml
         // Skips to the end tag of the current element.
         public override async Task SkipAsync()
         {
-            int startDepth = Depth;
             switch (NodeType)
             {
                 case XmlNodeType.Element:
@@ -684,9 +682,8 @@ namespace System.Xml
             return content.Item2;
         }
 
-        private async Task<Tuple<string, object>> InternalReadContentAsObjectTupleAsync(bool unwrapTypedValue)
+        private async Task<(string, object)> InternalReadContentAsObjectTupleAsync(bool unwrapTypedValue)
         {
-            Tuple<string, object> tuple;
             string originalStringValue;
 
             XmlNodeType nodeType = this.NodeType;
@@ -701,14 +698,12 @@ namespace System.Xml
                         originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
                     }
 
-                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue));
-                    return tuple;
+                    return (originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue));
                 }
                 else
                 {
                     // return string value
-                    tuple = new Tuple<string, object>(originalStringValue, this.Value);
-                    return tuple;
+                    return (originalStringValue, this.Value);
                 }
             }
             else if (nodeType == XmlNodeType.EndElement)
@@ -718,15 +713,13 @@ namespace System.Xml
                     Debug.Assert(_originalAtomicValueString != null);
                     originalStringValue = _originalAtomicValueString;
 
-                    tuple = new Tuple<string, object>(originalStringValue, _atomicValue);
-                    return tuple;
+                    return (originalStringValue, _atomicValue);
                 }
                 else
                 {
                     originalStringValue = string.Empty;
 
-                    tuple = new Tuple<string, object>(originalStringValue, string.Empty);
-                    return tuple;
+                    return (originalStringValue, string.Empty);
                 }
             }
             else
@@ -741,8 +734,7 @@ namespace System.Xml
                     Debug.Assert(_originalAtomicValueString != null);
                     originalStringValue = _originalAtomicValueString;
 
-                    tuple = new Tuple<string, object>(originalStringValue, value);
-                    return tuple;
+                    return (originalStringValue, value);
                 }
                 else
                 {
@@ -756,25 +748,24 @@ namespace System.Xml
                         originalStringValue = await InternalReadContentAsStringAsync().ConfigureAwait(false);
                     }
 
-                    tuple = new Tuple<string, object>(originalStringValue, originalStringValue);
-                    return tuple;
+                    return (originalStringValue, originalStringValue);
                 }
             }
         }
 
-        private Task<Tuple<XmlSchemaType, object>> InternalReadElementContentAsObjectAsync()
+        private Task<(XmlSchemaType, object)> InternalReadElementContentAsObjectAsync()
         {
             return InternalReadElementContentAsObjectAsync(false);
         }
 
-        private async Task<Tuple<XmlSchemaType, object>> InternalReadElementContentAsObjectAsync(bool unwrapTypedValue)
+        private async Task<(XmlSchemaType, object)> InternalReadElementContentAsObjectAsync(bool unwrapTypedValue)
         {
             var content = await InternalReadElementContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
 
-            return new Tuple<XmlSchemaType, object>(content.Item1, content.Item3);
+            return (content.Item1, content.Item3);
         }
 
-        private async Task<Tuple<XmlSchemaType, string, object>> InternalReadElementContentAsObjectTupleAsync(bool unwrapTypedValue)
+        private async Task<(XmlSchemaType, string, object)> InternalReadElementContentAsObjectTupleAsync(bool unwrapTypedValue)
         {
             XmlSchemaType? xmlType = null;
             string originalString;
@@ -798,7 +789,7 @@ namespace System.Xml
                 xmlType = ElementXmlType; // Set this for default values
                 await this.ReadAsync().ConfigureAwait(false);
 
-                return new Tuple<XmlSchemaType, string, object>(xmlType!, originalString, typedValue);
+                return (xmlType!, originalString, typedValue);
             }
 
             // move to content and read typed value
@@ -853,7 +844,7 @@ namespace System.Xml
             // move to next node
             await this.ReadAsync().ConfigureAwait(false);
 
-            return new Tuple<XmlSchemaType, string, object>(xmlType!, originalString, typedValue);
+            return (xmlType!, originalString, typedValue);
         }
 
         private async Task<object?> ReadTillEndElementAsync()

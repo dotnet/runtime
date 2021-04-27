@@ -24,14 +24,23 @@ This would result in a `PlatformNotSupportedException` when invoking the `Create
 
 The underlying ciphers and chaining are performed by the system libraries.
 
-| Cipher + Mode | Windows | Linux | macOS |
-|---------------|---------|-------|-------|
-| AES-CBC | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| AES-ECB | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 3DES-CBC | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 3DES-ECB | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| DES-CBC | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| DES-ECB | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Cipher + Mode | Windows 8 - 10     | Windows 7            | Linux              | macOS              |
+|---------------|--------------------|----------------------|--------------------|--------------------|
+| AES-CBC       | :white_check_mark: | :white_check_mark:   | :white_check_mark: | :white_check_mark: |
+| AES-ECB       | :white_check_mark: | :white_check_mark:   | :white_check_mark: | :white_check_mark: |
+| AES-CFB8*     | :white_check_mark: | :white_check_mark:** | :white_check_mark: | :white_check_mark: |
+| AES-CFB128*   | :white_check_mark: | :x:                  | :white_check_mark: | :white_check_mark: |
+| 3DES-CBC      | :white_check_mark: | :white_check_mark:   | :white_check_mark: | :white_check_mark: |
+| 3DES-ECB      | :white_check_mark: | :white_check_mark:   | :white_check_mark: | :white_check_mark: |
+| 3DES-CFB8*    | :white_check_mark: | :white_check_mark:** | :white_check_mark: | :white_check_mark: |
+| 3DES-CFB64*   | :white_check_mark: | :x:                  | :white_check_mark: | :white_check_mark: |
+| DES-CBC       | :white_check_mark: | :white_check_mark:   | :white_check_mark: | :white_check_mark: |
+| DES-ECB       | :white_check_mark: | :white_check_mark:   | :white_check_mark: | :white_check_mark: |
+| DES-CFB8*     | :white_check_mark: | :x:                  | :white_check_mark: | :white_check_mark: |
+
+\* Available starting in .NET 5.
+
+** Available starting in .NET 6.
 
 In the future there is a possibility that new ciphers may be added to .NET Core before one (or more) supported platforms have system support for it.
 This would result in a `PlatformNotSupportedException` when invoking the `Create()` method for the algorithm.

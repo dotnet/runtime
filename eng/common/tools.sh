@@ -64,6 +64,10 @@ else
   use_global_nuget_cache=${use_global_nuget_cache:-true}
 fi
 
+# Used when restoring .NET SDK from alternative feeds
+runtime_source_feed=${runtime_source_feed:-''}
+runtime_source_feed_key=${runtime_source_feed_key:-''}
+
 # Resolve any symlinks in the given path.
 function ResolvePath {
   local path=$1
@@ -85,16 +89,16 @@ function ResolvePath {
 function ReadGlobalVersion {
   local key=$1
 
-  local line=$(awk "/$key/ {print; exit}" "$global_json_file")
-  local pattern="\"$key\" *: *\"(.*)\""
+  if command -v jq &> /dev/null; then
+    _ReadGlobalVersion="$(jq -r ".[] | select(has(\"$key\")) | .\"$key\"" "$global_json_file")"
+  elif [[ "$(cat "$global_json_file")" =~ \"$key\"[[:space:]\:]*\"([^\"]+) ]]; then
+    _ReadGlobalVersion=${BASH_REMATCH[1]}
+  fi
 
-  if [[ ! $line =~ $pattern ]]; then
+  if [[ -z "$_ReadGlobalVersion" ]]; then
     Write-PipelineTelemetryError -category 'Build' "Error: Cannot find \"$key\" in $global_json_file"
     ExitWithExitCode 1
   fi
-
-  # return value
-  _ReadGlobalVersion=${BASH_REMATCH[1]}
 }
 
 function InitializeDotNetCli {
@@ -170,11 +174,11 @@ function InitializeDotNetCli {
 function InstallDotNetSdk {
   local root=$1
   local version=$2
-  local architecture=""
-  if [[ $# == 3 ]]; then
+  local architecture="unset"
+  if [[ $# -ge 3 ]]; then
     architecture=$3
   fi
-  InstallDotNet "$root" "$version" $architecture
+  InstallDotNet "$root" "$version" $architecture 'sdk' 'false' $runtime_source_feed $runtime_source_feed_key
 }
 
 function InstallDotNet {
@@ -185,50 +189,50 @@ function InstallDotNet {
   local install_script=$_GetDotNetInstallScript
 
   local archArg=''
-  if [[ -n "${3:-}" ]]; then
+  if [[ -n "${3:-}" ]] && [ "$3" != 'unset' ]; then
     archArg="--architecture $3"
   fi
   local runtimeArg=''
-  if [[ -n "${4:-}" ]]; then
+  if [[ -n "${4:-}" ]] && [ "$4" != 'sdk' ]; then
     runtimeArg="--runtime $4"
   fi
-
   local skipNonVersionedFilesArg=""
-  if [[ "$#" -ge "5" ]]; then
+  if [[ "$#" -ge "5" ]] && [[ "$5" != 'false' ]]; then
     skipNonVersionedFilesArg="--skip-non-versioned-files"
   fi
   bash "$install_script" --version $version --install-dir "$root" $archArg $runtimeArg $skipNonVersionedFilesArg || {
     local exit_code=$?
-    Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from public location (exit code '$exit_code')."
+    echo "Failed to install dotnet SDK from public location (exit code '$exit_code')."
 
-    if [[ -n "$runtimeArg" ]]; then
-      local runtimeSourceFeed=''
-      if [[ -n "${6:-}" ]]; then
-        runtimeSourceFeed="--azure-feed $6"
+    local runtimeSourceFeed=''
+    if [[ -n "${6:-}" ]]; then
+      runtimeSourceFeed="--azure-feed $6"
+    fi
+
+    local runtimeSourceFeedKey=''
+    if [[ -n "${7:-}" ]]; then
+      # The 'base64' binary on alpine uses '-d' and doesn't support '--decode'
+      # '-d'. To work around this, do a simple detection and switch the parameter
+      # accordingly.
+      decodeArg="--decode"
+      if base64 --help 2>&1 | grep -q "BusyBox"; then
+          decodeArg="-d"
       fi
+      decodedFeedKey=`echo $7 | base64 $decodeArg`
+      runtimeSourceFeedKey="--feed-credential $decodedFeedKey"
+    fi
 
-      local runtimeSourceFeedKey=''
-      if [[ -n "${7:-}" ]]; then
-        # The 'base64' binary on alpine uses '-d' and doesn't support '--decode'
-        # '-d'. To work around this, do a simple detection and switch the parameter
-        # accordingly.
-        decodeArg="--decode"
-        if base64 --help 2>&1 | grep -q "BusyBox"; then
-            decodeArg="-d"
-        fi
-        decodedFeedKey=`echo $7 | base64 $decodeArg`
-        runtimeSourceFeedKey="--feed-credential $decodedFeedKey"
-      fi
-
-      if [[ -n "$runtimeSourceFeed" || -n "$runtimeSourceFeedKey" ]]; then
-        bash "$install_script" --version $version --install-dir "$root" $archArg $runtimeArg $skipNonVersionedFilesArg $runtimeSourceFeed $runtimeSourceFeedKey || {
-          local exit_code=$?
-          Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from custom location '$runtimeSourceFeed' (exit code '$exit_code')."
-          ExitWithExitCode $exit_code
-        }
-      else
+    if [[ -n "$runtimeSourceFeed" || -n "$runtimeSourceFeedKey" ]]; then
+      bash "$install_script" --version $version --install-dir "$root" $archArg $runtimeArg $skipNonVersionedFilesArg $runtimeSourceFeed $runtimeSourceFeedKey || {
+        local exit_code=$?
+        Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from custom location '$runtimeSourceFeed' (exit code '$exit_code')."
         ExitWithExitCode $exit_code
+      }
+    else
+      if [[ $exit_code != 0 ]]; then
+        Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from public location (exit code '$exit_code')."
       fi
+      ExitWithExitCode $exit_code
     fi
   }
 }
@@ -245,7 +249,7 @@ function with_retries {
       return 0
     fi
 
-    timeout=$((2**$retries-1))
+    timeout=$((3**$retries-1))
     echo "Failed to execute '$@'. Waiting $timeout seconds before next attempt ($retries out of $maxRetries)." 1>&2
     sleep $timeout
   done
@@ -267,10 +271,18 @@ function GetDotNetInstallScript {
 
     # Use curl if available, otherwise use wget
     if command -v curl > /dev/null; then
-      with_retries curl "$install_script_url" -sSL --retry 10 --create-dirs -o "$install_script" || {
-        local exit_code=$?
-        Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to acquire dotnet install script (exit code '$exit_code')."
-        ExitWithExitCode $exit_code
+      # first, try directly, if this fails we will retry with verbose logging
+      curl "$install_script_url" -sSL --retry 10 --create-dirs -o "$install_script" || {
+        if command -v openssl &> /dev/null; then
+          echo "Curl failed; dumping some information about dotnet.microsoft.com for later investigation"
+          echo | openssl s_client -showcerts -servername dotnet.microsoft.com  -connect dotnet.microsoft.com:443
+        fi
+        echo "Will now retry the same URL with verbose logging."
+        with_retries curl "$install_script_url" -sSL --verbose --retry 10 --create-dirs -o "$install_script" || {
+          local exit_code=$?
+          Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to acquire dotnet install script (exit code '$exit_code')."
+          ExitWithExitCode $exit_code
+        }
       }
     else
       with_retries wget -v -O "$install_script" "$install_script_url" || {
@@ -294,15 +306,17 @@ function InitializeBuildTool {
   # return values
   _InitializeBuildTool="$_InitializeDotNetCli/dotnet"
   _InitializeBuildToolCommand="msbuild"
-  _InitializeBuildToolFramework="netcoreapp2.1"
+  _InitializeBuildToolFramework="netcoreapp3.1"
 }
 
+# Set RestoreNoCache as a workaround for https://github.com/NuGet/Home/issues/3116
 function GetNuGetPackageCachePath {
   if [[ -z ${NUGET_PACKAGES:-} ]]; then
     if [[ "$use_global_nuget_cache" == true ]]; then
       export NUGET_PACKAGES="$HOME/.nuget/packages"
     else
       export NUGET_PACKAGES="$repo_root/.packages"
+      export RESTORENOCACHE=true
     fi
   fi
 
@@ -391,11 +405,7 @@ function MSBuild {
     InitializeBuildTool
     InitializeToolset
 
-    # Work around issues with Azure Artifacts credential provider
-    # https://github.com/dotnet/arcade/issues/3932
     if [[ "$ci" == true ]]; then
-      "$_InitializeBuildTool" nuget locals http-cache -c
-
       export NUGET_PLUGIN_HANDSHAKE_TIMEOUT_IN_SECONDS=20
       export NUGET_PLUGIN_REQUEST_TIMEOUT_IN_SECONDS=20
       Write-PipelineSetVariable -name "NUGET_PLUGIN_HANDSHAKE_TIMEOUT_IN_SECONDS" -value "20"
@@ -403,8 +413,24 @@ function MSBuild {
     fi
 
     local toolset_dir="${_InitializeToolset%/*}"
-    local logger_path="$toolset_dir/$_InitializeBuildToolFramework/Microsoft.DotNet.Arcade.Sdk.dll"
-    args=( "${args[@]}" "-logger:$logger_path" )
+    # new scripts need to work with old packages, so we need to look for the old names/versions
+    local selectedPath=
+    local possiblePaths=()
+    possiblePaths+=( "$toolset_dir/$_InitializeBuildToolFramework/Microsoft.DotNet.ArcadeLogging.dll" )
+    possiblePaths+=( "$toolset_dir/$_InitializeBuildToolFramework/Microsoft.DotNet.Arcade.Sdk.dll" )
+    possiblePaths+=( "$toolset_dir/netcoreapp2.1/Microsoft.DotNet.ArcadeLogging.dll" )
+    possiblePaths+=( "$toolset_dir/netcoreapp2.1/Microsoft.DotNet.Arcade.Sdk.dll" )
+    for path in "${possiblePaths[@]}"; do
+      if [[ -f $path ]]; then
+        selectedPath=$path
+        break
+      fi
+    done
+    if [[ -z "$selectedPath" ]]; then
+      Write-PipelineTelemetryError -category 'Build'  "Unable to find arcade sdk logger assembly."
+      ExitWithExitCode 1
+    fi
+    args+=( "-logger:$selectedPath" )
   fi
 
   MSBuild-Core ${args[@]}
@@ -435,8 +461,17 @@ function MSBuild-Core {
 
     "$_InitializeBuildTool" "$@" || {
       local exit_code=$?
-      Write-PipelineTaskError "Build failed (exit code '$exit_code')."
-      ExitWithExitCode $exit_code
+      # We should not Write-PipelineTaskError here because that message shows up in the build summary
+      # The build already logged an error, that's the reason it failed. Producing an error here only adds noise.
+      echo "Build failed with exit code $exit_code. Check errors above."
+      if [[ "$ci" == "true" ]]; then
+        Write-PipelineSetResult -result "Failed" -message "msbuild execution failed."
+        # Exiting with an exit code causes the azure pipelines task to log yet another "noise" error
+        # The above Write-PipelineSetResult will cause the task to be marked as failure without adding yet another error
+        ExitWithExitCode 0
+      else
+        ExitWithExitCode $exit_code
+      fi
     }
   }
 
@@ -459,8 +494,11 @@ temp_dir="$artifacts_dir/tmp/$configuration"
 global_json_file="$repo_root/global.json"
 # determine if global.json contains a "runtimes" entry
 global_json_has_runtimes=false
-dotnetlocal_key=$(awk "/runtimes/ {print; exit}" "$global_json_file") || true
-if [[ -n "$dotnetlocal_key" ]]; then
+if command -v jq &> /dev/null; then
+  if jq -er '. | select(has("runtimes"))' "$global_json_file" &> /dev/null; then
+    global_json_has_runtimes=true
+  fi
+elif [[ "$(cat "$global_json_file")" =~ \"runtimes\"[[:space:]\:]*\{ ]]; then
   global_json_has_runtimes=true
 fi
 

@@ -103,7 +103,6 @@ namespace System.Net
             {
                 NetEventSource.DumpBuffer(this, buffer, offset, (int)dataRead);
                 NetEventSource.Info(this, "returning dataRead:" + dataRead);
-                NetEventSource.Exit(this, "dataRead:" + dataRead);
             }
             return (int)dataRead;
         }
@@ -118,17 +117,16 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "statusCode:" + statusCode + " _closed:" + _closed);
         }
 
-        public IAsyncResult BeginReadCore(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public IAsyncResult? BeginReadCore(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             if (size == 0 || _closed)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 HttpRequestStreamAsyncResult result = new HttpRequestStreamAsyncResult(this, state, callback);
                 result.InvokeCallback((uint)0);
                 return result;
             }
 
-            HttpRequestStreamAsyncResult asyncResult = null;
+            HttpRequestStreamAsyncResult? asyncResult = null;
 
             uint dataRead = 0;
             if (_dataChunkIndex != -1)
@@ -214,22 +212,18 @@ namespace System.Net
                     asyncResult.IOCompleted(statusCode, bytesReturned);
                 }
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
             return asyncResult;
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"asyncResult: {asyncResult}");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
+
             if (asyncResult == null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
-            HttpRequestStreamAsyncResult castedAsyncResult = asyncResult as HttpRequestStreamAsyncResult;
+            HttpRequestStreamAsyncResult? castedAsyncResult = asyncResult as HttpRequestStreamAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
@@ -240,8 +234,8 @@ namespace System.Net
             }
             castedAsyncResult.EndCalled = true;
             // wait & then check for errors
-            object returnValue = castedAsyncResult.InternalWaitForCompletion();
-            Exception exception = returnValue as Exception;
+            object? returnValue = castedAsyncResult.InternalWaitForCompletion();
+            Exception? exception = returnValue as Exception;
             if (exception != null)
             {
                 if (NetEventSource.Log.IsEnabled())
@@ -252,13 +246,9 @@ namespace System.Net
                 ExceptionDispatchInfo.Throw(exception);
             }
 
-            uint dataRead = (uint)returnValue;
+            uint dataRead = (uint)returnValue!;
             UpdateAfterRead((uint)castedAsyncResult.ErrorCode, dataRead);
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(this, $"returnValue:{returnValue}");
-                NetEventSource.Exit(this);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"returnValue:{returnValue}");
 
             return (int)dataRead + (int)castedAsyncResult._dataAlreadyRead;
         }
@@ -285,23 +275,23 @@ namespace System.Net
 
         private sealed unsafe class HttpRequestStreamAsyncResult : LazyAsyncResult
         {
-            private readonly ThreadPoolBoundHandle _boundHandle;
+            private readonly ThreadPoolBoundHandle? _boundHandle;
             internal NativeOverlapped* _pOverlapped;
             internal void* _pPinnedBuffer;
             internal uint _dataAlreadyRead;
 
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
 
-            internal HttpRequestStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback) : base(asyncObject, userState, callback)
+            internal HttpRequestStreamAsyncResult(object asyncObject, object? userState, AsyncCallback? callback) : base(asyncObject, userState, callback)
             {
             }
 
-            internal HttpRequestStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback, uint dataAlreadyRead) : base(asyncObject, userState, callback)
+            internal HttpRequestStreamAsyncResult(object asyncObject, object? userState, AsyncCallback? callback, uint dataAlreadyRead) : base(asyncObject, userState, callback)
             {
                 _dataAlreadyRead = dataAlreadyRead;
             }
 
-            internal HttpRequestStreamAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, uint size, uint dataAlreadyRead) : base(asyncObject, userState, callback)
+            internal HttpRequestStreamAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object? userState, AsyncCallback? callback, byte[] buffer, int offset, uint size, uint dataAlreadyRead) : base(asyncObject, userState, callback)
             {
                 _dataAlreadyRead = dataAlreadyRead;
                 _boundHandle = boundHandle;
@@ -317,7 +307,7 @@ namespace System.Net
             private static void IOCompleted(HttpRequestStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
-                object result = null;
+                object? result = null;
                 try
                 {
                     if (errorCode != Interop.HttpApi.ERROR_SUCCESS && errorCode != Interop.HttpApi.ERROR_HANDLE_EOF)
@@ -341,7 +331,7 @@ namespace System.Net
 
             private static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                HttpRequestStreamAsyncResult asyncResult = (HttpRequestStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+                HttpRequestStreamAsyncResult asyncResult = (HttpRequestStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes} nativeOverlapped:0x {((IntPtr)nativeOverlapped).ToString("x8")}");
 
@@ -354,7 +344,7 @@ namespace System.Net
                 base.Cleanup();
                 if (_pOverlapped != null)
                 {
-                    _boundHandle.FreeNativeOverlapped(_pOverlapped);
+                    _boundHandle!.FreeNativeOverlapped(_pOverlapped);
                 }
             }
         }

@@ -18,31 +18,34 @@ namespace ComWrappersTests
         {
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
-                Assert.IsTrue(obj is Test);
-
                 IntPtr fpQueryInteface = default;
                 IntPtr fpAddRef = default;
                 IntPtr fpRelease = default;
                 ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
 
-                var vtbl = new ITestVtbl()
+                ComInterfaceEntry* entryRaw = null;
+                count = 0;
+                if (obj is Test)
                 {
-                    IUnknownImpl = new IUnknownVtbl()
+                    var vtbl = new ITestVtbl()
                     {
-                        QueryInterface = fpQueryInteface,
-                        AddRef = fpAddRef,
-                        Release = fpRelease
-                    },
-                    SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
-                };
-                var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
-                Marshal.StructureToPtr(vtbl, vtblRaw, false);
+                        IUnknownImpl = new IUnknownVtbl()
+                        {
+                            QueryInterface = fpQueryInteface,
+                            AddRef = fpAddRef,
+                            Release = fpRelease
+                        },
+                        SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
+                    };
+                    var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
+                    Marshal.StructureToPtr(vtbl, vtblRaw, false);
 
-                var entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ComInterfaceEntry));
-                entryRaw->IID = typeof(ITest).GUID;
-                entryRaw->Vtable = vtblRaw;
+                    entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ComInterfaceEntry));
+                    entryRaw->IID = typeof(ITest).GUID;
+                    entryRaw->Vtable = vtblRaw;
+                    count = 1;
+                }
 
-                count = 1;
                 return entryRaw;
             }
 
@@ -75,6 +78,18 @@ namespace ComWrappersTests
             }
         }
 
+        static void ForceGC()
+        {
+            // Trigger the GC multiple times and then
+            // wait for all finalizers since that is where
+            // most of the cleanup occurs.
+            for (int i = 0; i < 5; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
         static void ValidateComInterfaceCreation()
         {
             Console.WriteLine($"Running {nameof(ValidateComInterfaceCreation)}...");
@@ -85,7 +100,7 @@ namespace ComWrappersTests
 
             // Allocate a wrapper for the object
             IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreNotEqual(comWrapper, IntPtr.Zero);
+            Assert.AreNotEqual(IntPtr.Zero, comWrapper);
 
             // Get a wrapper for an object and verify it is the same one.
             IntPtr comWrapperMaybe = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
@@ -93,9 +108,9 @@ namespace ComWrappersTests
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            Assert.AreEqual(count, 1);
+            Assert.AreEqual(1, count);
             count = Marshal.Release(comWrapperMaybe);
-            Assert.AreEqual(count, 0);
+            Assert.AreEqual(0, count);
 
             // Create a new wrapper
             IntPtr comWrapperNew = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
@@ -105,7 +120,27 @@ namespace ComWrappersTests
 
             // Release the new wrapper
             count = Marshal.Release(comWrapperNew);
-            Assert.AreEqual(count, 0);
+            Assert.AreEqual(0, count);
+        }
+
+        static void ValidateComInterfaceCreationRoundTrip()
+        {
+            Console.WriteLine($"Running {nameof(ValidateComInterfaceCreationRoundTrip)}...");
+
+            var testObj = new Test();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.AreNotEqual(IntPtr.Zero, comWrapper);
+
+            var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
+            Assert.AreEqual(testObj, testObjUnwrapped);
+
+            // Release the wrapper
+            int count = Marshal.Release(comWrapper);
+            Assert.AreEqual(0, count);
         }
 
         static void ValidateFallbackQueryInterface()
@@ -128,14 +163,17 @@ namespace ComWrappersTests
             var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
             testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
             int hr = Marshal.QueryInterface(comWrapper, ref anyGuid, out result);
-            Assert.AreEqual(hr, 0);
-            Assert.AreEqual(result, testObj.ICustomQueryInterface_GetInterfaceResult);
+            Assert.AreEqual(0, hr);
+            Assert.AreEqual(testObj.ICustomQueryInterface_GetInterfaceResult, result);
 
             var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
             hr = Marshal.QueryInterface(comWrapper, ref anyGuid2, out result);
             const int E_NOINTERFACE = unchecked((int)0x80004002);
-            Assert.AreEqual(hr, E_NOINTERFACE);
-            Assert.AreEqual(result, IntPtr.Zero);
+            Assert.AreEqual(E_NOINTERFACE, hr);
+            Assert.AreEqual(IntPtr.Zero, result);
+
+            int count = Marshal.Release(comWrapper);
+            Assert.AreEqual(0, count);
         }
 
         static void ValidateCreateObjectCachingScenario()
@@ -215,7 +253,7 @@ namespace ComWrappersTests
             var iid = typeof(ITrackerObject).GUID;
             IntPtr iTestComObject;
             int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
-            Assert.AreEqual(hr, 0);
+            Assert.AreEqual(0, hr);
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
             // Register wrapper, but supply the wrapper.
@@ -239,6 +277,23 @@ namespace ComWrappersTests
                 () =>
                 {
                     cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, null);
+                });
+        }
+
+        static void ValidateSuppliedInnerNotAggregation()
+        {
+            Console.WriteLine($"Running {nameof(ValidateSuppliedInnerNotAggregation)}...");
+
+            var cw = new TestComWrappers();
+
+            // Attempt to register a non-zero instance with a non-zero inner value without
+            // indicating the scenario is aggregaion.
+            var invalidInstance = new IntPtr(1);
+            var invalidInner = new IntPtr(2);
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    cw.GetOrRegisterObjectForComInstance(invalidInstance, CreateObjectFlags.None, new object(), invalidInner);
                 });
         }
 
@@ -366,15 +421,13 @@ namespace ComWrappersTests
 
                 // Retain the managed object wrapper ptr.
                 testWrapperIds.Add(id);
+
+                Marshal.Release(testWrapper);
             }
 
             Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
 
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
+            ForceGC();
 
             Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
 
@@ -386,11 +439,121 @@ namespace ComWrappersTests
 
             testWrapperIds.Clear();
 
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
+            ForceGC();
+        }
+
+        static void ValidateQueryInterfaceAfterManagedObjectCollected()
+        {
+            Console.WriteLine($"Running {nameof(ValidateQueryInterfaceAfterManagedObjectCollected)}...");
+
+            var cw = new TestComWrappers();
+
+            {
+                // Activate the Reference Tracker system in the .NET runtime by consuming an IReferenceTracker instance.
+                IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+                var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+                Marshal.Release(trackerObjRaw);
+            }
+
+            int refCount;
+            IntPtr refTrackerTarget;
+
+            {
+                // Create a native wrapper over a managed object.
+                IntPtr testWrapper = CreateWrapper(cw);
+
+                refTrackerTarget = MockReferenceTrackerRuntime.TrackerTarget_AddRefFromReferenceTrackerAndReturn(testWrapper);
+
+                // Ownership has been transferred to the IReferenceTrackerTarget instance.
+                // The COM reference count should be 0 and indicates to the GC the managed object
+                // can be collected.
+                refCount = Marshal.Release(testWrapper);
+                Assert.AreEqual(0, refCount);
+            }
+
+            ForceGC();
+
+            // Calling QueryInterface on an IReferenceTrackerTarget instance is permitted when
+            // the wrapper lifetime has been extended. However, the QueryInterface may fail
+            // if the associated managed object was collected. The failure here is an important
+            // part of the contract for a Reference Tracker runtime.
+            var iid = typeof(ITest).GUID;
+            IntPtr iTestComObject;
+            int hr = Marshal.QueryInterface(refTrackerTarget, ref iid, out iTestComObject);
+
+            const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
+            Assert.AreEqual(COR_E_ACCESSING_CCW, hr);
+
+            // Release the IReferenceTrackerTarget instance.
+            refCount = MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
+            Assert.AreEqual(0, refCount);
+
+            static IntPtr CreateWrapper(TestComWrappers cw)
+            {
+                return cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
+            }
+        }
+
+        unsafe class Derived : ITrackerObjectWrapper
+        {
+            public Derived(ComWrappers cw, bool aggregateRefTracker)
+                : base(cw, aggregateRefTracker)
+            { }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static WeakReference<Derived> AllocateAndUseBaseType(ComWrappers cw, bool aggregateRefTracker)
+            {
+                var derived = new Derived(cw, aggregateRefTracker);
+
+                // Use the base type
+                IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
+                int id = derived.AddObjectRef(testWrapper);
+
+                // Tell the tracker runtime to release its hold on the base instance.
+                MockReferenceTrackerRuntime.ReleaseAllTrackerObjects();
+
+                // Validate the GC is tracking the entire Derived type.
+                ForceGC();
+
+                derived.DropObjectRef(id);
+
+                return new WeakReference<Derived>(derived);
+            }
+        }
+
+        static void ValidateAggregationWithComObject()
+        {
+            Console.WriteLine($"Running {nameof(ValidateAggregationWithComObject)}...");
+
+            using var allocTracker = MockReferenceTrackerRuntime.CountTrackerObjectAllocations();
+            var cw = new TestComWrappers();
+            WeakReference<Derived> weakRef = Derived.AllocateAndUseBaseType(cw, aggregateRefTracker: false);
+
+            ForceGC();
+
+            // Validate all instances were cleaned up
+            Assert.IsFalse(weakRef.TryGetTarget(out _));
+            Assert.AreEqual(0, allocTracker.GetCount());
+        }
+
+        static void ValidateAggregationWithReferenceTrackerObject()
+        {
+            Console.WriteLine($"Running {nameof(ValidateAggregationWithReferenceTrackerObject)}...");
+
+            using var allocTracker = MockReferenceTrackerRuntime.CountTrackerObjectAllocations();
+            var cw = new TestComWrappers();
+            WeakReference<Derived> weakRef = Derived.AllocateAndUseBaseType(cw, aggregateRefTracker: true);
+
+            ForceGC();
+
+            // Validate all instances were cleaned up.
+            Assert.IsFalse(weakRef.TryGetTarget(out _));
+
+            // Reference counter cleanup requires additional GCs since the Finalizer is used
+            // to clean up the Reference Tracker runtime references.
+            ForceGC();
+
+            Assert.AreEqual(0, allocTracker.GetCount());
         }
 
         static int Main(string[] doNotUse)
@@ -398,13 +561,18 @@ namespace ComWrappersTests
             try
             {
                 ValidateComInterfaceCreation();
+                ValidateComInterfaceCreationRoundTrip();
                 ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
                 ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
+                ValidateSuppliedInnerNotAggregation();
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();
                 ValidateRuntimeTrackerScenario();
+                ValidateQueryInterfaceAfterManagedObjectCollected();
+                ValidateAggregationWithComObject();
+                ValidateAggregationWithReferenceTrackerObject();
             }
             catch (Exception e)
             {

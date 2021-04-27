@@ -3,8 +3,7 @@
     <Compile Include="System.Data.forwards.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- System.Data.SqlClient is not live built anymore, make sure to use reference assembly for it -->
-    <ReferencePath Remove="$(RuntimePath)\System.Data.SqlClient.dll" />
-    <ReferencePath Include="$(ArtifactsBinDir)ref\$(NetCoreAppCurrent)\System.Data.SqlClient.dll" />
+    <!-- System.Data.SqlClient is not live built anymore, reference it manually. -->
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
   </ItemGroup>
 </Project>

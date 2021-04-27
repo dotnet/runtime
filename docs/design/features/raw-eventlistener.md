@@ -23,7 +23,7 @@ public enum EventListenerSettings
    None,
    RawEventDispatch
 }
-``` 
+```
 
 This parameter is used to specify the desired dispatch behavior (in this case, do not deserialize event payloads).
 
@@ -33,7 +33,7 @@ The new raw dispatch API will be:
 
 ```
 public void OnEventWrittenRaw(RawEventWrittenEventArgs args);
- 
+
 public sealed class RawEventWrittenEventArgs
 {
 
@@ -52,9 +52,9 @@ public sealed class RawEventWrittenEventArgs
     public EventLevel Level { get; }
     public long OSThreadId { get; }
     public DateTime TimeStamp { get; }
-    
+
     // Replacement properties for Payload and PayloadNames.
-    public ReadOnlySpan<byte> Metadata { get; }     
+    public ReadOnlySpan<byte> Metadata { get; }
     public ReadOnlySpan<byte> Payload { get; }
 }
 ```

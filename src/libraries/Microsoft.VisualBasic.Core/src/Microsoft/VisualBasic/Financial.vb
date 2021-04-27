@@ -3,8 +3,6 @@
 
 Imports System
 Imports System.Math
-Imports Microsoft.VisualBasic.CompilerServices
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic
 
@@ -255,8 +253,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ValueArray"))

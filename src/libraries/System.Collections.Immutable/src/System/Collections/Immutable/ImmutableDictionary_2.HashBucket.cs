@@ -263,7 +263,7 @@ namespace System.Collections.Immutable
             {
                 if (this.IsEmpty)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
 
@@ -277,7 +277,7 @@ namespace System.Collections.Immutable
                 var index = _additionalElements.IndexOf(kv, comparers.KeyOnlyComparer);
                 if (index < 0)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
 

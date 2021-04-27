@@ -11,19 +11,19 @@ If the version specified is a _production_ version, the default behavior is:
 
 ```
 	For instance:
-	
+
 	Desired version: 1.0.1
 	Available versions: 1.0.0, 1.0.1, 1.0.2, 1.0.3, 1.1.0, 1.1.1, 2.0.1
 	Chosen version: 1.0.3
-	
+
 	Desired version: 1.0.1
 	Available versions: 1.0.0, 1.1.0-preview1-x, 1.1.0-preview2-x, 1.2.0-preview1-x
 	Chosen version: 1.1.0-preview2-x
-	
+
         Desired version: 1.0.1
 	Available versions: 1.0.0, 1.1.0-preview1-x, 1.2.0, 1.2.1-preview1-x
 	Chosen version: 1.2.0
-	
+
 	Desired version: 1.0.1
 	Available versions: 1.0.0, 2.0.0
 	Chosen version: there is no compatible version available
@@ -40,14 +40,14 @@ This means _preview_ is never rolled forward to _production_.
 	Desired version: 1.0.1-preview2-x
 	Available versions: 1.0.1-preview2-x, 1.0.1-preview3-x
 	Chosen version: 1.0.1-preview2-x
-	
+
 	Desired version: 1.0.1-preview2-x
 	Available versions: 1.0.1-preview3-x
 	Chosen version: 1.0.1-preview3-x
-	
+
 	Desired version: 1.0.1-preview2-x
 	Available versions: 1.0.1, 1.0.2-preview3-x
-	Chosen version: there is no compatible version available	
+	Chosen version: there is no compatible version available
 
 ## Settings to control behavior
 ### applyPatches
@@ -59,7 +59,7 @@ Once a compatible framework version is chosen as explained above, the latest pat
 	Desired version: 1.0.1
 	Available versions: 1.0.1, 1.0.2
 	Chosen version: 1.0.2
-	
+
 	Patch roll forward: disabled
 	Desired version: 1.0.1
 	Available versions: 1.0.1, 1.0.2
@@ -79,7 +79,7 @@ To specify the exact desired framework version, use the command line argument '-
 - Command line argument ('--roll-forward-on-no-candidate-fx' argument)
 - Runtime configuration file ('rollForwardOnNoCandidateFx' property)
 - DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX environment variable
-	
+
 The valid values:
 
 0) Off  (_do not roll forward_)
@@ -101,7 +101,7 @@ If this feature is enabled and no compatible framework version is found, we'll s
 	Desired Version: 1.0.0
 	Available versions: 1.1.1, 1.1.3, 1.2.0
 	Chosen version: 1.1.1
-	
+
 	Patch roll forward: enabled
 	Roll Forward On No Candidate Fx: 0 (disabled)
 	Desired Version: 1.0.0
@@ -111,7 +111,7 @@ If this feature is enabled and no compatible framework version is found, we'll s
 
 It's important to notice that, even if "Roll Forward On No Candidate Fx" is enabled, only the specified framework version will be accepted if the '--fx-version' argument is used.
 
-Since there are three ways to specify the values, conflicts will be resolved by the order listed above (command line has priority over config, which has priority over the environment variable). 
+Since there are three ways to specify the values, conflicts will be resolved by the order listed above (command line has priority over config, which has priority over the environment variable).
 ```
 	For instance:
 
@@ -123,8 +123,8 @@ Since there are three ways to specify the values, conflicts will be resolved by 
 	'rollForwardOnNoCandidateFx' property is set to '1'
 	DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var is set to '1'
 	The feature is DISABLED.
-```	
-	
+```
+
 There is no inheritance when there are chained framework references. If the app references FX1, and FX1 references FX2, then the resolution of FX2 only takes into account settings from `.runtimeconfig.json` in FX1, CLI and env. variable. The settings in the app's `.runtimeconfig.json` have no effect on resolution of FX2.
 
 ## Multilevel SharedFx Lookup

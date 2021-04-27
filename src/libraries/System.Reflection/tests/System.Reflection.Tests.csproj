@@ -5,6 +5,10 @@
     <!-- LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies test relies on no deps.json -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
+
+    <!-- these tests depend on the pdb files -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
@@ -16,6 +20,7 @@
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
+    <Compile Include="CustomAttributeTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />
@@ -29,6 +34,7 @@
     <Compile Include="TypeDerivedTests.cs" />
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
+    <Compile Include="PointerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
@@ -63,5 +69,15 @@
     <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj" />
     <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj" />
     <ProjectReference Include="TestAssembly\TestAssembly.csproj" />
+  </ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Include="TestAssembly" />
+
+    <!-- Assemblies that should be excluded from the bundle -->
+    <__ExcludeFromBundle Include="TestAssembly.dll" />
   </ItemGroup>
 </Project>

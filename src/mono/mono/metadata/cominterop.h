@@ -18,9 +18,6 @@ void
 mono_cominterop_init (void);
 
 void
-mono_cominterop_cleanup (void);
-
-void
 mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod* method);
 
 void
@@ -72,5 +69,8 @@ mono_cominterop_get_com_interface (MonoObject* object, MonoClass* ic, MonoError 
 
 gboolean
 mono_cominterop_is_interface (MonoClass* klass);
+
+gboolean
+mono_cominterop_method_com_visible (MonoMethod *method);
 
 #endif /* __MONO_COMINTEROP_H__ */

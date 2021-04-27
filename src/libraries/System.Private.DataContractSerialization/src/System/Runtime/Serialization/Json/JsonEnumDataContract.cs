@@ -1,21 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonEnumDataContract : JsonDataContract
+    internal sealed class JsonEnumDataContract : JsonDataContract
     {
         private readonly JsonEnumDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonEnumDataContract(EnumDataContract traditionalDataContract)
             : base(new JsonEnumDataContractCriticalHelper(traditionalDataContract))
         {
-            _helper = base.Helper as JsonEnumDataContractCriticalHelper;
+            _helper = (base.Helper as JsonEnumDataContractCriticalHelper)!;
         }
 
         public bool IsULong => _helper.IsULong;
 
-        public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             object enumValue;
             if (IsULong)
@@ -34,7 +38,8 @@ namespace System.Runtime.Serialization.Json
             return enumValue;
         }
 
-        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             if (IsULong)
             {
@@ -46,10 +51,11 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private class JsonEnumDataContractCriticalHelper : JsonDataContractCriticalHelper
+        private sealed class JsonEnumDataContractCriticalHelper : JsonDataContractCriticalHelper
         {
             private readonly bool _isULong;
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonEnumDataContractCriticalHelper(EnumDataContract traditionalEnumDataContract)
                 : base(traditionalEnumDataContract)
             {

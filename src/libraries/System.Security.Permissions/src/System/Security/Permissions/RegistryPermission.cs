@@ -5,6 +5,9 @@ using System.Security.AccessControl;
 
 namespace System.Security.Permissions
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class RegistryPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public RegistryPermission(PermissionState state) { }

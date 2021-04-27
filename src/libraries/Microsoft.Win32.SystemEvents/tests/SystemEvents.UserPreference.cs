@@ -118,7 +118,7 @@ namespace Microsoft.Win32.SystemEventsTests
             };
 
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [MemberData(nameof(PreferenceChangingCases))]
         public void SignalsUserPreferenceEventsAsynchronously(int message, int uiAction, string area, UserPreferenceCategory expectedCategory)
         {
@@ -169,7 +169,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsUserPreferenceEventsAsynchronouslyOnThemeChanged()
         {
             var changing = new AutoResetEvent(false);
@@ -226,7 +226,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [MemberData(nameof(PreferenceChangingCases))]
         public void SignalsUserPreferenceEventsSynchronously(int message, int uiAction, string area, UserPreferenceCategory expectedCategory)
         {
@@ -274,7 +274,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsUserPreferenceEventsSynchronouslyOnReflectedThemeChanged()
         {
             bool changing = false, changed = false;

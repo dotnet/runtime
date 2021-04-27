@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.UInt16.Vector64.UInt16.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.UInt16.Vector128.UInt16.7.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.UInt32.Vector64.UInt32.1.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndAdd.Vector128.UInt32.Vector128.UInt32.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.UInt16.Vector64.UInt16.3.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.UInt16.Vector128.UInt16.7.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.UInt32.Vector64.UInt32.1.cs" />
+    <Compile Include="MultiplyBySelectedScalarWideningUpperAndSubtract.Vector128.UInt32.Vector128.UInt32.3.cs" />
+    <Compile Include="MultiplyDoublingByScalarSaturateHigh.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingByScalarSaturateHigh.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingByScalarSaturateHigh.Vector128.Int16.cs" />
+    <Compile Include="MultiplyDoublingByScalarSaturateHigh.Vector128.Int32.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingBySelectedScalarSaturateHigh.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingSaturateHigh.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingSaturateHigh.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingSaturateHigh.Vector128.Int16.cs" />
+    <Compile Include="MultiplyDoublingSaturateHigh.Vector128.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerAndAddSaturate.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerAndAddSaturate.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerAndSubtractSaturate.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerAndSubtractSaturate.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerByScalarAndAddSaturate.Vector64.Int16.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerByScalarAndAddSaturate.Vector64.Int32.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerByScalarAndSubtractSaturate.Vector64.Int16.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerByScalarAndSubtractSaturate.Vector64.Int32.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLower.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLower.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLowerByScalar.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLowerByScalar.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLowerBySelectedScalar.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLowerBySelectedScalar.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLowerBySelectedScalar.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateLowerBySelectedScalar.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpper.Vector128.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpper.Vector128.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpperByScalar.Vector128.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpperByScalar.Vector128.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpperBySelectedScalar.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpperBySelectedScalar.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpperBySelectedScalar.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingWideningSaturateUpperBySelectedScalar.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperAndAddSaturate.Vector128.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperAndAddSaturate.Vector128.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperAndSubtractSaturate.Vector128.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperAndSubtractSaturate.Vector128.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperByScalarAndAddSaturate.Vector128.Int16.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperByScalarAndAddSaturate.Vector128.Int32.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperByScalarAndSubtractSaturate.Vector128.Int16.Vector64.Int16.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperByScalarAndSubtractSaturate.Vector128.Int32.Vector64.Int32.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingByScalarSaturateHigh.Vector64.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingByScalarSaturateHigh.Vector64.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingByScalarSaturateHigh.Vector128.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingByScalarSaturateHigh.Vector128.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int16.Vector64.Int16.2.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplyRoundedDoublingSaturateHigh.Vector64.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingSaturateHigh.Vector64.Int32.cs" />
+    <Compile Include="MultiplyRoundedDoublingSaturateHigh.Vector128.Int16.cs" />
+    <Compile Include="MultiplyRoundedDoublingSaturateHigh.Vector128.Int32.cs" />
+    <Compile Include="MultiplyScalarBySelectedScalar.Vector64.Single.Vector64.Single.1.cs" />
+    <Compile Include="MultiplyScalarBySelectedScalar.Vector64.Single.Vector128.Single.3.cs" />
+    <Compile Include="MultiplySubtract.Vector64.Byte.cs" />
+    <Compile Include="MultiplySubtract.Vector64.Int16.cs" />
+    <Compile Include="Program.AdvSimd_Part8.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

@@ -833,7 +833,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 		g_assert ((gsize)stack_limit % SIZEOF_SLOT == 0);
 
-		res = mono_find_jit_info_ext (frame.domain ? frame.domain : tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS], NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
+		res = mono_find_jit_info_ext (tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS], NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
 		if (!res)
 			break;
 
@@ -2425,7 +2425,7 @@ create_map (MonoCompile *cfg)
 		encoded_size = endbuf - buf;
 		alloc_size = sizeof (GCEncodedMap) + ALIGN_TO (encoded_size, map->callsite_entry_size) + (map->callsite_entry_size * map->ncallsites) + bitmaps_size;
 
-		emap = mono_domain_alloc0 (cfg->domain, alloc_size);
+		emap = mono_mem_manager_alloc0 (cfg->mem_manager, alloc_size);
 		//emap->ref_slots = map->ref_slots;
 
 		/* Encoded fixed fields */

@@ -5,6 +5,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -590,22 +591,22 @@ namespace System.Xml
         public override async Task FlushAsync()
         {
             CheckAsyncCall();
-            await FlushBufferAsync().ConfigureAwait(false);<#
-if (WriterType == RawTextWriterType.Encoded) { #>
-            await FlushEncoderAsync().ConfigureAwait(false);<#
-} #>
+            await FlushBufferAsync().ConfigureAwait(false);
+<# if (WriterType == RawTextWriterType.Encoded) { #>
+            await FlushEncoderAsync().ConfigureAwait(false);
+<# } #>
 
             if (_stream != null)
             {
                 await _stream.FlushAsync().ConfigureAwait(false);
             }
-<# if (WriterType == RawTextWriterType.Encoded) {
-#>            else if (_writer != null)
+<# if (WriterType == RawTextWriterType.Encoded) { #>
+            else if (_writer != null)
             {
                 await _writer.FlushAsync().ConfigureAwait(false);
             }
-<# }
-#>        }
+<# } #>
+        }
 
         //
         // Implementation methods
@@ -618,14 +619,14 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                 // Output all characters (except for previous characters stored at beginning of buffer)
                 if (!_writeToNull)
                 {
-<# if (WriterType == RawTextWriterType.Utf8) {
-#>                    if (_bufPos - 1 > 0)
+<# if (WriterType == RawTextWriterType.Utf8) { #>
+                    if (_bufPos - 1 > 0)
                     {
                         Debug.Assert(_stream != null);
                         await _stream.WriteAsync(_bufBytes.AsMemory(1, _bufPos - 1)).ConfigureAwait(false);
-                    }<#
-} else {
-#>                    Debug.Assert(_stream != null || _writer != null);
+                    }
+<# } else { #>
+                    Debug.Assert(_stream != null || _writer != null);
 
                     if (_stream != null)
                     {
@@ -656,8 +657,8 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                             // Write text to TextWriter
                             await _writer.WriteAsync(<#= BufferName #>.AsMemory(1, _bufPos - 1)).ConfigureAwait(false);
                         }
-                    }<#
-} #>
+                    }
+<# } #>
                 }
             }
             catch
@@ -671,8 +672,8 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
                 <#= BufferName #>[0] = <#= BufferName #>[_bufPos - 1];
 
-<# if (WriterType == RawTextWriterType.Utf8) {
-#>                if (IsSurrogateByte(_bufBytes[0]))
+<# if (WriterType == RawTextWriterType.Utf8) { #>
+                if (IsSurrogateByte(_bufBytes[0]))
                 {
                     // Last character was the first byte in a surrogate encoding, so move last three
                     // bytes of encoding to the beginning of the buffer.
@@ -680,6 +681,7 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                     _bufBytes[2] = _bufBytes[_bufPos + 1];
                     _bufBytes[3] = _bufBytes[_bufPos + 2];
                 }
+
 <# } #>
                 // Reset buffer position
                 _textPos = (_textPos == _bufPos) ? 1 : 0;
@@ -690,6 +692,7 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                                    // close an empty element or in CDATA section detection of double ]; _BUFFER[0] will always be 0
             }
         }
+
 <# if (WriterType == RawTextWriterType.Encoded) { #>
         private async Task EncodeCharsAsync(int startOffset, int endOffset, bool writeAllToStream)
         {
@@ -737,6 +740,7 @@ if (WriterType == RawTextWriterType.Encoded) { #>
 
             return Task.CompletedTask;
         }
+
 <# } #>
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
         // are entitized.
@@ -756,12 +760,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -945,12 +950,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1171,12 +1177,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && ((ch = *pSrc) <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && ((ch = *pSrc) < XmlCharType.SurHighStart))
-<# }
-#>                    {
+<# } #>
+                    {
                         pSrc++;
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
@@ -1331,12 +1338,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsTextChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1518,12 +1526,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                         {
                             pDstEnd = pDstBegin + _bufLen;
                         }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                         while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
 <# } else { #>
                         while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
-<# }
-#>                        {
+<# } #>
+                        {
                             *pDst = (<#= BufferType #>)ch;
                             pDst++;
                             pSrc++;
@@ -1693,12 +1702,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                         {
                             pDstEnd = pDstBegin + _bufLen;
                         }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                         while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
 <# } else { #>
                         while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
-<# }
-#>                        {
+<# } #>
+                        {
                             *pDst = (<#= BufferType #>)ch;
                             pDst++;
                             pSrc++;

@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Xml.Xsl.Qil
 {
-    /// <summary>A internal class that validates QilExpression graphs.</summary>
+    /// <summary>An internal class that validates QilExpression graphs.</summary>
     /// <remarks>
     /// QilValidationVisitor traverses the QilExpression graph once to enforce the following constraints:
     /// <list type="bullet">
@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.Qil
     /// to print correctly.)</p>
     /// </remarks>
     ///
-    internal class QilValidationVisitor : QilScopedVisitor
+    internal sealed class QilValidationVisitor : QilScopedVisitor
     {
 #if DEBUG
         private readonly QilTypeChecker _typeCheck = new QilTypeChecker();
@@ -41,12 +41,12 @@ namespace System.Xml.Xsl.Qil
             new QilValidationVisitor().VisitAssumeReference(node);
         }
 
-        protected QilValidationVisitor() { }
+        private QilValidationVisitor() { }
 
 #if DEBUG
-        protected Hashtable allNodes = new ObjectHashtable();
-        protected Hashtable parents = new ObjectHashtable();
-        protected Hashtable scope = new ObjectHashtable();
+        private Hashtable allNodes = new ObjectHashtable();
+        private Hashtable parents = new ObjectHashtable();
+        private Hashtable scope = new ObjectHashtable();
 
 
         //-----------------------------------------------
@@ -150,9 +150,9 @@ namespace System.Xml.Xsl.Qil
         // Helper methods
         //-----------------------------------------------
 
-        private class ObjectHashtable : Hashtable
+        private sealed class ObjectHashtable : Hashtable
         {
-            protected override bool KeyEquals(object item, object key)
+            protected override bool KeyEquals(object? item, object key)
             {
                 return item == key;
             }
@@ -182,7 +182,7 @@ namespace System.Xml.Xsl.Qil
             message += " ["+ n.NodeId + " (" + n.NodeType.ToString("G") + ")]";
 #endif
 
-            string s = n.Annotation as string;
+            string? s = n.Annotation as string;
             if (s != null)
             {
                 message = s + "\n" + message;

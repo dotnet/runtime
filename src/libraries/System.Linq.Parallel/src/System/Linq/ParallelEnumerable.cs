@@ -1579,13 +1579,6 @@ namespace System.Linq
                     {
                         acc = func(acc, elem);
                     }
-#if SUPPORT_THREAD_ABORT
-                    catch (ThreadAbortException)
-                    {
-                        // Do not wrap ThreadAbortExceptions
-                        throw;
-                    }
-#endif
                     catch (Exception e)
                     {
                         throw new AggregateException(e);
@@ -1718,13 +1711,6 @@ namespace System.Linq
             {
                 return resultSelector(acc);
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception e)
             {
                 throw new AggregateException(e);
@@ -2673,8 +2659,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource Min<TSource>(this ParallelQuery<TSource> source)
+        public static TSource? Min<TSource>(this ParallelQuery<TSource> source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             return AggregationMinMaxHelpers<TSource>.ReduceMin(source);
@@ -2936,8 +2921,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TResult Min<TSource, TResult>(this ParallelQuery<TSource> source, Func<TSource, TResult> selector)
+        public static TResult? Min<TSource, TResult>(this ParallelQuery<TSource> source, Func<TSource, TResult> selector)
         {
             return source.Select<TSource, TResult>(selector).Min<TResult>();
         }
@@ -3178,8 +3162,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource Max<TSource>(this ParallelQuery<TSource> source)
+        public static TSource? Max<TSource>(this ParallelQuery<TSource> source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             return AggregationMinMaxHelpers<TSource>.ReduceMax(source);
@@ -3441,8 +3424,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TResult Max<TSource, TResult>(this ParallelQuery<TSource> source, Func<TSource, TResult> selector)
+        public static TResult? Max<TSource, TResult>(this ParallelQuery<TSource> source, Func<TSource, TResult> selector)
         {
             return source.Select<TSource, TResult>(selector).Max<TResult>();
         }
@@ -4375,13 +4357,6 @@ namespace System.Linq
                     }
                     if (e2.MoveNext()) return false;
                 }
-#if SUPPORT_THREAD_ABORT
-                catch (ThreadAbortException)
-                {
-                    // Do not wrap ThreadAbortExceptions
-                    throw;
-                }
-#endif
                 catch (Exception ex)
                 {
                     ExceptionAggregator.ThrowOCEorAggregateException(ex, settings.CancellationState);
@@ -4409,13 +4384,6 @@ namespace System.Linq
             {
                 e.Dispose();
             }
-#if SUPPORT_THREAD_ABORT
-            catch (ThreadAbortException)
-            {
-                // Do not wrap ThreadAbortExceptions
-                throw;
-            }
-#endif
             catch (Exception ex)
             {
                 ExceptionAggregator.ThrowOCEorAggregateException(ex, cancelState);
@@ -4968,13 +4936,6 @@ namespace System.Linq
                         key = keySelector(val);
                         result.Add(key, val);
                     }
-#if SUPPORT_THREAD_ABORT
-                    catch (ThreadAbortException)
-                    {
-                        // Do not wrap ThreadAbortExceptions
-                        throw;
-                    }
-#endif
                     catch (Exception ex)
                     {
                         throw new AggregateException(ex);
@@ -5072,13 +5033,6 @@ namespace System.Linq
                     {
                         result.Add(keySelector(src), elementSelector(src));
                     }
-#if SUPPORT_THREAD_ABORT
-                    catch (ThreadAbortException)
-                    {
-                        // Do not wrap ThreadAbortExceptions
-                        throw;
-                    }
-#endif
                     catch (Exception ex)
                     {
                         throw new AggregateException(ex);
@@ -5331,8 +5285,7 @@ namespace System.Linq
         //     defaultIfEmpty - whether to return a default value (true) or throw an
         //                      exception if the output of the query operator is empty
         //
-        [return: MaybeNull]
-        private static TSource GetOneWithPossibleDefault<TSource>(
+        private static TSource? GetOneWithPossibleDefault<TSource>(
             QueryOperator<TSource> queryOp, bool throwIfTwo, bool defaultIfEmpty)
         {
             Debug.Assert(queryOp != null, "expected query operator");
@@ -5363,7 +5316,7 @@ namespace System.Linq
 
             if (defaultIfEmpty)
             {
-                return default(TSource)!;
+                return default;
             }
             else
             {
@@ -5478,8 +5431,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this ParallelQuery<TSource> source)
+        public static TSource? FirstOrDefault<TSource>(this ParallelQuery<TSource> source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
@@ -5525,8 +5477,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
+        public static TSource? FirstOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
@@ -5658,8 +5609,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource LastOrDefault<TSource>(this ParallelQuery<TSource> source)
+        public static TSource? LastOrDefault<TSource>(this ParallelQuery<TSource> source)
         {
             // @PERF: optimize for seekable data sources.  E.g. if an array, we can
             //     seek directly to the last element.
@@ -5701,8 +5651,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource LastOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
+        public static TSource? LastOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
@@ -5806,8 +5755,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this ParallelQuery<TSource> source)
+        public static TSource? SingleOrDefault<TSource>(this ParallelQuery<TSource> source)
         {
             // @PERF: optimize for ICollection-typed data sources, i.e. we can just
             //     check the Count property and avoid costly fork/join/synchronization.
@@ -5837,8 +5785,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
+        public static TSource? SingleOrDefault<TSource>(this ParallelQuery<TSource> source, Func<TSource, bool> predicate)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
@@ -5863,9 +5810,9 @@ namespace System.Linq
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
-        public static ParallelQuery<TSource> DefaultIfEmpty<TSource>(this ParallelQuery<TSource> source)
+        public static ParallelQuery<TSource?> DefaultIfEmpty<TSource>(this ParallelQuery<TSource> source)
         {
-            return DefaultIfEmpty<TSource>(source, default!);
+            return DefaultIfEmpty<TSource>(source, default!)!;
         }
 
         /// <summary>
@@ -5951,8 +5898,7 @@ namespace System.Linq
         /// <exception cref="System.OperationCanceledException">
         /// The query was canceled.
         /// </exception>
-        [return: MaybeNull]
-        public static TSource ElementAtOrDefault<TSource>(this ParallelQuery<TSource> source, int index)
+        public static TSource? ElementAtOrDefault<TSource>(this ParallelQuery<TSource> source, int index)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
@@ -5970,7 +5916,7 @@ namespace System.Linq
                 }
             }
 
-            return default(TSource)!;
+            return default;
         }
     }
 }

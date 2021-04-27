@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
         public virtual void EndExceptionBlock() { }
         public virtual void EndScope() { }
         public virtual void MarkLabel(System.Reflection.Emit.Label loc) { }
-        public virtual void ThrowException(System.Type excType) { }
+        public virtual void ThrowException([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type excType) { }
         public virtual void UsingNamespace(string usingNamespace) { }
     }
     public readonly partial struct Label : System.IEquatable<System.Reflection.Emit.Label>

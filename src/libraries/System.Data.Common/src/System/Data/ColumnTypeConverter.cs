@@ -51,7 +51,7 @@ namespace System.Data
             typeof(SqlChars),
             typeof(SqlXml)
         };
-        private StandardValuesCollection _values;
+        private StandardValuesCollection? _values;
 
         public ColumnTypeConverter() { }
 
@@ -65,7 +65,7 @@ namespace System.Data
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -93,10 +93,10 @@ namespace System.Data
 
                 if (value is Type || value is string)
                 {
-                    MethodInfo method = typeof(Type).GetMethod("GetType", new Type[] { typeof(string) });
+                    MethodInfo method = typeof(Type).GetMethod("GetType", new Type[] { typeof(string) })!;
                     if (method != null)
                     {
-                        return new InstanceDescriptor(method, new object[] { ((Type)newValue).AssemblyQualifiedName });
+                        return new InstanceDescriptor(method, new object[] { ((Type)newValue).AssemblyQualifiedName! });
                     }
                 }
             }
@@ -133,7 +133,7 @@ namespace System.Data
         {
             if (_values == null)
             {
-                object[] objTypes;
+                object[]? objTypes;
 
                 if (s_types != null)
                 {

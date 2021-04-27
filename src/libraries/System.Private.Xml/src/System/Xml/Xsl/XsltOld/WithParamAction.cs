@@ -39,18 +39,18 @@ namespace System.Xml.Xsl.XsltOld
                     if (this.selectKey != Compiler.InvalidQueryKey)
                     {
                         ParamValue = processor.RunQuery(frame, this.selectKey);
-                        processor.SetParameter(this.name, ParamValue);
+                        processor.SetParameter(this.name!, ParamValue);
                         frame.Finished();
                     }
                     else
                     {
                         if (this.containedActions == null)
                         {
-                            processor.SetParameter(this.name, string.Empty);
+                            processor.SetParameter(this.name!, string.Empty);
                             frame.Finished();
                             break;
                         }
-                        NavigatorOutput output = new NavigatorOutput(baseUri);
+                        NavigatorOutput output = new NavigatorOutput(baseUri!);
                         processor.PushOutput(output);
                         processor.PushActionFrame(frame);
                         frame.State = ProcessingChildren;
@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.XsltOld
                 case ProcessingChildren:
                     IRecordOutput recOutput = processor.PopOutput();
                     Debug.Assert(recOutput is NavigatorOutput);
-                    processor.SetParameter(this.name, ((NavigatorOutput)recOutput).Navigator);
+                    processor.SetParameter(this.name!, ((NavigatorOutput)recOutput).Navigator);
                     frame.Finished();
                     break;
                 default:

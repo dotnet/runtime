@@ -528,8 +528,6 @@ namespace MonoTests.System.Drawing
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Rotate1bit4bit(string file, RotateFlipType type, string md5)
         {
-            StringBuilder md5s = new StringBuilder();
-
             using (Bitmap bmp = new Bitmap(Helpers.GetTestBitmapPath(file)))
             {
                 Assert.Equal(md5, RotateIndexedBmp(bmp, type));
@@ -887,20 +885,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        private Stream Serialize(object o)
-        {
-            MemoryStream ms = new MemoryStream();
-            IFormatter formatter = new BinaryFormatter();
-            formatter.Serialize(ms, o);
-            ms.Position = 0;
-            return ms;
-        }
-
-        private object Deserialize(Stream s)
-        {
-            return new BinaryFormatter().Deserialize(s);
-        }
-
         static int[] palette1 = {
             -16777216,
             -1,
@@ -1233,78 +1217,6 @@ namespace MonoTests.System.Drawing
         public void XmlSerialization()
         {
             new XmlSerializer(typeof(Bitmap));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapImageCtor()
-        {
-            Assert.Throws<NullReferenceException>(() => new Bitmap((Image)null));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapImageSizeCtor()
-        {
-            Assert.Throws<ArgumentException>(() => new Bitmap((Image)null, Size.Empty));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapImageIntIntCtor()
-        {
-            Assert.Throws<ArgumentException>(() => new Bitmap((Image)null, int.MinValue, int.MaxValue));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapIntIntCtor()
-        {
-            Assert.Throws<ArgumentException>(() => new Bitmap(int.MinValue, int.MaxValue));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapIntIntGraphicCtor()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Bitmap(1, 1, null));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapIntIntPixelFormatCtor()
-        {
-            Assert.Throws<ArgumentException>(() => new Bitmap(int.MinValue, int.MaxValue, PixelFormat.Format1bppIndexed));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapStreamCtor()
-        {
-            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Bitmap((Stream)null));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapStreamBoolCtor()
-        {
-            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Bitmap((Stream)null, true));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapStringCtor()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Bitmap((string)null));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapStringBoolCtor()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Bitmap((string)null, false));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapTypeStringCtor1()
-        {
-            Assert.Throws<NullReferenceException>(() => new Bitmap((Type)null, "mono"));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BitmapTypeStringCtor2()
-        {
-            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("resource", null, () => new Bitmap(typeof(Bitmap), null));
         }
 
         private void SetResolution(float x, float y)

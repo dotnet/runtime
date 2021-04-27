@@ -144,7 +144,7 @@ namespace System.Formats.Asn1
             const byte SuffixState = 2;
             byte state = HmsState;
 
-            byte? GetNextState(byte octet)
+            static byte? GetNextState(byte octet)
             {
                 if (octet == 'Z' || octet == '-' || octet == '+')
                 {

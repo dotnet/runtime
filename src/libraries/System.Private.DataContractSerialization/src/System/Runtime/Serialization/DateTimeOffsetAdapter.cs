@@ -10,11 +10,7 @@ using System.Globalization;
 namespace System.Runtime.Serialization
 {
     [DataContract(Name = "DateTimeOffset", Namespace = "http://schemas.datacontract.org/2004/07/System")]
-#if USE_REFEMIT
-    public struct DateTimeOffsetAdapter
-#else
     internal struct DateTimeOffsetAdapter
-#endif
     {
         private DateTime _utcDateTime;
         private short _offsetMinutes;

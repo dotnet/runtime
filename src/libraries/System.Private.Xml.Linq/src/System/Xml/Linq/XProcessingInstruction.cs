@@ -144,7 +144,7 @@ namespace System.Xml.Linq
 
         internal override bool DeepEquals(XNode node)
         {
-            XProcessingInstruction other = node as XProcessingInstruction;
+            XProcessingInstruction? other = node as XProcessingInstruction;
             return other != null && target == other.target && data == other.data;
         }
 

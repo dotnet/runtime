@@ -1,4 +1,4 @@
-if(CLR_CMAKE_TARGET_ANDROID)
+if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OSX)
     set(HAVE_SET_MAX_VARIABLE 1)
     set(HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS 1)
 else()
@@ -13,11 +13,7 @@ else()
             int main(void) { enum UDateFormatSymbolType e = UDAT_STANDALONE_SHORTER_WEEKDAYS; }
         " HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
 
-        if(CLR_CMAKE_TARGET_OSX)
-            set(CMAKE_REQUIRED_LIBRARIES ${ICUCORE})
-        else()
-            set(CMAKE_REQUIRED_LIBRARIES ${ICUUC} ${ICUI18N})
-        endif()
+        set(CMAKE_REQUIRED_LIBRARIES ${ICUUC} ${ICUI18N})
 
         check_symbol_exists(
             ucol_setMaxVariable

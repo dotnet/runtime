@@ -440,7 +440,7 @@ do
   I=`expr $I + 1`
 done
 
-#valid coersion between native int and int32
+#valid coercion between native int and int32
 I=1
 for OP in stloc.0 "starg 0" 
 do

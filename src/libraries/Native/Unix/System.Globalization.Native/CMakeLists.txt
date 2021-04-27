@@ -14,7 +14,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-unknown-warning-option)
 
     if (NOT CLR_CMAKE_TARGET_ANDROID)
-        set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
+        if (CLR_CMAKE_TARGET_OSX)
+            execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
+        endif()
 
         find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
         if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
@@ -23,12 +26,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         endif()
 
         if(CLR_CMAKE_TARGET_OSX)
-            find_library(ICUCORE icucore)
-            if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
-                message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
-                return()
-            endif()
-            add_definitions(-DOSX_ICU_LIBRARY_PATH=\"${ICUCORE}\")
+            add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
             add_definitions(-DU_DISABLE_RENAMING)
         else()
             find_library(ICUUC icuuc)
@@ -48,6 +46,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0))
+    add_compile_options(-Wno-error=stringop-truncation)
+endif()
+
 include(configure.cmake)
 
 set(NATIVEGLOBALIZATION_SOURCES
@@ -59,10 +61,21 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_localeNumberData.c
     pal_localeStringData.c
     pal_normalization.c
-    pal_timeZoneInfo.c
     pal_icushim.c
-    entrypoints.c
 )
+
+# time zone names are filtered out of icu data for the browser and associated functionality is disabled
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
+endif()
+
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} entrypoints.c)
+endif()
+
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
 
 include_directories("../Common")
 
@@ -80,16 +93,19 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
+
 add_library(System.Globalization.Native-Static
-    OBJECT
+    STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+if(CLR_CMAKE_TARGET_UNIX)
+    set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+endif()
 
-install (TARGETS System.Globalization.Native-Static DESTINATION .)
+install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -225,9 +226,21 @@ namespace Internal.Cryptography.Pal
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             spki.Encode(writer);
 
-            using (SHA1 hash = SHA1.Create())
+            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+
+            try
             {
-                return hash.ComputeHash(writer.Encode());
+                if (!writer.TryEncode(rented, out int bytesWritten))
+                {
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new CryptographicException();
+                }
+
+                return SHA1.HashData(rented.AsSpan(0, bytesWritten));
+            }
+            finally
+            {
+                CryptoPool.Return(rented, clearSize: 0); // SubjectPublicKeyInfo is not sensitive.
             }
         }
 

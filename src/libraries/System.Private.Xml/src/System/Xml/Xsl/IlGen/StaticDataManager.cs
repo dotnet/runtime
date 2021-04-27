@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
@@ -14,7 +15,7 @@ namespace System.Xml.Xsl.IlGen
     /// This internal class maintains a list of unique values.  Each unique value is assigned a unique ID, which can
     /// be used to quickly access the value, since it corresponds to the value's position in the list.
     /// </summary>
-    internal class UniqueList<T>
+    internal sealed class UniqueList<T> where T : notnull
     {
         private readonly Dictionary<T, int> _lookup = new Dictionary<T, int>();
         private readonly List<T> _list = new List<T>();
@@ -58,15 +59,15 @@ namespace System.Xml.Xsl.IlGen
     ///   3. All Xml types that will be used at run-time
     ///   4. All global variables and parameters
     /// </summary>
-    internal class StaticDataManager
+    internal sealed class StaticDataManager
     {
-        private UniqueList<string> _uniqueNames;
-        private UniqueList<Int32Pair> _uniqueFilters;
-        private List<StringPair[]> _prefixMappingsList;
-        private List<string> _globalNames;
-        private UniqueList<EarlyBoundInfo> _earlyInfo;
-        private UniqueList<XmlQueryType> _uniqueXmlTypes;
-        private UniqueList<XmlCollation> _uniqueCollations;
+        private UniqueList<string>? _uniqueNames;
+        private UniqueList<Int32Pair>? _uniqueFilters;
+        private List<StringPair[]>? _prefixMappingsList;
+        private List<string>? _globalNames;
+        private UniqueList<EarlyBoundInfo>? _earlyInfo;
+        private UniqueList<XmlQueryType>? _uniqueXmlTypes;
+        private UniqueList<XmlCollation>? _uniqueCollations;
 
         /// <summary>
         /// Add "name" to the list of unique names that are used by this query.  Return the index of
@@ -83,7 +84,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array of all names that are used by the query (null if no names).
         /// </summary>
-        public string[] Names
+        public string[]? Names
         {
             get { return (_uniqueNames != null) ? _uniqueNames.ToArray() : null; }
         }
@@ -104,7 +105,7 @@ namespace System.Xml.Xsl.IlGen
         /// Return an array of all name filters, where each name filter is represented as a pair of integer offsets (localName, namespaceUri)
         /// into the Names array (null if no name filters).
         /// </summary>
-        public Int32Pair[] NameFilters
+        public Int32Pair[]? NameFilters
         {
             get { return (_uniqueFilters != null) ? _uniqueFilters.ToArray() : null; }
         }
@@ -140,7 +141,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array of all prefix mappings that are used by the query to compute names (null if no mappings).
         /// </summary>
-        public StringPair[][] PrefixMappingsList
+        public StringPair[][]? PrefixMappingsList
         {
             get { return (_prefixMappingsList != null) ? _prefixMappingsList.ToArray() : null; }
         }
@@ -163,7 +164,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array containing the names of all global variables and parameters.
         /// </summary>
-        public string[] GlobalNames
+        public string[]? GlobalNames
         {
             get { return (_globalNames != null) ? _globalNames.ToArray() : null; }
         }
@@ -172,7 +173,7 @@ namespace System.Xml.Xsl.IlGen
         /// Add early bound information to a list that is used by this query.  Return the index of
         /// the early bound information in the list.
         /// </summary>
-        public int DeclareEarlyBound(string namespaceUri, Type ebType)
+        public int DeclareEarlyBound(string namespaceUri, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type ebType)
         {
             if (_earlyInfo == null)
                 _earlyInfo = new UniqueList<EarlyBoundInfo>();
@@ -183,7 +184,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array of all early bound information that is used by the query (null if none is used).
         /// </summary>
-        public EarlyBoundInfo[] EarlyBound
+        public EarlyBoundInfo[]? EarlyBound
         {
             get
             {
@@ -210,7 +211,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array of all types that are used by the query (null if no names).
         /// </summary>
-        public XmlQueryType[] XmlTypes
+        public XmlQueryType[]? XmlTypes
         {
             get { return (_uniqueXmlTypes != null) ? _uniqueXmlTypes.ToArray() : null; }
         }
@@ -230,7 +231,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an array of all collations that are used by the query (null if no names).
         /// </summary>
-        public XmlCollation[] Collations
+        public XmlCollation[]? Collations
         {
             get { return (_uniqueCollations != null) ? _uniqueCollations.ToArray() : null; }
         }

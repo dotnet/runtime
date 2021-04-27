@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafePkcs7Handle : SafeHandle
     {
-        private SafePkcs7Handle() :
+        public SafePkcs7Handle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

@@ -20,9 +20,9 @@ namespace System.Data.ProviderBase
 
         private readonly WeakReference _owningObject = new WeakReference(null, false);  // [usage must be thread safe] the owning object, when not in the pool. (both Pooled and Non-Pooled connections)
 
-        private DbConnectionPool _connectionPool;           // the pooler that the connection came from (Pooled connections only)
-        private DbConnectionPoolCounters _performanceCounters;      // the performance counters we're supposed to update
-        private DbReferenceCollection _referenceCollection;      // collection of objects that we need to notify in some way when we're being deactivated
+        private DbConnectionPool? _connectionPool;           // the pooler that the connection came from (Pooled connections only)
+        private DbConnectionPoolCounters? _performanceCounters;      // the performance counters we're supposed to update
+        private DbReferenceCollection? _referenceCollection;      // collection of objects that we need to notify in some way when we're being deactivated
         private int _pooledCount;              // [usage must be thread safe] the number of times this object has been pushed into the pool less the number of times it's been popped (0 != inPool)
 
         private bool _connectionIsDoomed;       // true when the connection should no longer be used.
@@ -31,13 +31,13 @@ namespace System.Data.ProviderBase
 
         private DateTime _createTime;               // when the connection was created.
 
-        private SysTx.Transaction _enlistedTransaction;      // [usage must be thread-safe] the transaction that we're enlisted in, either manually or automatically
+        private SysTx.Transaction? _enlistedTransaction;      // [usage must be thread-safe] the transaction that we're enlisted in, either manually or automatically
 
         // _enlistedTransaction is a clone, so that transaction information can be queried even if the original transaction object is disposed.
         // However, there are times when we need to know if the original transaction object was disposed, so we keep a reference to it here.
         // This field should only be assigned a value at the same time _enlistedTransaction is updated.
         // Also, this reference should not be disposed, since we aren't taking ownership of it.
-        private SysTx.Transaction _enlistedTransactionOriginal;
+        private SysTx.Transaction? _enlistedTransactionOriginal;
 
 #if DEBUG
         private int _activateCount;            // debug only counter to verify activate/deactivates are in sync.
@@ -72,7 +72,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        protected internal SysTx.Transaction EnlistedTransaction
+        protected internal SysTx.Transaction? EnlistedTransaction
         {
             get
             {
@@ -80,7 +80,7 @@ namespace System.Data.ProviderBase
             }
             set
             {
-                SysTx.Transaction currentEnlistedTransaction = _enlistedTransaction;
+                SysTx.Transaction? currentEnlistedTransaction = _enlistedTransaction;
                 if (((null == currentEnlistedTransaction) && (null != value))
                     || ((null != currentEnlistedTransaction) && !currentEnlistedTransaction.Equals(value)))
                 {
@@ -92,8 +92,8 @@ namespace System.Data.ProviderBase
                     // we need to use a clone of the transaction
                     // when we store it, or we'll end up keeping it past the
                     // duration of the using block of the TransactionScope
-                    SysTx.Transaction valueClone = null;
-                    SysTx.Transaction previousTransactionClone = null;
+                    SysTx.Transaction? valueClone = null;
+                    SysTx.Transaction? previousTransactionClone = null;
                     try
                     {
                         if (null != value)
@@ -231,17 +231,17 @@ namespace System.Data.ProviderBase
             }
         }
 
-        protected internal object Owner
+        protected internal object? Owner
         {
             // We use a weak reference to the owning object so we can identify when
-            // it has been garbage collected without thowing exceptions.
+            // it has been garbage collected without throwing exceptions.
             get
             {
                 return _owningObject.Target;
             }
         }
 
-        internal DbConnectionPool Pool
+        internal DbConnectionPool? Pool
         {
             get
             {
@@ -249,14 +249,14 @@ namespace System.Data.ProviderBase
             }
         }
 
-        protected DbConnectionPoolCounters PerformanceCounters
+        protected DbConnectionPoolCounters? PerformanceCounters
         {
             get
             {
                 return _performanceCounters;
             }
         }
-        protected internal DbReferenceCollection ReferenceCollection
+        protected internal DbReferenceCollection? ReferenceCollection
         {
             get
             {
@@ -285,7 +285,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        protected abstract void Activate(SysTx.Transaction transaction);
+        protected abstract void Activate(SysTx.Transaction? transaction);
 
         internal void AddWeakReference(object value, int tag)
         {
@@ -312,12 +312,12 @@ namespace System.Data.ProviderBase
             // By default, there is no preperation required
         }
 
-        protected virtual object ObtainAdditionalLocksForClose()
+        protected virtual object? ObtainAdditionalLocksForClose()
         {
             return null; // no additional locks in default implementation
         }
 
-        protected virtual void ReleaseAdditionalLocksForClose(object lockToken)
+        protected virtual void ReleaseAdditionalLocksForClose(object? lockToken)
         {
             // no additional locks in default implementation
         }
@@ -343,7 +343,7 @@ namespace System.Data.ProviderBase
                 PerformanceCounters.NumberOfActiveConnections.Decrement();
             }
 
-            if (!_connectionIsDoomed && Pool.UseLoadBalancing)
+            if (!_connectionIsDoomed && Pool!.UseLoadBalancing)
             {
                 // If we're not already doomed, check the connection's lifetime and
                 // doom it if it's lifetime has elapsed.
@@ -377,7 +377,7 @@ namespace System.Data.ProviderBase
 
                 Deactivate(); // call it one more time just in case
 
-                DbConnectionPool pool = Pool;
+                DbConnectionPool? pool = Pool;
 
                 if (null == pool)
                 {
@@ -399,7 +399,7 @@ namespace System.Data.ProviderBase
                 // once and for all, or the server will have fits about us
                 // leaving connections open until the client-side GC kicks
                 // in.
-                PerformanceCounters.NumberOfNonPooledConnections.Decrement();
+                PerformanceCounters!.NumberOfNonPooledConnections.Decrement();
                 Dispose();
             }
             // When _pooledCount is 0, the connection is a pooled connection
@@ -419,9 +419,9 @@ namespace System.Data.ProviderBase
             _connectionIsDoomed = true;
         }
 
-        public abstract void EnlistTransaction(SysTx.Transaction transaction);
+        public abstract void EnlistTransaction(SysTx.Transaction? transaction);
 
-        protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
+        protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string?[]? restrictions)
         {
             Debug.Assert(outerConnection != null, "outerConnection may not be null.");
 
@@ -456,7 +456,7 @@ namespace System.Data.ProviderBase
 
         internal void NotifyWeakReference(int message)
         {
-            DbReferenceCollection referenceCollection = ReferenceCollection;
+            DbReferenceCollection? referenceCollection = ReferenceCollection;
             if (null != referenceCollection)
             {
                 referenceCollection.Notify(message);
@@ -476,17 +476,17 @@ namespace System.Data.ProviderBase
         /// override this and do the correct thing.</devdoc>
         // User code should either override DbConnectionInternal.Activate when it comes out of the pool
         // or override DbConnectionFactory.CreateConnection when the connection is created for non-pooled connections
-        internal virtual bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        internal virtual bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             throw ADP.ConnectionAlreadyOpen(State);
         }
 
-        protected bool TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        protected bool TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
             // ?->Connecting: prevent set_ConnectionString during Open
             if (connectionFactory.SetInnerConnectionFrom(outerConnection, DbConnectionClosedConnecting.SingletonInstance, this))
             {
-                DbConnectionInternal openConnection = null;
+                DbConnectionInternal? openConnection = null;
                 try
                 {
                     connectionFactory.PermissionDemand(outerConnection);
@@ -512,7 +512,7 @@ namespace System.Data.ProviderBase
             return true;
         }
 
-        internal void PrePush(object expectedOwner)
+        internal void PrePush(object? expectedOwner)
         {
             // Called by DbConnectionPool when we're about to be put into it's pool, we
             // take this opportunity to ensure ownership and pool counts are legit.
@@ -581,7 +581,7 @@ namespace System.Data.ProviderBase
 
         internal void RemoveWeakReference(object value)
         {
-            DbReferenceCollection referenceCollection = ReferenceCollection;
+            DbReferenceCollection? referenceCollection = ReferenceCollection;
             if (null != referenceCollection)
             {
                 referenceCollection.Remove(value);
@@ -590,7 +590,7 @@ namespace System.Data.ProviderBase
 
         internal void DetachCurrentTransactionIfEnded()
         {
-            SysTx.Transaction enlistedTransaction = EnlistedTransaction;
+            SysTx.Transaction? enlistedTransaction = EnlistedTransaction;
             if (enlistedTransaction != null)
             {
                 bool transactionIsDead;
@@ -619,10 +619,10 @@ namespace System.Data.ProviderBase
             lock (this)
             {
                 // Detach if detach-on-end behavior, or if outer connection was closed
-                DbConnection owner = (DbConnection)Owner;
+                DbConnection? owner = (DbConnection?)Owner;
                 if (isExplicitlyReleasing || UnbindOnTransactionCompletion || null == owner)
                 {
-                    SysTx.Transaction currentEnlistedTransaction = _enlistedTransaction;
+                    SysTx.Transaction? currentEnlistedTransaction = _enlistedTransaction;
                     if (currentEnlistedTransaction != null && transaction.Equals(currentEnlistedTransaction))
                     {
                         EnlistedTransaction = null;
@@ -639,12 +639,12 @@ namespace System.Data.ProviderBase
         internal void SetInStasis()
         {
             _isInStasis = true;
-            PerformanceCounters.NumberOfStasisConnections.Increment();
+            PerformanceCounters!.NumberOfStasisConnections.Increment();
         }
 
         private void TerminateStasis(bool returningToPool)
         {
-            PerformanceCounters.NumberOfStasisConnections.Decrement();
+            PerformanceCounters!.NumberOfStasisConnections.Decrement();
             _isInStasis = false;
         }
 

@@ -30,6 +30,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         public bool RespondEmpty { get; set; }
 
+        public TimeSpan ResponseDelay { get; set; }
+        public DelayedActionsFlag DelayedActions { get; set; }
+
         private RevocationResponder(HttpListener listener, string uriPrefix)
         {
             _listener = listener;
@@ -45,17 +48,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         {
             if (authority.AiaHttpUri != null && authority.AiaHttpUri.StartsWith(UriPrefix))
             {
-                _aiaPaths.Add(authority.AiaHttpUri.Substring(UriPrefix.Length - 1), authority);
+                string path = authority.AiaHttpUri.Substring(UriPrefix.Length - 1);
+                Trace($"Adding AIA path : {path}");
+                _aiaPaths.Add(path, authority);
             }
 
             if (authority.CdpUri != null && authority.CdpUri.StartsWith(UriPrefix))
             {
-                _crlPaths.Add(authority.CdpUri.Substring(UriPrefix.Length - 1), authority);
+                string path = authority.CdpUri.Substring(UriPrefix.Length - 1);
+                Trace($"Adding CRL path : {path}");
+                _crlPaths.Add(path, authority);
             }
 
             if (authority.OcspUri != null && authority.OcspUri.StartsWith(UriPrefix))
             {
-                _ocspAuthorities.Add((authority.OcspUri.Substring(UriPrefix.Length - 1), authority));
+                string path = authority.OcspUri.Substring(UriPrefix.Length - 1);
+                Trace($"Adding OCSP path : {path}");
+                _ocspAuthorities.Add((path, authority));
             }
         }
 
@@ -87,7 +96,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (context != null)
             {
-                HandleRequest(context);
+                ThreadPool.QueueUserWorkItem(
+                    state => HandleRequest(state),
+                    context,
+                    true);
             }
         }
 
@@ -105,7 +117,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (context != null)
             {
-                HandleRequest(context);
+                ThreadPool.QueueUserWorkItem(
+                    state => HandleRequest(state),
+                    context,
+                    true);
             }
         }
 
@@ -160,6 +175,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (_aiaPaths.TryGetValue(url, out authority))
             {
+                if (DelayedActions.HasFlag(DelayedActionsFlag.Aia))
+                {
+                    Trace($"Delaying response by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
+                }
+
                 byte[] certData = RespondEmpty ? Array.Empty<byte>() : authority.GetCertData();
 
                 responded = true;
@@ -172,6 +193,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (_crlPaths.TryGetValue(url, out authority))
             {
+                if (DelayedActions.HasFlag(DelayedActionsFlag.Crl))
+                {
+                    Trace($"Delaying response by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
+                }
+
                 byte[] crl = RespondEmpty ? Array.Empty<byte>() : authority.GetCrl();
 
                 responded = true;
@@ -190,26 +217,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
                 if (url.StartsWith(prefix))
                 {
-                    if (context.Request.HttpMethod == "GET")
+                    byte[] reqBytes;
+                    if (TryGetOcspRequestBytes(context.Request, prefix, out reqBytes))
                     {
                         ReadOnlyMemory<byte> certId;
                         ReadOnlyMemory<byte> nonce;
-
                         try
                         {
-                            string base64 = HttpUtility.UrlDecode(url.Substring(prefix.Length + 1));
-                            byte[] reqBytes = Convert.FromBase64String(base64);
                             DecodeOcspRequest(reqBytes, out certId, out nonce);
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
-                            Trace($"OcspRequest Decode failed ({url})");
+                            Trace($"OcspRequest Decode failed ({url}) - {e}");
                             context.Response.StatusCode = 400;
                             context.Response.Close();
                             return;
                         }
 
                         byte[] ocspResponse = RespondEmpty ? Array.Empty<byte>() : authority.BuildOcspResponse(certId, nonce);
+
+                        if (DelayedActions.HasFlag(DelayedActionsFlag.Ocsp))
+                        {
+                            Trace($"Delaying response by {ResponseDelay}.");
+                            Thread.Sleep(ResponseDelay);
+                        }
 
                         responded = true;
                         context.Response.StatusCode = 200;
@@ -262,6 +293,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 {
                 }
             }
+        }
+
+        private static bool TryGetOcspRequestBytes(HttpListenerRequest request, string prefix, out byte[] requestBytes)
+        {
+            requestBytes = null;
+            try
+            {
+                if (request.HttpMethod == "GET")
+                {
+                    string base64 = HttpUtility.UrlDecode(request.RawUrl.Substring(prefix.Length + 1));
+                    requestBytes = Convert.FromBase64String(base64);
+                    return true;
+                }
+                else if (request.HttpMethod == "POST" && request.ContentType == "application/ocsp-request")
+                {
+                    using (System.IO.Stream stream = request.InputStream)
+                    {
+                        requestBytes = new byte[request.ContentLength64];
+                        int read = stream.Read(requestBytes, 0, requestBytes.Length);
+                        System.Diagnostics.Debug.Assert(read == requestBytes.Length);
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Trace($"Failed to get OCSP request bytes ({request.RawUrl}) - {e}");
+            }
+
+            return false;
         }
 
         private static void DecodeOcspRequest(
@@ -345,6 +406,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
         }
 
+        internal void Stop() => _listener.Stop();
+
         private static void Trace(string trace)
         {
             if (s_traceEnabled)
@@ -352,5 +415,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 Console.WriteLine(trace);
             }
         }
+    }
+
+    public enum DelayedActionsFlag : byte
+    {
+        None = 0,
+        Ocsp = 0b1,
+        Crl = 0b10,
+        Aia = 0b100,
+        All = 0b11111111
     }
 }

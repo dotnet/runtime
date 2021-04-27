@@ -726,6 +726,7 @@ void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
 guint      g_ptr_array_capacity           (GPtrArray *array);
+gboolean   g_ptr_array_find               (GPtrArray *array, gconstpointer needle, guint *index);
 #define    g_ptr_array_index(array,index) (array)->pdata[(index)]
 //FIXME previous missing parens
 
@@ -779,6 +780,7 @@ GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags f
 void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
+void           g_log_disabled         (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN;
 void           mono_assertion_message_disabled  (const char *file, int line) G_GNUC_NORETURN;
@@ -786,6 +788,7 @@ void           mono_assertion_message  (const char *file, int line, const char *
 void           mono_assertion_message_unreachable (const char *file, int line) G_GNUC_NORETURN;
 const char *   g_get_assertion_message (void);
 
+#ifndef DISABLE_ASSERT_MESSAGES
 #ifdef HAVE_C99_SUPPORT
 /* The for (;;) tells gc thats g_error () doesn't return, avoiding warnings */
 #define g_error(format, ...)    do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, __VA_ARGS__); for (;;); } while (0)
@@ -800,6 +803,13 @@ const char *   g_get_assertion_message (void);
 #define g_message(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #endif  /* ndef HAVE_C99_SUPPORT */
+#else
+#define g_error(...)    do { g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __FILE__, __LINE__); for (;;); } while (0)
+#define g_critical(...) g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __FILE__, __LINE__)
+#define g_warning(...)  g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __FILE__, __LINE__)
+#define g_message(...)  g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __FILE__, __LINE__)
+#define g_debug(...)    g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __FILE__, __LINE__)
+#endif
 
 typedef void (*GLogFunc) (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
 typedef void (*GPrintFunc) (const gchar *string);
@@ -949,14 +959,6 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 
 #define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
-#if ENABLE_NETCORE
-#define g_assert_netcore()     /* nothing */
-#define g_assert_not_netcore() g_assert (!"This function should only be called on mono-notnetcore.")
-#else
-#define g_assert_netcore()     g_assert (!"This function should only be called on mono-netcore.")
-#define g_assert_not_netcore() /* nothing */
-#endif
-
 /* f is format -- like printf and scanf
  * Where you might have said:
  * 	if (!(expr))
@@ -994,7 +996,8 @@ typedef enum {
 	G_CONVERT_ERROR_FAILED,
 	G_CONVERT_ERROR_PARTIAL_INPUT,
 	G_CONVERT_ERROR_BAD_URI,
-	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
+	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH,
+	G_CONVERT_ERROR_NO_MEMORY
 } GConvertError;
 
 gchar     *g_utf8_strup (const gchar *str, gssize len);
@@ -1020,6 +1023,20 @@ size_t     g_utf16_len     (const gunichar2 *);
 #else
 #define u16to8(str) g_utf16_to_utf8(str, (glong)strlen(str), NULL, NULL, NULL)
 #endif
+
+typedef gpointer (*GCustomAllocator) (gsize req_size, gpointer custom_alloc_data);
+
+typedef struct {
+	gpointer buffer;
+	gsize buffer_size;
+	gsize req_buffer_size;
+} GFixedBufferCustomAllocatorData;
+
+gpointer
+g_fixed_buffer_custom_allocator (gsize req_size, gpointer custom_alloc_data);
+
+gunichar2 *g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
+gchar *g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
 
 /*
  * Path
@@ -1445,7 +1462,7 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 
 #define G_HAVE_API_SUPPORT(x) (x)
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
-#define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
+#define g_unsupported_api(name) G_STMT_START { g_debug (G_UNSUPPORTED_API, name); } G_STMT_END
 
 #if _WIN32
 // g_free the result

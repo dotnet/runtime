@@ -89,25 +89,13 @@ public class Reflection
 
             return true;
         }
-        catch (TargetInvocationException e)
+        catch (PlatformNotSupportedException) when (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && e.InnerException is PlatformNotSupportedException)
-            {
-                return true;
-            }
-            
-            Console.WriteLine($"Caught unexpected {nameof(PlatformNotSupportedException)}: {e}");
-            return false;
+            return true;
         }
-        catch(COMException e)
+        catch (COMException) when (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return true;
-            }
-            
-            Console.WriteLine($"Caught unexpected {nameof(COMException)}: {e}");
-            return false;
+            return true;
         }
         catch (Exception e)
         {

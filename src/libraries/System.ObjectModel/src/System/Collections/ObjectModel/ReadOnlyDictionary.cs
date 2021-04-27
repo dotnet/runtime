@@ -161,7 +161,14 @@ namespace System.Collections.ObjectModel
                     return null;
                 }
 
-                return this[(TKey)key];
+                if (m_dictionary.TryGetValue((TKey)key, out TValue? value))
+                {
+                    return value;
+                }
+                else
+                {
+                    return null;
+                }
             }
             set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }

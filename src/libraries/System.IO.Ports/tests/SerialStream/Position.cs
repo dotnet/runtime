@@ -78,7 +78,7 @@ namespace System.IO.Ports.Tests
             Assert.Throws(expectedException, () => serialStream.Position = value);
             Assert.Throws(expectedException, () =>
             {
-                long positionTest = serialStream.Position;
+                _ = serialStream.Position;
             });
         }
         #endregion

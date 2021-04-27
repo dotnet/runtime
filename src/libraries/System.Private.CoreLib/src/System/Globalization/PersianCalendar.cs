@@ -55,7 +55,7 @@ namespace System.Globalization
 
         internal override CalendarId ID => CalendarId.PERSIAN;
 
-        private long GetAbsoluteDatePersian(int year, int month, int day)
+        private static long GetAbsoluteDatePersian(int year, int month, int day)
         {
             if (year < 1 || year > MaxCalendarYear || month < 1 || month > 12)
             {
@@ -117,7 +117,7 @@ namespace System.Globalization
 
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
         }
 

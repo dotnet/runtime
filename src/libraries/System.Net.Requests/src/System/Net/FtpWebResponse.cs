@@ -23,8 +23,6 @@ namespace System.Net
 
         internal FtpWebResponse(Stream? responseStream, long contentLength, Uri responseUri, FtpStatusCode statusCode, string? statusLine, DateTime lastModified, string? bannerMessage, string? welcomeMessage, string? exitMessage)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, contentLength, statusLine);
-
             _responseStream = responseStream;
             if (responseStream == null && contentLength < 0)
             {
@@ -81,9 +79,7 @@ namespace System.Net
         /// </summary>
         public override void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             _responseStream?.Close();
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         /// <summary>

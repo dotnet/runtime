@@ -33,6 +33,8 @@ internal static partial class Interop
         {
             ECB = 1,
             CBC = 2,
+            CFB = 3,
+            CFB8 = 10,
         }
 
         internal enum PAL_SymmetricOptions
@@ -81,7 +83,7 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography
 {
-    internal class SafeAppleCryptorHandle : SafeHandle
+    internal sealed class SafeAppleCryptorHandle : SafeHandle
     {
         public SafeAppleCryptorHandle()
             : base(IntPtr.Zero, ownsHandle: true)

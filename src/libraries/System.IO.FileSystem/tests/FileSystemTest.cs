@@ -79,7 +79,7 @@ namespace System.IO.Tests
             return success;
         });
 
-        protected string GetNamedPipeServerStreamName()
+        public static string GetNamedPipeServerStreamName()
         {
             if (PlatformDetection.IsInAppContainer)
             {

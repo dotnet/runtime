@@ -560,5 +560,65 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             char c = d.get_Chars(2);
             Assert.Equal('c', c);
         }
+
+        private sealed class InitOnlyProperty
+        {
+            public InitOnlyProperty() { }
+            public InitOnlyProperty(int value)
+            {
+                ((dynamic)this).P = value;
+            }
+            public int P { get; init; }
+            public int Q
+            {
+                get { return P; }
+                init { ((dynamic)this).P = value; }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void InitOnlyProperty_Set()
+        {
+            dynamic d = new InitOnlyProperty();
+            Assert.Throws<RuntimeBinderException>(() => d.P = 1);
+        }
+
+        [Fact]
+        public void InitOnlyProperty_SetAccessor()
+        {
+            dynamic d = new InitOnlyProperty();
+            Assert.Throws<RuntimeBinderException>(() => d.set_P(1));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void InitOnlyProperty_SetInConstructor()
+        {
+            Assert.Throws<RuntimeBinderException>(() => new InitOnlyProperty(1));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void InitOnlyProperty_SetInInitAccessor()
+        {
+            Assert.Throws<RuntimeBinderException>(() => new InitOnlyProperty() { Q = 1 });
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void InitOnlyProperty_Increment()
+        {
+            dynamic d = new InitOnlyProperty();
+            Assert.Throws<RuntimeBinderException>(() => d.P++);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void InitOnlyProperty_CompoundAssignment()
+        {
+            dynamic d = new InitOnlyProperty();
+            Assert.Throws<RuntimeBinderException>(() => d.P += 1);
+        }
     }
 }

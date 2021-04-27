@@ -12,7 +12,7 @@ namespace System.Globalization
     //  NOTE: Calendars depend on the locale name that creates it.  Only a few
     //        properties are available without locales using CalendarData.GetCalendar(CalendarData)
     //
-    internal partial class CalendarData
+    internal sealed partial class CalendarData
     {
         // Max calendars
         internal const int MAX_CALENDARS = 23;
@@ -384,7 +384,7 @@ namespace System.Globalization
             return "en-US";
         }
 
-        private bool SystemSupportsTaiwaneseCalendar() => GlobalizationMode.UseNls ?
+        private static bool SystemSupportsTaiwaneseCalendar() => GlobalizationMode.UseNls ?
                                                             NlsSystemSupportsTaiwaneseCalendar() :
                                                             IcuSystemSupportsTaiwaneseCalendar();
     }

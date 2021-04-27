@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -60,14 +60,14 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
 
             SetSecret(TestSecretsId, configKey, randValue);
             var config = new ConfigurationBuilder()
-                .AddUserSecrets(typeof(ConfigurationExtensionTest).GetTypeInfo().Assembly)
+                .AddUserSecrets(typeof(ConfigurationExtensionTest).Assembly)
                 .Build();
 
             Assert.Equal(randValue, config[configKey]);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -86,12 +86,12 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         {
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 new ConfigurationBuilder().AddUserSecrets<string>());
-            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).GetTypeInfo().Assembly.GetName().Name),
+            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).Assembly.GetName().Name),
                 ex.Message);
 
             ex = Assert.Throws<InvalidOperationException>(() =>
                 new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly));
-            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).GetTypeInfo().Assembly.GetName().Name),
+            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).Assembly.GetName().Name),
                 ex.Message);
         }
 
@@ -108,16 +108,29 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void AddUserSecrets_DoesThrowsIfNotOptionalAndSecretDoesNotExist()
+        {
+            var secretId = Assembly.GetExecutingAssembly().GetName().Name;
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
+            if (File.Exists(secretPath))
+            {
+                File.Delete(secretPath);
+            }
+
+            Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddUserSecrets(Assembly.GetExecutingAssembly(), false).Build());
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
             var userSecretsId = Guid.NewGuid().ToString();
-            SetSecret(userSecretsId, "Facebook:AppSecret", "value1");
+            SetSecret(userSecretsId, "Facebook:PLACEHOLDER", "value1");
 
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
             var configuration = builder.Build();
 
-            Assert.Equal("value1", configuration["Facebook:AppSecret"]);
+            Assert.Equal("value1", configuration["Facebook:PLACEHOLDER"]);
         }
 
         [Fact]
@@ -128,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
 
             var configuration = builder.Build();
-            Assert.Null(configuration["Facebook:AppSecret"]);
+            Assert.Null(configuration["Facebook:PLACEHOLDER"]);
             Assert.False(File.Exists(secretFilePath));
         }
 

@@ -11,24 +11,24 @@ On the other hand, if you're hijacking or otherwise calling ICorProfilerInfo fun
 
 In 2.0 we've added some simple checks to help you avoid this problem. If you call an unsafe ICorProfilerInfo function asynchronously, instead of crossing its fingers and trying, it will fail with CORPROF\_E\_UNSUPPORTED\_CALL\_SEQUENCE.  The general rule of thumb is, nothing is safe to call asynchronously.  But here are the exceptions that are safe, and that we specifically allow to be called asynchronously:
 
-- GetEventMask/SetEventMask 
-- GetCurrentThreadID 
-- GetThreadContext 
-- GetThreadAppDomain 
-- GetFunctionFromIP 
-- GetFunctionInfo/GetFunctionInfo2 
-- GetCodeInfo/GetCodeInfo2 
-- GetModuleInfo 
-- GetClassIDInfo/GetClassIDInfo2 
-- IsArrayClass 
-- SetFunctionIDMapper 
-- DoStackSnapshot 
+- GetEventMask/SetEventMask
+- GetCurrentThreadID
+- GetThreadContext
+- GetThreadAppDomain
+- GetFunctionFromIP
+- GetFunctionInfo/GetFunctionInfo2
+- GetCodeInfo/GetCodeInfo2
+- GetModuleInfo
+- GetClassIDInfo/GetClassIDInfo2
+- IsArrayClass
+- SetFunctionIDMapper
+- DoStackSnapshot
 
 There are also a few things to keep in mind:
 
-1. ICorProfilerInfo calls made from within the fast-path Enter/Leave callbacks are considered asynchronous.  (Though ICorProfilerInfo calls made from within the _slow_-path Enter/Leave callbacks are considered synchronous.)  See the blog entries [here](ELT - The Basics.md) and [here](http://blogs.msdn.com/jkeljo/archive/2005/08/11/450506.aspx) for more info on fast / slow path. 
-2. ICorProfilerInfo calls made from within instrumented code (i.e., IL you've rewritten to call into your profiler and then into ICorProfilerInfo) are considered asynchronous. 
-3. Calls made inside your FunctionIDMapper hook are considered to be synchronous. 
-4. Calls made on threads created by your profiler, are always considered to be synchronous.  (This is because there's no danger of conflicts resulting from interrupting and then re-entering the CLR on that thread, since a profiler-created thread was not in the CLR to begin with.) 
-5. Calls made inside a StackSnapshotCallback are considered to be synchronous iff the call to DoStackSnapshot was synchronous.   
+1. ICorProfilerInfo calls made from within the fast-path Enter/Leave callbacks are considered asynchronous.  (Though ICorProfilerInfo calls made from within the _slow_-path Enter/Leave callbacks are considered synchronous.)  See the blog entries [here](ELT - The Basics.md) and [here](http://blogs.msdn.com/jkeljo/archive/2005/08/11/450506.aspx) for more info on fast / slow path.
+2. ICorProfilerInfo calls made from within instrumented code (i.e., IL you've rewritten to call into your profiler and then into ICorProfilerInfo) are considered asynchronous.
+3. Calls made inside your FunctionIDMapper hook are considered to be synchronous.
+4. Calls made on threads created by your profiler, are always considered to be synchronous.  (This is because there's no danger of conflicts resulting from interrupting and then re-entering the CLR on that thread, since a profiler-created thread was not in the CLR to begin with.)
+5. Calls made inside a StackSnapshotCallback are considered to be synchronous iff the call to DoStackSnapshot was synchronous.
 

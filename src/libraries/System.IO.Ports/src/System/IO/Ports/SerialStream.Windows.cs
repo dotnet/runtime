@@ -1411,7 +1411,6 @@ namespace System.IO.Ports
             if (bytes.Length - offset < count)
                 throw new IndexOutOfRangeException(SR.IndexOutOfRange_IORaceCondition);
 
-            // You can't use the fixed statement on an array of length 0.
             if (bytes.Length == 0)
             {
                 hr = 0;
@@ -1461,7 +1460,6 @@ namespace System.IO.Ports
             if (bytes.Length - offset < count)
                 throw new IndexOutOfRangeException(SR.IndexOutOfRange_IORaceCondition);
 
-            // You can't use the fixed statement on an array of length 0.
             if (bytes.Length == 0)
             {
                 hr = 0;

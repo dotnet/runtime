@@ -32,7 +32,7 @@ Text from the first bug report:
     These two non-atomic operations expose a race if the object is not a local variable, and
     can be mutated by another thread.
 
-    This is the tree generated for unboxing an int.  Note the two occurences of "field ref m_obj".
+    This is the tree generated for unboxing an int.  Note the two occurrences of "field ref m_obj".
 
 
     [[

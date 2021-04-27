@@ -73,7 +73,7 @@ public struct INNER2
     public int f1;
     [FieldOffset(4)]
     public float f2;
-    [FieldOffset(8)] 
+    [FieldOffset(8)]
     public String f3;
 }
 
@@ -145,7 +145,7 @@ public struct NumberSequential
     public UInt16 ui16;
     public Single sgl;
     public Byte b;
-    public SByte sb; 
+    public SByte sb;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -471,7 +471,7 @@ public struct NonBlittableFloat
 
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
     private float[] arr;
-    
+
     public float F => arr[0];
 }
 
@@ -502,4 +502,10 @@ delegate int IntIntDelegate(int a);
 public struct DelegateFieldMarshaling
 {
     public Delegate IntIntFunction;
+}
+
+public struct Int32CLongStruct
+{
+    public int i;
+    public CLong l;
 }

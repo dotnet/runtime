@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Tests;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    public abstract class CompressionTestBase
+    public abstract class CompressionTestBase : WrappingConnectedStreamConformanceTests
     {
         public static IEnumerable<object[]> UncompressedTestFiles()
         {
@@ -36,8 +38,22 @@ namespace System.IO.Compression
         public abstract Stream CreateStream(Stream stream, CompressionLevel level);
         public abstract Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen);
         public abstract Stream BaseStream(Stream stream);
-        public virtual bool FlushCompletes { get => true; }
-        public virtual bool FlushNoOps { get => false; }
         public virtual int BufferSize { get => 8192; }
+
+        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4 * 1024, 16 * 1024);
+            return Task.FromResult<StreamPair>((CreateStream(stream1, CompressionMode.Compress), CreateStream(stream2, CompressionMode.Decompress)));
+        }
+
+        protected override Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen) =>
+            Task.FromResult<StreamPair>((CreateStream(wrapped.Stream1, CompressionMode.Compress, leaveOpen), CreateStream(wrapped.Stream2, CompressionMode.Decompress, leaveOpen)));
+
+        protected override int BufferedSize => 16 * 1024 + BufferSize;
+        protected override bool UsableAfterCanceledReads => false;
+        protected override Type UnsupportedReadWriteExceptionType => typeof(InvalidOperationException);
+        protected override bool WrappedUsableAfterClose => false;
+        protected override bool FlushRequiredToWriteData => true;
+        protected override bool FlushGuaranteesAllDataWritten => false;
     }
 }

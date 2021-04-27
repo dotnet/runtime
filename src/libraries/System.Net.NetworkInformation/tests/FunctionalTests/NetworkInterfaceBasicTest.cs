@@ -47,6 +47,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -81,10 +86,14 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1332")]
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)]
         public void BasicTest_AccessInstanceProperties_NoExceptions_Bsd()
@@ -99,7 +108,7 @@ namespace System.Net.NetworkInformation.Tests
                 string id = nic.Id;
                 Assert.False(string.IsNullOrEmpty(id), "NetworkInterface.Id should not be null or empty.");
                 _log.WriteLine("ID: " + id);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
+                Assert.False(nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
                 _log.WriteLine("Speed: " + nic.Speed);
@@ -111,6 +120,11 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     // Ethernet, WIFI and loopback should have known status.
                     Assert.True((nic.OperationalStatus == OperationalStatus.Up) || (nic.OperationalStatus == OperationalStatus.Down));
+                }
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
                 }
             }
         }
@@ -260,7 +274,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~(TestPlatforms.OSX|TestPlatforms.FreeBSD))]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)

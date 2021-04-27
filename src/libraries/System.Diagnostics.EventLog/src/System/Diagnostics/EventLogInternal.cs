@@ -15,7 +15,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
-    internal class EventLogInternal : IDisposable, ISupportInitialize
+    internal sealed class EventLogInternal : IDisposable, ISupportInitialize
     {
         private EventLogEntryCollection entriesCollection;
         internal string logName;
@@ -53,7 +53,6 @@ namespace System.Diagnostics
         private readonly EventLog parent;
 
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
-        internal const string DllName = "EventLogMessages.dll";
         private const string eventLogMutexName = "netfxeventlog.1.0";
         private const int SecondsPerDay = 60 * 60 * 24;
 
@@ -1016,11 +1015,6 @@ namespace System.Diagnostics
             return pos - IntFrom(cache, pos - 4);
         }
 
-        internal static string GetDllPath(string machineName)
-        {
-            return Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
-        }
-
         private static int IntFrom(byte[] buf, int offset)
         {
             // assumes Little Endian byte order.
@@ -1250,7 +1244,7 @@ namespace System.Diagnostics
             if (!EventLog.SourceExists(sourceName, currentMachineName, true))
             {
                 Mutex mutex = null;
-                RuntimeHelpers.PrepareConstrainedRegions();
+
                 try
                 {
                     NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -1414,7 +1408,7 @@ namespace System.Diagnostics
             }
         }
 
-        private class LogListeningInfo
+        private sealed class LogListeningInfo
         {
             public EventLogInternal handleOwner;
             public RegisteredWaitHandle registeredWaitHandle;

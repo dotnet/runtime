@@ -96,7 +96,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public void Ctor_NoNetcoreappProperties_Success()
         {
-            var input = new SyndicationTextInput();
             var feed = new SyndicationFeed();
             var clone = new SyndicationFeedSubclass(feed, cloneItems: false);
             Assert.Null(clone.Documentation);

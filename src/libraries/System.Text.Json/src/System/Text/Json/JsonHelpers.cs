@@ -4,12 +4,19 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+        // Members accessed by the serializer when deserializing.
+        public const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
+            DynamicallyAccessedMemberTypes.PublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicProperties |
+            DynamicallyAccessedMemberTypes.PublicFields;
+
         /// <summary>
         /// Returns the span for the given reader.
         /// </summary>
@@ -133,6 +140,15 @@ namespace System.Text.Json
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));
 #endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateInt32MaxArrayLength(uint length)
+        {
+            if (length > 0X7FEFFFFF) // prior to .NET 6, max array length for sizeof(T) != 1 (size == 1 is larger)
+            {
+                ThrowHelper.ThrowOutOfMemoryException(length);
+            }
         }
     }
 }

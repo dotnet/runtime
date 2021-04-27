@@ -217,7 +217,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22168", TestPlatforms.AnyUnix)]
         [Theory,
             // Question marks collapse (right) to periods
             InlineData(
@@ -242,8 +241,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22168", TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22169", TestPlatforms.AnyUnix)]
         [Theory,
             // Periods are optional if left of ? and end of match
             InlineData(
@@ -283,7 +280,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22169", TestPlatforms.AnyUnix)]
         [Theory,
             // Periods are optional if left of * and end of match
             InlineData(
@@ -303,7 +299,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22169", TestPlatforms.AnyUnix)]
         // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
         [ConditionalTheory(nameof(UsingNewNormalization)),
             // Periods are optional if left of * or ? and end of match
@@ -348,7 +343,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22170", TestPlatforms.AnyUnix)]
         [Theory,
             InlineData(
                 "foo*.",
@@ -362,7 +356,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22170", TestPlatforms.AnyUnix)]
         // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
         [ConditionalTheory(nameof(UsingNewNormalization)),
             InlineData(
@@ -408,7 +401,6 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22170", TestPlatforms.AnyUnix)]
         [OuterLoop("These are pretty corner, don't need to run all the time.")]
         [Theory,
             // "foo*." actually becomes "foo<" when passed to NT. It matches all characters up to, and including, the final period.
@@ -682,7 +674,7 @@ namespace System.IO.Tests
         {
             string testDir1Str = GetTestFileName();
             DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-            DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
+            testDir.CreateSubdirectory(testDir1Str);
 
             using (File.Create(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())))
             using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))

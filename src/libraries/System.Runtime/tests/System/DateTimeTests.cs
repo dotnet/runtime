@@ -250,13 +250,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
         }
 
-        [Fact]
-        public void Ctor_OverflowingCalendar_ThrowsArgumentException()
-        {
-            AssertExtensions.Throws<ArgumentException>(null, () => new DateTime(1, 1, 1, 1, 1, 1, 1, new DateMaxCalendar()));
-            AssertExtensions.Throws<ArgumentException>(null, () => new DateTime(1, 1, 1, 1, 1, 1, 1, new DateMaxCalendar(), DateTimeKind.Local));
-        }
-
         [Theory]
         [InlineData(2004, 1, 31)]
         [InlineData(2004, 2, 29)]
@@ -382,17 +375,17 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddYears_OutOfRange_TestData()
         {
-            yield return new object[] { DateTime.Now, 10001, "value" };
-            yield return new object[] { DateTime.Now, -10001, "value" };
-            yield return new object[] { DateTime.MaxValue, 1, "months" };
-            yield return new object[] { DateTime.MinValue, -1, "months" };
+            yield return new object[] { DateTime.Now, 10001 };
+            yield return new object[] { DateTime.Now, -10001 };
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
         }
 
         [Theory]
         [MemberData(nameof(AddYears_OutOfRange_TestData))]
-        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, int years, string paramName)
+        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, int years)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(paramName, () => date.AddYears(years));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddYears(years));
         }
 
         public static IEnumerable<object[]> AddMonths_TestData()
@@ -1041,6 +1034,18 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => DateTime.Parse(""));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
         }
 
         [Theory]
@@ -1539,7 +1544,15 @@ namespace System.Tests
         [Fact]
         public static void ParseExact_EscapedSingleQuotes()
         {
-            var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+            DateTimeFormatInfo formatInfo;
+            if (PlatformDetection.IsBrowser)
+            {
+                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("id-ID"));
+            }
+            else
+            {
+                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+            }
             const string format = @"dddd, d' ta\' 'MMMM yyyy";
 
             DateTime expected = new DateTime(1999, 2, 28, 17, 00, 01);
@@ -1711,13 +1724,29 @@ namespace System.Tests
             yield return new object[] { "2 2 2Z", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2002, 2, 2, 0, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
             yield return new object[] { "#10/10/2095#\0", CultureInfo.InvariantCulture, new DateTime(2095, 10, 10, 0, 0, 0) };
 
-            DateTime today = DateTime.Today;
-            var hebrewCulture = new CultureInfo("he-IL");
-            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
-            yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
+            yield return new object[] { "2020-5-7T09:37:00.0000000+00:00\0", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "#2020-5-7T09:37:00.0000000+00:00#", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "#2020-5-7T09:37:00.0000000+00:00#\0", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "2020-5-7T09:37:00.0000000+00:00", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
 
-            var mongolianCulture = new CultureInfo("mn-MN");
-            yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                DateTime today = DateTime.Today;
+                var hebrewCulture = new CultureInfo("he-IL");
+                hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+                yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
+
+                CultureInfo culture;
+                if (PlatformDetection.IsBrowser)
+                {
+                    culture = new CultureInfo("pl-PL");
+                }
+                else
+                {
+                    culture = new CultureInfo("mn-MN");
+                }
+                yield return new object[] { today.ToString(culture), culture, today };
+            }
         }
 
         [Theory]
@@ -1832,12 +1861,15 @@ namespace System.Tests
             yield return new object[] { " 9 / 8 / 2017    10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { "   9   /   8   /   2017    10  :   11  :   12  AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
 
-            var hebrewCulture = new CultureInfo("he-IL");
-            hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
-            DateTime today = DateTime.Today;
-            foreach (string pattern in hebrewCulture.DateTimeFormat.GetAllDateTimePatterns())
+            if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                yield return new object[] { today.ToString(pattern, hebrewCulture), pattern, hebrewCulture, DateTimeStyles.None, null };
+                var hebrewCulture = new CultureInfo("he-IL");
+                hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
+                DateTime today = DateTime.Today;
+                foreach (string pattern in hebrewCulture.DateTimeFormat.GetAllDateTimePatterns())
+                {
+                    yield return new object[] { today.ToString(pattern, hebrewCulture), pattern, hebrewCulture, DateTimeStyles.None, null };
+                }
             }
         }
 
@@ -2004,16 +2036,76 @@ namespace System.Tests
             yield return new object[] { new DateTime(221550163152616218, DateTimeKind.Utc), "r", null, "Sun, 25 Jan 0703 19:11:55 GMT" };
 
             // Year patterns
-
-            var enUS = new CultureInfo("en-US");
-            var thTH = new CultureInfo("th-TH");
-            yield return new object[] { new DateTime(1234, 5, 6), "yy", enUS, "34" };
-            yield return new object[] { DateTime.MaxValue, "yy", thTH, "42" };
-            for (int i = 3; i < 20; i++)
+            if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                yield return new object[] { new DateTime(1234, 5, 6), new string('y', i), enUS, 1234.ToString("D" + i) };
-                yield return new object[] { DateTime.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
+                var enUS = new CultureInfo("en-US");
+                var thTH = new CultureInfo("th-TH");
+                yield return new object[] { new DateTime(1234, 5, 6), "yy", enUS, "34" };
+                yield return new object[] { DateTime.MaxValue, "yy", thTH, "42" };
+                for (int i = 3; i < 20; i++)
+                {
+                    yield return new object[] { new DateTime(1234, 5, 6), new string('y', i), enUS, 1234.ToString("D" + i) };
+                    yield return new object[] { DateTime.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
+                }
             }
+            else
+            {
+                var invariant = new CultureInfo("");
+                yield return new object[] { new DateTime(1234, 5, 6), "yy", invariant, "34" };
+
+                for (int i = 3; i < 20; i++)
+                {
+                    yield return new object[] { new DateTime(1234, 5, 6), new string('y', i), invariant, 1234.ToString("D" + i) };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
+        public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
+        {
+            Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
+        public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
+        {
+            DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);
+            DateTime result2 = DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style);
+
+            Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
+            Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
+
+            Assert.Equal(result1, result2);
+            Assert.Equal(result1, result3);
+            Assert.Equal(result1, result4);
+
+            if (expected != null) // some inputs don't roundtrip well
+            {
+                // Normalize values to make comparison easier
+                if (expected.Value.Kind != DateTimeKind.Utc)
+                {
+                    expected = expected.Value.ToUniversalTime();
+                }
+                if (result1.Kind != DateTimeKind.Utc)
+                {
+                    result1 = result1.ToUniversalTime();
+                }
+
+                Assert.Equal(expected, result1);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
+        public static void ParseExact_Span_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), format, culture, style));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style));
+
+            Assert.False(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result));
+            Assert.False(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out result));
         }
 
         [Theory]
@@ -2235,44 +2327,6 @@ namespace System.Tests
             internal ushort wMillisecond;
         }
 
-        private class DateMaxCalendar : Calendar
-        {
-            public override int[] Eras => throw new NotImplementedException();
-
-            public override DateTime AddMonths(DateTime time, int months) => time;
-
-            public override DateTime AddYears(DateTime time, int years) => time;
-
-            public override int GetDayOfMonth(DateTime time) => 0;
-
-            public override DayOfWeek GetDayOfWeek(DateTime time) => DayOfWeek.Monday;
-
-            public override int GetDayOfYear(DateTime time) => 0;
-
-            public override int GetDaysInMonth(int year, int month, int era) => 0;
-
-            public override int GetDaysInYear(int year, int era) => 0;
-
-            public override int GetEra(DateTime time) => 0;
-
-            public override int GetMonth(DateTime time) => 0;
-
-            public override int GetMonthsInYear(int year, int era) => 0;
-
-            public override int GetYear(DateTime time) => 0;
-
-            public override bool IsLeapDay(int year, int month, int day, int era) => false;
-
-            public override bool IsLeapMonth(int year, int month, int era) => false;
-
-            public override bool IsLeapYear(int year, int era) => false;
-
-            public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
-            {
-                return DateTime.MaxValue;
-            }
-        }
-
         [Theory]
         [MemberData(nameof(StandardFormatSpecifiers))]
         public static void TryFormat_MatchesToString(string format)
@@ -2299,7 +2353,7 @@ namespace System.Tests
             Assert.Equal(0, dest[dest.Length - 1]);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         public static void TryFormat_MatchesExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
@@ -2310,54 +2364,6 @@ namespace System.Tests
             Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
             Assert.Equal(destination.Length, charsWritten);
             Assert.Equal(expected, new string(destination));
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
-        public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
-        {
-            Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
-        }
-
-        [Theory]
-        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
-        public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
-        {
-            DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);
-            DateTime result2 = DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style);
-
-            Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
-            Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
-
-            Assert.Equal(result1, result2);
-            Assert.Equal(result1, result3);
-            Assert.Equal(result1, result4);
-
-            if (expected != null) // some inputs don't roundtrip well
-            {
-                // Normalize values to make comparison easier
-                if (expected.Value.Kind != DateTimeKind.Utc)
-                {
-                    expected = expected.Value.ToUniversalTime();
-                }
-                if (result1.Kind != DateTimeKind.Utc)
-                {
-                    result1 = result1.ToUniversalTime();
-                }
-
-                Assert.Equal(expected, result1);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
-        public static void ParseExact_Span_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
-        {
-            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), format, culture, style));
-            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style));
-
-            Assert.False(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result));
-            Assert.False(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out result));
         }
 
         [Fact]

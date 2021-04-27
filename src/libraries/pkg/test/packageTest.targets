@@ -3,11 +3,15 @@
   <PropertyGroup>
     <_targetFrameworkVersionIndex>$(TargetFramework.IndexOfAny(".-0123456789"))</_targetFrameworkVersionIndex>
     <_targetFrameworkIdentifier Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(TargetFramework.SubString(0, $(_targetFrameworkVersionIndex)))</_targetFrameworkIdentifier>
+    <!-- For net5.0 and later use netcoreapp folder. -->
+    <_targetFrameworkIdentifier Condition="'$(_targetFrameworkIdentifier)' == 'net' and !$(TargetFramework.StartsWith('net4'))">netcoreapp</_targetFrameworkIdentifier>
     <ToolsDir>$(MSBuildThisFileDirectory)tools\</ToolsDir>
 
     <RestoreSources>
-      https://api.nuget.org/v3/index.json;
+      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
+      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json;
+      https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6-transport/nuget/v3/index.json;
       $(LocalPackagesPath)
     </RestoreSources>
   </PropertyGroup>
@@ -69,7 +73,7 @@
 
   <Target Name="VerifyRuntimeClosure" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' != ''">
+          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(RuntimeIdentifier)' != '' and '$(SkipVerifyClosureForRuntime)' != 'true'">
     <ItemGroup>
       <_runClosureFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
         <Original>%(Identity)</Original>
@@ -99,9 +103,16 @@
                  IgnoredTypes="@(IgnoredTypes)" />
   </Target>
 
+  <Target Name="VerifyNotDependsOnNetStandard"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(_ShortFrameworkIdentifier)' == 'net' AND '$(_TargetFrameworkVersionWithoutV)' &gt;= '4.6.1' AND '$(RuntimeIdentifier)' == '' AND '$(DisableVerifyNotDependsOnNetStandardTest)' != 'true'">
+    <Error Condition="'$(DependsOnNetStandard)' == 'true'" Text="Package $(TestPackageId) requires netstandard shims when targeting $(TargetFramework)" />
+  </Target>
+
   <PropertyGroup>
     <_testDependsOn>
       LogBeginTest;
+      VerifyNotDependsOnNetStandard;
       VerifyReferenceClosure;
       VerifyReferenceTypes;
       VerifyRuntimeClosure;

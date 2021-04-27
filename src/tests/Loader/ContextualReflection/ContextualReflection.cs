@@ -3,7 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
@@ -724,6 +726,19 @@ namespace ContextualReflectionTest
             }
         }
 
+        void TestDefineDynamicAssembly(bool collectibleContext, AssemblyBuilderAccess assemblyBuilderAccess)
+        {
+            AssemblyLoadContext assemblyLoadContext = collectibleContext ? new AssemblyLoadContext("DynamicAssembly Collectable context", true) : AssemblyLoadContext.Default;
+            AssemblyName dynamicAssemblyName = new AssemblyName("DynamicAssembly");
+
+            using (assemblyLoadContext.EnterContextualReflection())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(dynamicAssemblyName, assemblyBuilderAccess);
+            }
+
+            Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), dynamicAssemblyName)));
+        }
+
         void TestMockAssemblyThrows()
         {
             Exception e = Assert.ThrowsArgumentException("activating", () => AssemblyLoadContext.EnterContextualReflection(new MockAssembly()));
@@ -736,6 +751,10 @@ namespace ContextualReflectionTest
             VerifyContextualReflectionProxy();
             VerifyUsingStatementContextualReflectionUsage();
             VerifyBadContextualReflectionUsage();
+
+            // TestDynamicAssembly() disabled due to https://github.com/dotnet/runtime/issues/48579
+            //TestDynamicAssembly(true);
+            //TestDynamicAssembly(false);
 
             RunTests(isolated : false);
             alcProgramInstance.RunTestsIsolated();
@@ -754,6 +773,12 @@ namespace ContextualReflectionTest
         {
             VerifyIsolationAlc();
             RunTests(isolated : true);
+        }
+
+        public void TestDynamicAssembly(bool collectibleContext)
+        {
+            TestDefineDynamicAssembly(collectibleContext, AssemblyBuilderAccess.Run);
+            TestDefineDynamicAssembly(collectibleContext, AssemblyBuilderAccess.RunAndCollect);
         }
     }
 }

@@ -44,8 +44,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch ex As Exception
                 Throw VbMakeException(ex, vbErrors.PathNotFound)
             End Try
@@ -115,8 +113,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch e As Exception
                     End Try

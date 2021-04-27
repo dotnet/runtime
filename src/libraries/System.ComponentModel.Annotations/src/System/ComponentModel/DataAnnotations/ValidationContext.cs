@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -26,11 +27,13 @@ namespace System.ComponentModel.DataAnnotations
         // Also we use this ability in Validator.CreateValidationContext()??
         : IServiceProvider
     {
+        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered.";
+
         #region Member Fields
 
-        private readonly Dictionary<object, object> _items;
-        private string _displayName;
-        private Func<Type, object> _serviceProvider;
+        private readonly Dictionary<object, object?> _items;
+        private string? _displayName;
+        private Func<Type, object?>? _serviceProvider;
 
         #endregion
 
@@ -41,6 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="instance">The object instance being validated.  It cannot be <c>null</c>.</param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
+        [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
         public ValidationContext(object instance)
             : this(instance, null, null)
         {
@@ -57,7 +61,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     new dictionary, preventing consumers from modifying the original dictionary.
         /// </param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
-        public ValidationContext(object instance, IDictionary<object, object> items)
+        [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
+        public ValidationContext(object instance, IDictionary<object, object?>? items)
             : this(instance, null, items)
         {
         }
@@ -78,7 +83,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     new dictionary, preventing consumers from modifying the original dictionary.
         /// </param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
-        public ValidationContext(object instance, IServiceProvider serviceProvider, IDictionary<object, object> items)
+        [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
+        public ValidationContext(object instance, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
         {
             if (instance == null)
             {
@@ -87,10 +93,11 @@ namespace System.ComponentModel.DataAnnotations
 
             if (serviceProvider != null)
             {
-                InitializeServiceProvider(serviceType => serviceProvider.GetService(serviceType));
+                IServiceProvider localServiceProvider = serviceProvider;
+                InitializeServiceProvider(serviceType => localServiceProvider.GetService(serviceType));
             }
 
-            _items = items != null ? new Dictionary<object, object>(items) : new Dictionary<object, object>();
+            _items = items != null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();
             ObjectInstance = instance;
         }
 
@@ -155,7 +162,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     This name reflects the API name of the member being validated, not a localized name.  It should be set
         ///     only for property or parameter contexts.
         /// </value>
-        public string MemberName { get; set; }
+        public string? MemberName { get; set; }
 
         /// <summary>
         ///     Gets the dictionary of key/value pairs associated with this context.
@@ -164,7 +171,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     This property will never be null, but the dictionary may be empty.  Changes made
         ///     to items in this dictionary will never affect the original dictionary specified in the constructor.
         /// </value>
-        public IDictionary<object, object> Items => _items;
+        public IDictionary<object, object?> Items => _items;
 
         #endregion
 
@@ -174,11 +181,12 @@ namespace System.ComponentModel.DataAnnotations
         ///     Looks up the display name using the DisplayAttribute attached to the respective type or property.
         /// </summary>
         /// <returns>A display-friendly name of the member represented by the <see cref="MemberName" />.</returns>
-        private string GetDisplayName()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctors are marked with RequiresUnreferencedCode.")]
+        private string? GetDisplayName()
         {
-            string displayName = null;
+            string? displayName = null;
             ValidationAttributeStore store = ValidationAttributeStore.Instance;
-            DisplayAttribute displayAttribute = null;
+            DisplayAttribute? displayAttribute = null;
 
             if (string.IsNullOrEmpty(MemberName))
             {
@@ -206,7 +214,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     desired <see cref="Type" /> when <see cref="GetService" /> is called.
         ///     If it is <c>null</c>, <see cref="GetService" /> will always return <c>null</c>.
         /// </param>
-        public void InitializeServiceProvider(Func<Type, object> serviceProvider)
+        public void InitializeServiceProvider(Func<Type, object?> serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
@@ -220,7 +228,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="serviceType">The type of the service needed.</param>
         /// <returns>An instance of that service or null if it is not available.</returns>
-        public object GetService(Type serviceType) => _serviceProvider?.Invoke(serviceType);
+        public object? GetService(Type serviceType) => _serviceProvider?.Invoke(serviceType);
 
         #endregion
     }

@@ -13,8 +13,8 @@
 #include "mono-threads-debug.h"
 #include "mono-logger-internals.h"
 #include "mono-error-internals.h"
-#include <mono/metadata/w32subset.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/w32subset.h>
 
 /* Empty handler only used to detect interrupt state of current thread. */
 /* Needed in order to correctly avoid entering wait methods under */
@@ -222,7 +222,6 @@ mono_coop_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles
 }
 
 #if HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
-
 static DWORD
 win32_signal_object_and_wait_interrupt_checked (MonoThreadInfo *info, HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable)
 {
@@ -250,6 +249,15 @@ win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOO
 
 	return result;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_SIGNAL_OBJECT_AND_WAIT
+static DWORD
+win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable, BOOL cooperative)
+{
+	g_unsupported_api ("SignalObjectAndWait");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return WAIT_FAILED;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT */
 
 DWORD
 mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable)
@@ -262,8 +270,6 @@ mono_coop_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD ti
 {
 	return win32_signal_object_and_wait (toSignal, toWait, timeout, alertable, TRUE);
 }
-
-#endif /* HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT */
 
 #if HAVE_API_SUPPORT_WIN32_MSG_WAIT_FOR_MULTIPLE_OBJECTS
 static DWORD
@@ -294,6 +300,15 @@ win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, DWOR
 
 	return result;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_MSG_WAIT_FOR_MULTIPLE_OBJECTS
+static DWORD
+win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, DWORD timeout, DWORD wakeMask, DWORD flags, BOOL cooperative)
+{
+	g_unsupported_api ("MsgWaitForMultipleObjectsEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return WAIT_FAILED;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_MSG_WAIT_FOR_MULTIPLE_OBJECTS */
 
 DWORD
 mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, DWORD timeout, DWORD wakeMask, DWORD flags)
@@ -306,7 +321,6 @@ mono_coop_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *han
 {
 	return win32_msg_wait_for_multiple_objects_ex (count, handles, timeout, wakeMask, flags, TRUE);
 }
-#endif /* HAVE_API_SUPPORT_WIN32_MSG_WAIT_FOR_MULTIPLE_OBJECTS */
 
 static DWORD
 win32_wsa_wait_for_multiple_events_interrupt_checked (MonoThreadInfo *info, DWORD count, const WSAEVENT FAR *handles, BOOL waitAll, DWORD timeout, BOOL alertable)

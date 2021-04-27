@@ -50,9 +50,27 @@ namespace System.Text.Tests
         [InlineData('\u0130', '\u0130', '\u0130')] // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
         [InlineData('\u0131', '\u0131', '\u0131')] // U+0131 LATIN SMALL LETTER DOTLESS I
         [InlineData('\u1E9E', '\u1E9E', '\u1E9E')] // U+1E9E LATIN CAPITAL LETTER SHARP S
+        public static void Casing_Invariant(int original, int upper, int lower)
+        {
+            var rune = new Rune(original);
+            Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
+            Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [InlineData('0', '0', '0')]
+        [InlineData('a', 'A', 'a')]
+        [InlineData('i', 'I', 'i')]
+        [InlineData('z', 'Z', 'z')]
+        [InlineData('A', 'A', 'a')]
+        [InlineData('I', 'I', 'i')]
+        [InlineData('Z', 'Z', 'z')]
+        [InlineData('\u00DF', '\u00DF', '\u00DF')] // U+00DF LATIN SMALL LETTER SHARP S
+        [InlineData('\u0130', '\u0130', '\u0130')] // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
+        [InlineData('\u0131', '\u0131', '\u0131')] // U+0131 LATIN SMALL LETTER DOTLESS I
         [InlineData(0x10400, 0x10400, 0x10428)] // U+10400 DESERET CAPITAL LETTER LONG I
         [InlineData(0x10428, 0x10400, 0x10428)] // U+10428 DESERET SMALL LETTER LONG I
-        public static void Casing_Invariant(int original, int upper, int lower)
+        public static void ICU_Casing_Invariant(int original, int upper, int lower)
         {
             var rune = new Rune(original);
             Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
@@ -157,6 +175,7 @@ namespace System.Text.Tests
             Rune b = new Rune(other);
 
             Assert.Equal(expectedSign, Math.Sign(a.CompareTo(b)));
+            Assert.Equal(expectedSign, Math.Sign(((IComparable)a).CompareTo(b)));
             Assert.Equal(expectedSign < 0, a < b);
             Assert.Equal(expectedSign <= 0, a <= b);
             Assert.Equal(expectedSign > 0, a > b);
@@ -474,7 +493,24 @@ namespace System.Text.Tests
             Assert.Equal(scalarValueLeft <= scalarValueRight, left <= right);
             Assert.Equal(scalarValueLeft > scalarValueRight, left > right);
             Assert.Equal(scalarValueLeft >= scalarValueRight, left >= right);
-            Assert.Equal(scalarValueLeft.CompareTo(scalarValueRight), left.CompareTo(right));
+            Assert.Equal(Math.Sign(scalarValueLeft.CompareTo(scalarValueRight)), Math.Sign(left.CompareTo(right)));
+            Assert.Equal(Math.Sign(((IComparable)scalarValueLeft).CompareTo(scalarValueRight)), Math.Sign(((IComparable)left).CompareTo(right)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(0x10FFFF)]
+        public static void NonGenericCompareTo_NonNullAlwaysGreaterThanNull(uint scalarValue)
+        {
+            Assert.Equal(1, Math.Sign(((IComparable)new Rune(scalarValue)).CompareTo(null)));
+        }
+
+        [Fact]
+        public static void NonGenericCompareTo_GivenNonRuneArgument_ThrowsArgumentException()
+        {
+            IComparable rune = new Rune(0);
+
+            Assert.Throws<ArgumentException>(() => rune.CompareTo(0 /* int32 */));
         }
 
         [Fact]

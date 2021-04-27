@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -261,10 +262,9 @@ namespace System
                     {
                         throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                     }
-                    int fileLen = (int)termInfoLength;
 
-                    byte[] data = new byte[fileLen];
-                    if (ConsolePal.Read(fd, data, 0, fileLen) != fileLen)
+                    byte[] data = new byte[(int)termInfoLength];
+                    if (ConsolePal.Read(fd, data) != data.Length)
                     {
                         throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                     }
@@ -481,12 +481,7 @@ namespace System
             /// <param name="pos">The position at which to read.</param>
             /// <returns>The 32-bit value read.</returns>
             private static int ReadInt32(byte[] buffer, int pos)
-            {
-                return (int)((buffer[pos] & 0xff) |
-                             buffer[pos + 1] << 8 |
-                             buffer[pos + 2] << 16 |
-                             buffer[pos + 3] << 24);
-            }
+                => BinaryPrimitives.ReadInt32LittleEndian(buffer.AsSpan(pos));
 
             /// <summary>Reads a string from the buffer starting at the specified position.</summary>
             /// <param name="buffer">The buffer from which to read.</param>

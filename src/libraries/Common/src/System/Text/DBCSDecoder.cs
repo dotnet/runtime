@@ -40,7 +40,7 @@ namespace System.Text
             _leftOverLeadByte = 0;
         }
 
-        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
+        public override int GetCharCount(byte[] bytes, int index, int count)
         {
             return GetCharCount(bytes, index, count, false);
         }
@@ -121,7 +121,7 @@ namespace System.Text
             return ConvertWithLeftOverByte(bytes, count, null, 0);
         }
 
-        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                              char[] chars, int charIndex)
         {
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, false);

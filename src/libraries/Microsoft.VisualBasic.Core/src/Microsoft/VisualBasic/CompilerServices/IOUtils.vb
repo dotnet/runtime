@@ -6,7 +6,6 @@ Imports System.Security
 Imports System.IO
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -71,8 +70,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Return ""

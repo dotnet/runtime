@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Tests
     /// <summary>
     /// Helper methods for DSASignatureFormatterTests and RSASignatureFormatterTests
     /// </summary>
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class AsymmetricSignatureFormatterTests
     {
         protected static void InvalidFormatterArguments(AsymmetricSignatureFormatter formatter)

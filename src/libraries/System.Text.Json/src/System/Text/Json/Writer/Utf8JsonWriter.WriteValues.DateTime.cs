@@ -21,7 +21,11 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteStringValue(DateTime value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteStringValueIndented(value);

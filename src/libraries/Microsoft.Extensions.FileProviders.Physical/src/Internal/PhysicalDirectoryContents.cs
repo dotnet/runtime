@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.FileProviders.Internal
                             return new PhysicalDirectoryInfo(dir);
                         }
                         // shouldn't happen unless BCL introduces new implementation of base type
-                        throw new InvalidOperationException("Unexpected type of FileSystemInfo");
+                        throw new InvalidOperationException(SR.UnexpectedFileSystemInfo);
                     });
             }
             catch (Exception ex) when (ex is DirectoryNotFoundException || ex is IOException)

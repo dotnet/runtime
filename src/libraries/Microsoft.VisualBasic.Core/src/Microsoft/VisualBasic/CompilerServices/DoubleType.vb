@@ -177,8 +177,6 @@ ThrowInvalidCast:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch Ex As Exception
                     Return False
                 End Try

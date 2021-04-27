@@ -63,7 +63,6 @@ namespace System.IO.IsolatedStorage
         public bool DirectoryExists(string path) { throw null; }
         public void Dispose() { }
         public bool FileExists(string path) { throw null; }
-        ~IsolatedStorageFile() { }
         public System.DateTimeOffset GetCreationTime(string path) { throw null; }
         public string[] GetDirectoryNames() { throw null; }
         public string[] GetDirectoryNames(string searchPattern) { throw null; }
@@ -111,8 +110,8 @@ namespace System.IO.IsolatedStorage
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public override Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] array, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, System.AsyncCallback? userCallback, object? stateObject) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
@@ -120,6 +119,7 @@ namespace System.IO.IsolatedStorage
         public override void Flush() { }
         public override void Flush(bool flushToDisk) { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public override void Lock(long position, long length) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
@@ -128,6 +128,7 @@ namespace System.IO.IsolatedStorage
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public override void Unlock(long position, long length) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }

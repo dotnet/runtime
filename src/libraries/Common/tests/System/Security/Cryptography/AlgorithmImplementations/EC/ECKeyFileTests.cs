@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();
@@ -16,15 +18,24 @@ namespace System.Security.Cryptography.Tests
         protected abstract void ImportParameters(T key, ECParameters ecParameters);
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
         protected abstract void Exercise(T key);
+        protected virtual Func<T, byte[]> PublicKeyWriteArrayFunc { get; } = null;
+        protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
+        
+        // This would need to be virtualized if there was ever a platform that
+        // allowed explicit in ECDH or ECDSA but not the other.
+        public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
+
+        public static bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
         public static bool SupportsSect283k1 { get; } = IsCurveSupported(EccTestData.Sect283k1Key1.Curve.Oid);
         public static bool SupportsC2pnb163v1 { get; } = IsCurveSupported(EccTestData.C2pnb163v1Key1.Curve.Oid);
 
-        // This would need to be virtualized if there was ever a platform that
-        // allowed explicit in ECDH or ECDSA but not the other.
-        public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
+        // Some platforms support explicitly specifying these curves, but do not support specifying them by name.
+        public static bool ExplicitNamedSameSupport { get; } = !PlatformDetection.IsAndroid;
+        public static bool SupportsSect163k1Explicit { get; } = SupportsSect163k1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
+        public static bool SupportsC2pnb163v1Explicit { get; } = SupportsC2pnb163v1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
 
         private static bool IsCurveSupported(Oid oid)
         {
@@ -176,6 +187,7 @@ qtlbnispri1a/EghiaPQ0po=";
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384_PasswordBytes()
         {
             // PBES2, PBKDF2 (SHA384), AES128
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
             const string base64 = @"
 MIIBXTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQI/JyXWyp/t3kCAggA
 MAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAECBBA3H8mbFK5afB5GzIemCCQkBIIB
@@ -196,7 +208,7 @@ qtlbnispri1a/EghiaPQ0po=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"
@@ -414,7 +426,7 @@ B9eT3k5tXlyU7ugCiQcPsF04/1gyHy6ABTbVOMzao9kCFQQAAAAAAAAAAAACAQii
 4MwNmfil7wIBAqEuAywABAYXnjcZzIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5
 iv4+C1w8ArP+Nw==",
                 EccTestData.Sect163k1Key1Explicit,
-                SupportsSect163k1);
+                SupportsSect163k1Explicit);
         }
 
         [Fact]
@@ -428,7 +440,7 @@ Bw+wXTj/WDIfLoAFNtU4zNqj2QIVBAAAAAAAAAAAAAIBCKLgzA2Z+KXvAgECBEww
 SgIBAQQVA8GZWt+ujAUY3BPf5jBLsBAX5qQSoS4DLAAEBheeNxnMgSVDX+ZFidX8
 ptwYh1UdB4j+u2L/ySSNizmK/j4LXDwCs/43",
                 EccTestData.Sect163k1Key1Explicit,
-                SupportsSect163k1);
+                SupportsSect163k1Explicit);
         }
 
         [Fact]
@@ -448,7 +460,7 @@ z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
                     HashAlgorithmName.SHA256,
                     12),
                 EccTestData.Sect163k1Key1Explicit,
-                SupportsSect163k1);
+                SupportsSect163k1Explicit);
         }
 
         [Fact]
@@ -461,7 +473,7 @@ MAkCAQMCAQYCAQcwBgQBAQQBAQQrBAL+E8BTe7wRrKoH15PeTm1eXJTu6AKJBw+w
 XTj/WDIfLoAFNtU4zNqj2QIVBAAAAAAAAAAAAAIBCKLgzA2Z+KXvAgECAywABAYX
 njcZzIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5iv4+C1w8ArP+Nw==",
                 EccTestData.Sect163k1Key1Explicit,
-                SupportsSect163k1);
+                SupportsSect163k1Explicit);
         }
 
         [Fact]
@@ -582,7 +594,7 @@ VhUXVAQrBAevaZiVRhA9eTKfzD10iA8zu+gDywHsIyEbWWat6h0/h/fqWEiu8LfK
 nwIVBAAAAAAAAAAAAAHmD8iCHMdNrq/BAgECoS4DLAAEAhEnLxxVgkJoiOkb1pJX
 dJQjIkiqBCcIMPehAJrWcKiN6SvVkkjMgTtF",
                 EccTestData.C2pnb163v1Key1Explicit,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1Explicit);
         }
 
         [Fact]
@@ -597,7 +609,7 @@ PXkyn8w9dIgPM7voA8sB7CMhG1lmreodP4f36lhIrvC3yp8CFQQAAAAAAAAAAAAB
 5g/IghzHTa6vwQIBAgRMMEoCAQEEFQD00koUBxIvRFlnvh2TwAk6ZTZ5hqEuAywA
 BAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
                 EccTestData.C2pnb163v1Key1Explicit,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1Explicit);
         }
 
         [Fact]
@@ -618,7 +630,7 @@ wxcZ+wOsnebIwy4ftKL+klh5EXv/9S5sCjC8g8J2cA6GmcZbiQ==",
                     HashAlgorithmName.SHA512,
                     1024),
                 EccTestData.C2pnb163v1Key1Explicit,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1Explicit);
         }
 
         [Fact]
@@ -633,7 +645,7 @@ zD10iA8zu+gDywHsIyEbWWat6h0/h/fqWEiu8LfKnwIVBAAAAAAAAAAAAAHmD8iC
 HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
 1ZJIzIE7RQ==",
                 EccTestData.C2pnb163v1Key1Explicit,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1Explicit);
         }
 
         [Fact]
@@ -951,6 +963,41 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             }
         }
 
+        [Fact]
+        public void DecryptPkcs12PbeTooManyIterations()
+        {
+            // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
+            byte[] high3DesIterationKey = Convert.FromBase64String(@"
+MIG6MCUGCiqGSIb3DQEMAQMwFwQQWOZyFrGwhyGTEd2nbKuLSQIDCSfBBIGQCgPLkx0OwmK3lJ9o
+VAdJAg/2nvOhboOHciu5I6oh5dRkxeDjUJixsadd3uhiZb5v7UgiohBQsFv+PWU12rmz6sgWR9rK
+V2UqV6Y5vrHJDlNJGI+CQKzOTF7LXyOT+EqaXHD+25TM2/kcZjZrOdigkgQBAFhbfn2/hV/t0TPe
+Tj/54rcY3i0gXT6da/r/o+qV");
+
+            using (T key = CreateKey())
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+            }
+        }
+
+        [Fact]
+        public void ReadWriteEc256EncryptedPkcs8_Pbes2HighIterations()
+        {
+            // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
+            ReadWriteBase64EncryptedPkcs8(@"
+MIH1MGAGCSqGSIb3DQEFDTBTMDIGCSqGSIb3DQEFDDAlBBA+rne0bUkwr614vLfQkwO4AgMJJ8Ew
+DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEIm3c9r5igQ9Vlv1mKTZYp0EgZC8KZfmJtfYmsl4
+Z0Dc85ugFvtFHVeRbcvfYmFns23WL3gpGQ0mj4BKxttX+WuDk9duAsCslNLvXFY7m3MQRkWA6QHT
+A8DiR3j0l5TGBkErbTUrjmB3ftvEmmF9mleRLj6qEYmmKdCV2Tfk1YBOZ2mpB9bpCPipUansyqWs
+xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    600_001),
+                EccTestData.GetNistP256ReferenceKey());
+        }
+
         private void ReadWriteBase64EncryptedPkcs8(
             string base64EncryptedPkcs8,
             string password,
@@ -1067,7 +1114,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
 
                     Assert.True(
                         e is PlatformNotSupportedException || e is CryptographicException,
-                        "e is PlatformNotSupportedException || e is CryptographicException");
+                        $"e should be PlatformNotSupportedException or CryptographicException.\n\te is {e.ToString()}");
                 }
             }
         }
@@ -1116,7 +1163,9 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                         key.ImportSubjectPublicKeyInfo(source, out read),
                     key => key.ExportSubjectPublicKeyInfo(),
                     (T key, Span<byte> destination, out int written) =>
-                        key.TryExportSubjectPublicKeyInfo(destination, out written));
+                        key.TryExportSubjectPublicKeyInfo(destination, out written),
+                    writePublicArrayFunc: PublicKeyWriteArrayFunc,
+                    writePublicSpanFunc: PublicKeyWriteSpanFunc);
             }
             else
             {
@@ -1138,7 +1187,9 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             ReadKeyAction readAction,
             Func<T, byte[]> writeArrayFunc,
             WriteKeyToSpanFunc writeSpanFunc,
-            bool isEncrypted = false)
+            bool isEncrypted = false,
+            Func<T, byte[]> writePublicArrayFunc = null,
+            WriteKeyToSpanFunc writePublicSpanFunc = null)
         {
             bool isPrivateKey = expected.D != null;
 
@@ -1154,6 +1205,16 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                 Assert.Equal(derBytes.Length, bytesRead);
 
                 arrayExport = writeArrayFunc(key);
+
+                if (writePublicArrayFunc is not null)
+                {
+                    byte[] publicArrayExport = writePublicArrayFunc(key);
+                    Assert.Equal(arrayExport, publicArrayExport);
+
+                    Assert.True(writePublicSpanFunc(key, publicArrayExport, out int publicExportWritten));
+                    Assert.Equal(publicExportWritten, publicArrayExport.Length);
+                    Assert.Equal(arrayExport, publicArrayExport);
+                }
 
                 ECParameters ecParameters = ExportParameters(key, isPrivateKey);
                 EccTestBase.AssertEqual(expected, ecParameters);
@@ -1249,7 +1310,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             }
         }
 
-        private delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
-        private delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
+        protected delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
+        protected delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
     }
 }

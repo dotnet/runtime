@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
-    <Nullable>annotations</Nullable>
-  </PropertyGroup>
-  <PropertyGroup>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Resources\ResourceWriter.cs"
@@ -28,8 +26,41 @@
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" 
+             Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <_packageTargetsFile>$(IntermediateOutputPath)$(AssemblyName).targets</_packageTargetsFile>
+  </PropertyGroup>
+
+  <Target Name="GeneratePackageTargetsFile" 
+          Condition="'$(TargetFramework)' == 'net461'"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="$(_packageTargetsFile)"
+          BeforeTargets="GetFilesToPackage">
+    <PropertyGroup>
+      <_packageTargetsFileContent><![CDATA[<Project>
+  <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
+       force a binding redirect ourselves so that we'll always unify to the System.Resources.Extensions
+       version provided by this package -->
+  <ItemGroup>
+    <SuggestedBindingRedirects Include="$(AssemblyName), Culture=neutral, PublicKeyToken=$(PublicKeyToken)" MaxVersion="$(AssemblyVersion)" />
+  </ItemGroup>
+</Project>
+]]></_packageTargetsFileContent>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_packageTargetsFile)" Overwrite="true" Lines="$(_packageTargetsFileContent)" />
+    <ItemGroup>
+      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="build/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
+      <FilesToPackage Include="$(_packageTargetsFile)" TargetPath="buildTransitive/$(TargetFramework)" TargetFramework="$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 </Project>

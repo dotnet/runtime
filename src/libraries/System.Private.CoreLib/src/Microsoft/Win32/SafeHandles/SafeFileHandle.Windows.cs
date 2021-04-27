@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         private bool? _isAsync;
 
-        private SafeFileHandle() : base(true)
+        public SafeFileHandle() : base(true)
         {
             _isAsync = null;
         }

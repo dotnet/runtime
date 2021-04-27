@@ -28,7 +28,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateSocketEventPort")]
-        internal static extern unsafe Error CreateSocketEventPort(out IntPtr port);
+        internal static extern Error CreateSocketEventPort(out IntPtr port);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseSocketEventPort")]
         internal static extern Error CloseSocketEventPort(IntPtr port);

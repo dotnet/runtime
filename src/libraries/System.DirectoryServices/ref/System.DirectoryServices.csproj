@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.DirectoryServices.cs" />

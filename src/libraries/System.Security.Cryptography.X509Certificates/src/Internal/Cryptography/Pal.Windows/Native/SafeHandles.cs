@@ -62,6 +62,8 @@ namespace Internal.Cryptography.Pal.Native
             SetHandle(_parent.handle);
         }
 
+        internal new void SetHandle(IntPtr handle) => base.SetHandle(handle);
+
         protected override bool ReleaseHandle()
         {
             if (_parent != null)

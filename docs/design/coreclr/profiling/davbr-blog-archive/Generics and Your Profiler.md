@@ -7,7 +7,7 @@ If you’re writing a profiler that you expect to run against CLR 2.0 or greater
 
 Let's say a C# developer writes code like this:
 
- 
+
 ```
 class MyClass<S>
 {
@@ -57,8 +57,6 @@ HRESULT GetFunctionInfo2([in] FunctionID funcId,
 
 typeArgs[]: This is the array of **type arguments** to MyClass\<int\>.Foo\<float\>.  So this will be an array of only one element: the ClassID for float.  (The int in MyClass\<int\> is a type argument to MyClass, not to Foo, and you would only see that when you call GetClassIDInfo2 with MyClass\<int\>.)
 
-## 
-
 ## GetClassIDInfo2
 
 OK, someone in parentheses said something about calling GetClassIDInfo2, so let’s do that.  Since we got the ClassID for MyClass\<int\> above, let’s pass it to GetClassIDInfo2 to see what we get:
@@ -89,20 +87,18 @@ To understand why, it’s necessary to understand an internal optimization the C
 
 For now, the important point is that, once we’re inside JITted code that is shared across different generic instantiations, how can one know which instantiation is the actual one that caused the current invocation?  Well, in many cases, the CLR may not have that data readily lying around.  However, as a profiler, you can capture this information and pass it back to the CLR when it needs it.  This is done through a COR\_PRF\_FRAME\_INFO.  There are two ways your profiler can get a COR\_PRF\_FRAME\_INFO:
 
-1. Via slow-path Enter/Leave/Tailcall probes 
-2. Via your DoStackSnapshot callback 
+1. Via slow-path Enter/Leave/Tailcall probes
+2. Via your DoStackSnapshot callback
 
 I lied.  #1 is really the only way for your profiler to get a COR\_PRF\_FRAME\_INFO.  #2 may seem like a way—at least the profiling API suggests that the CLR gives your profiler a COR\_PRF\_FRAME\_INFO in the DSS callback—but unfortunately the COR\_PRF\_FRAME\_INFO you get there is pretty useless.  I suspect the COR\_PRF\_FRAME\_INFO parameter was added to the signature of the profiler’s DSS callback function so that it could “light up” at some point in the future when we could work on finding out how to create a sufficiently helpful COR\_PRF\_FRAME\_INFO during stack walks.  However, that day has not yet arrived.  So if you want a COR\_PRF\_FRAME\_INFO, you’ll need to grab it—and use it from—your slow-path Enter/Leave/Tailcall probe.
 
 With a valid COR\_PRF\_FRAME\_INFO, GetFunctionInfo2 will give you helpful, specific ClassIDs in the typeArgs [out] array and pClassId [out] parameter.  If the profiler passes NULL for COR\_PRF\_FRAME\_INFO, here’s what you can expect:
 
-- If you’re using CLR V2, pClassId will point to NULL if the function sits on _any_ generic class (shared or not).  In CLR V4 this got a little better, and you’ll generally only see pClassId point to NULL if the function sits on a “shared” generic class (instantiated with reference types).  
-  - Note: If it’s impossible for the profiler to have a COR\_PRF\_FRAME\_INFO handy to pass to GetFunctionInfo2, and that results in a NULL \*pClassID, the profiler can always use the metadata interfaces to find the mdTypeDef token of the class on which the function resides for the purposes of pretty-printing the class name to the user.  Of course, the profiler will not know the specific instantiating type arguments that were used on the class in that case. 
-- the typeArgs [out] array will contain the ClassID for **System.\_\_Canon** , rather than the actual instantiating type(s), if the function itself is generic and is instantiated with reference type argument(s). 
+- If you’re using CLR V2, pClassId will point to NULL if the function sits on _any_ generic class (shared or not).  In CLR V4 this got a little better, and you’ll generally only see pClassId point to NULL if the function sits on a “shared” generic class (instantiated with reference types).
+  - Note: If it’s impossible for the profiler to have a COR\_PRF\_FRAME\_INFO handy to pass to GetFunctionInfo2, and that results in a NULL \*pClassID, the profiler can always use the metadata interfaces to find the mdTypeDef token of the class on which the function resides for the purposes of pretty-printing the class name to the user.  Of course, the profiler will not know the specific instantiating type arguments that were used on the class in that case.
+- the typeArgs [out] array will contain the ClassID for **System.\_\_Canon** , rather than the actual instantiating type(s), if the function itself is generic and is instantiated with reference type argument(s).
 
 It’s worth noting here that there is a bug in GetFunctionInfo2, in that the [out] pClassId you get for the class containing the function can be wrong with generic virtual functions.  Take a look at [this forum post](http://social.msdn.microsoft.com/Forums/en-US/netfxtoolsdev/thread/ed6f972f-712a-48df-8cce-74f8951503fa/) for more information and a workaround.
-
-## 
 
 ## ClassIDs & FunctionIDs vs. Metadata Tokens
 
@@ -120,14 +116,14 @@ If you got curious, and ran such a profiler under the debugger, you could use th
 
 If your profiler performs IL rewriting, it’s important to understand that it must NOT do instantiation-specific IL rewriting.  Huh?  Let’s take an example.  Suppose you’re profiling code that uses MyClass\<int\>.Foo\<float\> and MyClass\<int\>.Foo\<long\>.  Your profiler will see two JITCompilationStarted callbacks, and will have two opportunities to rewrite the IL.  Your profiler may call GetFunctionInfo2 on those two FunctionIDs and determine that they’re two different instantiations of the same generic function.  You may then be tempted to make use of the fact that one is instantiated with float, and the other with long, and provide different IL for the two different JIT compilations.  The problem with this is that the IL stored in metadata, as well as the IL provided to SetILFunctionBody, is always specified relative to the mdMethodDef.  (Remember, SetILFunctionBody doesn’t take a FunctionID as input; it takes an mdMethodDef.)  And it’s the profiler’s responsibility always to specify the same rewritten IL for any given mdMethodDef no matter how many times it’s JITted.  And a given mdMethodDef can be JITted multiple times due to a number of reasons:
 
-- Two threads simultaneously trying to call the same function for the first time (and thus both trying to JIT that function) 
-- Strange dependency chains involving class constructors (more on this in the MSDN [reference topic](http://msdn.microsoft.com/en-us/library/ms230586.aspx)) 
-- Multiple AppDomains using the same (non-domain-neutral) function 
-- And of course multiple generic instantiations! 
+- Two threads simultaneously trying to call the same function for the first time (and thus both trying to JIT that function)
+- Strange dependency chains involving class constructors (more on this in the MSDN [reference topic](http://msdn.microsoft.com/en-us/library/ms230586.aspx))
+- Multiple AppDomains using the same (non-domain-neutral) function
+- And of course multiple generic instantiations!
 
 Regardless of the reason, the profiler must always rewrite with exactly the same IL.  Otherwise, an invariant in the CLR will have been broken by the profiler, and you will get strange, undefined behavior as a result.  And no one wants that.
 
- 
+
 
 That’s it!  Hopefully this gives you a good idea of how the CLR Profiling API will behave in the face of generic classes and functions, and what is expected of your profiler.
 

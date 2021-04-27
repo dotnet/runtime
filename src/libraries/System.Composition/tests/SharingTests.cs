@@ -318,7 +318,6 @@ namespace System.Composition.UnitTests
         /// we fail only when we create instance of B.. is that correct.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void BoundaryExposedBoundaryButNoneImported()
         {
             try
@@ -338,7 +337,6 @@ namespace System.Composition.UnitTests
         /// Needs to be fixed so that specifying boundary would automatically create the shared
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void BoundarySharingTest()
         {
             var cc = CreateContainer(typeof(A), typeof(B), typeof(C), typeof(D));
@@ -360,7 +358,6 @@ namespace System.Composition.UnitTests
         /// CirA root of the composition has to be shared explicitly.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CircularBoundarySharingTest()
         {
             var cc = CreateContainer(typeof(CirA), typeof(CirB), typeof(CirC));
@@ -377,7 +374,6 @@ namespace System.Composition.UnitTests
         /// Something is badly busted here.. I am getting a null ref exception
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MultipleBoundarySpecified()
         {
             var cc = CreateContainer(typeof(ProjA), typeof(ProjB), typeof(SolA), typeof(DocA), typeof(DocB), typeof(ColA), typeof(ColB));
@@ -387,7 +383,6 @@ namespace System.Composition.UnitTests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void SharedPartExportingMultipleContractsSharesAnInstance()
         {
             var cc = CreateContainer(typeof(XY));
@@ -397,7 +392,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExportsCreatesInstancedObjectByDefault()
         {
             var cc = CreateContainer(typeof(NonSharedClass));
@@ -407,7 +401,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExportsCreatesSharedObjectsWhenSpecified()
         {
             var cc = CreateContainer(typeof(SharedClass));
@@ -422,7 +415,6 @@ namespace System.Composition.UnitTests
         /// verify that On Method call different instances are returned.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ExportFactoryCreatesNewInstances()
         {
             var cc = CreateContainer(typeof(ClassWithExportFactoryShared), typeof(NonSharedClass));
@@ -438,7 +430,6 @@ namespace System.Composition.UnitTests
         /// ExportFactory should be importable as a property
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ClassWithExportFactoryAsAProperty()
         {
             var cc = CreateContainer(typeof(ClassWithExportFactoryAsAProperty), typeof(NonSharedClass));
@@ -455,7 +446,6 @@ namespace System.Composition.UnitTests
         /// is creating a part which is shared, it will return back the same instance of the part.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ClassWithExportFactoryAndSharedExport()
         {
             var cc = CreateContainer(typeof(ClassWithExportFactoryShared), typeof(SharedClass));
@@ -472,7 +462,6 @@ namespace System.Composition.UnitTests
         /// Two instances of the root class are created , the part created using export factory should not be shared
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ClassWithNonSharedExportFactoryCreatesSharedInstances()
         {
             var cc = CreateContainer(typeof(ClassWithExportFactoryNonShared), typeof(SharedClass));
@@ -488,7 +477,6 @@ namespace System.Composition.UnitTests
         public class ASharedPart { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ConsistentResultsAreReturneWhenResolvingLargeNumbersOfSharedParts()
         {
             var config = new ContainerConfiguration();

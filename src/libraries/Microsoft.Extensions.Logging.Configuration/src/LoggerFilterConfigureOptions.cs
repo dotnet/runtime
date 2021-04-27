@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class LoggerFilterConfigureOptions : IConfigureOptions<LoggerFilterOptions>
+    internal sealed class LoggerFilterConfigureOptions : IConfigureOptions<LoggerFilterOptions>
     {
         private const string LogLevelKey = "LogLevel";
         private const string DefaultCategory = "Default";
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging
             }
             else
             {
-                throw new InvalidOperationException($"Configuration value '{value}' is not supported.");
+                throw new InvalidOperationException(SR.Format(SR.ValueNotSupported, value));
             }
         }
     }

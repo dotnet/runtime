@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BoundedChannelTests.cs" />
@@ -17,5 +18,8 @@
     <Compile Include="Stress.cs" />
     <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" />
     <Compile Include="ChannelTestBase.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="..\src\System.Threading.Channels.csproj" />
   </ItemGroup>
 </Project>

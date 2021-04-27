@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Condition="'$(AddFile)' != ''" Include="$(AddFile)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -65,7 +65,7 @@ namespace System.Data.Tests
 </xs:schema>";
         private const string schema2 = schema1 + xml8;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadSimpleAuto()
         {
             DataSet ds;
@@ -285,7 +285,7 @@ namespace System.Data.Tests
                 "NewDataSet", 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadSimpleInferSchema()
         {
             DataSet ds;
@@ -606,7 +606,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataTable("#3", ds.Tables[0], "root", 1, 2, 0, 0, 0, 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadComplexElementDocument()
         {
             var ds = new DataSet();
@@ -639,7 +639,7 @@ namespace System.Data.Tests
             Assert.Equal(0, dt.Rows.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void NameConflictDSAndTable()
         {
             string xml = @"<PriceListDetails>
@@ -657,7 +657,7 @@ namespace System.Data.Tests
             Assert.NotNull(ds.Tables["PriceListDetails"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ColumnOrder()
         {
             string xml = "<?xml version=\"1.0\" standalone=\"yes\"?>" +
@@ -690,7 +690,7 @@ namespace System.Data.Tests
             Assert.Equal(3, ds.Tables[0].Columns[3].Ordinal);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void XmlSpace()
         {
             string xml = "<?xml version=\"1.0\" standalone=\"yes\"?>" +

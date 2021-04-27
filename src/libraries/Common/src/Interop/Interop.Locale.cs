@@ -21,7 +21,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IsPredefinedLocale")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool IsPredefinedLocale(string localeName);
+        internal static extern bool IsPredefinedLocale(string localeName);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocaleTimeFormat")]
         [return: MarshalAs(UnmanagedType.Bool)]

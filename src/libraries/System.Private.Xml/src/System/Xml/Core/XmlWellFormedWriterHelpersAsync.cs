@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         private partial struct ElementScope
         {
@@ -27,7 +27,7 @@ namespace System.Xml
 
         private partial struct Namespace
         {
-            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter rawWriter)
+            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)
@@ -50,7 +50,7 @@ namespace System.Xml
             }
         }
 
-        private partial class AttributeValueCache
+        private sealed partial class AttributeValueCache
         {
             internal async Task ReplayAsync(XmlWriter writer)
             {
@@ -63,7 +63,7 @@ namespace System.Xml
                 BufferChunk bufChunk;
                 for (int i = _firstItem; i <= _lastItem; i++)
                 {
-                    Item item = _items[i];
+                    Item item = _items![i];
                     switch (item.type)
                     {
                         case ItemType.EntityRef:

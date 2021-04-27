@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -863,7 +862,7 @@ namespace System.Security.Cryptography
                 algorithmIdentifier.Parameters.Value,
                 AsnEncodingRules.BER);
 
-            int iterationCount = NormalizeIterationCount(pbeParameters.IterationCount);
+            int iterationCount = NormalizeIterationCount(pbeParameters.IterationCount, IterationLimit);
             Span<byte> iv = stackalloc byte[cipher.BlockSize / 8];
             Span<byte> key = stackalloc byte[cipher.KeySize / 8];
             ReadOnlySpan<byte> saltSpan = pbeParameters.Salt.Span;
@@ -1070,19 +1069,9 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        internal static int NormalizeIterationCount(uint iterationCount)
+        internal static int NormalizeIterationCount(int iterationCount, int? iterationLimit = null)
         {
-            if (iterationCount == 0 || iterationCount > IterationLimit)
-            {
-                throw new CryptographicException(SR.Argument_InvalidValue);
-            }
-
-            return (int)iterationCount;
-        }
-
-        internal static int NormalizeIterationCount(int iterationCount)
-        {
-            if (iterationCount <= 0 || iterationCount > IterationLimit)
+            if (iterationCount <= 0 || (iterationLimit.HasValue && iterationCount > iterationLimit.Value))
             {
                 throw new CryptographicException(SR.Argument_InvalidValue);
             }

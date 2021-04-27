@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal class ServiceFactoryAdapter<TContainerBuilder> : IServiceFactoryAdapter
+    internal sealed class ServiceFactoryAdapter<TContainerBuilder> : IServiceFactoryAdapter
     {
         private IServiceProviderFactory<TContainerBuilder> _serviceProviderFactory;
         private readonly Func<HostBuilderContext> _contextResolver;
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (_serviceProviderFactory == null)
                 {
-                    throw new InvalidOperationException("The resolver returned a null IServiceProviderFactory");
+                    throw new InvalidOperationException(SR.ResolverReturnedNull);
                 }
             }
             return _serviceProviderFactory.CreateBuilder(services);
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             if (_serviceProviderFactory == null)
             {
-                throw new InvalidOperationException("CreateBuilder must be called before CreateServiceProvider");
+                throw new InvalidOperationException(SR.CreateBuilderCallBeforeCreateServiceProvider);
             }
 
             return _serviceProviderFactory.CreateServiceProvider((TContainerBuilder)containerBuilder);

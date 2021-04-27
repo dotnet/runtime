@@ -10,26 +10,26 @@ Before proceeding further, please click on the link above that matches your mach
 
 ## Concept
 
-To build the Mono runtime, you must first do a complete runtime build (coreclr, libraries, and then mono).  At the repo root, simply execute:
+To build a complete runtime environment, you need to build both the Mono runtime and libraries.  At the repo root, simply execute:
 
 ```bash
-./build.sh 
+./build.sh mono+libs
 ```
 or on Windows,
-```bat
-build.cmd
+```cmd
+build.cmd mono+libs
 ```
 Note that the debug configuration is the default option. It generates a 'debug' output and that includes asserts, fewer code optimizations, and is easier for debugging. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration release` (or `-c release`).
- 
 
-Once you've built the whole runtime and assuming you want to work with just mono, you want to use the following command:
+
+Once you've built the complete runtime and assuming you want to work with just mono, you want to use the following command:
 
 ```bash
-./build.sh --subset mono
+./build.sh mono
 ```
 or on Windows,
-```bat
-build.cmd -subset mono
+```cmd
+build.cmd mono
 ```
 When the build completes, product binaries will be dropped in the `artifacts\bin\mono\<OS>.<arch>.<flavor>` folder.
 
@@ -40,7 +40,7 @@ Here are a list of build arguments that may be of use:
 
 `/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm` - Builds mono w/ LLVM from a custom path
 
-`/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm /p:MonoLLVMUseCxx11Abi=true` - Builds mono w/ LLVM 
+`/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm /p:MonoLLVMUseCxx11Abi=true` - Builds mono w/ LLVM
 from a custom path (and that LLVM was built with C++11 ABI)
 
 For `build.sh`
@@ -49,16 +49,28 @@ For `build.sh`
 
 The build has a number of options that you can learn about using build -?.
 
+### WebAssembly
+
+See the instructions for [Building WebAssembly](../../building/libraries/webassembly-instructions.md).
+
+### Android
+
+See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
+
+### iOS
+
+See the instructions for [Testing iOS](../../testing/libraries/testing-apple.md)
+
 ## Packages
 
 To generate nuget packages:
 
 ```bash
-./build.sh --subset mono -pack (with optional release configuration)
+./build.sh packs -runtimeFlavor mono (with optional release configuration)
 ```
 or on Windows,
-```bat
-build.cmd -subset mono -pack (with optional release configuration)
+```cmd
+build.cmd packs -runtimeFlavor mono (with optional release configuration)
 ```
 
 The following packages will be created under `artifacts\packages\<configuration>\Shipping`:
@@ -68,7 +80,15 @@ The following packages will be created under `artifacts\packages\<configuration>
 - `transport.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 
-## Important Notes 
+## To get started with "Hello World"
+
+Try the sample at `src/mono/sample/HelloWorld`.
+To run this sample, from the above folder
+```cd ../..
+make run
+```
+
+## Important Notes
 
 Test binaries are not yet available for mono.
 

@@ -26,6 +26,8 @@ namespace System
 
             _string = uri ?? string.Empty;
 
+            Debug.Assert(_originalUnicodeString is null && _info is null && _syntax is null && _flags == Flags.Zero);
+
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
 
@@ -244,7 +246,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate(string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -336,13 +338,14 @@ namespace System
         public static int Compare(Uri? uri1, Uri? uri2, UriComponents partsToCompare, UriFormat compareFormat,
             StringComparison comparisonType)
         {
-            if ((object?)uri1 == null)
+            if (uri1 is null)
             {
-                if (uri2 == null)
+                if (uri2 is null)
                     return 0; // Equal
                 return -1;    // null < non-null
             }
-            if ((object?)uri2 == null)
+
+            if (uri2 is null)
                 return 1;     // non-null > null
 
             // a relative uri is always less than an absolute one
@@ -521,7 +524,7 @@ namespace System
 
         public static string UnescapeDataString(string stringToUnescape)
         {
-            if ((object)stringToUnescape == null)
+            if (stringToUnescape is null)
                 throw new ArgumentNullException(nameof(stringToUnescape));
 
             if (stringToUnescape.Length == 0)
@@ -531,7 +534,7 @@ namespace System
             if (position == -1)
                 return stringToUnescape;
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
             vsb.EnsureCapacity(stringToUnescape.Length);
 
             vsb.Append(stringToUnescape.AsSpan(0, position));
@@ -546,6 +549,7 @@ namespace System
 
         // Where stringToEscape is intended to be a completely unescaped URI string.
         // This method will escape any character that is not a reserved or unreserved character, including percent signs.
+        [Obsolete(Obsoletions.EscapeUriStringMessage, DiagnosticId = Obsoletions.EscapeUriStringDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static string EscapeUriString(string stringToEscape) =>
             UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReservedTable);
 
@@ -649,7 +653,7 @@ namespace System
 
             string relativeStr;
 
-            if ((object?)relativeUri != null)
+            if (relativeUri is not null)
             {
                 if (relativeUri.IsAbsoluteUri)
                     return relativeUri;
@@ -658,7 +662,9 @@ namespace System
                 userEscaped = relativeUri.UserEscaped;
             }
             else
+            {
                 relativeStr = string.Empty;
+            }
 
             // Here we can assert that passed "relativeUri" is indeed a relative one
 
@@ -818,7 +824,7 @@ namespace System
 
         public bool IsBaseOf(Uri uri)
         {
-            if ((object)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             if (!IsAbsoluteUri)

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Xml.Tests
@@ -45,7 +44,7 @@ namespace System.Xml.Tests
             // Base URI as null is the default for internal Xml operation.
             var baseUris = new List<Uri> { null };
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // The case below does not work on Unix, the '#' ends up treated as a fragment and the path is cut there.
                 var currDirWithDirSeparator = Environment.CurrentDirectory + Path.DirectorySeparatorChar;

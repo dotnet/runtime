@@ -3,7 +3,7 @@
 
 namespace System.Configuration.Internal
 {
-    internal class FileVersion
+    internal sealed class FileVersion
     {
         private readonly bool _exists;
         private readonly long _fileSize;

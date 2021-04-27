@@ -12,10 +12,10 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class BooleanFunctions : ValueQuery
     {
-        private readonly Query _arg;
+        private readonly Query? _arg;
         private readonly FT _funcType;
 
-        public BooleanFunctions(FT funcType, Query arg)
+        public BooleanFunctions(FT funcType, Query? arg)
         {
             _arg = arg;
             _funcType = funcType;
@@ -41,7 +41,7 @@ namespace MS.Internal.Xml.XPath
                 FT.FuncNot => Not(nodeIterator),
                 FT.FuncTrue => true,
                 FT.FuncFalse => false,
-                FT.FuncLang => Lang(nodeIterator),
+                FT.FuncLang => Lang(nodeIterator!),
                 _ => false,
             };
 
@@ -56,10 +56,10 @@ namespace MS.Internal.Xml.XPath
 
         internal bool toBoolean(XPathNodeIterator nodeIterator)
         {
-            object result = _arg.Evaluate(nodeIterator);
+            object result = _arg!.Evaluate(nodeIterator);
             if (result is XPathNodeIterator) return _arg.Advance() != null;
 
-            string str = result as string;
+            string? str = result as string;
             if (str != null)
                 return toBoolean(str);
 
@@ -73,12 +73,13 @@ namespace MS.Internal.Xml.XPath
 
         private bool Not(XPathNodeIterator nodeIterator)
         {
-            return !(bool)_arg.Evaluate(nodeIterator);
+            return !(bool)_arg!.Evaluate(nodeIterator);
         }
 
         private bool Lang(XPathNodeIterator nodeIterator)
         {
-            string str = _arg.Evaluate(nodeIterator).ToString();
+            string str = _arg!.Evaluate(nodeIterator).ToString()!;
+            Debug.Assert(nodeIterator.Current != null);
             string lang = nodeIterator.Current.XmlLang;
             return (
                lang.StartsWith(str, StringComparison.OrdinalIgnoreCase) &&

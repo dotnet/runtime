@@ -20,16 +20,26 @@
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
 #endif
+#if HAVE_PIPE2
 #include <fcntl.h>
-#include <sys/socket.h>
+#endif
 #include <pthread.h>
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
 #endif
 
-// Validate that our Signals enum values are correct for the platform
-c_static_assert(PAL_SIGKILL == SIGKILL);
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
+#include <getexepath.h>
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -46,7 +56,7 @@ c_static_assert(PAL_PRIO_PROCESS == (int)PRIO_PROCESS);
 c_static_assert(PAL_PRIO_PGRP == (int)PRIO_PGRP);
 c_static_assert(PAL_PRIO_USER == (int)PRIO_USER);
 
-#ifndef SOCK_CLOEXEC
+#if !HAVE_PIPE2
 static pthread_mutex_t ProcessCreateLock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -181,31 +191,6 @@ static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* p
     return rv;
 }
 
-static int32_t SocketPair(int32_t sv[2])
-{
-    int32_t result;
-
-    int type = SOCK_STREAM;
-#ifdef SOCK_CLOEXEC
-    type |= SOCK_CLOEXEC;
-#endif
-
-    while ((result = socketpair(AF_UNIX, type, 0, sv)) < 0 && errno == EINTR);
-
-#ifndef SOCK_CLOEXEC
-    if (result == 0)
-    {
-        while ((result = fcntl(sv[READ_END_OF_PIPE], F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
-        if (result == 0)
-        {
-            while ((result = fcntl(sv[WRITE_END_OF_PIPE], F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
-        }
-    }
-#endif
-
-    return result;
-}
-
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -224,7 +209,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stderrFd)
 {
 #if HAVE_FORK
-#ifndef SOCK_CLOEXEC
+#if !HAVE_PIPE2
     bool haveProcessCreateLock = false;
 #endif
     bool success = true;
@@ -280,11 +265,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         goto done;
     }
 
-#ifndef SOCK_CLOEXEC
-    // We do not have SOCK_CLOEXEC; take the lock to emulate it race free.
-    // If another process were to be launched between the socket creation and the fcntl call to set CLOEXEC on it, that
-    // file descriptor would be inherited into the other child process, eventually causing a deadlock either in the loop
-    // below that waits for that socket to be closed or in StreamReader.ReadToEnd() in the calling code.
+#if !HAVE_PIPE2
+    // We do not have pipe2(); take the lock to emulate it race free.
+    // If another process were to be launched between the pipe creation and the fcntl call to set CLOEXEC on it, that
+    // file descriptor will be inherited into the other child process, eventually causing a deadlock either in the loop
+    // below that waits for that pipe to be closed or in StreamReader.ReadToEnd() in the calling code.
     if (pthread_mutex_lock(&ProcessCreateLock) != 0)
     {
         // This check is pretty much just checking for trashed memory.
@@ -296,9 +281,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     // Open pipes for any requests to redirect stdin/stdout/stderr and set the
     // close-on-exec flag to the pipe file descriptors.
-    if ((redirectStdin  && SocketPair(stdinFds) != 0) ||
-        (redirectStdout && SocketPair(stdoutFds) != 0) ||
-        (redirectStderr && SocketPair(stderrFds) != 0))
+    if ((redirectStdin  && SystemNative_Pipe(stdinFds,  PAL_O_CLOEXEC) != 0) ||
+        (redirectStdout && SystemNative_Pipe(stdoutFds, PAL_O_CLOEXEC) != 0) ||
+        (redirectStderr && SystemNative_Pipe(stderrFds, PAL_O_CLOEXEC) != 0))
     {
         success = false;
         goto done;
@@ -449,7 +434,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     *stderrFd = stderrFds[READ_END_OF_PIPE];
 
 done:;
-#ifndef SOCK_CLOEXEC
+#if !HAVE_PIPE2
     if (haveProcessCreateLock)
     {
         pthread_mutex_unlock(&ProcessCreateLock);
@@ -518,19 +503,6 @@ done:;
 #endif
 }
 
-FILE* SystemNative_POpen(const char* command, const char* type)
-{
-    assert(command != NULL);
-    assert(type != NULL);
-    return popen(command, type);
-}
-
-int32_t SystemNative_PClose(FILE* stream)
-{
-    assert(stream != NULL);
-    return pclose(stream);
-}
-
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
@@ -566,6 +538,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
+#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
+        default:
+            break;
+#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -653,6 +629,26 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+    switch (signal)
+    {
+        case PAL_NONE:
+             signal = 0;
+             break;
+
+        case PAL_SIGKILL:
+             signal = SIGKILL;
+             break;
+
+        case PAL_SIGSTOP:
+             signal = SIGSTOP;
+             break;
+
+        default:
+             assert_msg(false, "Unknown signal", signal);
+             errno = EINVAL;
+             return -1;
+    }
+
     return kill(pid, signal);
 }
 
@@ -820,6 +816,14 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
+#else
+int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -852,4 +856,17 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 
     return result;
 }
+#else
+int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
+
+char* SystemNative_GetProcessPath()
+{
+    return getexepath();
+}

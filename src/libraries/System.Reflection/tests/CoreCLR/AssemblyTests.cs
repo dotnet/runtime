@@ -11,6 +11,7 @@ namespace System.Reflection.Tests
     public class AssemblyTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39650", TestPlatforms.Browser)]
         public void CurrentLocation_HasLocaton()
         {
             string location = GetExecutingAssembly().Location;

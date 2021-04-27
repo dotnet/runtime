@@ -21,7 +21,11 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteStringValue(Guid value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteStringValueIndented(value);

@@ -710,7 +710,7 @@ namespace System.Threading.Tasks.Test
         private void ThreadLocalFinally64(List<long> local)
         {
             //add this row to the global sequences
-            //sequences.Add(Thread.CurrentThread.ManagedThreadId, local);
+            //sequences.Add(Environment.CurrentManagedThreadId, local);
             long index = Interlocked.Increment(ref _threadCount) - 1;
             _sequences64[index] = local;
         }
@@ -733,7 +733,7 @@ namespace System.Threading.Tasks.Test
         private void ThreadLocalFinally(List<int> local)
         {
             //add this row to the global sequences
-            //sequences.Add(Thread.CurrentThread.ManagedThreadId, local);
+            //sequences.Add(Environment.CurrentManagedThreadId, local);
             long index = Interlocked.Increment(ref _threadCount) - 1;
             _sequences[(int)index] = local;
         }

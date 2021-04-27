@@ -5,6 +5,9 @@ using System.Security.Cryptography;
 
 namespace System.Security.Permissions
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class KeyContainerPermissionAccessEntry
     {
         public KeyContainerPermissionAccessEntry(string keyContainerName, KeyContainerPermissionFlags flags) { }

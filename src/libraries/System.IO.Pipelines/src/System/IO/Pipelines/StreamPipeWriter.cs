@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
-    internal class StreamPipeWriter : PipeWriter
+    internal sealed class StreamPipeWriter : PipeWriter
     {
         internal const int InitialSegmentPoolSize = 4; // 16K
         internal const int MaxSegmentPoolSize = 256; // 1MB
@@ -22,6 +22,7 @@ namespace System.IO.Pipelines
         private int _bytesBuffered;
 
         private readonly MemoryPool<byte>? _pool;
+        private readonly int _maxPooledBufferSize;
 
         private CancellationTokenSource? _internalTokenSource;
         private bool _isCompleted;
@@ -56,6 +57,7 @@ namespace System.IO.Pipelines
 
             _minimumBufferSize = options.MinimumBufferSize;
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
+            _maxPooledBufferSize = _pool?.MaxBufferSize ?? -1;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
             _leaveOpen = options.LeaveOpen;
         }
@@ -149,18 +151,20 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
+            Debug.Assert(sizeHint >= 0);
             BufferSegment newSegment = CreateSegmentUnsynchronized();
 
-            if (_pool is null || sizeHint > _pool.MaxBufferSize)
+            int maxSize = _maxPooledBufferSize;
+            if (sizeHint <= maxSize)
+            {
+                // Use the specified pool as it fits. Specified pool is not null as maxSize == -1 if _pool is null.
+                newSegment.SetOwnedMemory(_pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
+            }
+            else
             {
                 // Use the array pool
                 int sizeToRequest = GetSegmentSize(sizeHint);
                 newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
-            }
-            else
-            {
-                // Use the specified pool as it fits
-                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
             }
 
             _tailMemory = newSegment.AvailableMemory;
@@ -230,13 +234,13 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            await FlushAsyncInternal(writeToStream: exception == null).ConfigureAwait(false);
+            await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
 
             _internalTokenSource?.Dispose();
 
             if (!_leaveOpen)
             {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
                 InnerStream.Dispose();
@@ -252,7 +256,12 @@ namespace System.IO.Pipelines
                 return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: false));
             }
 
-            return FlushAsyncInternal(writeToStream: true, cancellationToken);
+            return FlushAsyncInternal(writeToStream: true, data: Memory<byte>.Empty, cancellationToken);
+        }
+
+        public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        {
+            return FlushAsyncInternal(writeToStream: true, data: source, cancellationToken);
         }
 
         private void Cancel()
@@ -260,7 +269,7 @@ namespace System.IO.Pipelines
             InternalTokenSource.Cancel();
         }
 
-        private async ValueTask<FlushResult> FlushAsyncInternal(bool writeToStream, CancellationToken cancellationToken = default)
+        private async ValueTask<FlushResult> FlushAsyncInternal(bool writeToStream, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
             // Write all completed segments and whatever remains in the current segment
             // and flush the result.
@@ -302,14 +311,24 @@ namespace System.IO.Pipelines
                         _head = segment;
                     }
 
-                    if (_bytesBuffered > 0 && writeToStream)
+                    if (writeToStream)
                     {
-                        await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
+                        // Write data after the buffered data
+                        if (data.Length > 0)
+                        {
+                            await InnerStream.WriteAsync(data, localToken).ConfigureAwait(false);
+                        }
+
+                        if (_bytesBuffered > 0 || data.Length > 0)
+                        {
+                            await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
+                        }
                     }
 
                     // Mark bytes as written *after* flushing
                     _head = null;
                     _tail = null;
+                    _tailMemory = default;
                     _bytesBuffered = 0;
 
                     return new FlushResult(isCanceled: false, isCompleted: false);
@@ -355,7 +374,7 @@ namespace System.IO.Pipelines
 
                 if (returnSegment.Length > 0 && writeToStream)
                 {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                     InnerStream.Write(returnSegment.Memory.Span);
 #else
                     InnerStream.Write(returnSegment.Memory);
@@ -377,6 +396,7 @@ namespace System.IO.Pipelines
             // Mark bytes as written *after* flushing
             _head = null;
             _tail = null;
+            _tailMemory = default;
             _bytesBuffered = 0;
         }
     }

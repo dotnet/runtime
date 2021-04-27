@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class StringConverter : JsonConverter<string>
@@ -14,7 +12,15 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value);
+            // For performance, lift up the writer implementation.
+            if (value == null)
+            {
+                writer.WriteNullValue();
+            }
+            else
+            {
+                writer.WriteStringValue(value.AsSpan());
+            }
         }
 
         internal override string ReadWithQuotes(ref Utf8JsonReader reader)

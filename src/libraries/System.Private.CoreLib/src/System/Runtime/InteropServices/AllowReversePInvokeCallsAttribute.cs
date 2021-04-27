@@ -3,8 +3,8 @@
 
 namespace System.Runtime.InteropServices
 {
-    // To be used on methods that sink reverse P/Invoke calls.
-    // This attribute was a Silverlight security measure, currently ignored.
+    // This attribute was a Silverlight security measure and is no longer respected.
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class AllowReversePInvokeCallsAttribute : Attribute
     {

@@ -9,10 +9,10 @@ internal static partial class Interop
     internal static partial class Ole32
     {
         [DllImport(Libraries.Ole32)]
-        internal static extern IntPtr CoTaskMemAlloc(UIntPtr cb);
+        internal static extern IntPtr CoTaskMemAlloc(nuint cb);
 
         [DllImport(Libraries.Ole32)]
-        internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, UIntPtr cb);
+        internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, nuint cb);
 
         [DllImport(Libraries.Ole32)]
         internal static extern void CoTaskMemFree(IntPtr ptr);

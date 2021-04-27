@@ -12,40 +12,53 @@ namespace Internal.Cryptography
     {
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
-            switch (hashAlgorithmId)
-            {
-                case HashAlgorithmNames.MD5:
-                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Md5);
-                case HashAlgorithmNames.SHA1:
-                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha1);
-                case HashAlgorithmNames.SHA256:
-                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha256);
-                case HashAlgorithmNames.SHA384:
-                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha384);
-                case HashAlgorithmNames.SHA512:
-                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha512);
-            }
-
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+            return new AppleDigestProvider(algorithm);
         }
 
         public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            switch (hashAlgorithmId)
-            {
-                case HashAlgorithmNames.MD5:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Md5, key);
-                case HashAlgorithmNames.SHA1:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha1, key);
-                case HashAlgorithmNames.SHA256:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha256, key);
-                case HashAlgorithmNames.SHA384:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha384, key);
-                case HashAlgorithmNames.SHA512:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha512, key);
-            }
+            Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+            return new AppleHmacProvider(algorithm, key);
+        }
 
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+        private static Interop.AppleCrypto.PAL_HashAlgorithm HashAlgorithmToPal(string hashAlgorithmId) => hashAlgorithmId switch {
+            HashAlgorithmNames.MD5 => Interop.AppleCrypto.PAL_HashAlgorithm.Md5,
+            HashAlgorithmNames.SHA1 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha1,
+            HashAlgorithmNames.SHA256 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha256,
+            HashAlgorithmNames.SHA384 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha384,
+            HashAlgorithmNames.SHA512 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha512,
+            _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
+        };
+
+        internal static class OneShotHashProvider
+        {
+            public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+
+                fixed (byte* pSource = source)
+                fixed (byte* pDestination = destination)
+                {
+                    int ret = Interop.AppleCrypto.DigestOneShot(
+                        algorithm,
+                        pSource,
+                        source.Length,
+                        pDestination,
+                        destination.Length,
+                        out int digestSize);
+
+                    if (ret != 1)
+                    {
+                        Debug.Fail($"HashData return value {ret} was not 1");
+                        throw new CryptographicException();
+                    }
+
+                    Debug.Assert(digestSize <= destination.Length);
+
+                    return digestSize;
+                }
+            }
         }
 
         private sealed class AppleHmacProvider : HashProvider

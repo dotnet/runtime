@@ -18,10 +18,8 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
-        private static readonly bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-        [ThreadStatic]
-        private static Random? t_idGenerator;
+        private static bool SendIpHeader => OperatingSystem.IsMacOS();
+        private static bool NeedsConnect => OperatingSystem.IsLinux();
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
@@ -51,12 +49,11 @@ namespace System.Net.NetworkInformation
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
-            Random rand = t_idGenerator ??= new Random();
-            ushort id = (ushort)rand.Next(ushort.MaxValue + 1);
+            ushort id = (ushort)Random.Shared.Next(ushort.MaxValue + 1);
             IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            bool sendIpHeader = ipv4 && options != null && _sendIpHeader;
+            bool sendIpHeader = ipv4 && options != null && SendIpHeader;
 
              if (sendIpHeader)
              {
@@ -91,7 +88,7 @@ namespace System.Net.NetworkInformation
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
-            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (addrFamily == AddressFamily.InterNetworkV6 && OperatingSystem.IsMacOS())
             {
                 socket.DualMode = false;
             }
@@ -103,7 +100,7 @@ namespace System.Net.NetworkInformation
 
             if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
             {
-                if (_sendIpHeader)
+                if (SendIpHeader)
                 {
                     // some platforms like OSX don't support DontFragment so we construct IP header instead.
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
@@ -117,7 +114,7 @@ namespace System.Net.NetworkInformation
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (_needsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
@@ -251,10 +248,11 @@ namespace System.Net.NetworkInformation
                         SocketFlags.None,
                         socketConfig.EndPoint);
 
-                    var cts = new CancellationTokenSource();
-                    Task finished = await Task.WhenAny(receiveTask, Task.Delay(timeout - (int)elapsed, cts.Token)).ConfigureAwait(false);
-                    cts.Cancel();
-                    if (finished != receiveTask)
+                    try
+                    {
+                        await receiveTask.WaitAsync(TimeSpan.FromMilliseconds(timeout - (int)elapsed)).ConfigureAwait(false);
+                    }
+                    catch (TimeoutException)
                     {
                         return CreateTimedOutPingReply();
                     }
@@ -297,6 +295,8 @@ namespace System.Net.NetworkInformation
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
+            // Set LC_ALL=C to make sure to get ping output which is not affected by locale environment variables such as LANG and LC_MESSAGES.
+            psi.EnvironmentVariables["LC_ALL"] = "C";
             return new Process() { StartInfo = psi };
         }
 
@@ -332,34 +332,31 @@ namespace System.Net.NetworkInformation
                 p.Exited += (s, e) => processCompletion.SetResult();
                 p.Start();
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(timeout, cts.Token);
-                Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
-
-                if (finished == timeoutTask)
+                try
+                {
+                    await processCompletion.Task.WaitAsync(TimeSpan.FromMilliseconds(timeout)).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
                 {
                     p.Kill();
                     return CreateTimedOutPingReply();
                 }
-                else
-                {
-                    cts.Cancel();
-                    if (p.ExitCode == 1 || p.ExitCode == 2)
-                    {
-                        // Throw timeout for known failure return codes from ping functions.
-                        return CreateTimedOutPingReply();
-                    }
 
-                    try
-                    {
-                        string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                        return ParsePingUtilityOutput(address, output);
-                    }
-                    catch (Exception)
-                    {
-                        // If the standard output cannot be successfully parsed, throw a generic PingException.
-                        throw new PingException(SR.net_ping);
-                    }
+                if (p.ExitCode == 1 || p.ExitCode == 2)
+                {
+                    // Throw timeout for known failure return codes from ping functions.
+                    return CreateTimedOutPingReply();
+                }
+
+                try
+                {
+                    string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                    return ParsePingUtilityOutput(address, output);
+                }
+                catch (Exception)
+                {
+                    // If the standard output cannot be successfully parsed, throw a generic PingException.
+                    throw new PingException(SR.net_ping);
                 }
             }
         }
@@ -421,7 +418,7 @@ namespace System.Net.NetworkInformation
         // Since this is private should be safe to trust that the calling code
         // will behave. To get a little performance boost raw fields are exposed
         // and no validation is performed.
-        private class SocketConfig
+        private sealed class SocketConfig
         {
             public SocketConfig(EndPoint endPoint, int timeout, PingOptions? options, bool isIPv4, ProtocolType protocolType, ushort id, byte[] sendBuffer)
             {
@@ -462,7 +459,7 @@ namespace System.Net.NetworkInformation
             payload.CopyTo(result, offset + icmpHeaderSize);
 
             // offset now still points to beginning of ICMP header.
-            ushort checksum = ComputeBufferChecksum(result.AsSpan().Slice(offset));
+            ushort checksum = ComputeBufferChecksum(result.AsSpan(offset));
             // Jam the checksum into the buffer.
             result[offset + 2] = (byte)(checksum >> 8);
             result[offset + 3] = (byte)(checksum & (0xFF));

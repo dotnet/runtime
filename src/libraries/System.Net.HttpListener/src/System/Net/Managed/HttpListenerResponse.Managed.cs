@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Net.HttpListenerResponse
 //
@@ -53,7 +54,7 @@ namespace System.Net
         {
             if (_responseStream == null)
             {
-                _responseStream = _httpContext.Connection.GetResponseStream();
+                _responseStream = _httpContext!.Connection.GetResponseStream();
             }
         }
 
@@ -111,7 +112,7 @@ namespace System.Net
         private void Close(bool force)
         {
             Disposed = true;
-            _httpContext.Connection.Close(force);
+            _httpContext!.Connection.Close(force);
         }
 
         public void Close(byte[] responseEntity, bool willBlock)
@@ -143,7 +144,7 @@ namespace System.Net
             {
                 OutputStream.BeginWrite(responseEntity, 0, responseEntity.Length, iar =>
                 {
-                    var thisRef = (HttpListenerResponse)iar.AsyncState;
+                    var thisRef = (HttpListenerResponse)iar.AsyncState!;
                     try
                     {
                         thisRef.OutputStream.EndWrite(iar);
@@ -192,7 +193,7 @@ namespace System.Net
                         _boundaryType = BoundaryType.Chunked;
                     }
 
-                    if (CanSendResponseBody(_httpContext.Response.StatusCode))
+                    if (CanSendResponseBody(_httpContext!.Response.StatusCode))
                     {
                         _contentLength = -1;
                     }
@@ -207,7 +208,7 @@ namespace System.Net
                 {
                     if (_boundaryType != BoundaryType.ContentLength && closing)
                     {
-                        _contentLength = CanSendResponseBody(_httpContext.Response.StatusCode) ? -1 : 0;
+                        _contentLength = CanSendResponseBody(_httpContext!.Response.StatusCode) ? -1 : 0;
                     }
 
                     if (_boundaryType == BoundaryType.ContentLength)
@@ -232,7 +233,7 @@ namespace System.Net
 
                 if (!conn_close)
                 {
-                    conn_close = !_httpContext.Request.KeepAlive;
+                    conn_close = !_httpContext!.Request.KeepAlive;
                 }
 
                 // They sent both KeepAlive: true and Connection: close
@@ -247,7 +248,7 @@ namespace System.Net
                     _webHeaders.Set(HttpKnownHeaderNames.TransferEncoding, HttpHeaderStrings.Chunked);
                 }
 
-                int reuses = _httpContext.Connection.Reuses;
+                int reuses = _httpContext!.Connection.Reuses;
                 if (reuses >= 100)
                 {
                     _forceCloseChunked = true;
@@ -302,7 +303,7 @@ namespace System.Net
             for (int i = 0; i < headers.Count; i++)
             {
                 string key = headers.GetKey(i);
-                string[] values = headers.GetValues(i);
+                string[] values = headers.GetValues(i)!;
 
                 int startingLength = sb.Length;
 

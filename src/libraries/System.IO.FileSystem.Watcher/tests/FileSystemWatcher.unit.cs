@@ -3,7 +3,6 @@
 
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -507,8 +506,8 @@ namespace System.IO.Tests
             watcher.Path = currentDir;
             Assert.Equal(currentDir, watcher.Path);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || // expect no change for OrdinalIgnoreCase-equal strings
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsWindows() || // expect no change for OrdinalIgnoreCase-equal strings
+                OperatingSystem.IsMacOS())
             {
                 watcher.Path = currentDir.ToUpperInvariant();
                 Assert.Equal(currentDir, watcher.Path);

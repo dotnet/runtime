@@ -708,11 +708,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 BuiltDotNet = new DotNetCli(RepoDirectories.BuiltDotnet);
 
                 PortableAppFixture_Built = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 PortableAppFixture_Published = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");

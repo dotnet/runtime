@@ -196,13 +196,7 @@ namespace System.Security.Cryptography.Xml
             if (bytes == null)
                 return NullString;
 
-            StringBuilder builder = new StringBuilder(bytes.Length * 2);
-            foreach (byte b in bytes)
-            {
-                builder.Append(b.ToString("x2", CultureInfo.InvariantCulture));
-            }
-
-            return builder.ToString();
+            return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
         }
 
         /// <summary>
@@ -243,7 +237,7 @@ namespace System.Security.Cryptography.Xml
                 keyName = key.GetHashCode().ToString("x8", CultureInfo.InvariantCulture);
             }
 
-            return string.Format(CultureInfo.InvariantCulture, "{0}#{1}", key.GetType().Name, keyName);
+            return $"{key.GetType().Name}#{keyName}";
         }
 
         /// <summary>
@@ -253,9 +247,7 @@ namespace System.Security.Cryptography.Xml
         {
             Debug.Assert(o != null, "o != null");
 
-            return string.Format(CultureInfo.InvariantCulture,
-                                 "{0}#{1}", o.GetType().Name,
-                                 o.GetHashCode().ToString("x8", CultureInfo.InvariantCulture));
+            return $"{o.GetType().Name}#{o.GetHashCode().ToString("x8", CultureInfo.InvariantCulture)}";
         }
 
         /// <summary>

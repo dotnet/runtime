@@ -12,6 +12,8 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class PropertyDescriptor : MemberDescriptor
     {
+        internal const string PropertyDescriptorPropertyTypeMessage = "PropertyDescriptor's PropertyType cannot be statically discovered.";
+
         private TypeConverter _converter;
         private Hashtable _valueChangedHandlers;
         private object[] _editors;
@@ -57,6 +59,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual TypeConverter Converter
         {
+            [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
             get
             {
                 // Always grab the attribute collection first here, because if the metadata version
@@ -183,7 +186,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates an instance of the specified type.
         /// </summary>
-        protected object CreateInstance(Type type)
+        protected object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
             ConstructorInfo ctor = type.GetConstructor(typeArgs);
@@ -212,15 +216,19 @@ namespace System.ComponentModel
             base.FillAttributes(attributeList);
         }
 
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
         public PropertyDescriptorCollection GetChildProperties() => GetChildProperties(null, null);
 
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public PropertyDescriptorCollection GetChildProperties(Attribute[] filter) => GetChildProperties(null, filter);
 
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
         public PropertyDescriptorCollection GetChildProperties(object instance) => GetChildProperties(instance, null);
 
         /// <summary>
         /// Retrieves the properties
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {
             if (instance == null)
@@ -233,10 +241,10 @@ namespace System.ComponentModel
             }
         }
 
-
         /// <summary>
         /// Gets an editor of the specified type.
         /// </summary>
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " " + PropertyDescriptorPropertyTypeMessage)]
         public virtual object GetEditor(Type editorBaseType)
         {
             object editor = null;
@@ -337,7 +345,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type using its name.
         /// </summary>
-        protected Type GetTypeFromName(string typeName)
+        [RequiresUnreferencedCode("Calls ComponentType.Assembly.GetType on the non-fully qualified typeName, which the trimmer cannot recognize.")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        protected Type GetTypeFromName(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
         {
             if (typeName == null || typeName.Length == 0)
             {

@@ -12,6 +12,9 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private const int kSuccess = 1;
+        private const int kErrorSeeError = -2;
+
         private static int AppleCryptoNative_SecKeyImportEphemeral(
             ReadOnlySpan<byte> pbKeyBlob,
             int isPrivateKey,
@@ -129,9 +132,6 @@ internal static partial class Interop
 
         private static byte[] ExecuteTransform(ReadOnlySpan<byte> source, SecKeyTransform transform)
         {
-            const int Success = 1;
-            const int kErrorSeeError = -2;
-
             SafeCFDataHandle data;
             SafeCFErrorHandle error;
 
@@ -140,7 +140,7 @@ internal static partial class Interop
             using (error)
             using (data)
             {
-                if (ret == Success)
+                if (ret == kSuccess)
                 {
                     return CoreFoundation.CFGetData(data);
                 }
@@ -169,11 +169,9 @@ internal static partial class Interop
             using (errorHandle)
             using (outputHandle)
             {
-                const int Success = 1;
-                const int kErrorSeeError = -2;
                 switch (ret)
                 {
-                    case Success:
+                    case kSuccess:
                         return CoreFoundation.TryCFWriteData(outputHandle, destination, out bytesWritten);
                     case kErrorSeeError:
                         throw CreateExceptionForCFError(errorHandle);
@@ -292,7 +290,6 @@ internal static partial class Interop
 
             const int True = 1;
             const int False = 0;
-            const int kErrorSeeError = -2;
 
             using (error)
             {
@@ -331,7 +328,6 @@ internal static partial class Interop
 
             const int True = 1;
             const int False = 0;
-            const int kErrorSeeError = -2;
 
             using (error)
             {

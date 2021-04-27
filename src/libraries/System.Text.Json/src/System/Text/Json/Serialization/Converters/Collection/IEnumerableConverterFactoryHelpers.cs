@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -48,7 +49,7 @@ namespace System.Text.Json.Serialization
 
             Type? baseTypeToCheck = type;
 
-            while (baseTypeToCheck != null && baseTypeToCheck != JsonClassInfo.ObjectType)
+            while (baseTypeToCheck != null && baseTypeToCheck != JsonTypeInfo.ObjectType)
             {
                 if (baseTypeToCheck.IsGenericType)
                 {
@@ -171,7 +172,7 @@ namespace System.Text.Json.Serialization
 
         [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsAssembly)]
         [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsAssembly)]
-        public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type elementType)
+        public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type keyType, Type valueType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
             if (constructingType != null)
@@ -184,7 +185,7 @@ namespace System.Text.Json.Serialization
                         method.IsGenericMethod &&
                         method.GetGenericArguments().Length == 2)
                     {
-                        return method.MakeGenericMethod(typeof(string), elementType);
+                        return method.MakeGenericMethod(keyType, valueType);
                     }
                 }
             }

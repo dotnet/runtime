@@ -3,7 +3,7 @@
 
 .assembly extern System.Console { }
 // this test is also regression test for VSW 395780. The difference is that
-// .overrride directive in this case is in the class scope, whereas in testExplicitOverride
+// .override directive in this case is in the class scope, whereas in testExplicitOverride
 // .override directive is in method scope.
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.41122.00

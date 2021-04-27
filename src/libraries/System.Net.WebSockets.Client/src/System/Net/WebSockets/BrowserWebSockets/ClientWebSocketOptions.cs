@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.WebSockets
@@ -17,42 +18,49 @@ namespace System.Net.WebSockets
 
         #region HTTP Settings
 
+        [UnsupportedOSPlatform("browser")]
         // Note that some headers are restricted like Host.
         public void SetRequestHeader(string headerName, string headerValue)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public bool UseDefaultCredentials
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public System.Net.ICredentials Credentials
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public System.Net.IWebProxy Proxy
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public X509CertificateCollection ClientCertificates
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public System.Net.Security.RemoteCertificateValidationCallback RemoteCertificateValidationCallback
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public System.Net.CookieContainer Cookies
         {
             get => throw new PlatformNotSupportedException();
@@ -85,17 +93,20 @@ namespace System.Net.WebSockets
 
         internal List<string> RequestedSubProtocols => _requestedSubProtocols ??= new List<string>();
 
+        [UnsupportedOSPlatform("browser")]
         public TimeSpan KeepAliveInterval
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, ArraySegment<byte> buffer)
         {
             throw new PlatformNotSupportedException();

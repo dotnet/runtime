@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{a32671b6-5470-4f9c-9cd8-4094b9ab0799}</ProjectGuid>
     <NoVbRuntimeReference>true</NoVbRuntimeReference>
     <VBRuntime>None</VBRuntime>
     <OptionStrict>On</OptionStrict>
@@ -11,14 +10,13 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),TARGET_WINDOWS=True</DefineConstants>
-    <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
+    <NoWarn>$(NoWarn),CA1052,CA1810,CA2200</NoWarn>
+    <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn>
+    <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
-    <NoStdLib>true</NoStdLib>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
-    <!-- No plans to fix the analyzer issues. -->
-    <EnableAnalyzers>false</EnableAnalyzers>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />
@@ -31,6 +29,7 @@
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ByteType.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\CacheDict.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\CharType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\CharArrayType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
@@ -95,8 +94,8 @@
     <Compile Include="Microsoft\VisualBasic\VBMath.vb" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
@@ -113,6 +112,9 @@
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Extensions" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Reflection.TypeExtensions" />

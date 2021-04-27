@@ -20,11 +20,11 @@ $ dotnet run -- -help
 
 Note that the stress suite will test the sdk available in the environment,
 that is to say it will not necessarily test the implementation of the local runtime repo.
-To achieve this, we will first need to build a new sdk from source. This can be done [using docker](https://github.com/dotnet/runtime/blob/master/eng/docker/Readme.md).
+To achieve this, we will first need to build a new sdk from source. This can be done [using docker](https://github.com/dotnet/runtime/blob/main/eng/docker/Readme.md).
 
 ### Running using docker-compose
 
-The prefered way of running the stress suite is using docker-compose,
+The preferred way of running the stress suite is using docker-compose,
 which can be used to target both linux and windows containers.
 Docker and compose-compose are required for this step (both included in [docker for windows](https://docs.docker.com/docker-for-windows/)).
 
@@ -40,8 +40,8 @@ This will build the libraries and stress suite to a linux docker image and initi
 
 #### Using Windows containers
 
-Before we get started, please see 
-[docker documentation](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers) 
+Before we get started, please see
+[docker documentation](https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers)
 on how windows containers can be enabled on your machine.
 Once ready, simply run:
 

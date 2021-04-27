@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class DesImplementation
+    internal sealed partial class DesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
@@ -13,6 +13,8 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
             bool encrypting)
         {
             BasicSymmetricCipher cipher = new AppleCCCryptor(
@@ -21,7 +23,9 @@ namespace Internal.Cryptography
                 blockSize,
                 key,
                 iv,
-                encrypting);
+                encrypting,
+                feedbackSizeInBytes,
+                paddingSize);
 
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }

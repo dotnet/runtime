@@ -1436,7 +1436,7 @@ namespace System.Xml.Tests
             try
             {
                 ReloadSource(new StringReader(xml));
-                while (DataReader.Read()) { CError.WriteLine(DataReader.Value); };
+                while (DataReader.Read()) { CError.WriteLine(DataReader.Value); }
             }
             catch (XmlException e) { CError.WriteLine(e); return TEST_PASS; }
             return TEST_FAIL;

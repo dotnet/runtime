@@ -1,9 +1,0 @@
-add_subdirectory(test1)
-add_subdirectory(WFSOExMutexTest)
-add_subdirectory(WFSOExSemaphoreTest)
-add_subdirectory(WFSOExThreadTest)
-add_subdirectory(WFSOMutexTest)
-add_subdirectory(WFSOProcessTest)
-add_subdirectory(WFSOSemaphoreTest)
-add_subdirectory(WFSOThreadTest)
-

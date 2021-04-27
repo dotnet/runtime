@@ -2,7 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <IsNETCoreApp>true</IsNETCoreApp>
-    <IsNETCoreAppRef>false</IsNETCoreAppRef>
   </PropertyGroup>
 </Project>

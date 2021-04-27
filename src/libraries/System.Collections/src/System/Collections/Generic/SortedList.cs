@@ -270,7 +270,7 @@ namespace System.Collections.Generic
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
+            if (value == null && default(TValue) != null)    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
@@ -493,8 +493,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             }
 
-            KeyValuePair<TKey, TValue>[]? keyValuePairArray = array as KeyValuePair<TKey, TValue>[];
-            if (keyValuePairArray != null)
+            if (array is KeyValuePair<TKey, TValue>[] keyValuePairArray)
             {
                 for (int i = 0; i < Count; i++)
                 {
@@ -523,18 +522,15 @@ namespace System.Collections.Generic
             }
         }
 
-        private const int MaxArrayLength = 0X7FEFFFFF;
-
         // Ensures that the capacity of this sorted list is at least the given
-        // minimum value. If the current capacity of the list is less than
-        // min, the capacity is increased to twice the current capacity or
-        // to min, whichever is larger.
+        // minimum value. The capacity is increased to twice the current capacity
+        // or to min, whichever is larger.
         private void EnsureCapacity(int min)
         {
             int newCapacity = keys.Length == 0 ? DefaultCapacity : keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
             if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }
@@ -589,7 +585,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (((object)key) == null) throw new ArgumentNullException(nameof(key));
+                if (key == null) throw new ArgumentNullException(nameof(key));
                 int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -623,7 +619,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value == null && default(TValue) != null)
                     throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
@@ -686,7 +682,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            value = default(TValue)!;
+            value = default;
             return false;
         }
 
@@ -742,7 +738,7 @@ namespace System.Collections.Generic
         // SortedList.TrimExcess();
         public void TrimExcess()
         {
-            int threshold = (int)(((double)keys.Length) * 0.9);
+            int threshold = (int)(keys.Length * 0.9);
             if (_size < threshold)
             {
                 Capacity = _size;
@@ -762,8 +758,8 @@ namespace System.Collections.Generic
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private readonly SortedList<TKey, TValue> _sortedList;
-            [AllowNull] private TKey _key;
-            [AllowNull] private TValue _value;
+            private TKey? _key;
+            private TValue? _value;
             private int _index;
             private readonly int _version;
             private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
@@ -797,7 +793,7 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    return _key;
+                    return _key!;
                 }
             }
 
@@ -828,17 +824,11 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    return new DictionaryEntry(_key, _value);
+                    return new DictionaryEntry(_key!, _value);
                 }
             }
 
-            public KeyValuePair<TKey, TValue> Current
-            {
-                get
-                {
-                    return new KeyValuePair<TKey, TValue>(_key, _value);
-                }
-            }
+            public KeyValuePair<TKey, TValue> Current => new KeyValuePair<TKey, TValue>(_key!, _value!);
 
             object? IEnumerator.Current
             {
@@ -851,11 +841,11 @@ namespace System.Collections.Generic
 
                     if (_getEnumeratorRetType == DictEntry)
                     {
-                        return new DictionaryEntry(_key, _value);
+                        return new DictionaryEntry(_key!, _value);
                     }
                     else
                     {
-                        return new KeyValuePair<TKey, TValue>(_key, _value);
+                        return new KeyValuePair<TKey, TValue>(_key!, _value!);
                     }
                 }
             }
@@ -891,7 +881,7 @@ namespace System.Collections.Generic
             private readonly SortedList<TKey, TValue> _sortedList;
             private int _index;
             private readonly int _version;
-            [AllowNull] private TKey _currentKey = default!;
+            private TKey? _currentKey;
 
             internal SortedListKeyEnumerator(SortedList<TKey, TValue> sortedList)
             {
@@ -924,13 +914,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public TKey Current
-            {
-                get
-                {
-                    return _currentKey;
-                }
-            }
+            public TKey Current => _currentKey!;
 
             object? IEnumerator.Current
             {
@@ -961,7 +945,7 @@ namespace System.Collections.Generic
             private readonly SortedList<TKey, TValue> _sortedList;
             private int _index;
             private readonly int _version;
-            [AllowNull] private TValue _currentValue = default!;
+            private TValue? _currentValue;
 
             internal SortedListValueEnumerator(SortedList<TKey, TValue> sortedList)
             {
@@ -994,13 +978,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public TValue Current
-            {
-                get
-                {
-                    return _currentValue;
-                }
-            }
+            public TValue Current => _currentValue!;
 
             object? IEnumerator.Current
             {
@@ -1124,7 +1102,7 @@ namespace System.Collections.Generic
 
             public int IndexOf(TKey key)
             {
-                if (((object)key) == null)
+                if (key == null)
                     throw new ArgumentNullException(nameof(key));
 
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,

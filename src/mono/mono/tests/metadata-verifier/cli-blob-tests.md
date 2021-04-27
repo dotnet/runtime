@@ -20,7 +20,7 @@ method-def-sig {
 	invalid offset blob.i (table-row (6 0) + 10) + 1 set-byte 0x2E
 	invalid offset blob.i (table-row (6 0) + 10) + 1 set-byte 0x2F
 
-	#upper nimble flags 0x80 is invalid	
+	#upper nimble flags 0x80 is invalid
 	invalid offset blob.i (table-row (6 0) + 10) + 1 set-bit 7
 
 	#sig is too small to decode param count
@@ -89,7 +89,7 @@ method-def-ret-misc {
 method-ref-sig {
 	assembly assembly-with-signatures.exe
 
-	#member ref 0 is has a vararg sig 
+	#member ref 0 is has a vararg sig
 	#member ref 1 don't use vararg
 
 	#2 sentinels
@@ -156,23 +156,23 @@ locals-sig {
 
 	#bad local sig
 	#row 0 has tons of locals
-	#row 1 is int32&, int32 
+	#row 1 is int32&, int32
 	#row 2 is typedref
 
 	#typedref with byref
-	#row 1 is:      cconv pcount(2) byref int32      int32 
+	#row 1 is:      cconv pcount(2) byref int32      int32
 	#row 1 goes to: cconv pcount(2) byref typedbyref int32
 	invalid offset blob.i (table-row (0x11 1)) + 4 set-byte 0x16
 
 	#byref pinned int32
-	#row 1 is:      cconv pcount(2) byref int32  int32 
+	#row 1 is:      cconv pcount(2) byref int32  int32
 	#row 1 goes to: cconv pcount(1) byref pinned int32
 
 	invalid offset blob.i (table-row (0x11 1)) + 2 set-byte 0x01,
 			offset blob.i (table-row (0x11 1)) + 4 set-byte 0x45
 
 	#pinned pinned int32
-	#row 1 is:      cconv pcount(2) byref  int32  int32 
+	#row 1 is:      cconv pcount(2) byref  int32  int32
 	#row 1 goes to: cconv pcount(1) pinned pinned int32
 	#LAMEIMPL MS doesn't care about this
 	valid offset blob.i (table-row (0x11 1)) + 2 set-byte 0x01,
@@ -215,7 +215,7 @@ type-enc {
 	invalid offset blob.i (table-row (0x04 3) + 4) + 3 set-byte 0x16
 
 	#LAMEIMPL MS verifier doesn't catch this one (runtime does)
-	#rank 0 
+	#rank 0
 	invalid offset blob.i (table-row (0x04 3) + 4) + 4 set-byte 0x00
 	#large nsizes
 	invalid offset blob.i (table-row (0x04 3) + 4) + 5 set-byte 0x1F
@@ -240,7 +240,7 @@ type-enc {
 	#fnptr
 	#field 10 is a fnptr
 	#format is: cconv FNPTR cconv pcount ret param* sentinel? param*
-	#LAMESPEC, it lacks the fact that fnptr allows for unmanaged call conv 
+	#LAMESPEC, it lacks the fact that fnptr allows for unmanaged call conv
 	#bad callconv
 	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x88
 
@@ -263,10 +263,10 @@ typespec-sig {
 	#type zero is invalid
 	invalid offset blob.i (table-row (0x1B 0)) + 1 set-byte 0x0
 
-	#LAMESPEC part II, MS allows for cmods on a typespec as well 
+	#LAMESPEC part II, MS allows for cmods on a typespec as well
 	#modreq int32 is invalid
 	#typespec 2 is "modreq int32*" encoded as: PTR CMOD_REQD token INT32
-	#change int to CMOD_REQD token INT32 
+	#change int to CMOD_REQD token INT32
 	valid offset blob.i (table-row (0x1B 2)) + 1 set-byte 0x1f, #CMOD_REQD
 			offset blob.i (table-row (0x1B 2)) + 2 set-byte read.byte (blob.i (table-row (0x1B 2)) + 3), #token
 			offset blob.i (table-row (0x1B 2)) + 3 set-byte 0x08 #int8
@@ -321,7 +321,7 @@ method-header {
 
 	#bad fat header flags
 	#only 0x08 and 0x10 allowed
-	#regular value is 
+	#regular value is
 	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3033 #or 0x20
 	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3053
 	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3093

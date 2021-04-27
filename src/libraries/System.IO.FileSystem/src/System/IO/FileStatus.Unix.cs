@@ -39,7 +39,12 @@ namespace System.IO
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureStatInitialized(path, continueOnError);
+#if TARGET_BROWSER
+            const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
+            const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
+#else
             Interop.Sys.Permissions readBit, writeBit;
+
             if (_fileStatus.Uid == Interop.Sys.GetEUid())
             {
                 // User effectively owns the file
@@ -58,6 +63,7 @@ namespace System.IO
                 readBit = Interop.Sys.Permissions.S_IROTH;
                 writeBit = Interop.Sys.Permissions.S_IWOTH;
             }
+#endif
 
             return ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
                 (_fileStatus.Mode & (int)writeBit) == 0);     // but not write permission
@@ -234,6 +240,12 @@ namespace System.IO
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
 
+#if TARGET_BROWSER
+            buf[0].TvSec = seconds;
+            buf[0].TvNsec = nanoseconds;
+            buf[1].TvSec = seconds;
+            buf[1].TvNsec = nanoseconds;
+#else
             if (isAccessTime)
             {
                 buf[0].TvSec = seconds;
@@ -248,9 +260,8 @@ namespace System.IO
                 buf[1].TvSec = seconds;
                 buf[1].TvNsec = nanoseconds;
             }
-
+#endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-
             _fileStatusInitialized = -1;
         }
 
@@ -271,6 +282,7 @@ namespace System.IO
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _isDirectory = false;
             path = Path.TrimEndingDirectorySeparator(path);
+
             int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
             {

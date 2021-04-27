@@ -3,6 +3,7 @@
 
 namespace System.Security.Permissions
 {
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [Flags]
     public enum SecurityPermissionFlag
     {

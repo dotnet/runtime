@@ -7,7 +7,7 @@ namespace System
 {
     internal static partial class PasteArguments
     {
-        internal static void AppendArgument(StringBuilder stringBuilder, string argument)
+        internal static void AppendArgument(ref ValueStringBuilder stringBuilder, string argument)
         {
             if (stringBuilder.Length != 0)
             {

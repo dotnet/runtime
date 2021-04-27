@@ -15,7 +15,7 @@ namespace System.Data.OleDb
         private readonly int _dataLength;
         private readonly int _emptyStringOffset;
 
-        private UnsafeNativeMethods.IAccessor _iaccessor;
+        private UnsafeNativeMethods.IAccessor? _iaccessor;
         private IntPtr _accessorHandle;
 
         private readonly bool _needToReset;
@@ -117,9 +117,9 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal ColumnBinding[] SetBindings(OleDbDataReader dataReader, Bindings bindings,
+        internal ColumnBinding[] SetBindings(OleDbDataReader? dataReader, Bindings bindings,
                                              int indexStart, int indexForAccessor,
-                                             OleDbParameter[] parameters, tagDBBINDING[] dbbindings, bool ifIRowsetElseIRow)
+                                             OleDbParameter[]? parameters, tagDBBINDING[] dbbindings, bool ifIRowsetElseIRow)
         {
             Debug.Assert(null != bindings, "null bindings");
             Debug.Assert(dbbindings.Length == BindingCount(), "count mismatch");
@@ -150,9 +150,9 @@ namespace System.Data.OleDb
             for (int indexWithinAccessor = 0; indexWithinAccessor < columns.Length; ++indexWithinAccessor)
             {
                 int index = indexStart + indexWithinAccessor;
-                OleDbParameter parameter = ((null != parameters) ? parameters[index] : null);
+                OleDbParameter? parameter = ((null != parameters) ? parameters[index] : null);
                 columns[indexWithinAccessor] = new ColumnBinding(
-                    dataReader, index, indexForAccessor, indexWithinAccessor,
+                    dataReader!, index, indexForAccessor, indexWithinAccessor,
                     parameter, this, bindings, dbbindings[indexWithinAccessor], _headerLength,
                     ifIRowsetElseIRow);
             }
@@ -172,7 +172,7 @@ namespace System.Data.OleDb
             Debug.Assert(0 == offset % 8, "invalid alignment");
             ValidateCheck(offset, 2 * ODB.SizeOf_Variant);
 
-            object value = null;
+            object? value = null;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -320,7 +320,7 @@ namespace System.Data.OleDb
         {
             ResetValues();
 
-            UnsafeNativeMethods.IAccessor iaccessor = _iaccessor;
+            UnsafeNativeMethods.IAccessor? iaccessor = _iaccessor;
             IntPtr accessorHandle = _accessorHandle;
 
             _iaccessor = null;
@@ -393,7 +393,7 @@ namespace System.Data.OleDb
 #endif
         }
 
-        private unsafe void ResetValues(IntPtr buffer, object iaccessor)
+        private unsafe void ResetValues(IntPtr buffer, object? iaccessor)
         {
             Debug.Assert(ADP.PtrZero != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
             for (int i = 0; i < _bindingCount; ++i)
@@ -473,7 +473,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
-            UnsafeNativeMethods.IChapteredRowset chapteredRowset = (iaccessor as UnsafeNativeMethods.IChapteredRowset);
+            UnsafeNativeMethods.IChapteredRowset chapteredRowset = (iaccessor as UnsafeNativeMethods.IChapteredRowset)!;
             IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), ADP.PtrZero);
             if (ODB.DB_NULL_HCHAPTER != chapter)
             {

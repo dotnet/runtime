@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -10,9 +11,7 @@ namespace System.Drawing.Printing
     /// <summary>
     /// Specifies the margins of a printed page.
     /// </summary>
-#if NETCOREAPP
-    [TypeConverter("System.Drawing.Printing.MarginsConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [TypeConverter(typeof(MarginsConverter))]
     public partial class Margins : ICloneable
     {
         private int _left;
@@ -193,7 +192,7 @@ namespace System.Drawing.Printing
         /// Compares this <see cref='Margins'/> to a specified <see cref='Margins'/> to see whether they
         /// are equal.
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Margins margins))
             {

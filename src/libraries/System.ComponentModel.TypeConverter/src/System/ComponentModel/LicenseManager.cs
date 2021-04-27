@@ -4,7 +4,9 @@
 using System.Collections;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -116,7 +118,10 @@ namespace System.ComponentModel
         /// creationContext
         /// as the context in which the licensed instance can be used.
         /// </summary>
-        public static object CreateWithContext(Type type, LicenseContext creationContext)
+        [UnsupportedOSPlatform("browser")]
+        public static object CreateWithContext(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+            LicenseContext creationContext)
         {
             return CreateWithContext(type, creationContext, Array.Empty<object>());
         }
@@ -126,7 +131,11 @@ namespace System.ComponentModel
         /// specified arguments, using creationContext as the context in which the licensed
         /// instance can be used.
         /// </summary>
-        public static object CreateWithContext(Type type, LicenseContext creationContext, object[] args)
+        [UnsupportedOSPlatform("browser")]
+        public static object CreateWithContext(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+            LicenseContext creationContext,
+            object[] args)
         {
             object created = null;
 

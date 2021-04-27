@@ -24,7 +24,7 @@ namespace System.Reflection.Tests
         [InlineData("ConstField", FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault, typeof(FI_Enum))]
         public void Properties(string name, FieldAttributes attributes, Type fieldType)
         {
-            FieldInfo field = Helpers.GetField(typeof(FI_BaseClass), name);
+            FieldInfo field = TypeExtensions.GetField(typeof(FI_BaseClass), name, Helpers.AllFlags);
             Assert.Equal(name, field.Name);
             Assert.Equal(attributes, field.Attributes);
 
@@ -61,14 +61,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GetValue_TestData))]
         public void GetValue(Type type, string name, object obj, object value)
         {
-            FieldInfo field = Helpers.GetField(type, name);
+            FieldInfo field = TypeExtensions.GetField(type, name, Helpers.AllFlags);
             Assert.Equal(value, field.GetValue(obj));
         }
 
         [Fact]
         public void GetValue_NullTarget_ThrowsTargetException()
         {
-            FieldInfo field = Helpers.GetField(typeof(FI_BaseClass), "_privateStringField");
+            FieldInfo field = TypeExtensions.GetField(typeof(FI_BaseClass), "_privateStringField", Helpers.AllFlags);
             Assert.Throws<TargetException>(() => field.GetValue(null));
         }
     }

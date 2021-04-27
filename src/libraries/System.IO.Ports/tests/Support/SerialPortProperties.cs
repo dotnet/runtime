@@ -261,7 +261,7 @@ namespace Legacy.Support
             LoadFields("default", _defaultProperties);
         }
 
-        private void LoadFields(string stratsWith, Hashtable fields)
+        private void LoadFields(string startsWith, Hashtable fields)
         {
             Type serialPropertiesType = typeof(SerialPortProperties);
 
@@ -273,9 +273,9 @@ namespace Legacy.Support
             {
                 string defaultFieldName = defaultField.Name;
 
-                if (0 == defaultFieldName.IndexOf(stratsWith))
+                if (0 == defaultFieldName.IndexOf(startsWith))
                 {
-                    string fieldName = defaultFieldName.Replace(stratsWith, "");
+                    string fieldName = defaultFieldName.Replace(startsWith, "");
                     object defaultValue = defaultField.GetValue(this);
 
                     fields[fieldName] = defaultValue;

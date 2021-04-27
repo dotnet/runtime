@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 
@@ -264,24 +265,40 @@ namespace System.Security.Cryptography
 
             private static class Functions
             {
-                private static readonly Type s_xDocument = Type.GetType("System.Xml.Linq.XDocument, System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")!;
-                private static readonly Func<string, object> s_xDocumentCreate =
-                    s_xDocument.GetMethod(
+                private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+
+                private static readonly Func<string, object> s_xDocumentCreate;
+                private static readonly PropertyInfo s_docRootProperty;
+                private static readonly MethodInfo s_getElementsMethod;
+                private static readonly PropertyInfo s_elementNameProperty;
+                private static readonly PropertyInfo s_elementValueProperty;
+                private static readonly PropertyInfo s_nameNameProperty;
+
+#pragma warning disable CA1810 // explicit static cctor
+                static Functions()
+                {
+                    Type xDocument = Type.GetType("System.Xml.Linq.XDocument" + XmlLinqAssemblyString)!;
+                    s_xDocumentCreate = xDocument.GetMethod(
                         "Parse",
                         BindingFlags.Static | BindingFlags.Public,
-                        null,
-                        new[] { typeof(string) },
-                        null)!.CreateDelegate<Func<string, object>>();
-                private static readonly PropertyInfo s_docRootProperty = s_xDocument.GetProperty("Root")!;
-                private static readonly MethodInfo s_getElementsMethod = s_docRootProperty.PropertyType.GetMethod(
+                        new[] { typeof(string) })!
+                            .CreateDelegate<Func<string, object>>();
+
+                    s_docRootProperty = xDocument.GetProperty("Root")!;
+
+                    Type xElement = Type.GetType("System.Xml.Linq.XElement" + XmlLinqAssemblyString)!;
+                    s_getElementsMethod = xElement.GetMethod(
                         "Elements",
                         BindingFlags.Instance | BindingFlags.Public,
-                        null,
-                        Array.Empty<Type>(),
-                        null)!;
-                private static readonly PropertyInfo s_elementNameProperty = s_docRootProperty.PropertyType.GetProperty("Name")!;
-                private static readonly PropertyInfo s_nameNameProperty = s_elementNameProperty.PropertyType.GetProperty("LocalName")!;
-                private static readonly PropertyInfo s_elementValueProperty = s_docRootProperty.PropertyType.GetProperty("Value")!;
+                        Type.EmptyTypes)!;
+
+                    s_elementNameProperty = xElement.GetProperty("Name")!;
+                    s_elementValueProperty = xElement.GetProperty("Value")!;
+
+                    Type xName= Type.GetType("System.Xml.Linq.XName" + XmlLinqAssemblyString)!;
+                    s_nameNameProperty = xName.GetProperty("LocalName")!;
+                }
+#pragma warning restore CA1810
 
                 internal static object? ParseDocument(string xmlString) =>
                     s_docRootProperty.GetValue(s_xDocumentCreate(xmlString));

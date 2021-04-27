@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ComMethodDesc
+    internal sealed class ComMethodDesc
     {
         private readonly INVOKEKIND _invokeKind;
 
@@ -31,7 +31,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal ComMethodDesc(ITypeInfo typeInfo, FUNCDESC funcDesc)
             : this(funcDesc.memid)
         {
-
             _invokeKind = funcDesc.invkind;
 
             string[] rgNames = new string[1 + funcDesc.cParams];

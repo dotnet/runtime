@@ -558,8 +558,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= type.unsigned #> ExtractNarrowingSaturateUnsignedUpper(<#= type.unsigned #>[] op1, <#= type.wide #>[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
-        private static (<#= type.wide #> val, bool ovf) MultiplyDoublingOvf(<#= type.name #> op1, <#= type.name #> op2, bool rounding)
+        private static (<#= type.wide #> val, bool ovf) MultiplyDoublingOvf(<#= type.name #> op1, <#= type.name #> op2, bool rounding, <#= type.wide #> op3, bool subOp)
         {
+            <#= type.wide #> product = (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
+
+            bool dblOvf;
+            (product, dblOvf) = AddOvf(product, product);
+
+            bool addOvf;
+            <#= type.wide #> accum;
+
+            if (subOp)
+            {
+                (accum, addOvf) = SubtractOvf(op3, product);
+            }
+            else
+            {
+                (accum, addOvf) = AddOvf(op3, product);
+            }
+
             <#= type.wide #> roundConst = 0;
 
             if (rounding)
@@ -567,45 +584,41 @@ namespace JIT.HardwareIntrinsics.Arm
                 roundConst = (<#= type.wide#>)1 << (8 * sizeof(<#= type.name #>) - 1);
             }
 
-            <#= type.wide #> product = (<#= type.wide #>)((<#= type.wide #>)op1 * (<#= type.wide #>)op2);
+            bool rndOvf;
+            <#= type.wide #> result;
 
-            var (result, ovf) = AddOvf(product, roundConst);
+            (result, rndOvf) = AddOvf(accum, roundConst);
 
+            return (result, addOvf ^ rndOvf ^ dblOvf);
+        }
+
+        private static <#= type.name #> SaturateHigh(<#= type.wide #> val, bool ovf)
+        {
             if (ovf)
             {
-                return (result, ovf);
+                return val < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
             }
 
-            return AddOvf(result, product);
+            return (<#= type.name #>)UnsignedShift(val, (<#= type.wide #>)(-8 * sizeof(<#= type.name #>)));
         }
 
         public static <#= type.name #> MultiplyDoublingSaturateHigh(<#= type.name #> op1, <#= type.name #> op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (<#= type.wide #>)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
-            }
-
-            return (<#= type.name #>)UnsignedShift(product, (<#= type.wide #>)(-8 * sizeof(<#= type.name #>)));
+            return SaturateHigh(val, ovf);
         }
 
         public static <#= type.name #> MultiplyRoundedDoublingSaturateHigh(<#= type.name #> op1, <#= type.name #> op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true);
+            var (val, ovf) = MultiplyDoublingOvf(op1, op2, rounding: true, (<#= type.wide #>)0, subOp: false);
 
-            if (ovf)
-            {
-                return product < 0 ? <#= type.name #>.MaxValue : <#= type.name #>.MinValue;
-            }
-
-            return (<#= type.name #>)UnsignedShift(product, (<#= type.wide #>)(-8 * sizeof(<#= type.name #>)));
+            return SaturateHigh(val, ovf);
         }
 
         public static <#= type.wide #> MultiplyDoublingWideningSaturate(<#= type.name #> op1, <#= type.name #> op2)
         {
-            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false);
+            var (product, ovf) = MultiplyDoublingOvf(op1, op2, rounding: false, (<#= type.wide #>)0, subOp: false);
 
             if (ovf)
             {
@@ -613,6 +626,24 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return product;
+        }
+
+        public static <#= type.name #> MultiplyRoundedDoublingAndAddSaturateHigh(<#= type.name #> op1, <#= type.name #> op2, <#= type.name #> op3)
+        {
+            <#= type.wide #> addend = UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)(8 * sizeof(<#= type.name #>)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, addend, subOp: false);
+
+            return SaturateHigh(val, ovf);
+        }
+
+        public static <#= type.name #> MultiplyRoundedDoublingAndSubtractSaturateHigh(<#= type.name #> op1, <#= type.name #> op2, <#= type.name #> op3)
+        {
+            <#= type.wide #> minuend = UnsignedShift((<#= type.wide #>)op1, (<#= type.wide #>)(8 * sizeof(<#= type.name #>)));
+
+            var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
+
+            return SaturateHigh(val, ovf);
         }
 
         public static <#= type.wide #> MultiplyDoublingWideningAndAddSaturate(<#= type.wide #> op1, <#= type.name #> op2, <#= type.name #> op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -1362,6 +1393,30 @@ namespace JIT.HardwareIntrinsics.Arm
 <#
         }
 
+        foreach (string typeName in new string[] { "long", "ulong" })
+        {
+        // The following implementation is adaptation of an algorithm described in
+        // "Hacker's Delight, 2nd Edition" by Henry S. Warren, p.174.
+#>
+        public static <#= typeName #> MultiplyHigh(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            ulong u0, v0, w0;
+            <#= typeName #> u1, v1, w1, w2, t;
+            u0 = (ulong)op1 & 0xFFFFFFFF;
+            u1 = op1 >> 32;
+            v0 = (ulong)op2 & 0xFFFFFFFF;
+            v1 = op2 >> 32;
+            w0 = u0 * v0;
+            t  = u1 * (<#= typeName #>)v0 + (<#= typeName #>)(w0 >> 32);
+            w1 = t & 0xFFFFFFFF;
+            w2 = t >> 32;
+            w1 = (<#= typeName #>)u0 * v1 + w1;
+            return u1 * v1 + w2 + (w1 >> 32);
+        }
+
+<#
+        }
+
         foreach (var type in new[] { (name: "byte",  wide: "ushort"),
                                      (name: "sbyte", wide: "short") })
         {
@@ -1388,7 +1443,19 @@ namespace JIT.HardwareIntrinsics.Arm
         foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
         {
 #>
-        public static <#= typeName #> ExtractVector(<#= typeName #>[] op1, <#= typeName #>[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+        public static <#= typeName #> Concat(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
+
+        public static <#= typeName #> ConcatScalar(<#= typeName #>[] op1, <#= typeName #>[] op2, int i)
+        {
+            return i switch
+            {
+                0 => op1[0],
+                1 => op2[0],
+                _ => 0
+            };
+        }
+
+        public static <#= typeName #> ExtractVector(<#= typeName #>[] op1, <#= typeName #>[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static <#= typeName #> Insert(<#= typeName #>[] op1, int op2, <#= typeName #> op3, int i) => (op2 != i) ? op1[i] : op3;
 
@@ -1531,6 +1598,24 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return (<#= typeName #>)result;
+        }
+<#
+        }
+
+        foreach (var type in new[] { (name: "byte",  wide: "uint"), (name: "sbyte", wide: "int") })
+        {
+#>
+
+        public static <#= type.wide #> DotProduct(<#= type.wide #> op1, <#= type.name #>[] op2, int s, <#= type.name #>[] op3, int t)
+        {
+            <#= type.wide #> result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (<#= type.wide #>)((<#= type.wide #>)op2[s + i] * (<#= type.wide #>)op3[t + i]);
+            }
+
+            return result;
         }
 <#
         }

@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Diagnostics
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct
         | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event, AllowMultiple = true, Inherited = false)]
     public class EventLogPermissionAttribute : CodeAccessSecurityAttribute

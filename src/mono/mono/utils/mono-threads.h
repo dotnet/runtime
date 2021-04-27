@@ -22,6 +22,8 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/w32subset.h>
+#include <mono/utils/mono-compiler.h>
 
 #include <glib.h>
 #include <config.h>
@@ -73,10 +75,10 @@ typedef gsize (*MonoThreadStart)(gpointer);
 
 #endif /* #ifdef HOST_WIN32 */
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32) && defined(_DEBUG)
+#if HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32) && defined(_DEBUG)
 // Need more memory on Windows debug build (due to less optimization) to handle stack overflows.
 #define MONO_STACK_OVERFLOW_GUARD_SIZE (64 * 1024)
-#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+#elif HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32)
 #define MONO_STACK_OVERFLOW_GUARD_SIZE (32 * 1024)
 #elif defined(HOST_WIN32)
 // Not supported.
@@ -326,7 +328,7 @@ typedef struct {
 	SMR remains functional as its small_id has not been reclaimed.
 	*/
 	void (*thread_detach_with_lock)(THREAD_INFO_TYPE *info);
-	gboolean (*ip_in_critical_region) (MonoDomain *domain, gpointer ip);
+	gboolean (*ip_in_critical_region) (gpointer ip);
 	gboolean (*thread_in_critical_region) (THREAD_INFO_TYPE *info);
 
 	// Called on the affected thread.
@@ -403,9 +405,6 @@ mono_thread_info_set_tid (THREAD_INFO_TYPE *info, MonoNativeThreadId tid)
 	((MonoThreadInfo*) info)->node.key = (uintptr_t) MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 }
 
-void
-mono_thread_info_cleanup (void);
-
 /*
  * @thread_info_size is sizeof (GcThreadInfo), a struct the GC defines to make it possible to have
  * a single block with info from both camps. 
@@ -453,9 +452,7 @@ mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info);
 gboolean
 mono_thread_info_is_exiting (void);
 
-#ifdef HOST_WIN32
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-#endif
+MONO_COMPONENT_API
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
 
@@ -472,6 +469,7 @@ mono_thread_info_current_unchecked (void);
 MONO_API int
 mono_thread_info_get_small_id (void);
 
+MONO_COMPONENT_API
 MonoLinkedListSet*
 mono_thread_info_list_head (void);
 
@@ -508,7 +506,7 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 MONO_API gboolean
 mono_thread_info_yield (void);
 
-gint
+MONO_COMPONENT_API gint
 mono_thread_info_sleep (guint32 ms, gboolean *alerted);
 
 gint
@@ -626,7 +624,7 @@ gint mono_threads_suspend_get_suspend_signal (void);
 gint mono_threads_suspend_get_restart_signal (void);
 gint mono_threads_suspend_get_abort_signal (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data,
 	gsize* const stack_size, MonoNativeThreadId *tid);
 
@@ -765,7 +763,7 @@ gboolean mono_threads_transition_peek_blocking_suspend_requested (THREAD_INFO_TY
 void mono_threads_transition_begin_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 void mono_threads_transition_end_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
+MONO_COMPONENT_API
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
 gpointer
@@ -774,8 +772,7 @@ mono_threads_enter_gc_unsafe_region_cookie (void);
 
 void mono_thread_info_wait_for_resume (THREAD_INFO_TYPE *info);
 /* Advanced suspend API, used for suspending multiple threads as once. */
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
+MONO_COMPONENT_API gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 int mono_thread_info_suspend_count (THREAD_INFO_TYPE *info);

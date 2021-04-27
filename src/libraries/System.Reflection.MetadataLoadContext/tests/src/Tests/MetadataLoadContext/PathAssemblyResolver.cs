@@ -60,8 +60,7 @@ namespace System.Reflection.Tests
             string coreAssemblyPath = TestUtils.GetPathToCoreAssembly();
 
             // Obtain this test class
-            string thisAssemblyPath = typeof(MetadataLoadContextTests).Assembly.Location;
-
+            string thisAssemblyPath = AssemblyPathHelper.GetAssemblyLocation(typeof(MetadataLoadContextTests).Assembly);
             var resolver = new PathAssemblyResolver(new string[] { coreAssemblyPath, thisAssemblyPath });
             using (MetadataLoadContext lc = new MetadataLoadContext(resolver, TestUtils.GetNameOfCoreAssembly()))
             {

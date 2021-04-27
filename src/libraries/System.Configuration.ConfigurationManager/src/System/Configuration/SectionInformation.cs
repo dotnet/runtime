@@ -501,7 +501,7 @@ namespace System.Configuration
         // It may not be editable for the following reasons:
         //   - We are in Runtime mode, not Design time
         //   - The section is not attached to a _configRecord.
-        //   - We are locked (ie. allowOveride = false )
+        //   - We are locked (ie. AllowOverride = false )
         //   - We are a parent section (ie. Retrieved from GetParentSection)
         //
         internal void VerifyIsEditable()

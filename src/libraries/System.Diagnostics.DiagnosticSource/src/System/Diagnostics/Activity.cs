@@ -3,8 +3,10 @@
 
 using System.Buffers.Binary;
 using System.Buffers.Text;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -33,6 +35,7 @@ namespace System.Diagnostics
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
+        private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
@@ -72,13 +75,44 @@ namespace System.Diagnostics
         private string? _spanId;
 
         private byte _w3CIdFlags;
+        private byte _parentTraceFlags;
 
-        private LinkedList<KeyValuePair<string, string?>>? _tags;
-        private LinkedList<KeyValuePair<string, string?>>? _baggage;
+        private TagsLinkedList? _tags;
+        private BaggageLinkedList? _baggage;
         private LinkedList<ActivityLink>? _links;
         private LinkedList<ActivityEvent>? _events;
-        private ConcurrentDictionary<string, object>? _customProperties;
+        private Dictionary<string, object>? _customProperties;
         private string? _displayName;
+        private ActivityStatusCode _statusCode;
+        private string? _statusDescription;
+        private Activity? _previousActiveActivity;
+
+        /// <summary>
+        /// Gets status code of the current activity object.
+        /// </summary>
+        public ActivityStatusCode Status => _statusCode;
+
+        /// <summary>
+        /// Gets the status descrition of the current activity object.
+        /// </summary>
+        public string? StatusDescription => _statusDescription;
+
+        /// <summary>
+        /// Sets the status code and description on the current activity object.
+        /// </summary>
+        /// <param name="code">The status code</param>
+        /// <param name="description">The error status descrition</param>
+        /// <returns>'this' for convenient chaining</returns>
+        /// <remarks>
+        /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
+        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
+        /// </remarks>
+        public Activity SetStatus(ActivityStatusCode code, string? description = null)
+        {
+            _statusCode = code;
+            _statusDescription = code == ActivityStatusCode.Error ? description : null;
+            return this;
+        }
 
         /// <summary>
         /// Gets the relationship between the Activity, its parents, and its children in a Trace.
@@ -180,6 +214,9 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -187,7 +224,9 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-00";
+                        Span<char> flagsChars = stackalloc char[2];
+                        HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
+                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -243,7 +282,16 @@ namespace System.Diagnostics
         /// <seealso cref="Baggage"/>
         public IEnumerable<KeyValuePair<string, string?>> Tags
         {
-            get => _tags != null ? _tags.Enumerate() : s_emptyBaggageTags;
+            get => _tags?.EnumerateStringValues() ?? s_emptyBaggageTags;
+        }
+
+        /// <summary>
+        /// List of the tags which represent information that will be logged along with the Activity to the logging system.
+        /// This information however is NOT passed on to the children of this activity.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, object?>> TagObjects
+        {
+            get => _tags ?? s_emptyTagObjects;
         }
 
         /// <summary>
@@ -252,7 +300,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<ActivityEvent> Events
         {
-            get => _events != null ? _events.Enumerate() : s_emptyEvents;
+            get => _events ?? s_emptyEvents;
         }
 
         /// <summary>
@@ -261,7 +309,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<ActivityLink> Links
         {
-            get => _links != null ? _links.Enumerate() : s_emptyLinks;
+            get => _links ?? s_emptyLinks;
         }
 
         /// <summary>
@@ -317,11 +365,19 @@ namespace System.Diagnostics
             return null;
         }
 
+        /// <summary>
+        /// Returns the value of the Activity tag mapped to the input key/>.
+        /// Returns null if that key does not exist.
+        /// </summary>
+        /// <param name="key">The tag key string.</param>
+        /// <returns>The tag value mapped to the input key.</returns>
+        public object? GetTagItem(string key) => _tags?.Get(key) ?? null;
+
         /* Constructors  Builder methods */
 
         /// <summary>
         /// Note that Activity has a 'builder' pattern, where you call the constructor, a number of 'Set*' and 'Add*' APIs and then
-        /// call <see cref="Start"/> to build the activity.  You MUST call <see cref="Start"/> before using it.
+        /// call <see cref="Start"/> to build the activity. You MUST call <see cref="Start"/> before using it.
         /// </summary>
         /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
         public Activity(string operationName)
@@ -340,17 +396,53 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Update the Activity to have a tag with an additional 'key' and value 'value'.
-        /// This shows up in the <see cref="Tags"/>  enumeration.   It is meant for information that
+        /// This shows up in the <see cref="Tags"/>  enumeration. It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
         /// <returns>'this' for convenient chaining</returns>
-        public Activity AddTag(string key, string? value)
-        {
-            KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
+        /// <param name="key">The tag key name</param>
+        /// <param name="value">The tag value mapped to the input key</param>
+        public Activity AddTag(string key, string? value) => AddTag(key, (object?) value);
 
-            if (_tags != null || Interlocked.CompareExchange(ref _tags, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
+        /// <summary>
+        /// Update the Activity to have a tag with an additional 'key' and value 'value'.
+        /// This shows up in the <see cref="TagObjects"/> enumeration. It is meant for information that
+        /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
+        /// </summary>
+        /// <returns>'this' for convenient chaining</returns>
+        /// <param name="key">The tag key name</param>
+        /// <param name="value">The tag value mapped to the input key</param>
+        public Activity AddTag(string key, object? value)
+        {
+            KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
+
+            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp), null) != null)
             {
                 _tags.Add(kvp);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add or update the Activity tag with the input key and value.
+        /// If the input value is null
+        ///     - if the collection has any tag with the same key, then this tag will get removed from the collection.
+        ///     - otherwise, nothing will happen and the collection will not change.
+        /// If the input value is not null
+        ///     - if the collection has any tag with the same key, then the value mapped to this key will get updated with the new input value.
+        ///     - otherwise, the key and value will get added as a new tag to the collection.
+        /// </summary>
+        /// <param name="key">The tag key name</param>
+        /// <param name="value">The tag value mapped to the input key</param>
+        /// <returns>'this' for convenient chaining</returns>
+        public Activity SetTag(string key, object? value)
+        {
+            KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
+
+            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp, set: true), null) != null)
+            {
+                _tags.Set(kvp);
             }
 
             return this;
@@ -384,9 +476,33 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
-            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
+            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new BaggageLinkedList(kvp), null) != null)
             {
                 _baggage.Add(kvp);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add or update the Activity baggage with the input key and value.
+        /// If the input value is null
+        ///     - if the collection has any baggage with the same key, then this baggage will get removed from the collection.
+        ///     - otherwise, nothing will happen and the collection will not change.
+        /// If the input value is not null
+        ///     - if the collection has any baggage with the same key, then the value mapped to this key will get updated with the new input value.
+        ///     - otherwise, the key and value will get added as a new baggage to the collection.
+        /// </summary>
+        /// <param name="key">The baggage key name</param>
+        /// <param name="value">The baggage value mapped to the input key</param>
+        /// <returns>'this' for convenient chaining</returns>
+        public Activity SetBaggage(string key, string? value)
+        {
+            KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
+
+            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new BaggageLinkedList(kvp, set: true), null) != null)
+            {
+                _baggage.Set(kvp);
             }
 
             return this;
@@ -441,6 +557,7 @@ namespace System.Diagnostics
                 _traceId = traceId.ToHexString();     // The child will share the parent's traceId.
                 _parentSpanId = spanId.ToHexString();
                 ActivityTraceFlags = activityTraceFlags;
+                _parentTraceFlags = (byte) activityTraceFlags;
             }
             return this;
         }
@@ -512,15 +629,15 @@ namespace System.Diagnostics
             }
             else
             {
+                _previousActiveActivity = Current;
                 if (_parentId == null && _parentSpanId is null)
                 {
-                    Activity? parent = Current;
-                    if (parent != null)
+                    if (_previousActiveActivity != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
                         // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                         // 2. All started activities have a finite parent change (by inductive reasoning).
-                        Parent = parent;
+                        Parent = _previousActiveActivity;
                     }
                 }
 
@@ -561,7 +678,7 @@ namespace System.Diagnostics
         /// <seealso cref="SetEndTime(DateTime)"/>
         public void Stop()
         {
-            if (Id == null)
+            if (_id == null && _spanId == null)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotStarted));
                 return;
@@ -576,9 +693,8 @@ namespace System.Diagnostics
                     SetEndTime(GetUtcNow());
                 }
 
-                SetCurrent(Parent);
-
                 Source.NotifyActivityStop(this);
+                SetCurrent(_previousActiveActivity);
             }
         }
 
@@ -723,6 +839,18 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// When starting an Activity which does not have a parent context, the Trace Id will automatically be generated using random numbers.
+        /// TraceIdGenerator can be used to override the runtime's default Trace Id generation algorithm.
+        /// </summary>
+        /// <remarks>
+        /// - TraceIdGenerator needs to be set only if the default Trace Id generation is not enough for the app scenario.
+        /// - When setting TraceIdGenerator, ensure it is performant enough to avoid any slowness in the Activity starting operation.
+        /// - If TraceIdGenerator is set multiple times, the last set will be the one used for the Trace Id generation.
+        /// - Setting TraceIdGenerator to null will re-enable the default Trace Id generation algorithm.
+        /// </remarks>
+        public static Func<ActivityTraceId>? TraceIdGenerator { get; set; }
+
         /* static state (configuration) */
         /// <summary>
         /// Activity tries to use the same format for IDs as its parent.
@@ -785,30 +913,36 @@ namespace System.Diagnostics
             // The version (00-fe) is used to indicate that this is a WC3 ID.
             return id.Length == 55 &&
                    ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
-                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
+                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'f') &&
+                   (id[0] != 'f' || id[1] != 'f');
         }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        internal static bool TryConvertIdToContext(string id, out ActivityContext context)
+        internal static bool TryConvertIdToContext(string traceParent, string? traceState, out ActivityContext context)
         {
             context = default;
-            if (!IsW3CId(id))
+            if (!IsW3CId(traceParent))
             {
                 return false;
             }
 
-            ReadOnlySpan<char> traceIdSpan = id.AsSpan(3,  32);
-            ReadOnlySpan<char> spanIdSpan  = id.AsSpan(36, 16);
+            ReadOnlySpan<char> traceIdSpan = traceParent.AsSpan(3,  32);
+            ReadOnlySpan<char> spanIdSpan  = traceParent.AsSpan(36, 16);
 
             if (!ActivityTraceId.IsLowerCaseHexAndNotAllZeros(traceIdSpan) || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(spanIdSpan) ||
-                !ActivityTraceId.IsHexadecimalLowercaseChar(id[53]) || !ActivityTraceId.IsHexadecimalLowercaseChar(id[54]))
+                !HexConverter.IsHexLowerChar(traceParent[53]) || !HexConverter.IsHexLowerChar(traceParent[54]))
             {
                 return false;
             }
 
-            context = new ActivityContext(new ActivityTraceId(traceIdSpan.ToString()), new ActivitySpanId(spanIdSpan.ToString()), (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(id[53], id[54]));
+            context = new ActivityContext(
+                            new ActivityTraceId(traceIdSpan.ToString()),
+                            new ActivitySpanId(spanIdSpan.ToString()),
+                            (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
+                            traceState);
+
             return true;
         }
 
@@ -841,16 +975,19 @@ namespace System.Diagnostics
         {
             if (_customProperties == null)
             {
-                Interlocked.CompareExchange(ref _customProperties, new ConcurrentDictionary<string, object>(), null);
+                Interlocked.CompareExchange(ref _customProperties, new Dictionary<string, object>(), null);
             }
 
-            if (propertyValue == null)
+            lock (_customProperties)
             {
-                _customProperties.TryRemove(propertyName, out object _);
-            }
-            else
-            {
-                _customProperties[propertyName] = propertyValue!;
+                if (propertyValue == null)
+                {
+                    _customProperties.Remove(propertyName);
+                }
+                else
+                {
+                    _customProperties[propertyName] = propertyValue!;
+                }
             }
         }
 
@@ -868,53 +1005,24 @@ namespace System.Diagnostics
                 return null;
             }
 
-            return _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            object? ret;
+            lock (_customProperties)
+            {
+                ret = _customProperties.TryGetValue(propertyName, out object? o) ? o! : null;
+            }
+
+            return ret;
         }
 
-        internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
-                                                IEnumerable<KeyValuePair<string, string?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityDataRequest request)
+        internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
+                                        IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
-
-            if (parentId != null)
-            {
-                activity._parentId = parentId;
-            }
-            else if (parentContext != default)
-            {
-                activity._traceId = parentContext.TraceId.ToString();
-                activity._parentSpanId = parentContext.SpanId.ToString();
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
-            }
-            else
-            {
-                Activity? parent = Current;
-                if (parent != null)
-                {
-                    // The parent change should not form a loop. We are actually guaranteed this because
-                    // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
-                    // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = parent;
-                }
-            }
-
-            activity.IdFormat =
-                ForceDefaultIdFormat ? DefaultIdFormat :
-                activity.Parent != null ? activity.Parent.IdFormat :
-                activity._parentSpanId != null ? ActivityIdFormat.W3C :
-                activity._parentId == null ? DefaultIdFormat :
-                IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
-                ActivityIdFormat.Hierarchical;
-
-            if (activity.IdFormat == ActivityIdFormat.W3C)
-                activity.GenerateW3CId();
-            else
-                activity._id = activity.GenerateHierarchicalId();
+            activity.IdFormat = idFormat;
 
             if (links != null)
             {
@@ -929,25 +1037,61 @@ namespace System.Diagnostics
 
             if (tags != null)
             {
-                using (IEnumerator<KeyValuePair<string, string?>> enumerator = tags.GetEnumerator())
+                using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
                 {
                     if (enumerator.MoveNext())
                     {
-                        activity._tags = new LinkedList<KeyValuePair<string, string?>>(enumerator);
+                        activity._tags = new TagsLinkedList(enumerator);
                     }
                 }
             }
 
-            activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.DateTime;
+            if (samplerTags != null)
+            {
+                if (activity._tags == null)
+                {
+                    activity._tags = new TagsLinkedList(samplerTags!);
+                }
+                else
+                {
+                    activity._tags.Add(samplerTags!);
+                }
+            }
 
-            activity.IsAllDataRequested = request == ActivityDataRequest.AllData || request == ActivityDataRequest.AllDataAndRecorded;
+            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 
-            if (request == ActivityDataRequest.AllDataAndRecorded)
+            if (request == ActivitySamplingResult.AllDataAndRecorded)
             {
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
-            SetCurrent(activity);
+            if (parentId != null)
+            {
+                activity._parentId = parentId;
+            }
+            else if (parentContext != default)
+            {
+                activity._traceId = parentContext.TraceId.ToString();
+
+                if (parentContext.SpanId != default)
+                {
+                    activity._parentSpanId = parentContext.SpanId.ToString();
+                }
+
+                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._parentTraceFlags = (byte) parentContext.TraceFlags;
+                activity._traceState = parentContext.TraceState;
+            }
+
+            if (startTime != default)
+            {
+                activity.StartTimeUtc = startTime.UtcDateTime;
+            }
+
+            if (startIt)
+            {
+                activity.Start();
+            }
 
             return activity;
         }
@@ -965,7 +1109,9 @@ namespace System.Diagnostics
             {
                 if (!TrySetTraceIdFromParent())
                 {
-                    _traceId = ActivityTraceId.CreateRandom().ToHexString();
+                    Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
+                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    _traceId = id.ToHexString();
                 }
             }
 
@@ -1135,7 +1281,7 @@ namespace System.Diagnostics
                 }
                 else if (_parentId != null && IsW3CId(_parentId))
                 {
-                    if (ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[53]) && ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[54]))
+                    if (HexConverter.IsHexLowerChar(_parentId[53]) && HexConverter.IsHexLowerChar(_parentId[54]))
                     {
                         _w3CIdFlags = (byte)(ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) | ActivityTraceFlagsIsSet);
                     }
@@ -1177,7 +1323,7 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private partial class LinkedListNode<T>
+        private sealed partial class LinkedListNode<T>
         {
             public LinkedListNode(T value) => Value = value;
             public T Value;
@@ -1185,7 +1331,7 @@ namespace System.Diagnostics
         }
 
         // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private class LinkedList<T>
+        private sealed class LinkedList<T> : IEnumerable<T>
         {
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
@@ -1209,21 +1355,346 @@ namespace System.Diagnostics
             {
                 LinkedListNode<T> newNode = new LinkedListNode<T>(value);
 
-                lock (_first)
+                lock (this)
                 {
                     _last.Next = newNode;
                     _last = newNode;
                 }
             }
 
-            public IEnumerable<T> Enumerate()
+            public void AddFront(T value)
             {
-                LinkedListNode<T>? current = _first;
-                do
+                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
+
+                lock (this)
                 {
-                    yield return current.Value;
+                    newNode.Next = _first;
+                    _first = newNode;
+                }
+            }
+
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
+            public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
+        {
+            private LinkedListNode<KeyValuePair<string, string?>>? _first;
+
+            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, string?>>(firstValue));
+
+            public LinkedListNode<KeyValuePair<string, string?>>? First => _first;
+
+            public void Add(KeyValuePair<string, string?> value)
+            {
+                LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+
+                lock (this)
+                {
+                    newNode.Next = _first;
+                    _first = newNode;
+                }
+            }
+
+            public void Set(KeyValuePair<string, string?> value)
+            {
+                if (value.Value == null)
+                {
+                    Remove(value.Key);
+                    return;
+                }
+
+                lock (this)
+                {
+                    LinkedListNode<KeyValuePair<string, string?>>? current = _first;
+                    while (current != null)
+                    {
+                        if (current.Value.Key == value.Key)
+                        {
+                            current.Value = value;
+                            return;
+                        }
+
+                        current = current.Next;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                    newNode.Next = _first;
+                    _first = newNode;
+                }
+            }
+
+            public void Remove(string key)
+            {
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return;
+                    }
+
+                    if (_first.Value.Key == key)
+                    {
+                        _first = _first.Next;
+                        return;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, string?>> previous = _first;
+
+                    while (previous.Next != null)
+                    {
+                        if (previous.Next.Value.Key == key)
+                        {
+                            previous.Next = previous.Next.Next;
+                            return;
+                        }
+                        previous = previous.Next;
+                    }
+                }
+            }
+
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
+            public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
+            IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        {
+            private LinkedListNode<KeyValuePair<string, object?>>? _first;
+            private LinkedListNode<KeyValuePair<string, object?>>? _last;
+
+            private StringBuilder? _stringBuilder;
+
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
+
+            public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
+            {
+                _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);
+
+            // Add doesn't take the lock because it is called from the Activity creation before sharing the activity object to the caller.
+            public void Add(IEnumerable<KeyValuePair<string, object?>> list)
+            {
+                IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
+                if (!e.MoveNext())
+                {
+                    return;
+                }
+
+                if (_first == null)
+                {
+                    _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                }
+                else
+                {
+                    _last!.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public void Add(KeyValuePair<string, object?> value)
+            {
+                LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        _first = _last = newNode;
+                        return;
+                    }
+
+                    Debug.Assert(_last != null);
+
+                    _last!.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            public object? Get(string key)
+            {
+                // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
+                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                while (current != null)
+                {
+                    if (current.Value.Key == key)
+                    {
+                        return current.Value.Value;
+                    }
+
                     current = current.Next;
-                } while (current != null);
+                }
+
+                return null;
+            }
+
+            public void Remove(string key)
+            {
+
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return;
+                    }
+                    if (_first.Value.Key == key)
+                    {
+                        _first = _first.Next;
+                        return;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, object?>> previous = _first;
+
+                    while (previous.Next != null)
+                    {
+                        if (previous.Next.Value.Key == key)
+                        {
+                            previous.Next = previous.Next.Next;
+                            return;
+                        }
+                        previous = previous.Next;
+                    }
+                }
+            }
+
+            public void Set(KeyValuePair<string, object?> value)
+            {
+                if (value.Value == null)
+                {
+                    Remove(value.Key);
+                    return;
+                }
+
+                lock (this)
+                {
+                    LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                    while (current != null)
+                    {
+                        if (current.Value.Key == value.Key)
+                        {
+                            current.Value = value;
+                            return;
+                        }
+
+                        current = current.Next;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                    if (_first == null)
+                    {
+                        _first = _last = newNode;
+                        return;
+                    }
+
+                    Debug.Assert(_last != null);
+
+                    _last!.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
+            public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
+            {
+                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+
+                while (current != null)
+                {
+                    if (current.Value.Value is string || current.Value.Value == null)
+                    {
+                        yield return new KeyValuePair<string, string?>(current.Value.Key, (string?)current.Value.Value);
+                    }
+
+                    current = current.Next;
+                };
+            }
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return string.Empty;
+                    }
+
+                    _stringBuilder ??= new StringBuilder();
+                    _stringBuilder.Append(_first.Value.Key);
+                    _stringBuilder.Append(':');
+                    _stringBuilder.Append(_first.Value.Value);
+
+                    LinkedListNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    while (current != null)
+                    {
+                        _stringBuilder.Append(", ");
+                        _stringBuilder.Append(current.Value.Key);
+                        _stringBuilder.Append(':');
+                        _stringBuilder.Append(current.Value.Value);
+
+                        current = current.Next;
+                    }
+
+                    string result = _stringBuilder.ToString();
+                    _stringBuilder.Clear();
+                    return result;
+                }
+            }
+        }
+
+        // Note: Some consumers use this Enumerator dynamically to avoid allocations.
+        private struct Enumerator<T> : IEnumerator<T>
+        {
+            private LinkedListNode<T>? _nextNode;
+            [AllowNull, MaybeNull] private T _currentItem;
+
+            public Enumerator(LinkedListNode<T>? head)
+            {
+                _nextNode = head;
+                _currentItem = default;
+            }
+
+            public T Current => _currentItem!;
+
+            object? IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if (_nextNode == null)
+                {
+                    _currentItem = default;
+                    return false;
+                }
+
+                _currentItem = _nextNode.Value;
+                _nextNode = _nextNode.Next;
+                return true;
+            }
+
+            public void Reset() => throw new NotSupportedException();
+
+            public void Dispose()
+            {
             }
         }
 
@@ -1330,7 +1801,7 @@ namespace System.Diagnostics
         {
             return _hexString == traceId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivityTraceId traceId)
                 return _hexString == traceId._hexString;
@@ -1384,15 +1855,20 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Sets the bytes in 'outBytes' to be random values.   outBytes.Length must be less than or equal to 16
+        /// Sets the bytes in 'outBytes' to be random values. outBytes.Length must be either 8 or 16 bytes.
         /// </summary>
         /// <param name="outBytes"></param>
         internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
         {
-            Debug.Assert(outBytes.Length <= sizeof(Guid));     // Guid is 16 bytes, and so is TraceId
-            Guid guid = Guid.NewGuid();
-            ReadOnlySpan<byte> guidBytes = new ReadOnlySpan<byte>(&guid, sizeof(Guid));
-            guidBytes.Slice(0, outBytes.Length).CopyTo(outBytes);
+            Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
+            RandomNumberGenerator r = RandomNumberGenerator.Current;
+
+            Unsafe.WriteUnaligned(ref outBytes[0],  r.Next());
+
+            if (outBytes.Length == 16)
+            {
+                Unsafe.WriteUnaligned(ref outBytes[8],  r.Next());
+            }
         }
 
         /// <summary>
@@ -1407,15 +1883,14 @@ namespace System.Diagnostics
         }
         internal static byte HexByteFromChars(char char1, char char2)
         {
-            return (byte)(HexDigitToBinary(char1) * 16 + HexDigitToBinary(char2));
-        }
-        private static byte HexDigitToBinary(char c)
-        {
-            if ('0' <= c && c <= '9')
-                return (byte)(c - '0');
-            if ('a' <= c && c <= 'f')
-                return (byte)(c - ('a' - 10));
-            throw new ArgumentOutOfRangeException("idData");
+            int hi = HexConverter.FromLowerChar(char1);
+            int lo = HexConverter.FromLowerChar(char2);
+            if ((hi | lo) == 0xFF)
+            {
+                throw new ArgumentOutOfRangeException("idData");
+            }
+
+            return (byte)((hi << 4) | lo);
         }
 
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
@@ -1426,7 +1901,7 @@ namespace System.Diagnostics
             for (; i < idData.Length; i++)
             {
                 char c = idData[i];
-                if (!IsHexadecimalLowercaseChar(c))
+                if (!HexConverter.IsHexLowerChar(c))
                 {
                     return false;
                 }
@@ -1438,13 +1913,6 @@ namespace System.Diagnostics
             }
 
             return isNonZero;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsHexadecimalLowercaseChar(char c)
-        {
-            // Between 0 - 9 or lowercased between a - f
-            return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
         }
     }
 
@@ -1518,7 +1986,7 @@ namespace System.Diagnostics
         {
             return _hexString == spanId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivitySpanId spanId)
                 return _hexString == spanId._hexString;

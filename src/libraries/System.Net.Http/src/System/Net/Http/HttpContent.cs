@@ -143,12 +143,10 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync() =>
@@ -157,7 +155,7 @@ namespace System.Net.Http
         public Task<string> ReadAsStringAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsString());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsString());
         }
 
         private string ReadBufferedContentAsString()
@@ -242,7 +240,7 @@ namespace System.Net.Http
         public Task<byte[]> ReadAsByteArrayAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsByteArray());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, static s => s.ReadBufferedContentAsByteArray());
         }
 
         internal byte[] ReadBufferedContentAsByteArray()
@@ -459,7 +457,7 @@ namespace System.Net.Http
             // We're only comfortable disposing of the HttpContent instance like this because LoadIntoBuffer is internal and
             // we're only using it on content instances we get back from a handler's Send call that haven't been given out to the user yet.
             // If we were to ever make LoadIntoBuffer public, we'd need to rethink this.
-            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(s => ((HttpContent)s!).Dispose(), this);
+            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(static s => ((HttpContent)s!).Dispose(), this);
 
             try
             {
@@ -912,7 +910,7 @@ namespace System.Net.Http
                 ArraySegment<byte> buffer;
                 if (TryGetBuffer(out buffer))
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
 
                     long pos = Position;
                     long length = Length;

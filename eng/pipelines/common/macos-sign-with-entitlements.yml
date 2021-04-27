@@ -1,0 +1,65 @@
+parameters:
+  filesToSign: []
+
+steps:
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core SDK 2.1.808'
+    inputs:
+      packageType: sdk
+      version: 2.1.808
+
+  - ${{ each file in parameters.filesToSign }}:
+    - script: codesign -s - -f --entitlements ${{ file.entitlementsFile }} ${{ file.path }}/${{ file.name }}
+      displayName: 'Add entitlements to ${{ file.name }}'
+
+    - task: CopyFiles@2
+      displayName: 'Copy entitled file ${{ file.name }}'
+      inputs:
+        contents: '${{ file.path }}/${{ file.name }}'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/mac_entitled'
+        overWrite: true
+
+  - task: ArchiveFiles@2
+    displayName: 'Zip MacOS files for signing'
+    inputs:
+      rootFolderOrFile:  '$(Build.ArtifactStagingDirectory)/mac_entitled'
+      archiveFile:       '$(Build.ArtifactStagingDirectory)/mac_entitled_to_sign.zip'
+      archiveType:       zip
+      includeRootFolder: true
+      replaceExistingArchive: true
+
+  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+    displayName: 'ESRP CodeSigning'
+    inputs:
+      ConnectedServiceName: 'ESRP CodeSigning'
+      FolderPath: '$(Build.ArtifactStagingDirectory)/'
+      Pattern: 'mac_entitled_to_sign.zip'
+      UseMinimatch: true
+      signConfigType: inlineSignParams
+      inlineOperation: |
+        [
+          {
+            "keyCode": "CP-401337-Apple",
+            "operationCode": "MacAppDeveloperSign",
+            "parameters" : {
+              "hardening": "Enable"
+            },
+            "toolName": "sign",
+            "toolVersion": "1.0"
+          }
+        ]  
+
+  - task: ExtractFiles@1
+    displayName: 'Extract MacOS after signing'
+    inputs:
+      archiveFilePatterns: '$(Build.ArtifactStagingDirectory)/mac_entitled_to_sign.zip'
+      destinationFolder: '$(Build.ArtifactStagingDirectory)/mac_entitled_signed'
+
+  - ${{ each file in parameters.filesToSign }}:
+    - task: CopyFiles@2
+      displayName: 'Copy ${{ file.name }} to destination'
+      inputs:
+        contents: ${{ file.name }}
+        sourceFolder: '$(Build.ArtifactStagingDirectory)/mac_entitled_signed'
+        targetFolder: '${{ file.path }}'
+        overWrite: true

@@ -41,10 +41,10 @@ namespace System.Data.Common
 
         // synonyms hashtable is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string
-        public DbConnectionOptions(string connectionString, Dictionary<string, string> synonyms, bool useOdbcRules)
+        public DbConnectionOptions(string connectionString, Dictionary<string, string>? synonyms, bool useOdbcRules)
         {
             _useOdbcRules = useOdbcRules;
-            _parsetable = new Dictionary<string, string>();
+            _parsetable = new Dictionary<string, string?>();
             _usersConnectionString = ((null != connectionString) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
@@ -79,16 +79,16 @@ namespace System.Data.Common
                 {
                     if (_parsetable.ContainsKey(KEY.Password))
                     {
-                        return string.IsNullOrEmpty((string)_parsetable[KEY.Password]);
+                        return string.IsNullOrEmpty(_parsetable[KEY.Password]);
                     }
                     else
                     if (_parsetable.ContainsKey(SYNONYM.Pwd))
                     {
-                        return string.IsNullOrEmpty((string)_parsetable[SYNONYM.Pwd]); // MDAC 83097
+                        return string.IsNullOrEmpty(_parsetable[SYNONYM.Pwd]); // MDAC 83097
                     }
                     else
                     {
-                        return ((_parsetable.ContainsKey(KEY.User_ID) && !string.IsNullOrEmpty((string)_parsetable[KEY.User_ID])) || (_parsetable.ContainsKey(SYNONYM.UID) && !string.IsNullOrEmpty((string)_parsetable[SYNONYM.UID])));
+                        return ((_parsetable.ContainsKey(KEY.User_ID) && !string.IsNullOrEmpty(_parsetable[KEY.User_ID])) || (_parsetable.ContainsKey(SYNONYM.UID) && !string.IsNullOrEmpty(_parsetable[SYNONYM.UID])));
                     }
                 }
                 return false;
@@ -100,7 +100,7 @@ namespace System.Data.Common
             get { return (null == _keyChain); }
         }
 
-        internal Dictionary<string, string> Parsetable
+        internal Dictionary<string, string?> Parsetable
         {
             get { return _parsetable; }
         }
@@ -110,12 +110,12 @@ namespace System.Data.Common
             get { return _parsetable.Keys; }
         }
 
-        public string this[string keyword]
+        public string? this[string keyword]
         {
-            get { return (string)_parsetable[keyword]; }
+            get { return _parsetable[keyword]; }
         }
 
-        internal static void AppendKeyValuePairBuilder(StringBuilder builder, string keyName, string keyValue, bool useOdbcRules)
+        internal static void AppendKeyValuePairBuilder(StringBuilder builder, string keyName, string? keyValue, bool useOdbcRules)
         {
             ADP.CheckArgumentNull(builder, nameof(builder));
             ADP.CheckArgumentLength(keyName, nameof(keyName));
@@ -193,7 +193,7 @@ namespace System.Data.Common
         // same as Boolean, but with SSPI thrown in as valid yes
         public bool ConvertValueToIntegratedSecurity()
         {
-            object value = _parsetable[KEY.Integrated_Security];
+            object? value = _parsetable[KEY.Integrated_Security];
             if (null == value)
             {
                 return false;
@@ -223,7 +223,7 @@ namespace System.Data.Common
 
         public int ConvertValueToInt32(string keyName, int defaultValue)
         {
-            object value = _parsetable[keyName];
+            object? value = _parsetable[keyName];
             if (null == value)
             {
                 return defaultValue;
@@ -249,7 +249,7 @@ namespace System.Data.Common
 
         public string ConvertValueToString(string keyName, string defaultValue)
         {
-            string value = (string)_parsetable[keyName];
+            string? value = _parsetable[keyName];
             return ((null != value) ? value : defaultValue);
         }
 
@@ -262,16 +262,16 @@ namespace System.Data.Common
         // * this method queries "DataDirectory" value from the current AppDomain.
         //   This string is used for to replace "!DataDirectory!" values in the connection string, it is not considered as an "exposed resource".
         // * This method uses GetFullPath to validate that root path is valid, the result is not exposed out.
-        internal static string ExpandDataDirectory(string keyword, string value, ref string datadir)
+        internal static string? ExpandDataDirectory(string keyword, string? value, ref string? datadir)
         {
-            string fullPath = null;
+            string? fullPath = null;
             if ((null != value) && value.StartsWith(DataDirectory, StringComparison.OrdinalIgnoreCase))
             {
-                string rootFolderPath = datadir;
+                string? rootFolderPath = datadir;
                 if (null == rootFolderPath)
                 {
                     // find the replacement path
-                    object rootFolderObject = AppDomain.CurrentDomain.GetData("DataDirectory");
+                    object? rootFolderObject = AppDomain.CurrentDomain.GetData("DataDirectory");
                     rootFolderPath = (rootFolderObject as string);
                     if ((null != rootFolderObject) && (null == rootFolderPath))
                     {
@@ -320,16 +320,16 @@ namespace System.Data.Common
             return fullPath;
         }
 
-        internal string ExpandDataDirectories(ref string filename, ref int position)
+        internal string? ExpandDataDirectories(ref string? filename, ref int position)
         {
-            string value = null;
+            string? value = null;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            string datadir = null;
+            string? datadir = null;
 
             int copyPosition = 0;
             bool expanded = false;
 
-            for (NameValuePair current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
             {
                 value = current.Value;
 
@@ -420,7 +420,7 @@ namespace System.Data.Common
             int copyPosition = 0;
 
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
             {
                 if ((current.Name == keyword) && (current.Value == this[keyword]))
                 {

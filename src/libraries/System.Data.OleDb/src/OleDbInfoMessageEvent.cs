@@ -39,7 +39,7 @@ namespace System.Data.OleDb
             }
         }
 
-        public string Source
+        public string? Source
         {
             get
             {

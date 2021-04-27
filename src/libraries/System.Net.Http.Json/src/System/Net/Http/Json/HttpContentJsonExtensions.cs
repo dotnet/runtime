@@ -1,121 +1,109 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public static class HttpContentJsonExtensions
+    public static partial class HttpContentJsonExtensions
     {
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            ValidateContent(content);
-            Debug.Assert(content.Headers.ContentType != null);
-            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
-
-            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
-        }
-
-        public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            ValidateContent(content);
-            Debug.Assert(content.Headers.ContentType != null);
-            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
-
-            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
-        }
-
-        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
-        {
-            Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
-
-            // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
-            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
-            {
-#if NETCOREAPP
-                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
-#else
-                contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
-#endif
-            }
-
-            using (contentStream)
-            {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
-        {
-            Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
-
-            // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
-            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
-            {
-#if NETCOREAPP
-                contentStream = Encoding.CreateTranscodingStream(contentStream, innerStreamEncoding: sourceEncoding, outerStreamEncoding: Encoding.UTF8);
-#else
-                contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
-#endif
-            }
-
-            using (contentStream)
-            {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private static void ValidateContent(HttpContent content)
         {
             if (content == null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
 
-            string? mediaType = content.Headers.ContentType?.MediaType;
+            Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
-            if (mediaType == null ||
-                !mediaType.Equals(JsonContent.JsonMediaType, StringComparison.OrdinalIgnoreCase) &&
-                !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
+        }
+
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (content == null)
             {
-                throw new NotSupportedException(SR.Format(SR.ContentTypeNotSupported, mediaType));
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
+
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
+        }
+
+        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        {
+            using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
+            {
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        private static bool IsValidStructuredSyntaxJsonSuffix(ReadOnlySpan<char> mediaType)
+        private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            int index = 0;
-            int typeLength = mediaType.IndexOf('/');
-
-            ReadOnlySpan<char> type = mediaType.Slice(index, typeLength);
-            if (typeLength < 0 ||
-                type.CompareTo(JsonContent.JsonType.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
+            using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
             {
-                return false;
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        {
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
             }
 
-            index += typeLength + 1;
-            int suffixStart = mediaType.Slice(index).IndexOf('+');
+            Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
 
-            // Empty prefix subtype ("application/+json") not allowed.
-            if (suffixStart <= 0)
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, context, cancellationToken);
+        }
+
+        public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+        {
+            if (content == null)
             {
-                return false;
+                throw new ArgumentNullException(nameof(content));
             }
 
-            index += suffixStart + 1;
-            ReadOnlySpan<char> suffix = mediaType.Slice(index);
-            if (suffix.CompareTo(JsonContent.JsonSubtype.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
+            Encoding? sourceEncoding = JsonHelpers.GetEncoding(content.Headers.ContentType?.CharSet);
+
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, jsonTypeInfo, cancellationToken);
+        }
+
+        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerContext context, CancellationToken cancellationToken)
+        {
+            using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
             {
-                return false;
+                return await JsonSerializer.DeserializeAsync(contentStream, type, context, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
+        {
+            using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
+            {
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private static async Task<Stream> GetContentStream(HttpContent content, Encoding? sourceEncoding, CancellationToken cancellationToken)
+        {
+            Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
+
+            // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
+            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
+            {
+                contentStream = GetTranscodingStream(contentStream, sourceEncoding);
             }
 
-            return true;
+            return contentStream;
         }
     }
 }

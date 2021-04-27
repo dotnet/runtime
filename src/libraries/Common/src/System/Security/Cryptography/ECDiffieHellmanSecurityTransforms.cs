@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
                 KeySizeValue = _ecc.GenerateKey(curve);
             }
 
-            private SecKeyPair GetKeys()
+            internal SecKeyPair GetKeys()
             {
                 return _ecc.GetOrGenerateKeys(KeySize);
             }
@@ -256,7 +256,7 @@ namespace System.Security.Cryptography
             public override ECDiffieHellmanPublicKey PublicKey =>
                 new ECDiffieHellmanSecurityTransformsPublicKey(ExportParameters(false));
 
-            private class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
+            private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
             {
                 private EccSecurityTransforms _ecc;
 

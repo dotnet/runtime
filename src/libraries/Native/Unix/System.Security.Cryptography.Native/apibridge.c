@@ -19,6 +19,7 @@
 
 #define CRYPTO_LOCK_X509 3
 #define CRYPTO_LOCK_EVP_PKEY 10
+#define CRYPTO_LOCK_BIO 21
 
 #define SSL_CTRL_GET_SESSION_REUSED 8
 #define SSL_CTRL_OPTIONS 32
@@ -46,6 +47,46 @@ const ASN1_TIME* local_X509_get0_notAfter(const X509* x509)
     }
 
     return NULL;
+}
+
+int local_X509_set1_notBefore(X509* x509, const ASN1_TIME* time)
+{
+    if (x509 && x509->cert_info && x509->cert_info->validity)
+    {
+        if (time != x509->cert_info->validity->notBefore)
+        {
+            if (x509->cert_info->validity->notBefore)
+            {
+                ASN1_TIME_free(x509->cert_info->validity->notBefore);
+            }
+
+            x509->cert_info->validity->notBefore = ASN1_STRING_dup(time);
+        }
+
+        return x509->cert_info->validity->notBefore != NULL;
+    }
+
+    return 0;
+}
+
+int local_X509_set1_notAfter(X509* x509, const ASN1_TIME* time)
+{
+    if (x509 && x509->cert_info && x509->cert_info->validity)
+    {
+        if (time != x509->cert_info->validity->notAfter)
+        {
+            if (x509->cert_info->validity->notAfter)
+            {
+                ASN1_TIME_free(x509->cert_info->validity->notAfter);
+            }
+
+            x509->cert_info->validity->notAfter = ASN1_STRING_dup(time);
+        }
+
+        return x509->cert_info->validity->notAfter != NULL;
+    }
+
+    return 0;
 }
 
 const ASN1_TIME* local_X509_CRL_get0_nextUpdate(const X509_CRL* crl)
@@ -255,6 +296,23 @@ int32_t local_DSA_set0_key(DSA* dsa, BIGNUM* bnY, BIGNUM* bnX)
     }
 
     return 1;
+}
+
+RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey)
+{
+    if (pkey == NULL)
+    {
+        return NULL;
+    }
+
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+
+    if (rsa != NULL)
+    {
+        RSA_free(rsa);
+    }
+
+    return rsa;
 }
 
 int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey)
@@ -476,6 +534,16 @@ int32_t local_RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* 
     }
 
     return 1;
+}
+
+int32_t local_SSL_CTX_config(SSL_CTX* ctx, const char* name)
+{
+    (void)ctx;
+    (void)name;
+
+    // 1.0.x didn't load config in the same manner as 1.1.x,
+    // so the appropriate answer is "section not found".
+    return 0;
 }
 
 int32_t local_SSL_is_init_finished(const SSL* ssl)
@@ -727,4 +795,22 @@ void local_SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level)
     (void)ctx;
     (void)level;
 }
+
+int local_BIO_up_ref(BIO *bio)
+{
+    if (!bio)
+    {
+        return 0;
+    }
+
+    return CRYPTO_add_lock(&bio->references, 1, CRYPTO_LOCK_BIO, __FILE__, __LINE__) > 1;
+}
+
+int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2)
+{
+    // On OpenSSL 1.0.2 there aren't two different identifiers for RSA,
+    // so just pass the request on th EVP_PKEY_CTX_ctrl with the only identifier defined.
+    return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, optype, cmd, p1, p2);
+}
+
 #endif

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,60 +13,40 @@ using System.Threading.Tasks.Sources;
 
 namespace System.Net.Sockets
 {
-    // The Task-based APIs are currently wrappers over either the APM APIs (e.g. BeginConnect)
-    // or the SocketAsyncEventArgs APIs (e.g. ReceiveAsync(SocketAsyncEventArgs)).  The latter
-    // are much more efficient when the SocketAsyncEventArg instances can be reused; as such,
-    // at present we use them for ReceiveAsync and SendAsync, caching an instance for each.
-    // In the future we could potentially maintain a global cache of instances used for accepts
-    // and connects, and potentially separate per-socket instances for Receive{Message}FromAsync,
-    // which would need different instances from ReceiveAsync due to having different results
-    // and thus different Completed logic.  We also currently fall back to APM implementations
-    // when the single cached instance for each of send/receive is otherwise in use; we could
-    // potentially also employ a global pool from which to pull in such situations.
-
     public partial class Socket
     {
-        /// <summary>Handler for completed AcceptAsync operations.</summary>
-        private static readonly EventHandler<SocketAsyncEventArgs> AcceptCompletedHandler = (s, e) => CompleteAccept((Socket)s!, (TaskSocketAsyncEventArgs<Socket>)e);
-        /// <summary>Handler for completed ReceiveAsync operations.</summary>
-        private static readonly EventHandler<SocketAsyncEventArgs> ReceiveCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: true);
-        /// <summary>Handler for completed SendAsync operations.</summary>
-        private static readonly EventHandler<SocketAsyncEventArgs> SendCompletedHandler = (s, e) => CompleteSendReceive((Socket)s!, (Int32TaskSocketAsyncEventArgs)e, isReceive: false);
+        /// <summary>Cached instance for accept operations.</summary>
+        private TaskSocketAsyncEventArgs<Socket>? _acceptEventArgs;
+
+        /// <summary>Cached instance for receive operations that return <see cref="ValueTask{Int32}"/>. Also used for ConnectAsync operations.</summary>
+        private AwaitableSocketAsyncEventArgs? _singleBufferReceiveEventArgs;
+        /// <summary>Cached instance for send operations that return <see cref="ValueTask{Int32}"/>.</summary>
+        private AwaitableSocketAsyncEventArgs? _singleBufferSendEventArgs;
+
+        /// <summary>Cached instance for receive operations that return <see cref="Task{Int32}"/>.</summary>
+        private TaskSocketAsyncEventArgs<int>? _multiBufferReceiveEventArgs;
+        /// <summary>Cached instance for send operations that return <see cref="Task{Int32}"/>.</summary>
+        private TaskSocketAsyncEventArgs<int>? _multiBufferSendEventArgs;
+
         /// <summary>
-        /// Sentinel that can be stored into one of the Socket cached fields to indicate that an instance
-        /// was previously created but is currently being used by another concurrent operation.
+        /// Accepts an incoming connection.
         /// </summary>
-        private static readonly TaskSocketAsyncEventArgs<Socket> s_rentedSocketSentinel = new TaskSocketAsyncEventArgs<Socket>();
+        /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
+        public Task<Socket> AcceptAsync() => AcceptAsync((Socket?)null);
+
         /// <summary>
-        /// Sentinel that can be stored into one of the Int32 fields to indicate that an instance
-        /// was previously created but is currently being used by another concurrent operation.
+        /// Accepts an incoming connection.
         /// </summary>
-        private static readonly Int32TaskSocketAsyncEventArgs s_rentedInt32Sentinel = new Int32TaskSocketAsyncEventArgs();
-        /// <summary>Cached task with a 0 value.</summary>
-        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-
-        /// <summary>Cached event args used with Task-based async operations.</summary>
-        private CachedEventArgs? _cachedTaskEventArgs;
-
-        private CachedEventArgs EventArgs => LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs, () => new CachedEventArgs());
-
-        internal Task<Socket> AcceptAsync(Socket? acceptSocket)
+        /// <param name="acceptSocket">The socket to use for accepting the connection.</param>
+        /// <returns>An asynchronous task that completes with the accepted Socket.</returns>
+        public Task<Socket> AcceptAsync(Socket? acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
-            TaskSocketAsyncEventArgs<Socket>? saea = Interlocked.Exchange(ref EventArgs.TaskAccept, s_rentedSocketSentinel);
-            if (saea == s_rentedSocketSentinel)
+            TaskSocketAsyncEventArgs<Socket>? saea = Interlocked.Exchange(ref _acceptEventArgs, null);
+            if (saea is null)
             {
-                // An instance was once created (or is currently being created elsewhere), but some other
-                // concurrent operation is using it. Since we can store at most one, and since an individual
-                // APM operation is less expensive than creating a new SAEA and using it only once, we simply
-                // fall back to using an APM implementation.
-                return AcceptAsyncApm(acceptSocket);
-            }
-            else if (saea == null)
-            {
-                // No instance has been created yet, so create one.
                 saea = new TaskSocketAsyncEventArgs<Socket>();
-                saea.Completed += AcceptCompletedHandler;
+                saea.Completed += (s, e) => CompleteAccept((Socket)s!, (TaskSocketAsyncEventArgs<Socket>)e);
             }
 
             // Configure the SAEA.
@@ -103,92 +82,233 @@ namespace System.Net.Sockets
             return t;
         }
 
-        /// <summary>Implements Task-returning AcceptAsync on top of Begin/EndAsync.</summary>
-        private Task<Socket> AcceptAsyncApm(Socket? acceptSocket)
-        {
-            var tcs = new TaskCompletionSource<Socket>(this);
-            BeginAccept(acceptSocket, 0, iar =>
-            {
-                var innerTcs = (TaskCompletionSource<Socket>)iar.AsyncState!;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndAccept(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
-        }
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="remoteEP">The endpoint to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public Task ConnectAsync(EndPoint remoteEP) => ConnectAsync(remoteEP, default).AsTask();
 
-        internal Task ConnectAsync(EndPoint remoteEP)
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="remoteEP">The endpoint to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
         {
-            // Use ValueTaskReceive so the AwaitableSocketAsyncEventArgs can be re-used later.
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskReceive, () => new AwaitableSocketAsyncEventArgs());
-
-            if (!saea.Reserve())
+            if (cancellationToken.IsCancellationRequested)
             {
-                saea = new AwaitableSocketAsyncEventArgs();
-                saea.Reserve();
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
+            // Use _singleBufferReceiveEventArgs so the AwaitableSocketAsyncEventArgs can be re-used later for receives.
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
             saea.RemoteEndPoint = remoteEP;
-            return saea.ConnectAsync(this).AsTask();
+
+            ValueTask connectTask = saea.ConnectAsync(this);
+            if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
+            {
+                // Avoid async invocation overhead
+                return connectTask;
+            }
+            else
+            {
+                return WaitForConnectWithCancellation(saea, connectTask, cancellationToken);
+            }
+
+            static async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+            {
+                Debug.Assert(cancellationToken.CanBeCanceled);
+                try
+                {
+                    using (cancellationToken.UnsafeRegister(o => CancelConnectAsync((SocketAsyncEventArgs)o!), saea))
+                    {
+                        await connectTask.ConfigureAwait(false);
+                    }
+                }
+                catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw;
+                }
+            }
         }
 
-        internal Task ConnectAsync(IPAddress address, int port)
-            => ConnectAsync(new IPEndPoint(address, port));
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="address">The IPAddress of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public Task ConnectAsync(IPAddress address, int port) => ConnectAsync(new IPEndPoint(address, port));
 
-        internal Task ConnectAsync(IPAddress[] addresses, int port)
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="address">The IPAddress of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) => ConnectAsync(new IPEndPoint(address, port), cancellationToken);
+
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="addresses">A list of IPAddresses for the remote host that will be used to attempt to connect to the remote host.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public Task ConnectAsync(IPAddress[] addresses, int port) => ConnectAsync(addresses, port, CancellationToken.None).AsTask();
+
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="addresses">A list of IPAddresses for the remote host that will be used to attempt to connect to the remote host.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
+            ThrowIfDisposed();
+
             if (addresses == null)
             {
                 throw new ArgumentNullException(nameof(addresses));
             }
+
             if (addresses.Length == 0)
             {
                 throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
 
-            return DoConnectAsync(addresses, port);
-        }
-
-        private async Task DoConnectAsync(IPAddress[] addresses, int port)
-        {
-            Exception? lastException = null;
-            foreach (IPAddress address in addresses)
+            if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
-                try
-                {
-                    await ConnectAsync(address, port).ConfigureAwait(false);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-                }
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
-            Debug.Assert(lastException != null);
-            ExceptionDispatchInfo.Throw(lastException);
+
+            if (_isListening)
+            {
+                throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
+            ValidateForMultiConnect(isMultiEndpoint: false);
+
+            return Core(addresses, port, cancellationToken);
+
+            async ValueTask Core(IPAddress[] addresses, int port, CancellationToken cancellationToken)
+            {
+                Exception? lastException = null;
+                IPEndPoint? endPoint = null;
+                foreach (IPAddress address in addresses)
+                {
+                    try
+                    {
+                        if (endPoint is null)
+                        {
+                            endPoint = new IPEndPoint(address, port);
+                        }
+                        else
+                        {
+                            endPoint.Address = address;
+                            Debug.Assert(endPoint.Port == port);
+                        }
+
+                        await ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
+                        return;
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        lastException = ex;
+                    }
+                }
+
+                Debug.Assert(lastException != null);
+                ExceptionDispatchInfo.Throw(lastException);
+            }
         }
 
-        internal Task ConnectAsync(string host, int port)
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="host">The hostname of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
+
+        /// <summary>
+        /// Establishes a connection to a remote host.
+        /// </summary>
+        /// <param name="host">The hostname of the remote host to connect to.</param>
+        /// <param name="port">The port on the remote host to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the connection is established.</returns>
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             if (host == null)
             {
                 throw new ArgumentNullException(nameof(host));
             }
 
-            if (IPAddress.TryParse(host, out IPAddress? parsedAddress))
-            {
-                return ConnectAsync(new IPEndPoint(parsedAddress, port));
-            }
-            else
-            {
-                return ConnectAsync(new DnsEndPoint(host, port));
-            }
+            EndPoint ep = IPAddress.TryParse(host, out IPAddress? parsedAddress) ? (EndPoint)
+                new IPEndPoint(parsedAddress, port) :
+                new DnsEndPoint(host, port);
+            return ConnectAsync(ep, cancellationToken);
         }
+
+        /// <summary>
+        /// Disconnects a connected socket from the remote host.
+        /// </summary>
+        /// <param name="reuseSocket">Indicates whether the socket should be available for reuse after disconnect.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes when the socket is disconnected.</returns>
+        public ValueTask DisconnectAsync(bool reuseSocket, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            saea.DisconnectReuseSocket = reuseSocket;
+            saea.WrapExceptionsForNetworkStream = false;
+
+            return saea.DisconnectAsync(this, cancellationToken);
+        }
+
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes received.</returns>
+        public Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags) => ReceiveAsync(buffer, socketFlags, fromNetworkStream: false);
 
         internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
         {
             ValidateBuffer(buffer);
-            return ReceiveAsync((Memory<byte>)buffer, socketFlags, fromNetworkStream, default).AsTask();
+            return ReceiveAsync(buffer, socketFlags, fromNetworkStream, default).AsTask();
         }
+
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes received.</returns>
+        public ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken) =>
+            ReceiveAsync(buffer, socketFlags, fromNetworkStream: false, cancellationToken);
 
         internal ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream, CancellationToken cancellationToken)
         {
@@ -197,170 +317,157 @@ namespace System.Net.Sockets
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskReceive, () => new AwaitableSocketAsyncEventArgs());
-            if (saea.Reserve())
-            {
-                Debug.Assert(saea.BufferList == null);
-                saea.SetBuffer(buffer);
-                saea.SocketFlags = socketFlags;
-                saea.WrapExceptionsInIOExceptions = fromNetworkStream;
-                return saea.ReceiveAsync(this, cancellationToken);
-            }
-            else
-            {
-                // We couldn't get a cached instance, due to a concurrent receive operation on the socket.
-                // Fall back to wrapping APM.
-                return new ValueTask<int>(ReceiveAsyncApm(buffer, socketFlags));
-            }
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(buffer);
+            saea.SocketFlags = socketFlags;
+            saea.WrapExceptionsForNetworkStream = fromNetworkStream;
+            return saea.ReceiveAsync(this, cancellationToken);
         }
 
-        /// <summary>Implements Task-returning ReceiveAsync on top of Begin/EndReceive.</summary>
-        private Task<int> ReceiveAsyncApm(Memory<byte> buffer, SocketFlags socketFlags)
+        /// <summary>
+        /// Receives data from a connected socket.
+        /// </summary>
+        /// <param name="buffers">A list of buffers for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes received.</returns>
+        public Task<int> ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> bufferArray))
-            {
-                // We were able to extract the underlying byte[] from the Memory<byte>. Use it.
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginReceive(bufferArray.Array!, bufferArray.Offset, bufferArray.Count, socketFlags, iar =>
-                {
-                    var innerTcs = (TaskCompletionSource<int>)iar.AsyncState!;
-                    try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndReceive(iar)); }
-                    catch (Exception e) { innerTcs.TrySetException(e); }
-                }, tcs);
-                return tcs.Task;
-            }
-            else
-            {
-                // We weren't able to extract an underlying byte[] from the Memory<byte>.
-                // Instead read into an ArrayPool array, then copy from that into the memory.
-                byte[] poolArray = ArrayPool<byte>.Shared.Rent(buffer.Length);
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginReceive(poolArray, 0, buffer.Length, socketFlags, iar =>
-                {
-                    var state = (Tuple<TaskCompletionSource<int>, Memory<byte>, byte[]>)iar.AsyncState!;
-                    try
-                    {
-                        int bytesCopied = ((Socket)state.Item1.Task.AsyncState!).EndReceive(iar);
-                        new ReadOnlyMemory<byte>(state.Item3, 0, bytesCopied).Span.CopyTo(state.Item2.Span);
-                        state.Item1.TrySetResult(bytesCopied);
-                    }
-                    catch (Exception e)
-                    {
-                        state.Item1.TrySetException(e);
-                    }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(state.Item3);
-                    }
-                }, Tuple.Create(tcs, buffer, poolArray));
-                return tcs.Task;
-            }
-        }
-
-        internal Task<int> ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
-        {
-            // Validate the arguments.
             ValidateBuffersList(buffers);
 
-            Int32TaskSocketAsyncEventArgs? saea = RentSocketAsyncEventArgs(isReceive: true);
-            if (saea != null)
+            TaskSocketAsyncEventArgs<int>? saea = Interlocked.Exchange(ref _multiBufferReceiveEventArgs, null);
+            if (saea is null)
             {
-                // We got a cached instance. Configure the buffer list and initate the operation.
-                ConfigureBufferList(saea, buffers, socketFlags);
-                return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream: false, isReceive: true);
+                saea = new TaskSocketAsyncEventArgs<int>();
+                saea.Completed += (s, e) => CompleteSendReceive((Socket)s!, (TaskSocketAsyncEventArgs<int>)e, isReceive: true);
             }
-            else
-            {
-                // We couldn't get a cached instance, due to a concurrent receive operation on the socket.
-                // Fall back to wrapping APM.
-                return ReceiveAsyncApm(buffers, socketFlags);
-            }
+
+            saea.BufferList = buffers;
+            saea.SocketFlags = socketFlags;
+            return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream: false, isReceive: true);
         }
 
-        /// <summary>Implements Task-returning ReceiveAsync on top of Begin/EndReceive.</summary>
-        private Task<int> ReceiveAsyncApm(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
-        {
-            var tcs = new TaskCompletionSource<int>(this);
-            BeginReceive(buffers, socketFlags, iar =>
-            {
-                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState!;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndReceive(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
-        }
-
-        internal Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
-        {
-            var tcs = new StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>(this) { _field1 = remoteEndPoint };
-            BeginReceiveFrom(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, ref tcs._field1, iar =>
-            {
-                var innerTcs = (StateTaskCompletionSource<EndPoint, SocketReceiveFromResult>)iar.AsyncState!;
-                try
-                {
-                    int receivedBytes = ((Socket)innerTcs.Task.AsyncState!).EndReceiveFrom(iar, ref innerTcs._field1);
-                    innerTcs.TrySetResult(new SocketReceiveFromResult
-                    {
-                        ReceivedBytes = receivedBytes,
-                        RemoteEndPoint = innerTcs._field1
-                    });
-                }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
-        }
-
-        internal Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
-        {
-            var tcs = new StateTaskCompletionSource<SocketFlags, EndPoint, SocketReceiveMessageFromResult>(this) { _field1 = socketFlags, _field2 = remoteEndPoint };
-            BeginReceiveMessageFrom(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, ref tcs._field2, iar =>
-            {
-                var innerTcs = (StateTaskCompletionSource<SocketFlags, EndPoint, SocketReceiveMessageFromResult>)iar.AsyncState!;
-                try
-                {
-                    IPPacketInformation ipPacketInformation;
-                    int receivedBytes = ((Socket)innerTcs.Task.AsyncState!).EndReceiveMessageFrom(iar, ref innerTcs._field1, ref innerTcs._field2, out ipPacketInformation);
-                    innerTcs.TrySetResult(new SocketReceiveMessageFromResult
-                    {
-                        ReceivedBytes = receivedBytes,
-                        RemoteEndPoint = innerTcs._field2,
-                        SocketFlags = innerTcs._field1,
-                        PacketInformation = ipPacketInformation
-                    });
-                }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
-        }
-
-        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        /// <summary>
+        /// Receives data and returns the endpoint of the sending host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveFromResult"/> containing the number of bytes received and the endpoint of the sending host.</returns>
+        public Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             ValidateBuffer(buffer);
-            return SendAsync((ReadOnlyMemory<byte>)buffer, socketFlags, default).AsTask();
+            return ReceiveFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
         }
 
-        internal ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken)
+        /// <summary>
+        /// Receives data and returns the endpoint of the sending host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveFromResult"/> containing the number of bytes received and the endpoint of the sending host.</returns>
+        public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
+        {
+            ValidateReceiveFromEndpointAndState(remoteEndPoint, nameof(remoteEndPoint));
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<SocketReceiveFromResult>(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(buffer);
+            saea.SocketFlags = socketFlags;
+            saea.RemoteEndPoint = remoteEndPoint;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.ReceiveFromAsync(this, cancellationToken);
+        }
+
+        /// <summary>
+        /// Receives data and returns additional information about the sender of the message.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveMessageFromResult"/> containing the number of bytes received and additional information about the sending host.</returns>
+        public Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
+        {
+            ValidateBuffer(buffer);
+            return ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
+        }
+
+        /// <summary>
+        /// Receives data and returns additional information about the sender of the message.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveMessageFromResult"/> containing the number of bytes received and additional information about the sending host.</returns>
+        public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
+        {
+            ValidateReceiveFromEndpointAndState(remoteEndPoint, nameof(remoteEndPoint));
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<SocketReceiveMessageFromResult>(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(buffer);
+            saea.SocketFlags = socketFlags;
+            saea.RemoteEndPoint = remoteEndPoint;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.ReceiveMessageFromAsync(this, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends data on a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
+        public Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        {
+            ValidateBuffer(buffer);
+            return SendAsync(buffer, socketFlags, default).AsTask();
+        }
+
+        /// <summary>
+        /// Sends data on a connected socket.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
+        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
-            if (saea.Reserve())
-            {
-                Debug.Assert(saea.BufferList == null);
-                saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
-                saea.SocketFlags = socketFlags;
-                saea.WrapExceptionsInIOExceptions = false;
-                return saea.SendAsync(this, cancellationToken);
-            }
-            else
-            {
-                // We couldn't get a cached instance, due to a concurrent send operation on the socket.
-                // Fall back to wrapping APM.
-                return new ValueTask<int>(SendAsyncApm(buffer, socketFlags));
-            }
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
+            saea.SocketFlags = socketFlags;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.SendAsync(this, cancellationToken);
         }
 
         internal ValueTask SendAsyncForNetworkStream(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, CancellationToken cancellationToken)
@@ -370,107 +477,98 @@ namespace System.Net.Sockets
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
-            if (saea.Reserve())
-            {
-                Debug.Assert(saea.BufferList == null);
-                saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
-                saea.SocketFlags = socketFlags;
-                saea.WrapExceptionsInIOExceptions = true;
-                return saea.SendAsyncForNetworkStream(this, cancellationToken);
-            }
-            else
-            {
-                // We couldn't get a cached instance, due to a concurrent send operation on the socket.
-                // Fall back to wrapping APM.
-                return new ValueTask(SendAsyncApm(buffer, socketFlags));
-            }
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
+            saea.SocketFlags = socketFlags;
+            saea.WrapExceptionsForNetworkStream = true;
+            return saea.SendAsyncForNetworkStream(this, cancellationToken);
         }
 
-        /// <summary>Implements Task-returning SendAsync on top of Begin/EndSend.</summary>
-        private Task<int> SendAsyncApm(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags)
+        /// <summary>
+        /// Sends data on a connected socket.
+        /// </summary>
+        /// <param name="buffers">A list of buffers for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
+        public Task<int> SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
         {
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> bufferArray))
-            {
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginSend(bufferArray.Array!, bufferArray.Offset, bufferArray.Count, socketFlags, iar =>
-                {
-                    var innerTcs = (TaskCompletionSource<int>)iar.AsyncState!;
-                    try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndSend(iar)); }
-                    catch (Exception e) { innerTcs.TrySetException(e); }
-                }, tcs);
-                return tcs.Task;
-            }
-            else
-            {
-                // We weren't able to extract an underlying byte[] from the Memory<byte>.
-                // Instead read into an ArrayPool array, then copy from that into the memory.
-                byte[] poolArray = ArrayPool<byte>.Shared.Rent(buffer.Length);
-                buffer.Span.CopyTo(poolArray);
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginSend(poolArray, 0, buffer.Length, socketFlags, iar =>
-                {
-                    var state = (Tuple<TaskCompletionSource<int>, byte[]>)iar.AsyncState!;
-                    try
-                    {
-                        state.Item1.TrySetResult(((Socket)state.Item1.Task.AsyncState!).EndSend(iar));
-                    }
-                    catch (Exception e)
-                    {
-                        state.Item1.TrySetException(e);
-                    }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(state.Item2);
-                    }
-                }, Tuple.Create(tcs, poolArray));
-                return tcs.Task;
-            }
-        }
-
-        internal Task<int> SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
-        {
-            // Validate the arguments.
             ValidateBuffersList(buffers);
 
-            Int32TaskSocketAsyncEventArgs? saea = RentSocketAsyncEventArgs(isReceive: false);
-            if (saea != null)
+            TaskSocketAsyncEventArgs<int>? saea = Interlocked.Exchange(ref _multiBufferSendEventArgs, null);
+            if (saea is null)
             {
-                // We got a cached instance. Configure the buffer list and initate the operation.
-                ConfigureBufferList(saea, buffers, socketFlags);
-                return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream: false, isReceive: false);
+                saea = new TaskSocketAsyncEventArgs<int>();
+                saea.Completed += (s, e) => CompleteSendReceive((Socket)s!, (TaskSocketAsyncEventArgs<int>)e, isReceive: false);
             }
-            else
-            {
-                // We couldn't get a cached instance, due to a concurrent send operation on the socket.
-                // Fall back to wrapping APM.
-                return SendAsyncApm(buffers, socketFlags);
-            }
+
+            saea.BufferList = buffers;
+            saea.SocketFlags = socketFlags;
+            return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream: false, isReceive: false);
         }
 
-        /// <summary>Implements Task-returning SendAsync on top of Begin/EndSend.</summary>
-        private Task<int> SendAsyncApm(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
+        /// <summary>
+        /// Sends data to the specified remote host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="remoteEP">The remote host to which to send the data.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
+        public Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
         {
-            var tcs = new TaskCompletionSource<int>(this);
-            BeginSend(buffers, socketFlags, iar =>
-            {
-                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState!;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndSend(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
+            ValidateBuffer(buffer);
+            return SendToAsync(buffer, socketFlags, remoteEP, default).AsTask();
         }
 
-        internal Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
+        /// <summary>
+        /// Sends data to the specified remote host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="remoteEP">The remote host to which to send the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
+        public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default)
         {
-            var tcs = new TaskCompletionSource<int>(this);
-            BeginSendTo(buffer.Array!, buffer.Offset, buffer.Count, socketFlags, remoteEP, iar =>
+            if (remoteEP is null)
             {
-                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState!;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState!).EndSendTo(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
+                throw new ArgumentNullException(nameof(remoteEP));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
+
+            Debug.Assert(saea.BufferList == null);
+            saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
+            saea.SocketFlags = socketFlags;
+            saea.RemoteEndPoint = remoteEP;
+            saea.WrapExceptionsForNetworkStream = false;
+            return saea.SendToAsync(this, cancellationToken);
+        }
+
+        private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if ((uint)offset > (uint)buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if ((uint)size > (uint)(buffer.Length - offset))
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
         }
 
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
@@ -480,11 +578,11 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(buffer.Array));
             }
-            if (buffer.Offset < 0 || buffer.Offset > buffer.Array.Length)
+            if ((uint)buffer.Offset > (uint)buffer.Array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(buffer.Offset));
             }
-            if (buffer.Count < 0 || buffer.Count > buffer.Array.Length - buffer.Offset)
+            if ((uint)buffer.Count > (uint)(buffer.Array.Length - buffer.Offset))
             {
                 throw new ArgumentOutOfRangeException(nameof(buffer.Count));
             }
@@ -503,18 +601,6 @@ namespace System.Net.Sockets
             }
         }
 
-        private static void ConfigureBufferList(
-            Int32TaskSocketAsyncEventArgs saea, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
-        {
-            // Configure the buffer list.  We don't clear the buffers when returning the SAEA to the pool,
-            // so as to minimize overhead if the same buffers are used for subsequent operations (which is likely).
-            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer
-            // if there is one before we set the desired buffer list.
-            if (!saea.MemoryBuffer.Equals(default)) saea.SetBuffer(default);
-            saea.BufferList = buffers;
-            saea.SocketFlags = socketFlags;
-        }
-
         /// <summary>Gets a task to represent the operation.</summary>
         /// <param name="pending">true if the operation completes asynchronously; false if it completed synchronously.</param>
         /// <param name="saea">The event args instance used with the operation.</param>
@@ -523,9 +609,7 @@ namespace System.Net.Sockets
         /// exceptions and cached tasks; otherwise, false.
         /// </param>
         /// <param name="isReceive">true if this is a receive; false if this is a send.</param>
-        private Task<int> GetTaskForSendReceive(
-            bool pending, Int32TaskSocketAsyncEventArgs saea,
-            bool fromNetworkStream, bool isReceive)
+        private Task<int> GetTaskForSendReceive(bool pending, TaskSocketAsyncEventArgs<int> saea, bool fromNetworkStream, bool isReceive)
         {
             Task<int> t;
 
@@ -548,21 +632,10 @@ namespace System.Net.Sockets
                 // The operation completed synchronously.  Get a task for it.
                 if (saea.SocketError == SocketError.Success)
                 {
-                    // Get the number of bytes successfully received/sent.
-                    int bytesTransferred = saea.BytesTransferred;
-
-                    // For zero bytes transferred, we can return our cached 0 task.
-                    // We can also do so if the request came from network stream and is a send,
-                    // as for that we can return any value because it returns a non-generic Task.
-                    if (bytesTransferred == 0 || (fromNetworkStream & !isReceive))
-                    {
-                        t = s_zeroTask;
-                    }
-                    else
-                    {
-                        // Otherwise, create a new task for this result value.
-                        t = Task.FromResult(bytesTransferred);
-                    }
+                    // Get the number of bytes successfully received/sent.  If the request came from
+                    // NetworkStream and this is a send, we can always use 0 (and thus get a cached
+                    // task from FromResult), because the caller receives a non-generic Task.
+                    t = Task.FromResult(fromNetworkStream & !isReceive ? 0 : saea.BytesTransferred);
                 }
                 else
                 {
@@ -605,7 +678,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
-        private static void CompleteSendReceive(Socket s, Int32TaskSocketAsyncEventArgs saea, bool isReceive)
+        private static void CompleteSendReceive(Socket s, TaskSocketAsyncEventArgs<int> saea, bool isReceive)
         {
             // Pull the relevant state off of the SAEA
             SocketError error = saea.SocketError;
@@ -642,129 +715,72 @@ namespace System.Net.Sockets
                 e;
         }
 
-        /// <summary>Rents a <see cref="Int32TaskSocketAsyncEventArgs"/> for immediate use.</summary>
-        /// <param name="isReceive">true if this instance will be used for a receive; false if for sends.</param>
-        private Int32TaskSocketAsyncEventArgs? RentSocketAsyncEventArgs(bool isReceive)
-        {
-            // Get any cached SocketAsyncEventArg we may have.
-            CachedEventArgs cea = EventArgs;
-            Int32TaskSocketAsyncEventArgs? saea = isReceive ?
-                Interlocked.Exchange(ref cea.TaskReceive, s_rentedInt32Sentinel) :
-                Interlocked.Exchange(ref cea.TaskSend, s_rentedInt32Sentinel);
-
-            if (saea == s_rentedInt32Sentinel)
-            {
-                // An instance was once created (or is currently being created elsewhere), but some other
-                // concurrent operation is using it. Since we can store at most one, and since an individual
-                // APM operation is less expensive than creating a new SAEA and using it only once, we simply
-                // return null, for a caller to fall back to using an APM implementation.
-                return null;
-            }
-
-            if (saea == null)
-            {
-                // No instance has been created yet, so create one.
-                saea = new Int32TaskSocketAsyncEventArgs();
-                saea.Completed += isReceive ? ReceiveCompletedHandler : SendCompletedHandler;
-            }
-
-            return saea;
-        }
-
-        /// <summary>Returns a <see cref="Int32TaskSocketAsyncEventArgs"/> instance for reuse.</summary>
+        /// <summary>Returns a <see cref="TaskSocketAsyncEventArgs{TResult}"/> instance for reuse.</summary>
         /// <param name="saea">The instance to return.</param>
         /// <param name="isReceive">true if this instance is used for receives; false if used for sends.</param>
-        private void ReturnSocketAsyncEventArgs(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
+        private void ReturnSocketAsyncEventArgs(TaskSocketAsyncEventArgs<int> saea, bool isReceive)
         {
-            Debug.Assert(_cachedTaskEventArgs != null, "Should have been initialized when renting");
-            Debug.Assert(saea != s_rentedInt32Sentinel);
-
             // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
             saea._accessed = false;
-            saea._builder = default(AsyncTaskMethodBuilder<int>);
+            saea._builder = default;
             saea._wrapExceptionsInIOExceptions = false;
 
-            // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
-            // never null or another instance.
-            if (isReceive)
+            // Write this instance back as a cached instance, only if there isn't currently one cached.
+            ref TaskSocketAsyncEventArgs<int>? cache = ref isReceive ? ref _multiBufferReceiveEventArgs : ref _multiBufferSendEventArgs;
+            if (Interlocked.CompareExchange(ref cache, saea, null) != null)
             {
-                Debug.Assert(_cachedTaskEventArgs.TaskReceive == s_rentedInt32Sentinel);
-                Volatile.Write(ref _cachedTaskEventArgs.TaskReceive, saea);
-            }
-            else
-            {
-                Debug.Assert(_cachedTaskEventArgs.TaskSend == s_rentedInt32Sentinel);
-                Volatile.Write(ref _cachedTaskEventArgs.TaskSend, saea);
+                saea.Dispose();
             }
         }
 
-        /// <summary>Returns a <see cref="Int32TaskSocketAsyncEventArgs"/> instance for reuse.</summary>
+        /// <summary>Returns a <see cref="TaskSocketAsyncEventArgs{TResult}"/> instance for reuse.</summary>
         /// <param name="saea">The instance to return.</param>
         private void ReturnSocketAsyncEventArgs(TaskSocketAsyncEventArgs<Socket> saea)
         {
-            Debug.Assert(_cachedTaskEventArgs != null, "Should have been initialized when renting");
-            Debug.Assert(saea != s_rentedSocketSentinel);
-
             // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
             saea.AcceptSocket = null;
             saea._accessed = false;
-            saea._builder = default(AsyncTaskMethodBuilder<Socket>);
+            saea._builder = default;
 
-            // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
-            // never null or another instance.
-            Debug.Assert(_cachedTaskEventArgs.TaskAccept == s_rentedSocketSentinel);
-            Volatile.Write(ref _cachedTaskEventArgs.TaskAccept, saea);
-        }
-
-        /// <summary>Dispose of any cached <see cref="Int32TaskSocketAsyncEventArgs"/> instances.</summary>
-        private void DisposeCachedTaskSocketAsyncEventArgs()
-        {
-            CachedEventArgs? cea = _cachedTaskEventArgs;
-            if (cea != null)
+            // Write this instance back as a cached instance, only if there isn't currently one cached.
+            if (Interlocked.CompareExchange(ref _acceptEventArgs, saea, null) != null)
             {
-                Interlocked.Exchange(ref cea.TaskAccept, s_rentedSocketSentinel)?.Dispose();
-                Interlocked.Exchange(ref cea.TaskReceive, s_rentedInt32Sentinel)?.Dispose();
-                Interlocked.Exchange(ref cea.TaskSend, s_rentedInt32Sentinel)?.Dispose();
-                Interlocked.Exchange(ref cea.ValueTaskReceive, AwaitableSocketAsyncEventArgs.Reserved)?.Dispose();
-                Interlocked.Exchange(ref cea.ValueTaskSend, AwaitableSocketAsyncEventArgs.Reserved)?.Dispose();
+                // Couldn't return it, so dispose it.
+                saea.Dispose();
             }
         }
 
+        /// <summary>Dispose of any cached <see cref="TaskSocketAsyncEventArgs{TResult}"/> instances.</summary>
+        private void DisposeCachedTaskSocketAsyncEventArgs()
+        {
+            Interlocked.Exchange(ref _acceptEventArgs, null)?.Dispose();
+            Interlocked.Exchange(ref _multiBufferReceiveEventArgs, null)?.Dispose();
+            Interlocked.Exchange(ref _multiBufferSendEventArgs, null)?.Dispose();
+            Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null)?.Dispose();
+            Interlocked.Exchange(ref _singleBufferSendEventArgs, null)?.Dispose();
+        }
+
         /// <summary>A TaskCompletionSource that carries an extra field of strongly-typed state.</summary>
-        private class StateTaskCompletionSource<TField1, TResult> : TaskCompletionSource<TResult>
+        private sealed class StateTaskCompletionSource<TField1, TResult> : TaskCompletionSource<TResult>
         {
             internal TField1 _field1 = default!; // always set on construction
             public StateTaskCompletionSource(object baseState) : base(baseState) { }
         }
 
         /// <summary>A TaskCompletionSource that carries several extra fields of strongly-typed state.</summary>
-        private class StateTaskCompletionSource<TField1, TField2, TResult> : StateTaskCompletionSource<TField1, TResult>
+        private sealed class StateTaskCompletionSource<TField1, TField2, TResult> : TaskCompletionSource<TResult>
         {
+            internal TField1 _field1 = default!; // always set on construction
             internal TField2 _field2 = default!; // always set on construction
             public StateTaskCompletionSource(object baseState) : base(baseState) { }
         }
 
-        /// <summary>Cached event args used with Task-based async operations.</summary>
-        private sealed class CachedEventArgs
-        {
-            /// <summary>Cached instance for accept operations.</summary>
-            public TaskSocketAsyncEventArgs<Socket>? TaskAccept;
-            /// <summary>Cached instance for receive operations that return <see cref="Task{Int32}"/>.</summary>
-            public Int32TaskSocketAsyncEventArgs? TaskReceive;
-            /// <summary>Cached instance for send operations that return <see cref="Task{Int32}"/>.</summary>
-            public Int32TaskSocketAsyncEventArgs? TaskSend;
-            /// <summary>Cached instance for receive operations that return <see cref="ValueTask{Int32}"/>.</summary>
-            public AwaitableSocketAsyncEventArgs? ValueTaskReceive;
-            /// <summary>Cached instance for send operations that return <see cref="ValueTask{Int32}"/>.</summary>
-            public AwaitableSocketAsyncEventArgs? ValueTaskSend;
-        }
-
         /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
-        private class TaskSocketAsyncEventArgs<TResult> : SocketAsyncEventArgs
+        private sealed class TaskSocketAsyncEventArgs<TResult> : SocketAsyncEventArgs
         {
             /// <summary>
             /// The builder used to create the Task representing the result of the async operation.
@@ -780,6 +796,8 @@ namespace System.Net.Sockets
             /// accesses this second, so we track whether it's already been accessed.
             /// </summary>
             internal bool _accessed;
+            /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
+            internal bool _wrapExceptionsInIOExceptions;
 
             internal TaskSocketAsyncEventArgs() :
                 base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose Task, which handles it
@@ -799,29 +817,19 @@ namespace System.Net.Sockets
             }
         }
 
-        /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
-        private sealed class Int32TaskSocketAsyncEventArgs : TaskSocketAsyncEventArgs<int>
-        {
-            /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
-            internal bool _wrapExceptionsInIOExceptions;
-        }
-
         /// <summary>A SocketAsyncEventArgs that can be awaited to get the result of an operation.</summary>
-        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>
+        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>, IValueTaskSource<SocketReceiveFromResult>, IValueTaskSource<SocketReceiveMessageFromResult>
         {
-            internal static readonly AwaitableSocketAsyncEventArgs Reserved = new AwaitableSocketAsyncEventArgs() { _continuation = null };
-            /// <summary>Sentinel object used to indicate that the operation has completed prior to OnCompleted being called.</summary>
             private static readonly Action<object?> s_completedSentinel = new Action<object?>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_completedSentinel))));
-            /// <summary>Sentinel object used to indicate that the instance is available for use.</summary>
-            private static readonly Action<object?> s_availableSentinel = new Action<object?>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_availableSentinel))));
+            /// <summary>The owning socket.</summary>
+            private readonly Socket _owner;
+            /// <summary>Whether this should be cached as a read or a write on the <see cref="_owner"/></summary>
+            private bool _isReadForCaching;
             /// <summary>
-            /// <see cref="s_availableSentinel"/> if the object is available for use, after GetResult has been called on a previous use.
-            /// null if the operation has not completed.
-            /// <see cref="s_completedSentinel"/> if it has completed.
-            /// Another delegate if OnCompleted was called before the operation could complete, in which case it's the delegate to invoke
-            /// when the operation does complete.
+            /// <see cref="s_completedSentinel"/> if it has completed. Another delegate if OnCompleted was called before the operation could complete,
+            /// in which case it's the delegate to invoke when the operation does complete.
             /// </summary>
-            private Action<object?>? _continuation = s_availableSentinel;
+            private Action<object?>? _continuation;
             private ExecutionContext? _executionContext;
             private object? _scheduler;
             /// <summary>Current token value given to a ValueTask and then verified against the value it passes back to us.</summary>
@@ -835,21 +843,26 @@ namespace System.Net.Sockets
             private CancellationToken _cancellationToken;
 
             /// <summary>Initializes the event args.</summary>
-            public AwaitableSocketAsyncEventArgs() :
+            public AwaitableSocketAsyncEventArgs(Socket owner, bool isReceiveForCaching) :
                 base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
             {
+                _owner = owner;
+                _isReadForCaching = isReceiveForCaching;
             }
 
-            public bool WrapExceptionsInIOExceptions { get; set; }
-
-            public bool Reserve() =>
-                ReferenceEquals(Interlocked.CompareExchange(ref _continuation, null, s_availableSentinel), s_availableSentinel);
+            public bool WrapExceptionsForNetworkStream { get; set; }
 
             private void Release()
             {
                 _cancellationToken = default;
                 _token++;
-                Volatile.Write(ref _continuation, s_availableSentinel);
+                _continuation = null;
+
+                ref AwaitableSocketAsyncEventArgs? cache = ref _isReadForCaching ? ref _owner._singleBufferReceiveEventArgs : ref _owner._singleBufferSendEventArgs;
+                if (Interlocked.CompareExchange(ref cache, this, null) != null)
+                {
+                    Dispose();
+                }
             }
 
             protected override void OnCompleted(SocketAsyncEventArgs _)
@@ -859,7 +872,6 @@ namespace System.Net.Sockets
                 Action<object?>? c = _continuation;
                 if (c != null || (c = Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null)) != null)
                 {
-                    Debug.Assert(c != s_availableSentinel, "The delegate should not have been the available sentinel.");
                     Debug.Assert(c != s_completedSentinel, "The delegate should not have been the completed sentinel.");
 
                     object? continuationState = UserToken;
@@ -879,9 +891,9 @@ namespace System.Net.Sockets
                         _executionContext = null;
                         ExecutionContext.Run(ec, runState =>
                         {
-                            var t = (Tuple<AwaitableSocketAsyncEventArgs, Action<object?>, object>)runState!;
+                            var t = ((AwaitableSocketAsyncEventArgs, Action<object?>, object))runState!;
                             t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false, requiresExecutionContextFlow: false);
-                        }, Tuple.Create(this, c, continuationState));
+                        }, (this, c, continuationState));
                     }
                 }
             }
@@ -890,7 +902,7 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> ReceiveAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.ReceiveAsync(this, cancellationToken))
                 {
@@ -908,11 +920,55 @@ namespace System.Net.Sockets
                     ValueTask.FromException<int>(CreateException(error));
             }
 
+            public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+
+                if (socket.ReceiveFromAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask<SocketReceiveFromResult>(this, _token);
+                }
+
+                int bytesTransferred = BytesTransferred;
+                EndPoint remoteEndPoint = RemoteEndPoint!;
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    new ValueTask<SocketReceiveFromResult>(new SocketReceiveFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint }) :
+                    ValueTask.FromException<SocketReceiveFromResult>(CreateException(error));
+            }
+
+            public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+
+                if (socket.ReceiveMessageFromAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask<SocketReceiveMessageFromResult>(this, _token);
+                }
+
+                int bytesTransferred = BytesTransferred;
+                EndPoint remoteEndPoint = RemoteEndPoint!;
+                SocketFlags socketFlags = SocketFlags;
+                IPPacketInformation packetInformation = ReceiveMessageFromPacketInfo;
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    new ValueTask<SocketReceiveMessageFromResult>(new SocketReceiveMessageFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint, SocketFlags = socketFlags, PacketInformation = packetInformation }) :
+                    ValueTask.FromException<SocketReceiveMessageFromResult>(CreateException(error));
+            }
+
             /// <summary>Initiates a send operation on the associated socket.</summary>
             /// <returns>This instance.</returns>
             public ValueTask<int> SendAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
                 {
@@ -932,7 +988,7 @@ namespace System.Net.Sockets
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
                 {
@@ -949,13 +1005,33 @@ namespace System.Net.Sockets
                     ValueTask.FromException(CreateException(error));
             }
 
+            public ValueTask<int> SendToAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
+
+                if (socket.SendToAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask<int>(this, _token);
+                }
+
+                int bytesTransferred = BytesTransferred;
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
+            }
+
             public ValueTask ConnectAsync(Socket socket)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
                 try
                 {
-                    if (socket.ConnectAsync(this))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: false))
                     {
                         return new ValueTask(this, _token);
                     }
@@ -975,6 +1051,25 @@ namespace System.Net.Sockets
                     ValueTask.FromException(CreateException(error));
             }
 
+            public ValueTask DisconnectAsync(Socket socket, CancellationToken cancellationToken)
+            {
+                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+
+                if (socket.DisconnectAsync(this, cancellationToken))
+                {
+                    _cancellationToken = cancellationToken;
+                    return new ValueTask(this, _token);
+                }
+
+                SocketError error = SocketError;
+
+                Release();
+
+                return error == SocketError.Success ?
+                    ValueTask.CompletedTask :
+                    ValueTask.FromException(CreateException(error));
+            }
+
             /// <summary>Gets the status of the operation.</summary>
             public ValueTaskSourceStatus GetStatus(short token)
             {
@@ -985,7 +1080,7 @@ namespace System.Net.Sockets
 
                 return
                     !ReferenceEquals(_continuation, s_completedSentinel) ? ValueTaskSourceStatus.Pending :
-                    base.SocketError == SocketError.Success ? ValueTaskSourceStatus.Succeeded :
+                    SocketError == SocketError.Success ? ValueTaskSourceStatus.Succeeded :
                     ValueTaskSourceStatus.Faulted;
             }
 
@@ -1052,9 +1147,9 @@ namespace System.Net.Sockets
                     {
                         sc.Post(s =>
                         {
-                            var t = (Tuple<Action<object>, object>)s!;
+                            var t = ((Action<object>, object))s!;
                             t.Item1(t.Item2);
-                        }, Tuple.Create(continuation, state));
+                        }, (continuation, state));
                     }
                     else
                     {
@@ -1123,6 +1218,52 @@ namespace System.Net.Sockets
                 }
             }
 
+            SocketReceiveFromResult IValueTaskSource<SocketReceiveFromResult>.GetResult(short token)
+            {
+                if (token != _token)
+                {
+                    ThrowIncorrectTokenException();
+                }
+
+                SocketError error = SocketError;
+                int bytes = BytesTransferred;
+                EndPoint remoteEndPoint = RemoteEndPoint!;
+                CancellationToken cancellationToken = _cancellationToken;
+
+                Release();
+
+                if (error != SocketError.Success)
+                {
+                    ThrowException(error, cancellationToken);
+                }
+
+                return new SocketReceiveFromResult() { ReceivedBytes = bytes, RemoteEndPoint = remoteEndPoint };
+            }
+
+            SocketReceiveMessageFromResult IValueTaskSource<SocketReceiveMessageFromResult>.GetResult(short token)
+            {
+                if (token != _token)
+                {
+                    ThrowIncorrectTokenException();
+                }
+
+                SocketError error = SocketError;
+                int bytes = BytesTransferred;
+                EndPoint remoteEndPoint = RemoteEndPoint!;
+                SocketFlags socketFlags = SocketFlags;
+                IPPacketInformation packetInformation = ReceiveMessageFromPacketInfo;
+                CancellationToken cancellationToken = _cancellationToken;
+
+                Release();
+
+                if (error != SocketError.Success)
+                {
+                    ThrowException(error, cancellationToken);
+                }
+
+                return new SocketReceiveMessageFromResult() { ReceivedBytes = bytes, RemoteEndPoint = remoteEndPoint, SocketFlags = socketFlags, PacketInformation = packetInformation };
+            }
+
             private void ThrowIncorrectTokenException() => throw new InvalidOperationException(SR.InvalidOperation_IncorrectToken);
 
             private void ThrowMultipleContinuationsException() => throw new InvalidOperationException(SR.InvalidOperation_MultipleContinuations);
@@ -1146,8 +1287,8 @@ namespace System.Net.Sockets
                     e = ExceptionDispatchInfo.SetCurrentStackTrace(e);
                 }
 
-                return WrapExceptionsInIOExceptions ? (Exception)
-                    new IOException(SR.Format(SR.net_io_readfailure, e.Message), e) :
+                return WrapExceptionsForNetworkStream ?
+                    new IOException(SR.Format(_isReadForCaching ? SR.net_io_readfailure : SR.net_io_writefailure, e.Message), e) :
                     e;
             }
         }

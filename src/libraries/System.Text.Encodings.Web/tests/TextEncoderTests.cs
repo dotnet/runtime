@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace System.Text.Encodings.Web.Tests
@@ -16,13 +14,13 @@ namespace System.Text.Encodings.Web.Tests
         public void EncodeIntoBuffer_SurrogatePairs()
         {
             // Arange
-            ScalarTestEncoder encoder = new ScalarTestEncoder();
+            TextEncoder encoder = new ConfigurableScalarTextEncoder(_ => false);
 
             const string X = "\U00000058"; // LATIN CAPITAL LETTER X (ascii)
             const string Pair = "\U0001033A"; // GOTHIC LETTER KUSMA (surrogate pair)
 
-            const string eX = "00000058";
-            const string ePair = "0001033A";
+            const string eX = "[0058]";
+            const string ePair = "[1033A]";
 
             // Act & assert
             Assert.Equal("", encoder.Encode(""));
@@ -55,6 +53,7 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData(10, 10)]
         [InlineData(11, 11)]
         [InlineData(12, 11)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void EncodeUtf8_WellFormedInput_DoesNotRequireEncoding_CopiedToDestinationCorrectly(int destinationSize, int expectedBytesCopied)
         {
             // This test considers input which is well-formed and doesn't need to be encoded.
@@ -83,14 +82,12 @@ namespace System.Text.Encodings.Web.Tests
             Assert.Equal(expectedBytesCopied, bytesConsumed);
             Assert.Equal(expectedBytesCopied, bytesWritten); // bytes written should match bytes consumed if no encoding needs to take place
             Assert.Equal(fullUtf8Input.AsSpan(0, bytesConsumed).ToArray(), destination.AsSpan(0, bytesWritten).ToArray()); // ensure byte-for-byte copy
-            Assert.True(destination.AsSpan(bytesWritten).ToArray().All(el => el == 0)); // all remaining bytes should be unchanged
 
             destination = new byte[destinationSize];
             Assert.Equal(expectedOpStatus, encoder.EncodeUtf8(fullUtf8Input, destination, out bytesConsumed, out bytesWritten, isFinalBlock: false));
             Assert.Equal(expectedBytesCopied, bytesConsumed);
             Assert.Equal(expectedBytesCopied, bytesWritten); // bytes written should match bytes consumed if no encoding needs to take place
             Assert.Equal(fullUtf8Input.AsSpan(0, bytesConsumed).ToArray(), destination.AsSpan(0, bytesWritten).ToArray()); // ensure byte-for-byte copy
-            Assert.True(destination.AsSpan(bytesWritten).ToArray().All(el => el == 0)); // all remaining bytes should be unchanged
         }
 
         [Fact]
@@ -179,7 +176,7 @@ namespace System.Text.Encodings.Web.Tests
                 {
                     destination = new byte[destinationLength];
 
-                        Assert.Equal(OperationStatus.Done, encoder.EncodeUtf8(aggregateInputBytesSoFar.ToArray(), destination, out bytesConsumed, out bytesWritten, isFinalBlock: false));
+                    Assert.Equal(OperationStatus.Done, encoder.EncodeUtf8(aggregateInputBytesSoFar.ToArray(), destination, out bytesConsumed, out bytesWritten, isFinalBlock: false));
                     Assert.Equal(aggregateInputBytesSoFar.Count, bytesConsumed);
                     Assert.Equal(expectedOutputBytesSoFar.Count, bytesWritten);
                     Assert.Equal(expectedOutputBytesSoFar.ToArray(), new Span<byte>(destination, 0, expectedOutputBytesSoFar.Count).ToArray());
@@ -261,6 +258,7 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData(new byte[] { 0xF1, 0x80, 0x80 }, 0)]
         [InlineData(new byte[] { 0xF1, 0x80, 0x80, 0x80, 0xFF }, 4)]
         [InlineData(new byte[] { 0xFF, 0x80, 0x80, 0x80, 0xFF }, 0)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void FindFirstCharToEncodeUtf8_IllFormedData_ReturnsIndexOfIllFormedSubsequence(byte[] utf8Data, int expectedIndex)
         {
             // Arrange
@@ -274,6 +272,88 @@ namespace System.Text.Encodings.Web.Tests
             // Assert
 
             Assert.Equal(expectedIndex, actualIndex);
+        }
+
+        [Theory]
+        [InlineData("", 0, "", 0, OperationStatus.Done)]
+        [InlineData("", 20, "", 0, OperationStatus.Done)]
+        [InlineData("ABC", 0, "", 0, OperationStatus.DestinationTooSmall)]
+        [InlineData("ABC", 2, "AB", 2, OperationStatus.DestinationTooSmall)]
+        [InlineData("ABC", 3, "ABC", 3, OperationStatus.Done)]
+        [InlineData("ABC", 30, "ABC", 3, OperationStatus.Done)]
+        [InlineData("ABC+DEF", 3, "ABC", 3, OperationStatus.DestinationTooSmall)]
+        [InlineData("ABC+DEF", 8, "ABC", 3, OperationStatus.DestinationTooSmall)]
+        [InlineData("ABC+DEF", 9, "ABC[002B]", 4, OperationStatus.DestinationTooSmall)]
+        [InlineData("ABC+DEF", 12, "ABC[002B]DEF", 7, OperationStatus.Done)]
+        public void EncodeUtf16_OperationStatus_AlphaNumericOnly(string input, int destBufferSize, string expectedOutput, int expectedCharsConsumed, OperationStatus expectedResult)
+        {
+            // Arrange
+
+            var encoder = new ConfigurableScalarTextEncoder(scalar => UnicodeUtility.IsInRangeInclusive((uint)scalar | 0x20, 'a', 'z')); // allow only [A-Za-z] unescaped
+            using BoundedMemory<char> boundedInput = BoundedMemory.AllocateFromExistingData<char>(input.AsSpan());
+            using BoundedMemory<char> boundedOutput = BoundedMemory.Allocate<char>(destBufferSize);
+
+            // Act
+
+            OperationStatus actualResult = encoder.Encode(boundedInput.Span, boundedOutput.Span, out int actualCharsConsumed, out int actualCharsWritten);
+
+            // Assert
+
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(expectedCharsConsumed, actualCharsConsumed);
+            Assert.Equal(expectedOutput, boundedOutput.Span.Slice(0, actualCharsWritten).ToString());
+        }
+
+        [Theory]
+        [InlineData("ABC\U0001F600", 4, "ABC", 3, OperationStatus.DestinationTooSmall)] // don't allow breaking across a surrogate
+        [InlineData("ABC\U0001F600", 5, "ABC\U0001F600", 5, OperationStatus.Done)]
+        public void EncodeUtf16_OperationStatus_AllowEverything(string input, int destBufferSize, string expectedOutput, int expectedCharsConsumed, OperationStatus expectedResult)
+        {
+            // Arrange
+
+            var encoder = new ConfigurableScalarTextEncoder(_ => true); // allow all well-formed scalars
+            using BoundedMemory<char> boundedInput = BoundedMemory.AllocateFromExistingData<char>(input.AsSpan());
+            using BoundedMemory<char> boundedOutput = BoundedMemory.Allocate<char>(destBufferSize);
+
+            // Act
+
+            OperationStatus actualResult = encoder.Encode(boundedInput.Span, boundedOutput.Span, out int actualCharsConsumed, out int actualCharsWritten);
+
+            // Assert
+
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(expectedCharsConsumed, actualCharsConsumed);
+            Assert.Equal(expectedOutput, boundedOutput.Span.Slice(0, actualCharsWritten).ToString());
+        }
+
+        [Theory]
+        [InlineData(new[] { 'A', 'B', '\ud83d' }, 2, true, "AB", 2, OperationStatus.DestinationTooSmall)]
+        [InlineData(new[] { 'A', 'B', '\ud83d' }, 2, false, "AB", 2, OperationStatus.NeedMoreData)]
+        [InlineData(new[] { 'A', 'B', '\ud83d' }, 3, true, "AB", 2, OperationStatus.DestinationTooSmall)]
+        [InlineData(new[] { 'A', 'B', '\ud83d' }, 3, false, "AB", 2, OperationStatus.NeedMoreData)]
+        [InlineData(new[] { 'A', 'B', '\ud83d' }, 10, true, "AB[FFFD]", 3, OperationStatus.Done)]
+        [InlineData(new[] { 'A', 'B', '\ud83d' }, 10, false, "AB", 2, OperationStatus.NeedMoreData)]
+        [InlineData(new[] { 'A', 'B', '\ud83d', '\ude00' }, 2, true, "AB", 2, OperationStatus.DestinationTooSmall)]
+        [InlineData(new[] { 'A', 'B', '\ud83d', '\ude00' }, 2, false, "AB", 2, OperationStatus.DestinationTooSmall)]
+        [InlineData(new[] { 'A', 'B', '\ud83d', '\ude00' }, 4, true, "AB\U0001F600", 4, OperationStatus.Done)]
+        [InlineData(new[] { 'A', 'B', '\ud83d', '\ude00' }, 4, false, "AB\U0001F600", 4, OperationStatus.Done)]
+        public void EncodeUtf16_OperationStatus_SurrogateHandlingEdgeCases(char[] input, int destBufferSize, bool isFinalBlock, string expectedOutput, int expectedCharsConsumed, OperationStatus expectedResult)
+        {
+            // Arrange
+
+            var encoder = new ConfigurableScalarTextEncoder(_ => true); // allow all well-formed scalars
+            using BoundedMemory<char> boundedInput = BoundedMemory.AllocateFromExistingData(input);
+            using BoundedMemory<char> boundedOutput = BoundedMemory.Allocate<char>(destBufferSize);
+
+            // Act
+
+            OperationStatus actualResult = encoder.Encode(boundedInput.Span, boundedOutput.Span, out int actualCharsConsumed, out int actualCharsWritten, isFinalBlock);
+
+            // Assert
+
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(expectedCharsConsumed, actualCharsConsumed);
+            Assert.Equal(expectedOutput, boundedOutput.Span.Slice(0, actualCharsWritten).ToString());
         }
     }
 }

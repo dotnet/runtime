@@ -745,6 +745,53 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void SectionGetRequiredSectionSuccess()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", "Value1"},
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+                {"Mem1:KeyInMem1:Deep1", "ValueDeep1"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            IConfigurationRoot config = configurationBuilder.Build();
+
+            // Act
+            var sectionExists1 = config.GetRequiredSection("Mem1").Exists();
+            var sectionExists2 = config.GetRequiredSection("Mem1:KeyInMem1").Exists();
+
+            // Assert
+            Assert.True(sectionExists1);
+            Assert.True(sectionExists2);
+        }
+
+        [Fact]
+        public void SectionGetRequiredSectionMissingThrowException()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", "Value1"},
+                {"Mem1:Deep1", "Value1"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            IConfigurationRoot config = configurationBuilder.Build();
+
+            Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem2"));
+            Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem1:Deep2"));
+        }
+
+        [Fact]
+        public void SectionGetRequiredSectionNullThrowException()
+        {
+            IConfigurationRoot config = null;
+            Assert.Throws<ArgumentNullException>(() => config.GetRequiredSection("Mem1"));
+        }
+
+        [Fact]
         public void SectionWithChildrenExists()
         {
             // Arrange
@@ -769,6 +816,69 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.False(sectionNotExists);
         }
 
+        [Theory]
+        [InlineData("Value1")]
+        [InlineData("")]
+        public void KeyWithValueAndWithoutChildrenExistsAsSection(string value)
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", value}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            // Act
+            var sectionExists = config.GetSection("Mem1").Exists();
+
+            // Assert
+            Assert.True(sectionExists);
+        }
+
+        [Fact]
+        public void KeyWithNullValueAndWithoutChildrenIsASectionButNotExists()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1", null}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            // Act
+            var sections = config.GetChildren();
+            var sectionExists = config.GetSection("Mem1").Exists();
+            var sectionChildren = config.GetSection("Mem1").GetChildren();
+
+            // Assert
+            Assert.Single(sections, section => section.Key == "Mem1");
+            Assert.False(sectionExists);
+            Assert.Empty(sectionChildren);
+        }
+
+        [Fact]
+        public void SectionWithChildrenHasNullValue()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dict);
+            var config = configurationBuilder.Build();
+
+            // Act
+            var sectionValue = config.GetSection("Mem1").Value;
+
+            // Assert
+            Assert.Null(sectionValue);
+        }
+
         [Fact]
         public void NullSectionDoesNotExist()
         {
@@ -778,6 +888,30 @@ namespace Microsoft.Extensions.Configuration.Test
 
             // Assert
             Assert.False(sectionExists);
+        }
+
+        internal class NullReloadTokenConfigSource : IConfigurationSource, IConfigurationProvider
+        {
+            public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath) => throw new NotImplementedException();
+            public Primitives.IChangeToken GetReloadToken() => null;
+            public void Load() { }
+            public void Set(string key, string value) => throw new NotImplementedException();
+            public bool TryGet(string key, out string value) => throw new NotImplementedException();
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+        }
+
+        [Fact]
+        public void ProviderWithNullReloadToken()
+        {
+            // Arrange
+            var builder = new ConfigurationBuilder();
+            builder.Add(new NullReloadTokenConfigSource());
+
+            // Act
+            var config = builder.Build();
+
+            // Assert
+            Assert.NotNull(config);
         }
     }
 }

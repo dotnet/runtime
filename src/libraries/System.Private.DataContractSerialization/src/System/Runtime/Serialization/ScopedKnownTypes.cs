@@ -25,12 +25,12 @@ namespace System.Runtime.Serialization
             _count--;
         }
 
-        internal DataContract GetDataContract(XmlQualifiedName qname)
+        internal DataContract? GetDataContract(XmlQualifiedName qname)
         {
             for (int i = (_count - 1); i >= 0; i--)
             {
                 DataContractDictionary dataContractDictionary = dataContractDictionaries[i];
-                DataContract dataContract;
+                DataContract? dataContract;
                 if (dataContractDictionary.TryGetValue(qname, out dataContract))
                     return dataContract;
             }

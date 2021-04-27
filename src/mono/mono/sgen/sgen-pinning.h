@@ -42,10 +42,17 @@ void sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx);
 
 /* Pinning stats */
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 void sgen_pin_stats_register_address (char *addr, int pin_type);
 size_t sgen_pin_stats_get_pinned_byte_count (int pin_type);
 SgenPointerQueue *sgen_pin_stats_get_object_list (void);
 void sgen_pin_stats_reset (void);
+#else
+static inline void sgen_pin_stats_register_address (char *addr, int pin_type) { }
+static inline size_t sgen_pin_stats_get_pinned_byte_count (int pin_type) { return 0; }
+static inline SgenPointerQueue *sgen_pin_stats_get_object_list (void) { return NULL; }
+static inline void sgen_pin_stats_reset (void) { }
+#endif
 
 /* Perpetual pinning, aka cementing */
 

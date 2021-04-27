@@ -96,15 +96,15 @@ namespace System.Net
 
         private static WebExceptionStatus GetStatusFromExceptionHelper(HttpRequestException ex)
         {
-            SocketException? socketEx = ex.InnerException as SocketException;
+            SocketException? socketException = ex.InnerException as SocketException;
 
-            if (socketEx is null)
+            if (socketException is null)
             {
                 return WebExceptionStatus.UnknownError;
             }
 
             WebExceptionStatus status;
-            switch (socketEx.SocketErrorCode)
+            switch (socketException.SocketErrorCode)
             {
                 case SocketError.NoData:
                 case SocketError.HostNotFound:

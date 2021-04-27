@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#if defined(__APPLE__) && __APPLE__
+#include <CommonCrypto/CommonRandom.h>
+#endif
 
 #include "pal_config.h"
 #include "pal_random.h"
@@ -35,7 +38,7 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 
     if (!sInitializedMRand)
     {
-        srand48(time(NULL));
+        srand48((long int)time(NULL));
         sInitializedMRand = true;
     }
 
@@ -63,10 +66,34 @@ Return 0 on success, -1 on failure.
 */
 int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength)
 {
+    assert(buffer != NULL);
+
+#ifdef __EMSCRIPTEN__
+    extern int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength);
+    static bool sMissingBrowserCrypto;
+    if (!sMissingBrowserCrypto)
+    {
+        int32_t bff = dotnet_browser_entropy(buffer, bufferLength);
+        if (bff == -1)
+            sMissingBrowserCrypto = true;
+        else
+            return 0;
+    }
+#elif defined(__APPLE__) && __APPLE__
+    CCRNGStatus status = CCRandomGenerateBytes(buffer, bufferLength);
+
+    if (status == kCCSuccess)
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+#else
+
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;
-
-    assert(buffer != NULL);
 
     if (!sMissingDevURandom)
     {
@@ -121,6 +148,6 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
             return 0;
         }
     }
-
+#endif
     return -1;
 }

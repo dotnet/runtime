@@ -9,25 +9,47 @@ namespace System.IO
     /// <summary>Provides a <see cref="Stream"/> for the contents of a <see cref="ReadOnlyMemory{Byte}"/>.</summary>
     internal sealed class ReadOnlyMemoryStream : Stream
     {
-        private readonly ReadOnlyMemory<byte> _content;
+        private ReadOnlyMemory<byte> _content;
         private int _position;
+        private bool _isOpen;
 
         public ReadOnlyMemoryStream(ReadOnlyMemory<byte> content)
         {
             _content = content;
+            _isOpen = true;
         }
 
-        public override bool CanRead => true;
-        public override bool CanSeek => true;
+        public override bool CanRead => _isOpen;
+        public override bool CanSeek => _isOpen;
         public override bool CanWrite => false;
 
-        public override long Length => _content.Length;
+        private void EnsureNotClosed()
+        {
+            if (!_isOpen)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            }
+        }
+
+        public override long Length
+        {
+            get
+            {
+                EnsureNotClosed();
+                return _content.Length;
+            }
+        }
 
         public override long Position
         {
-            get => _position;
+            get
+            {
+                EnsureNotClosed();
+                return _position;
+            }
             set
             {
+                EnsureNotClosed();
                 if (value < 0 || value > int.MaxValue)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -38,6 +60,8 @@ namespace System.IO
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            EnsureNotClosed();
+
             long pos =
                 origin == SeekOrigin.Begin ? offset :
                 origin == SeekOrigin.Current ? _position + offset :
@@ -59,18 +83,26 @@ namespace System.IO
 
         public override int ReadByte()
         {
+            EnsureNotClosed();
+
             ReadOnlySpan<byte> s = _content.Span;
             return _position < s.Length ? s[_position++] : -1;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateReadArrayArguments(buffer, offset, count);
-            return Read(new Span<byte>(buffer, offset, count));
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadBuffer(new Span<byte>(buffer, offset, count));
         }
 
-        public override int Read(Span<byte> buffer)
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+        public override int Read(Span<byte> buffer) => ReadBuffer(buffer);
+#endif
+
+        private int ReadBuffer(Span<byte> buffer)
         {
+            EnsureNotClosed();
+
             int remaining = _content.Length - _position;
 
             if (remaining <= 0 || buffer.Length == 0)
@@ -93,26 +125,37 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateReadArrayArguments(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
+            EnsureNotClosed();
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
-                Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
+                Task.FromResult(ReadBuffer(new Span<byte>(buffer, offset, count)));
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
-            cancellationToken.IsCancellationRequested ?
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            EnsureNotClosed();
+            return cancellationToken.IsCancellationRequested ?
                 ValueTask.FromCanceled<int>(cancellationToken) :
-                new ValueTask<int>(Read(buffer.Span));
+                new ValueTask<int>(ReadBuffer(buffer.Span));
+        }
+#endif
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
 
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            EnsureNotClosed();
+            return TaskToApm.End<int>(asyncResult);
+        }
 
+#if !NETFRAMEWORK && !NETSTANDARD2_0
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
             if (_content.Length > _position)
             {
                 destination.Write(_content.Span.Slice(_position));
@@ -121,11 +164,13 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
             return _content.Length > _position ?
                 destination.WriteAsync(_content.Slice(_position), cancellationToken).AsTask() :
                 Task.CompletedTask;
         }
+#endif
 
         public override void Flush() { }
 
@@ -135,20 +180,31 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        private static void ValidateReadArrayArguments(byte[] buffer, int offset, int count)
+        protected override void Dispose(bool disposing)
         {
-            if (buffer == null)
+            _isOpen = false;
+            _content = default;
+            base.Dispose(disposing);
+        }
+
+#if NETFRAMEWORK || NETSTANDARD2_0
+        private static void ValidateBufferArguments(byte[] buffer, int offset, int count)
+        {
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
+
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            if (count < 0 || buffer.Length - offset < count)
+
+            if ((uint)count > buffer.Length - offset)
             {
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Argument_InvalidOffLen);
             }
         }
+#endif
     }
 }

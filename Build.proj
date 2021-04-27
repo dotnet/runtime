@@ -1,21 +1,14 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <!--
-    Subsets are already imported by Directory.Build.props.
-    Reference the projects for traversal build. Ordering matters here.
-  -->
-  <ItemGroup>
-    <ProjectReference Include="@(ProjectToBuild)" />
-  </ItemGroup>
+  <PropertyGroup>
+    <TraversalGlobalProperties Condition="'$(BuildAllConfigurations)' != 'true'">BuildTargetFramework=$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TraversalGlobalProperties>
+  </PropertyGroup>
 
-  <!--
-    Exclude installer depproj and pkgproj from static graph restore. We restore them below.
-    Remove when https://github.com/NuGet/Home/issues/9398 is fixed.
-  -->
-  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Remove="@(DepprojProjectToBuild)"  />
-    <ProjectReference Remove="@(PkgprojProjectToBuild)" />
-    <ProjectReference Remove="@(BundleProjectToBuild)" />
+  <ItemGroup>
+    <!-- Subsets are already imported by Directory.Build.props. -->
+    <ProjectReference Include="@(ProjectToBuild)" />
+    <!-- Only include tasks.proj during restore and build incrementally via a target. -->
+    <ProjectReference Include="$(RepoTasksDir)tasks.proj" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
   <!-- Custom arcade target which isn't available in Microsoft.Build.Traversal. -->
@@ -25,19 +18,11 @@
 
   <!-- Upfront restore hooks -->
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
 
   <Target Name="BuildLocalTasks"
-          BeforeTargets="Restore">
+          BeforeTargets="Build">
     <MSBuild Projects="$(RepoTasksDir)tasks.proj"
-             Targets="BuildAndRestoreIncrementally"/>
+             Targets="BuildIncrementally" />
   </Target>
-
-  <Target Name="RestoreWithoutStaticGraph"
-          BeforeTargets="Restore">
-    <MSBuild Projects="@(LibrariesRestoreProject);@(DepprojProjectToBuild);@(PkgprojProjectToBuild);@(BundleProjectToBuild)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestoreUseStaticGraphEvaluation=false"
-             Targets="Restore" />
-  </Target>
-
 </Project>

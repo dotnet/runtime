@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
                 //
                 // This is due to one version of the ASN.1 not including OPTIONAL, and that was
                 // the version that got predominately implemented for RSA. Now it's convention.
-                new AsnEncodedData(oid, new byte[] { 0x05, 0x00 }),
+                new AsnEncodedData(oid, stackalloc byte[] { 0x05, 0x00 }),
                 new AsnEncodedData(oid, rsa.ExportRSAPublicKey()));
         }
 

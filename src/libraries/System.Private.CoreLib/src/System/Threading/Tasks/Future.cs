@@ -58,10 +58,13 @@ namespace System.Threading.Tasks
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
-        // The value itself, if set.
-        [MaybeNull, AllowNull] internal TResult m_result = default!;
+        /// <summary>A cached task for default(TResult).</summary>
+        internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
 
-        private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
+        private static TaskFactory<TResult>? s_Factory;
+
+        // The value itself, if set.
+        internal TResult? m_result;
 
         // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
         // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.
@@ -93,7 +96,7 @@ namespace System.Threading.Tasks
             m_result = result;
         }
 
-        internal Task(bool canceled, [AllowNull] TResult result, TaskCreationOptions creationOptions, CancellationToken ct)
+        internal Task(bool canceled, TResult? result, TaskCreationOptions creationOptions, CancellationToken ct)
             : base(canceled, creationOptions, ct)
         {
             if (!canceled)
@@ -364,7 +367,7 @@ namespace System.Threading.Tasks
 
 
         // internal helper function breaks out logic used by TaskCompletionSource
-        internal bool TrySetResult([AllowNull] TResult result)
+        internal bool TrySetResult(TResult? result)
         {
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
@@ -483,7 +486,10 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory{TResult}"/>, as would result from using
         /// the default constructor on the factory type.
         /// </remarks>
-        public static new TaskFactory<TResult> Factory => s_Factory;
+        public static new TaskFactory<TResult> Factory =>
+            Volatile.Read(ref s_Factory) ??
+            Interlocked.CompareExchange(ref s_Factory, new TaskFactory<TResult>(), null) ??
+            s_Factory;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
@@ -526,6 +532,47 @@ namespace System.Threading.Tasks
             return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext);
         }
 
+        #endregion
+
+        #region WaitAsync methods
+        /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(CancellationToken cancellationToken) =>
+            WaitAsync(Timeout.UnsignedInfinite, cancellationToken);
+
+        /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified timeout expires.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout) =>
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), default);
+
+        /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), cancellationToken);
+
+        private Task<TResult> WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            if (IsCompleted || (!cancellationToken.CanBeCanceled && millisecondsTimeout == Timeout.UnsignedInfinite))
+            {
+                return this;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled<TResult>(cancellationToken);
+            }
+
+            if (millisecondsTimeout == 0)
+            {
+                return FromException<TResult>(new TimeoutException());
+            }
+
+            return new CancellationPromise<TResult>(this, millisecondsTimeout, cancellationToken);
+        }
         #endregion
 
         #region Continuation methods
@@ -1347,7 +1394,7 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal class SystemThreadingTasks_FutureDebugView<TResult>
+    internal sealed class SystemThreadingTasks_FutureDebugView<TResult>
     {
         private readonly Task<TResult> m_task;
 
@@ -1357,7 +1404,7 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        [MaybeNull] public TResult Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default!;
+        public TResult? Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default;
         public object? AsyncState => m_task.AsyncState;
         public TaskCreationOptions CreationOptions => m_task.CreationOptions;
         public Exception? Exception => m_task.Exception;

@@ -1,0 +1,84 @@
+<Project>
+  <!-- Invoke hotreload-delta-gen to apply the DeltaScript to the output assembly to
+       create the .dmeta, .dil and .dpdb files on the OutputPath -->
+  <!-- Have to be careful about AfterTargets. If we happen to go after a design-time target, we could get into an infinite loop. -->
+  <Target Name="CompileDiff" AfterTargets="Build">
+    <Message Importance="High" Condition="'$(HotreloadDeltaGenFullPath)' == ''" Text="WARNING: HotreloadDeltaGenFullPath property is unset.  Will run 'hotreload-delta-gen' assuming it is on the PATH" />
+    <Error Condition="'$(DeltaScript)' == ''" Text="DeltaScript property not set in project - don't know how to invoke hotreload-delta-gen" />
+    <PropertyGroup>
+      <HotreloadDeltaGenFullPath Condition="'$(HotreloadDeltaGenFullPath)' == ''">hotreload-delta-gen</HotreloadDeltaGenFullPath>
+      <HotreloadDeltaGenArgs>-msbuild:$(MSBuildProjectFullPath)</HotreloadDeltaGenArgs>
+      <!-- HACK: have to pass config and RID  so that this target works for a 'dotnet publish' run.
+	         What other properties do  I need to pass? Maybe hotreload-delta-gen should just expose an MSBuild task so we can pass everything -->
+      <HotreloadDeltaGenArgs Condition="'$(Configuration)' != ''">$(HotreloadDeltaGenArgs) -p:Configuration=$(Configuration)</HotreloadDeltaGenArgs>
+      <HotreloadDeltaGenArgs Condition="'$(RuntimeIdentifier)' != ''">$(HotreloadDeltaGenArgs) -p:RuntimeIdentifier=$(RuntimeIdentifier)</HotreloadDeltaGenArgs>
+      <HotreloadDeltaGenArgs Condition="'$(BuiltRuntimeConfiguration)' != ''">$(HotreloadDeltaGenArgs) -p:BuiltRuntimeConfiguration=$(BuiltRuntimeConfiguration)</HotreloadDeltaGenArgs>
+      <HotreloadDeltaGenArgs>$(HotreloadDeltaGenArgs) -script:$(DeltaScript)</HotreloadDeltaGenArgs>
+    </PropertyGroup>
+    <Exec Command="$(HotreloadDeltaGenFullPath) $(HotreloadDeltaGenArgs)"/>
+  </Target>
+
+  <!-- Computes the names of the files that hotreload-delta-gen will produce, given the name of the base assembly and the
+       number of deltas -->
+  <UsingTask TaskName="ComputeDeltaFileOutputNames" TaskFactory="RoslynCodeTaskFactory"
+	     AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >
+    <ParameterGroup>
+      <BaseAssemblyName ParameterType="System.String" Required="true" />
+      <DeltaCount ParameterType="System.Int32" Required="true" />
+      <DeltaOutputs ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <!-- <Reference Include=""/> -->
+      <Using Namespace="System"/>
+      <Using Namespace="System.IO"/>
+      <Code Type="Fragment" Language="cs">
+<![CDATA[
+// Display "Hello, world!"
+//Log.LogWarning("Hello, world!");
+// Log.LogMessageFromText($"Parameter1: '{Parameter1}'", MessageImportance.High);
+int count = DeltaCount;
+if (count == 0) {
+    Log.LogError("Did not expect 0 deltas");
+    Success = false;
+    return Success;
+}
+string baseAssemblyName = BaseAssemblyName;
+ITaskItem[] result = new TaskItem[3*count];
+for (int i = 0; i < count; ++i) {
+    int rev = 1+i;
+    string dmeta = baseAssemblyName + $".{rev}.dmeta";
+    string dil = baseAssemblyName + $".{rev}.dil";
+    string dpdb = baseAssemblyName + $".{rev}.dpdb";
+    result[3*i] = new TaskItem(dmeta);
+    result[3*i+1] = new TaskItem(dil);
+    result[3*i+2] = new TaskItem(dpdb);
+}
+DeltaOutputs = result;
+]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+
+  <Target Name="ComputeDeltaFileOutputNames">
+    <Error Condition="'$(DeltaCount)' == ''" Text="Set the DeltaCount property to the total number of deltas in this project" />
+    <!-- FIXME: is AssemblyName the best property to get the output assembly? -->
+    <ComputeDeltaFileOutputNames BaseAssemblyName="$(OutputPath)\$(AssemblyName).dll" DeltaCount="$(DeltaCount)">
+      <Output TaskParameter="DeltaOutputs" ItemName="_DeltaFileForPublish" />
+    </ComputeDeltaFileOutputNames>
+    <Message Importance="High" Text="Task gave me @(_DeltaFileForPublish)" />
+  </Target>
+
+  <Target Name="AddDiffsToPublishList"
+	  AfterTargets="ComputeResolvedFilesToPublishList"
+	  DependsOnTargets="ComputeDeltaFileOutputNames" >
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_DeltaFileForPublish)">
+	<RelativePath>.\%(Filename)%(Extension)</RelativePath>
+	<CopyToPublishDirectory>always</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+    <Message Importance="Low" Text="XXX ResolvedFileToPublish @(ResolvedFileToPublish)"/>
+  </Target>
+
+</Project>

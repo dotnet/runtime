@@ -72,7 +72,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class LongCountAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<long>
+        private sealed class LongCountAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<long>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The source data.
 
@@ -95,8 +95,8 @@ namespace System.Linq.Parallel
 
             protected override bool MoveNextCore(ref long currentElement)
             {
-                TSource elementUnused = default(TSource)!;
-                TKey keyUnused = default(TKey)!;
+                TSource? elementUnused = default(TSource);
+                TKey? keyUnused = default(TKey);
 
                 QueryOperatorEnumerator<TSource, TKey> source = _source;
                 if (source.MoveNext(ref elementUnused, ref keyUnused))
@@ -107,7 +107,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         checked
                         {

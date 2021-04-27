@@ -63,7 +63,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Constructor2_NullAsMetadataArgument_ShouldSetMetadataPropertyToEmptyDictionary()
         {
-            var definition = new ExportDefinition("Contract", (IDictionary<string, object>)null); ;
+            var definition = new ExportDefinition("Contract", (IDictionary<string, object>)null);
 
             Assert.Empty(definition.Metadata);
         }

@@ -547,8 +547,8 @@ namespace System.CodeDom.Compiler
             ValidateExpression(e.Condition);
             ValidateStatements(e.TrueStatements);
 
-            CodeStatementCollection falseStatemetns = e.FalseStatements;
-            if (falseStatemetns.Count > 0)
+            CodeStatementCollection falseStatements = e.FalseStatements;
+            if (falseStatements.Count > 0)
             {
                 ValidateStatements(e.FalseStatements);
             }

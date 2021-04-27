@@ -51,6 +51,16 @@
   <comClass
     clsid="{66DB7882-E2B0-471D-92C7-B2B52A0EA535}"
     threadingModel="Both" />
+
+  <!-- InspectableTesting -->
+  <comClass
+    clsid="{CE137261-6F19-44F5-A449-EF963B3F987E}"
+    threadingModel="Both" />
+
+  <!-- TrackMyLifetimeTesting -->
+  <comClass
+    clsid="{4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811}"
+    threadingModel="Both" />
 </file>
 
 </assembly>

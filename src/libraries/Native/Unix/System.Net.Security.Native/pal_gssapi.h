@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma once
+#include "pal_config.h"
 #include "pal_compiler.h"
 
 #if HAVE_GSSFW_HEADERS || HAVE_HEIMDAL_HEADERS

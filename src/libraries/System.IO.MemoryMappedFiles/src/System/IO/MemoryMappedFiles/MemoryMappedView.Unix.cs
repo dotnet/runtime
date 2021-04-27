@@ -6,9 +6,9 @@ using System.Diagnostics;
 
 namespace System.IO.MemoryMappedFiles
 {
-    internal partial class MemoryMappedView
+    internal sealed partial class MemoryMappedView
     {
-        public static unsafe MemoryMappedView CreateView(
+        public static MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {
@@ -26,7 +26,7 @@ namespace System.IO.MemoryMappedFiles
             }
             if (memMappedFileHandle.IsClosed)
             {
-                throw new ObjectDisposedException(typeof(MemoryMappedFile).Name);
+                throw new ObjectDisposedException(nameof(MemoryMappedFile));
             }
 
             if (requestedSize == MemoryMappedFile.DefaultSize)

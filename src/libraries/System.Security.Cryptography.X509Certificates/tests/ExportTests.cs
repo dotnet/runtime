@@ -8,6 +8,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class ExportTests
     {
         [Fact]
+        public static void ExportAsCert_CreatesCopy()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                byte[] first = cert.Export(X509ContentType.Cert);
+                byte[] second = cert.Export(X509ContentType.Cert);
+                Assert.NotSame(first, second);
+            }
+        }
+
+        [Fact]
         public static void ExportAsCert()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -65,7 +76,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportAsPfxWithPassword()
         {
-            const string password = "Cotton";
+            const string password = "PLACEHOLDER";
 
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
             {
@@ -83,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportAsPfxVerifyPassword()
         {
-            const string password = "Cotton";
+            const string password = "PLACEHOLDER";
 
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
             {
@@ -98,8 +109,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
             {
                 Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
-
-                const string password = "Cotton";
+                const string password = "PLACEHOLDER";
 
                 byte[] pfx = cert.Export(X509ContentType.Pkcs12, password);
 

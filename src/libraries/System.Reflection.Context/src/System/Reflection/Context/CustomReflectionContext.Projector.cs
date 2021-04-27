@@ -9,7 +9,7 @@ namespace System.Reflection.Context
 {
     public partial class CustomReflectionContext
     {
-        private class ReflectionContextProjector : Projector
+        private sealed class ReflectionContextProjector : Projector
         {
             public ReflectionContextProjector(CustomReflectionContext context)
             {

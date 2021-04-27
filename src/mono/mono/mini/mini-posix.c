@@ -56,9 +56,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-compiler.h>
@@ -77,7 +75,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "version.h"
 #include "debugger-agent.h"
 #include "mini-runtime.h"
 #include "jit-icalls.h"
@@ -108,13 +105,6 @@ mono_runtime_setup_stat_profiler (void)
 	printf("WARNING: mono_runtime_setup_stat_profiler() called!\n");
 }
 
-
-void
-mono_runtime_shutdown_stat_profiler (void)
-{
-}
-
-
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
@@ -137,11 +127,6 @@ mono_runtime_posix_install_handlers(void)
 
 void
 mono_runtime_shutdown_handlers (void)
-{
-}
-
-void
-mono_runtime_cleanup_handlers (void)
 {
 }
 
@@ -185,13 +170,6 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
 	g_hash_table_insert (mono_saved_signal_handlers, GINT_TO_POINTER (signo), handler_to_save);
 }
 
-static void
-free_saved_signal_handlers (void)
-{
-	g_hash_table_destroy (mono_saved_signal_handlers);
-	mono_saved_signal_handlers = NULL;
-}
-
 /*
  * mono_chain_signal:
  *
@@ -226,13 +204,13 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (mono_thread_internal_current ())
-		ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (mono_arch_ip_from_context (ctx), TRUE, TRUE);
 	if (!ji) {
 		if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		mono_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info, ctx);
+			mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
 		else
 			abort ();
 	}
@@ -254,7 +232,7 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	// running. Returns FALSE on unrecoverable error.
 	if (mono_dump_start ()) {
 		// Process was killed from outside since crash reporting wasn't running yet.
-		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, NULL, ctx);
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, NULL);
 	} else {
 		// Crash reporting already running and we got a second SIGTERM from as part of thread-summarizing
 		if (!mono_threads_summarize_execute (&mctx, &output, &hashes, FALSE, NULL, 0))
@@ -324,13 +302,6 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 {
-	gboolean res;
-
-	/* We use this signal to start the attach agent too */
-	res = mono_attach_start ();
-	if (res)
-		return;
-
 	mono_threads_request_thread_dump ();
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -491,27 +462,6 @@ mono_runtime_install_handlers (void)
 }
 #endif
 
-void
-mono_runtime_cleanup_handlers (void)
-{
-	if (mini_debug_options.handle_sigint)
-		remove_signal_handler (SIGINT);
-
-	remove_signal_handler (SIGFPE);
-	remove_signal_handler (SIGQUIT);
-	remove_signal_handler (SIGILL);
-	remove_signal_handler (SIGBUS);
-	if (mono_jit_trace_calls != NULL)
-		remove_signal_handler (SIGUSR2);
-	remove_signal_handler (SIGSYS);
-
-	remove_signal_handler (SIGABRT);
-
-	remove_signal_handler (SIGSEGV);
-
-	free_saved_signal_handlers ();
-}
-
 #ifdef HAVE_PROFILER_SIGNAL
 
 static volatile gint32 sampling_thread_running;
@@ -523,6 +473,7 @@ static clock_serv_t sampling_clock;
 static void
 clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
+	mono_clock_init (&sampling_clock);
 }
 
 static void
@@ -691,7 +642,6 @@ init:
 		goto init;
 	}
 
-	mono_clock_init (&sampling_clock);
 	clock_init_for_profiler (mode);
 
 	for (guint64 sleep = mono_clock_get_time_ns (sampling_clock); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
@@ -738,52 +688,6 @@ done:
 }
 
 void
-mono_runtime_shutdown_stat_profiler (void)
-{
-	mono_atomic_store_i32 (&sampling_thread_running, 0);
-
-	mono_profiler_sampling_thread_post ();
-
-#ifndef HOST_DARWIN
-	/*
-	 * There is a slight problem when we're using CLOCK_PROCESS_CPUTIME_ID: If
-	 * we're shutting down and there's largely no activity in the process other
-	 * than waiting for the sampler thread to shut down, it can take upwards of
-	 * 20 seconds (depending on a lot of factors) for us to shut down because
-	 * the sleep progresses very slowly as a result of the low CPU activity.
-	 *
-	 * We fix this by repeatedly sending the profiler signal to the sampler
-	 * thread in order to interrupt the sleep. clock_sleep_ns_abs () will check
-	 * sampling_thread_running upon an interrupt and return immediately if it's
-	 * zero. profiler_signal_handler () has a special case to ignore the signal
-	 * for the sampler thread.
-	 */
-	MonoThreadInfo *info;
-
-	// Did it shut down already?
-	if ((info = mono_thread_info_lookup (sampling_thread))) {
-		while (!mono_atomic_load_i32 (&sampling_thread_exiting)) {
-			mono_threads_pthread_kill (info, profiler_signal);
-			mono_thread_info_usleep (10 * 1000 /* 10ms */);
-		}
-
-		// Make sure info can be freed.
-		mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
-	}
-#endif
-
-	mono_os_event_wait_one (&sampling_thread_exited, MONO_INFINITE_WAIT, FALSE);
-	mono_os_event_destroy (&sampling_thread_exited);
-
-	/*
-	 * We can't safely remove the signal handler because we have no guarantee
-	 * that all pending signals have been delivered at this point. This should
-	 * not really be a problem anyway.
-	 */
-	//remove_signal_handler (profiler_signal);
-}
-
-void
 mono_runtime_setup_stat_profiler (void)
 {
 	/*
@@ -820,7 +724,7 @@ mono_runtime_setup_stat_profiler (void)
 	mono_atomic_store_i32 (&sampling_thread_running, 1);
 
 	ERROR_DECL (error);
-	MonoInternalThread *thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)sampling_thread_func, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	MonoInternalThread *thread = mono_thread_create_internal ((MonoThreadStart)sampling_thread_func, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
 
 	sampling_thread = MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid);
@@ -855,6 +759,7 @@ dump_memory_around_ip (MonoContext *mctx)
 
 	gpointer native_ip = MONO_CONTEXT_GET_IP (mctx);
 	if (native_ip) {
+		native_ip = MINI_FTNPTR_TO_ADDR (native_ip);
 		g_async_safe_printf ("Memory around native instruction pointer (%p):", native_ip);
 		mono_dump_mem (((guint8 *) native_ip) - 0x10, 0x40);
 	} else {
@@ -1107,7 +1012,7 @@ mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HAN
 }
 
 void
-mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining, void *context)
+mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
 {
 	if (!crash_chaining) {
 		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
@@ -1117,11 +1022,6 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 		abort ();
 #endif
 	}
-	mono_chain_signal (info->si_signo, info, context);
-
-	// we remove Mono's signal handlers from crashing signals in mono_handle_native_crash(), so re-raising will now allow the OS to handle the crash
-	// TODO: perhaps we can always use this to abort, instead of explicit exit()/abort() as we do above
-	raise (info->si_signo);
 }
 #endif /* !MONO_CROSS_COMPILE */
 
@@ -1134,13 +1034,6 @@ mono_init_native_crash_info (void)
 	gdb_path = g_find_program_in_path ("gdb");
 	lldb_path = g_find_program_in_path ("lldb");
 	mono_threads_summarize_init ();
-}
-
-void
-mono_cleanup_native_crash_info (void)
-{
-	g_free (gdb_path);
-	g_free (lldb_path);
 }
 
 static gboolean

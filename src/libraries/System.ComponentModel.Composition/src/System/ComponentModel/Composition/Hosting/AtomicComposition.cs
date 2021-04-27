@@ -295,7 +295,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return _outerAtomicComposition.TryGetValueInternal<T>(key, localAtomicCompositionOnly, out value);
             }
 
-            value = default(T)!;
+            value = default;
             return false;
         }
 

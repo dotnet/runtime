@@ -412,7 +412,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
-            string fullPath = Path.GetFullPath(fileName);
+            _ = Path.GetFullPath(fileName);
 
             return X509Pal.Instance.GetCertContentType(fileName);
         }
@@ -687,6 +687,83 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if this certificate does not have
+        /// an ECDiffieHellman public key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The handle is invalid.
+        /// </exception>
+        public ECDiffieHellman? GetECDiffieHellmanPublicKey()
+        {
+            return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> private key from this certificate.
+        /// </summary>
+        /// <returns>
+        /// The private key, or <see langword="null" /> if this certificate does not have
+        /// an ECDiffieHellman private key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The handle is invalid.
+        /// </exception>
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+        }
+
+        /// <summary>
+        /// Combines a private key with the public key of an <see cref="ECDiffieHellman" />
+        /// certificate to generate a new ECDiffieHellman certificate.
+        /// </summary>
+        /// <param name="privateKey">The private ECDiffieHellman key.</param>
+        /// <returns>
+        /// A new ECDiffieHellman certificate with the <see cref="HasPrivateKey" /> property set to <see langword="true"/>.
+        /// The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="privateKey" /> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The certificate already has an associated private key.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   The certificate doesn't have a public key.
+        /// </para>
+        /// <para> -or- </para>
+        /// <para>
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </para>
+        /// </exception>
+        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            if (privateKey is null)
+                throw new ArgumentNullException(nameof(privateKey));
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (ECDiffieHellman? publicKey = GetECDiffieHellmanPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (!Helpers.AreSamePublicECParameters(publicKey.ExportParameters(false), privateKey.ExportParameters(false)))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            ICertificatePal pal = Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
+        }
+
+        /// <summary>
         /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
         /// certificate and private key.
         /// </summary>
@@ -837,7 +914,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <para>
         ///   The SubjectPublicKeyInfo from the certificate determines what PEM labels are accepted for the private key.
         ///   For RSA certificates, accepted private key PEM labels are "RSA PRIVATE KEY" and "PRIVATE KEY".
-        ///   For ECDSA certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
+        ///   For ECDSA and ECDH certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
         ///   For DSA certificates, the accepted private key PEM label is "PRIVATE KEY".
         /// </para>
         /// <para>PEM-encoded items that have a different label are ignored.</para>
@@ -859,7 +936,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem)
         {
-            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            using (X509Certificate2 certificate = CreateFromPem(certPem))
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
@@ -867,7 +944,18 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
                     Oids.Dsa => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey => ExtractKeyFromPem<ECDsa>(keyPem, s_EcPublicKeyPrivateKeyLabels, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromPem<ECDsa>(
+                            keyPem,
+                            s_EcPublicKeyPrivateKeyLabels,
+                            ECDsa.Create,
+                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
+                        ExtractKeyFromPem<ECDiffieHellman>(
+                            keyPem,
+                            s_EcPublicKeyPrivateKeyLabels,
+                            ECDiffieHellman.Create,
+                            certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
             }
@@ -913,12 +1001,12 @@ namespace System.Security.Cryptography.X509Certificates
         ///   PEM-encoded values and apply any custom loading behavior.
         /// </para>
         /// <para>
-        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem" />.
+        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
         /// </para>
         /// </remarks>
         public static X509Certificate2 CreateFromEncryptedPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem, ReadOnlySpan<char> password)
         {
-            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            using (X509Certificate2 certificate = CreateFromPem(certPem))
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
@@ -926,13 +1014,61 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
                     Oids.Dsa => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey => ExtractKeyFromEncryptedPem<ECDsa>(keyPem, password, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromEncryptedPem<ECDsa>(
+                            keyPem,
+                            password,
+                            ECDsa.Create,
+                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
+                        ExtractKeyFromEncryptedPem<ECDiffieHellman>(
+                            keyPem,
+                            password,
+                            ECDiffieHellman.Create,
+                            certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
             }
         }
 
-        private static X509Certificate2 ExtractCertificateFromPem(ReadOnlySpan<char> certPem)
+        private static bool IsECDsa(X509Certificate2 certificate)
+        {
+            using (ECDsa? ecdsa = certificate.GetECDsaPublicKey())
+            {
+                return ecdsa is not null;
+            }
+        }
+
+        private static bool IsECDiffieHellman(X509Certificate2 certificate)
+        {
+            using (ECDiffieHellman? ecdh = certificate.GetECDiffieHellmanPublicKey())
+            {
+                return ecdh is not null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a new X509 certificate from the contents of an RFC 7468 PEM-encoded
+        /// certificate.
+        /// </summary>
+        /// <param name="certPem">The text of the PEM-encoded X509 certificate.</param>
+        /// <returns>A new X509 certificate.</returns>
+        /// <exception cref="CryptographicException">
+        /// The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// This loads the first well-formed PEM found with a CERTIFICATE label.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded certificates with a private key, use
+        /// <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded certificates in a file, use <see cref="X509Certificate2(string)" />.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
             {
@@ -1045,5 +1181,22 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
                 _ => null,
             };
+
+        private static bool HasECDiffieHellmanKeyUsage(X509Certificate2 certificate)
+        {
+            foreach (X509Extension extension in certificate.Extensions)
+            {
+                if (extension.Oid?.Value == Oids.KeyUsage && extension is X509KeyUsageExtension ext)
+                {
+                    // keyAgreement is mandatory for id-ecPublicKey certificates
+                    // when used with ECDH.
+                    return ((ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0);
+                }
+            }
+
+            // If the key usage extension is not present in the certificate it is
+            // considered valid for all usages, so we can use it for ECDH.
+            return true;
+        }
     }
 }

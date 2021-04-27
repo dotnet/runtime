@@ -12,6 +12,18 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             return SHA256.Create();
         }
 
+        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            return SHA256.TryHashData(source, destination, out bytesWritten);
+        }
+
+        protected override byte[] HashData(byte[] source) => SHA256.HashData(source);
+
+        protected override byte[] HashData(ReadOnlySpan<byte> source) => SHA256.HashData(source);
+
+        protected override int HashData(ReadOnlySpan<byte> source, Span<byte> destination) =>
+            SHA256.HashData(source, destination);
+
         [Fact]
         public void Sha256_Empty()
         {

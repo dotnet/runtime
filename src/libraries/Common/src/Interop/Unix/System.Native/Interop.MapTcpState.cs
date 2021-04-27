@@ -9,6 +9,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MapTcpState")]
+        [SuppressGCTransition]
         internal static extern TcpState MapTcpState(int nativeState);
     }
 }

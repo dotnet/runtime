@@ -10,7 +10,7 @@ namespace System.Collections.Generic
     // It is used in Dictionary class.
     public interface IEqualityComparer<in T>
     {
-        bool Equals([AllowNull] T x, [AllowNull] T y);
+        bool Equals(T? x, T? y);
         int GetHashCode([DisallowNull] T obj);
     }
 }

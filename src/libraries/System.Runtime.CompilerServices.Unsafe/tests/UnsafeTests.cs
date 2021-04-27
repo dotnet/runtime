@@ -53,7 +53,15 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(2, b4.B2);
             Assert.Equal(3, b4.B3);
 
-            int expected = (b4.B3 << 24) + (b4.B2 << 16) + (b4.B1 << 8) + (b4.B0);
+            int expected;
+            if (BitConverter.IsLittleEndian)
+            {
+                expected = (b4.B3 << 24) + (b4.B2 << 16) + (b4.B1 << 8) + (b4.B0);
+            }
+            else
+            {
+                expected = (b4.B0 << 24) + (b4.B1 << 16) + (b4.B2 << 8) + (b4.B3);
+            }
             Assert.Equal(expected, value);
         }
 
@@ -63,12 +71,24 @@ namespace System.Runtime.CompilerServices
             long value = 1234567891011121314L;
             long* longAddress = (long*)Unsafe.AsPointer(ref value);
             Byte4Short2 b4s2 = Unsafe.Read<Byte4Short2>(longAddress);
-            Assert.Equal(162, b4s2.B0);
-            Assert.Equal(48, b4s2.B1);
-            Assert.Equal(210, b4s2.B2);
-            Assert.Equal(178, b4s2.B3);
-            Assert.Equal(4340, b4s2.S4);
-            Assert.Equal(4386, b4s2.S6);
+            if (BitConverter.IsLittleEndian)
+            {
+                Assert.Equal(162, b4s2.B0);
+                Assert.Equal(48, b4s2.B1);
+                Assert.Equal(210, b4s2.B2);
+                Assert.Equal(178, b4s2.B3);
+                Assert.Equal(4340, b4s2.S4);
+                Assert.Equal(4386, b4s2.S6);
+            }
+            else
+            {
+                Assert.Equal(17, b4s2.B0);
+                Assert.Equal(34, b4s2.B1);
+                Assert.Equal(16, b4s2.B2);
+                Assert.Equal(244, b4s2.B3);
+                Assert.Equal(-19758, b4s2.S4);
+                Assert.Equal(12450, b4s2.S6);
+            }
 
             b4s2.B0 = 1;
             b4s2.B1 = 1;
@@ -78,7 +98,15 @@ namespace System.Runtime.CompilerServices
             b4s2.S6 = 1;
             Unsafe.Write(longAddress, b4s2);
 
-            long expected = 281479288520961;
+            long expected;
+            if (BitConverter.IsLittleEndian)
+            {
+                expected = 281479288520961;
+            }
+            else
+            {
+                expected = 72340172821299201;
+            }
             Assert.Equal(expected, value);
             Assert.Equal(expected, Unsafe.Read<long>(longAddress));
         }
@@ -413,7 +441,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void AsRef()
         {
             byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
-            fixed (byte * p = b)
+            fixed (byte* p = b)
             {
                 ref int r = ref Unsafe.AsRef<int>(p);
                 Assert.Equal(0x42424242, r);
@@ -505,6 +533,18 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static void RefAddNuint()
+        {
+            int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
+
+            ref int r1 = ref Unsafe.Add(ref a[0], (nuint)1);
+            Assert.Equal(0x234, r1);
+
+            ref int r2 = ref Unsafe.Add(ref r1, (nuint)2);
+            Assert.Equal(0x456, r2);
+        }
+
+        [Fact]
         public static void RefAddByteOffset()
         {
             byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
@@ -517,6 +557,18 @@ namespace System.Runtime.CompilerServices
 
             ref byte r3 = ref Unsafe.AddByteOffset(ref r2, (IntPtr)(-3));
             Assert.Equal(0x12, r3);
+        }
+
+        [Fact]
+        public static void RefAddNuintByteOffset()
+        {
+            byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+
+            ref byte r1 = ref Unsafe.AddByteOffset(ref a[0], (nuint)1);
+            Assert.Equal(0x34, r1);
+
+            ref byte r2 = ref Unsafe.AddByteOffset(ref r1, (nuint)2);
+            Assert.Equal(0x78, r2);
         }
 
         [Fact]
@@ -577,6 +629,15 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static void RefSubtractNuint()
+        {
+            string[] a = new string[] { "abc", "def", "ghi", "jkl" };
+
+            ref string r3 = ref Unsafe.Subtract(ref a[3], (nuint)3);
+            Assert.Equal("abc", r3);
+        }
+
+        [Fact]
         public static void RefSubtractByteOffset()
         {
             byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
@@ -588,6 +649,15 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(0x78, r2);
 
             ref byte r3 = ref Unsafe.SubtractByteOffset(ref r2, (IntPtr)3);
+            Assert.Equal(0x12, r3);
+        }
+
+        [Fact]
+        public static void RefSubtractNuintByteOffset()
+        {
+            byte[] a = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+
+            ref byte r3 = ref Unsafe.SubtractByteOffset(ref a[3], (nuint)3);
             Assert.Equal(0x12, r3);
         }
 
@@ -839,7 +909,7 @@ namespace System.Runtime.CompilerServices
             Unsafe.SkipInit(out double doubleValue);
 
             // Validate that calling on user-defined unmanaged structs works.
-            
+
             Unsafe.SkipInit(out Byte4 byte4Value);
             Unsafe.SkipInit(out Byte4Short2 byte4Short2Value);
             Unsafe.SkipInit(out Byte512 byte512Value);
@@ -931,6 +1001,84 @@ namespace System.Runtime.CompilerServices
             Unsafe.SkipInit(out stringValue);
             Assert.Equal("25", stringValue);
         }
+
+        [Fact]
+        public static unsafe void IsNullRef_NotNull()
+        {
+            // Validate that calling with a primitive type works.
+
+            int intValue = 5;
+            Assert.False(Unsafe.IsNullRef<int>(ref intValue));
+
+            // Validate that calling on user-defined unmanaged structs works.
+
+            Int32Double int32DoubleValue = default;
+            Assert.False(Unsafe.IsNullRef<Int32Double>(ref int32DoubleValue));
+
+            // Validate that calling on reference types works.
+
+            object objectValue = new object();
+            Assert.False(Unsafe.IsNullRef<object>(ref objectValue));
+
+            string stringValue = nameof(IsNullRef_NotNull);
+            Assert.False(Unsafe.IsNullRef<string>(ref stringValue));
+
+            // Validate on ref created from a pointer
+
+            int* p = (int*)1;
+            Assert.False(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(p)));
+        }
+
+        [Fact]
+        public static unsafe void IsNullRef_Null()
+        {
+            // Validate that calling with a primitive type works.
+
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(null)));
+
+            // Validate that calling on user-defined unmanaged structs works.
+
+            Assert.True(Unsafe.IsNullRef<Int32Double>(ref Unsafe.AsRef<Int32Double>(null)));
+
+            // Validate that calling on reference types works.
+
+            Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.AsRef<object>(null)));
+            Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.AsRef<string>(null)));
+
+            // Validate on ref created from a pointer
+
+            int* p = (int*)0;
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.AsRef<int>(p)));
+        }
+
+        [Fact]
+        public static unsafe void NullRef()
+        {
+            // Validate that calling with a primitive type works.
+
+            Assert.True(Unsafe.IsNullRef<int>(ref Unsafe.NullRef<int>()));
+
+            // Validate that calling on user-defined unmanaged structs works.
+
+            Assert.True(Unsafe.IsNullRef<Int32Double>(ref Unsafe.NullRef<Int32Double>()));
+
+            // Validate that calling on reference types works.
+
+            Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.NullRef<object>()));
+            Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.NullRef<string>()));
+
+            // Validate that pinning results in a null pointer
+
+            fixed (void* p = &Unsafe.NullRef<int>())
+            {
+                Assert.True(p == (void*)0);
+            }
+
+            // Validate that dereferencing a null ref throws a NullReferenceException
+
+            Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>() = 42);
+            Assert.Throws<NullReferenceException>(() => Unsafe.NullRef<int>());
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -968,7 +1116,7 @@ namespace System.Runtime.CompilerServices
         public fixed byte Bytes[512];
     }
 
-    [StructLayout(LayoutKind.Explicit, Size=16)]
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct Int32Double
     {
         [FieldOffset(0)]

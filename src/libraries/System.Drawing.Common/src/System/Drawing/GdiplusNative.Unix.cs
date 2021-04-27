@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal partial class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
         internal unsafe partial class Gdip
         {
@@ -33,7 +33,15 @@ namespace System.Drawing
                 IntPtr lib = IntPtr.Zero;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib);
+                    if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))
+                    {
+                        // homebrew install location
+                        if (!NativeLibrary.TryLoad("/usr/local/lib/libgdiplus.dylib", assembly, default, out lib))
+                        {
+                            // macports install location
+                            NativeLibrary.TryLoad("/opt/local/lib/libgdiplus.dylib", assembly, default, out lib);
+                        }
+                    }
                 }
                 else
                 {
@@ -43,7 +51,7 @@ namespace System.Drawing
                     // the name suffixed with ".0".
                     if (!NativeLibrary.TryLoad("libgdiplus.so", assembly, default, out lib))
                     {
-                         NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
+                        NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
                     }
                 }
 
@@ -114,28 +122,7 @@ namespace System.Drawing
             internal static extern int GdipSetImagePalette(IntPtr image, IntPtr palette);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyCount(IntPtr image, out uint propNumbers);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyIdList(IntPtr image, uint propNumbers, [Out] int[] list);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertySize(IntPtr image, out int bufferSize, out int propNumbers);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetAllPropertyItems(IntPtr image, int bufferSize, int propNumbers, IntPtr items);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageBounds(IntPtr image, out RectangleF source, ref GraphicsUnit unit);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyItemSize(IntPtr image, int propertyID, out int propertySize);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPropertyItem(IntPtr image, int propertyID, int propertySize, IntPtr buffer);
-
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSetPropertyItem(IntPtr image, GdipPropertyItem* propertyItem);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageThumbnail(IntPtr image, uint width, uint height, out IntPtr thumbImage, IntPtr callback, IntPtr callBackData);
@@ -403,7 +390,7 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPostScriptGraphicsContext(
-                [MarshalAs(UnmanagedType.LPStr)]string filename,
+                [MarshalAs(UnmanagedType.LPStr)] string filename,
                 int width, int height, double dpix, double dpiy, ref IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]

@@ -5,7 +5,7 @@ tables-header {
 	valid offset cli-metadata + read.uint ( stream-header ( 0 ) ) + 4  set-byte 2
 	valid offset tables-header + 4  set-byte 2
 
-	#major/minor versions	
+	#major/minor versions
 	invalid offset tables-header + 4 set-byte 22
 	invalid offset tables-header + 5 set-byte 1
 
@@ -67,7 +67,7 @@ module-table {
 	valid offset tables-header + 24 set-uint 1
 	invalid offset tables-header + 24 set-uint 0
 	invalid offset tables-header + 24 set-uint 2 , offset tables-header + 32 set-uint 1
-	
+
 	#name
 	#invalid string
 	invalid offset table-row ( 0 0 ) + 2 set-ushort 0x8888
@@ -120,7 +120,7 @@ typedef-table {
 	valid offset tables-header + 32 set-uint 2
 	invalid offset tables-header + 32 set-uint 0
 
-	#This part of the test suite only verifies structural properties, not table relationships	
+	#This part of the test suite only verifies structural properties, not table relationships
 
 	#Flags invalid bits: 6,9,14,15,19,21,24-31
 	invalid offset table-row ( 2 1 ) set-bit 6
@@ -186,7 +186,7 @@ typedef-table-field-list {
 
 	valid offset table-row ( 2 1 ) + 10 set-ushort 1
 
-	#bad field list 
+	#bad field list
 	invalid offset table-row ( 2 1 ) + 10 set-ushort 999
 
 	#this type is bigger than the next
@@ -202,7 +202,7 @@ typedef-table-method-list {
 
 	valid offset table-row ( 2 1 ) + 12 set-ushort 1
 
-	#bad field list 
+	#bad field list
 	invalid offset table-row ( 2 1 ) + 12 set-ushort 999
 
 	#this type is bigger than the next
@@ -262,11 +262,11 @@ field-table {
 
 	#if it's a global variable, it must be static and (public|compiler controler|private) (16)
 	#static + compiler controled
-	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x10 
+	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x10
 	#static + private
 	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x11
 	#static + public
-	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x16 
+	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x16
 	#static + bad visibility
 	#LAMEIMPL MS doesn't verify visibility
 	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x12
@@ -275,7 +275,7 @@ field-table {
 	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x15
 
 	#public and not static
-	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x06 
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x06
 
 	#field is constant but has no row in the contant table
 	#LAMESPEC this check is missing from the spec
@@ -300,7 +300,7 @@ methoddef-table {
 
 	#bad flags (4)
 	#no unused bits
-	
+
 	#invalid .ctor with generic params and specialname (6)
 	#method 0 is a .ctor, method 1 is generic
 	invalid offset table-row ( 6 1 ) + 6 or-ushort 0x1800 , offset table-row ( 6 1 ) + 8 set-ushort read.ushort ( table-row ( 6 0 ) + 8 )
@@ -343,8 +343,8 @@ methoddef-table {
 	#Interface cannot have .ctors (15)
 	#method 3 belongs to an inteface
 	invalid offset table-row ( 6 3 ) + 8 set-ushort read.ushort ( table-row ( 6 0 ) + 8 )
-	#Interface methods can't be static 
-	invalid offset table-row ( 6 3 ) + 6 or-ushort 0x0010 
+	#Interface methods can't be static
+	invalid offset table-row ( 6 3 ) + 6 or-ushort 0x0010
 
 	#XXX we don't care about CLS names (17)
 
@@ -377,7 +377,7 @@ methoddef-table {
 	invalid offset table-row ( 6 5 ) set-uint read.uint ( table-row ( 6 2 ) )
 
 	#pinvoke with runtime
-	#LAMEIMPL/SPEC either MS ignores it or the spec is ill defined 
+	#LAMEIMPL/SPEC either MS ignores it or the spec is ill defined
 	#invalid offset table-row ( 6 5 ) + 4 or-ushort 0x1000
 
 	#if compilercontroled (0x0) it must have an RVA or a pinvoke
@@ -389,7 +389,7 @@ methoddef-table {
 	#if RVA = 0 then one of (abstract, runtime, pinvoke) (34)
 	#let's test with an abstract class, method 6 is abstract and belongs to one.
 	invalid offset table-row ( 6 7 ) + 6 set-ushort 0x0006
-	#icall 
+	#icall
 	valid offset table-row ( 6 7 ) + 6 set-ushort 0x01c6 , offset table-row ( 6 7 ) + 4 or-ushort 0x1000
 
 	#if rva != 0 then abstract == 0 and codetypemask must be (native,cil,runtime) and rva shall be valid  (35)
@@ -429,7 +429,7 @@ methoddef-table-global-methods {
 	assembly assembly-with-global-method.exe
 
 	#checks for methods owned by <module> (20)
-	
+
 	#static + public
 	valid offset table-row ( 6 0 ) + 6 set-ushort 0x0010
 	#static + private
@@ -458,10 +458,10 @@ methoddef-table-global-methods {
 methoddef-table-params {
 	assembly assembly-with-methods.exe
 
-	#method 12,13,14 have 3 params and params: 2,5,8	
+	#method 12,13,14 have 3 params and params: 2,5,8
 	#method 13 has 3 params and params: 5
 	invalid offset table-row ( 6 12 ) + 12 set-ushort 6
-	invalid offset table-row ( 6 13 ) + 12 set-ushort 99 
+	invalid offset table-row ( 6 13 ) + 12 set-ushort 99
 }
 
 
@@ -489,7 +489,7 @@ param-table {
 	invalid offset table-row ( 8 0 ) + 2 set-ushort 2
 	invalid offset table-row ( 8 1 ) + 2 set-ushort 1
 
-	
+
 	#if HasDefault = 1 then there must be a row in the constant table (6)
 	#param 2 doesn't have a default
 	invalid offset table-row ( 8 2 ) or-ushort 0x1000
@@ -534,7 +534,7 @@ interfaceimpl-table {
 
 memberref-table {
 	assembly assembly-with-complex-type.exe
-	
+
 	#class must be a valid token (1 2)
 	#null
 	invalid offset table-row ( 10 0 ) set-ushort 0
@@ -555,13 +555,13 @@ memberref-table {
 
 	#signature must be valid (5)
 	invalid offset table-row ( 10 0 ) + 4 set-ushort 0x9900
-	
+
 
 	#TODO validate the signature (5)
 
 	#LAMESPEC CompilerControled visibility (9,10) is nice but no impl care about
 
-	#LAMESPEC what does (11) mean? 
+	#LAMESPEC what does (11) mean?
 }
 
 constant-table {
@@ -588,7 +588,7 @@ constant-table {
 	#First remove default from param 'a' (param table idx 0)
 	#Then set the has default flag in the property table
 	#Finally, make the first constant point from the part to the property (const 1, prop 0, token 0x6)
-	valid offset table-row ( 0x8 0 ) set-ushort 0 , offset table-row ( 0x17 0 ) or-ushort 0x1000 , offset table-row ( 0xB 1 ) + 2 set-ushort 0x6 
+	valid offset table-row ( 0x8 0 ) set-ushort 0 , offset table-row ( 0x17 0 ) or-ushort 0x1000 , offset table-row ( 0xB 1 ) + 2 set-ushort 0x6
 
 	#Invalid coded table
 	invalid offset table-row ( 0xB 0 ) + 2 set-ushort 0x0013 , offset table-row ( 0x04 0 ) set-ushort 0x16
@@ -608,7 +608,7 @@ constant-table {
 	invalid offset table-row ( 0xB 0 ) + 4 set-ushort read.uint ( stream-header ( 3 ) + 4 )
 
 	#LAMEIMPL, MS doesn't bound check the constant size. Lame of them.
-	invalid offset table-row ( 0xB 0 ) + 4 set-ushort read.uint ( stream-header ( 3 ) + 4 ) - 1 
+	invalid offset table-row ( 0xB 0 ) + 4 set-ushort read.uint ( stream-header ( 3 ) + 4 ) - 1
 }
 
 cattr-table {
@@ -708,7 +708,7 @@ class-layout-table {
 	#packing must be (0,1,2,4,8,16,32,64,128) (4)
 	invalid offset table-row ( 0xF 0 ) set-ushort 0x0003
 
-	#TODO do checks depending on the kind of parent (4) 
+	#TODO do checks depending on the kind of parent (4)
 
 	#Check layout along the inheritance chain. (7)
 }
@@ -753,7 +753,7 @@ event-table {
 	assembly assembly-with-events.exe
 
 	#event flags have valid bits (3)
-	#only bits 9 and 10 are used 
+	#only bits 9 and 10 are used
 
 	invalid offset table-row ( 0x14 0 ) set-bit 0
 	invalid offset table-row ( 0x14 0 ) set-bit 1
@@ -816,7 +816,7 @@ property-table {
 	assembly assembly-with-properties.exe
 
 	#valid flags (3)
-	#only bits 9, 10 and 12 are used 
+	#only bits 9, 10 and 12 are used
 	invalid offset table-row ( 0x17 0 ) set-bit 0
 	invalid offset table-row ( 0x17 0 ) set-bit 1
 	invalid offset table-row ( 0x17 0 ) set-bit 2
@@ -846,7 +846,7 @@ property-table {
 	#field zero has default value
 	valid offset table-row (0x17 0) + 0 or-ushort  0x1000, #mark the property with hasdefault
 		  offset table-row (0x04 0) + 0 set-ushort 0x0011, #clear literal and hasdefault from the field
-		  offset table-row (0x0B 0) + 2 set-ushort 0x0006  #change the parent token to row 1 of the property table (0x2) 
+		  offset table-row (0x0B 0) + 2 set-ushort 0x0006  #change the parent token to row 1 of the property table (0x2)
 
 	invalid offset table-row (0x17 0) + 0 or-ushort  0x1000
 
@@ -857,32 +857,32 @@ methodimpl-table {
 	assembly assembly-with-complex-type.exe
 
 	#class shall be valid (2)
-	invalid offset table-row (0x19 0) set-ushort 0 
+	invalid offset table-row (0x19 0) set-ushort 0
 	invalid offset table-row (0x19 0) set-ushort 0x8800
 
 	#methodbody shall be valid (3)
 	#null
-	invalid offset table-row (0x19 0) + 2 set-ushort 0x0000 
+	invalid offset table-row (0x19 0) + 2 set-ushort 0x0000
 	invalid offset table-row (0x19 0) + 2 set-ushort 0x0001
 	#out of range
-	invalid offset table-row (0x19 0) + 2 set-ushort 0x8800 
+	invalid offset table-row (0x19 0) + 2 set-ushort 0x8800
 	invalid offset table-row (0x19 0) + 2 set-ushort 0x8801
 
 	#MethodDeclaration shall be valid
 	#null
-	invalid offset table-row (0x19 0) + 4 set-ushort 0x0000 
+	invalid offset table-row (0x19 0) + 4 set-ushort 0x0000
 	invalid offset table-row (0x19 0) + 4 set-ushort 0x0001
 	#out of range
-	invalid offset table-row (0x19 0) + 4 set-ushort 0x8800 
+	invalid offset table-row (0x19 0) + 4 set-ushort 0x8800
 	invalid offset table-row (0x19 0) + 4 set-ushort 0x8801
-	
 
-	#TODO check MethodDeclaration method for virtual and owner type for !sealed (4,5) 	
+
+	#TODO check MethodDeclaration method for virtual and owner type for !sealed (4,5)
 	#TODO check MethodBody for belonging to a super type of Class,been virtual and rva != 0 (6,7,8)
 	#TODO check MethodBody must belong to any ancestor or iface of Class (9)
 	#TODO check MethodDeclaration method shall not be final (10)
 	#TODO if MethodDeclaration is strict, it must be visible to Class (11)
-	#TODO the method signature of MethodBody must match of MethodDeclaration (12)	
+	#TODO the method signature of MethodBody must match of MethodDeclaration (12)
 	#TODO no dups
 }
 
@@ -959,7 +959,7 @@ fieldrva-table {
 	invalid offset table-row (0x1D 0) + 4 set-ushort 0,
 			offset table-row (0x04 17) set-ushort 0x0013 #remove fieldrva from target field
 	invalid offset table-row (0x1D 0) + 4 set-ushort 0x9901,
-			offset table-row (0x04 17) set-ushort 0x0013 
+			offset table-row (0x04 17) set-ushort 0x0013
 
 
 	#TODO verify if the field is a blitable valuetype
@@ -974,7 +974,7 @@ assembly-table {
 	invalid offset tables-header + 40 set-uint 2,
 			offset stream-header (0) + 4 set-uint read.uint (stream-header (0) + 4) + 22 #increase the size of the #~ section
 
-	#bad hasalg (2) 
+	#bad hasalg (2)
 	valid offset table-row (0x20 0) set-uint 0
 	valid offset table-row (0x20 0) set-uint 0x8003
 	valid offset table-row (0x20 0) set-uint 0x8004
@@ -997,7 +997,7 @@ assembly-table {
 
 
 	#valid pub key (5)
-	valid offset table-row (0x20 0) + 16 set-ushort 0 
+	valid offset table-row (0x20 0) + 16 set-ushort 0
 	invalid offset table-row (0x20 0) + 16 set-ushort 0x9990
 
 	#name is a valid non-empty string (5)
@@ -1005,7 +1005,7 @@ assembly-table {
 	invalid offset table-row (0x20 0) + 18 set-ushort 0x9990
 
 	#culture is an optional valid non-empty string (8)
-	valid offset table-row (0x20 0) + 20 set-ushort 0 
+	valid offset table-row (0x20 0) + 20 set-ushort 0
 	invalid offset table-row (0x20 0) + 20 set-ushort 0x9990
 
 	#TODO check if culture is one of the listed cultures (9) (23.1.3)
@@ -1036,7 +1036,7 @@ assembly-ref-table {
 	invalid offset table-row (0x23 0) + 14 set-ushort 0
 
 	#culture is an optional valid non-empty string (6)
-	valid offset table-row (0x23 0) + 16 set-ushort 0 
+	valid offset table-row (0x23 0) + 16 set-ushort 0
 	invalid offset table-row (0x23 0) + 16 set-ushort 0x9990
 
 	#TODO check if culture is one of the listed cultures (7) (23.1.3)
@@ -1104,11 +1104,11 @@ exported-type-table {
 
 	#if Implementation points to exported type table visibility must be nested public (5)
 	#invalid offset table-row (0x27 1) set-uint 0x100005 #LAMEIMPL/SPEC this check is not really relevant
-	
+
 	#typename is a valid non-empty string (7)
 	invalid offset table-row (0x27 0) + 8 set-ushort 0
 	invalid offset table-row (0x27 0) + 8 set-ushort 0x9900
-	
+
 	#typenamedpace is a valid string (8,9)
 	invalid offset table-row (0x27 0) + 10 set-ushort 0x9900
 
@@ -1151,13 +1151,13 @@ manifest-resource-table {
 	valid offset table-row (0x28 0) + 10 set-ushort 0,
 			offset table-row (0x28 0) + 0  set-uint 1
 
-	#LAMEIMPL it doesn't check the resource offset! 
+	#LAMEIMPL it doesn't check the resource offset!
 	invalid offset table-row (0x28 0) + 10 set-ushort 0,
 			offset table-row (0x28 0) + 0  set-uint 0x990000
-	
+
 
 	#implementation is a valid token (8)
-	#does it accept exported type? 
+	#does it accept exported type?
 	invalid offset table-row (0x28 0) + 10 set-ushort 0x0006
 
 	#coded table 4 is invalid
@@ -1169,7 +1169,7 @@ manifest-resource-table {
 	#if implementation point to a file it's index must be zero (10)
 	#row 0 is a file resource
 	invalid offset table-row (0x28 0) set-uint 1
-	
+
 	#TODO check for dups (9)
 }
 
@@ -1185,7 +1185,7 @@ nested-class-table {
 
 	invalid offset table-row (0x29 0) + 2 set-ushort read.ushort (table-row (0x29 0))
 
-	#TODO check for dups based on nestedclass (5) 
+	#TODO check for dups based on nestedclass (5)
 }
 
 
@@ -1214,7 +1214,7 @@ generic-param-table {
 	invalid offset table-row (0x2A 0) + 4 set-ushort 0x8800
 	invalid offset table-row (0x2A 0) + 4 set-ushort 0x8801
 
-	#bad or empty name	
+	#bad or empty name
 	invalid offset table-row (0x2A 0) + 6 set-ushort 0
 	invalid offset table-row (0x2A 0) + 6 set-ushort 0x8800
 

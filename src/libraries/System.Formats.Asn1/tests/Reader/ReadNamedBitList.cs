@@ -464,6 +464,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
@@ -495,6 +496,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]

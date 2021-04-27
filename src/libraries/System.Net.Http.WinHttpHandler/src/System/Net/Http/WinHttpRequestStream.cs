@@ -134,7 +134,7 @@ namespace System.Net.Http
             WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
@@ -208,8 +208,7 @@ namespace System.Net.Http
             Debug.Assert(_chunkedMode);
             Debug.Assert(count > 0);
 
-            string chunkSizeString = string.Format("{0:x}\r\n", count);
-            byte[] chunkSize = Encoding.UTF8.GetBytes(chunkSizeString);
+            byte[] chunkSize = Encoding.UTF8.GetBytes($"{count:x}\r\n");
 
             await InternalWriteDataAsync(chunkSize, 0, chunkSize.Length, token).ConfigureAwait(false);
 

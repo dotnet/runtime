@@ -70,7 +70,6 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory()
-            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
         }
 
@@ -91,8 +90,8 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(CancellationToken cancellationToken)
-            : this(cancellationToken, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
+            m_defaultCancellationToken = cancellationToken;
         }
 
         /// <summary>
@@ -115,8 +114,8 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskScheduler? scheduler) // null means to use TaskScheduler.Current
-            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
+            m_defaultScheduler = scheduler;
         }
 
         /// <summary>
@@ -146,8 +145,12 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions)
-            : this(default, creationOptions, continuationOptions, null)
         {
+            CheckMultiTaskContinuationOptions(continuationOptions);
+            CheckCreationOptions(creationOptions);
+
+            m_defaultCreationOptions = creationOptions;
+            m_defaultContinuationOptions = continuationOptions;
         }
 
         /// <summary>
@@ -186,14 +189,10 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(CancellationToken cancellationToken, TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions, TaskScheduler? scheduler)
+            : this(creationOptions, continuationOptions)
         {
-            CheckMultiTaskContinuationOptions(continuationOptions);
-            CheckCreationOptions(creationOptions);
-
             m_defaultCancellationToken = cancellationToken;
             m_defaultScheduler = scheduler;
-            m_defaultCreationOptions = creationOptions;
-            m_defaultContinuationOptions = continuationOptions;
         }
 
         internal static void CheckCreationOptions(TaskCreationOptions creationOptions)

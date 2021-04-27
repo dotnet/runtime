@@ -14,7 +14,6 @@ namespace System.Data
         internal const int zop_False = 0;
         internal const int zop_Null = -1;
 
-
         internal ZeroOpNode(int op) : base(null)
         {
             _op = op;
@@ -41,7 +40,7 @@ namespace System.Data
             }
         }
 
-        internal override object Eval(DataRow row, DataRowVersion version)
+        internal override object Eval(DataRow? row, DataRowVersion version)
         {
             return Eval();
         }

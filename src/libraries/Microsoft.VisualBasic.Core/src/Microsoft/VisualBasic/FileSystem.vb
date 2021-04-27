@@ -73,6 +73,7 @@ Namespace Microsoft.VisualBasic
 
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Sub ChDrive(ByVal Drive As Char)
             Drive = System.Char.ToUpperInvariant(Drive)
 
@@ -87,6 +88,7 @@ Namespace Microsoft.VisualBasic
             IO.Directory.SetCurrentDirectory(Drive & Path.VolumeSeparatorChar)
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Sub ChDrive(ByVal Drive As String)
             Debug.Assert(Not System.Reflection.Assembly.GetCallingAssembly() Is Utils.VBRuntimeAssembly,
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
@@ -105,6 +107,7 @@ Namespace Microsoft.VisualBasic
             Return Directory.GetCurrentDirectory()
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function CurDir(ByVal Drive As Char) As String
             Debug.Assert(Not System.Reflection.Assembly.GetCallingAssembly() Is Utils.VBRuntimeAssembly,
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
@@ -130,6 +133,7 @@ Namespace Microsoft.VisualBasic
             Return FindNextFile(System.Reflection.Assembly.GetCallingAssembly())
         End Function
 
+        <SupportedOSPlatform("windows")>
         <ResourceExposure(ResourceScope.None)>
         <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
         Public Function Dir(ByVal PathName As String, Optional ByVal Attributes As FileAttribute = FileAttribute.Normal) As String
@@ -220,8 +224,6 @@ Namespace Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch e2 As Exception
                 Throw VbMakeException(e2, vbErrors.PathFileAccess)
@@ -717,7 +719,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")>
+        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")>
         Public Sub FilePut(ByVal FileNumber As Object, ByVal Value As Object, Optional ByVal RecordNumber As Object = -1)
             Throw New ArgumentException(SR.UseFilePutObject)
         End Sub
@@ -998,6 +1000,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Function InputString(ByVal FileNumber As Integer, ByVal CharCount As Integer) As String
             Try
                 Dim oFile As VB6File
@@ -1035,31 +1038,37 @@ Namespace Microsoft.VisualBasic
             Return oFile.LineInput()
         End Function
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Lock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock()
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Lock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(Record)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Lock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(FromRecord, ToRecord)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Unlock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock()
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(Record)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(FromRecord, ToRecord)
@@ -1162,6 +1171,7 @@ Namespace Microsoft.VisualBasic
             CloseAllFiles(System.Reflection.Assembly.GetCallingAssembly())
         End Sub
 
+        <SupportedOSPlatform("windows")>
         <ResourceExposure(ResourceScope.Machine)>
         <ResourceConsumption(ResourceScope.Machine)>
         Public Sub Rename(ByVal OldPath As String, ByVal NewPath As String)
@@ -1244,7 +1254,7 @@ Namespace Microsoft.VisualBasic
 
             ' This exception should never be hit.
             ' We will throw Arguments are not valid.
-            Throw New ArgumentException(SR.Argument_InvalidValue, "om")
+            Throw New ArgumentException(SR.Argument_InvalidValue, NameOf(om))
         End Function
 
         Friend Sub CloseAllFiles(ByVal assem As System.Reflection.Assembly)

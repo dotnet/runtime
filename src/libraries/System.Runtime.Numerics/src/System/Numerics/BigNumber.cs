@@ -408,21 +408,8 @@ namespace System.Numerics
             for (int i = len - 1; i > -1; i--)
             {
                 char c = number.digits[i];
-
-                byte b;
-                if (c >= '0' && c <= '9')
-                {
-                    b = (byte)(c - '0');
-                }
-                else if (c >= 'A' && c <= 'F')
-                {
-                    b = (byte)((c - 'A') + 10);
-                }
-                else
-                {
-                    Debug.Assert(c >= 'a' && c <= 'f');
-                    b = (byte)((c - 'a') + 10);
-                }
+                int b = HexConverter.FromChar(c);
+                Debug.Assert(b != 0xFF);
                 if (i == 0 && (b & 0x08) == 0x08)
                     isNegative = true;
 
@@ -433,7 +420,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    bits[bitIndex] = isNegative ? (byte)(b | 0xF0) : (b);
+                    bits[bitIndex] = (byte)(isNegative ? (b | 0xF0) : (b));
                 }
                 shift = !shift;
             }
@@ -489,9 +476,12 @@ namespace System.Numerics
                     n = format[i++] - '0';
                     while (i < format.Length && format[i] >= '0' && format[i] <= '9')
                     {
-                        n = n * 10 + (format[i++] - '0');
-                        if (n >= 10)
-                            break;
+                        int temp = n * 10 + (format[i++] - '0');
+                        if (temp < n)
+                        {
+                            throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        }
+                        n = temp;
                     }
                 }
                 if (i >= format.Length || format[i] == '\0')
@@ -616,7 +606,7 @@ namespace System.Numerics
             {
                 if (fmt == 'g' || fmt == 'G' || fmt == 'r' || fmt == 'R')
                 {
-                    formatSpan = formatString = digits > 0 ? string.Format("D{0}", digits) : "D";
+                    formatSpan = formatString = digits > 0 ? $"D{digits}" : "D";
                 }
 
                 if (targetSpan)

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
         protected override bool SupportsSha2 => DSAFactory.SupportsFips186_3;

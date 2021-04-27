@@ -21,22 +21,22 @@ namespace System.Net
         private readonly ulong _requestId;
         internal ulong _connectionId;
         private readonly SslStatus _sslStatus;
-        private readonly string _cookedUrlHost;
-        private readonly string _cookedUrlPath;
-        private readonly string _cookedUrlQuery;
+        private readonly string? _cookedUrlHost;
+        private readonly string? _cookedUrlPath;
+        private readonly string? _cookedUrlQuery;
         private long _contentLength;
-        private Stream _requestStream;
-        private string _httpMethod;
-        private WebHeaderCollection _webHeaders;
-        private IPEndPoint _localEndPoint;
-        private IPEndPoint _remoteEndPoint;
+        private Stream? _requestStream;
+        private string? _httpMethod;
+        private WebHeaderCollection? _webHeaders;
+        private IPEndPoint? _localEndPoint;
+        private IPEndPoint? _remoteEndPoint;
         private BoundaryType _boundaryType;
         private int _clientCertificateError;
-        private RequestContextBase _memoryBlob;
+        private RequestContextBase? _memoryBlob;
         private readonly HttpListenerContext _httpContext;
         private bool _isDisposed;
         internal const uint CertBoblSize = 1500;
-        private string _serviceName;
+        private string? _serviceName;
 
         private enum SslStatus : byte
         {
@@ -112,7 +112,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return _memoryBlob.RequestBuffer;
+                return _memoryBlob!.RequestBuffer;
             }
         }
 
@@ -121,7 +121,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return _memoryBlob.OriginalBlobAddress;
+                return _memoryBlob!.OriginalBlobAddress;
             }
         }
 
@@ -129,7 +129,7 @@ namespace System.Net
         // disposed.
         internal void DetachBlob(RequestContextBase memoryBlob)
         {
-            if (memoryBlob != null && (object)memoryBlob == (object)_memoryBlob)
+            if (memoryBlob != null && (object)memoryBlob == (object)_memoryBlob!)
             {
                 _memoryBlob = null;
             }
@@ -138,7 +138,7 @@ namespace System.Net
         // Finalizes ownership of the memory blob.  DetachBlob can't be called after this.
         internal void ReleasePins()
         {
-            _memoryBlob.ReleasePins();
+            _memoryBlob!.ReleasePins();
         }
 
         internal ulong RequestId => _requestId;
@@ -159,7 +159,7 @@ namespace System.Net
             {
                 if (_boundaryType == BoundaryType.None)
                 {
-                    string transferEncodingHeader = Headers[HttpKnownHeaderNames.TransferEncoding];
+                    string? transferEncodingHeader = Headers[HttpKnownHeaderNames.TransferEncoding];
                     if (transferEncodingHeader != null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
                     {
                         _boundaryType = BoundaryType.Chunked;
@@ -169,7 +169,7 @@ namespace System.Net
                     {
                         _contentLength = 0;
                         _boundaryType = BoundaryType.ContentLength;
-                        string length = Headers[HttpKnownHeaderNames.ContentLength];
+                        string? length = Headers[HttpKnownHeaderNames.ContentLength];
                         if (length != null)
                         {
                             bool success = long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out _contentLength);
@@ -208,7 +208,7 @@ namespace System.Net
                     _httpMethod = Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
                 }
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_httpMethod:{_httpMethod}");
-                return _httpMethod;
+                return _httpMethod!;
             }
         }
 
@@ -216,12 +216,10 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
                 if (_requestStream == null)
                 {
                     _requestStream = HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
                 return _requestStream;
             }
         }
@@ -230,14 +228,14 @@ namespace System.Net
         {
             get
             {
-                IPrincipal user = HttpListenerContext.User;
+                IPrincipal? user = HttpListenerContext.User;
                 return user != null && user.Identity != null && user.Identity.IsAuthenticated;
             }
         }
 
         public bool IsSecureConnection => _sslStatus != SslStatus.Insecure;
 
-        public string ServiceName
+        public string? ServiceName
         {
             get => _serviceName;
             internal set => _serviceName = value;
@@ -254,33 +252,27 @@ namespace System.Net
             _clientCertificateError = clientCertificateError;
         }
 
-        public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            X509Certificate2 clientCertificate = null;
-            try
+            X509Certificate2? clientCertificate = null;
+
+            if (asyncResult == null)
             {
-                if (asyncResult == null)
-                {
-                    throw new ArgumentNullException(nameof(asyncResult));
-                }
-                ListenerClientCertAsyncResult clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
-                if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
-                {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-                }
-                if (clientCertAsyncResult.EndCalled)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetClientCertificate)));
-                }
-                clientCertAsyncResult.EndCalled = true;
-                clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
-            finally
+            ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
+            if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
+            if (clientCertAsyncResult.EndCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetClientCertificate)));
+            }
+            clientCertAsyncResult.EndCalled = true;
+            clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+
             return clientCertificate;
         }
 
@@ -305,7 +297,7 @@ namespace System.Net
                     _remoteEndPoint = Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
                 }
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "_remoteEndPoint" + _remoteEndPoint);
-                return _remoteEndPoint;
+                return _remoteEndPoint!;
             }
         }
 
@@ -318,27 +310,25 @@ namespace System.Net
                     _localEndPoint = Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
                 }
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_localEndPoint={_localEndPoint}");
-                return _localEndPoint;
+                return _localEndPoint!;
             }
         }
 
         //should only be called from httplistenercontext
         internal void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            RequestContextBase memoryBlob = _memoryBlob;
+            RequestContextBase? memoryBlob = _memoryBlob;
             if (memoryBlob != null)
             {
                 memoryBlob.Close();
                 _memoryBlob = null;
             }
             _isDisposed = true;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
-        private ListenerClientCertAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
+        private ListenerClientCertAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
         {
-            ListenerClientCertAsyncResult asyncResult = null;
+            ListenerClientCertAsyncResult? asyncResult = null;
             //--------------------------------------------------------------------
             //When you configure the HTTP.SYS with a flag value 2
             //which means require client certificates, when the client makes the
@@ -544,7 +534,7 @@ namespace System.Net
                 if (_requestUri == null)
                 {
                     _requestUri = HttpListenerRequestUriBuilder.GetRequestUri(
-                        _rawUrl, RequestScheme, _cookedUrlHost, _cookedUrlPath, _cookedUrlQuery);
+                        _rawUrl!, RequestScheme, _cookedUrlHost!, _cookedUrlPath!, _cookedUrlQuery!);
                 }
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_requestUri:{_requestUri}");
@@ -552,7 +542,7 @@ namespace System.Net
             }
         }
 
-        internal ChannelBinding GetChannelBinding()
+        internal ChannelBinding? GetChannelBinding()
         {
             return HttpListener.GetChannelBindingFromTls(HttpListenerContext.ListenerSession, _connectionId);
         }

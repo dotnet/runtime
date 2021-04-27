@@ -9,6 +9,7 @@ namespace System.Globalization.Tests
     public class TaiwanCalendarDaysAndMonths
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39285", TestPlatforms.Browser)]
         public void DayNames_MonthNames()
         {
             string[] expectedDayNames =

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.XPath;
 
 namespace System.Xml
@@ -9,11 +10,11 @@ namespace System.Xml
     // Represents the text content of an element or attribute.
     public class XmlText : XmlCharacterData
     {
-        internal XmlText(string strData) : this(strData, null)
+        internal XmlText(string? strData) : this(strData, null!) // always throws ArgumentNullException
         {
         }
 
-        protected internal XmlText(string strData, XmlDocument doc) : base(strData, doc)
+        protected internal XmlText(string? strData, XmlDocument doc) : base(strData, doc)
         {
         }
 
@@ -22,7 +23,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.strTextName;
+                return OwnerDocument!.strTextName;
             }
         }
 
@@ -31,7 +32,7 @@ namespace System.Xml
         {
             get
             {
-                return OwnerDocument.strTextName;
+                return OwnerDocument!.strTextName;
             }
         }
 
@@ -44,11 +45,11 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode ParentNode
+        public override XmlNode? ParentNode
         {
             get
             {
-                switch (parentNode.NodeType)
+                switch (parentNode!.NodeType)
                 {
                     case XmlNodeType.Document:
                         return null;
@@ -56,11 +57,12 @@ namespace System.Xml
                     case XmlNodeType.CDATA:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        XmlNode parent = parentNode.parentNode;
+                        XmlNode parent = parentNode.parentNode!;
                         while (parent.IsText)
                         {
-                            parent = parent.parentNode;
+                            parent = parent.parentNode!;
                         }
+
                         return parent;
                     default:
                         return parentNode;
@@ -75,7 +77,7 @@ namespace System.Xml
             return OwnerDocument.CreateTextNode(Data);
         }
 
-        public override string Value
+        public override string? Value
         {
             get
             {
@@ -85,10 +87,10 @@ namespace System.Xml
             set
             {
                 Data = value;
-                XmlNode parent = parentNode;
+                XmlNode? parent = parentNode;
                 if (parent != null && parent.NodeType == XmlNodeType.Attribute)
                 {
-                    XmlUnspecifiedAttribute attr = parent as XmlUnspecifiedAttribute;
+                    XmlUnspecifiedAttribute? attr = parent as XmlUnspecifiedAttribute;
                     if (attr != null && !attr.Specified)
                     {
                         attr.SetSpecified(true);
@@ -101,7 +103,7 @@ namespace System.Xml
         // both in the tree as siblings.
         public virtual XmlText SplitText(int offset)
         {
-            XmlNode parentNode = this.ParentNode;
+            XmlNode? parentNode = this.ParentNode;
             int length = this.Length;
             if (offset > length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -112,7 +114,7 @@ namespace System.Xml
             int count = length - offset;
             string splitData = Substring(offset, count);
             DeleteData(offset, count);
-            XmlText newTextNode = OwnerDocument.CreateTextNode(splitData);
+            XmlText newTextNode = OwnerDocument!.CreateTextNode(splitData);
             parentNode.InsertAfter(newTextNode, this);
             return newTextNode;
         }
@@ -145,14 +147,15 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode PreviousText
+        public override XmlNode? PreviousText
         {
             get
             {
-                if (parentNode.IsText)
+                if (parentNode != null && parentNode.IsText)
                 {
                     return parentNode;
                 }
+
                 return null;
             }
         }

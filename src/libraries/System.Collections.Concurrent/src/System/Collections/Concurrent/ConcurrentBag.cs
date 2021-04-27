@@ -448,7 +448,7 @@ namespace System.Collections.Concurrent
                 FreezeBag(ref lockTaken);
                 for (WorkStealingQueue? queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
                 {
-                    T ignored;
+                    T? ignored;
                     while (queue.TrySteal(out ignored, take: true));
                 }
             }
@@ -1089,7 +1089,7 @@ namespace System.Collections.Concurrent
         private sealed class Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;
-            [AllowNull] private T _current = default;
+            private T? _current;
             private int _index;
 
             public Enumerator(T[] array)
@@ -1110,7 +1110,7 @@ namespace System.Collections.Concurrent
                 return false;
             }
 
-            public T Current => _current;
+            public T Current => _current!;
 
             object? IEnumerator.Current
             {

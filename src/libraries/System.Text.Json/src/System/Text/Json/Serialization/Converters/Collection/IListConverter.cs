@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -13,12 +14,17 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(in object? value, ref ReadStack state)
         {
-            ((IList)state.Current.ReturnValue!).Add(value);
+            TCollection collection = (TCollection)state.Current.ReturnValue!;
+            collection.Add(value);
+            if (IsValueType)
+            {
+                state.Current.ReturnValue = collection;
+            };
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -31,12 +37,12 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
@@ -49,36 +55,38 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
-            IEnumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            IList list = value;
+
+            // Using an index is 2x faster than using an enumerator.
+            int index = state.Current.EnumeratorIndex;
+            JsonConverter<object?> elementConverter = GetElementConverter(ref state);
+
+            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
+                // Fast path that avoids validation and extra indirection.
+                for (; index < list.Count; index++)
                 {
-                    return true;
+                    elementConverter.Write(writer, list[index], options);
                 }
             }
             else
             {
-                enumerator = state.Current.CollectionEnumerator;
+                for (; index < list.Count; index++)
+                {
+                    object? element = list[index];
+                    if (!elementConverter.TryWrite(writer, element, options, ref state))
+                    {
+                        state.Current.EnumeratorIndex = index;
+                        return false;
+                    }
+
+                    if (ShouldFlush(writer, ref state))
+                    {
+                        state.Current.EnumeratorIndex = ++index;
+                        return false;
+                    }
+                }
             }
-
-            JsonConverter<object?> converter = GetElementConverter(ref state);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                object? element = enumerator.Current;
-                if (!converter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-            } while (enumerator.MoveNext());
 
             return true;
         }

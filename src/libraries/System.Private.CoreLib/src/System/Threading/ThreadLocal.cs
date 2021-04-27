@@ -122,17 +122,12 @@ namespace System.Threading
             _valueFactory = valueFactory;
             _trackAllValues = trackAllValues;
 
-            // Assign the ID and mark the instance as initialized. To avoid leaking IDs, we assign the ID and set _initialized
-            // in a finally block, to avoid a thread abort in between the two statements.
-            try { }
-            finally
-            {
-                _idComplement = ~s_idManager.GetId();
+            // Assign the ID and mark the instance as initialized.
+             _idComplement = ~s_idManager.GetId();
 
-                // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
-                // occurred in the constructor.)
-                _initialized = true;
-            }
+            // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
+            // occurred in the constructor.)
+            _initialized = true;
         }
 
         /// <summary>
@@ -305,8 +300,7 @@ namespace System.Threading
             }
         }
 
-        [return: MaybeNull]
-        private T GetValueSlow()
+        private T? GetValueSlow()
         {
             // If the object has been disposed, the id will be -1.
             int id = ~_idComplement;
@@ -538,8 +532,7 @@ namespace System.Threading
 
         /// <summary>Gets the value of the ThreadLocal&lt;T&gt; for debugging display purposes. It takes care of getting
         /// the value for the current thread in the ThreadLocal mode.</summary>
-        [MaybeNull]
-        internal T ValueForDebugDisplay
+        internal T? ValueForDebugDisplay
         {
             get
             {
@@ -548,7 +541,7 @@ namespace System.Threading
 
                 LinkedSlot? slot;
                 if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !_initialized)
-                    return default!;
+                    return default;
                 return slot._value;
             }
         }
@@ -595,7 +588,7 @@ namespace System.Threading
         /// </summary>
         private static int GetNewTableSize(int minSize)
         {
-            if ((uint)minSize > Array.MaxArrayLength)
+            if ((uint)minSize > Array.MaxLength)
             {
                 // Intentionally return a value that will result in an OutOfMemoryException
                 return int.MaxValue;
@@ -630,9 +623,9 @@ namespace System.Threading
             newSize++;
 
             // Don't set newSize to more than Array.MaxArrayLength
-            if ((uint)newSize > Array.MaxArrayLength)
+            if ((uint)newSize > Array.MaxLength)
             {
-                newSize = Array.MaxArrayLength;
+                newSize = Array.MaxLength;
             }
 
             return newSize;
@@ -672,13 +665,13 @@ namespace System.Threading
             internal volatile LinkedSlotVolatile[]? _slotArray;
 
             // The value for this slot.
-            [AllowNull, MaybeNull] internal T _value = default;
+            internal T? _value;
         }
 
         /// <summary>
         /// A manager class that assigns IDs to ThreadLocal instances
         /// </summary>
-        private class IdManager
+        private sealed class IdManager
         {
             // The next ID to try
             private int _nextIdToTry;
@@ -735,7 +728,7 @@ namespace System.Threading
         /// (all those LinkedSlot instances can be found by following references from the table slots) and
         /// releases the table so that it can get GC'd.
         /// </summary>
-        private class FinalizationHelper
+        private sealed class FinalizationHelper
         {
             internal LinkedSlotVolatile[] SlotArray;
             private readonly bool _trackAllValues;
@@ -804,8 +797,7 @@ namespace System.Threading
         public bool IsValueCreated => _tlocal.IsValueCreated;
 
         /// <summary>Returns the value of the ThreadLocal object.</summary>
-        [MaybeNull]
-        public T Value => _tlocal.ValueForDebugDisplay;
+        public T? Value => _tlocal.ValueForDebugDisplay;
 
         /// <summary>Return all values for all threads that have accessed this instance.</summary>
         public List<T>? Values => _tlocal.ValuesForDebugDisplay;

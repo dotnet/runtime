@@ -12,11 +12,8 @@ using OpenSsl = Interop.OpenSsl;
 
 namespace System.Net.Security
 {
-    internal class CipherSuitesPolicyPal
+    internal sealed class CipherSuitesPolicyPal
     {
-        private static readonly byte[] RequireEncryptionDefault =
-            Encoding.ASCII.GetBytes("DEFAULT\0");
-
         private static readonly byte[] AllowNoEncryptionDefault =
             Encoding.ASCII.GetBytes("ALL:eNULL\0");
 
@@ -171,12 +168,12 @@ namespace System.Net.Security
             return policy.Pal._tls13CipherSuites;
         }
 
-        private static byte[] CipherListFromEncryptionPolicy(EncryptionPolicy policy)
+        private static byte[]? CipherListFromEncryptionPolicy(EncryptionPolicy policy)
         {
             switch (policy)
             {
                 case EncryptionPolicy.RequireEncryption:
-                    return RequireEncryptionDefault;
+                    return null;
                 case EncryptionPolicy.AllowNoEncryption:
                     return AllowNoEncryptionDefault;
                 case EncryptionPolicy.NoEncryption:
@@ -187,7 +184,7 @@ namespace System.Net.Security
             }
         }
 
-        private class OpenSslStringBuilder : StreamWriter
+        private sealed class OpenSslStringBuilder : StreamWriter
         {
             private const string SSL_TXT_Separator = ":";
             private static readonly byte[] EmptyString = new byte[1] { 0 };

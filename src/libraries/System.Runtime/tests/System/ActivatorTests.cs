@@ -560,7 +560,7 @@ namespace System.Tests
             Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, new object[] { });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateInstance_NonPublicValueTypeWithPrivateDefaultConstructor_Success()
         {
             AssemblyName assemblyName = new AssemblyName("Assembly");
@@ -589,7 +589,7 @@ namespace System.Tests
             Assert.Equal(-1, field.GetValue(v2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException()
         {
             AssemblyName assemblyName = new AssemblyName("Assembly");
@@ -619,7 +619,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
@@ -717,7 +717,7 @@ namespace System.Tests
         };
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceFromObjectHandleFullSignature(string physicalFileName, string assemblyFile, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {
@@ -796,7 +796,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateInstance_TypeBuilder_ThrowsNotSupportedException()
         {
             AssemblyName assemblyName = new AssemblyName("Assembly");

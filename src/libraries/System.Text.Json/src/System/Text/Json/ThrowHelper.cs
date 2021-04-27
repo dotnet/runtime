@@ -197,6 +197,16 @@ namespace System.Text.Json
             }
         }
 
+        public static InvalidOperationException GetInvalidOperationException_ExpectedArray(JsonTokenType tokenType)
+        {
+            return GetInvalidOperationException("array", tokenType);
+        }
+
+        public static InvalidOperationException GetInvalidOperationException_ExpectedObject(JsonTokenType tokenType)
+        {
+            return GetInvalidOperationException("object", tokenType);
+        }
+
         public static InvalidOperationException GetInvalidOperationException_ExpectedNumber(JsonTokenType tokenType)
         {
             return GetInvalidOperationException("number", tokenType);
@@ -504,6 +514,12 @@ namespace System.Text.Json
             InvalidOperationException ex = GetInvalidOperationException(message);
             ex.Source = ExceptionSourceValueToRethrowAsJsonException;
             return ex;
+        }
+
+        [DoesNotReturn]
+        public static void ThrowOutOfMemoryException(uint capacity)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
         }
 
         // This function will convert an ExceptionResource enum value to the resource string.

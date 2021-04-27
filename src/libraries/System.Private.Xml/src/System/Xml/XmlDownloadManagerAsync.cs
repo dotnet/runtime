@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Net;
@@ -10,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XmlDownloadManager
+    internal sealed partial class XmlDownloadManager
     {
         internal Task<Stream> GetStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
         {
@@ -30,6 +29,7 @@ namespace System.Xml
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
+#pragma warning disable CA1416 // Validate platform compatibility, 'credentials' and 'proxy' will not be set for browser, so safe to suppress
                 if (credentials != null)
                 {
                     handler.Credentials = credentials;
@@ -38,6 +38,7 @@ namespace System.Xml
                 {
                     handler.Proxy = proxy;
                 }
+#pragma warning restore CA1416
 
                 using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(false))
                 {

@@ -16,8 +16,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         private void RefreshContext()
         {
             string username = "Administrator";
-            string password = "Adrumble@6";
-
+            string password = Environment.GetEnvironmentVariable("TESTPASSWORD");
             string OU = "Tests";
             string baseDomain = WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
             string domain = $"{baseDomain}.nttest.microsoft.com";

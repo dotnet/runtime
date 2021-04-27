@@ -4,7 +4,7 @@
 using System;
 using System.Xml.Schema;
 using System.Reflection;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -14,8 +14,8 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = false)]
     public class XmlChoiceIdentifierAttribute : System.Attribute
     {
-        private string _name;
-        private MemberInfo _memberInfo;
+        private string? _name;
+        private MemberInfo? _memberInfo;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -27,7 +27,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlChoiceIdentifierAttribute(string name)
+        public XmlChoiceIdentifierAttribute(string? name)
         {
             _name = name;
         }
@@ -35,24 +35,25 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string MemberName
         {
             get { return _name == null ? string.Empty : _name; }
             set { _name = value; }
         }
 
-        internal MemberInfo MemberInfo
+        internal MemberInfo? MemberInfo
         {
             get { return _memberInfo; }
             set { _memberInfo = value; }
         }
 
-        internal MemberInfo GetMemberInfo()
+        internal MemberInfo? GetMemberInfo()
         {
             return MemberInfo;
         }
 
-        internal void SetMemberInfo(MemberInfo memberInfo)
+        internal void SetMemberInfo(MemberInfo? memberInfo)
         {
             MemberInfo = memberInfo;
         }

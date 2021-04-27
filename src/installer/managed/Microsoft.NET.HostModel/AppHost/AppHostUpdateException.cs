@@ -6,11 +6,10 @@ using System;
 namespace Microsoft.NET.HostModel.AppHost
 {
     /// <summary>
-    /// An instance of this exception is thrown when an AppHost binary update 
+    /// An instance of this exception is thrown when an AppHost binary update
     /// fails due to known user errors.
     /// </summary>
     public class AppHostUpdateException : Exception
     {
     }
 }
-

@@ -120,7 +120,7 @@ while the old code is active in some stack frames. An implementation
 must come up with solutions to several related sub problems, which we
 describe briefly here, and in more detail below.
 
-* **Patchpoints** : Identify where in the original method OSR is possible. 
+* **Patchpoints** : Identify where in the original method OSR is possible.
 We will use the term _patchpoint_ to describe a particular location in a
 method's code that supports OSR transitions.
 * **Triggers** : Determine what will trigger an OSR transition
@@ -258,13 +258,13 @@ PatchpointHelper(int ppID, int* counter)
 
     switch (s)
     {
-      case Unknown: 
-        *counter = initialThreshold; 
+      case Unknown:
+        *counter = initialThreshold;
         SetState(s, Active);
         return;
 
-      case Active:  
-        *counter = checkThreshold; 
+      case Active:
+        *counter = checkThreshold;
         SetState(s, Pending);
         RequestAlternative(ppID);
         return;
@@ -273,7 +273,7 @@ PatchpointHelper(int ppID, int* counter)
         *counter = checkThreshold;
         return;
 
-      case Ready:   
+      case Ready:
          Transition(...); // does not return
      }
 }
@@ -483,7 +483,7 @@ this is to just leave the original frame in place, and have the OSR frame
 #### 3.4.1 The Prototype
 
 The original method conditionally calls to the patchpoint helper at
-patchpoints. The helper will return if there is no transition. 
+patchpoints. The helper will return if there is no transition.
 
 For a transition, the helper will capture context and virtually unwind itself
 and the original method from the stack to recover callee-save register values
@@ -554,7 +554,7 @@ frame pointers.
 When control is executing in a funclet there are effectively two activation
 records on the stack that share a single frame: the parent frame and the
 funclet frame. The funclet frame is largely a stub frame and most of the frame
-state is kept in the parent frame. 
+state is kept in the parent frame.
 
 These two frames are not adjacent; they are separated by some number of runtime
 frames. This means it is going to be difficult for our system to handle
@@ -799,7 +799,7 @@ G_M6138_IG03:
        FFC9                 dec      ecx
        894DF0               mov      dword ptr [rbp-10H], ecx
        837DF000             cmp      dword ptr [rbp-10H], 0      // ... > 0 ?
-       7F0E                 jg       SHORT G_M6138_IG05         
+       7F0E                 jg       SHORT G_M6138_IG05
 
 G_M6138_IG04:           ;; bbWeight=0.01
        488D4DF0             lea      rcx, bword ptr [rbp-10H]    // &patchpointCounter
@@ -910,7 +910,7 @@ For example:
        5F                   pop      rdi
        4883C448             add      rsp, 72
        5D                   pop      rbp
-       C3                   ret      
+       C3                   ret
 ```
 with unwind info:
 ```

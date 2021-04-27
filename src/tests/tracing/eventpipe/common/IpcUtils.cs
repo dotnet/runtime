@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,14 +14,15 @@ using Microsoft.Diagnostics.Tools.RuntimeClient;
 using System.Threading;
 using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
 
 // modified version of same code in dotnet/diagnostics for testing
 namespace Tracing.Tests.Common
 {
     public static class Utils
     {
-        public static readonly string DiagnosticsMonitorAddressEnvKey = "DOTNET_DiagnosticsMonitorAddress";
-        public static readonly string DiagnosticsMonitorPauseOnStartEnvKey = "DOTNET_DiagnosticsMonitorPauseOnStart";
+        public static readonly string DiagnosticPortsEnvKey = "DOTNET_DiagnosticPorts";
+        public static readonly string DiagnosticPortSuspend = "DOTNET_DefaultDiagnosticPortSuspend";
 
         public static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
         {
@@ -65,10 +67,13 @@ namespace Tracing.Tests.Common
 
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.Environment.Add("COMPlus_StressLog",   "1");    // Turn on stresslog for subprocess
+                process.StartInfo.Environment.Add("COMPlus_LogFacility", "1000"); // Diagnostics Server Log Facility
+                process.StartInfo.Environment.Add("COMPlus_LogLevel",    "10");   // Log everything
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = new Uri(currentAssembly.CodeBase).LocalPath + " 0";
+                process.StartInfo.Arguments = new Uri(currentAssembly.Location).LocalPath + " 0";
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
@@ -95,14 +100,14 @@ namespace Tracing.Tests.Common
                 fSuccess &= process.Start();
                 if (!fSuccess)
                     throw new Exception("Failed to start subprocess");
-                StreamWriter subprocesssStdIn = process.StandardInput;
+                StreamWriter subprocessStdIn = process.StandardInput;
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
                 Logger.logger.Log($"subprocess PID: {process.Id}");
 
                 bool fGotToEnd = false;
-                process.Exited += (s, e) => 
+                process.Exited += (s, e) =>
                 {
                     Logger.logger.Log("================= Subprocess Exited =================");
                     if (!fGotToEnd)
@@ -125,8 +130,8 @@ namespace Tracing.Tests.Common
                         await duringExecution(process.Id);
                     fGotToEnd = true;
                     Logger.logger.Log($"Sending 'exit' to subprocess stdin");
-                    subprocesssStdIn.WriteLine("exit");
-                    subprocesssStdIn.Close();
+                    subprocessStdIn.WriteLine("exit");
+                    subprocessStdIn.Close();
                     while (!process.WaitForExit(5000))
                     {
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
@@ -142,8 +147,10 @@ namespace Tracing.Tests.Common
                 }
                 finally
                 {
+                    Logger.logger.Log($"----------------------------------------");
                     Logger.logger.Log($"Subprocess stdout: {stdoutSb.ToString()}");
                     Logger.logger.Log($"Subprocess stderr: {stderrSb.ToString()}");
+                    Logger.logger.Log($"----------------------------------------");
                 }
 
 
@@ -152,6 +159,12 @@ namespace Tracing.Tests.Common
             }
 
             return fSuccess;
+        }
+
+        public static void Assert(bool predicate, string message = "")
+        {
+            if (!predicate)
+                throw new Exception(message);
         }
     }
 
@@ -236,10 +249,10 @@ namespace Tracing.Tests.Common
         public IpcHeader Header { get; private set; } = default;
 
         public byte[] Serialize()
-        { 
+        {
             byte[] serializedData = null;
             // Verify things will fit in the size capacity
-            Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0))); ;
+            Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0)));
             byte[] headerBytes = Header.Serialize();
 
             using (var stream = new MemoryStream())
@@ -274,12 +287,55 @@ namespace Tracing.Tests.Common
             {
                 sb.Append("Payload=[ ");
                 foreach (byte b in Payload)
-                    sb.Append($"'{b:X4}' ");
+                    sb.Append($"0x{b:X2} ");
                 sb.Append(" ]");
             }
             sb.Append("}");
 
             return sb.ToString();
+        }
+    }
+
+    public class ProcessInfo
+    {
+        // uint64_t ProcessId;
+        // GUID RuntimeCookie;
+        // LPCWSTR CommandLine;
+        // LPCWSTR OS;
+        // LPCWSTR Arch;
+        public UInt64 ProcessId;
+        public Guid RuntimeCookie;
+        public string Commandline;
+        public string OS;
+        public string Arch;
+
+        public static ProcessInfo TryParse(byte[] buf)
+        {
+            var info = new ProcessInfo();
+            int start = 0;
+            int end = 8; /* sizeof(uint64_t) */
+            info.ProcessId = BitConverter.ToUInt64(buf[start..end]);
+
+            start = end;
+            end = start + 16; /* sizeof(guid) */
+            info.RuntimeCookie = new Guid(buf[start..end]);
+
+            string ParseString(ref int start, ref int end)
+            {
+                start = end;
+                end = start + 4; /* sizeof(uint32_t) */
+                uint nChars = BitConverter.ToUInt32(buf[start..end]);
+
+                start = end;
+                end = start + ((int)nChars * sizeof(char));
+                return System.Text.Encoding.Unicode.GetString(buf[start..end]).TrimEnd('\0');
+            }
+
+            info.Commandline = ParseString(ref start, ref end);
+            info.OS = ParseString(ref start, ref end);
+            info.Arch = ParseString(ref start, ref end);
+
+            return info;
         }
     }
 
@@ -314,6 +370,59 @@ namespace Tracing.Tests.Common
         private static IpcMessage Read(Stream stream)
         {
             return IpcMessage.Parse(stream);
+        }
+    }
+
+    public class ConnectionHelper
+    {
+        private static string IpcRootPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\\.\pipe\" : Path.GetTempPath();
+        public static Stream GetStandardTransport(int processId)
+        {
+            try
+            {
+                var process = Process.GetProcessById(processId);
+            }
+            catch (System.ArgumentException)
+            {
+                throw new Exception($"Process {processId} is not running.");
+            }
+            catch (System.InvalidOperationException)
+            {
+                throw new Exception($"Process {processId} seems to be elevated.");
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                string pipeName = $"dotnet-diagnostic-{processId}";
+                var namedPipe = new NamedPipeClientStream(
+                    ".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation);
+                namedPipe.Connect(3);
+                return namedPipe;
+            }
+            else
+            {
+                string ipcPort;
+                try
+                {
+                    ipcPort = Directory.GetFiles(IpcRootPath, $"dotnet-diagnostic-{processId}-*-socket") // Try best match.
+                                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
+                                .FirstOrDefault();
+                    if (ipcPort == null)
+                    {
+                        throw new Exception($"Process {processId} not running compatible .NET Core runtime.");
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw new Exception($"Process {processId} not running compatible .NET Core runtime.");
+                }
+                string path = Path.Combine(IpcRootPath, ipcPort);
+                var remoteEP = new UnixDomainSocketEndPoint(path);
+
+                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                socket.Connect(remoteEP);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
         }
     }
 }

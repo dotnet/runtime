@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
         [Fact]

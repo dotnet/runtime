@@ -500,7 +500,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException()
         {
             using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
@@ -526,6 +526,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_ClosedOutputStreamNoIconData_DoesNothing()
         {
@@ -688,7 +689,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_IconHandleOneTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -701,7 +702,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_IconHandleMultipleTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -722,7 +723,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_BitmapHandleOneTime_Success()
         {
             IntPtr handle;
@@ -739,7 +740,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_BitmapHandleMultipleTime_Success()
         {
             IntPtr handle;

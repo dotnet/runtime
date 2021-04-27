@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Text;
 using System.Globalization;
 using System.Xml.Schema;
@@ -37,7 +36,6 @@ namespace System.Xml
         //
         // Static fields with implicit initialization
         //
-        private static XmlCharType s_xmlCharType = XmlCharType.Instance;
         private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
 
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
@@ -225,7 +223,7 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!s_xmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
                      matchPos == 0)
                 {
                     if (bufBld == null)
@@ -262,8 +260,8 @@ namespace System.Xml
             }
             for (; position < length; position++)
             {
-                if ((local && !s_xmlCharType.IsNCNameCharXml4e(name[position])) ||
-                    (!local && !s_xmlCharType.IsNameCharXml4e(name[position])) ||
+                if ((local && !XmlCharType.IsNCNameCharXml4e(name[position])) ||
+                    (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
                     if (bufBld == null)
@@ -316,12 +314,7 @@ namespace System.Xml
         private static volatile Regex? s_decodeCharPattern;
         private static int FromHex(char digit)
         {
-            return (digit <= '9')
-            ? ((int)digit - (int)'0')
-            : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-               + 10);
+            return HexConverter.FromChar(digit);
         }
 
         internal static byte[] FromBinHexString(string s)
@@ -572,7 +565,7 @@ namespace System.Xml
             }
 
             // returns the position of invalid character or -1
-            int pos = s_xmlCharType.IsPublicId(publicId);
+            int pos = XmlCharType.IsPublicId(publicId);
             if (pos != -1)
             {
                 throw CreateInvalidCharException(publicId, pos, ExceptionType.XmlException);
@@ -591,7 +584,7 @@ namespace System.Xml
             }
 
             // returns the position of invalid character or -1
-            int pos = s_xmlCharType.IsOnlyWhitespaceWithPos(content);
+            int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
             if (pos != -1)
             {
                 throw new XmlException(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(content, pos), 0, pos + 1);
@@ -611,34 +604,20 @@ namespace System.Xml
         //                              combined with the production [4] NameStartChar of XML 1.0 spec
         public static bool IsStartNCNameChar(char ch)
         {
-            return s_xmlCharType.IsStartNCNameSingleChar(ch);
+            return XmlCharType.IsStartNCNameSingleChar(ch);
         }
-
-#if XML10_FIFTH_EDITION
-        public static bool IsStartNCNameSurrogatePair(char lowChar, char highChar)
-        {
-            return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
-        }
-#endif
 
         // Name character types - as defined in Namespaces XML 1.0 spec (second edition) production [6] NCNameStartChar
         //                        combined with the production [4] NameChar of XML 1.0 spec
         public static bool IsNCNameChar(char ch)
         {
-            return s_xmlCharType.IsNCNameSingleChar(ch);
+            return XmlCharType.IsNCNameSingleChar(ch);
         }
-
-#if XML10_FIFTH_EDITION
-        public static bool IsNCNameSurrogatePair(char lowChar, char highChar)
-        {
-            return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
-        }
-#endif
 
         // Valid XML character - as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static bool IsXmlChar(char ch)
         {
-            return s_xmlCharType.IsCharData(ch);
+            return XmlCharType.IsCharData(ch);
         }
 
         public static bool IsXmlSurrogatePair(char lowChar, char highChar)
@@ -649,13 +628,13 @@ namespace System.Xml
         // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
         public static bool IsPublicIdChar(char ch)
         {
-            return s_xmlCharType.IsPubidChar(ch);
+            return XmlCharType.IsPubidChar(ch);
         }
 
         // Valid Xml whitespace - as defined in XML 1.0 spec (fifth edition) production [3] S
         public static bool IsWhitespaceChar(char ch)
         {
-            return s_xmlCharType.IsWhiteSpace(ch);
+            return XmlCharType.IsWhiteSpace(ch);
         }
 
         // Value convertors:
@@ -1112,7 +1091,7 @@ namespace System.Xml
             return null;
         }
 
-        internal static double ToXPathDouble(object o)
+        internal static double ToXPathDouble(object? o)
         {
             if (o is string str)
             {
@@ -1480,25 +1459,19 @@ namespace System.Xml
         internal static bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            if (value == 0 && DoubleToInt64Bits(value) == DoubleToInt64Bits(-0e0))
+            if (value == 0 && BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(-0e0))
             {
                 return true;
             }
             return false;
         }
 
-        private static unsafe long DoubleToInt64Bits(double value)
-        {
-            // NOTE: BitConverter.DoubleToInt64Bits is missing in Silverlight
-            return *((long*)&value);
-        }
-
-        internal static void VerifyCharData(string data, ExceptionType exceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType exceptionType)
         {
             VerifyCharData(data, exceptionType, exceptionType);
         }
 
-        internal static void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
+        internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
             if (data == null || data.Length == 0)
             {
@@ -1509,7 +1482,7 @@ namespace System.Xml
             int len = data.Length;
             while (true)
             {
-                while (i < len && s_xmlCharType.IsCharData(data[i]))
+                while (i < len && XmlCharType.IsCharData(data[i]))
                 {
                     i++;
                 }
@@ -1551,7 +1524,7 @@ namespace System.Xml
             int endPos = offset + len;
             while (true)
             {
-                while (i < endPos && s_xmlCharType.IsCharData(data[i]))
+                while (i < endPos && XmlCharType.IsCharData(data[i]))
                 {
                     i++;
                 }

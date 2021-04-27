@@ -561,7 +561,7 @@ namespace System.Net.Sockets.Tests
                 const int acceptBufferSize = acceptBufferOverheadSize + acceptBufferDataSize;
 
                 byte[] sendBuffer = new byte[acceptBufferDataSize];
-                new Random().NextBytes(sendBuffer);
+                Random.Shared.NextBytes(sendBuffer);
 
                 SocketAsyncEventArgs acceptArgs = new SocketAsyncEventArgs();
                 acceptArgs.Completed += OnAcceptCompleted;

@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ChooseAction : ContainerAction
+    internal sealed class ChooseAction : ContainerAction
     {
         internal override void Compile(Compiler compiler)
         {
@@ -38,7 +38,7 @@ namespace System.Xml.Xsl.XsltOld
 
                         if (Ref.Equal(nspace, input.Atoms.UriXsl))
                         {
-                            IfAction action = null;
+                            IfAction? action = null;
                             if (Ref.Equal(name, input.Atoms.When))
                             {
                                 if (otherwise)

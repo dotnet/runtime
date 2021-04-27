@@ -5,26 +5,26 @@ namespace System.Data.Common
 {
     // DbConnectionPoolKey: Base class implementation of a key to connection pool groups
     //  Only connection string is used as a key
-    internal class DbConnectionPoolKey : ICloneable
+    internal sealed class DbConnectionPoolKey : ICloneable
     {
-        private string _connectionString;
+        private string? _connectionString;
 
-        internal DbConnectionPoolKey(string connectionString)
+        internal DbConnectionPoolKey(string? connectionString)
         {
             _connectionString = connectionString;
         }
 
-        protected DbConnectionPoolKey(DbConnectionPoolKey key)
+        private DbConnectionPoolKey(DbConnectionPoolKey key)
         {
             _connectionString = key.ConnectionString;
         }
 
-        public virtual object Clone()
+        public object Clone()
         {
             return new DbConnectionPoolKey(this);
         }
 
-        internal virtual string ConnectionString
+        internal string? ConnectionString
         {
             get
             {
@@ -37,14 +37,14 @@ namespace System.Data.Common
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || obj.GetType() != typeof(DbConnectionPoolKey))
             {
                 return false;
             }
 
-            DbConnectionPoolKey key = obj as DbConnectionPoolKey;
+            DbConnectionPoolKey? key = obj as DbConnectionPoolKey;
 
             return (key != null && _connectionString == key._connectionString);
         }

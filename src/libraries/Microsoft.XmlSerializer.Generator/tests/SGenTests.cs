@@ -15,12 +15,12 @@ namespace Microsoft.XmlSerializer.Generator.Tests
         [Fact]
         public static void SgenCommandTest()
         {
-            const string CodeFile = "Microsoft.XmlSerializer.Generator.Tests.XmlSerializers.cs";
+            const string CodeFile = "SerializableAssembly.XmlSerializers.cs";
             const string LKGCodeFile = "LKG." + CodeFile;
 
             var type = Type.GetType("Microsoft.XmlSerializer.Generator.Sgen, dotnet-Microsoft.XmlSerializer.Generator");
             MethodInfo md = type.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
-            string[] args = new string[] { "Microsoft.XmlSerializer.Generator.Tests.dll", "--force", "--quiet" };
+            string[] args = new string[] { "SerializableAssembly.dll", "--force", "--quiet" };
             int n = (int)md.Invoke(null, new object[] { args });
 
             Assert.Equal(0, n);

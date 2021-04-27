@@ -24,11 +24,14 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-proclib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #ifndef HOST_WIN32
 #include <sys/socket.h>
+#else
+#define sleep(t)                 Sleep((t) * 1000)
 #endif
 #include <glib.h>
 
@@ -213,7 +216,7 @@ static void prof_save (MonoProfiler *prof, FILE* file);
 static void *
 helper_thread (void *arg)
 {
-	mono_thread_attach (mono_get_root_domain ());
+	mono_thread_internal_attach (mono_get_root_domain ());
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "AOT Profiler Helper", MonoSetThreadNameFlag_None);
 
@@ -312,7 +315,7 @@ helper_thread (void *arg)
 	prof_shutdown (&aot_profiler);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
-	mono_thread_detach (mono_thread_current ());
+	mono_thread_internal_detach (mono_thread_current ());
 
 	return NULL;
 }
@@ -364,7 +367,7 @@ mono_profiler_init_aot (const char *desc)
 		if (!aot_profiler.outfile_name)
 			aot_profiler.outfile_name = g_strdup ("output.aotprofile");
 		else if (*aot_profiler.outfile_name == '+')
-			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, getpid ());
+			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, mono_process_current_pid ());
 
 		if (*aot_profiler.outfile_name == '|') {
 #ifdef HAVE_POPEN
@@ -392,7 +395,6 @@ mono_profiler_init_aot (const char *desc)
 
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
-	mono_profiler_set_runtime_shutdown_end_callback (handle, prof_shutdown);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
 }
 
@@ -681,7 +683,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 		MonoString *extra_arg = NULL;
 		if (prof->send_to_arg) {
-			extra_arg = mono_string_new_checked (mono_domain_get (), prof->send_to_arg, error);
+			extra_arg = mono_string_new_checked (prof->send_to_arg, error);
 			mono_error_assert_ok (error);
 		}
 

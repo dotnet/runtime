@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class RC2Implementation
+    internal sealed partial class RC2Implementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
@@ -16,6 +16,8 @@ namespace Internal.Cryptography
             int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
+            int feedbackSize,
+            int paddingSize,
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
@@ -32,7 +34,9 @@ namespace Internal.Cryptography
                     throw new NotSupportedException();
             }
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, effectiveKeyLength, iv, encrypting);
+            Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
+
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
     }

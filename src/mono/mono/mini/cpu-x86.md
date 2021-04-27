@@ -25,9 +25,9 @@
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
-#                    it defaults to zero.   But lengths are only checked if the given opcode 
-#                    is encountered during compilation. Some opcodes, like CONV_U4 are 
-#                    transformed into other opcodes in the brg files, so they do not show up 
+#                    it defaults to zero.   But lengths are only checked if the given opcode
+#                    is encountered during compilation. Some opcodes, like CONV_U4 are
+#                    transformed into other opcodes in the brg files, so they do not show up
 #                    during code generation.
 #
 # cost:number        describe how many cycles are needed to complete the instruction (unused)
@@ -180,8 +180,8 @@ storei2_membase_imm: dest:b len:11
 storei2_membase_reg: dest:b src1:i len:7
 storei4_membase_imm: dest:b len:10
 storei4_membase_reg: dest:b src1:i len:7
-storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i 
+storei8_membase_imm: dest:b
+storei8_membase_reg: dest:b src1:i
 storer4_membase_reg: dest:b src1:f len:7
 storer8_membase_reg: dest:b src1:f len:7
 load_membase: dest:i src1:b len:7
@@ -257,7 +257,7 @@ float_conv_to_u1: dest:y src1:f len:39
 float_conv_to_i: dest:i src1:f len:39
 float_conv_to_ovf_i: dest:a src1:f len:30
 float_conv_to_ovd_u: dest:a src1:f len:30
-float_mul_ovf: 
+float_mul_ovf:
 float_ceq: dest:y src1:f src2:f len:25
 float_cgt: dest:y src1:f src2:f len:25
 float_cgt_un: dest:y src1:f src2:f len:37
@@ -425,7 +425,7 @@ cmov_ile_un: dest:i src1:i src2:i len:16 clob:1
 cmov_ilt_un: dest:i src1:i src2:i len:16 clob:1
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
-long_conv_to_r8_2: dest:f src1:i src2:i len:14 
+long_conv_to_r8_2: dest:f src1:i src2:i len:14
 long_conv_to_r4_2: dest:f src1:i src2:i len:14
 long_conv_to_r_un_2: dest:f src1:i src2:i len:40
 
@@ -565,11 +565,11 @@ unpack_highq: dest:x src1:x src2:x len:4 clob:1
 unpack_highps: dest:x src1:x src2:x len:3 clob:1
 unpack_highpd: dest:x src1:x src2:x len:4 clob:1
 
-packw: dest:x src1:x src2:x len:4 clob:1 
-packd: dest:x src1:x src2:x len:4 clob:1 
+packw: dest:x src1:x src2:x len:4 clob:1
+packd: dest:x src1:x src2:x len:4 clob:1
 
-packw_un: dest:x src1:x src2:x len:4 clob:1 
-packd_un: dest:x src1:x src2:x len:5 clob:1 
+packw_un: dest:x src1:x src2:x len:4 clob:1
+packd_un: dest:x src1:x src2:x len:5 clob:1
 
 paddb_sat: dest:x src1:x src2:x len:4 clob:1
 paddb_sat_un: dest:x src1:x src2:x len:4 clob:1
@@ -634,7 +634,7 @@ extract_i2: dest:i src1:x len:10
 extract_u2: dest:i src1:x len:10
 extract_i1: dest:i src1:x len:10
 extract_u1: dest:i src1:x len:10
-extract_r8: dest:f src1:x len:8 
+extract_r8: dest:f src1:x len:8
 
 insert_i2: dest:x src1:x src2:i len:5 clob:1
 
@@ -653,7 +653,7 @@ loadx_aligned_membase: dest:x src1:b len:7
 storex_aligned_membase_reg: dest:b src1:x len:7
 storex_nta_membase_reg: dest:b src1:x len:7
 
-fconv_to_r8_x: dest:x src1:f len:14 
+fconv_to_r8_x: dest:x src1:f len:14
 xconv_r8_to_i4: dest:y src1:x len:7
 
 prefetch_membase: src1:b len:4

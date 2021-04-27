@@ -8,11 +8,11 @@ Contains source files for the networking test servers in Azure or a private IIS 
 1. Open .\Deployment\config.ps1 in an editor.
 2. Fill in the _Machine Selection_ section with the names and IP addresses of the target machines. In most cases the default options for _Test Parameters_ should be enough.
 
-Note: the `config.ps1` file has been added to .gitignore to prevent it being updated in the master branch.
+Note: the `config.ps1` file has been added to .gitignore to prevent it being updated in the main branch.
 
-### Build the server applications 
+### Build the server applications
 
-Prepare the $DOTNET_TEST_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md. Ensure that you can build and test CoreFX on this machine.
+Prepare the $DOTNET_TEST_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md. Ensure that you can build and test CoreFX on this machine.
 In addition, you will also need to install the _Azure development_ workload for Visual Studio 2017.
 
 From a Visual Studio command prompt:
@@ -30,7 +30,7 @@ You should now find a folder named `IISApplications` within the Deployment folde
 Skip this step if previously completed and all machines are already part of a domain to which you have Administrator rights.
 This will join all machines to a test Active Directory and enable Windows Remoting.
 
-1. Copy the Deployment folder to each of the machines. 
+1. Copy the Deployment folder to each of the machines.
 2. Run the .\setup.ps1 script on the machine designated to become the Domain Controller. Once complete, the machine will reboot.
 3. Run the .\setup.ps1 script on all other domain joined machines. Once complete, the machines will reboot.
 

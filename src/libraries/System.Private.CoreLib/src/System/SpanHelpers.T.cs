@@ -2,13 +2,189 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        public static void Fill<T>(ref T refData, nuint numElements, T value)
+        {
+            // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
+            // - T cannot contain references (GC can't track references in vectors)
+            // - Vectorization must be hardware-accelerated
+            // - T's size must not exceed the vector's size
+            // - T's size must be a whole power of 2
+
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) { goto CannotVectorize; }
+            if (!Vector.IsHardwareAccelerated) { goto CannotVectorize; }
+            if (Unsafe.SizeOf<T>() > Vector<byte>.Count) { goto CannotVectorize; }
+            if (!BitOperations.IsPow2(Unsafe.SizeOf<T>())) { goto CannotVectorize; }
+
+            if (numElements >= (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
+            {
+                // We have enough data for at least one vectorized write.
+
+                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loops below.
+                Vector<byte> vector;
+
+                if (Unsafe.SizeOf<T>() == 1)
+                {
+                    vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
+                }
+                else if (Unsafe.SizeOf<T>() == 2)
+                {
+                    vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
+                }
+                else if (Unsafe.SizeOf<T>() == 4)
+                {
+                    // special-case float since it's already passed in a SIMD reg
+                    vector = (typeof(T) == typeof(float))
+                        ? (Vector<byte>)(new Vector<float>((float)(object)tmp!))
+                        : (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
+                }
+                else if (Unsafe.SizeOf<T>() == 8)
+                {
+                    // special-case double since it's already passed in a SIMD reg
+                    vector = (typeof(T) == typeof(double))
+                        ? (Vector<byte>)(new Vector<double>((double)(object)tmp!))
+                        : (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
+                }
+                else if (Unsafe.SizeOf<T>() == 16)
+                {
+                    Vector128<byte> vec128 = Unsafe.As<T, Vector128<byte>>(ref tmp);
+                    if (Vector<byte>.Count == 16)
+                    {
+                        vector = vec128.AsVector();
+                    }
+                    else if (Vector<byte>.Count == 32)
+                    {
+                        vector = Vector256.Create(vec128, vec128).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> isn't 128 or 256 bits in size?");
+                        goto CannotVectorize;
+                    }
+                }
+                else if (Unsafe.SizeOf<T>() == 32)
+                {
+                    if (Vector<byte>.Count == 32)
+                    {
+                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> isn't 256 bits in size?");
+                        goto CannotVectorize;
+                    }
+                }
+                else
+                {
+                    Debug.Fail("Vector<T> is greater than 256 bits in size?");
+                    goto CannotVectorize;
+                }
+
+                ref byte refDataAsBytes = ref Unsafe.As<T, byte>(ref refData);
+                nuint totalByteLength = numElements * (nuint)Unsafe.SizeOf<T>(); // get this calculation ready ahead of time
+                nuint stopLoopAtOffset = totalByteLength & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
+                nuint offset = 0;
+
+                // Loop, writing 2 vectors at a time.
+                // Compare 'numElements' rather than 'stopLoopAtOffset' because we don't want a dependency
+                // on the very recently calculated 'stopLoopAtOffset' value.
+
+                if (numElements >= (uint)(2 * Vector<byte>.Count / Unsafe.SizeOf<T>()))
+                {
+                    do
+                    {
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset), vector);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset + (nuint)Vector<byte>.Count), vector);
+                        offset += (uint)(2 * Vector<byte>.Count);
+                    } while (offset < stopLoopAtOffset);
+                }
+
+                // At this point, if any data remains to be written, it's strictly less than
+                // 2 * sizeof(Vector) bytes. The loop above had us write an even number of vectors.
+                // If the total byte length instead involves us writing an odd number of vectors, write
+                // one additional vector now. The bit check below tells us if we're in an "odd vector
+                // count" situation.
+
+                if ((totalByteLength & (nuint)Vector<byte>.Count) != 0)
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset), vector);
+                }
+
+                // It's possible that some small buffer remains to be populated - something that won't
+                // fit an entire vector's worth of data. Instead of falling back to a loop, we'll write
+                // a vector at the very end of the buffer. This may involve overwriting previously
+                // populated data, which is fine since we're splatting the same value for all entries.
+                // There's no need to perform a length check here because we already performed this
+                // check before entering the vectorized code path.
+
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, totalByteLength - (nuint)Vector<byte>.Count), vector);
+
+                // And we're done!
+
+                return;
+            }
+
+        CannotVectorize:
+
+            // If we reached this point, we cannot vectorize this T, or there are too few
+            // elements for us to vectorize. Fall back to an unrolled loop.
+
+            nuint i = 0;
+
+            // Write 8 elements at a time
+
+            if (numElements >= 8)
+            {
+                nuint stopLoopAtOffset = numElements & ~(nuint)7;
+                do
+                {
+                    Unsafe.Add(ref refData, (nint)i + 0) = value;
+                    Unsafe.Add(ref refData, (nint)i + 1) = value;
+                    Unsafe.Add(ref refData, (nint)i + 2) = value;
+                    Unsafe.Add(ref refData, (nint)i + 3) = value;
+                    Unsafe.Add(ref refData, (nint)i + 4) = value;
+                    Unsafe.Add(ref refData, (nint)i + 5) = value;
+                    Unsafe.Add(ref refData, (nint)i + 6) = value;
+                    Unsafe.Add(ref refData, (nint)i + 7) = value;
+                } while ((i += 8) < stopLoopAtOffset);
+            }
+
+            // Write next 4 elements if needed
+
+            if ((numElements & 4) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i + 0) = value;
+                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                Unsafe.Add(ref refData, (nint)i + 2) = value;
+                Unsafe.Add(ref refData, (nint)i + 3) = value;
+                i += 4;
+            }
+
+            // Write next 2 elements if needed
+
+            if ((numElements & 2) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i + 0) = value;
+                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                i += 2;
+            }
+
+            // Write final element if needed
+
+            if ((numElements & 1) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i) = value;
+            }
+        }
+
         public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
@@ -49,7 +225,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 
             if (default(T) != null || (object)value != null)
             {
@@ -99,8 +275,8 @@ namespace System
             }
             else
             {
-                byte* len = (byte*)length;
-                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                nint len = length;
+                for (index = 0; index < len; index++)
                 {
                     if ((object)Unsafe.Add(ref searchSpace, index) is null)
                     {
@@ -119,7 +295,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
@@ -173,8 +349,8 @@ namespace System
             }
             else
             {
-                byte* len = (byte*)length;
-                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                nint len = (nint)length;
+                for (index = 0; index < len; index++)
                 {
                     if ((object)Unsafe.Add(ref searchSpace, index) is null)
                     {
@@ -185,21 +361,21 @@ namespace System
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return (int)(byte*)index;
+            return (int)index;
         Found1:
-            return (int)(byte*)(index + 1);
+            return (int)(index + 1);
         Found2:
-            return (int)(byte*)(index + 2);
+            return (int)(index + 2);
         Found3:
-            return (int)(byte*)(index + 3);
+            return (int)(index + 3);
         Found4:
-            return (int)(byte*)(index + 4);
+            return (int)(index + 4);
         Found5:
-            return (int)(byte*)(index + 5);
+            return (int)(index + 5);
         Found6:
-            return (int)(byte*)(index + 6);
+            return (int)(index + 6);
         Found7:
-            return (int)(byte*)(index + 7);
+            return (int)(index + 7);
         }
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
@@ -780,7 +956,7 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             T lookUp0;
             T lookUp1;
             while (length >= 8)

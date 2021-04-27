@@ -262,9 +262,6 @@ public class ManageFileSystem : IDisposable
         //we will not include this directory
         //        m_listOfAllDirs.Add(m_startDir);
 
-        string currentWorkingDir = _startDir;
-        string parentDir = _startDir;
-
         _allDirs = new Dictionary<int, Dictionary<string, List<string>>>();
         //        List<String> dirsForOneLevel = new List<String>();
         //        List<String> tempDirsForOneLevel;
@@ -386,72 +383,4 @@ public class TestInfo
     }
 
     public static string CurrentDirectory { get; set; }
-
-    private delegate void ExceptionCode();
-
-    private void DeleteFile(string fileName)
-    {
-        if (File.Exists(fileName))
-            File.Delete(fileName);
-    }
-
-
-    //Checks for error
-    private static bool Eval(bool expression, string msg, params object[] values)
-    {
-        return Eval(expression, string.Format(msg, values));
-    }
-
-    private static bool Eval<T>(T actual, T expected, string errorMsg)
-    {
-        bool retValue = expected == null ? actual == null : expected.Equals(actual);
-
-        if (!retValue)
-            Eval(retValue, errorMsg +
-            " Expected:" + (null == expected ? "<null>" : expected.ToString()) +
-            " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-
-        return retValue;
-    }
-
-    private static bool Eval(bool expression, string msg)
-    {
-        if (!expression)
-        {
-            Console.WriteLine(msg);
-        }
-        return expression;
-    }
-
-    //Checks for a particular type of exception
-    private static void CheckException<E>(ExceptionCode test, string error)
-    {
-        CheckException<E>(test, error, null);
-    }
-
-    //Checks for a particular type of exception and an Exception msg
-    private static void CheckException<E>(ExceptionCode test, string error, string msgExpected)
-    {
-        bool exception = false;
-        try
-        {
-            test();
-            error = string.Format("{0} Exception NOT thrown ", error);
-        }
-        catch (Exception e)
-        {
-            if (e.GetType() == typeof(E))
-            {
-                exception = true;
-                if (System.Globalization.CultureInfo.CurrentUICulture.Name == "en-US" && msgExpected != null && e.Message != msgExpected)
-                {
-                    exception = false;
-                    error = string.Format("{0} Message Different: <{1}>", error, e.Message);
-                }
-            }
-            else
-                error = string.Format("{0} Exception type: {1}", error, e.GetType().Name);
-        }
-        Eval(exception, error);
-    }
 }

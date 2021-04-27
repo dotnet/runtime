@@ -118,7 +118,7 @@ storei2_membase_imm: dest:b len:20
 storei2_membase_reg: dest:b src1:i len:20
 storei4_membase_imm: dest:b len:20
 storei4_membase_reg: dest:b src1:i len:20
-storei8_membase_imm: dest:b 
+storei8_membase_imm: dest:b
 storei8_membase_reg: dest:b src1:i len:20
 storer4_membase_reg: dest:b src1:f len:20
 storer8_membase_reg: dest:b src1:f len:20
@@ -156,7 +156,7 @@ add_imm: dest:i src1:i len:12
 sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:20
 # there is no actual support for division or reminder by immediate
-# we simulate them, though (but we need to change the burg rules 
+# we simulate them, though (but we need to change the burg rules
 # to allocate a symbolic reg for src2)
 div_imm: dest:i src1:i src2:i len:20
 div_un_imm: dest:i src1:i src2:i len:12
@@ -346,7 +346,7 @@ long_xor_imm: dest:i src1:i clob:1 len:4
 lcompare: src1:i src2:i len:4
 lcompare_imm: src1:i len:12
 
-long_conv_to_r_un: dest:f src1:i src2:i len:37 
+long_conv_to_r_un: dest:f src1:i src2:i len:37
 
 float_beq:    len:16
 float_bne_un: len:16

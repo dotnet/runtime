@@ -68,7 +68,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="key">The key to parse</param>
         /// <returns>Array of individual key members</returns>
-        private static string[] GetKeyMembers(string key)
+        private static string[] GetKeyMembers(string? key)
         {
             if (key == null)
             {

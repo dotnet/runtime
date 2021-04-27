@@ -7,7 +7,7 @@ REM Set the repo root.
 set _root=d:\src\coreclr
 
 REM Set the build flavor.
-set _flavor=Windows_NT.x64.Debug
+set _flavor=windows.x64.Debug
 
 REM Everything else in this script is parameterized using the above two variables.
 

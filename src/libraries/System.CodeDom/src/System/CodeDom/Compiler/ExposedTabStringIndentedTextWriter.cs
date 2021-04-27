@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 
 namespace System.CodeDom.Compiler
@@ -9,7 +10,8 @@ namespace System.CodeDom.Compiler
     {
         public ExposedTabStringIndentedTextWriter(TextWriter writer, string tabString) : base(writer, tabString)
         {
-            TabString = tabString ?? IndentedTextWriter.DefaultTabString;
+            Debug.Assert(tabString != null, "CodeGeneratorOptions can never have a null TabString");
+            TabString = tabString;
         }
 
         internal void InternalOutputTabs()
@@ -46,14 +48,16 @@ namespace System.CodeDom.Compiler
 
                     switch (_indent)
                     {
-                        case 0: _s = string.Empty; break;
                         case 1: _s = tabString; break;
                         case 2: _s = tabString + tabString; break;
                         case 3: _s = tabString + tabString + tabString; break;
                         case 4: _s = tabString + tabString + tabString + tabString; break;
                         default:
                             var args = new string[_indent];
-                            for (int i = 0; i < args.Length; i++) args[i] = tabString;
+                            for (int i = 0; i < args.Length; i++)
+                            {
+                                args[i] = tabString;
+                            }
                             return string.Concat(args);
                     }
                 }

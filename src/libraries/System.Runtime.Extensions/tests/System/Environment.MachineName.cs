@@ -20,6 +20,8 @@ namespace System.Tests
 #if !Unix
                 return Environment.GetEnvironmentVariable("COMPUTERNAME");
 #else
+                if (PlatformDetection.IsBrowser)
+                    return "localhost";
                 string temp = Interop.Sys.GetNodeName();
                 int index = temp.IndexOf('.');
                 return index < 0 ? temp : temp.Substring(0, index);

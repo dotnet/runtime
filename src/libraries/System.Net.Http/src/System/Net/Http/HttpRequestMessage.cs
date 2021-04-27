@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -22,9 +23,10 @@ namespace System.Net.Http
         private Uri? _requestUri;
         private HttpRequestHeaders? _headers;
         private Version _version;
+        private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
         private bool _disposed;
-        private IDictionary<string, object?>? _properties;
+        private HttpRequestOptions? _options;
 
         public Version Version
         {
@@ -38,6 +40,20 @@ namespace System.Net.Http
                 CheckDisposed();
 
                 _version = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the policy determining how <see cref="Version" /> is interpreted and how is the final HTTP version negotiated with the server.
+        /// </summary>
+        public HttpVersionPolicy VersionPolicy
+        {
+            get { return _versionPolicy; }
+            set
+            {
+                CheckDisposed();
+
+                _versionPolicy = value;
             }
         }
 
@@ -87,7 +103,7 @@ namespace System.Net.Http
             {
                 if ((value != null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
                 {
-                    throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(value));
+                    throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(value));
                 }
                 CheckDisposed();
 
@@ -111,17 +127,10 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        public IDictionary<string, object?> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, object?>();
-                }
-                return _properties;
-            }
-        }
+        [Obsolete("Use Options instead.")]
+        public IDictionary<string, object?> Properties => Options;
+
+        public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 
         public HttpRequestMessage()
             : this(HttpMethod.Get, (Uri?)null)
@@ -130,15 +139,11 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, method, requestUri);
             InitializeValues(method, requestUri);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public HttpRequestMessage(HttpMethod method, string? requestUri)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, method, requestUri);
-
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
             // Note that we also allow the string to be empty: null and empty are considered equivalent.
@@ -150,8 +155,6 @@ namespace System.Net.Http
             {
                 InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
             }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         public override string ToString()
@@ -180,24 +183,27 @@ namespace System.Net.Http
         [MemberNotNull(nameof(_version))]
         private void InitializeValues(HttpMethod method, Uri? requestUri)
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
             if ((requestUri != null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
             {
-                throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(requestUri));
+                throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(requestUri));
             }
 
             _method = method;
             _requestUri = requestUri;
             _version = HttpUtilities.DefaultRequestVersion;
+            _versionPolicy = HttpUtilities.DefaultVersionPolicy;
         }
 
         internal bool MarkAsSent()
         {
             return Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageNotYetSent;
         }
+
+        internal bool WasSentByHttpClient() => _sendStatus == MessageAlreadySent;
 
         #region IDisposable Members
 

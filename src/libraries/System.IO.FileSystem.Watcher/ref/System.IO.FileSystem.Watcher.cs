@@ -31,6 +31,7 @@ namespace System.IO
         public bool IncludeSubdirectories { get { throw null; } set { } }
         public int InternalBufferSize { get { throw null; } set { } }
         public System.IO.NotifyFilters NotifyFilter { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.FSWPathEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Path { get { throw null; } set { } }
         public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
         public System.ComponentModel.ISynchronizeInvoke? SynchronizingObject { get { throw null; } set { } }

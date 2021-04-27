@@ -27,7 +27,7 @@ namespace ILVerification.Tests
         /// <summary>
         /// The folder with the test binaries
         /// </summary>
-        private const string TestAssemblyPath = @"Tests\";
+        private const string TestAssemblyPath = @"Tests";
 
         private const string SpecialTestPrefix = "special.";
 
@@ -236,7 +236,7 @@ namespace ILVerification.Tests
 
             foreach (var fileName in GetAllTestDlls())
             {
-                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), TestAssemblyPath + fileName);
+                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), Path.Combine(TestAssemblyPath, fileName));
             }
 
             Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;

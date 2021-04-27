@@ -124,10 +124,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #ifdef HOST_WIN32
 	const char *tmp = g_get_tmp_dir ();
 #endif
-	char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
 	char *as_file;
 	char *o_file;
-	char *cmd;
 	int unused G_GNUC_UNUSED;
 
 #ifdef HOST_WIN32
@@ -255,15 +253,16 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 
 #ifdef HAVE_SYSTEM
-	cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
+	char *cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
 	unused = system (cmd); 
 	g_free (cmd);
+	char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
 	if (!objdump_args)
 		objdump_args = g_strdup ("");
 
 	fflush (stdout);
 
-#if defined(__arm__) || defined(__aarch64__)
+#if (defined(__arm__) || defined(__aarch64__)) && !defined(TARGET_OSX)
 	/* 
 	 * The arm assembler inserts ELF directives instructing objdump to display 
 	 * everything as data.

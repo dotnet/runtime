@@ -417,7 +417,7 @@ namespace JIT.HardwareIntrinsics.Arm
             UInt64[] outArray = new UInt64[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<UInt64, byte>(ref inArray1[0]), op1);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result),(uint)(Unsafe.SizeOf<UInt64>() * RetElementCount));
 
             ValidateResult(inArray1, outArray[0], method);
         }
@@ -428,7 +428,7 @@ namespace JIT.HardwareIntrinsics.Arm
             UInt64[] outArray = new UInt64[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)(Unsafe.SizeOf<UInt64>() * RetElementCount));
 
             ValidateResult(inArray1, outArray[0], method);
         }

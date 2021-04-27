@@ -2,8 +2,6 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <!-- Doesn't run tests on Browser since it is not supported. -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />
@@ -30,8 +28,5 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Net.NetworkInformation" />
   </ItemGroup>
 </Project>

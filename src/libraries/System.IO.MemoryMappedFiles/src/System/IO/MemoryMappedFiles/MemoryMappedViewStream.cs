@@ -10,7 +10,7 @@ namespace System.IO.MemoryMappedFiles
     {
         private readonly MemoryMappedView _view;
 
-        internal unsafe MemoryMappedViewStream(MemoryMappedView view)
+        internal MemoryMappedViewStream(MemoryMappedView view)
         {
             Debug.Assert(view != null, "view is null");
 
@@ -18,20 +18,20 @@ namespace System.IO.MemoryMappedFiles
             Initialize(_view.ViewHandle, _view.PointerOffset, _view.Size, MemoryMappedFile.GetFileAccess(_view.Access));
         }
 
-        public SafeMemoryMappedViewHandle SafeMemoryMappedViewHandle
-        {
-            get { return _view.ViewHandle; }
-        }
+        public SafeMemoryMappedViewHandle SafeMemoryMappedViewHandle => _view.ViewHandle;
+
+        public long PointerOffset => _view.PointerOffset;
 
         public override void SetLength(long value)
         {
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
             throw new NotSupportedException(SR.NotSupported_MMViewStreamsFixedLength);
         }
 
-        public long PointerOffset
-        {
-            get { return _view.PointerOffset; }
-        }
 
         protected override void Dispose(bool disposing)
         {

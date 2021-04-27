@@ -11,12 +11,14 @@ using System.Reflection.Emit;
 using System.IO;
 using System.Security;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
-    internal class CodeGenerator
+    internal sealed class CodeGenerator
     {
-        private static MethodInfo s_getTypeFromHandle;
+        private static MethodInfo? s_getTypeFromHandle;
         private static MethodInfo GetTypeFromHandle
         {
             get
@@ -30,21 +32,21 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static MethodInfo s_objectEquals;
+        private static MethodInfo? s_objectEquals;
         private static MethodInfo ObjectEquals
         {
             get
             {
                 if (s_objectEquals == null)
                 {
-                    s_objectEquals = Globals.TypeOfObject.GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
+                    s_objectEquals = typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
                     Debug.Assert(s_objectEquals != null);
                 }
                 return s_objectEquals;
             }
         }
 
-        private static MethodInfo s_arraySetValue;
+        private static MethodInfo? s_arraySetValue;
         private static MethodInfo ArraySetValue
         {
             get
@@ -58,21 +60,21 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static MethodInfo s_objectToString;
+        private static MethodInfo? s_objectToString;
         private static MethodInfo ObjectToString
         {
             get
             {
                 if (s_objectToString == null)
                 {
-                    s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
+                    s_objectToString = typeof(object).GetMethod("ToString", Type.EmptyTypes);
                     Debug.Assert(s_objectToString != null);
                 }
                 return s_objectToString;
             }
         }
 
-        private static MethodInfo s_stringFormat;
+        private static MethodInfo? s_stringFormat;
         private static MethodInfo StringFormat
         {
             get
@@ -86,16 +88,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private Type _delegateType;
+        private Type _delegateType = null!; // initialized in BeginMethod
 
-#if USE_REFEMIT
-        AssemblyBuilder assemblyBuilder;
-        ModuleBuilder moduleBuilder;
-        TypeBuilder typeBuilder;
-        static int typeCounter;
-        MethodBuilder methodBuilder;
-#else
-        private static Module s_serializationModule;
+        private static Module? s_serializationModule;
         private static Module SerializationModule
         {
             get
@@ -107,19 +102,18 @@ namespace System.Runtime.Serialization
                 return s_serializationModule;
             }
         }
-        private DynamicMethod _dynamicMethod;
-#endif
+        private DynamicMethod _dynamicMethod = null!; // initialized in BeginMethod
 
-        private ILGenerator _ilGen;
-        private List<ArgBuilder> _argList;
-        private Stack<object> _blockStack;
+        private ILGenerator _ilGen = null!; // initialized in BeginMethod
+        private List<ArgBuilder> _argList = null!; // initialized in BeginMethod
+        private Stack<object> _blockStack = null!; // initialized in BeginMethod
         private Label _methodEndLabel;
 
         private readonly Dictionary<LocalBuilder, string> _localNames = new Dictionary<LocalBuilder, string>();
 
         private enum CodeGenTrace { None, Save, Tron };
         private readonly CodeGenTrace _codeGenTrace;
-        private LocalBuilder _stringFormatArray;
+        private LocalBuilder? _stringFormatArray;
 
         internal CodeGenerator()
         {
@@ -127,7 +121,6 @@ namespace System.Runtime.Serialization
             _codeGenTrace = CodeGenTrace.None;
         }
 
-#if !USE_REFEMIT
         internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
             _dynamicMethod = dynamicMethod;
@@ -136,11 +129,10 @@ namespace System.Runtime.Serialization
 
             InitILGeneration(methodName, argTypes);
         }
-#endif
 
         internal void BeginMethod(string methodName, Type delegateType, bool allowPrivateMemberAccess)
         {
-            MethodInfo signature = delegateType.GetMethod("Invoke");
+            MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
             ParameterInfo[] parameters = signature.GetParameters();
             Type[] paramTypes = new Type[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -151,17 +143,9 @@ namespace System.Runtime.Serialization
 
         private void BeginMethod(Type returnType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
-#if USE_REFEMIT
-            string typeName = "Type" + (typeCounter++);
-            InitAssemblyBuilder(typeName + "." + methodName);
-            this.typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes.Public);
-            this.methodBuilder = typeBuilder.DefineMethod(methodName, MethodAttributes.Public|MethodAttributes.Static, returnType, argTypes);
-            this.ilGen = this.methodBuilder.GetILGenerator();
-#else
             _dynamicMethod = new DynamicMethod(methodName, returnType, argTypes, SerializationModule, allowPrivateMemberAccess);
 
             _ilGen = _dynamicMethod.GetILGenerator();
-#endif
 
             InitILGeneration(methodName, argTypes);
         }
@@ -184,21 +168,14 @@ namespace System.Runtime.Serialization
                 EmitSourceLabel("} End method");
             Ret();
 
-            Delegate retVal = null;
-#if USE_REFEMIT
-            Type type = typeBuilder.CreateType();
-            MethodInfo method = type.GetMethod(methodBuilder.Name);
-            retVal = Delegate.CreateDelegate(delegateType, method);
-            methodBuilder = null;
-#else
+            Delegate? retVal = null;
             retVal = _dynamicMethod.CreateDelegate(_delegateType);
-            _dynamicMethod = null;
-#endif
-            _delegateType = null;
+            _dynamicMethod = null!;
+            _delegateType = null!;
 
-            _ilGen = null;
-            _blockStack = null;
-            _argList = null;
+            _ilGen = null!;
+            _blockStack = null!;
+            _argList = null!;
             return retVal;
         }
 
@@ -206,11 +183,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if USE_REFEMIT
-                return methodBuilder;
-#else
                 return _dynamicMethod;
-#endif
             }
         }
 
@@ -259,7 +232,7 @@ namespace System.Runtime.Serialization
             Store(local);
         }
 
-        internal object For(LocalBuilder local, object start, object end)
+        internal object For(LocalBuilder? local, object? start, object? end)
         {
             ForState forState = new ForState(local, DefineLabel(), DefineLabel(), end);
             if (forState.Index != null)
@@ -276,7 +249,7 @@ namespace System.Runtime.Serialization
         internal void EndFor()
         {
             object stackTop = _blockStack.Pop();
-            ForState forState = stackTop as ForState;
+            ForState? forState = stackTop as ForState;
             if (forState == null)
                 ThrowMismatchException(stackTop);
 
@@ -289,7 +262,7 @@ namespace System.Runtime.Serialization
                 MarkLabel(forState.TestLabel);
                 Ldloc(forState.Index);
                 Load(forState.End);
-                if (GetVariableType(forState.End).IsArray)
+                if (GetVariableType(forState.End!).IsArray)
                     Ldlen();
                 Blt(forState.BeginLabel);
             }
@@ -313,7 +286,7 @@ namespace System.Runtime.Serialization
         {
             foreach (object block in _blockStack)
             {
-                ForState forState = block as ForState;
+                ForState? forState = block as ForState;
                 if (forState != null && (object)forState == userForState)
                 {
                     if (!forState.RequiresEndLabel)
@@ -347,13 +320,13 @@ namespace System.Runtime.Serialization
         internal void EndForEach(MethodInfo moveNextMethod)
         {
             object stackTop = _blockStack.Pop();
-            ForState forState = stackTop as ForState;
+            ForState? forState = stackTop as ForState;
             if (forState == null)
                 ThrowMismatchException(stackTop);
 
             MarkLabel(forState.TestLabel);
 
-            object enumerator = forState.End;
+            object? enumerator = forState.End;
             Call(enumerator, moveNextMethod);
 
 
@@ -424,7 +397,7 @@ namespace System.Runtime.Serialization
         }
 
 
-        internal void If(object value1, Cmp cmpOp, object value2)
+        internal void If(object value1, Cmp cmpOp, object? value2)
         {
             Load(value1);
             Load(value2);
@@ -469,14 +442,14 @@ namespace System.Runtime.Serialization
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ParameterCountMismatch, methodInfo.Name, methodInfo.GetParameters().Length, expectedCount)));
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo)
+        internal void Call(object? thisObj, MethodInfo methodInfo)
         {
             VerifyParameterCount(methodInfo, 0);
             LoadThis(thisObj, methodInfo);
             Call(methodInfo);
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1)
+        internal void Call(object? thisObj, MethodInfo methodInfo, object? param1)
         {
             VerifyParameterCount(methodInfo, 1);
             LoadThis(thisObj, methodInfo);
@@ -484,7 +457,7 @@ namespace System.Runtime.Serialization
             Call(methodInfo);
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2)
+        internal void Call(object? thisObj, MethodInfo methodInfo, object? param1, object? param2)
         {
             VerifyParameterCount(methodInfo, 2);
             LoadThis(thisObj, methodInfo);
@@ -493,7 +466,7 @@ namespace System.Runtime.Serialization
             Call(methodInfo);
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3)
+        internal void Call(object? thisObj, MethodInfo methodInfo, object? param1, object? param2, object? param3)
         {
             VerifyParameterCount(methodInfo, 3);
             LoadThis(thisObj, methodInfo);
@@ -503,7 +476,7 @@ namespace System.Runtime.Serialization
             Call(methodInfo);
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3, object param4)
+        internal void Call(object? thisObj, MethodInfo methodInfo, object? param1, object? param2, object? param3, object? param4)
         {
             VerifyParameterCount(methodInfo, 4);
             LoadThis(thisObj, methodInfo);
@@ -514,7 +487,7 @@ namespace System.Runtime.Serialization
             Call(methodInfo);
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3, object param4, object param5)
+        internal void Call(object? thisObj, MethodInfo methodInfo, object? param1, object? param2, object? param3, object? param4, object? param5)
         {
             VerifyParameterCount(methodInfo, 5);
             LoadThis(thisObj, methodInfo);
@@ -526,7 +499,7 @@ namespace System.Runtime.Serialization
             Call(methodInfo);
         }
 
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3, object param4, object param5, object param6)
+        internal void Call(object? thisObj, MethodInfo methodInfo, object? param1, object? param2, object? param3, object? param4, object? param5, object? param6)
         {
             VerifyParameterCount(methodInfo, 6);
             LoadThis(thisObj, methodInfo);
@@ -541,7 +514,7 @@ namespace System.Runtime.Serialization
 
         internal void Call(MethodInfo methodInfo)
         {
-            if (methodInfo.IsVirtual && !methodInfo.DeclaringType.IsValueType)
+            if (methodInfo.IsVirtual && !methodInfo.DeclaringType!.IsValueType)
             {
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction("Callvirt " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType.ToString());
@@ -550,13 +523,13 @@ namespace System.Runtime.Serialization
             else if (methodInfo.IsStatic)
             {
                 if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Static Call " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType.ToString());
+                    EmitSourceInstruction("Static Call " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType!.ToString());
                 _ilGen.Emit(OpCodes.Call, methodInfo);
             }
             else
             {
                 if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Call " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType.ToString());
+                    EmitSourceInstruction("Call " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType!.ToString());
                 _ilGen.Emit(OpCodes.Call, methodInfo);
             }
         }
@@ -564,14 +537,14 @@ namespace System.Runtime.Serialization
         internal void Call(ConstructorInfo ctor)
         {
             if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Call " + ctor.ToString() + " on type " + ctor.DeclaringType.ToString());
+                EmitSourceInstruction("Call " + ctor.ToString() + " on type " + ctor.DeclaringType!.ToString());
             _ilGen.Emit(OpCodes.Call, ctor);
         }
 
         internal void New(ConstructorInfo constructorInfo)
         {
             if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Newobj " + constructorInfo.ToString() + " on type " + constructorInfo.DeclaringType.ToString());
+                EmitSourceInstruction("Newobj " + constructorInfo.ToString() + " on type " + constructorInfo.DeclaringType!.ToString());
             _ilGen.Emit(OpCodes.Newobj, constructorInfo);
         }
 
@@ -591,9 +564,9 @@ namespace System.Runtime.Serialization
             _ilGen.Emit(OpCodes.Newarr, elementType);
         }
 
-        internal void LoadArrayElement(object obj, object arrayIndex)
+        internal void LoadArrayElement(object obj, object? arrayIndex)
         {
-            Type objType = GetVariableType(obj).GetElementType();
+            Type objType = GetVariableType(obj).GetElementType()!;
             Load(obj);
             Load(arrayIndex);
             if (IsStruct(objType))
@@ -614,7 +587,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                Type objType = arrayType.GetElementType();
+                Type objType = arrayType.GetElementType()!;
                 Load(obj);
                 Load(arrayIndex);
                 if (IsStruct(objType))
@@ -635,7 +608,7 @@ namespace System.Runtime.Serialization
 
         internal Type LoadMember(MemberInfo memberInfo)
         {
-            Type memberType = null;
+            Type? memberType = null;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
@@ -653,13 +626,12 @@ namespace System.Runtime.Serialization
                     _ilGen.Emit(OpCodes.Ldfld, fieldInfo);
                 }
             }
-            else if (memberInfo is PropertyInfo)
+            else if (memberInfo is PropertyInfo property)
             {
-                PropertyInfo property = memberInfo as PropertyInfo;
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo getMethod = property.GetMethod;
+                    MethodInfo? getMethod = property.GetMethod;
                     if (getMethod == null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoGetMethodForProperty, property.DeclaringType, property)));
                     Call(getMethod);
@@ -698,10 +670,10 @@ namespace System.Runtime.Serialization
             }
             else if (memberInfo is PropertyInfo)
             {
-                PropertyInfo property = memberInfo as PropertyInfo;
+                PropertyInfo? property = memberInfo as PropertyInfo;
                 if (property != null)
                 {
-                    MethodInfo setMethod = property.SetMethod;
+                    MethodInfo? setMethod = property.SetMethod;
                     if (setMethod == null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoSetMethodForProperty, property.DeclaringType, property)));
                     Call(setMethod);
@@ -755,7 +727,7 @@ namespace System.Runtime.Serialization
                 Load(null);
         }
 
-        internal void Load(object obj)
+        internal void Load(object? obj)
         {
             if (obj == null)
             {
@@ -860,7 +832,7 @@ namespace System.Runtime.Serialization
             if (!opCode.Equals(OpCodes.Nop))
             {
                 if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString());
+                    EmitSourceInstruction(opCode.ToString()!);
                 _ilGen.Emit(opCode);
             }
             else
@@ -1134,7 +1106,7 @@ namespace System.Runtime.Serialization
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
                 if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString());
+                    EmitSourceInstruction(opCode.ToString()!);
                 _ilGen.Emit(opCode);
                 EmitStackTop(arrayElementType);
             }
@@ -1143,7 +1115,7 @@ namespace System.Runtime.Serialization
         {
             OpCode opCode = OpCodes.Ldelema;
             if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction(opCode.ToString());
+                EmitSourceInstruction(opCode.ToString()!);
             _ilGen.Emit(opCode, arrayElementType);
 
             EmitStackTop(arrayElementType);
@@ -1179,7 +1151,7 @@ namespace System.Runtime.Serialization
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
                 if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString());
+                    EmitSourceInstruction(opCode.ToString()!);
                 EmitStackTop(arrayElementType);
                 _ilGen.Emit(opCode);
             }
@@ -1282,16 +1254,16 @@ namespace System.Runtime.Serialization
             _ilGen.Emit(OpCodes.Dup);
         }
 
-        private void LoadThis(object thisObj, MethodInfo methodInfo)
+        private void LoadThis(object? thisObj, MethodInfo methodInfo)
         {
             if (thisObj != null && !methodInfo.IsStatic)
             {
                 LoadAddress(thisObj);
-                ConvertAddress(GetVariableType(thisObj), methodInfo.DeclaringType);
+                ConvertAddress(GetVariableType(thisObj), methodInfo.DeclaringType!);
             }
         }
 
-        private void LoadParam(object arg, int oneBasedArgIndex, MethodBase methodInfo)
+        private void LoadParam(object? arg, int oneBasedArgIndex, MethodBase methodInfo)
         {
             Load(arg);
             if (arg != null)
@@ -1342,7 +1314,7 @@ namespace System.Runtime.Serialization
                     else
                     {
                         if (_codeGenTrace != CodeGenTrace.None)
-                            EmitSourceInstruction(opCode.ToString());
+                            EmitSourceInstruction(opCode.ToString()!);
                         _ilGen.Emit(opCode);
                     }
                 }
@@ -1379,23 +1351,13 @@ namespace System.Runtime.Serialization
         private IfState PopIfState()
         {
             object stackTop = _blockStack.Pop();
-            IfState ifState = stackTop as IfState;
+            IfState? ifState = stackTop as IfState;
             if (ifState == null)
                 ThrowMismatchException(stackTop);
             return ifState;
         }
 
-#if USE_REFEMIT
-        void InitAssemblyBuilder(string methodName)
-        {
-            AssemblyName name = new AssemblyName();
-            name.Name = "Microsoft.GeneratedCode."+methodName;
-            //Add SecurityCritical and SecurityTreatAsSafe attributes to the generated method
-            assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            moduleBuilder = assemblyBuilder.DefineDynamicModule(name.Name + ".dll", false);
-        }
-#endif
-
+        [DoesNotReturn]
         private void ThrowMismatchException(object expected)
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExpectingEnd, expected.ToString())));
@@ -1443,7 +1405,7 @@ namespace System.Runtime.Serialization
         internal void EndCase()
         {
             object stackTop = _blockStack.Peek();
-            SwitchState switchState = stackTop as SwitchState;
+            SwitchState? switchState = stackTop as SwitchState;
             if (switchState == null)
                 ThrowMismatchException(stackTop);
             Br(switchState.EndOfSwitchLabel);
@@ -1454,7 +1416,7 @@ namespace System.Runtime.Serialization
         internal void EndSwitch()
         {
             object stackTop = _blockStack.Pop();
-            SwitchState switchState = stackTop as SwitchState;
+            SwitchState? switchState = stackTop as SwitchState;
             if (switchState == null)
                 ThrowMismatchException(stackTop);
             if (_codeGenTrace != CodeGenTrace.None)
@@ -1464,7 +1426,7 @@ namespace System.Runtime.Serialization
             MarkLabel(switchState.EndOfSwitchLabel);
         }
 
-        private static readonly MethodInfo s_stringLength = typeof(string).GetProperty("Length").GetMethod;
+        private static readonly MethodInfo s_stringLength = typeof(string).GetProperty("Length")!.GetMethod!;
         internal void ElseIfIsEmptyString(LocalBuilder strLocal)
         {
             IfState ifState = (IfState)_blockStack.Pop();
@@ -1535,7 +1497,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ArgBuilder
+    internal sealed class ArgBuilder
     {
         internal int Index;
         internal Type ArgType;
@@ -1546,16 +1508,16 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ForState
+    internal sealed class ForState
     {
-        private readonly LocalBuilder _indexVar;
+        private readonly LocalBuilder? _indexVar;
         private readonly Label _beginLabel;
         private readonly Label _testLabel;
         private Label _endLabel;
         private bool _requiresEndLabel;
-        private readonly object _end;
+        private readonly object? _end;
 
-        internal ForState(LocalBuilder indexVar, Label beginLabel, Label testLabel, object end)
+        internal ForState(LocalBuilder? indexVar, Label beginLabel, Label testLabel, object? end)
         {
             _indexVar = indexVar;
             _beginLabel = beginLabel;
@@ -1563,7 +1525,7 @@ namespace System.Runtime.Serialization
             _end = end;
         }
 
-        internal LocalBuilder Index
+        internal LocalBuilder? Index
         {
             get
             {
@@ -1611,7 +1573,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal object End
+        internal object? End
         {
             get
             {
@@ -1630,7 +1592,7 @@ namespace System.Runtime.Serialization
         GreaterThanOrEqualTo
     }
 
-    internal class IfState
+    internal sealed class IfState
     {
         private Label _elseBegin;
         private Label _endIf;
@@ -1661,7 +1623,7 @@ namespace System.Runtime.Serialization
     }
 
 
-    internal class SwitchState
+    internal sealed class SwitchState
     {
         private readonly Label _defaultLabel;
         private readonly Label _endOfSwitchLabel;

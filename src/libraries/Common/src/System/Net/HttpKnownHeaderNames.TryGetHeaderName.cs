@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -22,8 +21,8 @@ namespace System.Net
 
             return TryGetHeaderName(
                 array, startIndex, length,
-                (arr, index) => arr[index],
-                (known, arr, start, len) => known.AsSpan().SequenceEqual(arr.AsSpan(start, len)),
+                static (arr, index) => arr[index],
+                static (known, arr, start, len) => known.AsSpan().SequenceEqual(arr.AsSpan(start, len)),
                 out name);
         }
 
@@ -46,8 +45,8 @@ namespace System.Net
 
             return TryGetHeaderName(
                 buffer, startIndex, length,
-                (buf, index) => (char)((byte*)buf)[index],
-                (known, buf, start, len) => EqualsOrdinal(known, buf, len),
+                static (buf, index) => (char)((byte*)buf)[index],
+                static (known, buf, start, len) => EqualsOrdinal(known, buf, len),
                 out name);
         }
 

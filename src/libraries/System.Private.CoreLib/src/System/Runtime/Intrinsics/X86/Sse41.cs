@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics.X86
         public static new bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        public new abstract class X64 : Sse2.X64
+        public new abstract class X64 : Ssse3.X64
         {
             internal X64() { }
 

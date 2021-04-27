@@ -23,6 +23,8 @@ namespace Internal.Cryptography.Pal
         private SafeEvpPKeyHandle? _privateKey;
         private X500DistinguishedName? _subjectName;
         private X500DistinguishedName? _issuerName;
+        private string? _subject;
+        private string? _issuer;
 
         public static ICertificatePal FromHandle(IntPtr handle)
         {
@@ -258,9 +260,37 @@ namespace Internal.Cryptography.Pal
             get { return _cert; }
         }
 
-        public string Issuer => IssuerName.Name;
+        public string Issuer
+        {
+            get
+            {
+                if (_issuer == null)
+                {
+                    // IssuerName is mutable to callers in X509Certificate. We want to be
+                    // able to get the issuer even if IssuerName has been mutated, so we
+                    // don't use it here.
+                    _issuer = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert)).Name;
+                }
 
-        public string Subject => SubjectName.Name;
+                return _issuer;
+            }
+        }
+
+        public string Subject
+        {
+            get
+            {
+                if (_subject == null)
+                {
+                    // SubjectName is mutable to callers in X509Certificate. We want to be
+                    // able to get the subject even if SubjectName has been mutated, so we
+                    // don't use it here.
+                    _subject = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert)).Name;
+                }
+
+                return _subject;
+            }
+        }
 
         public string LegacyIssuer => IssuerName.Decode(X500DistinguishedNameFlags.None);
 
@@ -543,6 +573,16 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public ECDiffieHellman GetECDiffieHellmanPublicKey()
+        {
+            using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
+            {
+                Interop.Crypto.CheckValidOpenSslHandle(publicKeyHandle);
+
+                return new ECDiffieHellmanOpenSsl(publicKeyHandle);
+            }
+        }
+
         public ECDsa? GetECDsaPrivateKey()
         {
             if (_privateKey == null || _privateKey.IsInvalid)
@@ -551,6 +591,16 @@ namespace Internal.Cryptography.Pal
             }
 
             return new ECDsaOpenSsl(_privateKey);
+        }
+
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
         private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
@@ -570,7 +620,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             DSAParameters dsaParameters = privateKey.ExportParameters(true);
@@ -578,7 +628,7 @@ namespace Internal.Cryptography.Pal
             using (PinAndClear.Track(dsaParameters.X!))
             using (typedKey = new DSAOpenSsl(dsaParameters))
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 
@@ -588,7 +638,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             ECParameters ecParameters = privateKey.ExportParameters(true);
@@ -598,7 +648,27 @@ namespace Internal.Cryptography.Pal
             {
                 typedKey.ImportParameters(ecParameters);
 
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            ECDiffieHellmanOpenSsl? typedKey = privateKey as ECDiffieHellmanOpenSsl;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(ecParameters.D!))
+            using (typedKey = new ECDiffieHellmanOpenSsl())
+            {
+                typedKey.ImportParameters(ecParameters);
+
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 
@@ -608,7 +678,7 @@ namespace Internal.Cryptography.Pal
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
 
             RSAParameters rsaParameters = privateKey.ExportParameters(true);
@@ -621,7 +691,7 @@ namespace Internal.Cryptography.Pal
             using (PinAndClear.Track(rsaParameters.InverseQ!))
             using (typedKey = new RSAOpenSsl(rsaParameters))
             {
-                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
             }
         }
 

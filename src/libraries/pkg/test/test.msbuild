@@ -1,6 +1,6 @@
 <Project DefaultTargets="Restore;Test">
   <ItemGroup>
-    <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
+    <PackagesToTest Condition="'$(PackagesToTest)' != ''" Include="$(PackagesToTest)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -11,8 +11,8 @@
 
   <Target Name="GetProjects">
     <ItemGroup>
-      <Project Condition="'@(TestPackages)' == ''" Include="$(PackageTestProjectsDir)\**\*.csproj" />
-      <Project Condition="'@(TestPackages)' != ''" Include="$(PackageTestProjectsDir)\%(TestPackages.Identity)\**\*.csproj" />
+      <Project Condition="'@(PackagesToTest)' == ''" Include="$(PackageTestProjectsDir)\**\*.csproj" />
+      <Project Condition="'@(PackagesToTest)' != ''" Include="$(PackageTestProjectsDir)\%(PackagesToTest.Identity)\**\*.csproj" />
     </ItemGroup>
   </Target>
 

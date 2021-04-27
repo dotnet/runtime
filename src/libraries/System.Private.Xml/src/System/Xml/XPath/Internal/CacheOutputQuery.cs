@@ -46,7 +46,7 @@ namespace MS.Internal.Xml.XPath
                                             // All subclasses should and would anyway override this method and return this.
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             Debug.Assert(0 <= count && count <= outputBuffer.Count);
             if (count < outputBuffer.Count)
@@ -56,7 +56,7 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get
             {

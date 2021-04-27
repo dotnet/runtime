@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {
-                throw new InvalidOperationException($"Cannot find compilation library location for package '{Name}'");
+                throw new InvalidOperationException(SR.Format(SR.LibraryLocationNotFound, Name));
             }
             return assemblies;
         }

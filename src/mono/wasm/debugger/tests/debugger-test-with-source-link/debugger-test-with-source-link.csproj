@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>LibraryTest</PackageId>
+    <Version>1.0.0</Version>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryUrl>https://github.com/dotnet/runtime.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <EnableSourceLink>true</EnableSourceLink>
+    <IncludeSymbols>true</IncludeSymbols>
+    <DebugType>embedded</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    <DisableSourceLink>false</DisableSourceLink>
+  </PropertyGroup>
+</Project>

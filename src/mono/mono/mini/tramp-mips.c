@@ -18,7 +18,6 @@
 #include <glib.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/mips/mips-codegen.h>
@@ -41,9 +40,9 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	MonoDomain *domain = mono_domain_get ();
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	    
-	start = code = mono_domain_code_reserve (domain, 20);
+	start = code = mono_mem_manager_code_reserve (mem_manager, 20);
 
 	mips_load (code, mips_t9, addr);
 	/* The this pointer is kept in a0 */
@@ -58,7 +57,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }
@@ -279,13 +278,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 }
 
 gpointer
-mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	code = buf = mono_domain_code_reserve (domain, 32);
+	code = buf = mono_mem_manager_code_reserve (mem_manager, 32);
 
 	/* Prepare the jump to the generic trampoline code
 	 * mono_arch_create_trampoline_code() knows we're putting this in t8
@@ -310,16 +309,14 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	int buf_len;
 
-	MonoDomain *domain = mono_domain_get ();
-
 	buf_len = 24;
 
-	start = code = mono_domain_code_reserve (domain, buf_len);
+	start = code = mono_mem_manager_code_reserve (mem_manager, buf_len);
 
 	mips_load (code, MONO_ARCH_RGCTX_REG, arg);
 	mips_load (code, mips_at, addr);
@@ -331,7 +328,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }
@@ -431,7 +428,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		mips_jr (code, mips_at);
 		mips_nop (code);
 	} else {
-		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+		MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
+		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, &code_len);
 		mips_load (code, mips_at, tramp);
 		mips_jr (code, mips_at);
 		mips_nop (code);

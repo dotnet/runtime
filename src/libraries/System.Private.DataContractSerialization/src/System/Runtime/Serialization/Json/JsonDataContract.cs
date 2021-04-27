@@ -6,6 +6,8 @@ using System.Runtime;
 using System.Runtime.Serialization;
 using System.Reflection;
 using System.Xml;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -13,6 +15,7 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected JsonDataContract(DataContract traditionalDataContract)
         {
             _helper = new JsonDataContractCriticalHelper(traditionalDataContract);
@@ -23,26 +26,26 @@ namespace System.Runtime.Serialization.Json
             _helper = helper;
         }
 
-        internal virtual string TypeName => null;
+        internal virtual string? TypeName => null;
 
         protected JsonDataContractCriticalHelper Helper => _helper;
 
         protected DataContract TraditionalDataContract => _helper.TraditionalDataContract;
 
-        private Dictionary<XmlQualifiedName, DataContract> KnownDataContracts => _helper.KnownDataContracts;
+        private Dictionary<XmlQualifiedName, DataContract>? KnownDataContracts => _helper.KnownDataContracts;
 
-        public static JsonReadWriteDelegates GetGeneratedReadWriteDelegates(DataContract c)
+        public static JsonReadWriteDelegates? GetGeneratedReadWriteDelegates(DataContract c)
         {
             // this method used to be rewritten by an IL transform
             // with the restructuring for multi-file, this is no longer true - instead
             // this has become a normal method
-            JsonReadWriteDelegates result;
+            JsonReadWriteDelegates? result;
             return JsonReadWriteDelegates.GetJsonDelegates().TryGetValue(c, out result) ? result : null;
         }
 
         internal static JsonReadWriteDelegates GetReadWriteDelegatesFromGeneratedAssembly(DataContract c)
         {
-            JsonReadWriteDelegates result = GetGeneratedReadWriteDelegates(c);
+            JsonReadWriteDelegates? result = GetGeneratedReadWriteDelegates(c);
             if (result == null)
             {
                 throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, c.UnderlyingType));
@@ -53,38 +56,43 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal static JsonReadWriteDelegates TryGetReadWriteDelegatesFromGeneratedAssembly(DataContract c)
+        internal static JsonReadWriteDelegates? TryGetReadWriteDelegatesFromGeneratedAssembly(DataContract c)
         {
-            JsonReadWriteDelegates result = GetGeneratedReadWriteDelegates(c);
+            JsonReadWriteDelegates? result = GetGeneratedReadWriteDelegates(c);
             return result;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
         {
             return JsonDataContractCriticalHelper.GetJsonDataContract(traditionalDataContract);
         }
 
-        public object ReadJsonValue(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public object? ReadJsonValue(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             PushKnownDataContracts(context);
-            object deserializedObject = ReadJsonValueCore(jsonReader, context);
+            object? deserializedObject = ReadJsonValueCore(jsonReader, context);
             PopKnownDataContracts(context);
             return deserializedObject;
         }
 
-        public virtual object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             return TraditionalDataContract.ReadXmlValue(jsonReader, context);
         }
 
-        public void WriteJsonValue(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public void WriteJsonValue(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             PushKnownDataContracts(context);
             WriteJsonValueCore(jsonWriter, obj, context, declaredTypeHandle);
             PopKnownDataContracts(context);
         }
 
-        public virtual void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public virtual void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             TraditionalDataContract.WriteXmlValue(jsonWriter, obj, context);
         }
@@ -108,18 +116,20 @@ namespace System.Runtime.Serialization.Json
             return false;
         }
 
-        protected void PopKnownDataContracts(XmlObjectSerializerContext context)
+        protected void PopKnownDataContracts(XmlObjectSerializerContext? context)
         {
             if (KnownDataContracts != null)
             {
+                Debug.Assert(context != null);
                 context.scopedKnownTypes.Pop();
             }
         }
 
-        protected void PushKnownDataContracts(XmlObjectSerializerContext context)
+        protected void PushKnownDataContracts(XmlObjectSerializerContext? context)
         {
             if (KnownDataContracts != null)
             {
+                Debug.Assert(context != null);
                 context.scopedKnownTypes.Push(KnownDataContracts);
             }
         }
@@ -134,10 +144,11 @@ namespace System.Runtime.Serialization.Json
 
             private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
             private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
-            private Dictionary<XmlQualifiedName, DataContract> _knownDataContracts;
+            private Dictionary<XmlQualifiedName, DataContract>? _knownDataContracts;
             private readonly DataContract _traditionalDataContract;
             private readonly string _typeName;
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal JsonDataContractCriticalHelper(DataContract traditionalDataContract)
             {
                 _traditionalDataContract = traditionalDataContract;
@@ -145,12 +156,13 @@ namespace System.Runtime.Serialization.Json
                 _typeName = string.IsNullOrEmpty(traditionalDataContract.Namespace.Value) ? traditionalDataContract.Name.Value : string.Concat(traditionalDataContract.Name.Value, JsonGlobals.NameValueSeparatorString, XmlObjectSerializerWriteContextComplexJson.TruncateDefaultDataContractNamespace(traditionalDataContract.Namespace.Value));
             }
 
-            internal Dictionary<XmlQualifiedName, DataContract> KnownDataContracts => _knownDataContracts;
+            internal Dictionary<XmlQualifiedName, DataContract>? KnownDataContracts => _knownDataContracts;
 
             internal DataContract TraditionalDataContract => _traditionalDataContract;
 
             internal virtual string TypeName => _typeName;
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
             {
                 int id = JsonDataContractCriticalHelper.GetId(traditionalDataContract.UnderlyingType.TypeHandle);
@@ -167,7 +179,7 @@ namespace System.Runtime.Serialization.Json
             {
                 lock (s_cacheLock)
                 {
-                    IntRef id;
+                    IntRef? id;
                     s_typeHandleRef.Value = typeHandle;
                     if (!s_typeToIDCache.TryGetValue(s_typeHandleRef, out id))
                     {
@@ -189,10 +201,6 @@ namespace System.Runtime.Serialization.Json
                         }
                         catch (Exception ex)
                         {
-                            if (DiagnosticUtility.IsFatal(ex))
-                            {
-                                throw;
-                            }
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                         }
                     }
@@ -200,6 +208,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static JsonDataContract CreateJsonDataContract(int id, DataContract traditionalDataContract)
             {
                 lock (s_createDataContractLock)
@@ -263,13 +272,14 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void AddCollectionItemContractsToKnownDataContracts()
             {
                 if (_traditionalDataContract.KnownDataContracts != null)
                 {
                     foreach (KeyValuePair<XmlQualifiedName, DataContract> knownDataContract in _traditionalDataContract.KnownDataContracts)
                     {
-                        CollectionDataContract collectionDataContract = knownDataContract.Value as CollectionDataContract;
+                        CollectionDataContract? collectionDataContract = knownDataContract.Value as CollectionDataContract;
                         while (collectionDataContract != null)
                         {
                             DataContract itemContract = collectionDataContract.ItemContract;
@@ -299,7 +309,7 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
-    internal class JsonReadWriteDelegates
+    internal sealed class JsonReadWriteDelegates
     {
         // this is the global dictionary for JSON delegates introduced for multi-file
         private static readonly Dictionary<DataContract, JsonReadWriteDelegates> s_jsonDelegates = new Dictionary<DataContract, JsonReadWriteDelegates>();
@@ -309,10 +319,10 @@ namespace System.Runtime.Serialization.Json
             return s_jsonDelegates;
         }
 
-        public JsonFormatClassWriterDelegate ClassWriterDelegate { get; set; }
-        public JsonFormatClassReaderDelegate ClassReaderDelegate { get; set; }
-        public JsonFormatCollectionWriterDelegate CollectionWriterDelegate { get; set; }
-        public JsonFormatCollectionReaderDelegate CollectionReaderDelegate { get; set; }
-        public JsonFormatGetOnlyCollectionReaderDelegate GetOnlyCollectionReaderDelegate { get; set; }
+        public JsonFormatClassWriterDelegate? ClassWriterDelegate { get; set; }
+        public JsonFormatClassReaderDelegate? ClassReaderDelegate { get; set; }
+        public JsonFormatCollectionWriterDelegate? CollectionWriterDelegate { get; set; }
+        public JsonFormatCollectionReaderDelegate? CollectionReaderDelegate { get; set; }
+        public JsonFormatGetOnlyCollectionReaderDelegate? GetOnlyCollectionReaderDelegate { get; set; }
     }
 }

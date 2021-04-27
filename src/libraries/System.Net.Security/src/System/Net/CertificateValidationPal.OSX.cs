@@ -78,8 +78,6 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(securityContext);
-
             SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
 
             if (sslContext == null)
@@ -111,11 +109,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Log.RemoteCertificate(result);
-                NetEventSource.Exit(securityContext, result);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
 
             return result;
         }

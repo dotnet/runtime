@@ -72,6 +72,7 @@ namespace System.Net
     public delegate void UploadValuesCompletedEventHandler(object sender, System.Net.UploadValuesCompletedEventArgs e);
     public partial class WebClient : System.ComponentModel.Component
     {
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public WebClient() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
@@ -79,16 +80,16 @@ namespace System.Net
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public bool AllowWriteStreamBuffering { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string BaseAddress { get { throw null; } set { } }
         public System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Text.Encoding Encoding { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
         public bool IsBusy { get { throw null; } }
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Collections.Specialized.NameValueCollection QueryString { get { throw null; } set { } }
         public System.Net.WebHeaderCollection? ResponseHeaders { get { throw null; } }
         public bool UseDefaultCredentials { get { throw null; } set { } }

@@ -5,7 +5,7 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Http-WinHttpHandler", LocalizationResources = "FxResources.System.Net.Http.WinHttpHandler.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Http.WinHttpHandler", LocalizationResources = "FxResources.System.Net.Http.WinHttpHandler.SR")]
     internal sealed partial class NetEventSource : EventSource
     {
     }

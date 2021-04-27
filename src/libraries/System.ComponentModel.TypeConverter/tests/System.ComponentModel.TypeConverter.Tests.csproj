@@ -6,14 +6,12 @@
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <Compile Include="Drawing\ColorConverterTests.cs" />
     <Compile Include="Drawing\PointConverterTests.cs" />
     <Compile Include="Drawing\RectangleConverterTests.cs" />
     <Compile Include="Drawing\SizeConverterTests.cs" />
     <Compile Include="Drawing\SizeFConverterTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Design\Serialization\ComponentSerializationServiceTests.cs" />
     <Compile Include="Design\StandardCommandsTests.cs" />
     <Compile Include="Extensions\EnumeratorExtensions.cs" />
@@ -70,14 +68,13 @@
     <Compile Include="DateTimeOffsetConverterTests.cs" />
     <Compile Include="DecimalConverterTests.cs" />
     <Compile Include="DefaultEventAttributeTests.cs" />
-    <Compile Include="EditorAttributeTests.cs" />
     <Compile Include="DesignTimeVisibleAttributeTests.cs" />
-    <Compile Include="DesignerAttributeTests.cs" />
     <Compile Include="DefaultPropertyAttributeTests.cs" />
     <Compile Include="Design\DesignerTransactionCloseEventArgsTests.cs" />
     <Compile Include="Design\DesignerVerbTests.cs" />
     <Compile Include="Design\DesignerVerbCollectionTests.cs" />
     <Compile Include="Design\DesigntimeLicenseContextTests.cs" />
+    <Compile Include="Design\DesigntimeLicenseContextSerializerTests.cs" />
     <Compile Include="Design\HelpKeywordAttributeTests.cs" />
     <Compile Include="Design\Serialization\MemberRelationshipServiceTests.cs" />
     <Compile Include="Design\ServiceContainerTests.cs" />
@@ -86,7 +83,6 @@
     <Compile Include="Design\Serialization\RootDesignerSerializerAttributeTests.cs" />
     <Compile Include="Design\Serialization\ResolveNameEventArgsTests.cs" />
     <Compile Include="Design\Serialization\MemberRelationshipTests.cs" />
-    <Compile Include="Design\Serialization\DesignerSerializerAttributeTests.cs" />
     <Compile Include="Design\Serialization\DesignerLoaderTests.cs" />
     <Compile Include="Design\Serialization\DefaultSerializationProviderAttributeTests.cs" />
     <Compile Include="Design\MenuCommandTests.cs" />
@@ -108,6 +104,7 @@
     <Compile Include="Mocks\MockServiceProvider.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
+    <Compile Include="ReflectionCachesUpdateHandlerTests.cs" />
     <Compile Include="PropertyDescriptorCollectionTests.cs" />
     <Compile Include="PropertyDescriptorTests.cs" />
     <Compile Include="ProvidePropertyAttributeTests.cs" />
@@ -165,5 +162,8 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

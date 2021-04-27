@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace System.Xml.Xsl.Runtime
     /// XmlNodeOrder.Unknown, a stable order between documents is maintained by an ordered list mapping each root node
     /// to an ordering index.
     /// </summary>
-    internal class DocumentOrderComparer : IComparer<XPathNavigator>
+    internal sealed class DocumentOrderComparer : IComparer<XPathNavigator>
     {
         private List<XPathNavigator> _roots;
 

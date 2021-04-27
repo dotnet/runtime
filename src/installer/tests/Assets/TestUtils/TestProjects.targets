@@ -4,4 +4,8 @@
     provides basic info needed for restore and build with the vanilla SDK.
   -->
 
+  <!--
+    We are using to best emulate the live version. This should be removed once we start using the live bits.
+    https://github.com/dotnet/runtime/issues/45972  
+  -->
 </Project>

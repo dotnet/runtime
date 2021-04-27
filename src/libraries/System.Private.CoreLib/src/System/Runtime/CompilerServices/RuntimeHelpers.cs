@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
@@ -66,28 +65,7 @@ namespace System.Runtime.CompilerServices
             return dest;
         }
 
-        public static object GetUninitializedObject(
-            // This API doesn't call any constructors, but the type needs to be seen as constructed.
-            // A type is seen as constructed if a constructor is kept.
-            // This obviously won't cover a type with no constructor. Reference types with no
-            // constructor are an academic problem. Valuetypes with no constructors are a problem,
-            // but IL Linker currently treats them as always implicitly boxed.
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type)
-        {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-            }
-
-            if (!type.IsRuntimeImplemented())
-            {
-                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
-            }
-
-            return GetUninitializedObjectInternal(type);
-        }
-
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
         {
             if (code == null)
@@ -108,18 +86,22 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void PrepareContractedDelegate(Delegate d)
         {
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ProbeForSufficientStack()
         {
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void PrepareConstrainedRegions()
         {
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void PrepareConstrainedRegionsNoOP()
         {
         }

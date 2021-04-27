@@ -1,17 +1,52 @@
 <Project>
-  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
-    <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)/ref/$(MSBuildProjectName).csproj</ContractProject>
-    <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
-    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$(RefPath)/$(MSBuildProjectName).dll</ContractAssemblyPath>
+  <PropertyGroup>
+    <!-- Use implementation referencepath if no contract dependency path is set.
+         This item transform is executed at the time this property is evaluated in the API Compat targets. -->
+    <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
+  </PropertyGroup>
 
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
+    <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)\ref\$(MSBuildProjectName).csproj</ContractProject>
+    <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
     <!-- Disable API compat if the project doesn't have reference assembly -->
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
-    <ResolvedMatchingContract Condition="Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
+  <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != '' and '@(ResolvedMatchingContract)' == ''">
+    <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContract" />
+    <!-- We aren't referencing the contract, but make sure it's considered as an input to Compile so that if it changes we rebuild and rerun API compat -->
+    <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="CustomAdditionalCompileInputs" />
   </ItemGroup>
-
   <!-- intentionally empty since we no longer need a target -->
   <Target Name="ResolveMatchingContract" />
+
+  <!-- Allow P2Ps that target a source project to build against the corresponding ref project. -->
+  <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithReferenceAssembly"
+          Condition="'$(HasMatchingContract)' == 'true'"
+          AfterTargets="GetTargetPathWithTargetPlatformMoniker">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="HandleReferenceAssemblyAttributeForProjectReferences"
+          AfterTargets="ResolveProjectReferences"
+          BeforeTargets="FindReferenceAssembliesForReferences"
+          Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
+    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies. -->
+    <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
+      <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+    </PropertyGroup>
+    <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
+    <ItemGroup>
+       <_resolvedP2PFiltered Include="@(ProjectReference)">
+        <ProjectReferenceItemSpec>$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))</ProjectReferenceItemSpec>
+        <SkipUseReferenceAssembly>%(ProjectReference.SkipUseReferenceAssembly)</SkipUseReferenceAssembly>
+      </_resolvedP2PFiltered>
+      <_ResolvedProjectReferencePaths Update="@(_resolvedProjectReferenceFiltred)"
+                                      Condition="'%(_resolvedP2PFiltered.ProjectReferenceItemSpec)' == '%(_resolvedP2PFiltered.MSBuildSourceProjectFile)' and
+                                                 '%(_resolvedP2PFiltered.SkipUseReferenceAssembly)' == 'true'"
+                                      ReferenceAssembly="" />
+    </ItemGroup>
+  </Target>
 </Project>

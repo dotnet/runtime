@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
@@ -51,6 +52,7 @@ namespace System.ComponentModel
         /// to the corresponding property on the object. If there is no matching
         /// property the resource will be ignored.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         public void ApplyResources(object value, string objectName) => ApplyResources(value, objectName, null);
 
         /// <summary>
@@ -60,6 +62,7 @@ namespace System.ComponentModel
         /// to the corresponding property on the object. If there is no matching
         /// property the resource will be ignored.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         public virtual void ApplyResources(object value, string objectName, CultureInfo culture)
         {
             if (value == null)

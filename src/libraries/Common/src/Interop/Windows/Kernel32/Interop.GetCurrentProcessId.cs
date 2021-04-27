@@ -10,6 +10,4 @@ internal static partial class Interop
         [DllImport(Libraries.Kernel32)]
         internal static extern uint GetCurrentProcessId();
     }
-
-    internal static uint GetCurrentProcessId() => Kernel32.GetCurrentProcessId();
 }

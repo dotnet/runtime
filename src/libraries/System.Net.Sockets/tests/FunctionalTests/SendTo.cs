@@ -1,17 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class SendToBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    public abstract class SendTo<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
+        protected static Socket CreateSocket(AddressFamily addressFamily = AddressFamily.InterNetwork) => new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
 
-        protected SendToBase(ITestOutputHelper output) : base(output)
+        protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
+            addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
+
+        protected SendTo(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -19,34 +26,41 @@ namespace System.Net.Sockets.Tests
         [InlineData(1, -1, 0)] // offset low
         [InlineData(1, 2, 0)] // offset high
         [InlineData(1, 0, -1)] // count low
-        [InlineData(1, 1, 2)] // count high
-        public async Task OutOfRange_Throws(int length, int offset, int count)
+        [InlineData(1, 0, 2)] // count high
+        [InlineData(1, 1, 1)] // count high
+        public async Task OutOfRange_Throws_ArgumentOutOfRangeException(int length, int offset, int count)
         {
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var socket = CreateSocket();
 
             ArraySegment<byte> buffer = new FakeArraySegment
             {
                 Array = new byte[length], Count = count, Offset = offset
             }.ToActual();
 
-            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => SendToAsync(socket, buffer, ValidUdpRemoteEndpoint));
+            await AssertThrowsSynchronously<ArgumentOutOfRangeException>(() => SendToAsync(socket, buffer, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
-        public async Task NullBuffer_Throws()
+        public async Task NullBuffer_Throws_ArgumentNullException()
         {
             if (!ValidatesArrayArguments) return;
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var socket = CreateSocket();
 
-            await Assert.ThrowsAsync<ArgumentNullException>(() => SendToAsync(socket, null, ValidUdpRemoteEndpoint));
+            await AssertThrowsSynchronously<ArgumentNullException>(() => SendToAsync(socket, null, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
-        public async Task NullEndpoint_Throws()
+        public async Task NullEndpoint_Throws_ArgumentException()
         {
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-            await Assert.ThrowsAnyAsync<ArgumentException>(() => SendToAsync(socket, new byte[1], null));
+            using Socket socket = CreateSocket();
+            if (UsesEap)
+            {
+                await AssertThrowsSynchronously<ArgumentException>(() => SendToAsync(socket, new byte[1], null));
+            }
+            else
+            {
+                await AssertThrowsSynchronously<ArgumentNullException>(() => SendToAsync(socket, new byte[1], null));
+            }
         }
 
         [Fact]
@@ -55,7 +69,7 @@ namespace System.Net.Sockets.Tests
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             byte[] buffer = new byte[32];
 
-            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), ValidUdpRemoteEndpoint);
+            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), GetGetDummyTestEndpoint());
 
             // Asynchronous calls shall alter the property immediately:
             if (!UsesSync)
@@ -80,59 +94,101 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             Assert.Null(socket.LocalEndPoint);
         }
+
+        [Fact]
+        public async Task Disposed_Throws()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Dispose();
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendToAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+        }
     }
 
-    public static class SendTo
+    public sealed class SendTo_SyncSpan : SendTo<SocketHelperSpanSync>
     {
-        public static class Sync
+        public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_SyncSpanForceNonBlocking : SendTo<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_ArraySync : SendTo<SocketHelperArraySync>
+    {
+        public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_SyncForceNonBlocking : SendTo<SocketHelperSyncForceNonBlocking>
+    {
+        public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendTo_Apm : SendTo<SocketHelperApm>
+    {
+        public SendTo_Apm(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        public void EndSendTo_NullAsyncResult_Throws_ArgumentNullException()
         {
-            public sealed class Span : SendToBase<SocketHelperSpanSync>
-            {
-                public Span(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class SpanForceNonBlocking : SendToBase<SocketHelperSpanSyncForceNonBlocking>
-            {
-                public SpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
-            {
-                public MemoryArrayTask(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class MemoryNativeTask : SendToBase<SocketHelperMemoryNativeTask>
-            {
-                public MemoryNativeTask(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class ArraySync : SendToBase<SocketHelperArraySync>
-            {
-                public ArraySync(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class ArrayForceNonBlocking : SendToBase<SocketHelperSyncForceNonBlocking>
-            {
-                public ArrayForceNonBlocking(ITestOutputHelper output) : base(output) {}
-            }
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+            Assert.Throws<ArgumentNullException>(() => socket.EndSendTo(null));
         }
 
-        public static class Async
+        [Fact]
+        public void EndSendTo_UnrelatedAsyncResult_Throws_ArgumentException()
         {
-            public sealed class Apm : SendToBase<SocketHelperApm>
-            {
-                public Apm(ITestOutputHelper output) : base(output) {}
-            }
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
 
-            public sealed class Task : SendToBase<SocketHelperTask>
-            {
-                public Task(ITestOutputHelper output) : base(output) {}
-            }
-
-            public sealed class Eap : SendToBase<SocketHelperEap>
-            {
-                public Eap(ITestOutputHelper output) : base(output) {}
-            }
+            Assert.Throws<ArgumentException>(() => socket.EndSendTo(Task.CompletedTask));
         }
+    }
+
+    public sealed class SendTo_Eap : SendTo<SocketHelperEap>
+    {
+        public SendTo_Eap(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        public void SendToAsync_NullAsyncEventArgs_Throws_ArgumentNullException()
+        {
+            using Socket socket = CreateSocket();
+            Assert.Throws<ArgumentNullException>(() => socket.SendToAsync(null));
+        }
+    }
+
+    public sealed class SendTo_Task : SendTo<SocketHelperTask>
+    {
+        public SendTo_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_CancellableTask : SendTo<SocketHelperCancellableTask>
+    {
+        public SendTo_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task PreCanceled_Throws()
+        {
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => sender.SendToAsync(new byte[1], SocketFlags.None, GetGetDummyTestEndpoint(), cts.Token).AsTask());
+
+            Assert.Equal(cts.Token, ex.CancellationToken);
+        }
+    }
+
+    public sealed class SendTo_MemoryArrayTask : SendTo<SocketHelperMemoryArrayTask>
+    {
+        public SendTo_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_MemoryNativeTask : SendTo<SocketHelperMemoryNativeTask>
+    {
+        public SendTo_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
 }

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Diagnostics.FileVersionInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -47,8 +46,7 @@
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <ProjectReference Include="../../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
     <Reference Include="System.Collections.Immutable" />
-    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Reflection.Metadata" />
   </ItemGroup>
 </Project>

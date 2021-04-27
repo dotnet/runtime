@@ -355,11 +355,11 @@ namespace System.Net.Http.Headers
 
             for (int i = 0; i < headers.Length; i++)
             {
-                if (headers[i] != null)
+                if (headers[i] is HttpHeaders hh)
                 {
-                    foreach (var header in headers[i]!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                    foreach (KeyValuePair<string, string[]> header in hh.EnumerateWithoutValidation())
                     {
-                        foreach (var headerValue in header.Value)
+                        foreach (string headerValue in header.Value)
                         {
                             sb.Append("  ");
                             sb.Append(header.Key);
@@ -389,6 +389,20 @@ namespace System.Net.Http.Headers
         private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)
         {
             CheckValidToken(value, "item");
+        }
+
+        internal static ObjectCollection<NameValueHeaderValue>? Clone(this ObjectCollection<NameValueHeaderValue>? source)
+        {
+            if (source == null)
+                return null;
+
+            var copy = new ObjectCollection<NameValueHeaderValue>();
+            foreach (NameValueHeaderValue item in source)
+            {
+                copy.Add(new NameValueHeaderValue(item));
+            }
+
+            return copy;
         }
     }
 }

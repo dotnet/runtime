@@ -5,6 +5,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -67,8 +68,8 @@ namespace System.Xml
         private int[] _textContentMarks;   // even indices contain text content start positions
                                            // odd indices contain markup start positions
         private readonly CharEntityEncoderFallback _charEntityFallback;
-<# }
-#>
+<# } #>
+
         // writer settings
         protected NewLineHandling _newLineHandling;
         protected bool _closeOutput;
@@ -88,9 +89,10 @@ namespace System.Xml
         private const int BUFSIZE = 2048 * 3;       // Should be greater than default FileStream size (4096), otherwise the FileStream will try to cache the data
         private const int ASYNCBUFSIZE = 64 * 1024; // Set async buffer size to 64KB
         private const int OVERFLOW = 32;            // Allow overflow in order to reduce checks when writing out constant size markup
-<# if (WriterType != RawTextWriterType.Utf8) {
-#>        private const int INIT_MARKS_COUNT = 64;
+<# if (WriterType != RawTextWriterType.Utf8) { #>
+        private const int INIT_MARKS_COUNT = 64;
 <# } #>
+
         //
         // Constructors
         //
@@ -116,6 +118,7 @@ namespace System.Xml
             }
         }
 <# if (WriterType == RawTextWriterType.Encoded) { #>
+
         // Construct an instance of this class that outputs text to the TextWriter interface.
         public <#= ClassName #>(TextWriter writer, XmlWriterSettings settings) : this(settings)
         {
@@ -138,6 +141,7 @@ namespace System.Xml
             }
         }
 <# } #>
+
         // Construct an instance of this class that serializes to a Stream interface.
         public <#= ClassName #>(Stream stream, XmlWriterSettings settings) : this(settings)
         {
@@ -152,8 +156,8 @@ namespace System.Xml
                 _bufLen = ASYNCBUFSIZE;
             }
 
-            <#= BufferName #> = new <#= BufferType #>[_bufLen + OVERFLOW];<#
-if (WriterType == RawTextWriterType.Utf8) { #>
+            <#= BufferName #> = new <#= BufferType #>[_bufLen + OVERFLOW];
+<# if (WriterType == RawTextWriterType.Utf8) { #>
             // Output UTF-8 byte order mark if Encoding object wants it
             if (!stream.CanSeek || stream.Position == 0)
             {
@@ -197,6 +201,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                 }
             }
 <# } #>
+
             // Write the xml declaration
             if (settings.AutoXmlDeclaration)
             {
@@ -754,8 +759,8 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                             _stream = null;
                         }
                     }
-                }<#
-if (WriterType == RawTextWriterType.Encoded) { #>
+                }
+<# if (WriterType == RawTextWriterType.Encoded) { #>
                 else if (_writer != null)
                 {
                     try
@@ -776,8 +781,8 @@ if (WriterType == RawTextWriterType.Encoded) { #>
                             _writer = null;
                         }
                     }
-                }<#
-} #>
+                }
+<# } #>
             }
         }
 
@@ -786,12 +791,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
         {
             FlushBuffer();
             FlushEncoder();
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
             if (_stream != null)
             {
                 _stream.Flush();
-            }<#
-} else { #>
+            }
+<# } else { #>
             if (_stream != null)
             {
                 _stream.Flush();
@@ -799,8 +805,8 @@ if (WriterType == RawTextWriterType.Encoded) { #>
             else if (_writer != null)
             {
                 _writer.Flush();
-            }<#
-} #>
+            }
+<# } #>
         }
 
         //
@@ -813,14 +819,14 @@ if (WriterType == RawTextWriterType.Encoded) { #>
             {
                 // Output all characters (except for previous characters stored at beginning of buffer)
                 if (!_writeToNull)
-                {<#
-if (WriterType == RawTextWriterType.Utf8) { #>
+                {
+<# if (WriterType == RawTextWriterType.Utf8) { #>
                     if (_bufPos - 1 > 0)
                     {
                         Debug.Assert(_stream != null);
                         _stream.Write(<#= BufferName #>, 1, _bufPos - 1);
-                    }<#
-} else { #>
+                    }
+<# } else { #>
                     Debug.Assert(_stream != null || _writer != null);
 
                     if (_stream != null)
@@ -852,8 +858,8 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                             // Write text to TextWriter
                             _writer.Write(<#= BufferName #>, 1, _bufPos - 1);
                         }
-                    }<#
-} #>
+                    }
+<# } #>
                 }
             }
             catch
@@ -866,6 +872,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
             {
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
                 <#= BufferName #>[0] = <#= BufferName #>[_bufPos - 1];
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                 if (IsSurrogateByte(<#= BufferName #>[0]))
                 {
@@ -875,6 +882,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     <#= BufferName #>[2] = <#= BufferName #>[_bufPos + 1];
                     <#= BufferName #>[3] = <#= BufferName #>[_bufPos + 2];
                 }
+
 <# } #>
                 // Reset buffer position
                 _textPos = (_textPos == _bufPos) ? 1 : 0;
@@ -885,6 +893,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                                    // close an empty element or in CDATA section detection of double ]; <#= BufferName #>[0] will always be 0
             }
         }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
         private void FlushEncoder()
         {
@@ -937,6 +946,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
             }
         }
 <# } #>
+
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
         // are entitized.
         protected unsafe void WriteAttributeTextBlock(char* pSrc, char* pSrcEnd)
@@ -953,12 +963,13 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1062,12 +1073,13 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1178,12 +1190,13 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && ((ch = *pSrc) <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && ((ch = *pSrc) < XmlCharType.SurHighStart))
-<# }
-#>                    {
+<# }#>
+                    {
                         pSrc++;
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
@@ -1227,12 +1240,13 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsTextChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1332,12 +1346,13 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1468,12 +1483,13 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst = (<#= BufferType #>)ch;
                         pDst++;
                         pSrc++;
@@ -1566,6 +1582,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                 _bufPos = (int)(pDst - pDstBegin);
             }
         }
+
 <# if (WriterType == RawTextWriterType.Utf8) { #>
         // Returns true if UTF8 encoded byte is first of four bytes that encode a surrogate pair.
         // To do this, detect the bit pattern 11110xxx.
@@ -1573,6 +1590,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
         {
             return (b & 0xF8) == 0xF0;
         }
+
 <# } #>
         private static unsafe <#= BufferType #>* EncodeSurrogate(char* pSrc, char* pSrcEnd, <#= BufferType #>* pDst)
         {
@@ -1586,8 +1604,8 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     int lowChar = pSrc[1];
                     if (lowChar >= XmlCharType.SurLowStart &&
                         (LocalAppContextSwitches.DontThrowOnInvalidSurrogatePairs || lowChar <= XmlCharType.SurLowEnd))
-                    {<#
-if (WriterType == RawTextWriterType.Utf8) { #>
+                    {
+<# if (WriterType == RawTextWriterType.Utf8) { #>
                         // Calculate Unicode scalar value for easier manipulations (see section 3.7 in Unicode spec)
                         // The scalar value repositions surrogate values to start at 0x10000.
 
@@ -1603,6 +1621,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                         pDst[1] = (<#= BufferType #>)lowChar;
                         pDst += 2;
 <# } #>
+
                         return pDst;
                     }
                     throw XmlConvert.CreateInvalidSurrogatePairException((char)lowChar, (char)ch);
@@ -1629,8 +1648,8 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     return CharEntity(pDst, (char)ch);
                 }
                 else
-                {<#
-if (WriterType == RawTextWriterType.Utf8) { #>
+                {
+<# if (WriterType == RawTextWriterType.Utf8) { #>
                     if (ch < 0x80)
                     {
                         *pDst = (<#= BufferType #>)ch;
@@ -1644,6 +1663,7 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                     *pDst = (<#= BufferType #>)ch;
                     pDst++;
 <# } #>
+
                     return pDst;
                 }
             }
@@ -1655,8 +1675,8 @@ if (WriterType == RawTextWriterType.Utf8) { #>
 <#= EncodeChar(3, false) #>
         }
 
-<# if (WriterType == RawTextWriterType.Utf8) {
-#>        internal static unsafe byte* EncodeMultibyteUTF8(int ch, byte* pDst)
+<# if (WriterType == RawTextWriterType.Utf8) { #>
+        internal static unsafe byte* EncodeMultibyteUTF8(int ch, byte* pDst)
         {
             Debug.Assert(ch >= 0x80 && !XmlCharType.IsSurrogate(ch));
 
@@ -1704,8 +1724,9 @@ if (WriterType == RawTextWriterType.Utf8) { #>
                 pSrc++;
             }
         }
-<# }
-if (WriterType == RawTextWriterType.Encoded) { #>
+
+<# } #>
+<# if (WriterType == RawTextWriterType.Encoded) { #>
         protected void ChangeTextContentMark(bool value)
         {
             Debug.Assert(_inTextContent != value);
@@ -1725,6 +1746,7 @@ if (WriterType == RawTextWriterType.Encoded) { #>
             Array.Copy(_textContentMarks, newTextContentMarks, _textContentMarks.Length);
             _textContentMarks = newTextContentMarks;
         }
+
 <# } #>
         // Write NewLineChars to the specified buffer position and return an updated position.
         protected unsafe <#= BufferType #>* WriteNewLine(<#= BufferType #>* pDst)
@@ -1943,12 +1965,13 @@ if (WriterType == RawTextWriterType.Encoded) { #>
 
         //
         // Constructors
-        //<#
-if (WriterType == RawTextWriterType.Encoded) { #>
+        //
+<# if (WriterType == RawTextWriterType.Encoded) { #>
         public <#= ClassNameIndent #>(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
             Init(settings);
         }
+
 <# } #>
         public <#= ClassNameIndent #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {

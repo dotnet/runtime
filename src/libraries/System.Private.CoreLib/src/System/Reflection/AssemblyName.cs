@@ -19,8 +19,6 @@ namespace System.Reflection
         private string? _codeBase;
         private Version? _version;
 
-        private StrongNameKeyPair? _strongNameKeyPair;
-
         private AssemblyHashAlgorithm _hashAlgorithm;
 
         private AssemblyVersionCompatibility _versionCompatibility;
@@ -200,10 +198,11 @@ namespace System.Reflection
             set => _versionCompatibility = value;
         }
 
+        [Obsolete(Obsoletions.StrongNameKeyPairMessage, DiagnosticId = Obsoletions.StrongNameKeyPairDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public StrongNameKeyPair? KeyPair
         {
-            get => _strongNameKeyPair;
-            set => _strongNameKeyPair = value;
+            get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
+            set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
         }
 
         public string FullName
@@ -212,6 +211,9 @@ namespace System.Reflection
             {
                 if (this.Name == null)
                     return string.Empty;
+                if (this.Name == string.Empty)
+                    throw new System.IO.FileLoadException();
+
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
                 byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType);
@@ -339,7 +341,7 @@ namespace System.Reflection
                         // Means we don't reEncode '%' but check for the possible escaped sequence
                         dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
                             c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        if (i + 2 < end && EscapedAscii(pStr[i + 1], pStr[i + 2]) != c_DummyChar)
+                        if (i + 2 < end && HexConverter.IsHexChar(pStr[i + 1]) && HexConverter.IsHexChar(pStr[i + 2]))
                         {
                             // leave it escaped
                             dest[destPos++] = '%';
@@ -400,37 +402,6 @@ namespace System.Reflection
             to[pos++] = '%';
             to[pos++] = HexConverter.ToCharUpper(ch >> 4);
             to[pos++] = HexConverter.ToCharUpper(ch);
-        }
-
-        internal static char EscapedAscii(char digit, char next)
-        {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
-            {
-                return c_DummyChar;
-            }
-
-            int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
-                : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
-
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
-            {
-                return c_DummyChar;
-            }
-
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
-                    : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
-                       + 10)));
         }
 
         private static bool IsReservedUnreservedOrHash(char c)

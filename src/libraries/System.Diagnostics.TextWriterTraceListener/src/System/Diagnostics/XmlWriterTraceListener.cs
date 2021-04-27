@@ -84,13 +84,13 @@ namespace System.Diagnostics
             }));
         }
 
-        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
+        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
 
             WriteHeader(source, eventType, id, eventCache);
-            WriteEscaped(args != null && args.Length != 0 ? string.Format(CultureInfo.InvariantCulture, format, args) : format);
+            WriteEscaped(args != null && args.Length != 0 ? string.Format(CultureInfo.InvariantCulture, format!, args) : format);
             WriteFooter(eventCache);
         }
 
@@ -258,8 +258,15 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                using Process process = Process.GetCurrentProcess();
-                s_processName = processName = process.ProcessName;
+                if (OperatingSystem.IsBrowser()) // Process isn't supported on Browser
+                {
+                    s_processName = processName = string.Empty;
+                }
+                else
+                {
+                    using Process process = Process.GetCurrentProcess();
+                    s_processName = processName = process.ProcessName;
+                }
             }
 
             InternalWrite("\" />");

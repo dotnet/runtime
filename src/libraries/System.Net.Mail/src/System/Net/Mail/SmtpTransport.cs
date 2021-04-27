@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Net.Mail
 {
-    internal class SmtpTransport
+    internal sealed class SmtpTransport
     {
         internal const int DefaultPort = 25;
 
@@ -122,7 +122,6 @@ namespace System.Net.Mail
 
         internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback? callback, object? state, string host, int port)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             IAsyncResult? result = null;
             try
             {
@@ -141,25 +140,14 @@ namespace System.Net.Mail
                 throw new SmtpException(SR.MailHostNotFound, innerException);
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(this, "Sync completion");
-                NetEventSource.Exit(this);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Sync completion");
+
             return result;
         }
 
         internal void EndGetConnection(IAsyncResult result)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-            try
-            {
-                _connection!.EndGetConnection(result);
-            }
-            finally
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
-            }
+            _connection!.EndGetConnection(result);
         }
 
         internal IAsyncResult BeginSendMail(MailAddress sender, MailAddressCollection recipients,
@@ -265,7 +253,7 @@ namespace System.Net.Mail
         }
     }
 
-    internal class SendMailAsyncResult : LazyAsyncResult
+    internal sealed class SendMailAsyncResult : LazyAsyncResult
     {
         private readonly SmtpConnection _connection;
         private readonly MailAddress _from;

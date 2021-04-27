@@ -37,7 +37,7 @@ namespace System.Xml.Tests
             var xmlDocument = new XmlDocument();
             var cdata = xmlDocument.CreateCDataSection("]]>");
 
-            AssertExtensions.Throws<ArgumentException>(null, () => { var test = cdata.OuterXml; });
+            AssertExtensions.Throws<ArgumentException>(null, () => cdata.OuterXml);
             Assert.Equal(string.Empty, cdata.InnerXml);
             Assert.Equal("]]>", cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);

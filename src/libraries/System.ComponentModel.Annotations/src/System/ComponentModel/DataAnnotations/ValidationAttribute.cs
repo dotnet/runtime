@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -22,12 +23,13 @@ namespace System.ComponentModel.DataAnnotations
     {
         #region Member Fields
 
-        private string _errorMessage;
-        private Func<string> _errorMessageResourceAccessor;
-        private string _errorMessageResourceName;
-        private Type _errorMessageResourceType;
+        private string? _errorMessage;
+        private Func<string>? _errorMessageResourceAccessor;
+        private string? _errorMessageResourceName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        private Type? _errorMessageResourceType;
         private volatile bool _hasBaseIsValid;
-        private string _defaultErrorMessage;
+        private string? _defaultErrorMessage;
         #endregion
 
         #region All Constructors
@@ -76,7 +78,7 @@ namespace System.ComponentModel.DataAnnotations
         /// This property was added after the public contract for DataAnnotations was created.
         /// It is internal to avoid changing the DataAnnotations contract.
         /// </summary>
-        internal string DefaultErrorMessage
+        internal string? DefaultErrorMessage
         {
             set
             {
@@ -99,7 +101,7 @@ namespace System.ComponentModel.DataAnnotations
             get
             {
                 SetupResourceAccessor();
-                return _errorMessageResourceAccessor();
+                return _errorMessageResourceAccessor!();
             }
         }
 
@@ -127,7 +129,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     This property is intended to be used for non-localizable error messages.  Use
         ///     <see cref="ErrorMessageResourceType" /> and <see cref="ErrorMessageResourceName" /> for localizable error messages.
         /// </value>
-        public string ErrorMessage
+        public string? ErrorMessage
         {
             // If _errorMessage is not set, return the default. This is done to preserve
             // behavior prior to the fix where ErrorMessage showed the non-null message to use.
@@ -154,7 +156,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Use this property to set the name of the property within <see cref="ErrorMessageResourceType" />
         ///     that will provide a localized error message.  Use <see cref="ErrorMessage" /> for non-localized error messages.
         /// </value>
-        public string ErrorMessageResourceName
+        public string? ErrorMessageResourceName
         {
             get => _errorMessageResourceName;
             set
@@ -175,7 +177,8 @@ namespace System.ComponentModel.DataAnnotations
         ///         Use <see cref="ErrorMessage" /> instead of this pair if error messages are not localized.
         ///     </para>
         /// </value>
-        public Type ErrorMessageResourceType
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        public Type? ErrorMessageResourceType
         {
             get => _errorMessageResourceType;
             set
@@ -199,7 +202,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (_errorMessageResourceAccessor == null)
             {
-                string localErrorMessage = ErrorMessage;
+                string? localErrorMessage = ErrorMessage;
                 bool resourceNameSet = !string.IsNullOrEmpty(_errorMessageResourceName);
                 bool errorMessageSet = !string.IsNullOrEmpty(_errorMessage);
                 bool resourceTypeSet = _errorMessageResourceType != null;
@@ -231,7 +234,7 @@ namespace System.ComponentModel.DataAnnotations
                     // Here if not using resource type/name -- the accessor is just the error message string,
                     // which we know is not empty to have gotten this far.
                     // We captured error message to local in case it changes before accessor runs
-                    _errorMessageResourceAccessor = () => localErrorMessage;
+                    _errorMessageResourceAccessor = () => localErrorMessage!;
                 }
             }
         }
@@ -241,11 +244,7 @@ namespace System.ComponentModel.DataAnnotations
             Debug.Assert(_errorMessageResourceType != null);
             Debug.Assert(!string.IsNullOrEmpty(_errorMessageResourceName));
             var property = _errorMessageResourceType
-                .GetTypeInfo().GetDeclaredProperty(_errorMessageResourceName);
-            if (property != null && !ValidationAttributeStore.IsStatic(property))
-            {
-                property = null;
-            }
+                .GetProperty(_errorMessageResourceName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             if (property != null)
             {
@@ -273,7 +272,7 @@ namespace System.ComponentModel.DataAnnotations
                                                     _errorMessageResourceType.FullName));
             }
 
-            _errorMessageResourceAccessor = () => (string)property.GetValue(null, null);
+            _errorMessageResourceAccessor = () => (string)property.GetValue(null, null)!;
         }
 
         #endregion
@@ -321,7 +320,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when neither overload of IsValid has been implemented
         ///     by a derived class.
         /// </exception>
-        public virtual bool IsValid(object value)
+        public virtual bool IsValid(object? value)
         {
             if (!_hasBaseIsValid)
             {
@@ -330,7 +329,10 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             // call overridden method.
-            return IsValid(value, null) == ValidationResult.Success;
+            // The IsValid method without a validationContext predates the one accepting the context.
+            // This is theoretically unreachable through normal use cases.
+            // Instead, the overload using validationContext should be called.
+            return IsValid(value, null!) == ValidationResult.Success;
         }
 
         /// <summary>
@@ -355,7 +357,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        protected virtual ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected virtual ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             if (_hasBaseIsValid)
             {
@@ -369,8 +371,8 @@ namespace System.ComponentModel.DataAnnotations
             // call overridden method.
             if (!IsValid(value))
             {
-                string[] memberNames = validationContext.MemberName != null
-                    ? new string[] { validationContext.MemberName }
+                string[]? memberNames = validationContext.MemberName is { } memberName
+                    ? new[] { memberName }
                     : null;
                 result = new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
             }
@@ -404,7 +406,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        public ValidationResult GetValidationResult(object value, ValidationContext validationContext)
+        public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext)
         {
             if (validationContext == null)
             {
@@ -445,7 +447,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown if <see cref="IsValid(object)" /> returns <c>false</c>.
         /// </exception>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
-        public void Validate(object value, string name)
+        public void Validate(object? value, string name)
         {
             if (!IsValid(value))
             {
@@ -474,14 +476,14 @@ namespace System.ComponentModel.DataAnnotations
         ///     is thrown when <see cref="IsValid(object, ValidationContext)" />
         ///     has not been implemented by a derived class.
         /// </exception>
-        public void Validate(object value, ValidationContext validationContext)
+        public void Validate(object? value, ValidationContext validationContext)
         {
             if (validationContext == null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
 
-            ValidationResult result = GetValidationResult(value, validationContext);
+            ValidationResult? result = GetValidationResult(value, validationContext);
 
             if (result != null)
             {

@@ -114,7 +114,7 @@ namespace System.IO
         {
             if (_disposed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
         }
 
@@ -214,7 +214,7 @@ namespace System.IO
             int b = _stream.ReadByte();
             if (b == -1)
             {
-                throw Error.GetEndOfFile();
+                ThrowHelper.ThrowEndOfFileException();
             }
 
             return (byte)b;
@@ -229,7 +229,7 @@ namespace System.IO
             int value = Read();
             if (value == -1)
             {
-                throw Error.GetEndOfFile();
+                ThrowHelper.ThrowEndOfFileException();
             }
             return (char)value;
         }
@@ -245,6 +245,7 @@ namespace System.IO
         public virtual long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8));
         [CLSCompliant(false)]
         public virtual ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(InternalRead(8));
+        public virtual Half ReadHalf() => BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(InternalRead(2)));
         public virtual unsafe float ReadSingle() => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(InternalRead(4)));
         public virtual unsafe double ReadDouble() => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8)));
 
@@ -295,7 +296,7 @@ namespace System.IO
                 n = _stream.Read(_charBytes, 0, readLength);
                 if (n == 0)
                 {
-                    throw Error.GetEndOfFile();
+                    ThrowHelper.ThrowEndOfFileException();
                 }
 
                 charsRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
@@ -535,7 +536,7 @@ namespace System.IO
                     int n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
                     if (n == 0)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     bytesRead += n;
                 } while (bytesRead < numBytes);
@@ -568,7 +569,7 @@ namespace System.IO
                 n = _stream.ReadByte();
                 if (n == -1)
                 {
-                    throw Error.GetEndOfFile();
+                    ThrowHelper.ThrowEndOfFileException();
                 }
 
                 _buffer[0] = (byte)n;
@@ -580,7 +581,7 @@ namespace System.IO
                 n = _stream.Read(_buffer, bytesRead, numBytes - bytesRead);
                 if (n == 0)
                 {
-                    throw Error.GetEndOfFile();
+                    ThrowHelper.ThrowEndOfFileException();
                 }
                 bytesRead += n;
             } while (bytesRead < numBytes);

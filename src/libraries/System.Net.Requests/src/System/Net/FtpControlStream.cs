@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
@@ -23,7 +24,7 @@ namespace System.Net
     ///     This means basic command sending and parsing.
     /// </para>
     /// </summary>
-    internal class FtpControlStream : CommandStream
+    internal sealed class FtpControlStream : CommandStream
     {
         private Socket? _dataSocket;
         private IPEndPoint? _passiveEndPoint;
@@ -499,6 +500,7 @@ namespace System.Net
                 if (domainUserName.Length == 0 && password.Length == 0)
                 {
                     domainUserName = "anonymous";
+                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Anonymous FTP credential in production code.")]
                     password = "anonymous@";
                 }
 
@@ -664,10 +666,7 @@ namespace System.Net
 
             if (isPassive)
             {
-                if (port == -1)
-                {
-                    NetEventSource.Fail(this, "'port' not set.");
-                }
+                Debug.Assert(port != -1, "'port' not set.");
 
                 try
                 {
@@ -807,14 +806,12 @@ namespace System.Net
         /// </summary>
         private string FormatAddressV6(IPAddress address, int port)
         {
-            StringBuilder sb = new StringBuilder(43); // based on max size of IPv6 address + port + seperators
-            string addressString = address.ToString();
-            sb.Append("|2|");
-            sb.Append(addressString);
-            sb.Append('|');
-            sb.Append(port.ToString(NumberFormatInfo.InvariantInfo));
-            sb.Append('|');
-            return sb.ToString();
+            return
+                "|2|" +
+                address.ToString() +
+                "|" +
+                port.ToString(NumberFormatInfo.InvariantInfo) +
+                "|";
         }
 
         internal long ContentLength
@@ -1122,15 +1119,9 @@ namespace System.Net
         /// </summary>
         private string FormatFtpCommand(string command, string? parameter)
         {
-            StringBuilder stringBuilder = new StringBuilder(command.Length + ((parameter != null) ? parameter.Length : 0) + 3 /*size of ' ' \r\n*/);
-            stringBuilder.Append(command);
-            if (!string.IsNullOrEmpty(parameter))
-            {
-                stringBuilder.Append(' ');
-                stringBuilder.Append(parameter);
-            }
-            stringBuilder.Append("\r\n");
-            return stringBuilder.ToString();
+            return string.IsNullOrEmpty(parameter) ?
+                command + "\r\n" :
+                command + " " + parameter + "\r\n";
         }
 
         /// <summary>
@@ -1138,7 +1129,7 @@ namespace System.Net
         ///     This will handle either connecting to a port or listening for one
         ///    </para>
         /// </summary>
-        protected Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
+        private Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
         {
             // Safe to be called under an Assert.
             Socket socket = new Socket(templateSocket.AddressFamily, templateSocket.SocketType, templateSocket.ProtocolType);

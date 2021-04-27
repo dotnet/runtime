@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -384,7 +383,7 @@ internal static partial class Interop
             // this code could be removed.
             //
             // It was verified as supporting case invariant match as of 10.12.1 (Sierra).
-            string matchName = s_idnMapping.GetAscii(hostName);
+            string matchName = string.IsNullOrEmpty(hostName) ? string.Empty : s_idnMapping.GetAscii(hostName);
 
             using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
             using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
@@ -412,7 +411,7 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
-        internal SafeSslHandle()
+        public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

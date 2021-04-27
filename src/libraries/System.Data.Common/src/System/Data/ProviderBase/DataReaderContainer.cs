@@ -15,7 +15,7 @@ namespace System.Data.ProviderBase
         {
             if (returnProviderSpecificTypes)
             {
-                DbDataReader providerSpecificDataReader = (dataReader as DbDataReader);
+                DbDataReader? providerSpecificDataReader = (dataReader as DbDataReader);
                 if (null != providerSpecificDataReader)
                 {
                     return new ProviderSpecificDataReader(dataReader, providerSpecificDataReader);
@@ -51,7 +51,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(null != fieldName, "null GetName");
             return ((null != fieldName) ? fieldName : "");
         }
-        internal DataTable GetSchemaTable()
+        internal DataTable? GetSchemaTable()
         {
             return _dataReader.GetSchemaTable();
         }

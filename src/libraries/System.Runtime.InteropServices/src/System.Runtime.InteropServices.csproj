@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Runtime.InteropServices</AssemblyName>
-    <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
@@ -48,6 +46,7 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVarFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttribute.cs" />
     <Compile Include="System\Security\SecureStringMarshal.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Text;
 using System.Diagnostics;
 
@@ -106,7 +105,7 @@ namespace System.Xml
         }
     }
 
-    internal partial class XmlRawWriterBase64Encoder : Base64Encoder
+    internal sealed partial class XmlRawWriterBase64Encoder : Base64Encoder
     {
         private readonly XmlRawWriter _rawWriter;
 
@@ -121,7 +120,7 @@ namespace System.Xml
         }
     }
 
-    internal partial class XmlTextWriterBase64Encoder : Base64Encoder
+    internal sealed partial class XmlTextWriterBase64Encoder : Base64Encoder
     {
         private readonly XmlTextEncoder _xmlTextEncoder;
 

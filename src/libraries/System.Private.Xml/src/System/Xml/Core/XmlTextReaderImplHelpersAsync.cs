@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -17,12 +16,12 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XmlTextReaderImpl
+    internal sealed partial class XmlTextReaderImpl
     {
         //
         // DtdParserProxy: IDtdParserAdapter proxy for XmlTextReaderImpl
         //
-        internal partial class DtdParserProxy : IDtdParserAdapterV1
+        internal sealed partial class DtdParserProxy : IDtdParserAdapterV1
         {
             Task<int> IDtdParserAdapter.ReadDataAsync()
             {
@@ -49,7 +48,7 @@ namespace System.Xml
                 return _reader.DtdParserProxy_ParseCommentAsync(sb);
             }
 
-            Task<Tuple<int, bool>> IDtdParserAdapter.PushEntityAsync(IDtdEntityInfo entity)
+            Task<(int, bool)> IDtdParserAdapter.PushEntityAsync(IDtdEntityInfo entity)
             {
                 return _reader.DtdParserProxy_PushEntityAsync(entity);
             }

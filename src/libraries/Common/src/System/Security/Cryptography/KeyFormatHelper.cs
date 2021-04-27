@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -347,7 +346,7 @@ namespace System.Security.Cryptography
             return writer;
         }
 
-        internal static unsafe AsnWriter WriteEncryptedPkcs8(
+        internal static AsnWriter WriteEncryptedPkcs8(
             ReadOnlySpan<char> password,
             AsnWriter pkcs8Writer,
             PbeParameters pbeParameters)
@@ -371,7 +370,7 @@ namespace System.Security.Cryptography
                 pbeParameters);
         }
 
-        private static unsafe AsnWriter WriteEncryptedPkcs8(
+        private static AsnWriter WriteEncryptedPkcs8(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,
             AsnWriter pkcs8Writer,

@@ -32,6 +32,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCurrent")]
         private static extern int DigestCurrent(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
+        internal static unsafe extern int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, out int cbDigest);
     }
 }
 
@@ -39,7 +42,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal sealed class SafeDigestCtxHandle : SafeHandle
     {
-        internal SafeDigestCtxHandle()
+        public SafeDigestCtxHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

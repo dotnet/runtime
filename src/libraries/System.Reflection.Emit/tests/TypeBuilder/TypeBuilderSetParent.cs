@@ -39,17 +39,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/19478")]
-        public void SetParent_This_LoopsForever()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
-            type.SetParent(type.AsType());
-            Assert.Equal(type.AsType(), type.BaseType);
-
-            Assert.ThrowsAny<Exception>(() => type.CreateTypeInfo());
-        }
-
-        [Fact]
         public void SetParent_ThisIsInterface_ThrowsTypeLoadExceptionOnLoad()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Interface | TypeAttributes.Abstract);

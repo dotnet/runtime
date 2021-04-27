@@ -12,7 +12,9 @@ namespace System.Net
         public static System.Net.ICredentialPolicy? CredentialPolicy { get { throw null; } set { } }
         public static System.Collections.Specialized.StringDictionary CustomTargetNameDictionary { get { throw null; } }
         public static System.Collections.IEnumerator RegisteredModules { get { throw null; } }
+        [System.ObsoleteAttribute("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Authorization? Authenticate(string challenge, System.Net.WebRequest request, System.Net.ICredentials credentials) { throw null; }
+        [System.ObsoleteAttribute("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Authorization? PreAuthenticate(System.Net.WebRequest request, System.Net.ICredentials credentials) { throw null; }
         public static void Register(System.Net.IAuthenticationModule authenticationModule) { }
         public static void Unregister(System.Net.IAuthenticationModule authenticationModule) { }
@@ -118,6 +120,7 @@ namespace System.Net
         public override long ContentLength { get { throw null; } set { } }
         public long ContentOffset { get { throw null; } set { } }
         public override string? ContentType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public override System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public static new System.Net.Cache.RequestCachePolicy? DefaultCachePolicy { get { throw null; } set { } }
         public bool EnableSsl { get { throw null; } set { } }
@@ -127,6 +130,7 @@ namespace System.Net
         public override bool PreAuthenticate { get { throw null; } set { } }
         public override System.Net.IWebProxy? Proxy { get { throw null; } set { } }
         public int ReadWriteTimeout { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public string? RenameTo { get { throw null; } set { } }
         public override System.Uri RequestUri { get { throw null; } }
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
@@ -162,14 +166,14 @@ namespace System.Net
     public partial class GlobalProxySelection
     {
         public GlobalProxySelection() { }
-        [System.Diagnostics.CodeAnalysis.AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public static System.Net.IWebProxy Select { get { throw null; } set { } }
         public static System.Net.IWebProxy GetEmptyWebProxy() { throw null; }
     }
     public delegate void HttpContinueDelegate(int StatusCode, System.Net.WebHeaderCollection httpHeaders);
     public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
-        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? Accept { get { throw null; } set { } }
         public System.Uri Address { get { throw null; } }
@@ -240,8 +244,8 @@ namespace System.Net
     }
     public partial class HttpWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
-        [System.Obsolete("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public HttpWebResponse() { }
         [System.ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -331,13 +335,16 @@ namespace System.Net
     }
     public abstract partial class WebRequest : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected WebRequest() { }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected WebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public System.Net.Security.AuthenticationLevel AuthenticationLevel { get { throw null; } set { } }
         public virtual System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
         public virtual string? ConnectionGroupName { get { throw null; } set { } }
         public virtual long ContentLength { get { throw null; } set { } }
         public virtual string? ContentType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public virtual System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public static System.Net.Cache.RequestCachePolicy? DefaultCachePolicy { get { throw null; } set { } }
         public static System.Net.IWebProxy? DefaultWebProxy { get { throw null; } set { } }
@@ -352,10 +359,15 @@ namespace System.Net
         public virtual void Abort() { }
         public virtual System.IAsyncResult BeginGetRequestStream(System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.IAsyncResult BeginGetResponse(System.AsyncCallback? callback, object? state) { throw null; }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.WebRequest Create(string requestUriString) { throw null; }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.WebRequest Create(System.Uri requestUri) { throw null; }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.WebRequest CreateDefault(System.Uri requestUri) { throw null; }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.HttpWebRequest CreateHttp(string requestUriString) { throw null; }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.HttpWebRequest CreateHttp(System.Uri requestUri) { throw null; }
         public virtual System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
         public virtual System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }

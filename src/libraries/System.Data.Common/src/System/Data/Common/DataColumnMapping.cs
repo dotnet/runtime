@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -12,28 +13,29 @@ namespace System.Data.Common
     [TypeConverter(typeof(DataColumnMappingConverter))]
     public sealed class DataColumnMapping : MarshalByRefObject, IColumnMapping, ICloneable
     {
-        private DataColumnMappingCollection _parent;
-        private string _dataSetColumnName;
-        private string _sourceColumnName;
+        private DataColumnMappingCollection? _parent;
+        private string? _dataSetColumnName;
+        private string? _sourceColumnName;
 
         public DataColumnMapping()
         {
         }
 
-        public DataColumnMapping(string sourceColumn, string dataSetColumn)
+        public DataColumnMapping(string? sourceColumn, string? dataSetColumn)
         {
             SourceColumn = sourceColumn;
             DataSetColumn = dataSetColumn;
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string DataSetColumn
         {
             get { return _dataSetColumnName ?? string.Empty; }
             set { _dataSetColumnName = value; }
         }
 
-        internal DataColumnMappingCollection Parent
+        internal DataColumnMappingCollection? Parent
         {
             get
             {
@@ -46,6 +48,7 @@ namespace System.Data.Common
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string SourceColumn
         {
             get { return _sourceColumnName ?? string.Empty; }
@@ -68,13 +71,13 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public DataColumn GetDataColumnBySchemaAction(DataTable dataTable, Type dataType, MissingSchemaAction schemaAction)
+        public DataColumn? GetDataColumnBySchemaAction(DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
         {
             return GetDataColumnBySchemaAction(SourceColumn, DataSetColumn, dataTable, dataType, schemaAction);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static DataColumn GetDataColumnBySchemaAction(string sourceColumn, string dataSetColumn, DataTable dataTable, Type dataType, MissingSchemaAction schemaAction)
+        public static DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
         {
             if (null == dataTable)
             {
@@ -109,7 +112,7 @@ namespace System.Data.Common
             return CreateDataColumnBySchemaAction(sourceColumn, dataSetColumn, dataTable, dataType, schemaAction);
         }
 
-        internal static DataColumn CreateDataColumnBySchemaAction(string sourceColumn, string dataSetColumn, DataTable dataTable, Type dataType, MissingSchemaAction schemaAction)
+        internal static DataColumn? CreateDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
         {
             Debug.Assert(dataTable != null, "Should not call with a null DataTable");
             if (string.IsNullOrEmpty(dataSetColumn))
@@ -121,7 +124,7 @@ namespace System.Data.Common
             {
                 case MissingSchemaAction.Add:
                 case MissingSchemaAction.AddWithKey:
-                    return new DataColumn(dataSetColumn, dataType);
+                    return new DataColumn(dataSetColumn, dataType!);
 
                 case MissingSchemaAction.Ignore:
                     return null;
@@ -167,7 +170,7 @@ namespace System.Data.Common
                     object[] values = new object[] { mapping.SourceColumn, mapping.DataSetColumn };
                     Type[] types = new Type[] { typeof(string), typeof(string) };
 
-                    ConstructorInfo ctor = typeof(DataColumnMapping).GetConstructor(types);
+                    ConstructorInfo ctor = typeof(DataColumnMapping).GetConstructor(types)!;
                     return new InstanceDescriptor(ctor, values);
                 }
                 return base.ConvertTo(context, culture, value, destinationType);

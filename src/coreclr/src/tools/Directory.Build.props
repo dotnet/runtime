@@ -1,7 +1,0 @@
-<Project>
-  <Import Project="../Directory.Build.props" />
-  <PropertyGroup>
-    <IsShipping>false</IsShipping>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
-</Project>

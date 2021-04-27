@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Ansi, BestFitMapping = false)]
         public static extern IntPtr GetProcAddress(SafeLibraryHandle hModule, string lpProcName);

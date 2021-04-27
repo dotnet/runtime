@@ -72,7 +72,7 @@ namespace System.Data
         /// <exception cref="ArgumentNullException">if source is null</exception>
         /// <exception cref="ArgumentNullException">if table is null</exception>
         /// <exception cref="InvalidOperationException">if source DataRow is in Deleted or Detached state</exception>
-        public static void CopyToDataTable<T>(this IEnumerable<T> source, DataTable table, LoadOption options, FillErrorEventHandler errorHandler)
+        public static void CopyToDataTable<T>(this IEnumerable<T> source, DataTable table, LoadOption options, FillErrorEventHandler? errorHandler)
             where T : DataRow
         {
             DataSetUtil.CheckArgumentNull(source, nameof(source));
@@ -80,7 +80,7 @@ namespace System.Data
             LoadTableFromEnumerable(source, table, options, errorHandler);
         }
 
-        private static DataTable LoadTableFromEnumerable<T>(IEnumerable<T> source, DataTable table, LoadOption? options, FillErrorEventHandler errorHandler)
+        private static DataTable LoadTableFromEnumerable<T>(IEnumerable<T> source, DataTable? table, LoadOption? options, FillErrorEventHandler? errorHandler)
             where T : DataRow
         {
             if (options.HasValue)
@@ -141,7 +141,7 @@ namespace System.Data
                             continue;
                         }
 
-                        object[] values = null;
+                        object?[]? values = null;
                         try
                         {
                             // 'recoverable' error block
@@ -179,7 +179,7 @@ namespace System.Data
                                 throw;
                             }
 
-                            FillErrorEventArgs fillError = null;
+                            FillErrorEventArgs? fillError = null;
                             if (null != errorHandler)
                             {
                                 fillError = new FillErrorEventArgs(table, values)
@@ -202,7 +202,9 @@ namespace System.Data
                                 else
                                 {
                                     // user may have changed exception to throw in handler
-                                    throw fillError.Errors;
+                                    // FillErrorEventArgs instances constructed in the codebase always have
+                                    // their Errors property set to not-null immediately afterwards
+                                    throw fillError.Errors!;
                                 }
                             }
                         }

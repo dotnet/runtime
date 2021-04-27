@@ -25,6 +25,9 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
+  <!-- Pack is a no-op and should just invoke build. -->
+  <Target Name="Pack" DependsOnTargets="Build" />
+
   <PropertyGroup>
     <TraversalBuildDependsOn>BuildAllProjects;$(TraversalBuildDependsOn);</TraversalBuildDependsOn>
   </PropertyGroup>

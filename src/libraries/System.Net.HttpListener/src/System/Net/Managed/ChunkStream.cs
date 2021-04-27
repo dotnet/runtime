@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Net.ChunkStream
 //
@@ -50,7 +51,7 @@ namespace System.Net
             Trailer
         }
 
-        private class Chunk
+        private sealed class Chunk
         {
             public byte[] Bytes;
             public int Offset;
@@ -381,7 +382,7 @@ namespace System.Net
             }
 
             StringReader reader = new StringReader(_saved.ToString());
-            string line;
+            string? line;
             while ((line = reader.ReadLine()) != null && line != "")
                 _headers.Add(line);
 

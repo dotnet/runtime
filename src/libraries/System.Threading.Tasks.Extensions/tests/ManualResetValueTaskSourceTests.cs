@@ -11,7 +11,6 @@ namespace System.Threading.Tasks.Sources.Tests
     public class ManualResetValueTaskSourceTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task ReuseInstanceWithResets_Success()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -84,7 +83,6 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task SetResult_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -133,7 +131,6 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task SetException_AfterOnCompleted_ResultAvailableAsynchronously()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
@@ -415,7 +412,6 @@ namespace System.Threading.Tasks.Sources.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38931", TestPlatforms.Browser)]
         public async Task AsyncEnumerable_Success(bool awaitForeach, bool asyncIterator)
         {
             IAsyncEnumerable<int> enumerable = asyncIterator ?

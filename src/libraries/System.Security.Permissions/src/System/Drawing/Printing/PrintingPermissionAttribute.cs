@@ -5,6 +5,9 @@ using System.Security.Permissions;
 
 namespace System.Drawing.Printing
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public sealed class PrintingPermissionAttribute : CodeAccessSecurityAttribute
     {

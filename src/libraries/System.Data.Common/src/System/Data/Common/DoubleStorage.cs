@@ -10,7 +10,7 @@ namespace System.Data.Common
     {
         private const double defaultValue = 0.0d;
 
-        private double[] _values;
+        private double[] _values = default!; // Late-initialized
 
         internal DoubleStorage(DataColumn column)
         : base(column, typeof(double), defaultValue, StorageType.Double)
@@ -129,12 +129,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         return base.Aggregate(records, kind);
@@ -161,7 +161,7 @@ namespace System.Data.Common
             return valueNo1.CompareTo(valueNo2); // not simple, checks Nan
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -183,7 +183,7 @@ namespace System.Data.Common
             return valueNo1.CompareTo((double)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

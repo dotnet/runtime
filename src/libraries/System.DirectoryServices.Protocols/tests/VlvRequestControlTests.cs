@@ -8,6 +8,7 @@ using Xunit;
 namespace System.DirectoryServices.Protocols.Tests
 {
     [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49105", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class VlvRequestControlTests
     {
         [Fact]

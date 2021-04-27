@@ -50,7 +50,7 @@ namespace System.Xml.XPath
 
         public abstract void SetContext(XmlNamespaceManager nsManager);
 
-        public abstract void SetContext(IXmlNamespaceResolver nsResolver);
+        public abstract void SetContext(IXmlNamespaceResolver? nsResolver);
 
         public abstract XPathResultType ReturnType { get; }
 
@@ -59,7 +59,7 @@ namespace System.Xml.XPath
             return Compile(xpath, /*nsResolver:*/null);
         }
 
-        public static XPathExpression Compile(string xpath, IXmlNamespaceResolver nsResolver)
+        public static XPathExpression Compile(string xpath, IXmlNamespaceResolver? nsResolver)
         {
             bool hasPrefix;
             Query query = new QueryBuilder().Build(xpath, out hasPrefix);

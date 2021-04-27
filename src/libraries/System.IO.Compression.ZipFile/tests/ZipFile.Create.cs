@@ -282,19 +282,23 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
             }
 
-            FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
-            fileWithBadDate.Create().Dispose();
-            fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
+            // Browser VFS does not support saving file attributes, so skip
+            if (!PlatformDetection.IsBrowser)
+            {
+                FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
+                fileWithBadDate.Create().Dispose();
+                fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
 
-            string archivePath = GetTestFilePath();
-            using (FileStream output = File.Open(archivePath, FileMode.Create))
-            using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
-            {
-                archive.CreateEntryFromFile(fileWithBadDate.FullName, "SomeEntryName");
-            }
-            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
-            {
-                Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+                string archivePath = GetTestFilePath();
+                using (FileStream output = File.Open(archivePath, FileMode.Create))
+                using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
+                {
+                    archive.CreateEntryFromFile(fileWithBadDate.FullName, "SomeEntryName");
+                }
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+                }
             }
         }
 

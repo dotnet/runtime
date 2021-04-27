@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>net5.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
@@ -36,6 +36,7 @@
     <Reference Include="System.Buffers" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Threading" />

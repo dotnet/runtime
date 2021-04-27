@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- This test is too slow under GCStress=3. Issue: https://github.com/dotnet/runtime/issues/50615 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

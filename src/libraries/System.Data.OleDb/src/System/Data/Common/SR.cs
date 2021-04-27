@@ -10,7 +10,7 @@ namespace System
             return value;
         }
 
-        internal static string GetString(string format, params object[] args)
+        internal static string GetString(string format, params object?[] args)
         {
             return SR.Format(format, args);
         }

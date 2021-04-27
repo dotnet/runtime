@@ -10,83 +10,46 @@ namespace System.Linq
     {
         public static TSource Single<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            TSource? single = source.TryGetSingle(out bool found);
+            if (!found)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowNoElementsException();
             }
 
-            if (source is IList<TSource> list)
-            {
-                switch (list.Count)
-                {
-                    case 0:
-                        ThrowHelper.ThrowNoElementsException();
-                        return default;
-                    case 1:
-                        return list[0];
-                }
-            }
-            else
-            {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
-                {
-                    if (!e.MoveNext())
-                    {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
-
-                    TSource result = e.Current;
-                    if (!e.MoveNext())
-                    {
-                        return result;
-                    }
-                }
-            }
-
-            ThrowHelper.ThrowMoreThanOneElementException();
-            return default;
+            return single!;
         }
-
         public static TSource Single<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            TSource? single = source.TryGetSingle(predicate, out bool found);
+            if (!found)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                ThrowHelper.ThrowNoMatchException();
             }
 
-            if (predicate == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
-            }
-
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                while (e.MoveNext())
-                {
-                    TSource result = e.Current;
-                    if (predicate(result))
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (predicate(e.Current))
-                            {
-                                ThrowHelper.ThrowMoreThanOneMatchException();
-                            }
-                        }
-
-                        return result;
-                    }
-                }
-            }
-
-            ThrowHelper.ThrowNoMatchException();
-            return default;
+            return single!;
         }
 
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source)
+        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source)
+            => source.TryGetSingle(out _);
+
+        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
-            if (source == null)
+            var single = source.TryGetSingle(out bool found);
+            return found ? single! : defaultValue;
+        }
+
+        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+            => source.TryGetSingle(predicate, out _);
+
+        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
+        {
+            var single = source.TryGetSingle(predicate, out bool found);
+            return found ? single! : defaultValue;
+        }
+
+        private static TSource? TryGetSingle<TSource>(this IEnumerable<TSource> source, out bool found)
+        {
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -96,8 +59,10 @@ namespace System.Linq
                 switch (list.Count)
                 {
                     case 0:
-                        return default!;
+                        found = false;
+                        return default;
                     case 1:
+                        found = true;
                         return list[0];
                 }
             }
@@ -107,23 +72,25 @@ namespace System.Linq
                 {
                     if (!e.MoveNext())
                     {
-                        return default!;
+                        found = false;
+                        return default;
                     }
 
                     TSource result = e.Current;
                     if (!e.MoveNext())
                     {
+                        found = true;
                         return result;
                     }
                 }
             }
 
+            found = false;
             ThrowHelper.ThrowMoreThanOneElementException();
             return default;
         }
 
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        private static TSource? TryGetSingle<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
             if (source == null)
             {
@@ -149,13 +116,14 @@ namespace System.Linq
                                 ThrowHelper.ThrowMoreThanOneMatchException();
                             }
                         }
-
+                        found = true;
                         return result;
                     }
                 }
             }
 
-            return default!;
+            found = false;
+            return default;
         }
     }
 }

@@ -1,79 +1,67 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     internal sealed class ThreadInt64PersistentCounter
     {
-        // This type is used by Monitor for lock contention counting, so can't use an object for a lock. Also it's preferable
-        // (though currently not required) to disallow/ignore thread interrupt for uses of this lock here. Using Lock directly
-        // is a possibility but maybe less compatible with other runtimes. Lock cases are relatively rare, static instance
-        // should be ok.
         private static readonly LowLevelLock s_lock = new LowLevelLock();
 
-        private readonly ThreadLocal<ThreadLocalNode> _threadLocalNode = new ThreadLocal<ThreadLocalNode>(trackAllValues: true);
         private long _overflowCount;
+        private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Increment()
+        public static void Increment(object threadLocalCountObject)
         {
-            ThreadLocalNode? node = _threadLocalNode.Value;
-            if (node != null)
-            {
-                node.Increment();
-                return;
-            }
-
-            TryCreateNode();
+            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
+            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Increment();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void TryCreateNode()
+        public object CreateThreadLocalCountObject()
         {
-            Debug.Assert(_threadLocalNode.Value == null);
+            var node = new ThreadLocalNode(this);
 
+            s_lock.Acquire();
             try
             {
-                _threadLocalNode.Value = new ThreadLocalNode(this);
+                _nodes.Add(node);
             }
-            catch (OutOfMemoryException)
+            finally
             {
+                s_lock.Release();
             }
+
+            return node;
         }
 
         public long Count
         {
             get
             {
-                long count = 0;
+                s_lock.Acquire();
+                long count = _overflowCount;
                 try
                 {
-                    s_lock.Acquire();
-                    try
+                    foreach (ThreadLocalNode node in _nodes)
                     {
-                        count = _overflowCount;
-                        foreach (ThreadLocalNode node in _threadLocalNode.ValuesAsEnumerable)
-                        {
-                            if (node != null)
-                            {
-                                count += node.Count;
-                            }
-                        }
-                        return count;
-                    }
-                    finally
-                    {
-                        s_lock.Release();
+                        count += node.Count;
                     }
                 }
                 catch (OutOfMemoryException)
                 {
                     // Some allocation occurs above and it may be a bit awkward to get an OOM from this property getter
-                    return count;
                 }
+                finally
+                {
+                    s_lock.Release();
+                }
+
+                return count;
             }
         }
 
@@ -85,8 +73,6 @@ namespace System.Threading
             public ThreadLocalNode(ThreadInt64PersistentCounter counter)
             {
                 Debug.Assert(counter != null);
-
-                _count = 1;
                 _counter = counter;
             }
 

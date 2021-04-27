@@ -46,12 +46,12 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         /// <param name="n">the node to replace</param>
         /// <returns>null if no replacement is found</returns>
-        public QilNode FindReplacement(QilNode n)
+        public QilNode? FindReplacement(QilNode n)
         {
             Debug.Assert(_s.Count % 2 == 0);
             for (int i = _s.Count - 2; i >= 0; i -= 2)
                 if (_s[i] == n)
-                    return (QilNode)_s[i + 1];
+                    return (QilNode)_s[i + 1]!;
             return null;
         }
     }

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Logging.Configuration
 {
-    internal class LoggerProviderConfigurationFactory : ILoggerProviderConfigurationFactory
+    internal sealed class LoggerProviderConfigurationFactory : ILoggerProviderConfigurationFactory
     {
         private readonly IEnumerable<LoggingConfiguration> _configurations;
 

@@ -24,24 +24,13 @@ namespace Internal.Cryptography
         public static char[] ToHexArrayUpper(this byte[] bytes)
         {
             char[] chars = new char[bytes.Length * 2];
-            ToHexArrayUpper(bytes, chars);
+            HexConverter.EncodeToUtf16(bytes, chars);
             return chars;
-        }
-
-        private static void ToHexArrayUpper(ReadOnlySpan<byte> bytes, Span<char> chars)
-        {
-            Debug.Assert(chars.Length >= bytes.Length * 2);
-            int i = 0;
-            foreach (byte b in bytes)
-            {
-                HexConverter.ToCharsBuffer(b, chars, i, HexConverter.Casing.Upper);
-                i += 2;
-            }
         }
 
         // Encode a byte array as an upper case hex string.
         public static string ToHexStringUpper(this byte[] bytes) =>
-            HexConverter.ToString(bytes.AsSpan(), HexConverter.Casing.Upper);
+            Convert.ToHexString(bytes);
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
@@ -78,7 +67,7 @@ namespace Internal.Cryptography
                 }
 
                 accum <<= 4;
-                accum |= HexToByte(c);
+                accum |= (byte)HexConverter.FromChar(c);
 
                 byteInProgress = !byteInProgress;
 
@@ -100,18 +89,6 @@ namespace Internal.Cryptography
             Debug.Assert(index == cbHex, "index == cbHex");
 
             return hex;
-        }
-
-        private static byte HexToByte(char val)
-        {
-            if (val <= '9' && val >= '0')
-                return (byte)(val - '0');
-            else if (val >= 'a' && val <= 'f')
-                return (byte)((val - 'a') + 10);
-            else if (val >= 'A' && val <= 'F')
-                return (byte)((val - 'A') + 10);
-            else
-                return 0xFF;
         }
 
         public static bool ContentsEqual(this byte[]? a1, byte[]? a2)
@@ -264,6 +241,57 @@ namespace Internal.Cryptography
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
+        }
+
+        public static bool AreSamePublicECParameters(ECParameters aParameters, ECParameters bParameters)
+        {
+            if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
+                return false;
+
+            if (!aParameters.Q.X!.ContentsEqual(bParameters.Q.X!) ||
+                !aParameters.Q.Y!.ContentsEqual(bParameters.Q.Y!))
+            {
+                return false;
+            }
+
+            ECCurve aCurve = aParameters.Curve;
+            ECCurve bCurve = bParameters.Curve;
+
+            if (aCurve.IsNamed)
+            {
+                // On Windows we care about FriendlyName, on Unix we care about Value
+                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
+            }
+
+            if (!aCurve.IsExplicit)
+            {
+                // Implicit curve, always fail.
+                return false;
+            }
+
+            // Ignore Cofactor (which is derivable from the prime or polynomial and Order)
+            // Ignore Seed and Hash (which are entirely optional, and about how A and B were built)
+            if (!aCurve.G.X!.ContentsEqual(bCurve.G.X!) ||
+                !aCurve.G.Y!.ContentsEqual(bCurve.G.Y!) ||
+                !aCurve.Order.ContentsEqual(bCurve.Order) ||
+                !aCurve.A.ContentsEqual(bCurve.A) ||
+                !aCurve.B.ContentsEqual(bCurve.B))
+            {
+                return false;
+            }
+
+            if (aCurve.IsPrime)
+            {
+                return aCurve.Prime.ContentsEqual(bCurve.Prime);
+            }
+
+            if (aCurve.IsCharacteristic2)
+            {
+                return aCurve.Polynomial.ContentsEqual(bCurve.Polynomial);
+            }
+
+            Debug.Fail($"Missing match criteria for curve type {aCurve.CurveType}");
+            return false;
         }
     }
 

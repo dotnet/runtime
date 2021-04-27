@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class BlockSizeValueTests
     {
         [Fact]

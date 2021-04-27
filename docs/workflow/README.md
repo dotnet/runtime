@@ -14,6 +14,8 @@ The repo can be built for the following platforms, using the provided setup and 
 
 Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.
 
+Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.
+
 ## Concepts
 
 The runtime repo can be built from a regular, non-administrator command prompt, from the root of the repo, as follows:
@@ -24,7 +26,7 @@ For Linux and macOS
 ```
 
 For Windows:
-```bat
+```cmd
 build.cmd
 ```
 
@@ -40,9 +42,13 @@ On Unix like systems, arguments can be passed in with a single `-` or double hyp
 The repository currently consists of different major parts: the runtimes, the libraries, and the installer.
 To build just one part you use the root build script (build.cmd/sh), and you add the `-subset` flag.
 
+## Editing and Debugging
+
+For instructions on how to edit code and debug your changes, see [Editing and Debugging](editing-and-debugging.md).
+
 ## Configurations
 
-You may need to build the tree in a combination of configurations. This section explains why. 
+You may need to build the tree in a combination of configurations. This section explains why.
 
 A quick reminder of some concepts -- see the [glossary](../project/glossary.md) for more on these:
 
@@ -51,7 +57,7 @@ A quick reminder of some concepts -- see the [glossary](../project/glossary.md) 
 * **Release Configuration** -- Optimized code. Asserts are disabled. Runs at the best speed, and suitable for performance profiling. You will have limited debugging experience.
 
 When we talk about mixing configurations, we're discussing the following sub-components:
-  
+
 * **Runtime** is the execution engine for managed code and there are two different implementations available. Both are written in C/C++, therefore, easier to debug when built in a Debug configuration.
     * CoreCLR is the comprehensive execution engine which if build in Debug Configuration it executes managed code very slowly. For example, it will take a long time to run the managed code unit tests. The code lives under [src/coreclr](../../src/coreclr).
     * Mono is portable and also slimmer runtime and it's not that sensitive to Debug Configuration for running managed code. You will still need to build it without optimizations to have good runtime debugging experience though. The code lives under [src/mono](../../src/mono).

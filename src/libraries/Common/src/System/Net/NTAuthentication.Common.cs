@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
@@ -10,7 +9,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal partial class NTAuthentication
+    internal sealed partial class NTAuthentication
     {
         private bool _isServer;
 
@@ -100,7 +99,7 @@ namespace System.Net
         [MemberNotNull(nameof(_package))]
         private void Initialize(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, package, spn, requestedContextFlags);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
 
             _tokenSize = NegotiateStreamPal.QueryMaxTokenSize(package);
             _isServer = isServer;
@@ -131,15 +130,8 @@ namespace System.Net
         internal SafeDeleteContext? GetContext(out SecurityStatusPal status)
         {
             status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-            if (!(IsCompleted && IsValidContext))
-            {
-                NetEventSource.Fail(this, "Should be called only when completed with success, currently is not!");
-            }
-
-            if (!IsServer)
-            {
-                NetEventSource.Fail(this, "The method must not be called by the client side!");
-            }
+            Debug.Assert(IsCompleted && IsValidContext, "Should be called only when completed with success, currently is not!");
+            Debug.Assert(IsServer, "The method must not be called by the client side!");
 
             if (!IsValidContext)
             {
@@ -212,8 +204,6 @@ namespace System.Net
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, incomingBlob);
-
             byte[]? result = new byte[_tokenSize];
 
             bool firstTime = _securityContext == null;
@@ -279,12 +269,9 @@ namespace System.Net
                 _isCompleted = true;
                 if (throwOnError)
                 {
-                    Exception exception = NegotiateStreamPal.CreateExceptionFromError(statusCode);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, exception);
-                    throw exception;
+                    throw NegotiateStreamPal.CreateExceptionFromError(statusCode);
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"null statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
                 return null;
             }
             else if (firstTime && _credentialsHandle != null)
@@ -300,15 +287,10 @@ namespace System.Net
                 // Success.
                 _isCompleted = true;
             }
-            else if (NetEventSource.Log.IsEnabled())
+            else
             {
                 // We need to continue.
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"need continue statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode}) _securityContext:{_securityContext}");
-            }
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, $"IsCompleted: {IsCompleted}");
             }
 
             return result;
@@ -316,10 +298,7 @@ namespace System.Net
 
         private string? GetClientSpecifiedSpn()
         {
-            if (!(IsValidContext && IsCompleted))
-            {
-                NetEventSource.Fail(this, "Trying to get the client SPN before handshaking is done!");
-            }
+            Debug.Assert(IsValidContext && IsCompleted, "Trying to get the client SPN before handshaking is done!");
 
             string? spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext!);
 

@@ -7,7 +7,8 @@ namespace System.Diagnostics
     {
         private static long QueryPerformanceFrequency()
         {
-            return (long)Interop.Sys.GetTimestampResolution();
+            const long SecondsToNanoSeconds = 1000000000;
+            return SecondsToNanoSeconds;
         }
 
         private static long QueryPerformanceCounter()

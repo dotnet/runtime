@@ -49,6 +49,7 @@ namespace System.Diagnostics
 
         public string? SwitchDescription { get; set; }
 
+        [RequiresUnreferencedCode("Types may be trimmed from the assembly.")]
         public static SwitchAttribute[] GetAll(Assembly assembly)
         {
             if (assembly == null)
@@ -68,7 +69,7 @@ namespace System.Diagnostics
             return ret;
         }
 
-        private static void GetAllRecursive(Type type, List<object> switchAttribs)
+        private static void GetAllRecursive([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, List<object> switchAttribs)
         {
             GetAllRecursive((MemberInfo)type, switchAttribs);
             MemberInfo[] members = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic |

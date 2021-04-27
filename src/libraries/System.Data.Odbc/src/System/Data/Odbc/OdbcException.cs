@@ -37,7 +37,7 @@ namespace System.Data.Odbc
         private OdbcException(SerializationInfo si, StreamingContext sc) : base(si, sc)
         {
             // Ignoring ODBC32.RETCODE
-            _odbcErrors = (OdbcErrorCollection)si.GetValue("odbcErrors", typeof(OdbcErrorCollection));
+            _odbcErrors = (OdbcErrorCollection)si.GetValue("odbcErrors", typeof(OdbcErrorCollection))!;
             HResult = HResults.OdbcException;
         }
 

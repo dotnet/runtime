@@ -177,7 +177,7 @@ namespace System.Runtime.CompilerServices
                 {
                     return node;
                 }
-                return Expression.Field(Expression.Constant(box), "Value");
+                return Utils.GetStrongBoxValueField(Expression.Constant(box));
             }
 
             private IStrongBox? GetBox(ParameterExpression variable)

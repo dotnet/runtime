@@ -1,22 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Resources;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Net.Http.Headers
 {
     /// <summary>
     /// Parses Alt-Svc header values, per RFC 7838 Section 3.
     /// </summary>
-    internal class AltSvcHeaderParser : BaseHeaderParser
+    internal sealed class AltSvcHeaderParser : BaseHeaderParser
     {
         internal const long DefaultMaxAgeTicks = 24 * TimeSpan.TicksPerHour;
 
@@ -306,20 +300,15 @@ namespace System.Net.Http.Headers
         /// </summary>
         private static bool TryReadAlpnHexDigit(char ch, out int nibble)
         {
-            if ((uint)(ch - '0') <= '9' - '0') // ch >= '0' && ch <= '9'
+            int result = HexConverter.FromUpperChar(ch);
+            if (result == 0xFF)
             {
-                nibble = ch - '0';
-                return true;
+                nibble = 0;
+                return false;
             }
 
-            if ((uint)(ch - 'A') <= 'F' - 'A') // ch >= 'A' && ch <= 'F'
-            {
-                nibble = ch - 'A' + 10;
-                return true;
-            }
-
-            nibble = 0;
-            return false;
+            nibble = result;
+            return true;
         }
 
         private static bool TryReadQuotedAltAuthority(string value, int startIndex, out string? host, out int port, out int readLength)

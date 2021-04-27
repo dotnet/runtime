@@ -18,7 +18,7 @@ namespace System.Reflection.Tests
 
             Assembly assembly = type.Assembly;
             string location = assembly.Location;
-            if (location == null || location == string.Empty)
+            if (PlatformDetection.IsNotBrowser && (location == null || location == string.Empty))
             {
                 throw new Exception("Could not find the IL for assembly " + type.Assembly + " on disk. The most likely cause " +
                     "is that you built the tests for a Jitted runtime but are running them on an AoT runtime.");
@@ -30,9 +30,11 @@ namespace System.Reflection.Tests
                     // The core assembly we're using might not be the one powering the runtime. Make sure we project to the core assembly the MetataLoadContext
                     // is using.
                     if (a == typeof(object).Assembly)
-                        return TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly());
+                    {
+                        TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly());
+                    }
 
-                    return TestMetadataLoadContext.LoadFromAssemblyPath(a.Location);
+                    return TestMetadataLoadContext.LoadFromAssemblyPath(AssemblyPathHelper.GetAssemblyLocation(a));
                 });
 
             Type projectedType = s_typeDict.GetOrAdd(type, (t) => projectedAssembly.GetType(t.FullName, throwOnError: true, ignoreCase: false));
@@ -50,12 +52,15 @@ namespace System.Reflection.Tests
         {
             // We need a core assembly in IL form. Since this version of this code is for Jitted platforms, the System.Private.Corelib
             // of the underlying runtime will do just fine.
-            string assumedLocationOfCoreLibrary = typeof(object).Assembly.Location;
-            if (assumedLocationOfCoreLibrary == null || assumedLocationOfCoreLibrary == string.Empty)
+            if (PlatformDetection.IsNotBrowser)
             {
-                throw new Exception("Could not find a core assembly to use for tests as 'typeof(object).Assembly.Location` returned " +
-                    "a null or empty value. The most likely cause is that you built the tests for a Jitted runtime but are running them " +
-                    "on an AoT runtime.");
+                string assumedLocationOfCoreLibrary = typeof(object).Assembly.Location;
+                if (assumedLocationOfCoreLibrary == null || assumedLocationOfCoreLibrary == string.Empty)
+                {
+                    throw new Exception("Could not find a core assembly to use for tests as 'typeof(object).Assembly.Location` returned " +
+                        "a null or empty value. The most likely cause is that you built the tests for a Jitted runtime but are running them " +
+                        "on an AoT runtime.");
+                }
             }
 
             return File.OpenRead(GetPathToCoreAssembly());
@@ -63,7 +68,7 @@ namespace System.Reflection.Tests
 
         public static string GetPathToCoreAssembly()
         {
-            return typeof(object).Assembly.Location;
+            return AssemblyPathHelper.GetAssemblyLocation(typeof(object).Assembly);
         }
 
         public static string GetNameOfCoreAssembly()

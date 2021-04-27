@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Tests;
@@ -15,6 +16,8 @@ namespace System.Text.RegularExpressions.Tests
         public static IEnumerable<object[]> Match_Basic_TestData()
         {
             // pattern, input, options, beginning, length, expectedSuccess, expectedValue
+            yield return new object[] { @"H#", "#H#", RegexOptions.IgnoreCase, 0, 3, true, "H#" }; // https://github.com/dotnet/runtime/issues/39390
+            yield return new object[] { @"H#", "#H#", RegexOptions.None, 0, 3, true, "H#" };
 
             // Testing octal sequence matches: "\\060(\\061)?\\061"
             // Octal \061 is ASCII 49 ('1')
@@ -125,6 +128,13 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
             yield return new object[] { @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
             yield return new object[] { @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
+            foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+            {
+                yield return new object[] { @".*", "abc", lineOption, 1, 2, true, "bc" };
+                yield return new object[] { @".*c", "abc", lineOption, 1, 2, true, "bc" };
+                yield return new object[] { @"b.*", "abc", lineOption, 1, 2, true, "bc" };
+                yield return new object[] { @".*", "abc", lineOption, 2, 1, true, "c" };
+            }
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz" };
@@ -369,6 +379,32 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        public static IEnumerable<object[]> Match_Basic_TestData_NetCore()
+        {
+            // Unicode symbols in character ranges. These are chars whose lowercase values cannot be found by using the offsets specified in s_lcTable.
+            yield return new object[] { @"^(?i:[\u00D7-\u00D8])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
+            yield return new object[] { @"^(?i:[\u00C0-\u00DE])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
+            yield return new object[] { @"^(?i:[\u00C0-\u00DE])$", ((char)('\u00C0' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u00C0' + 32)).ToString() };
+            yield return new object[] { @"^(?i:[\u00C0-\u00DE])$", ((char)('\u00DE' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u00DE' + 32)).ToString() };
+            yield return new object[] { @"^(?i:[\u0391-\u03AB])$", ((char)('\u03A2' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
+            yield return new object[] { @"^(?i:[\u0391-\u03AB])$", ((char)('\u0391' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u0391' + 32)).ToString() };
+            yield return new object[] { @"^(?i:[\u0391-\u03AB])$", ((char)('\u03AB' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u03AB' + 32)).ToString() };
+            yield return new object[] { @"^(?i:[\u1F18-\u1F1F])$", ((char)('\u1F1F' - 8)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
+            yield return new object[] { @"^(?i:[\u1F18-\u1F1F])$", ((char)('\u1F18' - 8)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u1F18' - 8)).ToString() };
+            yield return new object[] { @"^(?i:[\u10A0-\u10C5])$", ((char)('\u10A0' + 7264)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u10A0' + 7264)).ToString() };
+            yield return new object[] { @"^(?i:[\u10A0-\u10C5])$", ((char)('\u1F1F' + 48)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
+            yield return new object[] { @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24D0' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
+            yield return new object[] { @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString() };
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Theory]
+        [MemberData(nameof(Match_Basic_TestData_NetCore))]
+        public void Match_NetCore(string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
+        {
+            Match(pattern, input, options, beginning, length, expectedSuccess, expectedValue);
+        }
+
         [Theory]
         [MemberData(nameof(Match_Basic_TestData))]
         [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_Basic_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
@@ -517,13 +553,46 @@ namespace System.Text.RegularExpressions.Tests
                 string input = new string('a', 50) + "@a.a";
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+
+                if ((RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture) == RegexOptions.None)
+                {
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).IsMatch(input));
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Matches(input).Count);
+
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern).Count);
+                }
+
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).IsMatch(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Matches(input).Count);
+
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Count);
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_CachedPattern_NewTimeoutApplies(RegexOptions options)
+        {
+            const string PatternLeadingToLotsOfBacktracking = @"^(\w+\s?)*$";
+            Assert.True(Regex.IsMatch("", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromDays(1)));
+            var sw = Stopwatch.StartNew();
+            Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch("An input string that takes a very very very very very very very very very very very long time!", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromMilliseconds(1)));
+            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
+        }
+
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
         [OuterLoop("Can take several seconds")]
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
         [InlineData(@"a\s+", RegexOptions.None)]
         [InlineData(@"a\s+", RegexOptions.Compiled)]
         [InlineData(@"a\s+ ", RegexOptions.None)]
@@ -536,8 +605,9 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        // On Linux, we may get killed by the OOM Killer; on Windows, it will swap instead
         [OuterLoop("Can take several seconds")]
-        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsWindows))]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
         public void Match_Timeout_Repetition_Throws(RegexOptions options)
@@ -850,6 +920,11 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.True(Regex.IsMatch(input, pattern));
                 }
 
+                // Note: this block will fail if any inputs attempt to look for anchors or lookbehinds at the initial position,
+                // as there is a difference between Match(input, beginning) and Match(input, beginning, input.Length - beginning)
+                // in that the former doesn't modify from 0 what the engine sees as the beginning of the input whereas the latter
+                // is equivalent to taking a substring and then matching on that.  However, as we currently don't have any such inputs,
+                // it's currently a viable way to test the additional overload.  Same goes for the similar case below with options.
                 if (beginning + length == input.Length)
                 {
                     // Use Match(string, int)
@@ -857,11 +932,9 @@ namespace System.Text.RegularExpressions.Tests
 
                     Assert.True(r.IsMatch(input, beginning));
                 }
-                else
-                {
-                    // Use Match(string, int, int)
-                    VerifyMatch(r.Match(input, beginning, length), true, expected);
-                }
+
+                // Use Match(string, int, int)
+                VerifyMatch(r.Match(input, beginning, length), true, expected);
             }
 
             r = new Regex(pattern, options);
@@ -886,6 +959,36 @@ namespace System.Text.RegularExpressions.Tests
                 // Use Match(string, int, int)
                 VerifyMatch(r.Match(input, beginning, length), true, expected);
             }
+        }
+
+        public static IEnumerable<object[]> Match_StartatDiffersFromBeginning_MemberData()
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+            {
+                // Anchors
+                yield return new object[] { @"^.*", "abc", options, 0, true, true };
+                yield return new object[] { @"^.*", "abc", options, 1, false, true };
+
+                // Positive Lookbehinds
+                yield return new object[] { @"(?<=abc)def", "abcdef", options, 3, true, false };
+
+                // Negative Lookbehinds
+                yield return new object[] { @"(?<!abc)def", "abcdef", options, 3, false, true };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Match_StartatDiffersFromBeginning_MemberData))]
+        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Match_StartatDiffersFromBeginning_MemberData), 2, MemberType = typeof(RegexCompilationHelper))]
+        public void Match_StartatDiffersFromBeginning(string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        {
+            var r = new Regex(pattern, options);
+
+            Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
+            Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
+
+            Assert.Equal(expectedSuccessBeginning, r.Match(input.Substring(startat)).Success);
+            Assert.Equal(expectedSuccessBeginning, r.Match(input, startat, input.Length - startat).Success);
         }
 
         private static void VerifyMatch(Match match, bool expectedSuccess, CaptureData[] expected)

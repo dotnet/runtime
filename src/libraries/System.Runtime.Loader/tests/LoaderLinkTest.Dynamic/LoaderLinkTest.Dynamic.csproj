@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SharedInterfaceImplementation.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
+  </ItemGroup>
+</Project>

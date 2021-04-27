@@ -213,7 +213,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         public static IEnumerable<object[]> FromObject_Overflow_TestData()
         {
-            yield break;
+            yield return new object[] { "1234567890123456789012345678901234567890" };
         }
 
         public static IEnumerable<object[]> FromString_TestData()

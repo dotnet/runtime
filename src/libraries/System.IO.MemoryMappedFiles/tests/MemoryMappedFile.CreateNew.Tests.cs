@@ -11,6 +11,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedFile.CreateNew.
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
     {
         /// <summary>
@@ -112,7 +113,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             // due to differences in OS behaviors and Unix not actually having a notion of
             // a view separate from a map.  It could also come from CreateNew, depending
             // on what backing store is being used.
-            Assert.Throws<IOException>(() =>
+            AssertExtensions.ThrowsAny<IOException, ArgumentOutOfRangeException>(() =>
             {
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, (IntPtr.Size == 4) ? uint.MaxValue : long.MaxValue))
                 {

@@ -1231,7 +1231,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -1426,7 +1425,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -2610,7 +2608,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -2805,7 +2802,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -3870,7 +3866,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -4065,7 +4060,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -4946,7 +4940,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -5141,7 +5134,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -6022,7 +6014,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -6217,7 +6208,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -7217,7 +7207,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -7412,7 +7401,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -8596,7 +8584,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -8791,7 +8778,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -9975,7 +9961,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -10170,7 +10155,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -11354,7 +11338,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -11549,7 +11532,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -12726,7 +12708,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -12921,7 +12902,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -14069,7 +14049,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -14264,7 +14243,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;
@@ -15412,7 +15390,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]--;
@@ -15607,7 +15584,6 @@ namespace System.Numerics.Tensors
         {
 
             var resultSpan = result.Buffer.Span;
-            var tensorSpan = tensor.Buffer.Span;
             for (int i = 0; i < resultSpan.Length; i++)
             {
                 resultSpan[i]++;

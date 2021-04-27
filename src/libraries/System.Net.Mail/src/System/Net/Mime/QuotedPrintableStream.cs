@@ -16,7 +16,7 @@ namespace System.Net.Mime
     /// This stream should only be used for the e-mail content.
     /// Use QEncodedStream for encoding headers.
     /// </summary>
-    internal class QuotedPrintableStream : DelegatedStream, IEncodableStream
+    internal sealed class QuotedPrintableStream : DelegatedStream, IEncodableStream
     {
         //should we encode CRLF or not?
         private readonly bool _encodeCRLF;
@@ -86,18 +86,7 @@ namespace System.Net.Mime
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             WriteAsyncResult result = new WriteAsyncResult(this, buffer, offset, count, callback, state);
             result.Write();
@@ -311,6 +300,12 @@ namespace System.Net.Mime
             return cur - offset;
         }
 
+        public int EncodeString(string value, Encoding encoding)
+        {
+            byte[] buffer = encoding.GetBytes(value);
+            return EncodeBytes(buffer, 0, buffer.Length);
+        }
+
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
         public override void EndWrite(IAsyncResult asyncResult) => WriteAsyncResult.End(asyncResult);
@@ -332,18 +327,7 @@ namespace System.Net.Mime
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             int written = 0;
             while (true)

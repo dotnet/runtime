@@ -7,25 +7,26 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
     public class XsdDataContractExporter
     {
-        private ExportOptions _options;
-        private XmlSchemaSet _schemas;
-        private DataContractSet _dataContractSet;
+        private ExportOptions? _options;
+        private XmlSchemaSet? _schemas;
+        private DataContractSet? _dataContractSet;
 
         public XsdDataContractExporter()
         {
         }
 
-        public XsdDataContractExporter(XmlSchemaSet schemas)
+        public XsdDataContractExporter(XmlSchemaSet? schemas)
         {
             this._schemas = schemas;
         }
 
-        public ExportOptions Options
+        public ExportOptions? Options
         {
             get { return _options; }
             set { _options = value; }
@@ -72,6 +73,7 @@ namespace System.Runtime.Serialization
         {
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Assembly> assemblies)
         {
             if (assemblies == null)
@@ -79,7 +81,7 @@ namespace System.Runtime.Serialization
 
             TraceExportBegin();
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Assembly assembly in assemblies)
@@ -96,10 +98,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -107,6 +105,7 @@ namespace System.Runtime.Serialization
             TraceExportEnd();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Type> types)
         {
             if (types == null)
@@ -114,7 +113,7 @@ namespace System.Runtime.Serialization
 
             TraceExportBegin();
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Type type in types)
@@ -128,10 +127,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -139,6 +134,7 @@ namespace System.Runtime.Serialization
             TraceExportEnd();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(Type type)
         {
             if (type == null)
@@ -146,7 +142,7 @@ namespace System.Runtime.Serialization
 
             TraceExportBegin();
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);
@@ -154,10 +150,6 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
@@ -165,6 +157,7 @@ namespace System.Runtime.Serialization
             TraceExportEnd();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlQualifiedName GetSchemaTypeName(Type type)
         {
             if (type == null)
@@ -172,26 +165,28 @@ namespace System.Runtime.Serialization
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            XmlDataContract xmlDataContract = dataContract as XmlDataContract;
+            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
             if (xmlDataContract != null && xmlDataContract.IsAnonymous)
                 return XmlQualifiedName.Empty;
             return dataContract.StableName;
         }
 
-        public XmlSchemaType GetSchemaType(Type type)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public XmlSchemaType? GetSchemaType(Type type)
         {
             if (type == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            XmlDataContract xmlDataContract = dataContract as XmlDataContract;
+            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
             if (xmlDataContract != null && xmlDataContract.IsAnonymous)
                 return xmlDataContract.XsdType;
             return null;
         }
 
-        public XmlQualifiedName GetRootElementName(Type type)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public XmlQualifiedName? GetRootElementName(Type type)
         {
             if (type == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
@@ -200,7 +195,7 @@ namespace System.Runtime.Serialization
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
             if (dataContract.HasRoot)
             {
-                return new XmlQualifiedName(dataContract.TopLevelElementName.Value, dataContract.TopLevelElementNamespace.Value);
+                return new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value);
             }
             else
             {
@@ -218,6 +213,7 @@ namespace System.Runtime.Serialization
             return type;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void CheckAndAddType(Type type)
         {
             type = GetSurrogatedType(type);
@@ -225,11 +221,13 @@ namespace System.Runtime.Serialization
                 AddType(type);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddType(Type type)
         {
             DataContractSet.Add(type);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void Export()
         {
             AddKnownTypes();
@@ -237,6 +235,7 @@ namespace System.Runtime.Serialization
             schemaExporter.Export();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddKnownTypes()
         {
             if (Options != null)
@@ -256,12 +255,13 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Assembly> assemblies)
         {
             if (assemblies == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(assemblies)));
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Assembly assembly in assemblies)
@@ -283,22 +283,19 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Type> types)
         {
             if (types == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(types)));
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Type type in types)
@@ -317,22 +314,19 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(Type type)
         {
             if (type == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
 
-            DataContractSet oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);
@@ -346,91 +340,10 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex)
             {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
                 _dataContractSet = oldValue;
                 TraceExportError(ex);
                 throw;
             }
         }
-
-#if USE_REFEMIT
-        //Returns warnings
-        public IList<string> GenerateCode(IList<Assembly> assemblies)
-        {
-            if (assemblies == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(assemblies)));
-            List<string> warnings = new List<string>();
-
-            DataContractSet oldValue = (dataContractSet == null) ? null : new DataContractSet(dataContractSet);
-            try
-            {
-                for (int i=0; i < assemblies.Count; i++)
-                {
-                    Assembly assembly = assemblies[i];
-                    if (assembly == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullAssembly, "assemblies")));
-
-                    Type[] types = assembly.GetTypes();
-                    for (int j=0; j < types.Length; j++)
-                    {
-                        try
-                        {
-                            CheckAndAddType(types[j]);
-                        }
-                        catch (Exception ex)
-                        {
-                            warnings.Add("Error on exporting Type " + DataContract.GetClrTypeFullName(types[j]) + ". " + ex.Message);
-                        }
-
-                    }
-                }
-
-                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in dataContractSet)
-                {
-                    DataContract dataContract = pair.Value;
-                    if (dataContract is ClassDataContract)
-                    {
-                        try
-                        {
-                            XmlFormatClassWriterDelegate writerMethod = ((ClassDataContract)dataContract).XmlFormatWriterDelegate;
-                            XmlFormatClassReaderDelegate readerMethod = ((ClassDataContract)dataContract).XmlFormatReaderDelegate;
-                        }
-                        catch (Exception ex)
-                        {
-                            warnings.Add("Error on exporting Type " + dataContract.UnderlyingType + ". " + ex.Message);
-                        }
-                    }
-                    else if (dataContract is CollectionDataContract)
-                    {
-                        try
-                        {
-                            XmlFormatCollectionWriterDelegate writerMethod = ((CollectionDataContract)dataContract).XmlFormatWriterDelegate;
-                            XmlFormatCollectionReaderDelegate readerMethod = ((CollectionDataContract)dataContract).XmlFormatReaderDelegate;
-                        }
-                        catch (Exception ex)
-                        {
-                            warnings.Add("Error on exporting Type " + dataContract.UnderlyingType + ". " + ex.Message);
-                        }
-                    }
-                }
-                return warnings;
-            }
-            catch (Exception ex)
-            {
-                if (DiagnosticUtility.IsFatal(ex))
-                {
-                    throw;
-                }
-                dataContractSet = oldValue;
-                TraceExportError(ex);
-                throw;
-            }
-        }
-#endif
-
     }
-
 }

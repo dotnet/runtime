@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace System.Net.NetworkInformation
 {
@@ -29,10 +29,7 @@ namespace System.Net.NetworkInformation
 
                 for (i = 0; i < size; i += 4)
                 {
-                    hash ^= (int)_address[i]
-                            | ((int)_address[i + 1] << 8)
-                            | ((int)_address[i + 2] << 16)
-                            | ((int)_address[i + 3] << 24);
+                    hash ^= BinaryPrimitives.ReadInt32LittleEndian(_address.AsSpan(i));
                 }
 
                 if ((_address.Length & 3) != 0)
@@ -60,7 +57,7 @@ namespace System.Net.NetworkInformation
             return _hash;
         }
 
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             PhysicalAddress? address = comparand as PhysicalAddress;
             if (address == null)
@@ -91,7 +88,7 @@ namespace System.Net.NetworkInformation
 
         public override string ToString()
         {
-            return HexConverter.ToString(_address.AsSpan(), HexConverter.Casing.Upper);
+            return Convert.ToHexString(_address.AsSpan());
         }
 
         public byte[] GetAddressBytes()
@@ -184,20 +181,8 @@ namespace System.Net.NetworkInformation
             for (int i = 0; i < address.Length; i++)
             {
                 int character = address[i];
-
-                if (character >= '0' && character <= '9')
-                {
-                    character -= '0';
-                }
-                else if (character >= 'A' && character <= 'F')
-                {
-                    character -= ('A' - 10);
-                }
-                else if (character >= 'a' && character <= 'f')
-                {
-                    character -= ('a' - 10);
-                }
-                else
+                int tmp;
+                if ((tmp = HexConverter.FromChar(character)) == 0xFF)
                 {
                     if (delimiter == character && validCount == validSegmentLength)
                     {
@@ -207,6 +192,8 @@ namespace System.Net.NetworkInformation
 
                     return false;
                 }
+
+                character = tmp;
 
                 // we had too many characters after the last delimiter
                 if (validCount >= validSegmentLength)

@@ -9,7 +9,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Tests for the constructors for NamedPipeServerStream
     /// </summary>
-    public class NamedPipeTest_CreateServer : NamedPipeTestBase
+    public class NamedPipeTest_CreateServer
     {
         [Theory]
         [InlineData(PipeDirection.In)]
@@ -57,13 +57,13 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void Create_PipeName()
         {
-            new NamedPipeServerStream(GetUniquePipeName()).Dispose();
+            new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName()).Dispose();
         }
 
         [Fact]
         public static void Create_PipeName_Direction_MaxInstances()
         {
-            new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1).Dispose();
+            new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.Out, 1).Dispose();
         }
 
         [Fact]
@@ -72,7 +72,7 @@ namespace System.IO.Pipes.Tests
         {
             // When passed -1 as the maxnumberofserverisntances, the NamedPipeServerStream.Windows class
             // will translate that to the platform specific maximum number (255)
-            using (var server = new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, -1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (var server = new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.InOut, -1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var server2 = new NamedPipeServerStream(PipeDirection.InOut, false, true, server.SafePipeHandle))
             using (var server3 = new NamedPipeServerStream(PipeDirection.InOut, false, true, server.SafePipeHandle))
             {
@@ -197,7 +197,7 @@ namespace System.IO.Pipes.Tests
         public static void Windows_CreateFromDisposedServerHandle_Throws_ObjectDisposedException(PipeDirection direction)
         {
             // The pipe is closed when we try to make a new Stream with it
-            var pipe = new NamedPipeServerStream(GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            var pipe = new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
             SafePipeHandle handle = pipe.SafePipeHandle;
             pipe.Dispose();
             Assert.Throws<ObjectDisposedException>(() => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle).Dispose());
@@ -207,7 +207,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Unix_GetHandleOfNewServerStream_Throws_InvalidOperationException()
         {
-            using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte))
+            using (var pipe = new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte))
             {
                 Assert.Throws<InvalidOperationException>(() => pipe.SafePipeHandle);
             }
@@ -221,7 +221,7 @@ namespace System.IO.Pipes.Tests
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {
             // The pipe is already bound
-            using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (var pipe = new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
                 AssertExtensions.Throws<ArgumentException>("handle", () => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle));
             }
@@ -231,7 +231,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
         public static void ServerCountOverMaxServerInstances_Throws_IOException()
         {
-            string uniqueServerName = GetUniquePipeName();
+            string uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(uniqueServerName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
                 Assert.Throws<IOException>(() => new NamedPipeServerStream(uniqueServerName));
@@ -242,7 +242,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
         public static void Windows_ServerCloneWithDifferentDirection_Throws_UnauthorizedAccessException()
         {
-            string uniqueServerName = GetUniquePipeName();
+            string uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.Out));

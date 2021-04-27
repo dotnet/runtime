@@ -120,6 +120,9 @@
   <data name="AdvanceToInvalidCursor" xml:space="preserve">
     <value>The PipeReader has already advanced past the provided position.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
   <data name="ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Concurrent reads or writes are not supported.</value>
   </data>
@@ -138,8 +141,17 @@
   <data name="InvalidZeroByteRead" xml:space="preserve">
     <value>The PipeReader returned 0 bytes when the ReadResult was not completed or canceled.</value>
   </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
   <data name="NoReadingOperationToComplete" xml:space="preserve">
     <value>No reading operation to complete.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
   </data>
   <data name="ReadCanceledOnPipeReader" xml:space="preserve">
     <value>Read was canceled on underlying PipeReader.</value>

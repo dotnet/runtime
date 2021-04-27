@@ -12,13 +12,13 @@ namespace System.Data.Odbc
         // used by pooling classes so it is much easier to verify correctness
         // when not worried about the class being modified during execution
 
-        private readonly string _expandedConnectionString;
+        private readonly string? _expandedConnectionString;
 
         internal OdbcConnectionString(string connectionString, bool validate) : base(connectionString, null, true)
         {
             if (!validate)
             {
-                string filename = null;
+                string? filename = null;
                 int position = 0;
                 _expandedConnectionString = ExpandDataDirectories(ref filename, ref position);
             }

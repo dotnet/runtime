@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="exception">The exception related to this entry.</param>
         /// <param name="formatter">Function to create a <see cref="string"/> message of the <paramref name="state"/> and <paramref name="exception"/>.</param>
         /// <typeparam name="TState">The type of the object to be written.</typeparam>
-        void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter);
+        void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter);
 
         /// <summary>
         /// Checks if the given <paramref name="logLevel"/> is enabled.

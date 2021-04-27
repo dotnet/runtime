@@ -1004,7 +1004,10 @@ namespace System.Text.Json
             {
                 Debug.Assert(_arrayBufferWriter != null);
 
-                _memory = _arrayBufferWriter.GetMemory(checked(BytesPending + sizeHint));
+                int needed = BytesPending + sizeHint;
+                JsonHelpers.ValidateInt32MaxArrayLength((uint)needed);
+
+                _memory = _arrayBufferWriter.GetMemory(needed);
 
                 Debug.Assert(_memory.Length >= sizeHint);
             }

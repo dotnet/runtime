@@ -111,6 +111,292 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Empty(ctorCallSite.ParameterCallSites);
         }
 
+        [Fact]
+        public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfyStructGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithStructConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<object>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsService_IfClosedTypeSatisfiesStructGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithStructConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var matchingType = typeof(IFakeOpenGenericService<int>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            Assert.NotNull(matchingCallSite);
+        }
+
+        [Fact]
+        public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfyClassGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithClassConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<int>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsService_IfClosedTypeSatisfiesClassGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithClassConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var matchingType = typeof(IFakeOpenGenericService<object>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            Assert.NotNull(matchingCallSite);
+        }
+
+        [Fact]
+        public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfyNewGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithNewConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<TypeWithNoPublicConstructors>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsService_IfClosedTypeSatisfiesNewGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithNewConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor, new ServiceDescriptor(typeof(TypeWithParameterlessPublicConstructor), new TypeWithParameterlessPublicConstructor()));
+            // Act
+            var matchingType = typeof(IFakeOpenGenericService<TypeWithParameterlessPublicConstructor>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            Assert.NotNull(matchingCallSite);
+        }
+
+        [Fact]
+        public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfyInterfaceGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithInterfaceConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<int>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsService_IfClosedTypeSatisfiesInterfaceGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithInterfaceConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor, new ServiceDescriptor(typeof(string), ""));
+            // Act
+            var matchingType = typeof(IFakeOpenGenericService<string>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            Assert.NotNull(matchingCallSite);
+        }
+
+        [Fact]
+        public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfyAbstractClassGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithAbstractClassConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<object>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsService_IfClosedTypeSatisfiesAbstractClassGenericConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithAbstractClassConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor, new ServiceDescriptor(typeof(ClassInheritingAbstractClass), new ClassInheritingAbstractClass()));
+            // Act
+            var matchingType = typeof(IFakeOpenGenericService<ClassInheritingAbstractClass>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            Assert.NotNull(matchingCallSite);
+        }
+
+        [Fact]
+        public void CreateCallSite_Throws_IfClosedTypeDoesNotSatisfySelfReferencingConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithSelfReferencingConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<object>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_Throws_IfComplexClosedTypeDoesNotSatisfySelfReferencingConstraint()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithSelfReferencingConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor);
+            // Act
+            var nonMatchingType = typeof(IFakeOpenGenericService<int[]>);
+            // Assert
+            Assert.Throws<ArgumentException>(() => callSiteFactory(nonMatchingType));
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsService_IfClosedTypeSatisfiesSelfReferencing()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var implementationType = typeof(ClassWithSelfReferencingConstraint<>);
+            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
+            var callSiteFactory = GetCallSiteFactory(descriptor, new ServiceDescriptor(typeof(string), ""));
+            // Act
+            var matchingType = typeof(IFakeOpenGenericService<string>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            Assert.NotNull(matchingCallSite);
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsEmpty_IfClosedTypeSatisfiesBaseClassConstraintButRegisteredTypeNotExactMatch()
+        {
+            // Arrange
+            var classInheritingAbstractClassImplementationType = typeof(ClassWithAbstractClassConstraint<ClassInheritingAbstractClass>);
+            var classInheritingAbstractClassDescriptor = new ServiceDescriptor(typeof(IFakeOpenGenericService<ClassInheritingAbstractClass>), classInheritingAbstractClassImplementationType, ServiceLifetime.Transient);
+            var classAlsoInheritingAbstractClassImplementationType = typeof(ClassWithAbstractClassConstraint<ClassAlsoInheritingAbstractClass>);
+            var classAlsoInheritingAbstractClassDescriptor = new ServiceDescriptor(typeof(IFakeOpenGenericService<ClassAlsoInheritingAbstractClass>), classAlsoInheritingAbstractClassImplementationType, ServiceLifetime.Transient);
+            var classInheritingClassInheritingAbstractClassImplementationType = typeof(ClassWithAbstractClassConstraint<ClassInheritingClassInheritingAbstractClass>);
+            var classInheritingClassInheritingAbstractClassDescriptor = new ServiceDescriptor(typeof(IFakeOpenGenericService<ClassInheritingClassInheritingAbstractClass>), classInheritingClassInheritingAbstractClassImplementationType, ServiceLifetime.Transient);
+            var notMatchingServiceType = typeof(IFakeOpenGenericService<PocoClass>);
+            var notMatchingType = typeof(FakeService);
+            var notMatchingDescriptor = new ServiceDescriptor(notMatchingServiceType, notMatchingType, ServiceLifetime.Transient);
+
+            var callSiteFactory = GetCallSiteFactory(classInheritingAbstractClassDescriptor, classAlsoInheritingAbstractClassDescriptor, classInheritingClassInheritingAbstractClassDescriptor, notMatchingDescriptor);
+            // Act
+            var matchingType = typeof(IEnumerable<IFakeOpenGenericService<AbstractClass>>);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            var enumerableCall = Assert.IsType<IEnumerableCallSite>(matchingCallSite);
+
+            Assert.Empty(enumerableCall.ServiceCallSites);
+        }
+
+        [Fact]
+        public void CreateCallSite_ReturnsMatchingTypes_IfClosedTypeSatisfiesBaseClassConstraintAndRegisteredType()
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<AbstractClass>);
+            var classInheritingAbstractClassImplementationType = typeof(ClassWithAbstractClassConstraint<ClassInheritingAbstractClass>);
+            var classInheritingAbstractClassDescriptor = new ServiceDescriptor(serviceType, classInheritingAbstractClassImplementationType, ServiceLifetime.Transient);
+            var classAlsoInheritingAbstractClassImplementationType = typeof(ClassWithAbstractClassConstraint<ClassAlsoInheritingAbstractClass>);
+            var classAlsoInheritingAbstractClassDescriptor = new ServiceDescriptor(serviceType, classAlsoInheritingAbstractClassImplementationType, ServiceLifetime.Transient);
+            var classInheritingClassInheritingAbstractClassImplementationType = typeof(ClassWithAbstractClassConstraint<ClassInheritingClassInheritingAbstractClass>);
+            var classInheritingClassInheritingAbstractClassDescriptor = new ServiceDescriptor(serviceType, classInheritingClassInheritingAbstractClassImplementationType, ServiceLifetime.Transient);
+            var notMatchingServiceType = typeof(IFakeOpenGenericService<PocoClass>);
+            var notMatchingType = typeof(FakeService);
+            var notMatchingDescriptor = new ServiceDescriptor(notMatchingServiceType, notMatchingType, ServiceLifetime.Transient);
+
+            var descriptors = new[]
+            {
+                classInheritingAbstractClassDescriptor,
+                new ServiceDescriptor(typeof(ClassInheritingAbstractClass), new ClassInheritingAbstractClass()),
+                classAlsoInheritingAbstractClassDescriptor,
+                new ServiceDescriptor(typeof(ClassAlsoInheritingAbstractClass), new ClassAlsoInheritingAbstractClass()),
+                classInheritingClassInheritingAbstractClassDescriptor,
+                new ServiceDescriptor(typeof(ClassInheritingClassInheritingAbstractClass), new ClassInheritingClassInheritingAbstractClass()),
+                notMatchingDescriptor
+            };
+            var callSiteFactory = GetCallSiteFactory(descriptors);
+            // Act
+            var matchingType = typeof(IEnumerable<>).MakeGenericType(serviceType);
+            var matchingCallSite = callSiteFactory(matchingType);
+            // Assert
+            var enumerableCall = Assert.IsType<IEnumerableCallSite>(matchingCallSite);
+
+            var matchingTypes = new[]
+            {
+                classInheritingAbstractClassImplementationType,
+                classAlsoInheritingAbstractClassImplementationType,
+                classInheritingClassInheritingAbstractClassImplementationType
+            };
+            Assert.Equal(matchingTypes.Length, enumerableCall.ServiceCallSites.Length);
+            Assert.Equal(matchingTypes, enumerableCall.ServiceCallSites.Select(scs => scs.ImplementationType).ToArray());
+        }
+
+        [Theory]
+        [InlineData(typeof(IFakeOpenGenericService<int>), default(int), new[] { typeof(FakeOpenGenericService<int>), typeof(ClassWithStructConstraint<int>), typeof(ClassWithNewConstraint<int>), typeof(ClassWithSelfReferencingConstraint<int>) })]
+        [InlineData(typeof(IFakeOpenGenericService<string>), "", new[] { typeof(FakeOpenGenericService<string>), typeof(ClassWithClassConstraint<string>), typeof(ClassWithInterfaceConstraint<string>), typeof(ClassWithSelfReferencingConstraint<string>) })]
+        [InlineData(typeof(IFakeOpenGenericService<int[]>), new[] { 1, 2, 3 }, new[] { typeof(FakeOpenGenericService<int[]>), typeof(ClassWithClassConstraint<int[]>), typeof(ClassWithInterfaceConstraint<int[]>) })]
+        public void CreateCallSite_ReturnsMatchingTypesThatMatchCorrectConstraints(Type closedServiceType, object value, Type[] matchingImplementationTypes)
+        {
+            // Arrange
+            var serviceType = typeof(IFakeOpenGenericService<>);
+            var noConstraintImplementationType = typeof(FakeOpenGenericService<>);
+            var noConstraintDescriptor = new ServiceDescriptor(serviceType, noConstraintImplementationType, ServiceLifetime.Transient);
+            var structImplementationType = typeof(ClassWithStructConstraint<>);
+            var structDescriptor = new ServiceDescriptor(serviceType, structImplementationType, ServiceLifetime.Transient);
+            var classImplementationType = typeof(ClassWithClassConstraint<>);
+            var classDescriptor = new ServiceDescriptor(serviceType, classImplementationType, ServiceLifetime.Transient);
+            var newImplementationType = typeof(ClassWithNewConstraint<>);
+            var newDescriptor = new ServiceDescriptor(serviceType, newImplementationType, ServiceLifetime.Transient);
+            var interfaceImplementationType = typeof(ClassWithInterfaceConstraint<>);
+            var interfaceDescriptor = new ServiceDescriptor(serviceType, interfaceImplementationType, ServiceLifetime.Transient);
+            var selfConstraintImplementationType = typeof(ClassWithSelfReferencingConstraint<>);
+            var selfConstraintDescriptor = new ServiceDescriptor(serviceType, selfConstraintImplementationType, ServiceLifetime.Transient);
+            var serviceValueType = closedServiceType.GenericTypeArguments[0];
+            var serviceValueDescriptor = new ServiceDescriptor(serviceValueType, value);
+            var callSiteFactory = GetCallSiteFactory(noConstraintDescriptor, structDescriptor, classDescriptor, newDescriptor, interfaceDescriptor, selfConstraintDescriptor, serviceValueDescriptor);
+            var collectionType = typeof(IEnumerable<>).MakeGenericType(closedServiceType);
+            // Act
+            var callSite = callSiteFactory(collectionType);
+            // Assert
+            var enumerableCall = Assert.IsType<IEnumerableCallSite>(callSite);
+            Assert.Equal(matchingImplementationTypes.Length, enumerableCall.ServiceCallSites.Length);
+            Assert.Equal(matchingImplementationTypes, enumerableCall.ServiceCallSites.Select(scs => scs.ImplementationType).ToArray());
+        }
+
         public static TheoryData CreateCallSite_PicksConstructorWithTheMostNumberOfResolvedParametersData =>
             new TheoryData<Type, Func<Type, ServiceCallSite>, Type[]>
             {

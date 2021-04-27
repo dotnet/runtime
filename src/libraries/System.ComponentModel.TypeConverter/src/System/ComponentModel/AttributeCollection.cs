@@ -12,6 +12,8 @@ namespace System.ComponentModel
     /// </summary>
     public class AttributeCollection : ICollection, IEnumerable
     {
+        internal const string FilterRequiresUnreferencedCodeMessage = "The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.";
+
         /// <summary>
         /// An empty AttributeCollection that can used instead of creating a new one.
         /// </summary>
@@ -118,7 +120,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attributes collection.
         /// </summary>
-        protected virtual Attribute[] Attributes => _attributes;
+        protected internal virtual Attribute[] Attributes => _attributes;
 
         /// <summary>
         /// Gets the number of attributes.
@@ -133,10 +135,15 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attribute with the specified type.
         /// </summary>
-        public virtual Attribute this[Type attributeType]
+        public virtual Attribute this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
         {
             get
             {
+                if (attributeType == null)
+                {
+                    throw new ArgumentNullException(nameof(attributeType));
+                }
+
                 lock (s_internalSyncObject)
                 {
                     // 2 passes here for perf. Really!  first pass, we just
@@ -211,8 +218,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines if this collection of attributes has the specified attribute.
         /// </summary>
+        [RequiresUnreferencedCode(FilterRequiresUnreferencedCodeMessage)]
         public bool Contains(Attribute attribute)
         {
+            if (attribute == null)
+            {
+                return false;
+            }
+
             Attribute attr = this[attribute.GetType()];
             return attr != null && attr.Equals(attribute);
         }
@@ -221,6 +234,7 @@ namespace System.ComponentModel
         /// Determines if this attribute collection contains the all
         /// the specified attributes in the attribute array.
         /// </summary>
+        [RequiresUnreferencedCode(FilterRequiresUnreferencedCodeMessage)]
         public bool Contains(Attribute[] attributes)
         {
             if (attributes == null)
@@ -243,8 +257,13 @@ namespace System.ComponentModel
         /// Returns the default value for an attribute. This uses the following heuristic:
         /// 1. It looks for a public static field named "Default".
         /// </summary>
-        protected Attribute GetDefaultAttribute(Type attributeType)
+        protected Attribute GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
         {
+            if (attributeType == null)
+            {
+                throw new ArgumentNullException(nameof(attributeType));
+            }
+
             lock (s_internalSyncObject)
             {
                 if (s_defaultAttributes == null)
@@ -270,7 +289,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Array.Empty<Type>());
+                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Type.EmptyTypes);
                     if (ci != null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());
@@ -316,6 +335,11 @@ namespace System.ComponentModel
         /// </summary>
         public bool Matches(Attribute[] attributes)
         {
+            if (attributes == null)
+            {
+                return true;
+            }
+
             for (int i = 0; i < attributes.Length; i++)
             {
                 if (!Matches(attributes[i]))
@@ -329,7 +353,7 @@ namespace System.ComponentModel
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot => null;
+        object ICollection.SyncRoot => this;
 
         int ICollection.Count => Count;
 

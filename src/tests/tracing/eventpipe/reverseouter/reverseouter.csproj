@@ -4,9 +4,11 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority>0</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- reverseouter fails under GCStress. Issue: https://github.com/dotnet/runtime/issues/38801 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

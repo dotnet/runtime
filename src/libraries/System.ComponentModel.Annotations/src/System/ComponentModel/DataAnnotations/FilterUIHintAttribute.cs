@@ -24,14 +24,14 @@ namespace System.ComponentModel.DataAnnotations
         /// Gets the name of the presentation layer that supports the control type
         /// in <see cref="FilterUIHint"/>
         /// </summary>
-        public string PresentationLayer => _implementation.PresentationLayer;
+        public string? PresentationLayer => _implementation.PresentationLayer;
 
         /// <summary>
         /// Gets the name-value pairs used as parameters to the control's constructor
         /// </summary>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute
         /// is ill-formed.</exception>
-        public IDictionary<string, object> ControlParameters => _implementation.ControlParameters;
+        public IDictionary<string, object?> ControlParameters => _implementation.ControlParameters;
 
         /// <summary>
         /// Constructor that accepts the name of the control, without specifying
@@ -50,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="filterUIHint">The name of the control to use</param>
         /// <param name="presentationLayer">The name of the presentation layer that
         /// supports this control</param>
-        public FilterUIHintAttribute(string filterUIHint, string presentationLayer)
+        public FilterUIHintAttribute(string filterUIHint, string? presentationLayer)
             : this(filterUIHint, presentationLayer, Array.Empty<object>())
         {
         }
@@ -62,8 +62,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="filterUIHint">The name of the control</param>
         /// <param name="presentationLayer">The presentation layer</param>
         /// <param name="controlParameters">The list of parameters for the control</param>
-        public FilterUIHintAttribute(string filterUIHint, string presentationLayer,
-            params object[] controlParameters)
+        public FilterUIHintAttribute(string filterUIHint, string? presentationLayer,
+            params object?[] controlParameters)
         {
             _implementation = new UIHintAttribute.UIHintImplementation(
                 filterUIHint, presentationLayer, controlParameters);
@@ -82,7 +82,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="obj">An System.Object.</param>
         /// <returns>true if obj is a FilterUIHintAttribute and its value is the same
         /// as this instance; otherwise, false.</returns>
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             obj is FilterUIHintAttribute otherAttribute && _implementation.Equals(otherAttribute._implementation);
     }
 }

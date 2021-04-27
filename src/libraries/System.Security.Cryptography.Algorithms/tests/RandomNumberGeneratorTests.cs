@@ -12,10 +12,13 @@ namespace System.Security.Cryptography.RNG.Tests
 {
     public class RandomNumberGeneratorTests
     {
-        [Fact]
-        public static void RandomDistribution()
+        [Theory]
+        [InlineData(2048)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void RandomDistribution(int arraySize)
         {
-            byte[] random = new byte[2048];
+            byte[] random = new byte[arraySize];
 
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
@@ -55,7 +58,7 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConcurrentAccess()
         {
             const int ParallelTasks = 3;
@@ -99,26 +102,33 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        [Fact]
-        public static void GetNonZeroBytes_Array()
+        [Theory]
+        [InlineData(10)]
+        [InlineData(256)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void GetNonZeroBytes_Array(int arraySize)
         {
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetNonZeroBytes(null));
 
                 // Array should not have any zeros
-                byte[] rand = new byte[65536];
+                byte[] rand = new byte[arraySize];
                 rng.GetNonZeroBytes(rand);
                 Assert.Equal(-1, Array.IndexOf<byte>(rand, 0));
             }
         }
 
-        [Fact]
-        public static void GetBytes_Offset()
+        [Theory]
+        [InlineData(400)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void GetBytes_Offset(int arraySize)
         {
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
-                byte[] rand = new byte[400];
+                byte[] rand = new byte[arraySize];
 
                 // Set canary bytes
                 rand[99] = 77;
@@ -160,6 +170,7 @@ namespace System.Security.Cryptography.RNG.Tests
         [InlineData(10)]
         [InlineData(256)]
         [InlineData(65536)]
+        [InlineData(1048576)]
         public static void DifferentSequential_Array(int arraySize)
         {
             // Ensure that the RNG doesn't produce a stable set of data.
@@ -186,6 +197,7 @@ namespace System.Security.Cryptography.RNG.Tests
         [InlineData(10)]
         [InlineData(256)]
         [InlineData(65536)]
+        [InlineData(1048576)]
         public static void DifferentParallel(int arraySize)
         {
             // Ensure that two RNGs don't produce the same data series (such as being implemented via new Random(1)).
@@ -229,10 +241,46 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
+        [Fact]
+        public static void GetBytes_Int_Negative()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
+                RandomNumberGenerator.GetBytes(-1));
+        }
+
+        [Fact]
+        public static void GetBytes_Int_Empty()
+        {
+            byte[] result = RandomNumberGenerator.GetBytes(0);
+            Assert.Empty(result);
+        }
+
+        [Theory]
+        [InlineData(2048)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void GetBytes_Int_RandomDistribution(int arraySize)
+        {
+            byte[] result = RandomNumberGenerator.GetBytes(arraySize);
+            RandomDataGenerator.VerifyRandomDistribution(result);
+        }
+
+        [Theory]
+        [InlineData(2048)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void GetBytes_Int_NotSame(int arraySize)
+        {
+            byte[] result1 = RandomNumberGenerator.GetBytes(arraySize);
+            byte[] result2 = RandomNumberGenerator.GetBytes(arraySize);
+            Assert.NotEqual(result1, result2);
+        }
+
         [Theory]
         [InlineData(10)]
         [InlineData(256)]
         [InlineData(65536)]
+        [InlineData(1048576)]
         public static void DifferentSequential_Span(int arraySize)
         {
             // Ensure that the RNG doesn't produce a stable set of data.
@@ -266,12 +314,16 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
-        [Fact]
-        public static void GetNonZeroBytes_Span()
+        [Theory]
+        [InlineData(10)]
+        [InlineData(256)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void GetNonZeroBytes_Span(int arraySize)
         {
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
-                var rand = new byte[65536];
+                var rand = new byte[arraySize];
                 rng.GetNonZeroBytes(new Span<byte>(rand));
                 Assert.Equal(-1, Array.IndexOf<byte>(rand, 0));
             }
@@ -495,9 +547,9 @@ namespace System.Security.Cryptography.RNG.Tests
                 }
             }
             const double tolerance = 0.07;
-            foreach ((_, int occurences) in observedNumbers)
+            foreach ((_, int occurrences) in observedNumbers)
             {
-                double percentage = occurences / (double)numbers.Length;
+                double percentage = occurrences / (double)numbers.Length;
                 double actual = Math.Abs(expected - percentage);
                 Assert.True(actual < tolerance, $"Occurred number of times within threshold. Actual: {actual}");
             }

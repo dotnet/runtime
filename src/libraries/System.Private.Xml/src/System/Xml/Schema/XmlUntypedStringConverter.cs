@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Text;
@@ -14,7 +13,7 @@ namespace System.Xml.Schema
 {
     // This is an atomic value converted for Silverlight XML core that knows only how to convert to and from string.
     // It does not recognize XmlAtomicValue or XPathItemType.
-    internal class XmlUntypedStringConverter
+    internal sealed class XmlUntypedStringConverter
     {
         // Fields
         private readonly bool _listsAllowed;

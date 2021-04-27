@@ -469,7 +469,9 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(TimeSpan), typeof(TimeSpanConverter))]
         [InlineData(typeof(Guid), typeof(GuidConverter))]
         [InlineData(typeof(Array), typeof(ArrayConverter))]
+        [InlineData(typeof(int[]), typeof(ArrayConverter))]
         [InlineData(typeof(ICollection), typeof(CollectionConverter))]
+        [InlineData(typeof(Stack), typeof(CollectionConverter))]
         [InlineData(typeof(Enum), typeof(EnumConverter))]
         [InlineData(typeof(SomeEnum), typeof(EnumConverter))]
         [InlineData(typeof(SomeValueType?), typeof(NullableConverter))]
@@ -482,9 +484,14 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(ClassIBase), typeof(IBaseConverter))]
         [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
         [InlineData(typeof(Uri), typeof(UriTypeConverter))]
+        [InlineData(typeof(DerivedUri), typeof(UriTypeConverter))]
+        [InlineData(typeof(TwiceDerivedUri), typeof(UriTypeConverter))]
         [InlineData(typeof(CultureInfo), typeof(CultureInfoConverter))]
+        [InlineData(typeof(DerivedCultureInfo), typeof(CultureInfoConverter))]
+        [InlineData(typeof(TwiceDerivedCultureInfo), typeof(CultureInfoConverter))]
         [InlineData(typeof(Version), typeof(VersionConverter))]
         [InlineData(typeof(IComponent), typeof(ComponentConverter))]
+        [InlineData(typeof(IFooComponent), typeof(ReferenceConverter))]
         public static void GetConverter(Type targetType, Type resultConverterType)
         {
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
@@ -1140,6 +1147,46 @@ namespace System.ComponentModel.Tests
             Assert.Equal("Derived", descriptionAttribute.Description);
         }
 
+        [Fact]
+        public void PropertyFilterAttributeMatch()
+        {
+            Assert.Equal(3, TypeDescriptor.GetProperties(typeof(PropertyFilterAttributeMatchPoco), new[] { new PropertyFilterAttribute() }).Count);
+        }
+
+        public class PropertyFilterAttribute : Attribute
+        {
+            public override bool Equals(object value) => ReferenceEquals(this, value);
+
+            public override int GetHashCode() => throw new NotImplementedException();
+
+            public override bool Match(object value)
+            {
+                Attribute attr = (Attribute)value;
+                if (attr.GetType().IsSubclassOf(this.GetType()))
+                    return attr.Match(value);
+
+                return true;
+            }
+
+            public static readonly PropertyFilterAttribute Default = new PropertyFilterAttribute();
+        }
+
+        public sealed class PropertyFilterFalseMatchAttribute : PropertyFilterAttribute
+        {
+            public override bool Match(object value) => false;
+        }
+
+        public class PropertyFilterAttributeMatchPoco
+        {
+            public string StringProp { get; set; }
+            public int IntProp { get; set; }
+            public double DoubleProp { get; set; }
+            public ClassWithFilterAttribute FilterProp { get; set; }
+        }
+
+        [PropertyFilterFalseMatch]
+        public class ClassWithFilterAttribute { }
+
         class FooBarBase
         {
             [Description("Base")]
@@ -1150,6 +1197,33 @@ namespace System.ComponentModel.Tests
         {
             [Description("Derived")]
             public override int Value { get; set; }
+        }
+
+        interface IFooComponent
+        {
+            bool Flag { get; set; }
+        }
+
+        class DerivedUri : Uri
+        {
+            protected DerivedUri() : base("https://hello")
+            {
+            }
+        }
+
+        class TwiceDerivedUri : DerivedUri
+        {
+        }
+
+        class DerivedCultureInfo : CultureInfo
+        {
+            protected DerivedCultureInfo() : base("hello")
+            {
+            }
+        }
+
+        class TwiceDerivedCultureInfo : DerivedCultureInfo
+        {
         }
     }
 }

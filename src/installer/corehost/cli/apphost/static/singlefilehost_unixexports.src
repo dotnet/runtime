@@ -1,8 +1,0 @@
-; Licensed to the .NET Foundation under one or more agreements.
-; The .NET Foundation licenses this file to you under the MIT license.
-
-DllMain
-
-; the following two exports are needed for FreeBSD where overwise they will be implicitly hidden and cause linker issues.
-__progname
-environ

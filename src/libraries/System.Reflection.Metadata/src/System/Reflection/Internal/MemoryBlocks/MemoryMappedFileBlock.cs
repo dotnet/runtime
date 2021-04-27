@@ -17,14 +17,13 @@ namespace System.Reflection.Internal
 
             public DisposableData(IDisposable accessor, SafeBuffer safeBuffer, long offset)
             {
+#if FEATURE_CER
                 // Make sure the current thread isn't aborted in between acquiring the pointer and assigning the fields.
-#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
-                {
-                }
+                { /* intentionally left blank */ }
                 finally
+#endif
                 {
                     byte* basePointer = null;
                     safeBuffer.AcquirePointer(ref basePointer);
@@ -37,15 +36,14 @@ namespace System.Reflection.Internal
 
             protected override void Release()
             {
+#if FEATURE_CER
                 // Make sure the current thread isn't aborted in between zeroing the references and releasing/disposing.
                 // Safe buffer only frees the underlying resource if its ref count drops to zero, so we have to make sure it does.
-#if !NETSTANDARD1_1
                 RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
-                {
-                }
+                { /* intentionally left blank */ }
                 finally
+#endif
                 {
                     Interlocked.Exchange(ref _safeBuffer, null)?.ReleasePointer();
                     Interlocked.Exchange(ref _accessor, null)?.Dispose();

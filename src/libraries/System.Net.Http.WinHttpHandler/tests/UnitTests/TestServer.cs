@@ -158,18 +158,12 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             using (var memoryStream = new MemoryStream())
             {
-                Stream compressedStream = null;
-                if (useGZip)
+                using (Stream compressedStream = useGZip ?
+                    new GZipStream(memoryStream, CompressionMode.Compress) :
+                    new DeflateStream(memoryStream, CompressionMode.Compress))
                 {
-                    compressedStream = new GZipStream(memoryStream, CompressionMode.Compress);
+                    compressedStream.Write(bytes, 0, bytes.Length);
                 }
-                else
-                {
-                    compressedStream = new DeflateStream(memoryStream, CompressionMode.Compress);
-                }
-
-                compressedStream.Write(bytes, 0, bytes.Length);
-                compressedStream.Dispose();
 
                 return memoryStream.ToArray();
             }

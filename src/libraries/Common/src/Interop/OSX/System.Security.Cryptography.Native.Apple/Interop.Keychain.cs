@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,10 +21,10 @@ internal static partial class Interop
             out SafeKeychainHandle keychain);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeychainCreate")]
-        private static extern int AppleCryptoNative_SecKeychainCreateTemporary(
+        private static extern unsafe int AppleCryptoNative_SecKeychainCreateTemporary(
             string path,
             int utf8PassphraseLength,
-            byte[] utf8Passphrase,
+            byte* utf8Passphrase,
             out SafeTemporaryKeychainHandle keychain);
 
         [DllImport(Libraries.AppleCryptoNative)]
@@ -220,25 +219,46 @@ internal static partial class Interop
             throw CreateExceptionForOSStatus(osStatus);
         }
 
-        internal static SafeTemporaryKeychainHandle CreateTemporaryKeychain()
+        internal static unsafe SafeTemporaryKeychainHandle CreateTemporaryKeychain()
         {
+            const int randomSize = 256;
             string tmpKeychainPath = Path.Combine(
                 Path.GetTempPath(),
                 Guid.NewGuid().ToString("N") + ".keychain");
 
-            // Use a distinct GUID so that if a keychain is abandoned it isn't recoverable.
-            string tmpKeychainPassphrase = Guid.NewGuid().ToString("N");
+            // Use a random password so that if a keychain is abandoned it isn't recoverable.
+            // We use stack to minimize lingering
+            Span<byte> random = stackalloc byte[randomSize];
+            RandomNumberGenerator.Fill(random);
 
-            byte[] utf8Passphrase = System.Text.Encoding.UTF8.GetBytes(tmpKeychainPassphrase);
+            // Create hex-like UTF8 string.
+            Span<byte> utf8Passphrase =  stackalloc byte[randomSize * 2 +1];
+            utf8Passphrase[randomSize * 2] = 0; // null termination for C string.
+
+            for (int i = 0; i < random.Length; i++)
+            {
+                // Instead of true hexadecimal, we simply take lower and upper 4 bits and we offset them from ASCII 'A'
+                // to get printable form. We dont use managed string to avoid lingering copies.
+                utf8Passphrase[i*2] = (byte)((random[i] & 0x0F) + 65);
+                utf8Passphrase[i*2 + 1] = (byte)((random[i] >> 4) & 0x0F + 65);
+            }
+
+            // clear the binary bits.
+            CryptographicOperations.ZeroMemory(random);
 
             SafeTemporaryKeychainHandle keychain;
+            int osStatus;
 
-            int osStatus = AppleCryptoNative_SecKeychainCreateTemporary(
-                tmpKeychainPath,
-                utf8Passphrase.Length,
-                utf8Passphrase,
-                out keychain);
+            fixed (byte* ptr = utf8Passphrase)
+            {
+                osStatus = AppleCryptoNative_SecKeychainCreateTemporary(
+                    tmpKeychainPath,
+                    utf8Passphrase.Length,
+                    ptr,
+                    out keychain);
+            }
 
+            CryptographicOperations.ZeroMemory(utf8Passphrase);
             SafeTemporaryKeychainHandle.TrackKeychain(keychain);
 
             if (osStatus == 0)
@@ -271,7 +291,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal class SafeKeychainItemHandle : SafeHandle
     {
-        internal SafeKeychainItemHandle()
+        public SafeKeychainItemHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -289,7 +309,7 @@ namespace System.Security.Cryptography.Apple
 
     internal class SafeKeychainHandle : SafeHandle
     {
-        internal SafeKeychainHandle()
+        public SafeKeychainHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

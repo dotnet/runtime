@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeWinHttpHandle WinHttpOpen(
@@ -43,7 +42,9 @@ internal partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WinHttpAddRequestHeaders(
             SafeWinHttpHandle requestHandle,
+#pragma warning disable CA1838 // Uses pooled StringBuilder
             [In] StringBuilder headers,
+#pragma warning restore CA1838
             uint headersLength,
             uint modifiers);
 
@@ -59,7 +60,7 @@ internal partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WinHttpSendRequest(
             SafeWinHttpHandle requestHandle,
-            [In] StringBuilder headers,
+            IntPtr headers,
             uint headersLength,
             IntPtr optional,
             uint optionalLength,

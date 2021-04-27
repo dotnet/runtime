@@ -15,12 +15,12 @@ namespace System.ComponentModel.DataAnnotations
         {
         }
 
-        public DisplayColumnAttribute(string displayColumn, string sortColumn)
+        public DisplayColumnAttribute(string displayColumn, string? sortColumn)
             : this(displayColumn, sortColumn, false)
         {
         }
 
-        public DisplayColumnAttribute(string displayColumn, string sortColumn, bool sortDescending)
+        public DisplayColumnAttribute(string displayColumn, string? sortColumn, bool sortDescending)
         {
             DisplayColumn = displayColumn;
             SortColumn = sortColumn;
@@ -29,7 +29,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public string DisplayColumn { get; }
 
-        public string SortColumn { get; }
+        public string? SortColumn { get; }
 
         public bool SortDescending { get; }
     }

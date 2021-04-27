@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -100,7 +101,7 @@ namespace System.Data.Common
             return ((byte)_values[i]);
         }
 
-        public override long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
             int cbytes = 0;
             int ndataIndex;
@@ -170,7 +171,7 @@ namespace System.Data.Common
 
         public override char GetChar(int i) => ((string)_values[i])[0];
 
-        public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length)
         {
             // if the object doesn't contain a char[] then the user will get an exception
             string s = (string)_values[i];
@@ -305,6 +306,8 @@ namespace System.Data.Common
             return new AttributeCollection(null);
         }
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         string ICustomTypeDescriptor.GetClassName()
         {
             return null;
@@ -315,42 +318,49 @@ namespace System.Data.Common
             return null;
         }
 
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
             return null;
         }
 
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
         {
             return null;
         }
 
-
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
         {
             return null;
         }
 
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return null;
         }
+#nullable enable
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
             return new EventDescriptorCollection(null);
         }
 
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
         {
             return new EventDescriptorCollection(null);
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
         {
             return ((ICustomTypeDescriptor)this).GetProperties(null);
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
             if (_propertyDescriptors == null)

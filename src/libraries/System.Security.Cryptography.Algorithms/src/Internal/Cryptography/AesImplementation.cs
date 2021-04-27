@@ -30,16 +30,12 @@ namespace Internal.Cryptography
 
         public sealed override void GenerateIV()
         {
-            byte[] iv = new byte[BlockSize / BitsPerByte];
-            RandomNumberGenerator.Fill(iv);
-            IV = iv;
+            IV = RandomNumberGenerator.GetBytes(BlockSize / BitsPerByte);
         }
 
         public sealed override void GenerateKey()
         {
-            byte[] key = new byte[KeySize / BitsPerByte];
-            RandomNumberGenerator.Fill(key);
-            Key = key;
+            Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
         protected sealed override void Dispose(bool disposing)
@@ -65,7 +61,21 @@ namespace Internal.Cryptography
                     throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
+            if (Mode == CipherMode.CFB)
+            {
+                ValidateCFBFeedbackSize(FeedbackSize);
+            }
+
+            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, this.GetPaddingSize(), FeedbackSize / BitsPerByte, encrypting);
+        }
+
+        private static void ValidateCFBFeedbackSize(int feedback)
+        {
+            // only 8bits/128bits feedback would be valid.
+            if (feedback != 8 && feedback != 128)
+            {
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            }
         }
 
         private const int BitsPerByte = 8;

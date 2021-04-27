@@ -33,7 +33,10 @@ namespace System.Text.Json
 
         private void WriteBase64ByOptions(ReadOnlySpan<byte> bytes)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
 
             if (_options.Indented)
             {

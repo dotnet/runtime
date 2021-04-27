@@ -63,7 +63,7 @@ namespace System.Net.Http
 
                 // We schedule a continuation task once the inner handler completes in order to trigger the response
                 // processing method. ProcessResponse() is only called if the task wasn't canceled before.
-                sendAsyncTask.ContinueWithStandard(tcs, (task, state) =>
+                sendAsyncTask.ContinueWithStandard(tcs, static (task, state) =>
                 {
                     var sendState = (SendState)state!;
                     MessageProcessingHandler self = sendState._handler;
@@ -77,7 +77,7 @@ namespace System.Net.Http
 
                     if (task.IsCanceled)
                     {
-                        sendState.TrySetCanceled();
+                        sendState.TrySetCanceled(token);
                         return;
                     }
 

@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsTestProject>true</IsTestProject>
+    <IsFunctionalTest>true</IsFunctionalTest>
+  </PropertyGroup>
+
+  <Import Project="..\..\libraries\Directory.Build.props" />
+</Project>

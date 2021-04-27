@@ -21,7 +21,8 @@ export PYTHON
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-staticanalyzer: skip native image generation.")
+usage_list+=("-staticanalyzer: use scan_build static analyzer.")
+usage_list+=("-component: Build individual components instead of the full project. Available options are 'jit', 'runtime', 'paltests', 'alljits', and 'iltools'. Can be specified multiple times.")
 
 setup_dirs_local()
 {
@@ -37,7 +38,7 @@ setup_dirs_local()
 
 restore_optdata()
 {
-    local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
+    local OptDataProjectFilePath="$__ProjectRoot/.nuget/optdata/optdata.csproj"
     if [[ "$__SkipRestoreOptData" == 0 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
@@ -95,7 +96,7 @@ build_cross_architecture_components()
     export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
+    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "crosscomponents" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1
     export CROSSCOMPILE
@@ -121,6 +122,10 @@ handle_arguments_local() {
             __StaticAnalyzer=1
             ;;
 
+        component|-component)
+            __RequestedBuildComponents="$__RequestedBuildComponents $2"
+            __ShiftArgs=1
+            ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -171,14 +176,10 @@ __StaticAnalyzer=0
 __UnprocessedBuildArgs=
 __UseNinja=0
 __VerboseBuild=0
-__ValidateCrossArg=1
 __CMakeArgs=""
+__RequestedBuildComponents=""
 
 source "$__ProjectRoot"/_build-commons.sh
-
-if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
-    __CrossBuild=1
-fi
 
 # Set dependent variables
 
@@ -228,16 +229,25 @@ check_prereqs
 restore_optdata
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
+__CMakeTarget=""
+if [[ -n "$__RequestedBuildComponents" ]]; then
+    __CMakeTarget=" $__RequestedBuildComponents "
+    __CMakeTarget="${__CMakeTarget// paltests / paltests_install }"
+fi
+if [[ -z "$__CMakeTarget" ]]; then
+    __CMakeTarget="install"
+fi
+
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    build_native "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "CoreCLR component"
+    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components
     if [[ "$__SkipCrossArchNative" != 1 ]]; then

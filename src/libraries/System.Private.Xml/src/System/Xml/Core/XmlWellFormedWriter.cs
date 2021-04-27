@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -13,7 +12,7 @@ using System.Collections.Generic;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         //
         // Private types used by the XmlWellFormedWriter are defined in XmlWellFormedWriterHelpers.cs
@@ -62,9 +61,6 @@ namespace System.Xml
         // flags
         private bool _dtdWritten;
         private bool _xmlDeclFollows;
-
-        // char type tables
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         //
         // Constants
@@ -395,21 +391,21 @@ namespace System.Xml
                 {
                     if (pubid != null)
                     {
-                        if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
+                        if ((i = XmlCharType.IsPublicId(pubid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(pubid, i)), nameof(pubid));
                         }
                     }
                     if (sysid != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(sysid)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(sysid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(sysid, i)), nameof(sysid));
                         }
                     }
                     if (subset != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(subset)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(subset)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(subset, i)), nameof(subset));
                         }
@@ -1048,7 +1044,7 @@ namespace System.Xml
                 {
                     ws = string.Empty;
                 }
-                if (!XmlCharType.Instance.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
@@ -1343,7 +1339,7 @@ namespace System.Xml
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
@@ -2137,16 +2133,10 @@ namespace System.Xml
             int endPos = ncname.Length;
 
             // Check if first character is StartNCName (inc. surrogates)
-            if (_xmlCharType.IsStartNCNameSingleChar(ncname[0]))
+            if (XmlCharType.IsStartNCNameSingleChar(ncname[0]))
             {
                 i = 1;
             }
-#if XML10_FIFTH_EDITION
-            else if (_xmlCharType.IsNCNameSurrogateChar(ncname, 0))
-            { // surrogate ranges are same for NCName and StartNCName
-                i = 2;
-            }
-#endif
             else
             {
                 throw InvalidCharsException(ncname, 0);
@@ -2155,16 +2145,10 @@ namespace System.Xml
             // Check if following characters are NCName (inc. surrogates)
             while (i < endPos)
             {
-                if (_xmlCharType.IsNCNameSingleChar(ncname[i]))
+                if (XmlCharType.IsNCNameSingleChar(ncname[i]))
                 {
                     i++;
                 }
-#if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(ncname, i))
-                {
-                    i += 2;
-                }
-#endif
                 else
                 {
                     throw InvalidCharsException(ncname, i);

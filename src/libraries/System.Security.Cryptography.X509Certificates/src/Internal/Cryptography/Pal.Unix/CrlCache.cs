@@ -28,15 +28,12 @@ namespace Internal.Cryptography.Pal
 
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
-        [ThreadStatic]
-        private static HashAlgorithm? ts_urlHash;
-
         public static void AddCrlForCertificate(
             SafeX509Handle cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
             DateTime verificationTime,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             // In Offline mode, accept any cached CRL we have.
             // "CRL is Expired" is a better match for Offline than "Could not find CRL"
@@ -59,14 +56,13 @@ namespace Internal.Cryptography.Pal
                 return;
             }
 
-            // Don't do any work if we're over limit or prohibited from fetching new CRLs
-            if (remainingDownloadTime <= TimeSpan.Zero ||
-                revocationMode != X509RevocationMode.Online)
+            // Don't do any work if we're prohibited from fetching new CRLs
+            if (revocationMode != X509RevocationMode.Online)
             {
                 return;
             }
 
-            DownloadAndAddCrl(url, crlFileName, store, ref remainingDownloadTime);
+            DownloadAndAddCrl(url, crlFileName, store, downloadTimeout);
         }
 
         private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTime verificationTime)
@@ -96,8 +92,30 @@ namespace Internal.Cryptography.Pal
                     // at least it can fail without using the network.
                     //
                     // If crl.NextUpdate is in the past, try downloading a newer version.
-                    DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
-                        Interop.Crypto.GetX509CrlNextUpdate(crl));
+                    IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
+                    DateTime nextUpdate;
+
+                    // If there is no crl.NextUpdate, this indicates that the CA is not providing
+                    // any more updates to the CRL, or they made a mistake not providing a NextUpdate.
+                    // We'll cache it for a few days to cover the case it was a mistake.
+                    if (nextUpdatePtr == IntPtr.Zero)
+                    {
+                        try
+                        {
+                            nextUpdate = File.GetLastWriteTime(crlFile).AddDays(3);
+                        }
+                        catch
+                        {
+                            // We couldn't determine when the CRL was last written to,
+                            // so consider it expired.
+                            Debug.Fail("Failed to get the last write time of the CRL file");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(nextUpdatePtr);
+                    }
 
                     // OpenSSL is going to convert our input time to universal, so we should be in Local or
                     // Unspecified (local-assumed).
@@ -134,11 +152,11 @@ namespace Internal.Cryptography.Pal
             string url,
             string crlFileName,
             SafeX509StoreHandle store,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
             // dispose our copy.
-            using (SafeX509CrlHandle? crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
+            using (SafeX509CrlHandle? crl = CertificateAssetDownloader.DownloadCrl(url, downloadTimeout))
             {
                 // null is a valid return (e.g. no remainingDownloadTime)
                 if (crl != null && !crl.IsInvalid)
@@ -194,21 +212,15 @@ namespace Internal.Cryptography.Pal
             }
 
             uint persistentHash = unchecked((uint)persistentHashLong);
-
-            if (ts_urlHash == null)
-            {
-                ts_urlHash = SHA256.Create();
-            }
-
             Span<byte> hash = stackalloc byte[256 >> 3];
 
             // Endianness isn't important, it just needs to be consistent.
             // (Even if the same storage was used for two different endianness systems it'd stabilize at two files).
             ReadOnlySpan<byte> utf16Url = MemoryMarshal.AsBytes(crlUrl.AsSpan());
 
-            if (!ts_urlHash.TryComputeHash(utf16Url, hash, out int written) || written != hash.Length)
+            if (SHA256.HashData(utf16Url, hash) != hash.Length)
             {
-                Debug.Fail("TryComputeHash failed or produced an incorrect length output");
+                Debug.Fail("HashData failed or produced an incorrect length output");
                 throw new CryptographicException();
             }
 

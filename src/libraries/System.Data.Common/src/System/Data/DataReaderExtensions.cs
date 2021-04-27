@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -170,7 +171,7 @@ namespace System.Data
             return reader.IsDBNullAsync(reader.GetOrdinal(name), cancellationToken);
         }
 
-        private static void AssertNotNull(DbDataReader reader)
+        private static void AssertNotNull([NotNull] DbDataReader? reader)
         {
             if (reader is null)
             {

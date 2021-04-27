@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
     internal class TextAction : CompiledAction
     {
         private bool _disableOutputEscaping;
-        private string _text;
+        private string? _text;
 
         internal override void Compile(Compiler compiler)
         {

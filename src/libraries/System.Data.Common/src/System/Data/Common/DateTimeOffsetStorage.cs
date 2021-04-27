@@ -10,7 +10,7 @@ namespace System.Data.Common
     {
         private static readonly DateTimeOffset s_defaultValue = DateTimeOffset.MinValue;
 
-        private DateTimeOffset[] _values;
+        private DateTimeOffset[] _values = default!; // Late-initialized
 
         internal DateTimeOffsetStorage(DataColumn column)
         : base(column, typeof(DateTimeOffset), s_defaultValue, StorageType.DateTimeOffset)
@@ -58,12 +58,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         int count = 0;
@@ -100,7 +100,7 @@ namespace System.Data.Common
             return DateTimeOffset.Compare(valueNo1, valueNo2);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -118,7 +118,7 @@ namespace System.Data.Common
             return DateTimeOffset.Compare(valueNo1, (DateTimeOffset)value);
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

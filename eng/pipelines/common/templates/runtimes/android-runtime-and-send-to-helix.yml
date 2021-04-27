@@ -1,0 +1,70 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  testGroup: ''
+  crossrootfsDir: ''
+  liveLibrariesBuildConfig: ''
+  helixQueues: ''
+  stagedBuild: false
+  displayNameArgs: ''
+  runtimeVariant: ''
+  variables: {}
+  pool: ''
+  runtimeFlavorDisplayName: 'Mono'
+  dependsOn: []
+  #arcade-specific parameters
+  condition: always()
+  continueOnError: false
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+  shouldContinueOnError: false
+  
+  
+steps:
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
+    displayName: Build Tests
+
+  #  Send tests to Helix
+  - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+    parameters:
+      displayName: Send tests to Helix
+      buildConfig: $(buildConfigUpper)
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup}}
+      coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
+      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        creator: $(Build.DefinitionName)
+
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+
+        helixType: 'test/functional/cli/'
+
+        helixQueues: ${{ parameters.helixQueues }}
+
+        # This tests whether an array is empty
+        ${{ if eq(join('', parameters.helixQueues), '') }}:
+          condition: false
+
+        publishTestResults: true
+
+        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          # Access token variable for internal project from the
+          # DotNet-HelixApi-Access variable group
+          helixAccessToken: $(HelixApiAccessToken)
+
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+
+        scenarios: normal 

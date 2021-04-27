@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Hosting.IntegrationTesting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Test;
@@ -97,11 +96,11 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                     }
                 };
 
-                await started.Task.TimeoutAfter(TimeSpan.FromSeconds(60));
+                await started.Task.WaitAsync(TimeSpan.FromSeconds(60));
 
                 SendShutdownSignal(deployer.HostProcess);
 
-                await completed.Task.TimeoutAfter(TimeSpan.FromSeconds(60));
+                await completed.Task.WaitAsync(TimeSpan.FromSeconds(60));
 
                 WaitForExitOrKill(deployer.HostProcess);
 

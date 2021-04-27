@@ -4,6 +4,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify TextRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -18,7 +19,7 @@ namespace System.Xml
     // Encoder class to output to any encoding.  The TextUtf8RawTextWriter class combined the encoding
     // operation with serialization in order to achieve better performance.
     // </summary>
-    internal class TextUtf8RawTextWriter : XmlUtf8RawTextWriter
+    internal sealed class TextUtf8RawTextWriter : XmlUtf8RawTextWriter
     {
         // Construct an instance of this class that serializes to a Stream interface.
         public TextUtf8RawTextWriter(Stream stream, XmlWriterSettings settings) : base(stream, settings)

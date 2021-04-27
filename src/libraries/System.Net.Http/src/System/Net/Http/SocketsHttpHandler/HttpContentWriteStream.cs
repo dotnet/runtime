@@ -8,15 +8,17 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed partial class HttpConnection : IDisposable
     {
         private abstract class HttpContentWriteStream : HttpContentStream
         {
+            public long BytesWritten { get; protected set; }
+
             public HttpContentWriteStream(HttpConnection connection) : base(connection) =>
                 Debug.Assert(connection != null);
 
             public sealed override bool CanRead => false;
-            public sealed override bool CanWrite => true;
+            public sealed override bool CanWrite => _connection != null;
 
             public sealed override void Flush() =>
                 _connection?.Flush();

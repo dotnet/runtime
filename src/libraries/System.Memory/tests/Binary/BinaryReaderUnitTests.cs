@@ -14,9 +14,15 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanRead()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
-            ulong value = 0x8877665544332211; // [11 22 33 44 55 66 77 88]
+            ulong value; // [11 22 33 44 55 66 77 88]
+            if (BitConverter.IsLittleEndian)
+            {
+                value = 0x8877665544332211;
+            }
+            else
+            {
+                value = 0x1122334455667788;
+            }
             Span<byte> span;
             unsafe
             {
@@ -79,6 +85,16 @@ namespace System.Buffers.Binary.Tests
             Assert.True(TryReadInt64LittleEndian(span, out longValue));
             Assert.Equal<long>(unchecked((long)0x8877665544332211), longValue);
 
+            Half expectedHalf = BitConverter.Int16BitsToHalf(0x1122);
+            Assert.Equal<Half>(expectedHalf, ReadHalfBigEndian(span));
+            Assert.True(TryReadHalfBigEndian(span, out Half halfValue));
+            Assert.Equal<Half>(expectedHalf, halfValue);
+
+            expectedHalf = BitConverter.Int16BitsToHalf(0x2211);
+            Assert.Equal<Half>(expectedHalf, ReadHalfLittleEndian(span));
+            Assert.True(TryReadHalfLittleEndian(span, out halfValue));
+            Assert.Equal<Half>(expectedHalf, halfValue);
+
             float expectedFloat = BitConverter.Int32BitsToSingle(0x11223344);
             Assert.Equal<float>(expectedFloat, ReadSingleBigEndian(span));
             Assert.True(TryReadSingleBigEndian(span, out float floatValue));
@@ -103,9 +119,15 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void ReadOnlySpanRead()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
-            ulong value = 0x8877665544332211; // [11 22 33 44 55 66 77 88]
+            ulong value; // [11 22 33 44 55 66 77 88]
+            if (BitConverter.IsLittleEndian)
+            {
+                value = 0x8877665544332211;
+            }
+            else
+            {
+                value = 0x1122334455667788;
+            }
             ReadOnlySpan<byte> span;
             unsafe
             {
@@ -168,6 +190,16 @@ namespace System.Buffers.Binary.Tests
             Assert.True(TryReadInt64LittleEndian(span, out longValue));
             Assert.Equal<long>(unchecked((long)0x8877665544332211), longValue);
 
+            Half expectedHalf = BitConverter.Int16BitsToHalf(0x1122);
+            Assert.Equal<Half>(expectedHalf, ReadHalfBigEndian(span));
+            Assert.True(TryReadHalfBigEndian(span, out Half halfValue));
+            Assert.Equal<Half>(expectedHalf, halfValue);
+
+            expectedHalf = BitConverter.Int16BitsToHalf(0x2211);
+            Assert.Equal<Half>(expectedHalf, ReadHalfLittleEndian(span));
+            Assert.True(TryReadHalfLittleEndian(span, out halfValue));
+            Assert.Equal<Half>(expectedHalf, halfValue);
+
             float expectedFloat = BitConverter.Int32BitsToSingle(0x11223344);
             Assert.Equal<float>(expectedFloat, ReadSingleBigEndian(span));
             Assert.True(TryReadSingleBigEndian(span, out float floatValue));
@@ -212,6 +244,8 @@ namespace System.Buffers.Binary.Tests
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<ulong>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out ulong ulongValue));
 
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<Half>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out Half halfValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<float>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out float floatValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<double>(_span));
@@ -245,6 +279,8 @@ namespace System.Buffers.Binary.Tests
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<ulong>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out ulong ulongValue));
 
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<Half>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out Half halfValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<float>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out float floatValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<double>(_span));
@@ -258,8 +294,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWriteAndReadBigEndianHeterogeneousStruct()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
             Span<byte> spanBE = new byte[Unsafe.SizeOf<TestStruct>()];
 
             WriteInt16BigEndian(spanBE, s_testStruct.S0);
@@ -278,6 +312,8 @@ namespace System.Buffers.Binary.Tests
             WriteUInt64BigEndian(spanBE.Slice(60), s_testStruct.UL1);
             WriteSingleBigEndian(spanBE.Slice(68), s_testStruct.F1);
             WriteDoubleBigEndian(spanBE.Slice(72), s_testStruct.D1);
+            WriteHalfBigEndian(spanBE.Slice(80), s_testStruct.H0);
+            WriteHalfBigEndian(spanBE.Slice(82), s_testStruct.H1);
 
             ReadOnlySpan<byte> readOnlySpanBE = new ReadOnlySpan<byte>(spanBE.ToArray());
 
@@ -298,7 +334,9 @@ namespace System.Buffers.Binary.Tests
                 UI1 = ReadUInt32BigEndian(spanBE.Slice(56)),
                 UL1 = ReadUInt64BigEndian(spanBE.Slice(60)),
                 F1 = ReadSingleBigEndian(spanBE.Slice(68)),
-                D1 = ReadDoubleBigEndian(spanBE.Slice(72))
+                D1 = ReadDoubleBigEndian(spanBE.Slice(72)),
+                H0 = ReadHalfBigEndian(spanBE.Slice(80)),
+                H1 = ReadHalfBigEndian(spanBE.Slice(82))
             };
 
             var readStructFromReadOnlySpan = new TestStruct
@@ -318,7 +356,9 @@ namespace System.Buffers.Binary.Tests
                 UI1 = ReadUInt32BigEndian(readOnlySpanBE.Slice(56)),
                 UL1 = ReadUInt64BigEndian(readOnlySpanBE.Slice(60)),
                 F1 = ReadSingleBigEndian(readOnlySpanBE.Slice(68)),
-                D1 = ReadDoubleBigEndian(readOnlySpanBE.Slice(72))
+                D1 = ReadDoubleBigEndian(readOnlySpanBE.Slice(72)),
+                H0 = ReadHalfBigEndian(readOnlySpanBE.Slice(80)),
+                H1 = ReadHalfBigEndian(readOnlySpanBE.Slice(82))
             };
 
             Assert.Equal(s_testStruct, readStruct);
@@ -328,8 +368,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWriteAndReadLittleEndianHeterogeneousStruct()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
             Span<byte> spanLE = new byte[Unsafe.SizeOf<TestStruct>()];
 
             WriteInt16LittleEndian(spanLE, s_testStruct.S0);
@@ -348,6 +386,8 @@ namespace System.Buffers.Binary.Tests
             WriteUInt64LittleEndian(spanLE.Slice(60), s_testStruct.UL1);
             WriteSingleLittleEndian(spanLE.Slice(68), s_testStruct.F1);
             WriteDoubleLittleEndian(spanLE.Slice(72), s_testStruct.D1);
+            WriteHalfLittleEndian(spanLE.Slice(80), s_testStruct.H0);
+            WriteHalfLittleEndian(spanLE.Slice(82), s_testStruct.H1);
 
             ReadOnlySpan<byte> readOnlySpanLE = new ReadOnlySpan<byte>(spanLE.ToArray());
 
@@ -368,7 +408,9 @@ namespace System.Buffers.Binary.Tests
                 UI1 = ReadUInt32LittleEndian(spanLE.Slice(56)),
                 UL1 = ReadUInt64LittleEndian(spanLE.Slice(60)),
                 F1 = ReadSingleLittleEndian(spanLE.Slice(68)),
-                D1 = ReadDoubleLittleEndian(spanLE.Slice(72))
+                D1 = ReadDoubleLittleEndian(spanLE.Slice(72)),
+                H0 = ReadHalfLittleEndian(spanLE.Slice(80)),
+                H1 = ReadHalfLittleEndian(spanLE.Slice(82))
             };
 
             var readStructFromReadOnlySpan = new TestStruct
@@ -388,7 +430,9 @@ namespace System.Buffers.Binary.Tests
                 UI1 = ReadUInt32LittleEndian(readOnlySpanLE.Slice(56)),
                 UL1 = ReadUInt64LittleEndian(readOnlySpanLE.Slice(60)),
                 F1 = ReadSingleLittleEndian(readOnlySpanLE.Slice(68)),
-                D1 = ReadDoubleLittleEndian(readOnlySpanLE.Slice(72))
+                D1 = ReadDoubleLittleEndian(readOnlySpanLE.Slice(72)),
+                H0 = ReadHalfLittleEndian(readOnlySpanLE.Slice(80)),
+                H1 = ReadHalfLittleEndian(readOnlySpanLE.Slice(82))
             };
 
             Assert.Equal(s_testStruct, readStruct);
@@ -398,7 +442,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void ReadingStructFieldByFieldOrReadAndReverseEndianness()
         {
-            Assert.True(BitConverter.IsLittleEndian);
             Span<byte> spanBE = new byte[Unsafe.SizeOf<TestHelpers.TestStructExplicit>()];
 
             var testExplicitStruct = new TestHelpers.TestStructExplicit
@@ -525,6 +568,8 @@ namespace System.Buffers.Binary.Tests
             UL1 = ulong.MinValue,
             F1 = float.MinValue,
             D1 = double.MinValue,
+            H0 = Half.MaxValue,
+            H1 = Half.MinValue,
         };
 
         [StructLayout(LayoutKind.Sequential)]
@@ -546,6 +591,8 @@ namespace System.Buffers.Binary.Tests
             public ulong UL1;
             public float F1;
             public double D1;
+            public Half H0;
+            public Half H1;
         }
     }
 }

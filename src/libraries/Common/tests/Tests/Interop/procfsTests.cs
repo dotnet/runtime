@@ -45,7 +45,7 @@ namespace Common.Tests
                 File.WriteAllText(path, statFileText);
 
                 Interop.procfs.ParsedStat result;
-                Assert.True(Interop.procfs.TryParseStatFile(path, out result, new ReusableTextReader()));
+                Assert.True(Interop.procfs.TryParseStatFile(path, out result));
 
                 Assert.Equal(expectedPid, result.pid);
                 Assert.Equal(expectedComm, result.comm);

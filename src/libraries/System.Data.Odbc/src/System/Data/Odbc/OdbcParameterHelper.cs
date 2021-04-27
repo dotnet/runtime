@@ -2,25 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Odbc
 {
     public sealed partial class OdbcParameter : DbParameter
     {
-        private object _value;
+        private object? _value;
 
-        private object _parent;
+        private object? _parent;
 
         private ParameterDirection _direction;
         private int _size;
         private int _offset;
-        private string _sourceColumn;
+        private string? _sourceColumn;
         private DataRowVersion _sourceVersion;
         private bool _sourceColumnNullMapping;
 
         private bool _isNullable;
 
-        private object _coercedValue;
+        private object? _coercedValue;
 
         private OdbcParameter(OdbcParameter source) : this() // V1.2.3300, Clone
         {
@@ -28,14 +29,13 @@ namespace System.Data.Odbc
 
             source.CloneHelper(this);
 
-            ICloneable cloneable = (_value as ICloneable);
-            if (null != cloneable)
+            if (_value is ICloneable cloneable)
             { // MDAC 49322
                 _value = cloneable.Clone();
             }
         }
 
-        private object CoercedValue
+        private object? CoercedValue
         {
             get
             {
@@ -134,11 +134,12 @@ namespace System.Data.Odbc
             return (0 != _size);
         }
 
+        [AllowNull]
         public override string SourceColumn
         {
             get
             {
-                string sourceColumn = _sourceColumn;
+                string? sourceColumn = _sourceColumn;
                 return ((null != sourceColumn) ? sourceColumn : string.Empty);
             }
             set
@@ -195,9 +196,9 @@ namespace System.Data.Odbc
             destination._isNullable = _isNullable;
         }
 
-        internal object CompareExchangeParent(object value, object comparand)
+        internal object? CompareExchangeParent(object? value, object? comparand)
         {
-            object parent = _parent;
+            object? parent = _parent;
             if (comparand == parent)
             {
                 _parent = value;
@@ -215,7 +216,7 @@ namespace System.Data.Odbc
             return ParameterName;
         }
 
-        private byte ValuePrecisionCore(object value)
+        private byte ValuePrecisionCore(object? value)
         {
             if (value is decimal)
             {
@@ -224,7 +225,7 @@ namespace System.Data.Odbc
             return 0;
         }
 
-        private byte ValueScaleCore(object value)
+        private byte ValueScaleCore(object? value)
         {
             if (value is decimal)
             {
@@ -233,29 +234,19 @@ namespace System.Data.Odbc
             return 0;
         }
 
-        private int ValueSizeCore(object value)
+        private int ValueSizeCore(object? value)
         {
             if (!ADP.IsNull(value))
             {
-                string svalue = (value as string);
-                if (null != svalue)
+                return value switch
                 {
-                    return svalue.Length;
-                }
-                byte[] bvalue = (value as byte[]);
-                if (null != bvalue)
-                {
-                    return bvalue.Length;
-                }
-                char[] cvalue = (value as char[]);
-                if (null != cvalue)
-                {
-                    return cvalue.Length;
-                }
-                if ((value is byte) || (value is char))
-                {
-                    return 1;
-                }
+                    string svalue => svalue.Length,
+                    byte[] bvalue => bvalue.Length,
+                    char[] cvalue => cvalue.Length,
+                    byte _ => 1,
+                    char _ => 1,
+                    _ => 0
+                };
             }
             return 0;
         }

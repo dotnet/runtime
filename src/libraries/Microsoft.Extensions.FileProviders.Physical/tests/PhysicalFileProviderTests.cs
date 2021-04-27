@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
@@ -17,6 +18,7 @@ namespace Microsoft.Extensions.FileProviders
     public class PhysicalFileProviderTests
     {
         private const int WaitTimeForTokenToFire = 500;
+        private const int WaitTimeForTokenCallback = 10000;
 
         [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForNullPath()
@@ -88,6 +90,54 @@ namespace Microsoft.Extensions.FileProviders
             GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(path);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void PollingFileProviderShouldntConsumeINotifyInstances()
+        {
+            List<IDisposable> disposables = new List<IDisposable>();
+            using (var root = new DisposableFileSystem())
+            {
+                string maxInstancesFile = "/proc/sys/fs/inotify/max_user_instances";
+                Assert.True(File.Exists(maxInstancesFile));
+                int maxInstances = int.Parse(File.ReadAllText(maxInstancesFile));
+
+                // choose an arbitrary number that exceeds max
+                int instances = maxInstances + 16;
+
+                AutoResetEvent are = new AutoResetEvent(false);
+
+                var oldPollingInterval = PhysicalFilesWatcher.DefaultPollingInterval;
+                try
+                {
+                    PhysicalFilesWatcher.DefaultPollingInterval = TimeSpan.FromMilliseconds(WaitTimeForTokenToFire);
+                    for (int i = 0; i < instances; i++)
+                    {
+                        PhysicalFileProvider pfp = new PhysicalFileProvider(root.RootPath)
+                        {
+                            UsePollingFileWatcher = true,
+                            UseActivePolling = true
+                        };
+                        disposables.Add(pfp);
+                        disposables.Add(pfp.Watch("*").RegisterChangeCallback(_ => are.Set(), null));
+                    }
+
+                    // trigger an event
+                    root.CreateFile("test.txt");
+
+                    // wait for at least one event.
+                    Assert.True(are.WaitOne(WaitTimeForTokenCallback));
+                }
+                finally
+                {
+                    PhysicalFilesWatcher.DefaultPollingInterval = oldPollingInterval;
+                    foreach (var disposable in disposables)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+            }
+        }
+            
         private void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(string path)
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
@@ -176,7 +226,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateReadStreamSucceedsOnEmptyFile()
         {
             using (var root = new DisposableFileSystem())
@@ -274,7 +324,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokenIsSameForSamePath()
         {
             using (var root = new DisposableFileSystem())
@@ -297,7 +347,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokensFiredOnFileChange()
         {
             using (var root = new DisposableFileSystem())
@@ -327,7 +377,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenCallbackInvokedOnFileChange()
         {
             using (var root = new DisposableFileSystem())
@@ -363,7 +413,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WatcherWithPolling_ReturnsTrueForFileChangedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
             using (var root = new DisposableFileSystem())
@@ -393,7 +443,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WatcherWithPolling_ReturnsTrueForFileRemovedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
             using (var root = new DisposableFileSystem())
@@ -425,7 +475,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokensFiredOnFileDeleted()
         {
             using (var root = new DisposableFileSystem())
@@ -736,7 +786,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task FileChangeTokenNotNotifiedAfterExpiry()
         {
             using (var root = new DisposableFileSystem())
@@ -768,7 +818,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokenIsSameForSamePathCaseInsensitive()
         {
             using (var root = new DisposableFileSystem())
@@ -784,7 +834,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CorrectTokensFiredForMultipleFiles()
         {
             using (var root = new DisposableFileSystem())
@@ -817,7 +867,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenNotAffectedByExceptions()
         {
             using (var root = new DisposableFileSystem())
@@ -875,7 +925,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokenForEmptyFilter()
         {
             using (var root = new DisposableFileSystem())
@@ -891,7 +941,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokenForWhitespaceFilters()
         {
             using (var root = new DisposableFileSystem())
@@ -924,7 +974,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenFiredOnCreation()
         {
             using (var root = new DisposableFileSystem())
@@ -949,7 +999,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenFiredOnDeletion()
         {
             using (var root = new DisposableFileSystem())
@@ -974,7 +1024,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenFiredForFilesUnderPathEndingWithSlash()
         {
             using (var root = new DisposableFileSystem())
@@ -1012,7 +1062,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("/")]
         [InlineData("///")]
         [InlineData("/\\/")]
@@ -1101,7 +1151,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenFiredForGlobbingPatternsPointingToSubDirectory()
         {
             using (var root = new DisposableFileSystem())
@@ -1134,7 +1184,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokensWithForwardAndBackwardSlashesAreSame()
         {
             using (var root = new DisposableFileSystem())
@@ -1150,7 +1200,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokensFiredForOldAndNewNamesOnRename()
         {
             using (var root = new DisposableFileSystem())
@@ -1179,7 +1229,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
             var tcsShouldNotFire = new TaskCompletionSource<object>();
@@ -1236,7 +1286,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, newDirectoryName, oldDirectoryName));
 
-                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).TimeoutAfter(TimeSpan.FromSeconds(30));
+                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).WaitAsync(TimeSpan.FromSeconds(30));
 
                 Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
                 Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
@@ -1252,7 +1302,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokenNotFiredForFileNameStartingWithPeriod()
         {
             using (var root = new DisposableFileSystem())
@@ -1277,7 +1327,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         // Hidden and system files only make sense on Windows.
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task TokensNotFiredForHiddenAndSystemFiles()
@@ -1319,7 +1369,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task TokensFiredForAllEntriesOnError()
         {
             using (var root = new DisposableFileSystem())
@@ -1347,7 +1397,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WildCardToken_RaisesEventsForNewFilesAdded()
         {
             // Arrange
@@ -1373,7 +1423,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WildCardToken_RaisesEventsWhenFileSystemWatcherDoesNotFire()
         {
             // Arrange
@@ -1478,6 +1528,31 @@ namespace Microsoft.Extensions.FileProviders
                 // Assert
                 Assert.True(fileWatcher.PollForChanges);
                 Assert.True(fileWatcher.UseActivePolling);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task CanDeleteWatchedDirectory(bool useActivePolling)
+        {
+            using (var root = new DisposableFileSystem())
+            using (var provider = new PhysicalFileProvider(root.RootPath))
+            {
+                var fileName = Path.GetRandomFileName();
+                PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
+
+                provider.UsePollingFileWatcher = true;  // We must use polling due to https://github.com/dotnet/runtime/issues/44484
+                provider.UseActivePolling = useActivePolling;
+
+                root.CreateFile(fileName);
+                var token = provider.Watch(fileName);
+                Directory.Delete(root.RootPath, true);
+
+                await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
+
+                Assert.True(token.HasChanged);
             }
         }
     }

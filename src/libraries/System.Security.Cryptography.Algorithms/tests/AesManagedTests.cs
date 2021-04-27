@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     /// <summary>
     /// Since AesManaged wraps Aes, we only test minimally here.
     /// </summary>
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class AesManagedTests
     {
         [Fact]

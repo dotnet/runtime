@@ -74,5 +74,30 @@ namespace System.Linq.Tests
             IEnumerable<int> expected = source.SkipLast(count);
             Assert.Equal(expected, source.SkipLast(count).RunOnce());
         }
+
+        [Fact]
+        public void List_ChangesAfterSkipLast_ChangesReflectedInResults()
+        {
+            var list = new List<int>() { 1, 2, 3, 4, 5 };
+
+            IEnumerable<int> e = list.SkipLast(2);
+
+            list.RemoveAt(4);
+            list.RemoveAt(3);
+
+            Assert.Equal(new[] { 1 }, e.ToArray());
+        }
+
+        [Fact]
+        public void List_Skip_ChangesAfterSkipLast_ChangesReflectedInResults()
+        {
+            var list = new List<int>() { 1, 2, 3, 4, 5 };
+
+            IEnumerable<int> e = list.Skip(1).SkipLast(2);
+
+            list.RemoveAt(4);
+
+            Assert.Equal(new[] { 2 }, e.ToArray());
+        }
     }
 }

@@ -14,7 +14,7 @@ namespace System.Data
 
         internal ExpressionNode _right;
 
-        internal UnaryNode(DataTable table, int op, ExpressionNode right) : base(table)
+        internal UnaryNode(DataTable? table, int op, ExpressionNode right) : base(table)
         {
             _op = op;
             _right = right;
@@ -31,7 +31,7 @@ namespace System.Data
             return Eval(null, DataRowVersion.Default);
         }
 
-        internal override object Eval(DataRow row, DataRowVersion version)
+        internal override object Eval(DataRow? row, DataRowVersion version)
         {
             return EvalUnaryOp(_op, _right.Eval(row, version));
         }
@@ -59,7 +59,7 @@ namespace System.Data
                     {
                         return vl;
                     }
-                    throw ExprException.TypeMismatch(ToString());
+                    throw ExprException.TypeMismatch(ToString()!);
 
                 case Operators.Negative:
                     // the have to be better way for doing this..
@@ -118,7 +118,7 @@ namespace System.Data
                         return value;
                     }
 
-                    throw ExprException.TypeMismatch(ToString());
+                    throw ExprException.TypeMismatch(ToString()!);
 
                 case Operators.Not:
                     if (vl is SqlBoolean)

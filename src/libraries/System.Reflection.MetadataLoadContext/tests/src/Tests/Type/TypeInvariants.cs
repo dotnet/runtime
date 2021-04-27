@@ -395,7 +395,7 @@ namespace System.Reflection.Tests
                 {
                     ICustomAttributeProvider icp = mem;
                     Assert.Throws<InvalidOperationException>(() => icp.IsDefined(null, inherit: false));
-                    Assert.Throws<InvalidOperationException>(() => icp.GetCustomAttributes(null, inherit: false)); ;
+                    Assert.Throws<InvalidOperationException>(() => icp.GetCustomAttributes(null, inherit: false));
                     Assert.Throws<InvalidOperationException>(() => icp.GetCustomAttributes(inherit: false));
 
                     if (mem is MethodBase mb)
@@ -603,7 +603,7 @@ namespace System.Reflection.Tests
             Assert.True(position >= 0);
             GenericParameterAttributes attributes = type.GenericParameterAttributes;
 
-            Assert.Equal<Type>(Array.Empty<Type>(), type.GetGenericArguments());
+            Assert.Equal<Type>(Type.EmptyTypes, type.GetGenericArguments());
 
             Assert.False(type.IsByRefLike());
 

@@ -17,7 +17,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 0;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is DecoderExceptionFallback;
 
         public override int GetHashCode() => 879;
@@ -41,7 +41,7 @@ namespace System.Text
         public override int Remaining => 0;
 
         [DoesNotReturn]
-        private void Throw(byte[] bytesUnknown, int index)
+        private static void Throw(byte[] bytesUnknown, int index)
         {
             bytesUnknown ??= Array.Empty<byte>();
 

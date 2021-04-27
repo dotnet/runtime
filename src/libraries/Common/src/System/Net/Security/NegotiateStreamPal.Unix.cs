@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -585,13 +584,13 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
+                Debug.Fail("Argument 'offset' out of range");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -603,13 +602,13 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
+                Debug.Fail("Argument 'offset' out of range");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 

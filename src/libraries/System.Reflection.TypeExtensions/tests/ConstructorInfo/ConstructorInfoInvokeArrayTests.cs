@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         public void Invoke_SZArrayConstructor()
         {
             Type type = Type.GetType("System.Object[]");
-            ConstructorInfo[] constructors = type.GetConstructors();
+            ConstructorInfo[] constructors = TypeExtensions.GetConstructors(type);
             Assert.Equal(1, constructors.Length);
 
             ConstructorInfo constructor = constructors[0];
@@ -36,11 +36,11 @@ namespace System.Reflection.Tests
         public void Invoke_1DArrayConstructor()
         {
             Type type = Type.GetType("System.Char[*]");
-            MethodInfo getLowerBound = type.GetMethod("GetLowerBound");
-            MethodInfo getUpperBound = type.GetMethod("GetUpperBound");
-            PropertyInfo getLength = type.GetProperty("Length");
+            MethodInfo getLowerBound = TypeExtensions.GetMethod(type, "GetLowerBound");
+            MethodInfo getUpperBound = TypeExtensions.GetMethod(type, "GetUpperBound");
+            PropertyInfo getLength = TypeExtensions.GetProperty(type, "Length");
 
-            ConstructorInfo[] constructors = type.GetConstructors();
+            ConstructorInfo[] constructors = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, constructors.Length);
 
             for (int i = 0; i < constructors.Length; i++)
@@ -103,7 +103,7 @@ namespace System.Reflection.Tests
         {
             Type type = Type.GetType("System.Int32[,]", false);
 
-            ConstructorInfo[] constructors = type.GetConstructors();
+            ConstructorInfo[] constructors = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, constructors.Length);
 
             for (int i = 0; i < constructors.Length; i++)
@@ -224,7 +224,7 @@ namespace System.Reflection.Tests
         public void Invoke_LargeDimensionalArrayConstructor()
         {
             Type type = Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]");
-            ConstructorInfo[] cia = type.GetConstructors();
+            ConstructorInfo[] cia = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, cia.Length);
             Assert.Throws<TypeLoadException>(() => Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]"));
         }
@@ -233,7 +233,7 @@ namespace System.Reflection.Tests
         public void Invoke_JaggedArrayConstructor()
         {
             Type type = Type.GetType("System.String[][]");
-            ConstructorInfo[] constructors = type.GetConstructors();
+            ConstructorInfo[] constructors = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, constructors.Length);
 
             for (int i = 0; i < constructors.Length; i++)

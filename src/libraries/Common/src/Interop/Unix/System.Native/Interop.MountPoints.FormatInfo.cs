@@ -173,29 +173,26 @@ internal static partial class Interop
             return GetFormatInfoForMountPoint(name, out _, out type);
         }
 
-        private static int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
+        private static unsafe int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
         {
-            unsafe
+            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
+            long numericFormat;
+            int result = GetFormatInfoForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
+            if (result == 0)
             {
-                byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
-                long numericFormat;
-                int result = GetFormatInfoForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
-                if (result == 0)
-                {
-                    // Check if we have a numeric answer or string
-                    format = numericFormat != -1 ?
-                        Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
-                        Marshal.PtrToStringAnsi((IntPtr)formatBuffer)!;
-                    type = GetDriveType(format);
-                }
-                else
-                {
-                    format = string.Empty;
-                    type = DriveType.Unknown;
-                }
-
-                return result;
+                // Check if we have a numeric answer or string
+                format = numericFormat != -1 ?
+                    Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
+                    Marshal.PtrToStringAnsi((IntPtr)formatBuffer)!;
+                type = GetDriveType(format);
             }
+            else
+            {
+                format = string.Empty;
+                type = DriveType.Unknown;
+            }
+
+            return result;
         }
 
         /// <summary>Categorizes a file system name into a drive type.</summary>

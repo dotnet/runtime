@@ -78,7 +78,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     SharedState.FrameworkReferenceApp,
                     new TestSettings()
                         .WithRuntimeConfigCustomizer(runtimeConfig)
-                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath),
+                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath)
+                        .WithEnvironment( // Redirect the default install location to an invalid location so that a machine-wide install is not used
+                            Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                            System.IO.Path.Combine(SharedState.DotNetMainHive.BinPath, "invalid")),
                     // Must enable multi-level lookup otherwise multiple hives are not enabled
                     multiLevelLookup: true);
             }

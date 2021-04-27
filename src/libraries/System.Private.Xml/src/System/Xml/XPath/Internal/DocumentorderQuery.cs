@@ -14,7 +14,7 @@ namespace MS.Internal.Xml.XPath
         {
             base.Evaluate(context);
 
-            XPathNavigator node;
+            XPathNavigator? node;
             while ((node = base.input.Advance()) != null)
             {
                 Insert(outputBuffer, node);
@@ -23,7 +23,7 @@ namespace MS.Internal.Xml.XPath
             return this;
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator context)
+        public override XPathNavigator? MatchNode(XPathNavigator? context)
         {
             return input.MatchNode(context);
         }

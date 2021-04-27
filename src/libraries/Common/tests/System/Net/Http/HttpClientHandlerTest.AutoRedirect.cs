@@ -44,8 +44,15 @@ namespace System.Net.Http.Functional.Tests
             foreach (int statusCode in new[] { 300, 301, 302, 303, 307, 308 })
             {
                 yield return new object[] { statusCode, "GET", "GET" };
-                yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
                 yield return new object[] { statusCode, "HEAD", "HEAD" };
+
+                yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
+
+                yield return new object[] { statusCode, "DELETE", statusCode == 303 ? "GET" : "DELETE" };
+                yield return new object[] { statusCode, "OPTIONS", statusCode == 303 ? "GET" : "OPTIONS" };
+                yield return new object[] { statusCode, "PATCH", statusCode == 303 ? "GET" : "PATCH" };
+                yield return new object[] { statusCode, "PUT", statusCode == 303 ? "GET" : "PUT" };
+                yield return new object[] { statusCode, "MYCUSTOMMETHOD", statusCode == 303 ? "GET" : "MYCUSTOMMETHOD" };
             }
         }
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }

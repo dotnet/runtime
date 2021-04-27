@@ -17,6 +17,13 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        public new abstract class X64 : Sse3.X64
+        {
+            internal X64() { }
+
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
+        }
+
         /// <summary>
         /// __m128i _mm_abs_epi8 (__m128i a)
         ///   PABSB xmm, xmm/m128

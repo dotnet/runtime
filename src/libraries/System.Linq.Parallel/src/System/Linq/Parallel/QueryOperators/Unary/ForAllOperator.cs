@@ -121,7 +121,7 @@ namespace System.Linq.Parallel
         // partition is walked, invoking the per-element action for each item.
         //
 
-        private class ForAllEnumerator<TKey> : QueryOperatorEnumerator<TInput, int>
+        private sealed class ForAllEnumerator<TKey> : QueryOperatorEnumerator<TInput, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The data source.
             private readonly Action<TInput> _elementAction; // Forall operator being executed.
@@ -155,13 +155,13 @@ namespace System.Linq.Parallel
 
                 // Cancellation testing must be performed here as full enumeration occurs within this method.
                 // We only need to throw a simple exception here.. marshalling logic handled via QueryTaskGroupState.QueryEnd (called by ForAllSpoolingTask)
-                TInput element = default(TInput)!;
-                TKey keyUnused = default(TKey)!;
+                TInput? element = default(TInput);
+                TKey? keyUnused = default(TKey);
                 int i = 0;
                 while (_source.MoveNext(ref element, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
                     _elementAction(element);
                 }
 

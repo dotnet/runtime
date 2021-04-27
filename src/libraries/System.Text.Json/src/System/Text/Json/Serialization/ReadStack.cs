@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{JsonPath()} Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
+    [DebuggerDisplay("Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
     internal struct ReadStack
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
@@ -81,13 +82,21 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
-            Current.JsonClassInfo = jsonClassInfo;
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            Initialize(jsonTypeInfo, supportContinuation);
+        }
+
+        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
+        {
+            Current.JsonTypeInfo = jsonTypeInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
 
-            bool preserveReferences = options.ReferenceHandler != null;
+            Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
+
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
             if (preserveReferences)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
@@ -108,33 +117,39 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonClassInfo jsonClassInfo;
-                    if (Current.JsonClassInfo.ClassType == ClassType.Object)
+                    JsonTypeInfo jsonTypeInfo;
+                    JsonNumberHandling? numberHandling = Current.NumberHandling;
+                    ConverterStrategy converterStrategy = Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
+
+                    if (converterStrategy == ConverterStrategy.Object)
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
-                            jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                            jsonTypeInfo = Current.JsonPropertyInfo.RuntimeTypeInfo;
                         }
                         else
                         {
-                            jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
+                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
                         }
                     }
-                    else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
+                    else if (converterStrategy == ConverterStrategy.Value)
                     {
-                        // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
+                        // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
+                        jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
                     }
                     else
                     {
-                        jsonClassInfo = Current.JsonClassInfo.ElementClassInfo!;
+                        Debug.Assert(((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & converterStrategy) != 0);
+                        jsonTypeInfo = Current.JsonTypeInfo.ElementTypeInfo!;
                     }
 
                     AddCurrent();
                     Current.Reset();
 
-                    Current.JsonClassInfo = jsonClassInfo;
-                    Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    Current.JsonTypeInfo = jsonTypeInfo;
+                    Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+                    // Allow number handling on property to win over handling on type.
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
                 }
             }
             else if (_continuationCount == 1)
@@ -159,7 +174,7 @@ namespace System.Text.Json
                 }
             }
 
-            SetConstrutorArgumentState();
+            SetConstructorArgumentState();
         }
 
         public void Pop(bool success)
@@ -210,7 +225,7 @@ namespace System.Text.Json
                 Current = _previous[--_count -1];
             }
 
-            SetConstrutorArgumentState();
+            SetConstructorArgumentState();
         }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -241,7 +256,7 @@ namespace System.Text.Json
                 string? propertyName = GetPropertyName(frame);
                 AppendPropertyName(sb, propertyName);
 
-                if (frame.JsonClassInfo != null && frame.IsProcessingEnumerable())
+                if (frame.JsonTypeInfo != null && frame.IsProcessingEnumerable())
                 {
                     IEnumerable? enumerable = (IEnumerable?)frame.ReturnValue;
                     if (enumerable == null)
@@ -328,9 +343,9 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetConstrutorArgumentState()
+        private void SetConstructorArgumentState()
         {
-            if (Current.JsonClassInfo.ParameterCount > 0)
+            if (Current.JsonTypeInfo.ParameterCount > 0)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)

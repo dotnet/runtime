@@ -5,9 +5,11 @@ using System.Collections.Specialized;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
+using System.Runtime.Versioning;
 
 namespace System.Configuration
 {
+    [SupportedOSPlatform("windows")]
     public sealed class DpapiProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
         private bool _useMachineProtection = true;

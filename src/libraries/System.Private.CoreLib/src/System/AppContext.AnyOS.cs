@@ -11,7 +11,13 @@ namespace System
         private static string GetBaseDirectoryCore()
         {
             // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
-            string? directory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+#if CORERT
+            string? path = Environment.ProcessPath;
+#else
+            string? path = Assembly.GetEntryAssembly()?.Location;
+#endif
+
+            string? directory = Path.GetDirectoryName(path);
 
             if (directory == null)
                 return string.Empty;

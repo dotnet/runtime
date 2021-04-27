@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeRsaHandle : SafeHandle
     {
-        private SafeRsaHandle() :
+        public SafeRsaHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

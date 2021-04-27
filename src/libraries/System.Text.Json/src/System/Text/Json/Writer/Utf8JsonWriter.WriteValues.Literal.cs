@@ -46,7 +46,11 @@ namespace System.Text.Json
 
         private void WriteLiteralByOptions(ReadOnlySpan<byte> utf8Value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteLiteralIndented(utf8Value);

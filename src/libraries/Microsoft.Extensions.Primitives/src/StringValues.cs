@@ -5,8 +5,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.Internal;
+using System.Text;
 
 namespace Microsoft.Extensions.Primitives
 {
@@ -219,7 +220,7 @@ namespace Microsoft.Extensions.Primitives
                         length += value.Length;
                     }
                 }
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
                     int offset = 0;
@@ -242,9 +243,7 @@ namespace Microsoft.Extensions.Primitives
                     }
                 });
 #else
-#pragma warning disable CS0618
-                var sb = new InplaceStringBuilder(length);
-#pragma warning restore CS0618
+                var sb = new ValueStringBuilder(length);
                 bool hasAdded = false;
                 // Skip null and empty values
                 for (int i = 0; i < values.Length; i++)
@@ -420,7 +419,7 @@ namespace Microsoft.Extensions.Primitives
         /// Indicates whether the specified <see cref="StringValues"/> contains no string values.
         /// </summary>
         /// <param name="value">The <see cref="StringValues"/> to test.</param>
-        /// <returns>true if <paramref name="value">value</paramref> contains a single null string or empty array; otherwise, false.</returns>
+        /// <returns>true if <paramref name="value">value</paramref> contains a single null or empty string or an empty array; otherwise, false.</returns>
         public static bool IsNullOrEmpty(StringValues value)
         {
             object data = value._values;
@@ -741,12 +740,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
                 }
-                var hcc = default(HashCodeCombiner);
+                int hashCode = 0;
                 for (int i = 0; i < values.Length; i++)
                 {
-                    hcc.Add(values[i]);
+                    hashCode = HashHelpers.Combine(hashCode, values[i]?.GetHashCode() ?? 0);
                 }
-                return hcc.CombinedHash;
+                return hashCode;
             }
             else
             {

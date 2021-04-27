@@ -217,6 +217,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Block(ref uint rp0, ref uint rp1)
         {
+            // Intrinsified in mono interpreter
             uint p0 = rp0;
             uint p1 = rp1;
 

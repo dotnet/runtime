@@ -64,7 +64,7 @@ namespace System.Web.Util
             HtmlAttributeEncodeInternal(value, output);
         }
 
-        private static unsafe void HtmlAttributeEncodeInternal(string s, TextWriter output)
+        private static void HtmlAttributeEncodeInternal(string s, TextWriter output)
         {
             int index = IndexOfHtmlAttributeEncodingChars(s, 0);
             if (index == -1)
@@ -73,43 +73,36 @@ namespace System.Web.Util
             }
             else
             {
-                int cch = s.Length - index;
-                fixed (char* str = s)
-                {
-                    char* pch = str;
-                    while (index-- > 0)
-                    {
-                        output.Write(*pch++);
-                    }
+                output.Write(s.AsSpan(0, index));
 
-                    while (cch-- > 0)
+                ReadOnlySpan<char> remaining = s.AsSpan(index);
+                for (int i = 0; i < remaining.Length; i++)
+                {
+                    char ch = remaining[i];
+                    if (ch <= '<')
                     {
-                        char ch = *pch++;
-                        if (ch <= '<')
+                        switch (ch)
                         {
-                            switch (ch)
-                            {
-                                case '<':
-                                    output.Write("&lt;");
-                                    break;
-                                case '"':
-                                    output.Write("&quot;");
-                                    break;
-                                case '\'':
-                                    output.Write("&#39;");
-                                    break;
-                                case '&':
-                                    output.Write("&amp;");
-                                    break;
-                                default:
-                                    output.Write(ch);
-                                    break;
-                            }
+                            case '<':
+                                output.Write("&lt;");
+                                break;
+                            case '"':
+                                output.Write("&quot;");
+                                break;
+                            case '\'':
+                                output.Write("&#39;");
+                                break;
+                            case '&':
+                                output.Write("&amp;");
+                                break;
+                            default:
+                                output.Write(ch);
+                                break;
                         }
-                        else
-                        {
-                            output.Write(ch);
-                        }
+                    }
+                    else
+                    {
+                        output.Write(ch);
                     }
                 }
             }
@@ -141,25 +134,23 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlEncode(value));
         }
 
-        private static unsafe int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
+        private static int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
         {
             Debug.Assert(0 <= startPos && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
-            int cch = s.Length - startPos;
-            fixed (char* str = s)
+
+            ReadOnlySpan<char> span = s.AsSpan(startPos);
+            for (int i = 0; i < span.Length; i++)
             {
-                for (char* pch = &str[startPos]; cch > 0; pch++, cch--)
+                char ch = span[i];
+                if (ch <= '<')
                 {
-                    char ch = *pch;
-                    if (ch <= '<')
+                    switch (ch)
                     {
-                        switch (ch)
-                        {
-                            case '<':
-                            case '"':
-                            case '\'':
-                            case '&':
-                                return s.Length - cch;
-                        }
+                        case '<':
+                        case '"':
+                        case '\'':
+                        case '&':
+                            return startPos + i;
                     }
                 }
             }
@@ -269,10 +260,10 @@ namespace System.Web.Util
                 }
                 else if (b == '%' && i < count - 2)
                 {
-                    int h1 = HttpEncoderUtility.HexToInt((char)bytes[pos + 1]);
-                    int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
+                    int h1 = HexConverter.FromChar(bytes[pos + 1]);
+                    int h2 = HexConverter.FromChar(bytes[pos + 2]);
 
-                    if (h1 >= 0 && h2 >= 0)
+                    if ((h1 | h2) != 0xFF)
                     {
                         // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
@@ -322,12 +313,12 @@ namespace System.Web.Util
                 {
                     if (bytes[pos + 1] == 'u' && i < count - 5)
                     {
-                        int h1 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
-                        int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 3]);
-                        int h3 = HttpEncoderUtility.HexToInt((char)bytes[pos + 4]);
-                        int h4 = HttpEncoderUtility.HexToInt((char)bytes[pos + 5]);
+                        int h1 = HexConverter.FromChar(bytes[pos + 2]);
+                        int h2 = HexConverter.FromChar(bytes[pos + 3]);
+                        int h3 = HexConverter.FromChar(bytes[pos + 4]);
+                        int h4 = HexConverter.FromChar(bytes[pos + 5]);
 
-                        if (h1 >= 0 && h2 >= 0 && h3 >= 0 && h4 >= 0)
+                        if ((h1 | h2 | h3 | h4) != 0xFF)
                         {   // valid 4 hex chars
                             char ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                             i += 5;
@@ -339,10 +330,10 @@ namespace System.Web.Util
                     }
                     else
                     {
-                        int h1 = HttpEncoderUtility.HexToInt((char)bytes[pos + 1]);
-                        int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
+                        int h1 = HexConverter.FromChar(bytes[pos + 1]);
+                        int h2 = HexConverter.FromChar(bytes[pos + 2]);
 
-                        if (h1 >= 0 && h2 >= 0)
+                        if ((h1 | h2) != 0xFF)
                         {     // valid 2 hex chars
                             b = (byte)((h1 << 4) | h2);
                             i += 2;
@@ -383,12 +374,12 @@ namespace System.Web.Util
                 {
                     if (value[pos + 1] == 'u' && pos < count - 5)
                     {
-                        int h1 = HttpEncoderUtility.HexToInt(value[pos + 2]);
-                        int h2 = HttpEncoderUtility.HexToInt(value[pos + 3]);
-                        int h3 = HttpEncoderUtility.HexToInt(value[pos + 4]);
-                        int h4 = HttpEncoderUtility.HexToInt(value[pos + 5]);
+                        int h1 = HexConverter.FromChar(value[pos + 2]);
+                        int h2 = HexConverter.FromChar(value[pos + 3]);
+                        int h3 = HexConverter.FromChar(value[pos + 4]);
+                        int h4 = HexConverter.FromChar(value[pos + 5]);
 
-                        if (h1 >= 0 && h2 >= 0 && h3 >= 0 && h4 >= 0)
+                        if ((h1 | h2 | h3 | h4) != 0xFF)
                         {   // valid 4 hex chars
                             ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                             pos += 5;
@@ -400,10 +391,10 @@ namespace System.Web.Util
                     }
                     else
                     {
-                        int h1 = HttpEncoderUtility.HexToInt(value[pos + 1]);
-                        int h2 = HttpEncoderUtility.HexToInt(value[pos + 2]);
+                        int h1 = HexConverter.FromChar(value[pos + 1]);
+                        int h2 = HexConverter.FromChar(value[pos + 2]);
 
-                        if (h1 >= 0 && h2 >= 0)
+                        if ((h1 | h2) != 0xFF)
                         {     // valid 2 hex chars
                             byte b = (byte)((h1 << 4) | h2);
                             pos += 2;
@@ -674,7 +665,7 @@ namespace System.Web.Util
         }
 
         // Internal class to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
-        private class UrlDecoder
+        private sealed class UrlDecoder
         {
             private readonly int _bufferSize;
 

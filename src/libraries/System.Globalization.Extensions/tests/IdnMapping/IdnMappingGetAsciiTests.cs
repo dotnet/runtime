@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -92,8 +91,8 @@ namespace System.Globalization.Tests
             if (ex == null)
             {
                 // Windows and OSX always throw exception. some versions of Linux succeed and others throw exception
-                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                Assert.False(OperatingSystem.IsWindows());
+                Assert.False(OperatingSystem.IsMacOS());
                 Assert.Equal(".", result);
             }
             else
@@ -122,9 +121,9 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 3, 9, typeof(ArgumentException) };
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 11, 10, typeof(ArgumentException) };
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))  // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
+            if (!OperatingSystem.IsWindows())  // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     yield return new object[] { ".", 0, 1, typeof(ArgumentException) };
                 }

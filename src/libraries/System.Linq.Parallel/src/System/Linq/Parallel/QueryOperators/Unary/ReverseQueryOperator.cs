@@ -101,7 +101,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the reverse operation.
         //
 
-        private class ReverseQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, TKey>
+        private sealed class ReverseQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, TKey>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to reverse.
             private readonly CancellationToken _cancellationToken;
@@ -124,7 +124,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, [AllowNull] ref TKey currentKey)
             {
                 // If the buffer has not been created, we will generate it lazily on demand.
                 if (_buffer == null)
@@ -138,7 +138,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref current!, ref key))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         _buffer.Add(new Pair<TSource, TKey>(current, key));
                         _bufferIndex.Value++;
@@ -168,7 +168,7 @@ namespace System.Linq.Parallel
         // results were indexable.
         //
 
-        private class ReverseQueryOperatorResults : UnaryQueryOperatorResults
+        private sealed class ReverseQueryOperatorResults : UnaryQueryOperatorResults
         {
             private readonly int _count; // The number of elements in child results
 

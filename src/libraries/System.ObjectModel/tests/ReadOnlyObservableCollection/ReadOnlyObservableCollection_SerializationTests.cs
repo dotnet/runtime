@@ -17,7 +17,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { new ReadOnlyObservableCollection<int>(new ObservableCollection<int>() { 1, 2, 3 }) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
         public void SerializeDeserialize_Roundtrips(ReadOnlyObservableCollection<int> c)
         {

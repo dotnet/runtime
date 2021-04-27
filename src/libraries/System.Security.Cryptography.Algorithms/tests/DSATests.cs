@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class DSATests
     {
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;

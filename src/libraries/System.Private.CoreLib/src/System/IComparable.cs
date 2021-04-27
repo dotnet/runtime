@@ -33,6 +33,6 @@ namespace System
         // if this is equal to object, or a value greater than zero
         // if this is greater than object.
         //
-        int CompareTo([AllowNull] T other);
+        int CompareTo(T? other);
     }
 }

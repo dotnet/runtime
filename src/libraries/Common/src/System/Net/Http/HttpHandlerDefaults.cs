@@ -9,7 +9,7 @@ namespace System.Net.Http
     /// Central repository for default values used in http handler settings.  Not all settings are relevant
     /// to or configurable by all handlers.
     /// </summary>
-    internal static class HttpHandlerDefaults
+    internal static partial class HttpHandlerDefaults
     {
         public const int DefaultMaxAutomaticRedirections = 50;
         public const int DefaultMaxConnectionsPerServer = int.MaxValue;

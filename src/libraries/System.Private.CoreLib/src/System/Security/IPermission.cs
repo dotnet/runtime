@@ -3,6 +3,7 @@
 
 namespace System.Security
 {
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public partial interface IPermission : ISecurityEncodable
     {
         IPermission Copy();

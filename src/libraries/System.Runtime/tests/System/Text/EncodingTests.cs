@@ -10,9 +10,9 @@ namespace System.Text.Tests
 {
     public class EncodingTests
     {
-#pragma warning disable MSLIB0001 // UTF7Encoding is obsolete
+#pragma warning disable SYSLIB0001 // UTF7Encoding is obsolete
         private static UTF7Encoding _utf7Encoding = new UTF7Encoding();
-#pragma warning restore MSLIB0001
+#pragma warning restore SYSLIB0001
 
         public static IEnumerable<object[]> DisallowedEncodings()
         {
@@ -29,7 +29,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(codePage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
         public void GetEncoding_FromProvider_ByCodePage_WithDisallowedEncoding_Throws(string encodingName, int codePage)
@@ -59,7 +59,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(encodingName, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncoding_FromProvider_ByEncodingName_WithDisallowedEncoding_Throws(string encodingName, int codePage)
         {
@@ -88,7 +88,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncodings_FromProvider_DoesNotContainDisallowedEncodings(string encodingName, int codePage)
         {

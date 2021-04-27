@@ -11,11 +11,8 @@
 #if defined(HOST_WIN32)
 #include <winsock2.h>
 #include <windows.h>
-#include "mono/metadata/icall-windows-internals.h"
-#include "mono/metadata/w32subset.h"
-#if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
-#include <shlobj.h>
-#endif
+#include <mono/metadata/icall-internals.h>
+#include <mono/utils/w32subset.h>
 
 void
 mono_icall_make_platform_path (gchar *path)
@@ -45,15 +42,6 @@ mono_icall_module_get_hinstance (MonoImage *image)
 }
 
 #if HAVE_API_SUPPORT_WIN32_GET_COMPUTER_NAME
-// Support older UWP SDK?
-WINBASEAPI
-BOOL
-WINAPI
-GetComputerNameW (
-	PWSTR buffer,
-	PDWORD size
-	);
-
 MonoStringHandle
 mono_icall_get_machine_name (MonoError *error)
 {
@@ -61,8 +49,15 @@ mono_icall_get_machine_name (MonoError *error)
 	DWORD len = G_N_ELEMENTS (buf);
 
 	if (GetComputerNameW (buf, &len))
-		return mono_string_new_utf16_handle (mono_domain_get (), buf, len, error);
+		return mono_string_new_utf16_handle (buf, len, error);
 	return MONO_HANDLE_NEW (MonoString, NULL);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_COMPUTER_NAME
+MonoStringHandle
+mono_icall_get_machine_name (MonoError *error)
+{
+	g_unsupported_api ("GetComputerName");
+	return mono_string_new_handle ("mono", error);
 }
 #endif
 
@@ -76,7 +71,7 @@ mono_icall_get_platform (void)
 MonoStringHandle
 mono_icall_get_new_line (MonoError *error)
 {
-	return mono_string_new_handle (mono_domain_get (), "\r\n", error);
+	return mono_string_new_handle ("\r\n", error);
 }
 
 MonoBoolean
@@ -97,7 +92,6 @@ MonoArrayHandle
 mono_icall_get_environment_variable_names (MonoError *error)
 {
 	MonoArrayHandle names;
-	MonoDomain *domain;
 	MonoStringHandle str;
 	WCHAR* env_strings;
 	WCHAR* env_string;
@@ -118,8 +112,7 @@ mono_icall_get_environment_variable_names (MonoError *error)
 		}
 	}
 
-	domain = mono_domain_get ();
-	names = mono_array_new_handle (domain, mono_defaults.string_class, n, error);
+	names = mono_array_new_handle (mono_defaults.string_class, n, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	if (env_strings) {
@@ -131,7 +124,7 @@ mono_icall_get_environment_variable_names (MonoError *error)
 			if (*env_string != '=') {
 				equal_str = wcschr(env_string, '=');
 				g_assert(equal_str);
-				MonoString *s = mono_string_new_utf16_checked (domain, env_string, (gint32)(equal_str - env_string), error);
+				MonoString *s = mono_string_new_utf16_checked (env_string, (gint32)(equal_str - env_string), error);
 				goto_if_nok (error, cleanup);
 				MONO_HANDLE_ASSIGN_RAW (str, s);
 
@@ -154,6 +147,7 @@ cleanup:
 }
 
 #if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
+#include <shlobj.h>
 MonoStringHandle
 mono_icall_get_windows_folder_path (int folder, MonoError *error)
 {
@@ -168,9 +162,17 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 		int len = 0;
 		while (path [len])
 			++ len;
-		return mono_string_new_utf16_handle (mono_domain_get (), path, len, error);
+		return mono_string_new_utf16_handle (path, len, error);
 	}
-	return mono_string_new_handle (mono_domain_get (), "", error);
+	return mono_string_new_handle ("", error);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_SH_GET_FOLDER_PATH
+MonoStringHandle
+mono_icall_get_windows_folder_path (int folder, MonoError *error)
+{
+	error_init (error);
+	g_unsupported_api ("SHGetFolderPath");
+	return mono_string_new_handle ("", error);
 }
 #endif
 
@@ -178,7 +180,15 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 ICALL_EXPORT void
 ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 {
-	SendMessageTimeout (HWND_BROADCAST, WM_SETTINGCHANGE, (WPARAM)NULL, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 2000, 0);
+	SendMessageTimeoutW (HWND_BROADCAST, WM_SETTINGCHANGE, (WPARAM)NULL, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 2000, 0);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_SEND_MESSAGE_TIMEOUT
+ICALL_EXPORT void
+ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
+{
+	g_unsupported_api ("SendMessageTimeout");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SendMessageTimeout");
+	SetLastError (ERROR_NOT_SUPPORTED);
 }
 #endif
 
@@ -187,6 +197,16 @@ gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
 {
 	return WaitForInputIdle (handle, milliseconds);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_WAIT_FOR_INPUT_IDLE
+gint32
+mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("WaitForInputIdle");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "WaitForInputIdle");
+	mono_error_set_pending_exception (error);
+	return WAIT_TIMEOUT;
 }
 #endif
 

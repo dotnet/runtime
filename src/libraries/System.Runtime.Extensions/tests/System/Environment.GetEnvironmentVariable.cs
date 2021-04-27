@@ -25,7 +25,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.GetEnvironmentVariable("test", (EnvironmentVariableTarget)42));
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.SetEnvironmentVariable("test", "test", (EnvironmentVariableTarget)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.GetEnvironmentVariables((EnvironmentVariableTarget)(3)));
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && System.Tests.SetEnvironmentVariable.IsSupportedTarget(EnvironmentVariableTarget.User))
+            if (OperatingSystem.IsWindows() && System.Tests.SetEnvironmentVariable.IsSupportedTarget(EnvironmentVariableTarget.User))
             {
                 AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
@@ -84,7 +84,7 @@ namespace System.Tests
 
                 Assert.Equal(value, Environment.GetEnvironmentVariable("ThisIsATestEnvironmentVariable"));
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     value = null;
                 }
@@ -102,9 +102,8 @@ namespace System.Tests
         [Fact]
         public void CanGetAllVariablesIndividually()
         {
-            Random r = new Random();
-            string envVar1 = "TestVariable_CanGetVariablesIndividually_" + r.Next().ToString();
-            string envVar2 = "TestVariable_CanGetVariablesIndividually_" + r.Next().ToString();
+            string envVar1 = "TestVariable_CanGetVariablesIndividually_" + Random.Shared.Next().ToString();
+            string envVar2 = "TestVariable_CanGetVariablesIndividually_" + Random.Shared.Next().ToString();
 
             try
             {

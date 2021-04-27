@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -8,16 +10,18 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonCollectionDataContract : JsonDataContract
+    internal sealed class JsonCollectionDataContract : JsonDataContract
     {
         private readonly JsonCollectionDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonCollectionDataContract(CollectionDataContract traditionalDataContract)
             : base(new JsonCollectionDataContractCriticalHelper(traditionalDataContract))
         {
-            _helper = base.Helper as JsonCollectionDataContractCriticalHelper;
+            _helper = (base.Helper as JsonCollectionDataContractCriticalHelper)!;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private JsonFormatCollectionReaderDelegate CreateJsonFormatReaderDelegate()
         {
             return new ReflectionJsonCollectionReader().ReflectionReadCollection;
@@ -25,6 +29,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatCollectionReaderDelegate JsonFormatReaderDelegate
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -52,6 +57,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private JsonFormatGetOnlyCollectionReaderDelegate CreateJsonFormatGetOnlyReaderDelegate()
         {
             return new ReflectionJsonCollectionReader().ReflectionReadGetOnlyCollection;
@@ -59,6 +65,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatGetOnlyCollectionReaderDelegate JsonFormatGetOnlyReaderDelegate
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatGetOnlyReaderDelegate == null)
@@ -92,6 +99,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private JsonFormatCollectionWriterDelegate CreateJsonFormatWriterDelegate()
         {
             return new ReflectionJsonFormatWriter().ReflectionWriteCollection;
@@ -100,6 +108,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatCollectionWriterDelegate JsonFormatWriterDelegate
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -129,10 +138,13 @@ namespace System.Runtime.Serialization.Json
 
         private CollectionDataContract TraditionalCollectionDataContract => _helper.TraditionalCollectionDataContract;
 
-        public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
+            Debug.Assert(context != null);
+
             jsonReader.Read();
-            object o = null;
+            object? o = null;
             if (context.IsGetOnlyCollection)
             {
                 // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset.
@@ -147,39 +159,42 @@ namespace System.Runtime.Serialization.Json
             return o;
         }
 
-        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
+            Debug.Assert(context != null);
             // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset.
             context.IsGetOnlyCollection = false;
             JsonFormatWriterDelegate(jsonWriter, obj, context, TraditionalCollectionDataContract);
         }
 
-        private class JsonCollectionDataContractCriticalHelper : JsonDataContractCriticalHelper
+        private sealed class JsonCollectionDataContractCriticalHelper : JsonDataContractCriticalHelper
         {
-            private JsonFormatCollectionReaderDelegate _jsonFormatReaderDelegate;
-            private JsonFormatGetOnlyCollectionReaderDelegate _jsonFormatGetOnlyReaderDelegate;
-            private JsonFormatCollectionWriterDelegate _jsonFormatWriterDelegate;
+            private JsonFormatCollectionReaderDelegate? _jsonFormatReaderDelegate;
+            private JsonFormatGetOnlyCollectionReaderDelegate? _jsonFormatGetOnlyReaderDelegate;
+            private JsonFormatCollectionWriterDelegate? _jsonFormatWriterDelegate;
             private readonly CollectionDataContract _traditionalCollectionDataContract;
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonCollectionDataContractCriticalHelper(CollectionDataContract traditionalDataContract)
                 : base(traditionalDataContract)
             {
                 _traditionalCollectionDataContract = traditionalDataContract;
             }
 
-            internal JsonFormatCollectionReaderDelegate JsonFormatReaderDelegate
+            internal JsonFormatCollectionReaderDelegate? JsonFormatReaderDelegate
             {
                 get { return _jsonFormatReaderDelegate; }
                 set { _jsonFormatReaderDelegate = value; }
             }
 
-            internal JsonFormatGetOnlyCollectionReaderDelegate JsonFormatGetOnlyReaderDelegate
+            internal JsonFormatGetOnlyCollectionReaderDelegate? JsonFormatGetOnlyReaderDelegate
             {
                 get { return _jsonFormatGetOnlyReaderDelegate; }
                 set { _jsonFormatGetOnlyReaderDelegate = value; }
             }
 
-            internal JsonFormatCollectionWriterDelegate JsonFormatWriterDelegate
+            internal JsonFormatCollectionWriterDelegate? JsonFormatWriterDelegate
             {
                 get { return _jsonFormatWriterDelegate; }
                 set { _jsonFormatWriterDelegate = value; }

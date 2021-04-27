@@ -1,5 +1,6 @@
 <Project TreatAsLocalProperty="ExcludeRestorePackageImports">
   <PropertyGroup>
+    <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
     <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>

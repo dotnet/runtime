@@ -12,4 +12,4 @@
  * have to end with a func_flag_end_of_array (0x01) entry.
  **/
 
-FCClassElement("Globalization", "", gPalGlobalizationNative)
+FCClassElement("", "", NULL)

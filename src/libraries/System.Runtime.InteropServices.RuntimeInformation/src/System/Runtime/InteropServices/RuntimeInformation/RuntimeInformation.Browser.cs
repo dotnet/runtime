@@ -5,8 +5,6 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        public static bool IsOSPlatform(OSPlatform osPlatform) => osPlatform.Equals(OSPlatform.Browser);
-
         public static string OSDescription => "Browser";
 
         public static Architecture OSArchitecture => Architecture.Wasm;

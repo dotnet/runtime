@@ -72,8 +72,6 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Render_ParameterlessWithNullTargetGraphics_Success()
         {
-            Color color = Color.FromArgb(255, 0, 0, 0);
-
             using (var context = new BufferedGraphicsContext())
             using (var image = new Bitmap(3, 3))
             using (Graphics graphics = Graphics.FromImage(image))

@@ -740,9 +740,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 </TypeWithByteProperty>");
             writer.Flush();
             stream.Position = 0;
-            Assert.Throws<InvalidOperationException>(() => {
-                var deserializedObj = (TypeWithByteProperty)serializer.Deserialize(stream);
-            });
+            Assert.Throws<InvalidOperationException>(() => (TypeWithByteProperty)serializer.Deserialize(stream));
         }
     }
 
@@ -817,7 +815,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_SimpleType()
     {
-        var serializer = new XmlSerializer(typeof(SimpleType));
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         var deserializedObj = SerializeAndDeserialize(obj,
 @"<?xml version=""1.0"" encoding=""utf-16""?>

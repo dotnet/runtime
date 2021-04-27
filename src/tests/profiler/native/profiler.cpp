@@ -3,6 +3,9 @@
 
 #include "profiler.h"
 
+std::atomic<bool> ShutdownGuard::s_preventHooks;
+std::atomic<int> ShutdownGuard::s_hooksInProgress;
+
 Profiler::Profiler() : refCount(0), pCorProfilerInfo(nullptr)
 {
 }
@@ -18,15 +21,18 @@ Profiler::~Profiler()
 
 HRESULT STDMETHODCALLTYPE Profiler::Initialize(IUnknown *pICorProfilerInfoUnk)
 {
+    ShutdownGuard::Initialize();
+
     printf("Profiler.dll!Profiler::Initialize\n");
     fflush(stdout);
 
-    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo9), reinterpret_cast<void **>(&this->pCorProfilerInfo));
+    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo11), reinterpret_cast<void **>(&this->pCorProfilerInfo));
     if (FAILED(queryInterfaceResult))
     {
         printf("Profiler.dll!Profiler::Initialize failed to QI for ICorProfilerInfo.\n");
         pICorProfilerInfoUnk = NULL;
     }
+    
     return S_OK;
 }
 
@@ -34,6 +40,9 @@ HRESULT STDMETHODCALLTYPE Profiler::Shutdown()
 {
     printf("Profiler.dll!Profiler::Shutdown\n");
     fflush(stdout);
+
+    // Wait for any in progress profiler callbacks to finish.
+    ShutdownGuard::WaitForInProgressHooks();
 
     if (this->pCorProfilerInfo != nullptr)
     {

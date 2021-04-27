@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -106,8 +105,6 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
 #if DEBUG
                 // Can't be called when state is protected.
                 if (_protectState)
@@ -135,7 +132,6 @@ namespace System.Net
                     LazilyCreateEvent(out asyncEvent);
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, asyncEvent);
                 return asyncEvent;
             }
         }
@@ -191,8 +187,6 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
 #if DEBUG
                 // Can't be called when state is protected.
                 if (_protectState)
@@ -208,7 +202,6 @@ namespace System.Net
                     result = Interlocked.CompareExchange(ref _intCompleted, HighBit, 0);
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, result > 0);
                 return result > 0;
             }
         }
@@ -218,8 +211,6 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
 #if DEBUG
                 // Can't be called when state is protected.
                 if (_protectState)
@@ -265,15 +256,9 @@ namespace System.Net
                 // then the "result" parameter passed to InvokeCallback() will be ignored.
 
                 // It's an error to call after the result has been completed or with DBNull.
-                if (value == DBNull.Value)
-                {
-                    NetEventSource.Fail(this, "Result can't be set to DBNull - it's a special internal value.");
-                }
+                Debug.Assert(value != DBNull.Value, "Result can't be set to DBNull - it's a special internal value.");
 
-                if (InternalPeekCompleted)
-                {
-                    NetEventSource.Fail(this, "Called on completed result.");
-                }
+                Debug.Assert(!InternalPeekCompleted, "Called on completed result.");
                 _result = value;
             }
         }
@@ -309,8 +294,6 @@ namespace System.Net
         // the equivalent of InvokeCallback().
         protected void ProtectedInvokeCallback(object? result, IntPtr userToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this, result, userToken);
-
             // Critical to disallow DBNull here - it could result in a stuck spinlock in WaitForCompletion.
             if (result == DBNull.Value)
             {
@@ -494,7 +477,6 @@ namespace System.Net
                 sw.SpinOnce();
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this, _result);
             return _result;
         }
 

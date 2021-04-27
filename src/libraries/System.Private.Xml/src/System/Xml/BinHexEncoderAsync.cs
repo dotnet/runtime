@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Threading.Tasks;
 
 namespace System.Xml
@@ -32,8 +31,8 @@ namespace System.Xml
             while (index < endIndex)
             {
                 int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
-                int charCount = Encode(buffer, index, cnt, chars);
-                await writer.WriteRawAsync(chars, 0, charCount).ConfigureAwait(false);
+                HexConverter.EncodeToUtf16(buffer.AsSpan(index, cnt), chars);
+                await writer.WriteRawAsync(chars, 0, cnt * 2).ConfigureAwait(false);
                 index += cnt;
                 count -= cnt;
             }

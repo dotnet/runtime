@@ -8,4 +8,4 @@ You can build this project with msbuild.
 
 ## License
 
-Both the source and binary files are licensed as MIT, the same as the rest of the repository. See [LICENSE](https://github.com/dotnet/runtime/blob/master/LICENSE.TXT) at the root of the repo for more information.
+Both the source and binary files are licensed as MIT, the same as the rest of the repository. See [LICENSE](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT) at the root of the repo for more information.

@@ -101,15 +101,15 @@ namespace System.Formats.Cbor.Tests
         [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "a3200240410161616141")]
         [InlineData(new object[] { Map, new object[] { Map, 3, 4, 1, 2 }, 0, new object[] { 1, 2, 3 }, 0, new string[] { "a", "b" }, 0, new string[] { Hex, "ab", "" }, 00 }, "a441ab00626162008301020300a20102030400")]
         public static void WriteMap_IndefiniteLength_WithPatching_Ctap2Sorting_HappyPath(object[] values, string expectedHexEncoding)
-    {
-        byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
-        var writer = new CborWriter(CborConformanceMode.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
-        Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
-        byte[] actualEncoding = writer.Encode();
-        AssertHelper.HexEqual(expectedEncoding, actualEncoding);
-    }
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            var writer = new CborWriter(CborConformanceMode.Ctap2Canonical, convertIndefiniteLengthEncodings: true);
+            Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
+            byte[] actualEncoding = writer.Encode();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
 
-    [Theory]
+        [Theory]
         [InlineData(new object[] { Map, "a", 1, "b", new object[] { 2, 3 } }, "a26161016162820203")]
         [InlineData(new object[] { Map, "a", new object[] { 2, 3, "b", new object[] { Map, "x", -1, "y", new object[] { "z", 0 } } } }, "a161618402036162a2617820617982617a00")]
         [InlineData(new object[] { "a", new object[] { Map, "b", "c" } }, "826161a161626163")]
@@ -383,6 +383,19 @@ namespace System.Formats.Cbor.Tests
         {
             var writer = new CborWriter(conformanceMode, convertIndefiniteLengthEncodings: false);
             Assert.Throws<InvalidOperationException>(() => writer.WriteStartMap(null));
+        }
+
+        [Fact]
+        public static void Write_TaggedEmptyMap_ShouldSucceed()
+        {
+            var writer = new CborWriter();
+
+            writer.WriteTag(CborTag.DateTimeString);
+            writer.WriteStartMap(0);
+            writer.WriteEndMap();
+
+            byte[] encoding = writer.Encode();
+            Assert.Equal("C0A0", encoding.ByteArrayToHex());
         }
     }
 }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -386,7 +385,7 @@ namespace System.Xml.Schema
         }
     };
 
-    internal class NamespaceListV1Compat : NamespaceList
+    internal sealed class NamespaceListV1Compat : NamespaceList
     {
         public NamespaceListV1Compat(string namespaces, string targetNamespace) : base(namespaces, targetNamespace) { }
 

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -32,10 +33,10 @@ namespace System.Data.Odbc
         // Bind:            Bind may change _bindtype if the type is not supported through the driver
         //
 
-        private TypeMap _typemap;
-        private TypeMap _bindtype;
+        private TypeMap? _typemap;
+        private TypeMap? _bindtype;
 
-        private string _parameterName;
+        private string? _parameterName;
         private byte _precision;
         private byte _scale;
         private bool _hasScale;
@@ -47,7 +48,7 @@ namespace System.Data.Odbc
         private int _boundScale;
         private IntPtr _boundBuffer;
         private IntPtr _boundIntbuffer;
-        private TypeMap _originalbindtype;         // the original type in case we had to change the bindtype
+        private TypeMap? _originalbindtype;         // the original type in case we had to change the bindtype
                                                    // (e.g. decimal to string)
         private byte _internalPrecision;
         private bool _internalShouldSerializeSize;
@@ -56,12 +57,12 @@ namespace System.Data.Odbc
         private byte _internalScale;
         private int _internalOffset;
         internal bool _internalUserSpecifiedType;
-        private object _internalValue;
+        private object? _internalValue;
 
         private int _preparedOffset;
         private int _preparedSize;
         private int _preparedBufferSize;
-        private object _preparedValue;
+        private object? _preparedValue;
         private int _preparedIntOffset;
         private int _preparedValueOffset;
 
@@ -72,26 +73,26 @@ namespace System.Data.Odbc
             // uses System.Threading!
         }
 
-        public OdbcParameter(string name, object value) : this()
+        public OdbcParameter(string? name, object? value) : this()
         {
             ParameterName = name;
             Value = value;
         }
 
-        public OdbcParameter(string name, OdbcType type) : this()
+        public OdbcParameter(string? name, OdbcType type) : this()
         {
             ParameterName = name;
             OdbcType = type;
         }
 
-        public OdbcParameter(string name, OdbcType type, int size) : this()
+        public OdbcParameter(string? name, OdbcType type, int size) : this()
         {
             ParameterName = name;
             OdbcType = type;
             Size = size;
         }
 
-        public OdbcParameter(string name, OdbcType type, int size, string sourcecolumn) : this()
+        public OdbcParameter(string? name, OdbcType type, int size, string? sourcecolumn) : this()
         {
             ParameterName = name;
             OdbcType = type;
@@ -101,16 +102,16 @@ namespace System.Data.Odbc
 
 
         [EditorBrowsableAttribute(EditorBrowsableState.Advanced)] // MDAC 69508
-        public OdbcParameter(string parameterName,
+        public OdbcParameter(string? parameterName,
                              OdbcType odbcType,
                              int size,
                              ParameterDirection parameterDirection,
                              bool isNullable,
                              byte precision,
                              byte scale,
-                             string srcColumn,
+                             string? srcColumn,
                              DataRowVersion srcVersion,
-                             object value
+                             object? value
                              ) : this()
         { // V1.0 everything
             this.ParameterName = parameterName;
@@ -126,12 +127,12 @@ namespace System.Data.Odbc
         }
 
         [EditorBrowsableAttribute(EditorBrowsableState.Advanced)] // MDAC 69508
-        public OdbcParameter(string parameterName,
+        public OdbcParameter(string? parameterName,
                                  OdbcType odbcType, int size,
                                  ParameterDirection parameterDirection,
                                  byte precision, byte scale,
-                                 string sourceColumn, DataRowVersion sourceVersion, bool sourceColumnNullMapping,
-                                 object value) : this()
+                                 string? sourceColumn, DataRowVersion sourceVersion, bool sourceColumnNullMapping,
+                                 object? value) : this()
         { // V2.0 everything - round trip all browsable properties + precision/scale
             this.ParameterName = parameterName;
             this.OdbcType = odbcType;
@@ -151,7 +152,7 @@ namespace System.Data.Odbc
             {
                 if (_userSpecifiedType)
                 {
-                    return _typemap._dbType;
+                    return _typemap!._dbType;
                 }
                 return TypeMap._NVarChar._dbType; // default type
             }
@@ -181,7 +182,7 @@ namespace System.Data.Odbc
             {
                 if (_userSpecifiedType)
                 {
-                    return _typemap._odbcType;
+                    return _typemap!._odbcType;
                 }
                 return TypeMap._NVarChar._odbcType; // default type
             }
@@ -219,11 +220,12 @@ namespace System.Data.Odbc
             }
         }
 
+        [AllowNull]
         public override string ParameterName
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string parameterName = _parameterName;
+                string? parameterName = _parameterName;
                 return ((null != parameterName) ? parameterName : string.Empty);
             }
             set
@@ -314,16 +316,16 @@ namespace System.Data.Odbc
         }
 
         // returns the count of bytes for the data (ColumnSize argument to SqlBindParameter)
-        private int GetColumnSize(object value, int offset, int ordinal)
+        private int GetColumnSize(object? value, int offset, int ordinal)
         {
-            if ((ODBC32.SQL_C.NUMERIC == _bindtype._sql_c) && (0 != _internalPrecision))
+            if ((ODBC32.SQL_C.NUMERIC == _bindtype!._sql_c) && (0 != _internalPrecision))
             {
                 return Math.Min((int)_internalPrecision, ADP.DecimalMaxPrecision);
             }
             int cch = _bindtype._columnSize;
             if (0 >= cch)
             {
-                if (ODBC32.SQL_C.NUMERIC == _typemap._sql_c)
+                if (ODBC32.SQL_C.NUMERIC == _typemap!._sql_c)
                 {
                     cch = 62;  // (DecimalMaxPrecision+sign+terminator)*BytesPerUnicodeCharacter
                 }
@@ -414,9 +416,9 @@ namespace System.Data.Odbc
 
         // Return the count of bytes for the data (size in bytes for the native buffer)
         //
-        private int GetValueSize(object value, int offset)
+        private int GetValueSize(object? value, int offset)
         {
-            if ((ODBC32.SQL_C.NUMERIC == _bindtype._sql_c) && (0 != _internalPrecision))
+            if ((ODBC32.SQL_C.NUMERIC == _bindtype!._sql_c) && (0 != _internalPrecision))
             {
                 return Math.Min((int)_internalPrecision, ADP.DecimalMaxPrecision);
             }
@@ -457,12 +459,12 @@ namespace System.Data.Odbc
 
         // return the count of bytes for the data, used for SQLBindParameter
         //
-        private int GetParameterSize(object value, int offset, int ordinal)
+        private int GetParameterSize(object? value, int offset, int ordinal)
         {
-            int ccb = _bindtype._bufferSize;
+            int ccb = _bindtype!._bufferSize;
             if (0 >= ccb)
             {
-                if (ODBC32.SQL_C.NUMERIC == _typemap._sql_c)
+                if (ODBC32.SQL_C.NUMERIC == _typemap!._sql_c)
                 {
                     ccb = 518; // _bindtype would be VarChar ([0-9]?{255} + '-' + '.') * 2
                 }
@@ -529,7 +531,7 @@ namespace System.Data.Odbc
             return ccb;
         }
 
-        private byte GetParameterPrecision(object value)
+        private byte GetParameterPrecision(object? value)
         {
             if (0 != _internalPrecision && value is decimal)
             {
@@ -556,7 +558,7 @@ namespace System.Data.Odbc
         }
 
 
-        private byte GetParameterScale(object value)
+        private byte GetParameterScale(object? value)
         {
             // For any value that is not decimal simply return the Scale
             //
@@ -618,11 +620,13 @@ namespace System.Data.Odbc
 
         internal void PrepareForBind(OdbcCommand command, short ordinal, ref int parameterBufferSize)
         {
+            Debug.Assert(command.Connection != null);
+
             // make a snapshot of the current properties. Properties may change while we work on them
             //
             CopyParameterInternal();
 
-            object value = ProcessAndGetParameterValue();
+            object? value = ProcessAndGetParameterValue();
             int offset = _internalOffset;
             int size = _internalSize;
             ODBC32.SQL_C sql_c_type;
@@ -663,7 +667,7 @@ namespace System.Data.Odbc
 
             // type support verification for certain data types
             //
-            switch (_bindtype._sql_type)
+            switch (_bindtype!._sql_type)
             {
                 case ODBC32.SQL_TYPE.DECIMAL:
                 case ODBC32.SQL_TYPE.NUMERIC:
@@ -703,7 +707,7 @@ namespace System.Data.Odbc
                 case ODBC32.SQL_TYPE.WLONGVARCHAR:
                     if (value is char)
                     {
-                        value = value.ToString();
+                        value = value.ToString()!;
                         size = ((string)value).Length;
                         offset = 0;
                     }
@@ -739,7 +743,7 @@ namespace System.Data.Odbc
                             int lcid = System.Globalization.CultureInfo.CurrentCulture.LCID;
                             CultureInfo culInfo = new CultureInfo(lcid);
                             Encoding cpe = System.Text.Encoding.GetEncoding(culInfo.TextInfo.ANSICodePage);
-                            value = cpe.GetBytes(value.ToString());
+                            value = cpe.GetBytes(value.ToString()!);
                             size = ((byte[])value).Length;
                         }
                     }
@@ -786,13 +790,15 @@ namespace System.Data.Odbc
 
         internal void Bind(OdbcStatementHandle hstmt, OdbcCommand command, short ordinal, CNativeBuffer parameterBuffer, bool allowReentrance)
         {
+            Debug.Assert(command.Connection != null);
+
             ODBC32.RetCode retcode;
             ODBC32.SQL_C sql_c_type = _prepared_Sql_C_Type;
             ODBC32.SQL_PARAM sqldirection = SqlDirectionFromParameterDirection();
 
             int offset = _preparedOffset;
             int size = _preparedSize;
-            object value = _preparedValue;
+            object? value = _preparedValue;
             int cbValueSize = GetValueSize(value, offset);             // count of bytes for the data
             int cchSize = GetColumnSize(value, offset, ordinal);   // count of bytes for the data, used to allocate the buffer length
             byte precision = GetParameterPrecision(value);
@@ -843,7 +849,7 @@ namespace System.Data.Odbc
 
             if (!_hasChanged
                 && (_boundSqlCType == sql_c_type)
-                && (_boundParameterType == _bindtype._sql_type)
+                && (_boundParameterType == _bindtype!._sql_type)
                 && (_boundSize == cchSize)
                 && (_boundScale == scale)
                 && (_boundBuffer == valueBuffer.Handle)
@@ -858,7 +864,7 @@ namespace System.Data.Odbc
                                     ordinal,                    // Parameter Number
                                     (short)sqldirection,        // InputOutputType
                                     sql_c_type,                 // ValueType
-                                    _bindtype._sql_type,        // ParameterType
+                                    _bindtype!._sql_type,        // ParameterType
                                     (IntPtr)cchSize,            // ColumnSize
                                     (IntPtr)scale,              // DecimalDigits
                                     valueBuffer,                // ParameterValuePtr
@@ -968,7 +974,7 @@ namespace System.Data.Odbc
                         }
                     }
 
-                    if ((typemap != _typemap) && (null != Value) && !Convert.IsDBNull(Value) && (Value.GetType() != _typemap._type))
+                    if ((typemap != _typemap) && (null != Value) && !Convert.IsDBNull(Value) && (Value.GetType() != _typemap!._type))
                     {
                         Debug.Assert(ODBC32.SQL_C.NUMERIC == _typemap._sql_c, "unexpected");
                         Value = decimal.Parse((string)Value, System.Globalization.CultureInfo.CurrentCulture);
@@ -977,9 +983,9 @@ namespace System.Data.Odbc
             }
         }
 
-        private object ProcessAndGetParameterValue()
+        private object? ProcessAndGetParameterValue()
         {
-            object value = _internalValue;
+            object? value = _internalValue;
             if (_internalUserSpecifiedType)
             {
                 if ((null != value) && !Convert.IsDBNull(value))
@@ -987,11 +993,11 @@ namespace System.Data.Odbc
                     Type valueType = value.GetType();
                     if (!valueType.IsArray)
                     {
-                        if (valueType != _typemap._type)
+                        if (valueType != _typemap!._type)
                         {
                             try
                             {
-                                value = Convert.ChangeType(value, _typemap._type, (System.IFormatProvider)null);
+                                value = Convert.ChangeType(value, _typemap._type, null);
                             }
                             catch (Exception e)
                             {
@@ -1040,7 +1046,7 @@ namespace System.Data.Odbc
             //CoercedValue = null;
         }
 
-        internal void SetInputValue(object value, ODBC32.SQL_C sql_c_type, int cbsize, int sizeorprecision, int offset, CNativeBuffer parameterBuffer)
+        internal void SetInputValue(object? value, ODBC32.SQL_C sql_c_type, int cbsize, int sizeorprecision, int offset, CNativeBuffer parameterBuffer)
         { //Handle any input params
             if ((ParameterDirection.Input == _internalDirection) || (ParameterDirection.InputOutput == _internalDirection))
             {
@@ -1105,7 +1111,7 @@ namespace System.Data.Odbc
             }
         }
 
-        public override object Value
+        public override object? Value
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -1118,17 +1124,17 @@ namespace System.Data.Odbc
             }
         }
 
-        private byte ValuePrecision(object value)
+        private byte ValuePrecision(object? value)
         {
             return ValuePrecisionCore(value);
         }
 
-        private byte ValueScale(object value)
+        private byte ValueScale(object? value)
         {
             return ValueScaleCore(value);
         }
 
-        private int ValueSize(object value)
+        private int ValueSize(object? value)
         {
             return ValueSizeCore(value);
         }

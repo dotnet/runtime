@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed partial class HttpConnection : IDisposable
     {
         private sealed class ChunkedEncodingWriteStream : HttpContentWriteStream
         {
@@ -19,6 +19,8 @@ namespace System.Net.Http
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
+                BytesWritten += buffer.Length;
+
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
 
@@ -39,6 +41,8 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored)
             {
+                BytesWritten += buffer.Length;
+
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
 

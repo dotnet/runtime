@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -146,13 +148,7 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(capacity);
             m_ChunkLength = length;
 
-            unsafe
-            {
-                fixed (char* sourcePtr = value)
-                {
-                    ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
-                }
-            }
+            value.AsSpan(startIndex, length).CopyTo(m_ChunkChars);
         }
 
         /// <summary>
@@ -357,37 +353,31 @@ namespace System.Text
 
             string result = string.FastAllocateString(Length);
             StringBuilder? chunk = this;
-            unsafe
+            do
             {
-                fixed (char* destinationPtr = result)
+                if (chunk.m_ChunkLength > 0)
                 {
-                    do
+                    // Copy these into local variables so that they are stable even in the presence of race conditions
+                    char[] sourceArray = chunk.m_ChunkChars;
+                    int chunkOffset = chunk.m_ChunkOffset;
+                    int chunkLength = chunk.m_ChunkLength;
+
+                    // Check that we will not overrun our boundaries.
+                    if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
                     {
-                        if (chunk.m_ChunkLength > 0)
-                        {
-                            // Copy these into local variables so that they are stable even in the presence of race conditions
-                            char[] sourceArray = chunk.m_ChunkChars;
-                            int chunkOffset = chunk.m_ChunkOffset;
-                            int chunkLength = chunk.m_ChunkLength;
-
-                            // Check that we will not overrun our boundaries.
-                            if ((uint)(chunkLength + chunkOffset) <= (uint)result.Length && (uint)chunkLength <= (uint)sourceArray.Length)
-                            {
-                                fixed (char* sourcePtr = &sourceArray[0])
-                                    string.wstrcpy(destinationPtr + chunkOffset, sourcePtr, chunkLength);
-                            }
-                            else
-                            {
-                                throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_Index);
-                            }
-                        }
-                        chunk = chunk.m_ChunkPrevious;
+                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_Index);
                     }
-                    while (chunk != null);
 
-                    return result;
+                    Buffer.Memmove(
+                        ref Unsafe.Add(ref result.GetRawStringData(), chunkOffset),
+                        ref MemoryMarshal.GetArrayDataReference(sourceArray),
+                        (nuint)chunkLength);
                 }
+                chunk = chunk.m_ChunkPrevious;
             }
+            while (chunk != null);
+
+            return result;
         }
 
         /// <summary>
@@ -671,7 +661,7 @@ namespace System.Text
             /// <summary>
             /// Used to hold all the chunks indexes when you have many chunks.
             /// </summary>
-            private class ManyChunkInfo
+            private sealed class ManyChunkInfo
             {
                 private readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first)
                 private int _chunkPos;
@@ -795,7 +785,6 @@ namespace System.Text
             }
         }
 
-
         /// <summary>
         /// Appends a string to the end of this builder.
         /// </summary>
@@ -808,9 +797,8 @@ namespace System.Text
                 char[] chunkChars = m_ChunkChars;
                 int chunkLength = m_ChunkLength;
                 int valueLen = value.Length;
-                int newCurrentIndex = chunkLength + valueLen;
 
-                if (newCurrentIndex < chunkChars.Length) // Use strictly < to avoid issues if count == 0, newIndex == length
+                if (((uint)chunkLength + (uint)valueLen) < (uint)chunkChars.Length) // Use strictly < to avoid issues if count == 0, newIndex == length
                 {
                     if (valueLen <= 2)
                     {
@@ -825,17 +813,13 @@ namespace System.Text
                     }
                     else
                     {
-                        unsafe
-                        {
-                            fixed (char* valuePtr = value)
-                            fixed (char* destPtr = &chunkChars[chunkLength])
-                            {
-                                string.wstrcpy(destPtr, valuePtr, valueLen);
-                            }
-                        }
+                        Buffer.Memmove(
+                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(chunkChars), chunkLength),
+                            ref value.GetRawStringData(),
+                            (nuint)valueLen);
                     }
 
-                    m_ChunkLength = newCurrentIndex;
+                    m_ChunkLength = chunkLength + valueLen;
                 }
                 else
                 {
@@ -1048,9 +1032,7 @@ namespace System.Text
                     curDestIndex -= chunkCount;
                     count -= chunkCount;
 
-                    // We ensure that chunkStartIndex + chunkCount are within range of m_chunkChars as well as
-                    // ensuring that curDestIndex + chunkCount are within range of destination
-                    ThreadSafeCopy(chunk.m_ChunkChars, chunkStartIndex, destination, curDestIndex, chunkCount);
+                    new ReadOnlySpan<char>(chunk.m_ChunkChars, chunkStartIndex, chunkCount).CopyTo(destination.Slice(curDestIndex));
                 }
                 chunk = chunk.m_ChunkPrevious;
             }
@@ -1192,6 +1174,8 @@ namespace System.Text
 
         private StringBuilder AppendSpanFormattable<T>(T value) where T : ISpanFormattable
         {
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
             if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format: default, provider: null))
             {
                 m_ChunkLength += charsWritten;
@@ -1201,8 +1185,10 @@ namespace System.Text
             return Append(value.ToString());
         }
 
-        internal StringBuilder AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable, IFormattable
+        internal StringBuilder AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
         {
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
             if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format, provider))
             {
                 m_ChunkLength += charsWritten;
@@ -1342,7 +1328,7 @@ namespace System.Text
 
             if (values[0] != null)
             {
-                Append(values[0]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                Append(values[0]!.ToString());
             }
 
             for (int i = 1; i < values.Length; i++)
@@ -1350,7 +1336,7 @@ namespace System.Text
                 Append(separator, separatorLength);
                 if (values[i] != null)
                 {
-                    Append(values[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    Append(values[i]!.ToString());
                 }
             }
             return this;
@@ -1764,6 +1750,14 @@ namespace System.Text
                         (leftJustify || width == 0) &&
                         spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
+                        if ((uint)charsWritten > (uint)RemainingCurrentChunk.Length)
+                        {
+                            // Untrusted ISpanFormattable implementations might return an erroneous charsWritten value,
+                            // and m_ChunkLength might end up being used in unsafe code, so fail if we get back an
+                            // out-of-range charsWritten value.
+                            FormatError();
+                        }
+
                         m_ChunkLength += charsWritten;
 
                         // Pad the end, if needed.
@@ -1827,7 +1821,7 @@ namespace System.Text
         /// Determines if the contents of this builder are equal to the contents of another builder.
         /// </summary>
         /// <param name="sb">The other builder.</param>
-        public bool Equals(StringBuilder? sb)
+        public bool Equals([NotNullWhen(true)] StringBuilder? sb)
         {
             if (sb == null)
             {
@@ -2095,7 +2089,7 @@ namespace System.Text
             int newIndex = valueCount + m_ChunkLength;
             if (newIndex <= m_ChunkChars.Length)
             {
-                ThreadSafeCopy(value, m_ChunkChars, m_ChunkLength, valueCount);
+                new ReadOnlySpan<char>(value, valueCount).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
                 m_ChunkLength = newIndex;
             }
             else
@@ -2104,7 +2098,7 @@ namespace System.Text
                 int firstLength = m_ChunkChars.Length - m_ChunkLength;
                 if (firstLength > 0)
                 {
-                    ThreadSafeCopy(value, m_ChunkChars, m_ChunkLength, firstLength);
+                    new ReadOnlySpan<char>(value, firstLength).CopyTo(m_ChunkChars.AsSpan(m_ChunkLength));
                     m_ChunkLength = m_ChunkChars.Length;
                 }
 
@@ -2114,7 +2108,7 @@ namespace System.Text
                 Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
 
                 // Copy the second chunk
-                ThreadSafeCopy(value + firstLength, m_ChunkChars, 0, restLength);
+                new ReadOnlySpan<char>(value + firstLength, restLength).CopyTo(m_ChunkChars);
                 m_ChunkLength = restLength;
             }
             AssertInvariants();
@@ -2283,7 +2277,7 @@ namespace System.Text
                     Debug.Assert(lengthInChunk >= 0, "Index isn't in the chunk.");
 
                     int lengthToCopy = Math.Min(lengthInChunk, count);
-                    ThreadSafeCopy(value, chunk.m_ChunkChars, indexInChunk, lengthToCopy);
+                    new ReadOnlySpan<char>(value, lengthToCopy).CopyTo(chunk.m_ChunkChars.AsSpan(indexInChunk));
 
                     // Advance the index.
                     indexInChunk += lengthToCopy;
@@ -2299,46 +2293,6 @@ namespace System.Text
                     }
                     value += lengthToCopy;
                 }
-            }
-        }
-
-        /// <remarks>
-        /// This method prevents out-of-bounds writes in the case a different thread updates a field in the builder just before a copy begins.
-        /// All interesting variables are copied out of the heap into the parameters of this method, and then bounds checks are run.
-        /// </remarks>
-        private static unsafe void ThreadSafeCopy(char* sourcePtr, char[] destination, int destinationIndex, int count)
-        {
-            if (count > 0)
-            {
-                if ((uint)destinationIndex <= (uint)destination.Length && (destinationIndex + count) <= destination.Length)
-                {
-                    fixed (char* destinationPtr = &destination[destinationIndex])
-                        string.wstrcpy(destinationPtr, sourcePtr, count);
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_Index);
-                }
-            }
-        }
-
-        private static unsafe void ThreadSafeCopy(char[] source, int sourceIndex, Span<char> destination, int destinationIndex, int count)
-        {
-            if (count > 0)
-            {
-                if ((uint)sourceIndex > (uint)source.Length || count > source.Length - sourceIndex)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
-                }
-
-                if ((uint)destinationIndex > (uint)destination.Length || count > destination.Length - destinationIndex)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_Index);
-                }
-
-                fixed (char* sourcePtr = &source[sourceIndex])
-                fixed (char* destinationPtr = &MemoryMarshal.GetReference(destination))
-                    string.wstrcpy(destinationPtr + destinationIndex, sourcePtr, count);
             }
         }
 
@@ -2523,20 +2477,14 @@ namespace System.Text
             int copyCount1 = Math.Min(count, indexInChunk);
             if (copyCount1 > 0)
             {
-                unsafe
-                {
-                    fixed (char* chunkCharsPtr = &chunk.m_ChunkChars[0])
-                    {
-                        ThreadSafeCopy(chunkCharsPtr, newChunk.m_ChunkChars, 0, copyCount1);
+                new ReadOnlySpan<char>(chunk.m_ChunkChars, 0, copyCount1).CopyTo(newChunk.m_ChunkChars);
 
-                        // Slide characters over in the current buffer to make room.
-                        int copyCount2 = indexInChunk - copyCount1;
-                        if (copyCount2 >= 0)
-                        {
-                            ThreadSafeCopy(chunkCharsPtr + copyCount1, chunk.m_ChunkChars, 0, copyCount2);
-                            indexInChunk = copyCount2;
-                        }
-                    }
+                // Slide characters over in the current buffer to make room.
+                int copyCount2 = indexInChunk - copyCount1;
+                if (copyCount2 >= 0)
+                {
+                    new ReadOnlySpan<char>(chunk.m_ChunkChars, copyCount1, copyCount2).CopyTo(chunk.m_ChunkChars);
+                    indexInChunk = copyCount2;
                 }
             }
 
@@ -2646,7 +2594,7 @@ namespace System.Text
             // Remove any characters in the end chunk, by sliding the characters down.
             if (copyTargetIndexInChunk != endIndexInChunk) // Sometimes no move is necessary
             {
-                ThreadSafeCopy(endChunk.m_ChunkChars, endIndexInChunk, endChunk.m_ChunkChars, copyTargetIndexInChunk, copyCount);
+                new ReadOnlySpan<char>(endChunk.m_ChunkChars, endIndexInChunk, copyCount).CopyTo(endChunk.m_ChunkChars.AsSpan(copyTargetIndexInChunk));
             }
 
             Debug.Assert(chunk != null, "We fell off the beginning of the string!");

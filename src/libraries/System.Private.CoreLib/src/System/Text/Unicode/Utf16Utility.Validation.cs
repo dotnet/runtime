@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Numerics;
 
@@ -11,28 +12,10 @@ using System.Numerics;
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nuint_t = System.UInt64;
-#else // TARGET_64BIT
-using nuint_t = System.UInt32;
-#endif // TARGET_64BIT
-#else
-using nuint_t = System.UInt64;
-#endif
-
 namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf16Utility
     {
-#if DEBUG && SYSTEM_PRIVATE_CORELIB
-        static Utf16Utility()
-        {
-            Debug.Assert(sizeof(nuint_t) == IntPtr.Size && nuint.MinValue == 0, "nuint_t is defined incorrectly.");
-        }
-#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
-
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
         /// Given an input buffer <paramref name="pInputBuffer"/> of char length <paramref name="inputLength"/>,
@@ -77,27 +60,52 @@ namespace System.Text.Unicode
 
             long tempUtf8CodeUnitCountAdjustment = 0;
             int tempScalarCountAdjustment = 0;
+            char* pEndOfInputBuffer = pInputBuffer + (uint)inputLength;
 
-            if (Sse2.IsSupported)
+            // Per https://github.com/dotnet/runtime/issues/41699, temporarily disabling
+            // ARM64-intrinsicified code paths. ARM64 platforms may still use the vectorized
+            // non-intrinsicified 'else' block below.
+
+            if (/* (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || */ Sse2.IsSupported)
             {
                 if (inputLength >= Vector128<ushort>.Count)
                 {
-                    Vector128<ushort> vector0080 = Vector128.Create((ushort)0x80);
-                    Vector128<ushort> vectorA800 = Vector128.Create((ushort)0xA800);
-                    Vector128<short> vector8800 = Vector128.Create(unchecked((short)0x8800));
-                    Vector128<ushort> vectorZero = Vector128<ushort>.Zero;
+                    Vector128<ushort> vector0080 = Vector128.Create((ushort)0x0080);
+                    Vector128<ushort> vector7800 = Vector128.Create((ushort)0x7800);
+                    Vector128<ushort> vectorA000 = Vector128.Create((ushort)0xA000);
+
+                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
+                        Vector128.Create(0x80402010_08040201).AsByte() :
+                        Vector128.Create(0x01020408_10204080).AsByte();
+
+                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - Vector128<ushort>.Count;
+                    Debug.Assert(pHighestAddressWhereCanReadOneVector >= pInputBuffer);
 
                     do
                     {
-                        Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
-                        uint mask;
+                        Vector128<ushort> utf16Data;
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            utf16Data = AdvSimd.LoadVector128((ushort*)pInputBuffer); // unaligned
+                        }
+                        else
+                        {
+                            utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
+                        }
 
+                        pInputBuffer += Vector128<ushort>.Count; // eagerly bump this now in preparation for next loop, will adjust later if necessary
                         Vector128<ushort> charIsNonAscii;
-                        if (Sse41.IsSupported)
+
+                        if (AdvSimd.Arm64.IsSupported)
                         {
                             // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
                             // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
-
+                            charIsNonAscii = AdvSimd.Min(utf16Data, vector0080);
+                        }
+                        else if (Sse41.IsSupported)
+                        {
+                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
+                            // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
                             charIsNonAscii = Sse41.Min(utf16Data, vector0080);
                         }
                         else
@@ -111,16 +119,40 @@ namespace System.Text.Unicode
 
 #if DEBUG
                         // Quick check to ensure we didn't accidentally set the 0x8000 bit of any element.
-                        uint debugMask = (uint)Sse2.MoveMask(charIsNonAscii.AsByte());
+                        uint debugMask;
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            debugMask = GetNonAsciiBytes(charIsNonAscii.AsByte(), bitMask128);
+                        }
+                        else
+                        {
+                            debugMask = (uint)Sse2.MoveMask(charIsNonAscii.AsByte());
+                        }
                         Debug.Assert((debugMask & 0b_1010_1010_1010_1010) == 0, "Shouldn't have set the 0x8000 bit of any element in 'charIsNonAscii'.");
 #endif // DEBUG
 
                         // Sets the 0x8080 bits of each element in 'charIsNonAscii' if the corresponding
                         // input was 0x0800 <= [value]. This also handles the missing range a few lines above.
 
-                        Vector128<ushort> charIsThreeByteUtf8Encoded = Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 11));
+                        Vector128<ushort> charIsThreeByteUtf8Encoded;
+                        uint mask;
 
-                        mask = (uint)Sse2.MoveMask(Sse2.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
+                        // Since 3-byte elements have a value >= 0x0800, we'll perform a saturating add of 0x7800 in order to
+                        // get all 3-byte elements to have their 0x8000 bits set. A saturating add will not set the 0x8000
+                        // bit for 1-byte or 2-byte elements. 2-byte and 3-byte elements MAY have their 0x0080 bits set,
+                        // but this is not required, and the 0x0080 bits (see 'charIsNonAscii' above) will be explicitly
+                        // set for such elements anyway by the immediately following OR instruction.
+
+                        if (AdvSimd.IsSupported)
+                        {
+                            charIsThreeByteUtf8Encoded = AdvSimd.AddSaturate(utf16Data, vector7800);
+                            mask = GetNonAsciiBytes(AdvSimd.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte(), bitMask128);
+                        }
+                        else
+                        {
+                            charIsThreeByteUtf8Encoded = Sse2.AddSaturate(utf16Data, vector7800);
+                            mask = (uint)Sse2.MoveMask(Sse2.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
+                        }
 
                         // Each even bit of mask will be 1 only if the char was >= 0x0080,
                         // and each odd bit of mask will be 1 only if the char was >= 0x0800.
@@ -146,17 +178,43 @@ namespace System.Text.Unicode
                         // unpaired surrogates in our data. (Unpaired surrogates would invalidate
                         // our computed result and we'd have to throw it away.)
 
-                        uint popcnt = (uint)BitOperations.PopCount(mask);
+                        nuint popcnt = (uint)BitOperations.PopCount(mask); // on x64, perform zero-extension for free
 
                         // Surrogates need to be special-cased for two reasons: (a) we need
                         // to account for the fact that we over-counted in the addition above;
                         // and (b) they require separate validation.
-
-                        utf16Data = Sse2.Add(utf16Data, vectorA800);
-                        mask = (uint)Sse2.MoveMask(Sse2.CompareLessThan(utf16Data.AsInt16(), vector8800).AsByte());
-
-                        if (mask != 0)
+                        //
+                        // Since surrogate code points are [D800..DFFF], adding {A000} to each element moves surrogate
+                        // code points to [7800..7FFF], which allows performing a single signed comparison.
+                        if (AdvSimd.Arm64.IsSupported)
                         {
+                            mask = GetNonAsciiBytes(AdvSimd.CompareLessThan(AdvSimd.Add(utf16Data, vectorA000).AsInt16(), vector7800.AsInt16()).AsByte(), bitMask128);
+                        }
+                        else
+                        {
+                            mask = (uint)Sse2.MoveMask(Sse2.CompareLessThan(Sse2.Add(utf16Data, vectorA000).AsInt16(), vector7800.AsInt16()).AsByte());
+                        }
+
+                    FinishIteration:
+
+                        // Note: mask bits are set when the corresponding element is NOT a surrogate.
+                        // We'll invert this before entering the "validate surrogate pairs" logic below.
+
+                        if (mask == 0xFFFF)
+                        {
+                            // Put this logic up top since it's predicted-taken (surrogate pairs are uncommon).
+                            // Either we saw no surrogates or we already handled them below.
+
+                            tempUtf8CodeUnitCountAdjustment += (long)popcnt;
+                            if (pInputBuffer > pHighestAddressWhereCanReadOneVector)
+                            {
+                                goto NonVectorizedLoop; // can no longer read a vector's worth of data
+                            }
+                        }
+                        else
+                        {
+                            mask = ~mask;
+
                             // There's at least one UTF-16 surrogate code unit present.
                             // Since we performed a pmovmskb operation on the result of a 16-bit pcmpgtw,
                             // the resulting bits of 'mask' will occur in pairs:
@@ -165,10 +223,8 @@ namespace System.Text.Unicode
                             //
                             // A UTF-16 high/low surrogate code unit has the bit pattern [ 11011q## ######## ],
                             // where # is any bit; q = 0 represents a high surrogate, and q = 1 represents
-                            // a low surrogate. Since we added 0xA800 in the vectorized operation above,
-                            // our surrogate pairs will now have the bit pattern [ 10000q## ######## ].
-                            // If we logical right-shift each word by 3, we'll end up with the bit pattern
-                            // [ 00010000 q####### ], which means that we can immediately use pmovmskb to
+                            // a low surrogate. Right-shifting each surrogate char by 3 bits, we end up with
+                            // [ 00011011 q####### ], which means that we can immediately use pmovmskb to
                             // determine whether a given char was a high or a low surrogate.
                             //
                             // Therefore the resulting bits of 'mask2' will occur in pairs:
@@ -178,7 +234,15 @@ namespace System.Text.Unicode
                             //   Since 'mask' already has 00 in these positions (since the corresponding char
                             //   wasn't a surrogate), "mask AND mask2 == 00" holds for these positions.
 
-                            uint mask2 = (uint)Sse2.MoveMask(Sse2.ShiftRightLogical(utf16Data, 3).AsByte());
+                            uint mask2;
+                            if (AdvSimd.Arm64.IsSupported)
+                            {
+                                mask2 = GetNonAsciiBytes(AdvSimd.ShiftRightLogical(utf16Data, 3).AsByte(), bitMask128);
+                            }
+                            else
+                            {
+                                mask2 = (uint)Sse2.MoveMask(Sse2.ShiftRightLogical(utf16Data, 3).AsByte());
+                            }
 
                             // 'lowSurrogatesMask' has its bits occur in pairs:
                             // - 01 if the corresponding char was a low surrogate char,
@@ -207,7 +271,7 @@ namespace System.Text.Unicode
                             highSurrogatesMask <<= 2;
                             if ((ushort)highSurrogatesMask != lowSurrogatesMask)
                             {
-                                goto NonVectorizedLoop; // error: mismatched surrogate pair; break out of vectorized logic
+                                break; // error: mismatched surrogate pair; break out of vectorized logic
                             }
 
                             if (highSurrogatesMask > ushort.MaxValue)
@@ -217,8 +281,7 @@ namespace System.Text.Unicode
 
                                 highSurrogatesMask = (ushort)highSurrogatesMask; // don't allow stray high surrogate to be consumed by popcnt
                                 popcnt -= 2; // the '0xC000_0000' bits in the original mask are shifted out and discarded, so account for that here
-                                pInputBuffer--;
-                                inputLength++;
+                                pInputBuffer--; // don't consume this char (pointer has already been bumped at start of loop)
                             }
 
                             // If we're 64-bit, we can perform the zero-extension of the surrogate pairs count for
@@ -249,12 +312,16 @@ namespace System.Text.Unicode
                                 // Take the hit of the 64-bit extension now.
                                 tempUtf8CodeUnitCountAdjustment -= 2 * (uint)surrogatePairsCountNuint;
                             }
-                        }
 
-                        tempUtf8CodeUnitCountAdjustment += popcnt;
-                        pInputBuffer += Vector128<ushort>.Count;
-                        inputLength -= Vector128<ushort>.Count;
-                    } while (inputLength >= Vector128<ushort>.Count);
+                            mask = 0xFFFF; // mark "no surrogates require processing"
+                            goto FinishIteration; // jump backward to continue the main loop
+                        }
+                    } while (true);
+
+                    // If we reached this point, we saw truly invalid data within the loop.
+                    // Need to undo the eager "bump pInputBuffer" adjustment that took place at start of loop.
+
+                    pInputBuffer -= Vector128<ushort>.Count;
                 }
             }
             else if (Vector.IsHardwareAccelerated)
@@ -265,6 +332,9 @@ namespace System.Text.Unicode
                     Vector<ushort> vector0400 = new Vector<ushort>(0x0400);
                     Vector<ushort> vector0800 = new Vector<ushort>(0x0800);
                     Vector<ushort> vectorD800 = new Vector<ushort>(0xD800);
+
+                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - Vector<ushort>.Count;
+                    Debug.Assert(pHighestAddressWhereCanReadOneVector >= pInputBuffer);
 
                     do
                     {
@@ -286,13 +356,13 @@ namespace System.Text.Unicode
                         Vector<ushort> utf16Data = Unsafe.ReadUnaligned<Vector<ushort>>(pInputBuffer);
                         Vector<ushort> twoOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0080);
                         Vector<ushort> threeOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector<nuint_t> sumVector = (Vector<nuint_t>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
+                        Vector<nuint> sumVector = (Vector<nuint>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
 
                         // We'll try summing by a natural word (rather than a 16-bit word) at a time,
                         // which should halve the number of operations we must perform.
 
                         nuint popcnt = 0;
-                        for (int i = 0; i < Vector<nuint_t>.Count; i++)
+                        for (int i = 0; i < Vector<nuint>.Count; i++)
                         {
                             popcnt += (nuint)sumVector[i];
                         }
@@ -350,7 +420,6 @@ namespace System.Text.Unicode
                                 // We'll adjust our counters so that we don't consider this char consumed.
 
                                 pInputBuffer--;
-                                inputLength++;
                                 popcnt32 -= 2;
                             }
 
@@ -371,8 +440,7 @@ namespace System.Text.Unicode
 
                         tempUtf8CodeUnitCountAdjustment += popcnt32;
                         pInputBuffer += Vector<ushort>.Count;
-                        inputLength -= Vector<ushort>.Count;
-                    } while (inputLength >= Vector<ushort>.Count);
+                    } while (pInputBuffer <= pHighestAddressWhereCanReadOneVector);
                 }
             }
 
@@ -382,7 +450,7 @@ namespace System.Text.Unicode
             // from vectorization, or we saw invalid UTF-16 data in the vectorized code paths and need to
             // drain remaining valid chars before we report failure.
 
-            for (; inputLength > 0; pInputBuffer++, inputLength--)
+            for (; pInputBuffer < pEndOfInputBuffer; pInputBuffer++)
             {
                 uint thisChar = pInputBuffer[0];
                 if (thisChar <= 0x7F)
@@ -407,7 +475,7 @@ namespace System.Text.Unicode
 
                 tempUtf8CodeUnitCountAdjustment -= 2;
 
-                if (inputLength == 1)
+                if ((nuint)pEndOfInputBuffer - (nuint)pInputBuffer < sizeof(uint))
                 {
                     goto Error; // input buffer too small to read a surrogate pair
                 }
@@ -422,7 +490,6 @@ namespace System.Text.Unicode
                 tempUtf8CodeUnitCountAdjustment += 2; // 2 UTF-16 code units -> 4 UTF-8 code units
 
                 pInputBuffer++; // consumed one extra char
-                inputLength--;
             }
 
         Error:
@@ -432,6 +499,21 @@ namespace System.Text.Unicode
             utf8CodeUnitCountAdjustment = tempUtf8CodeUnitCountAdjustment;
             scalarCountAdjustment = tempScalarCountAdjustment;
             return pInputBuffer;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
+        {
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+
+            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, bitMask128);
+
+            // self-pairwise add until all flags have moved to the first two bytes of the vector
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
+            return extractedBits.AsUInt16().ToScalar();
         }
     }
 }

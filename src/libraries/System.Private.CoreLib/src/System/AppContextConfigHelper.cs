@@ -7,6 +7,23 @@ namespace System
 {
     internal static class AppContextConfigHelper
     {
+        internal static bool GetBooleanConfig(string configName, bool defaultValue) =>
+            AppContext.TryGetSwitch(configName, out bool value) ? value : defaultValue;
+
+        internal static bool GetBooleanConfig(string switchName, string envVariable)
+        {
+            if (!AppContext.TryGetSwitch(switchName, out bool ret))
+            {
+                string? switchValue = Environment.GetEnvironmentVariable(envVariable);
+                if (switchValue != null)
+                {
+                    ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
+                }
+            }
+
+            return ret;
+        }
+
         internal static int GetInt32Config(string configName, int defaultValue, bool allowNegative = true)
         {
             try
@@ -15,6 +32,9 @@ namespace System
                 int result = defaultValue;
                 switch (config)
                 {
+                    case uint value:
+                        result = (int)value;
+                        break;
                     case string str:
                         if (str.StartsWith('0'))
                         {
@@ -57,6 +77,15 @@ namespace System
                 short result = defaultValue;
                 switch (config)
                 {
+                    case uint value:
+                        {
+                            result = (short)value;
+                            if ((uint)result != value)
+                            {
+                                return defaultValue; // overflow
+                            }
+                            break;
+                        }
                     case string str:
                         if (str.StartsWith("0x"))
                         {

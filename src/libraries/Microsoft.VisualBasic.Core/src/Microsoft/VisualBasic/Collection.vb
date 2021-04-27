@@ -99,8 +99,6 @@ Namespace Microsoft.VisualBasic
                 End If
             Catch ex As OutOfMemoryException
                 Throw
-            Catch ex As Threading.ThreadAbortException
-                Throw
             Catch ex As StackOverflowException
                 Throw
             Catch ex As Exception
@@ -233,8 +231,6 @@ Namespace Microsoft.VisualBasic
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, NameOf(Index)), NameOf(Index))

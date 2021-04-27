@@ -49,7 +49,7 @@ The above registration is typically done with the [`RegAsm.exe`](https://docs.mi
 
 In .NET Core, our intent will be to avoid a system wide shim library. This decision may add additional cost for deployment scenarios, but will reduce servicing and engineering costs by making deployment more explicit and less magic.
 
-The current .NET Core hosting solutions are described in detail at [Documentation/design-docs/host-components.md](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md). Along with the existing hosts an additional customizable COM activation host library (`comhost.dll`) will be added. This library (henceforth identified as 'shim') will export the required functions for COM class activation and registration and act in a way similar to .NET Framework's `mscoree.dll`.
+The current .NET Core hosting solutions are described in detail at [Documentation/design-docs/host-components.md](https://github.com/dotnet/runtime/tree/main/docs/design/features/host-components.md). Along with the existing hosts an additional customizable COM activation host library (`comhost.dll`) will be added. This library (henceforth identified as 'shim') will export the required functions for COM class activation and registration and act in a way similar to .NET Framework's `mscoree.dll`.
 
 >[`HRESULT DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv);`](https://docs.microsoft.com/windows/desktop/api/combaseapi/nf-combaseapi-dllgetclassobject)
 
@@ -105,7 +105,7 @@ When `DllGetClassObject()` is called in a COM activation scenario, the following
         ```
         Note this API is not exposed outside of `System.Private.CoreLib` and is subject to change at any time.
     * The loading of the assembly will take place in a new [`AssemblyLoadContext`](https://docs.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext) for dependency isolation. Each assembly path will get a seperate `AssemblyLoadContext`. This means that if an assembly provides multiple COM servers all of the servers from that assembly will reside in the same `AssemblyLoadContext`.
-    * The created `AssemblyLoadContext` will use an [`AssemblyDependencyResolver`](https://github.com/dotnet/corefx/issues/33165) that was supplied with the path to the assembly to load assemblies.
+    * The created `AssemblyLoadContext` will use an [`AssemblyDependencyResolver`](https://github.com/dotnet/runtime/issues/27787) that was supplied with the path to the assembly to load assemblies.
 1) The `IClassFactory` instance is returned to the caller of `DllGetClassObject()` to attempt class activation.
 
 The `DllCanUnloadNow()` function will always return `S_FALSE` indicating the shim is never able to be unloaded. This matches .NET Framework semantics but may be adjusted in the future if needed.

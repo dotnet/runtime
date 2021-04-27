@@ -687,15 +687,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        private void CheckBoundsInt(string msg, RectangleF bounds, int x, int y, int w, int h)
-        {
-            // currently bounds are rounded at 8 pixels (FIXME - we can go down to 1 pixel)
-            AssertEquals(msg + ".X", x, bounds.X, -1);
-            AssertEquals(msg + ".Y", y, bounds.Y, -1);
-            AssertEquals(msg + ".Width", w, bounds.Width, -1);
-            AssertEquals(msg + ".Height", h, bounds.Height, -1);
-        }
-
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clip_ScaleTransform_NoBoundsChange()
         {
@@ -777,7 +768,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        static Point[] SmallCurve = new Point[3] { new Point(0, 0), new Point(15, 5), new Point(5, 15) };
         static PointF[] SmallCurveF = new PointF[3] { new PointF(0, 0), new PointF(15, 5), new PointF(5, 15) };
 
         static Point[] TooSmallCurve = new Point[2] { new Point(0, 0), new Point(15, 5) };

@@ -8,9 +8,11 @@
 #include <stdlib.h>
 #include <glib.h>
 #include "config.h"
-#include "mono-counters.h"
-#include "mono-proclib.h"
-#include "mono-os-mutex.h"
+
+#include "mono/utils/mono-counters.h"
+#include "mono/utils/mono-proclib.h"
+#include "mono/utils/mono-os-mutex.h"
+#include "mono/utils/mono-time.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -24,8 +26,13 @@ struct _MonoCounter {
 	size_t size;
 };
 
+#ifndef DISABLE_PERF_COUNTERS
+
 static MonoCounter *counters = NULL;
 static mono_mutex_t counters_mutex;
+
+static mono_clock_id_t real_time_clock;
+static guint64 real_time_start;
 
 static volatile gboolean initialized = FALSE;
 
@@ -130,6 +137,9 @@ mono_counters_init (void)
 		return;
 
 	mono_os_mutex_init (&counters_mutex);
+
+	mono_clock_init (&real_time_clock);
+	real_time_start = mono_clock_get_time_ns (real_time_clock);
 
 	initialize_system_counters ();
 
@@ -311,6 +321,12 @@ total_time (void)
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_TOTAL_TIME);
 }
 
+static guint64
+real_time (void)
+{
+	return mono_clock_get_time_ns (real_time_clock) - real_time_start;
+}
+
 static gint64
 working_set (void)
 {
@@ -346,7 +362,7 @@ paged_bytes (void)
 // cause a failure when registering counters since the same function address will be used by all three functions. Preventing this method from being inlined
 // will make sure the registered callback functions remains unique.
 #ifdef _MSC_VER
-__declspec(noinline)
+#pragma optimize("", off)
 #endif
 static double
 cpu_load (int kind)
@@ -399,6 +415,9 @@ cpu_load_15min (void)
 {
 	return cpu_load (2);
 }
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
 
 #define SYSCOUNTER_TIME (MONO_COUNTER_SYSTEM | MONO_COUNTER_LONG | MONO_COUNTER_TIME | MONO_COUNTER_MONOTONIC | MONO_COUNTER_CALLBACK)
 #define SYSCOUNTER_BYTES (MONO_COUNTER_SYSTEM | MONO_COUNTER_LONG | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE | MONO_COUNTER_CALLBACK)
@@ -411,6 +430,7 @@ initialize_system_counters (void)
 	register_internal ("User Time", SYSCOUNTER_TIME, (gpointer) &user_time, sizeof (gint64));
 	register_internal ("System Time", SYSCOUNTER_TIME, (gpointer) &system_time, sizeof (gint64));
 	register_internal ("Total Time", SYSCOUNTER_TIME, (gpointer) &total_time, sizeof (gint64));
+	register_internal ("Real Time", SYSCOUNTER_TIME, (gpointer) &real_time, sizeof (guint64));
 	register_internal ("Working Set", SYSCOUNTER_BYTES, (gpointer) &working_set, sizeof (gint64));
 	register_internal ("Private Bytes", SYSCOUNTER_BYTES, (gpointer) &private_bytes, sizeof (gint64));
 	register_internal ("Virtual Bytes", SYSCOUNTER_BYTES, (gpointer) &virtual_bytes, sizeof (gint64));
@@ -731,4 +751,99 @@ mono_runtime_resource_set_callback (MonoResourceCallback callback)
 	limit_reached = callback;
 }
 
+#else // DISABLE_MONO_COUNTERS
+
+int
+mono_counter_get_variance (MonoCounter *counter)
+{
+	return 0;
+}
+
+int
+mono_counter_get_unit (MonoCounter *counter)
+{
+	return 0;
+}
+
+int
+mono_counter_get_section (MonoCounter *counter)
+{
+	return 0;
+}
+
+int
+mono_counter_get_type (MonoCounter *counter)
+{
+	return 0;
+}
+
+size_t
+mono_counter_get_size (MonoCounter *counter)
+{
+	return 0;
+}
+
+void
+mono_counters_enable (int section_mask)
+{
+}
+
+void
+mono_counters_init (void)
+{
+}
+
+void 
+mono_counters_register (const char* name, int type, void *addr)
+{
+}
+
+void
+mono_counters_register_with_size (const char *name, int type, void *addr, int size)
+{
+}
+
+void
+mono_counters_on_register (MonoCounterRegisterCallback callback)
+{
+}
+
+void
+mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
+{
+}
+
+int
+mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
+{
+	return 0;
+}
+
+void
+mono_counters_dump (int section_mask, FILE *outfile)
+{
+}
+
+void
+mono_counters_cleanup (void)
+{
+}
+
+void
+mono_runtime_resource_check_limit (int resource_type, uintptr_t value)
+{
+}
+
+int
+mono_runtime_resource_limit (int resource_type, uintptr_t soft_limit, uintptr_t hard_limit)
+{
+	return 1;
+}
+
+void
+mono_runtime_resource_set_callback (MonoResourceCallback callback)
+{
+}
+
+#endif // DISABLE_MONO_COUNTERS
 

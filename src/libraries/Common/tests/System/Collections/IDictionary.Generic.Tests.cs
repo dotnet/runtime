@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -20,6 +22,13 @@ namespace System.Collections.Tests
         /// </summary>
         /// <returns>An instance of an IDictionary{TKey, TValue} that can be used for testing.</returns>
         protected abstract IDictionary<TKey, TValue> GenericIDictionaryFactory();
+
+        /// <summary>
+        /// Creates an instance of an IDictionary{TKey, TValue} that can be used for testing, with a specific comparer.
+        /// </summary>
+        /// <param name="comparer">The comparer to use with the dictionary.</param>
+        /// <returns>An instance of an IDictionary{TKey, TValue} that can be used for testing, or null if the tested type doesn't support an equality comparer.</returns>
+        protected virtual IDictionary<TKey, TValue> GenericIDictionaryFactory(IEqualityComparer<TKey> comparer) => null;
 
         /// <summary>
         /// Creates an instance of an IDictionary{TKey, TValue} that can be used for testing.
@@ -641,6 +650,21 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IDictionary_Generic_Add_DistinctValuesWithHashCollisions(int count)
+        {
+            if (!IsReadOnly)
+            {
+                IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(new EqualityComparerConstantHashCode<TKey>(EqualityComparer<TKey>.Default));
+                if (dictionary != null)
+                {
+                    AddToCollection(dictionary, count);
+                    Assert.Equal(count, dictionary.Count);
+                }
+            }
+        }
+
         #endregion
 
         #region ContainsKey
@@ -792,6 +816,50 @@ namespace System.Collections.Tests
                 TKey missingKey = default(TKey);
                 dictionary.TryAdd(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.Remove(missingKey));
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void IDictionary_Generic_Remove_ReferenceRemovedFromCollection(bool useRemove)
+        {
+            if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
+            {
+                return;
+            }
+
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory();
+
+            // If TKey or TValue is a value type, the test will be meaningless for that part of it,
+            // but it will still pass.
+            KeyValuePair<WeakReference<object>, WeakReference<object>> wr = PopulateAndRemove(dictionary, useRemove);
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                GC.Collect();
+                return !wr.Key.TryGetTarget(out _) && !wr.Value.TryGetTarget(out _);
+            }, 30_000));
+
+            GC.KeepAlive(dictionary);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            KeyValuePair<WeakReference<object>, WeakReference<object>> PopulateAndRemove(IDictionary<TKey, TValue> collection, bool useRemove)
+            {
+                AddToCollection(collection, 1);
+                KeyValuePair<TKey, TValue> item = collection.First();
+
+                if (useRemove)
+                {
+                    Assert.True(collection.Remove(item));
+                }
+                else
+                {
+                    collection.Clear();
+                    Assert.Equal(0, collection.Count);
+                }
+
+                return new KeyValuePair<WeakReference<object>, WeakReference<object>>(
+                    new WeakReference<object>(item.Key), new WeakReference<object>(item.Value));
             }
         }
 

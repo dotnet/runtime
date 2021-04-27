@@ -51,7 +51,6 @@ private:
     FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
     ModuleID GetModuleIDForFunction(FunctionID functionId);
-    bool EndsWith(const String &lhs, const String &rhs);
 
     ICorProfilerInfo10 *_profInfo10;
     std::atomic<int> _failures;

@@ -224,7 +224,21 @@ public class Tests
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_variant_out_bool_false_unmanaged (VarRefFunc func);
 
-    [DllImport ("libtest")]
+	public delegate int CheckStructWithVariantFunc ([MarshalAs (UnmanagedType.Struct)] StructWithVariant obj);
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_struct_with_variant_in_unmanaged (CheckStructWithVariantFunc func);
+
+	public delegate int CheckStructWithBstrFunc ([MarshalAs (UnmanagedType.Struct)] StructWithBstr obj);
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_struct_with_bstr_in_unmanaged (CheckStructWithBstrFunc func);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_struct_with_variant_out_unmanaged ([MarshalAs (UnmanagedType.Struct)] StructWithVariant obj);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_struct_with_bstr_out_unmanaged ([MarshalAs (UnmanagedType.Struct)] StructWithBstr obj);
+
+	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_com_object_create (out IntPtr pUnk);
 
 	[DllImport ("libtest")]
@@ -331,6 +345,9 @@ public class Tests
 	public static extern int mono_test_marshal_safearray_in_ccw([MarshalAs (UnmanagedType.Interface)] ITest itest);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_lparray_out_ccw([MarshalAs (UnmanagedType.Interface)] ITest itest);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_default_interface_ccw([MarshalAs (UnmanagedType.Interface)] ITest itest);
 
 	[DllImport("libtest")]
@@ -338,7 +355,6 @@ public class Tests
 
 	public static int Main ()
 	{
-
 		bool isWindows = !(((int)Environment.OSVersion.Platform == 4) ||
 			((int)Environment.OSVersion.Platform == 128));
 
@@ -355,6 +371,15 @@ public class Tests
 				return 1;
 			if (mono_test_marshal_bstr_out_null (out str) != 0 || str != null)
 				return 2;
+
+			var sbfunc = new CheckStructWithBstrFunc(mono_test_marshal_struct_with_bstr_callback);
+			if (mono_test_marshal_struct_with_bstr_in_unmanaged(sbfunc) != 0)
+				return 3;
+
+			StructWithBstr swithB;
+			swithB.data = "this is a test string";
+			if (mono_test_marshal_struct_with_bstr_out_unmanaged (swithB) != 0)
+				return 4;
 
 			#endregion // BSTR Tests
 
@@ -480,6 +505,15 @@ public class Tests
 				return 106;
 			if (mono_test_marshal_variant_out_bstr_byref (out obj) != 0 || (string)obj != "PI")
 				return 107;
+
+			var svfunc = new CheckStructWithVariantFunc(mono_test_marshal_struct_with_variant_callback);
+			if (mono_test_marshal_struct_with_variant_in_unmanaged(svfunc) != 0)
+				return 108;
+
+			StructWithVariant swithV;
+			swithV.data = (object)-123;
+			if (mono_test_marshal_struct_with_variant_out_unmanaged (swithV) != 0)
+				return 109;
 
 			#endregion // VARIANT Tests
 
@@ -792,6 +826,8 @@ public class Tests
 				}
 				if (mono_test_marshal_safearray_in_ccw(test) != 0)
 					return 97;
+				if (mono_test_marshal_lparray_out_ccw(test) != 0)
+					return 98;
 			}
 			#endregion // SafeArray Tests
 
@@ -904,6 +940,8 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		void ArrayIn3 (object[] array);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		int ArrayOut ([Out, MarshalAs (UnmanagedType.LPArray, SizeConst=1)] int[] array);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		[return: MarshalAs (UnmanagedType.Interface)]
 		TestDefaultInterfaceClass1 GetDefInterface1();
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
@@ -971,6 +1009,9 @@ public class Tests
 		int ArrayIn2 ([In] object[] array);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		int ArrayIn3 (object[] array);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig]
+		int ArrayOut ([Out, MarshalAs (UnmanagedType.LPArray, SizeConst=1)] int[] array, out int result);
 	}
 
 	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000002")]
@@ -1021,6 +1062,8 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		public virtual extern void ArrayIn3 (object[] array);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern int ArrayOut ([Out, MarshalAs (UnmanagedType.LPArray, SizeConst=1)] int[] array);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		public virtual extern TestDefaultInterfaceClass1 GetDefInterface1();
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		public virtual extern TestDefaultInterfaceClass2 GetDefInterface2();
@@ -1031,7 +1074,7 @@ public class Tests
 	{
 		static TestClass ()
 		{
-			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject)); ;
+			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject));
 		}
 		private static System.IntPtr CreateObject (System.IntPtr aggr)
 		{
@@ -1046,7 +1089,7 @@ public class Tests
 	{
 		static TestActivatorClass ()
 		{
-			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject)); ;
+			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject));
 		}
 		private static System.IntPtr CreateObject (System.IntPtr aggr)
 		{
@@ -1212,6 +1255,18 @@ public class Tests
 		{
 			return ArrayIn(array);
 		}
+
+		public int ArrayOut (int[] array, out int result)
+		{
+			if (array == null)
+				result = 0;
+			else
+			{
+				array[0] = 55;
+				result = 1;
+			}
+			return 0;
+		}
 	}
 
 	public class ManagedTest : ITest
@@ -1344,6 +1399,14 @@ public class Tests
 		public void ArrayIn3(object[] array)
 		{
 			ArrayIn(array);
+		}
+
+		public int ArrayOut (int[] array)
+		{
+			if (array == null)
+				return 0;
+			array[0] = 55;
+			return 1;
 		}
 
 		public TestDefaultInterfaceClass1 GetDefInterface1()
@@ -1581,8 +1644,38 @@ public class Tests
 	public static int TestIfaceNoIcall (ITestPresSig itest) {
 		return itest.Return22NoICall () == 22 ? 0 : 1;
 	}
+
+        public static int mono_test_marshal_struct_with_variant_callback(StructWithVariant sv)
+        {
+            if (sv.data.GetType() != typeof(int))
+                return 1;
+            if ((int)sv.data != -123)
+                return 2;
+            return 0;
+        }
+
+        public static int mono_test_marshal_struct_with_bstr_callback(StructWithBstr sb)
+        {
+            if (sb.data.GetType() != typeof(string))
+                return 1;
+            if ((string)sb.data != "this is a test string")
+                return 2;
+            return 0;
+        }
 }
 
 public class TestVisible
 {
+}
+
+public struct StructWithVariant
+{
+	[MarshalAs (UnmanagedType.Struct)]
+	public object data;
+}
+
+public struct StructWithBstr
+{
+	[MarshalAs (UnmanagedType.BStr)]
+	public string data;
 }

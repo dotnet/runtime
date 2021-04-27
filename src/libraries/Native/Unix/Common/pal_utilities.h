@@ -45,6 +45,12 @@
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
+#if __has_attribute(fallthrough)
+#define FALLTHROUGH __attribute__((fallthrough))
+#else
+#define FALLTHROUGH
+#endif
+
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
  * or a different safe copy method, depending on the current platform.
@@ -57,6 +63,24 @@ inline static void SafeStringCopy(char* destination, size_t destinationSize, con
     strlcpy(destination, source, destinationSize);
 #else
     snprintf(destination, destinationSize, "%s", source);
+#endif
+}
+
+/**
+ * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
+ * or a different safe copy method, depending on the current platform.
+ */
+inline static void SafeStringConcat(char* destination, size_t destinationSize, const char* str1, const char* str2)
+{
+    memset(destination, 0, destinationSize);
+#if HAVE_STRCAT_S
+    strcat_s(destination, destinationSize, str1);
+    strcat_s(destination, destinationSize, str2);
+#elif HAVE_STRLCAT
+    strlcat(destination, str1, destinationSize);
+    strlcat(destination, str2, destinationSize);
+#else
+    snprintf(destination, destinationSize, "%s%s", str1, str2);
 #endif
 }
 

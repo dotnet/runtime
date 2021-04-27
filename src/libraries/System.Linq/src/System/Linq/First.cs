@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static TSource First<TSource>(this IEnumerable<TSource> source)
         {
-            TSource first = source.TryGetFirst(out bool found);
+            TSource? first = source.TryGetFirst(out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoElementsException();
@@ -21,7 +21,7 @@ namespace System.Linq
 
         public static TSource First<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            TSource first = source.TryGetFirst(predicate, out bool found);
+            TSource? first = source.TryGetFirst(predicate, out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoMatchException();
@@ -30,16 +30,26 @@ namespace System.Linq
             return first!;
         }
 
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
-            source.TryGetFirst(out bool _);
+        public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
+            source.TryGetFirst(out _);
 
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
-            source.TryGetFirst(predicate, out bool _);
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
+        {
+            TSource? first = source.TryGetFirst(out bool found);
+            return found ? first! : defaultValue;
+        }
 
-        [return: MaybeNull]
-        private static TSource TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found)
+        public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
+            source.TryGetFirst(predicate, out _);
+
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
+        {
+            TSource? first = source.TryGetFirst(predicate, out bool found);
+            return found ? first! : defaultValue;
+        }
+
+
+        private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found)
         {
             if (source == null)
             {
@@ -72,11 +82,10 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        private static TSource TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
+        private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
             if (source == null)
             {
@@ -98,7 +107,7 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
     }
 }

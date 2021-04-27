@@ -33,7 +33,7 @@ public class HttpWebRequestTest
 ```
 
  # LoopbackServer
-When writing network related tests we try to avoid running tests against a remote endpoint if possible. We provide simple APIs to create a LoopbackServer and send responses. A high number of scenarios can be tested with it. For additional information see https://github.com/dotnet/runtime/blob/master/src/libraries/Common/tests/System/Net/Http/LoopbackServer.cs
+When writing network related tests we try to avoid running tests against a remote endpoint if possible. We provide simple APIs to create a LoopbackServer and send responses. A high number of scenarios can be tested with it. For additional information see https://github.com/dotnet/runtime/blob/main/src/libraries/Common/tests/System/Net/Http/LoopbackServer.cs
 
 Example (skipping additional usings and class scoping):
 ```cs
@@ -56,7 +56,7 @@ public async Task Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationExcepti
 ```
 
 # OuterLoop
-This one is fairly simple but often used incorrectly. When running tests which depend on outside influences like e.g. Hardware (Internet, SerialPort, ...) and you can't mitigate these dependencies, you might consider using the `[OuterLoop]` attribute for your test. 
+This one is fairly simple but often used incorrectly. When running tests which depend on outside influences like e.g. Hardware (Internet, SerialPort, ...) and you can't mitigate these dependencies, you might consider using the `[OuterLoop]` attribute for your test.
 With this attribute, tests are executed in a dedicated CI loop and won't break the default CI loops which get created when you submit a PR.
 To run OuterLoop tests locally you need to set the msbuild property "OuterLoop" to true: `/p:OuterLoop=true`.
 To run OuterLoop tests in CI you need to mention dotnet-bot and identify the tests you want to run. See `@dotnet-bot help` for the exact loop names.
@@ -65,7 +65,7 @@ This doesn't mean that you should mark every test which executes against a remot
 
 # Relay Server
 For network related tests which needs to contact a remote endpoint instead of a LoopbackServer, you can use our Relay Servers. We invest in Infrastructure to provide these "safe" remote endpoints.
-For more information see https://github.com/dotnet/runtime/blob/master/src/libraries/Common/tests/System/Net/Configuration.Http.cs
+For more information see https://github.com/dotnet/runtime/blob/main/src/libraries/Common/tests/System/Net/Configuration.Http.cs
 
 Example:
 ```cs

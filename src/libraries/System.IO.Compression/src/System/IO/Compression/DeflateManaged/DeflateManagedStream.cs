@@ -31,7 +31,7 @@ namespace System.IO.Compression
 
             Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
 
-            _inflater = new InflaterManaged(null, method == ZipArchiveEntry.CompressionMethodValues.Deflate64 ? true : false, uncompressedSize);
+            _inflater = new InflaterManaged(method == ZipArchiveEntry.CompressionMethodValues.Deflate64, uncompressedSize);
 
             _stream = stream;
             _buffer = new byte[DefaultBufferSize];
@@ -94,9 +94,9 @@ namespace System.IO.Compression
             throw new NotSupportedException(SR.NotSupported);
         }
 
-        public override int Read(byte[] array, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(array, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotDisposed();
 
             int bytesRead;
@@ -105,7 +105,7 @@ namespace System.IO.Compression
 
             while (true)
             {
-                bytesRead = _inflater.Inflate(array, currentOffset, remainingCount);
+                bytesRead = _inflater.Inflate(buffer, currentOffset, remainingCount);
                 currentOffset += bytesRead;
                 remainingCount -= bytesRead;
 
@@ -139,21 +139,6 @@ namespace System.IO.Compression
             return count - remainingCount;
         }
 
-        private void ValidateParameters(byte[] array, int offset, int count)
-        {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
-
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.InvalidArgumentOffsetCount);
-        }
-
         private void EnsureNotDisposed()
         {
             if (_stream == null)
@@ -162,7 +147,7 @@ namespace System.IO.Compression
 
         private static void ThrowStreamClosedException()
         {
-            throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            throw new ObjectDisposedException(nameof(DeflateStream), SR.ObjectDisposed_StreamClosed);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
@@ -171,60 +156,50 @@ namespace System.IO.Compression
         public override int EndRead(IAsyncResult asyncResult) =>
             TaskToApm.End<int>(asyncResult);
 
-        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            // We use this checking order for compat to earlier versions:
-            if (_asyncOperations != 0)
-                throw new InvalidOperationException(SR.InvalidBeginCall);
-
-            ValidateParameters(array, offset, count);
-            EnsureNotDisposed();
-
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             Interlocked.Increment(ref _asyncOperations);
-            Task<int>? readTask = null;
+            bool startedAsyncWork = false;
 
             try
             {
                 // Try to read decompressed data in output buffer
-                int bytesRead = _inflater.Inflate(array, offset, count);
+                int bytesRead = _inflater.Inflate(buffer);
                 if (bytesRead != 0)
                 {
                     // If decompression output buffer is not empty, return immediately.
-                    return Task.FromResult(bytesRead);
+                    return ValueTask.FromResult(bytesRead);
                 }
 
                 if (_inflater.Finished())
                 {
                     // end of compression stream
-                    return Task.FromResult(0);
+                    return ValueTask.FromResult(0);
                 }
 
                 // If there is no data on the output buffer and we are not at
                 // the end of the stream, we need to get more data from the base stream
-                readTask = _stream!.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
-                if (readTask == null)
-                {
-                    throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
-                }
+                ValueTask<int> readTask = _stream!.ReadAsync(_buffer.AsMemory(), cancellationToken);
+                startedAsyncWork = true;
 
-                return ReadAsyncCore(readTask, array, offset, count, cancellationToken);
+                return ReadAsyncCore(readTask, buffer, cancellationToken);
             }
             finally
             {
                 // if we haven't started any async work, decrement the counter to end the transaction
-                if (readTask == null)
+                if (!startedAsyncWork)
                 {
                     Interlocked.Decrement(ref _asyncOperations);
                 }
             }
         }
 
-        private async Task<int> ReadAsyncCore(Task<int> readTask, byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadAsyncCore(ValueTask<int> readTask, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             try
             {
@@ -249,17 +224,13 @@ namespace System.IO.Compression
 
                     // Feed the data from base stream into decompression engine
                     _inflater.SetInput(_buffer, 0, bytesRead);
-                    bytesRead = _inflater.Inflate(array, offset, count);
+                    bytesRead = _inflater.Inflate(buffer);
 
                     if (bytesRead == 0 && !_inflater.Finished())
                     {
                         // We could have read in head information and didn't get any data.
                         // Read from the base stream again.
-                        readTask = _stream!.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
-                        if (readTask == null)
-                        {
-                            throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
-                        }
+                        readTask = _stream!.ReadAsync(_buffer.AsMemory(), cancellationToken);
                     }
                     else
                     {
@@ -273,7 +244,30 @@ namespace System.IO.Compression
             }
         }
 
-        public override void Write(byte[] array, int offset, int count)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            // We use this checking order for compat to earlier versions:
+            if (_asyncOperations != 0)
+                throw new InvalidOperationException(SR.InvalidBeginCall);
+
+            ValidateBufferArguments(buffer, offset, count);
+            EnsureNotDisposed();
+
+            return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            // We use this checking order for compat to earlier versions:
+            if (_asyncOperations != 0)
+                throw new InvalidOperationException(SR.InvalidBeginCall);
+
+            EnsureNotDisposed();
+
+            return ReadAsyncInternal(buffer, cancellationToken);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
         {
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }

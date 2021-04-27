@@ -74,15 +74,8 @@ namespace Microsoft.Win32.SafeHandles
             base.Dispose(disposing);
         }
 
-        protected override unsafe bool ReleaseHandle()
-        {
-            // Nothing to clean up.  We unlinked immediately after creating the backing store.
-            return true;
-        }
+        protected override bool ReleaseHandle() => true; // Nothing to clean up.  We unlinked immediately after creating the backing store.
 
-        public override bool IsInvalid
-        {
-            get { return (long)handle <= 0; }
-        }
+        public override bool IsInvalid => (long)handle <= 0;
     }
 }

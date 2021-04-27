@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [Fact]
         public void DecodeVarArgsDefAndRef()
         {
-            using (FileStream stream = File.OpenRead(typeof(VarArgsToDecode).GetTypeInfo().Assembly.Location))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(VarArgsToDecode).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader metadataReader = peReader.GetMetadataReader();
@@ -135,7 +135,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [Fact]
         public void SimpleSignatureProviderCoverage()
         {
-            using (FileStream stream = File.OpenRead(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly.Location))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader reader = peReader.GetMetadataReader();
@@ -246,7 +246,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [Fact]
         public void PinnedAndUnpinnedLocals()
         {
-            using (FileStream stream = File.OpenRead(typeof(PinnedAndUnpinnedLocalsToDecode).GetTypeInfo().Assembly.Location))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(PinnedAndUnpinnedLocalsToDecode).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader reader = peReader.GetMetadataReader();
@@ -285,7 +285,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [Fact]
         public void WrongSignatureType()
         {
-            using (FileStream stream = File.OpenRead(typeof(VarArgsToDecode).GetTypeInfo().Assembly.Location))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(VarArgsToDecode).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader reader = peReader.GetMetadataReader();

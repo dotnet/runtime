@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
     public static class SignedCmsWholeDocumentTests
     {
         [Theory]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         [InlineData(false)]
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             if (fromSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 cms.Decode(SignedDocuments.RsaPssDocument.AsSpan());
 #else
                 throw new Xunit.Sdk.XunitException(

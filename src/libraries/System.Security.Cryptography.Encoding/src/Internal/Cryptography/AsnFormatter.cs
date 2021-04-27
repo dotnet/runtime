@@ -13,7 +13,7 @@ namespace Internal.Cryptography
 
         public string Format(Oid? oid, byte[] rawData, bool multiLine)
         {
-            return FormatNative(oid, rawData, multiLine) ?? HexConverter.ToString(rawData.AsSpan(), HexConverter.Casing.Upper);
+            return FormatNative(oid, rawData, multiLine) ?? Convert.ToHexString(rawData);
         }
 
         protected abstract string? FormatNative(Oid? oid, byte[] rawData, bool multiLine);

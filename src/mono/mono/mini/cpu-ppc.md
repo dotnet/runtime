@@ -137,7 +137,7 @@ add_imm: dest:i src1:i len:4
 sub_imm: dest:i src1:i len:4
 mul_imm: dest:i src1:i len:4
 # there is no actual support for division or reminder by immediate
-# we simulate them, though (but we need to change the burg rules 
+# we simulate them, though (but we need to change the burg rules
 # to allocate a symbolic reg for src2)
 div_imm: dest:i src1:i src2:i len:20
 div_un_imm: dest:i src1:i src2:i len:12
@@ -164,8 +164,8 @@ cond_exc_no: len:8
 cond_exc_c: len:12
 cond_exc_nc: len:8
 long_conv_to_ovf_i: dest:i src1:i src2:i len:32
-long_mul_ovf: 
-long_conv_to_r_un: dest:f src1:i src2:i len:37 
+long_mul_ovf:
+long_conv_to_r_un: dest:f src1:i src2:i len:37
 float_beq: len:8
 float_bne_un: len:8
 float_blt: len:8

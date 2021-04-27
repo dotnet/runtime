@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class TextEvent : Event
     {
-        private readonly string _text;
+        private readonly string _text = null!;
 
         protected TextEvent() { }
 
@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public virtual string Evaluate(Processor processor, ActionFrame frame)
         {
-            return _text;
+            return _text!;
         }
     }
 }

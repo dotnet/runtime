@@ -1609,14 +1609,32 @@ namespace System.Numerics.Tests
         public void Matrix4x4GetHashCodeTest()
         {
             Matrix4x4 target = GenerateIncrementalMatrixNumber();
-            int expected = unchecked(
-                target.M11.GetHashCode() + target.M12.GetHashCode() + target.M13.GetHashCode() + target.M14.GetHashCode() +
-                target.M21.GetHashCode() + target.M22.GetHashCode() + target.M23.GetHashCode() + target.M24.GetHashCode() +
-                target.M31.GetHashCode() + target.M32.GetHashCode() + target.M33.GetHashCode() + target.M34.GetHashCode() +
-                target.M41.GetHashCode() + target.M42.GetHashCode() + target.M43.GetHashCode() + target.M44.GetHashCode());
-            int actual;
 
-            actual = target.GetHashCode();
+            HashCode hash = default;
+
+            hash.Add(target.M11);
+            hash.Add(target.M12);
+            hash.Add(target.M13);
+            hash.Add(target.M14);
+
+            hash.Add(target.M21);
+            hash.Add(target.M22);
+            hash.Add(target.M23);
+            hash.Add(target.M24);
+
+            hash.Add(target.M31);
+            hash.Add(target.M32);
+            hash.Add(target.M33);
+            hash.Add(target.M34);
+
+            hash.Add(target.M41);
+            hash.Add(target.M42);
+            hash.Add(target.M43);
+            hash.Add(target.M44);
+
+            int expected = hash.ToHashCode();
+            int actual = target.GetHashCode();
+
             Assert.Equal(expected, actual);
         }
 

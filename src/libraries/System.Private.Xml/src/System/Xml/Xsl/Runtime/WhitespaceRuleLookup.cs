@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System;
 using System.Xml;
 using System.Collections;
@@ -15,7 +16,7 @@ namespace System.Xml.Xsl.Runtime
     /// This class keeps a list of whitespace rules in order to determine whether whitespace children of particular
     /// elements should be stripped.
     /// </summary>
-    internal class WhitespaceRuleLookup
+    internal sealed class WhitespaceRuleLookup
     {
         private readonly Hashtable _qnames;
         private readonly ArrayList _wildcards;
@@ -123,7 +124,7 @@ namespace System.Xml.Xsl.Runtime
             return (qnameRule != null && !qnameRule.PreserveSpace);
         }
 
-        private class InternalWhitespaceRule : WhitespaceRule
+        private sealed class InternalWhitespaceRule : WhitespaceRule
         {
             private int _priority;       // Relative priority of this test
             private int _hashCode;       // Cached hashcode

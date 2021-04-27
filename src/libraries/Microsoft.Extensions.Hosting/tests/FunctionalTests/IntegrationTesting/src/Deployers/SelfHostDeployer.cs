@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.IntegrationTesting
@@ -165,7 +164,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                     // The timeout here is large, because we don't know how long the test could need
                     // We cover a lot of error cases above, but I want to make sure we eventually give up and don't hang the build
                     // just in case we missed one -anurse
-                    await started.Task.TimeoutAfter(TimeSpan.FromMinutes(10));
+                    await started.Task.WaitAsync(TimeSpan.FromMinutes(10));
                 }
 
                 return hostExitTokenSource.Token;

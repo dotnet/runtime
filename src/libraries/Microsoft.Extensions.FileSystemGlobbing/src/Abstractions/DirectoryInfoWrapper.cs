@@ -35,7 +35,17 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         {
             if (_directoryInfo.Exists)
             {
-                foreach (FileSystemInfo fileSystemInfo in _directoryInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly))
+                IEnumerable<FileSystemInfo> fileSystemInfos;
+                try
+                {
+                    fileSystemInfos = _directoryInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    yield break;
+                }
+
+                foreach (FileSystemInfo fileSystemInfo in fileSystemInfos)
                 {
                     var directoryInfo = fileSystemInfo as DirectoryInfo;
                     if (directoryInfo != null)
@@ -84,8 +94,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
                 {
                     // This shouldn't happen. The parameter name isn't supposed to contain wild card.
                     throw new InvalidOperationException(
-                        string.Format("More than one sub directories are found under {0} with name {1}.",
-                            _directoryInfo.FullName, name));
+                        $"More than one sub directories are found under {_directoryInfo.FullName} with name {name}.");
                 }
             }
         }

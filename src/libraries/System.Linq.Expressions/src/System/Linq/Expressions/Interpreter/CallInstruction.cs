@@ -132,24 +132,24 @@ namespace System.Linq.Expressions.Interpreter
             {
                 case 1:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter1));
                     break;
 
                 case 2:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter2));
                     break;
 
                 case 3:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter3));
                     break;
             }
 
-            if ((object?)alternativeMethod == null)
+            if (alternativeMethod is null)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -261,10 +261,10 @@ namespace System.Linq.Expressions.Interpreter
         protected static bool TryGetLightLambdaTarget(object? instance, [NotNullWhen(true)] out LightLambda? lightLambda)
         {
             var del = instance as Delegate;
-            if ((object?)del != null)
+            if (del is not null)
             {
                 var thunk = del.Target as Func<object[], object>;
-                if ((object?)thunk != null)
+                if (thunk is not null)
                 {
                     lightLambda = thunk.Target as LightLambda;
                     if (lightLambda != null)
@@ -387,7 +387,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string ToString() => "Call(" + _target + ")";
     }
 
-    internal class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
+    internal sealed class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
     {
         private readonly ByRefUpdater[] _byrefArgs;
 

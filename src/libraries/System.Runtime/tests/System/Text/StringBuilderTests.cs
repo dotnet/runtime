@@ -750,6 +750,29 @@ namespace System.Text.Tests
 
             yield return new object[] { "", new CustomFormatter(), "{0}", new object[] { 1.2 }, "abc" }; // Custom format provider
             yield return new object[] { "", new CustomFormatter(), "{0:0}", new object[] { 1.2 }, "abc" }; // Custom format provider
+
+            // ISpanFormattable inputs: simple validation of known types that implement the interface
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (byte)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { 'A' }, "A" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0:r}", new object[] { DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal) }, "Mon, 15 Mar 2021 14:52:51 GMT" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0:r}", new object[] { DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal) }, "Mon, 15 Mar 2021 14:52:51 GMT" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (decimal)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (double)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { Guid.Parse("68d9cfaf-feab-4d5b-96d8-a3fd889ae89f") }, "68d9cfaf-feab-4d5b-96d8-a3fd889ae89f" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (Half)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (short)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (int)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (long)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (IntPtr)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { new Rune('A') }, "A" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (sbyte)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (float)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { TimeSpan.FromSeconds(42) }, "00:00:42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (ushort)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (uint)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (ulong)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { (UIntPtr)42 }, "42" };
+            yield return new object[] { "", CultureInfo.InvariantCulture, "{0}", new object[] { new Version(1, 2, 3, 4) }, "1.2.3.4" };
         }
 
         [Theory]
@@ -2229,6 +2252,25 @@ namespace System.Text.Tests
             sb2.Append("12345");
 
             Assert.True(sb1.Equals(sb2));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40625")] // Hangs expanding the SB
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static unsafe void FailureOnLargeString()
+        {
+            RemoteExecutor.Invoke(() => // Uses lots of memory
+            {
+                AssertExtensions.ThrowsAny<ArgumentOutOfRangeException, OutOfMemoryException>(() =>
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(new char[2_000_000_000]);
+                    sb.Length--;
+                    string s = new string('x', 500_000_000);
+                    sb.Append(s); // This should throw, not AV
+                });
+
+                return RemoteExecutor.SuccessExitCode; // workaround https://github.com/dotnet/arcade/issues/5865
+            }).Dispose();
         }
     }
 }

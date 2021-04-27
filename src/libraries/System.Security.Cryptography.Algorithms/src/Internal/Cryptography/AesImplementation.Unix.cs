@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class AesImplementation
+    internal sealed partial class AesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
@@ -14,54 +14,40 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int paddingSize,
+            int feedback,
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm = GetAlgorithm(key.Length * 8, cipherMode);
+            IntPtr algorithm = GetAlgorithm(key.Length * 8, feedback * 8, cipherMode);
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
-        private static readonly Tuple<int, CipherMode, Func<IntPtr>>[] s_algorithmInitializers =
-        {
-            // Neither OpenSSL nor Cng Aes support CTS mode.
-            // Cng Aes doesn't seem to support CFB mode, and that would
-            // require passing in the feedback size.  Since Windows doesn't support it,
-            // we can skip it here, too.
-            Tuple.Create(128, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes128Cbc),
-            Tuple.Create(128, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes128Ecb),
-
-            Tuple.Create(192, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes192Cbc),
-            Tuple.Create(192, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes192Ecb),
-
-            Tuple.Create(256, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes256Cbc),
-            Tuple.Create(256, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes256Ecb),
-        };
-
-        private static IntPtr GetAlgorithm(int keySize, CipherMode cipherMode)
-        {
-            bool foundKeysize = false;
-
-            foreach (var triplet in s_algorithmInitializers)
+        private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode) =>
+            (keySize, cipherMode) switch
             {
-                if (triplet.Item1 == keySize && triplet.Item2 == cipherMode)
-                {
-                    return triplet.Item3();
-                }
+                // Neither OpenSSL nor Cng Aes support CTS mode.
 
-                if (triplet.Item1 == keySize)
-                {
-                    foundKeysize = true;
-                }
-            }
+                (128, CipherMode.CBC) => Interop.Crypto.EvpAes128Cbc(),
+                (128, CipherMode.ECB) => Interop.Crypto.EvpAes128Ecb(),
+                (128, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes128Cfb8(),
+                (128, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes128Cfb128(),
 
-            if (!foundKeysize)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidKeySize);
-            }
+                (192, CipherMode.CBC) => Interop.Crypto.EvpAes192Cbc(),
+                (192, CipherMode.ECB) => Interop.Crypto.EvpAes192Ecb(),
+                (192, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes192Cfb8(),
+                (192, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes192Cfb128(),
 
-            throw new NotSupportedException();
-        }
+                (256, CipherMode.CBC) => Interop.Crypto.EvpAes256Cbc(),
+                (256, CipherMode.ECB) => Interop.Crypto.EvpAes256Ecb(),
+                (256, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes256Cfb8(),
+                (256, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes256Cfb128(),
+
+                _ => throw (keySize == 128 || keySize == 192 || keySize == 256 ? (Exception)
+                        new NotSupportedException() :
+                        new CryptographicException(SR.Cryptography_InvalidKeySize)),
+            };
     }
 }

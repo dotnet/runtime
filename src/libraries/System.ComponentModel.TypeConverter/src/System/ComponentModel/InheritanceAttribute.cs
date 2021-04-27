@@ -104,6 +104,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts this attribute to a string.
         /// </summary>
-        public override string ToString() => TypeDescriptor.GetConverter(typeof(InheritanceLevel)).ConvertToString(InheritanceLevel);
+        public override string ToString() => TypeDescriptor.GetConverterTrimUnsafe(typeof(InheritanceLevel)).ConvertToString(InheritanceLevel);
     }
 }

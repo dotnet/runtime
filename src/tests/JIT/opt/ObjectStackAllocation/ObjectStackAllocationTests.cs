@@ -110,7 +110,7 @@ namespace ObjectStackAllocation
                 Console.WriteLine("GCStress is enabled");
                 expectedAllocationKind = AllocationKind.Undefined;
             }
-            else if (!SPCOptimizationsEnabled()) {
+            else if (!SPCOptimizationsEnabled() && !Crossgen2Test()) {
                 Console.WriteLine("System.Private.CoreLib.dll optimizations are disabled");
                 expectedAllocationKind = AllocationKind.Heap;
             }
@@ -145,7 +145,7 @@ namespace ObjectStackAllocation
 
             // The object is currently allocated on the stack when this method is jitted and on the heap when it's R2R-compiled.
             // The reason is that we always do the type check via helper in R2R mode, which blocks stack allocation.
-            // We don't have to use a helper in this case (even for R2R), https://github.com/dotnet/coreclr/issues/22086 tracks fixing that.
+            // We don't have to use a helper in this case (even for R2R), https://github.com/dotnet/runtime/issues/11850 tracks fixing that.
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeNoHelper, 1, AllocationKind.Undefined);
 
             CallTestAndVerifyAllocation(AllocateClassWithGcFieldAndInt, 5, expectedAllocationKind);
@@ -179,6 +179,12 @@ namespace ObjectStackAllocation
         static bool GCStressEnabled()
         {
             return Environment.GetEnvironmentVariable("COMPlus_GCStress") != null;
+        }
+
+        static bool Crossgen2Test()
+        {
+            // CrossGen2 doesn't respect the debuggable attribute
+            return Environment.GetEnvironmentVariable("RunCrossGen2") != null;
         }
 
         static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)

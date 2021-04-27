@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text;
 
 namespace System.Net.Mime
 {
@@ -20,7 +21,7 @@ namespace System.Net.Mime
     /// For legacy (app-compat) reasons we have chosen to remove the enforcement
     /// and rename the class from SevenBitStream to EightBitStream.
     /// </summary>
-    internal class EightBitStream : DelegatedStream, IEncodableStream
+    internal sealed class EightBitStream : DelegatedStream, IEncodableStream
     {
         private WriteStateInfoBase? _writeState;
 
@@ -52,18 +53,7 @@ namespace System.Net.Mime
         /// <param name="state">State to pass to callback</param>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             IAsyncResult result;
             if (_shouldEncodeLeadingDots)
@@ -94,18 +84,7 @@ namespace System.Net.Mime
         /// <param name="count">Count of bytes to write</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             if (_shouldEncodeLeadingDots)
             {
@@ -154,6 +133,8 @@ namespace System.Net.Mime
         public int DecodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
 
         public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+
+        public int EncodeString(string value, Encoding encoding) { throw new NotImplementedException(); }
 
         public string GetEncodedString() { throw new NotImplementedException(); }
     }

@@ -500,7 +500,7 @@ namespace System.Diagnostics
         /// <summary>Spawns an asynchronous polling loop for process completion.</summary>
         /// <param name="cancellationToken">A token to monitor to exit the polling loop.</param>
         /// <returns>The task representing the loop.</returns>
-        private Task WaitForExitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        private Task WaitForExitAsync(CancellationToken cancellationToken = default)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
             Debug.Assert(_waitInProgress == null);
@@ -549,7 +549,7 @@ namespace System.Diagnostics
                         _waitInProgress = null;
                     }
                 }
-            });
+            }, cancellationToken);
         }
 
         private bool TryReapChild()

@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Net.Mail
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class SmtpPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public SmtpPermission(bool unrestricted) { }

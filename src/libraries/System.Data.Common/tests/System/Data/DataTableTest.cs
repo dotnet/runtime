@@ -375,7 +375,7 @@ namespace System.Data.Tests
 
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void DataColumnTypeSerialization()
         {
             DataTable dt = new DataTable("MyTable");
@@ -1767,7 +1767,7 @@ Assert.False(true);
             Assert.Equal("</xs:schema>", textString);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Serialize()
         {
             // Create an array with multiple elements refering to
@@ -2887,7 +2887,7 @@ Assert.False(true);
             Assert.True(column3.Unique);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXmlSchema_2()
         {
             DataTable dt = new DataTable();
@@ -3111,7 +3111,7 @@ Assert.False(true);
             Assert.Equal(0, dt2.Rows.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void WriteXmlSchema()
         {
             using (new ThreadCultureChange("en-GB"))

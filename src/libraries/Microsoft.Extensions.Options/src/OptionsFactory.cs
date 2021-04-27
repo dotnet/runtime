@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Microsoft.Extensions.Options
 {
@@ -10,18 +12,20 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IOptionsFactory{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
-    public class OptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOptions : class
+    public class OptionsFactory<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
+        IOptionsFactory<TOptions>
+        where TOptions : class
     {
-        private readonly IEnumerable<IConfigureOptions<TOptions>> _setups;
-        private readonly IEnumerable<IPostConfigureOptions<TOptions>> _postConfigures;
-        private readonly IEnumerable<IValidateOptions<TOptions>> _validations;
+        private readonly IConfigureOptions<TOptions>[] _setups;
+        private readonly IPostConfigureOptions<TOptions>[] _postConfigures;
+        private readonly IValidateOptions<TOptions>[] _validations;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
         /// </summary>
         /// <param name="setups">The configuration actions to run.</param>
         /// <param name="postConfigures">The initialization actions to run.</param>
-        public OptionsFactory(IEnumerable<IConfigureOptions<TOptions>> setups, IEnumerable<IPostConfigureOptions<TOptions>> postConfigures) : this(setups, postConfigures, validations: null)
+        public OptionsFactory(IEnumerable<IConfigureOptions<TOptions>> setups, IEnumerable<IPostConfigureOptions<TOptions>> postConfigures) : this(setups, postConfigures, validations: Array.Empty<IValidateOptions<TOptions>>())
         { }
 
         /// <summary>
@@ -32,9 +36,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="validations">The validations to run.</param>
         public OptionsFactory(IEnumerable<IConfigureOptions<TOptions>> setups, IEnumerable<IPostConfigureOptions<TOptions>> postConfigures, IEnumerable<IValidateOptions<TOptions>> validations)
         {
-            _setups = setups;
-            _postConfigures = postConfigures;
-            _validations = validations;
+            _setups = setups as IConfigureOptions<TOptions>[] ?? setups.ToArray();
+            _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? postConfigures.ToArray();
+            _validations = validations as IValidateOptions<TOptions>[] ?? validations.ToArray();
         }
 
         /// <summary>
@@ -65,7 +69,7 @@ namespace Microsoft.Extensions.Options
                 foreach (IValidateOptions<TOptions> validate in _validations)
                 {
                     ValidateOptionsResult result = validate.Validate(name, options);
-                    if (result.Failed)
+                    if (result is not null && result.Failed)
                     {
                         failures.AddRange(result.Failures);
                     }

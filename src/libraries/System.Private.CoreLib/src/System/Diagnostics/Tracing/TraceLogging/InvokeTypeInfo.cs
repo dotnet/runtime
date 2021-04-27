@@ -62,13 +62,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             if (this.properties != null)
             {
                 foreach (PropertyAnalysis property in this.properties)
                 {
-                    property.typeInfo.WriteData(collector, property.getter(value));
+                    property.typeInfo.WriteData(property.getter(value));
                 }
             }
         }
@@ -77,13 +77,13 @@ namespace System.Diagnostics.Tracing
         {
             if (this.properties != null)
             {
-                var membersNames = new List<string>();
-                var membersValues = new List<object?>();
+                var membersNames = new string[this.properties.Length];
+                var membersValues = new object?[this.properties.Length];
                 for (int i = 0; i < this.properties.Length; i++)
                 {
                     object? propertyValue = properties[i].propertyInfo.GetValue(value);
-                    membersNames.Add(properties[i].name);
-                    membersValues.Add(properties[i].typeInfo.GetData(propertyValue));
+                    membersNames[i] = properties[i].name;
+                    membersValues[i] = properties[i].typeInfo.GetData(propertyValue);
                 }
                 return new EventPayload(membersNames, membersValues);
             }

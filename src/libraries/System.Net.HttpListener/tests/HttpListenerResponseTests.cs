@@ -410,7 +410,6 @@ namespace System.Net.Tests
         public async Task CloseResponseEntity_SendToClosedConnection_DoesNotThrow(bool willBlock)
         {
             const string Text = "Some-String";
-            byte[] buffer = Encoding.UTF8.GetBytes(Text);
 
             using (HttpListenerFactory factory = new HttpListenerFactory())
             using (Socket client = factory.GetConnectedSocket())
@@ -433,6 +432,27 @@ namespace System.Net.Tests
                 {
                     Assert.False(willBlock);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task AddLongHeader_DoesNotThrow()
+        {
+            string longString = new string('a', 65536);
+
+            using (HttpListenerResponse response = await GetResponse())
+            {
+                // WebHeaderCollection.Add(String,String) is called inside
+                response.AddHeader("Long-Header", longString);
+
+                // WebHeaderCollection[HttpResponseHeader] is called inside
+                response.Redirect("someValueToChangeType"); // this will implicitly change WebHeaderCollection._type
+
+                // WebHeaderCollection.Add(String,String) is called inside
+                response.AddHeader("Long-Header-2", longString);
+
+                Assert.Equal(longString, response.Headers["Long-Header"]);
+                Assert.Equal(longString, response.Headers["Long-Header-2"]);
             }
         }
     }

@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
 
@@ -135,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             string expectedHex;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 expectedHex = testCase.GetBmpEncoding() ?? testCase.GetPreferredEncoding();
             }

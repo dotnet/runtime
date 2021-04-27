@@ -79,12 +79,12 @@ namespace System.Data.ProviderBase
                 // Lock to prevent race condition with cancellation
                 lock (this)
                 {
-                    object lockToken = ObtainAdditionalLocksForClose();
+                    object? lockToken = ObtainAdditionalLocksForClose();
                     try
                     {
                         PrepareForCloseConnection();
 
-                        DbConnectionPool connectionPool = Pool;
+                        DbConnectionPool? connectionPool = Pool;
 
 
                         // The singleton closed classes won't have owners and

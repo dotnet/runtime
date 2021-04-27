@@ -108,7 +108,7 @@ namespace System.SpanTests
         {
             var arr = new Guid[20];
 
-            Span<Guid> slice = arr.AsSpan().Slice(2, 2);
+            Span<Guid> slice = arr.AsSpan(2, 2);
             Guid guid = Guid.NewGuid();
             slice[1] = guid;
 

@@ -96,6 +96,22 @@ namespace System.Tests
         [InlineData(ulong.MaxValue, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF })]
         public abstract void ConvertFromULong(ulong num, byte[] expected);
 
+        public static IEnumerable<object[]> ConvertFromHalfTestData()
+        {
+            yield return new object[] { (Half)0.0, new byte[] { 0x00, 0x00 } };
+            yield return new object[] { (Half)123.44, new byte[] { 0xB7, 0x57 } };
+            yield return new object[] { Half.MinValue, new byte[] { 0xFF, 0xFB } };
+            yield return new object[] { Half.MaxValue, new byte[] { 0xFF, 0x7B } };
+            yield return new object[] { Half.Epsilon, new byte[] { 0x01, 0x00 } };
+            yield return new object[] { Half.NaN, new byte[] { 0x00, 0xFE } };
+            yield return new object[] { Half.PositiveInfinity, new byte[] { 0x00, 0x7C } };
+            yield return new object[] { Half.NegativeInfinity, new byte[] { 0x00, 0xFC } };
+        }
+
+        [Theory]
+        [MemberData(nameof(ConvertFromHalfTestData))]
+        public abstract void ConvertFromHalf(Half num, byte[] expected);
+
         [Theory]
         [InlineData(0.0F, new byte[] { 0x00, 0x00, 0x00, 0x00 })]
         [InlineData(1.0F, new byte[] { 0x00, 0x00, 0x80, 0x3F })]
@@ -140,7 +156,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToCharTestData()
         {
-            yield return new object[] { 0, ' ', s_toCharByteArray};
+            yield return new object[] { 0, ' ', s_toCharByteArray };
             yield return new object[] { 1, '\0', s_toCharByteArray };
             yield return new object[] { 3, '*', s_toCharByteArray };
             yield return new object[] { 5, 'A', s_toCharByteArray };
@@ -260,6 +276,25 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(ToUInt64TestData))]
         public abstract void ToUInt64(int index, ulong expected, byte[] byteArray);
+
+        private static byte[] s_toHalfByteArray =
+            { 0x00, 0x00, 0xB7, 0x57, 0xFF, 0xFB, 0xFF, 0x7B, 0x01, 0x00, 0x00, 0xFE, 0x00, 0x7C, 0x00, 0xFC };
+
+        public static IEnumerable<object[]> ToHalfTestData()
+        {
+            yield return new object[] { 0, (Half)0.0, s_toHalfByteArray };
+            yield return new object[] { 2, (Half)123.44, s_toHalfByteArray };
+            yield return new object[] { 4, Half.MinValue, s_toHalfByteArray };
+            yield return new object[] { 6, Half.MaxValue, s_toHalfByteArray };
+            yield return new object[] { 8, Half.Epsilon, s_toHalfByteArray };
+            yield return new object[] { 10, Half.NaN, s_toHalfByteArray };
+            yield return new object[] { 12, Half.PositiveInfinity, s_toHalfByteArray };
+            yield return new object[] { 14, Half.NegativeInfinity, s_toHalfByteArray };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToHalfTestData))]
+        public abstract void ToHalf(int index, Half expected, byte[] byteArray);
 
         private static byte[] s_toSingleByteArray =
             { 0x00, 0x00, 0x00, 0x00, 0x80, 0x3F, 0x00, 0x00, 0x70, 0x41, 0x00, 0xFF, 0x7F, 0x47, 0x00, 0x00, 0x80, 0x3B, 0x00, 0x00,

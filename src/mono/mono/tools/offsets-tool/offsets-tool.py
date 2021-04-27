@@ -6,6 +6,7 @@ import os
 import sys
 import argparse
 import clang.cindex
+import platform
 
 IOS_DEFINES = ["HOST_DARWIN", "TARGET_MACH", "MONO_CROSS_COMPILE", "USE_MONO_CTX", "_XOPEN_SOURCE"]
 ANDROID_DEFINES = ["HOST_ANDROID", "MONO_CROSS_COMPILE", "USE_MONO_CTX", "BIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD"]
@@ -55,14 +56,14 @@ class OffsetsTool:
 				sys.exit (1)
 
 		parser = argparse.ArgumentParser ()
-		parser.add_argument ('--libclang', dest='libclang', help='path to shared library of libclang.{so,dylib}')
+		parser.add_argument ('--libclang', dest='libclang', help='path to shared library of libclang.{so,dylib}', required=True)
 		parser.add_argument ('--emscripten-sdk', dest='emscripten_path', help='path to emscripten sdk')
 		parser.add_argument ('--outfile', dest='outfile', help='path to output file', required=True)
 		parser.add_argument ('--monodir', dest='mono_path', help='path to mono source tree', required=True)
 		parser.add_argument ('--targetdir', dest='target_path', help='path to mono tree configured for target', required=True)
 		parser.add_argument ('--abi=', dest='abi', help='ABI triple to generate', required=True)
 		parser.add_argument ('--sysroot=', dest='sysroot', help='path to sysroot headers of target')
-		parser.add_argument ('--include-prefix=', dest='include_prefix', help='prefix path to include directory of target')
+		parser.add_argument ('--prefix=', dest='prefixes', action='append', help='prefix path to include directory of target')
 		parser.add_argument ('--netcore', dest='netcore', help='target runs with netcore', action='store_true')
 		args = parser.parse_args ()
 
@@ -75,7 +76,7 @@ class OffsetsTool:
 		if not os.path.isfile (args.target_path + "/config.h"):
 			print ("File '" + args.target_path + "/config.h' doesn't exist.", file=sys.stderr)
 			sys.exit (1)
-			
+
 		self.sys_includes=[]
 		self.target = None
 		self.target_args = []
@@ -84,21 +85,25 @@ class OffsetsTool:
 		if "wasm" in args.abi:
 			require_emscipten_path (args)
 			self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten"]
+			if platform.system() == "Windows":
+				self.sys_includes += [args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic"]
 			self.target = Target ("TARGET_WASM", None, [])
 			self.target_args += ["-target", args.abi]
 
 		# Linux
 		elif "arm-linux-gnueabihf" == args.abi:
+			require_sysroot (args)
 			self.target = Target ("TARGET_ARM", None, ["ARM_FPU_VFP", "HAVE_ARMV5", "HAVE_ARMV6", "HAVE_ARMV7"] + LINUX_DEFINES)
 			self.target_args += ["--target=arm---gnueabihf"]
 			self.target_args += ["-I", args.sysroot + "/include"]
 
-			if args.include_prefix:
-				if not os.path.isdir (args.include_prefix):
-					print ("provided path via --include-prefix (\"" + args.include_prefix + "\") doesn't exist.", file=sys.stderr)
-					sys.exit (1)
-				self.target_args += ["-I", args.include_prefix + "/include"]
-				self.target_args += ["-I", args.include_prefix + "/include-fixed"]
+			if args.prefixes:
+				for prefix in args.prefixes:
+					if not os.path.isdir (prefix):
+						print ("provided path via --prefix (\"" + prefix + "\") doesn't exist.", file=sys.stderr)
+						sys.exit (1)
+					self.target_args += ["-I", prefix + "/include"]
+					self.target_args += ["-I", prefix + "/include-fixed"]
 			else:
 				found = False
 				for i in range (11, 5, -1):
@@ -111,8 +116,22 @@ class OffsetsTool:
 					break
 
 				if not found:
-					print ("could not find a valid include path for target, provide one via --include-prefix=<path>.", file=sys.stderr)
+					print ("could not find a valid include path for target, provide one via --prefix=<path>.", file=sys.stderr)
 					sys.exit (1)
+
+		elif "aarch64-linux-gnu" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_ARM64", None, LINUX_DEFINES)
+			self.target_args += ["--target=aarch64-linux-gnu"]
+			self.target_args += ["--sysroot", args.sysroot]
+			self.target_args += ["-I", args.sysroot + "/include"]
+			if args.prefixes:
+				for prefix in args.prefixes:
+					if not os.path.isdir (prefix):
+						print ("provided path via --prefix (\"" + prefix + "\") doesn't exist.", file=sys.stderr)
+						sys.exit (1)
+					self.target_args += ["-I", prefix + "/include"]
+					self.target_args += ["-I", prefix + "/include-fixed"]
 
 		# iOS
 		elif "arm-apple-darwin10" == args.abi:
@@ -129,6 +148,11 @@ class OffsetsTool:
 			require_sysroot (args)
 			self.target = Target ("TARGET_X86", "", IOS_DEFINES)
 			self.target_args += ["-arch", "i386"]
+			self.target_args += ["-isysroot", args.sysroot]
+		elif "x86_64-apple-darwin10" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_AMD64", "", IOS_DEFINES)
+			self.target_args += ["-arch", "x86_64"]
 			self.target_args += ["-isysroot", args.sysroot]
 
 		# watchOS
@@ -172,9 +196,6 @@ class OffsetsTool:
 		if not self.target:
 			print ("ABI '" + args.abi + "' is not supported.", file=sys.stderr)
 			sys.exit (1)
-
-		if args.netcore:
-			self.target_args += ["-DENABLE_NETCORE"]
 
 		self.args = args
 

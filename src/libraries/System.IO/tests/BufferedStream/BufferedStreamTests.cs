@@ -10,11 +10,76 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class BufferedStream_StreamAsync : StreamAsync
+    public class BufferedStream_StreamAsync
     {
-        protected override Stream CreateStream()
+        [Fact]
+        public static void NullConstructor_Throws_ArgumentNullException()
         {
-            return new BufferedStream(new MemoryStream());
+            Assert.Throws<ArgumentNullException>(() => new BufferedStream(null));
+        }
+
+        [Fact]
+        public static void NegativeBufferSize_Throws_ArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BufferedStream(new MemoryStream(), -1));
+        }
+
+        [Fact]
+        public static void ZeroBufferSize_Throws_ArgumentNullException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BufferedStream(new MemoryStream(), 0));
+        }
+
+        [Fact]
+        public static void UnderlyingStreamDisposed_Throws_ObjectDisposedException()
+        {
+            MemoryStream disposedStream = new MemoryStream();
+            disposedStream.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => new BufferedStream(disposedStream));
+        }
+
+        [Fact]
+        public void UnderlyingStream()
+        {
+            var underlyingStream = new MemoryStream();
+            var bufferedStream = new BufferedStream(underlyingStream);
+            Assert.Same(underlyingStream, bufferedStream.UnderlyingStream);
+        }
+
+        [Fact]
+        public void BufferSize()
+        {
+            var bufferedStream = new BufferedStream(new MemoryStream(), 1234);
+            Assert.Equal(1234, bufferedStream.BufferSize);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ShouldNotFlushUnderlyingStreamIfReadOnly(bool underlyingCanSeek)
+        {
+            var underlying = new DelegateStream(
+                canReadFunc: () => true,
+                canWriteFunc: () => false,
+                canSeekFunc: () => underlyingCanSeek,
+                readFunc: (_, __, ___) => 123,
+                writeFunc: (_, __, ___) =>
+                {
+                    throw new NotSupportedException();
+                },
+                seekFunc: (_, __) => 123L
+            );
+
+            var wrapper = new CallTrackingStream(underlying);
+
+            var buffered = new BufferedStream(wrapper);
+            buffered.ReadByte();
+
+            buffered.Flush();
+            Assert.Equal(0, wrapper.TimesCalled(nameof(wrapper.Flush)));
+
+            await buffered.FlushAsync();
+            Assert.Equal(0, wrapper.TimesCalled(nameof(wrapper.FlushAsync)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -123,33 +188,6 @@ namespace System.IO.Tests
             var expected = new byte[data.Length - 1];
             Array.Copy(data, 1, expected, 0, expected.Length);
             Assert.Equal(expected, dst.ToArray());
-        }
-    }
-
-    public class BufferedStream_StreamMethods : StreamMethods
-    {
-        protected override Stream CreateStream()
-        {
-            return new BufferedStream(new MemoryStream());
-        }
-
-        protected override Stream CreateStream(int bufferSize)
-        {
-            return new BufferedStream(new MemoryStream(), bufferSize);
-        }
-
-        [Fact]
-        public void ReadByte_ThenRead_EndOfStreamCorrectlyFound()
-        {
-            using (var s = new BufferedStream(new MemoryStream(new byte[] { 1, 2 }), 2))
-            {
-                Assert.Equal(1, s.ReadByte());
-                Assert.Equal(2, s.ReadByte());
-                Assert.Equal(-1, s.ReadByte());
-
-                Assert.Equal(0, s.Read(new byte[1], 0, 1));
-                Assert.Equal(0, s.Read(new byte[1], 0, 1));
-            }
         }
     }
 
@@ -330,126 +368,5 @@ namespace System.IO.Tests
 
         public override Task FlushAsync(CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Exception from FlushAsync");
-    }
-
-    public class BufferedStream_NS17
-    {
-        protected Stream CreateStream()
-        {
-            return new BufferedStream(new MemoryStream());
-        }
-
-        private void EndCallback(IAsyncResult ar)
-        {
-        }
-
-        [Fact]
-        public void BeginEndReadTest()
-        {
-            Stream stream = CreateStream();
-            IAsyncResult result = stream.BeginRead(new byte[1], 0, 1, new AsyncCallback(EndCallback), new object());
-            stream.EndRead(result);
-        }
-
-        [Fact]
-        public void BeginEndWriteTest()
-        {
-            Stream stream = CreateStream();
-            IAsyncResult result = stream.BeginWrite(new byte[1], 0, 1, new AsyncCallback(EndCallback), new object());
-            stream.EndWrite(result);
-        }
-    }
-
-    public class BufferedStreamTests
-    {
-        [Fact]
-        public void UnderlyingStream()
-        {
-            var underlyingStream = new MemoryStream();
-            var bufferedStream = new BufferedStream(underlyingStream);
-            Assert.Same(underlyingStream, bufferedStream.UnderlyingStream);
-        }
-
-        [Fact]
-        public void BufferSize()
-        {
-            var bufferedStream = new BufferedStream(new MemoryStream(), 1234);
-            Assert.Equal(1234, bufferedStream.BufferSize);
-        }
-
-        [Theory]
-        [InlineData(1, 1)]
-        [InlineData(1, 2)]
-        [InlineData(1024, 4096)]
-        [InlineData(4096, 4097)]
-        [InlineData(4096, 1)]
-        [InlineData(2047, 4096)]
-        public void ReadSpan_WriteSpan_AllDataCopied(int spanSize, int bufferSize)
-        {
-            byte[] data = new byte[80000];
-            new Random(42).NextBytes(data);
-
-            var result = new MemoryStream();
-            using (var output = new BufferedStream(result, bufferSize))
-            using (var input = new BufferedStream(new MemoryStream(data), bufferSize))
-            {
-                Span<byte> span = new byte[spanSize];
-                int bytesRead;
-                while ((bytesRead = input.Read(span)) != 0)
-                {
-                    output.Write(span.Slice(0, bytesRead));
-                }
-            }
-            Assert.Equal(data, result.ToArray());
-        }
-
-        [Theory]
-        [InlineData(1, 1)]
-        [InlineData(1, 2)]
-        [InlineData(1024, 4096)]
-        [InlineData(4096, 4097)]
-        [InlineData(4096, 1)]
-        [InlineData(2047, 4096)]
-        public async Task ReadMemory_WriteMemory_AllDataCopied(int spanSize, int bufferSize)
-        {
-            byte[] data = new byte[80000];
-            new Random(42).NextBytes(data);
-
-            var result = new MemoryStream();
-            using (var output = new BufferedStream(result, bufferSize))
-            using (var input = new BufferedStream(new MemoryStream(data), bufferSize))
-            {
-                Memory<byte> memory = new byte[spanSize];
-                int bytesRead;
-                while ((bytesRead = await input.ReadAsync(memory)) != 0)
-                {
-                    await output.WriteAsync(memory.Slice(0, bytesRead));
-                }
-            }
-            Assert.Equal(data, result.ToArray());
-        }
-
-        [Fact]
-        public void ReadWriteMemory_Precanceled_Throws()
-        {
-            using (var bs = new BufferedStream(new MemoryStream()))
-            {
-                Assert.Equal(TaskStatus.Canceled, bs.ReadAsync(new byte[1], new CancellationToken(true)).AsTask().Status);
-                Assert.Equal(TaskStatus.Canceled, bs.WriteAsync(new byte[1], new CancellationToken(true)).AsTask().Status);
-            }
-        }
-
-        [Fact]
-        public async Task DisposeAsync_FlushesAndClosesStream()
-        {
-            var ms = new MemoryStream();
-            var bs = new BufferedStream(ms);
-            bs.Write(new byte[1], 0, 1);
-            Assert.Equal(0, ms.Position);
-            await bs.DisposeAsync();
-            Assert.True(bs.DisposeAsync().IsCompletedSuccessfully);
-            Assert.Throws<ObjectDisposedException>(() => ms.Position);
-            Assert.Equal(1, ms.ToArray().Length);
-        }
     }
 }

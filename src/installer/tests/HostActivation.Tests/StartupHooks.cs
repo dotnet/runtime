@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     {
         private SharedTestState sharedTestState;
         private string startupHookVarName = "DOTNET_STARTUP_HOOKS";
+        private string startupHookSupport = "System.StartupHookProvider.IsSupported";
 
         public StartupHooks(StartupHooks.SharedTestState fixture)
         {
@@ -639,6 +640,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.ExitWith(2);
         }
 
+        [Fact]
+        public void Muxer_activation_of_StartupHook_With_IsSupported_False()
+        {
+            var fixture = sharedTestState.PortableAppFixture.Copy();
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            var startupHookFixture = sharedTestState.StartupHookFixture.Copy();
+            var startupHookDll = startupHookFixture.TestProject.AppDll;
+
+            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+                .WithProperty(startupHookSupport, "false")
+                .Save();
+
+            // Startup hooks are not executed when the StartupHookSupport
+            // feature switch is set to false.
+            dotnet.Exec(appDll)
+                .EnvironmentVariable(startupHookVarName, startupHookDll)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.NotHaveStdOutContaining("Hello from startup hook!")
+                .And.HaveStdOutContaining("Hello World");
+        }
+
         public class SharedTestState : IDisposable
         {
             // Entry point projects
@@ -676,60 +703,60 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Entry point projects
                 PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 // Entry point with missing reference assembly
                 PortableAppWithMissingRefFixture = new TestProjectFixture("PortableAppWithMissingRef", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 // Correct startup hooks
                 StartupHookFixture = new TestProjectFixture("StartupHook", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 StartupHookWithOverloadFixture = new TestProjectFixture("StartupHookWithOverload", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 // Missing startup hook type (no StartupHook type defined)
                 StartupHookWithoutStartupHookTypeFixture = new TestProjectFixture("StartupHookWithoutStartupHookType", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 // Missing startup hook method (no Initialize method defined)
                 StartupHookWithoutInitializeMethodFixture = new TestProjectFixture("StartupHookWithoutInitializeMethod", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 // Invalid startup hook assembly
                 StartupHookStartupHookInvalidAssemblyFixture = new TestProjectFixture("StartupHookFake", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 // Invalid startup hooks (incorrect signatures)
                 StartupHookWithNonPublicMethodFixture = new TestProjectFixture("StartupHookWithNonPublicMethod", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 StartupHookWithInstanceMethodFixture = new TestProjectFixture("StartupHookWithInstanceMethod", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 StartupHookWithParameterFixture = new TestProjectFixture("StartupHookWithParameter", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 StartupHookWithReturnTypeFixture = new TestProjectFixture("StartupHookWithReturnType", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 StartupHookWithMultipleIncorrectSignaturesFixture = new TestProjectFixture("StartupHookWithMultipleIncorrectSignatures", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 // Valid startup hooks with incorrect behavior
                 StartupHookWithDependencyFixture = new TestProjectFixture("StartupHookWithDependency", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 // Startup hook with an assembly resolver
                 StartupHookWithAssemblyResolver = new TestProjectFixture("StartupHookWithAssemblyResolver", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
             }
 

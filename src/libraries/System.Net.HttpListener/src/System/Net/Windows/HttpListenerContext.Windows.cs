@@ -13,7 +13,7 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerContext
     {
-        private string _mutualAuthentication;
+        private string? _mutualAuthentication;
         internal HttpListenerSession ListenerSession { get; private set; }
 
         internal HttpListenerContext(HttpListenerSession session, RequestContextBase memoryBlob)
@@ -28,7 +28,7 @@ namespace System.Net
         }
 
         // Call this right after construction, and only once!  Not after it's been handed to a user.
-        internal void SetIdentity(IPrincipal principal, string mutualAuthentication)
+        internal void SetIdentity(IPrincipal principal, string? mutualAuthentication)
         {
             _mutualAuthentication = mutualAuthentication;
             _user = principal;
@@ -38,9 +38,9 @@ namespace System.Net
         // This can be used to cache the results of HttpListener.ExtendedProtectionSelectorDelegate.
         internal ExtendedProtectionPolicy ExtendedProtectionPolicy { get; set; }
 
-        internal string MutualAuthentication => _mutualAuthentication;
+        internal string? MutualAuthentication => _mutualAuthentication;
 
-        internal HttpListener Listener => _listener;
+        internal HttpListener? Listener => _listener;
 
         internal SafeHandle RequestQueueHandle => ListenerSession.RequestQueueHandle;
 
@@ -48,7 +48,7 @@ namespace System.Net
 
         internal ulong RequestId => Request.RequestId;
 
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol,
+        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval)
         {
@@ -62,7 +62,7 @@ namespace System.Net
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol,
+        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
@@ -76,8 +76,6 @@ namespace System.Net
 
         internal void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
-
             try
             {
                 _response?.Close();
@@ -90,23 +88,21 @@ namespace System.Net
                 }
                 finally
                 {
-                    IDisposable user = _user == null ? null : _user.Identity as IDisposable;
+                    IDisposable? user = _user == null ? null : _user.Identity as IDisposable;
 
                     // For unsafe connection ntlm auth we dont dispose this identity as yet since its cached
                     if ((user != null) &&
-                        (_user.Identity.AuthenticationType != NegotiationInfoClass.NTLM) &&
-                        (!_listener.UnsafeConnectionNtlmAuthentication))
+                        (_user!.Identity!.AuthenticationType != NegotiationInfoClass.NTLM) &&
+                        (!_listener!.UnsafeConnectionNtlmAuthentication))
                     {
                         user.Dispose();
                     }
                 }
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         internal void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(this);
             ForceCancelRequest(RequestQueueHandle, Request.RequestId);
             try
             {
@@ -116,7 +112,6 @@ namespace System.Net
             {
                 (_user?.Identity as IDisposable)?.Dispose();
             }
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(this);
         }
 
         internal Interop.HttpApi.HTTP_VERB GetKnownMethod()
@@ -144,13 +139,13 @@ namespace System.Net
             // The only way to cancel now is with CancelIoEx.
             if (statusCode == Interop.HttpApi.ERROR_CONNECTION_INVALID)
             {
-                _response.CancelLastWrite(requestQueueHandle);
+                _response!.CancelLastWrite(requestQueueHandle);
             }
         }
 
         internal void SetAuthenticationHeaders()
         {
-            Listener.SetAuthenticationHeaders(this);
+            Listener!.SetAuthenticationHeaders(this);
         }
     }
 }

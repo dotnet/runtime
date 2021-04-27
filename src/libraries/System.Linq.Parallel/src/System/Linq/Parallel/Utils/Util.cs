@@ -61,7 +61,7 @@ namespace System.Linq.Parallel
 
         private static readonly FastIntComparer s_fastIntComparer = new FastIntComparer();
 
-        private class FastIntComparer : Comparer<int>
+        private sealed class FastIntComparer : Comparer<int>
         {
             public override int Compare(int x, int y)
             {
@@ -71,7 +71,7 @@ namespace System.Linq.Parallel
 
         private static readonly FastLongComparer s_fastLongComparer = new FastLongComparer();
 
-        private class FastLongComparer : Comparer<long>
+        private sealed class FastLongComparer : Comparer<long>
         {
             public override int Compare(long x, long y)
             {
@@ -81,7 +81,7 @@ namespace System.Linq.Parallel
 
         private static readonly FastFloatComparer s_fastFloatComparer = new FastFloatComparer();
 
-        private class FastFloatComparer : Comparer<float>
+        private sealed class FastFloatComparer : Comparer<float>
         {
             public override int Compare(float x, float y)
             {
@@ -91,7 +91,7 @@ namespace System.Linq.Parallel
 
         private static readonly FastDoubleComparer s_fastDoubleComparer = new FastDoubleComparer();
 
-        private class FastDoubleComparer : Comparer<double>
+        private sealed class FastDoubleComparer : Comparer<double>
         {
             public override int Compare(double x, double y)
             {
@@ -101,7 +101,7 @@ namespace System.Linq.Parallel
 
         private static readonly FastDateTimeComparer s_fastDateTimeComparer = new FastDateTimeComparer();
 
-        private class FastDateTimeComparer : Comparer<DateTime>
+        private sealed class FastDateTimeComparer : Comparer<DateTime>
         {
             public override int Compare(DateTime x, DateTime y)
             {

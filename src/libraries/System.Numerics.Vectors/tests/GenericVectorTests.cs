@@ -445,13 +445,10 @@ namespace System.Numerics.Tests
         #region Tests for constructors using unsupported types
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Guid() => TestConstructorWithUnsupportedTypes<Guid>();
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_DateTime() => TestConstructorWithUnsupportedTypes<DateTime>();
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<Char>();
 
         private void TestConstructorWithUnsupportedTypes<T>() where T : struct
@@ -719,7 +716,7 @@ namespace System.Numerics.Tests
             // us to check that we didn't overwrite any part of the destination
             // if it was too small to contain the entire output.
 
-            new Random().NextBytes(MemoryMarshal.AsBytes(destination));
+            Random.Shared.NextBytes(MemoryMarshal.AsBytes(destination));
             T[] destinationCopy = destination.ToArray();
 
             Assert.False(vector.TryCopyTo(destination.Slice(1)));
@@ -3050,6 +3047,96 @@ namespace System.Numerics.Tests
 
         #endregion Narrow / Widen
 
+        #region Explicit Cast/As
+        [Fact]
+        public void TestCastByteToInt() => TestCastToInt<byte>();
+
+        [Fact]
+        public void TestCastSByteToInt() => TestCastToInt<sbyte>();
+
+        [Fact]
+        public void TestCastInt16ToInt() => TestCastToInt<short>();
+
+        [Fact]
+        public void TestCastUInt16ToInt() => TestCastToInt<ushort>();
+
+        [Fact]
+        public void TestCastInt32ToInt() => TestCastToInt<int>();
+
+        [Fact]
+        public void TestCastUInt32ToInt() => TestCastToInt<uint>();
+
+        [Fact]
+        public void TestCastInt64ToInt() => TestCastToInt<long>();
+
+        [Fact]
+        public void TestCastUInt64ToInt() => TestCastToInt<ulong>();
+
+        [Fact]
+        public void TestCastSingleToInt() => TestCastToInt<float>();
+
+        [Fact]
+        public void TestCastDoubleToInt() => TestCastToInt<double>();
+
+        private unsafe void TestCastToInt<T>() where T : unmanaged
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values);
+            Vector<int> vector2 = (Vector<int>)vector1;
+
+            var vector1Bytes = new byte[sizeof(T) * Vector<T>.Count];
+            vector1.CopyTo(vector1Bytes);
+            var vector2Bytes = new byte[sizeof(int) * Vector<int>.Count];
+            vector2.CopyTo(vector2Bytes);
+
+            Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+
+        [Fact]
+        public void TestAsIntToByte() => TestAs<int, byte>();
+
+        [Fact]
+        public void TestAsIntToSByte() => TestAs<int, sbyte>();
+
+        [Fact]
+        public void TestAsIntToInt16() => TestAs<int, short>();
+
+        [Fact]
+        public void TestAsIntToUInt16() => TestAs<int, ushort>();
+
+        [Fact]
+        public void TestAsIntToInt32() => TestAs<int, int>();
+
+        [Fact]
+        public void TestAsIntToUInt32() => TestAs<int, uint>();
+
+        [Fact]
+        public void TestAsIntToInt64() => TestAs<int, long>();
+
+        [Fact]
+        public void TestAsIntToUInt64() => TestAs<int, ulong>();
+
+        [Fact]
+        public void TestAsIntToSingle() => TestAs<int, float>();
+
+        [Fact]
+        public void TestAsIntToDouble() => TestAs<int, double>();
+
+        private unsafe void TestAs<TFrom, TTo>() where TFrom : unmanaged where TTo : unmanaged
+        {
+            TFrom[] values = GenerateRandomValuesForVector<TFrom>();
+            Vector<TFrom> vector1 = new Vector<TFrom>(values);
+            Vector<TTo> vector2 = vector1.As<TFrom, TTo>();
+
+            var vector1Bytes = new byte[sizeof(TFrom) * Vector<TFrom>.Count];
+            vector1.CopyTo(vector1Bytes);
+            var vector2Bytes = new byte[sizeof(TTo) * Vector<TTo>.Count];
+            vector2.CopyTo(vector2Bytes);
+
+            Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+        #endregion
+
         #region Helper Methods
         private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>
         {
@@ -3290,45 +3377,48 @@ namespace System.Numerics.Tests
         {
             if (typeof(T) == typeof(byte))
             {
-                return (T)(object)ConstantHelper.GetByteWithAllBitsSet();
+                return (T)(object)byte.MaxValue;
             }
             else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)ConstantHelper.GetSByteWithAllBitsSet();
+                return (T)(object)(sbyte)-1;
             }
             else if (typeof(T) == typeof(ushort))
             {
-                return (T)(object)ConstantHelper.GetUInt16WithAllBitsSet();
+                return (T)(object)ushort.MaxValue;
             }
             else if (typeof(T) == typeof(short))
             {
-                return (T)(object)ConstantHelper.GetInt16WithAllBitsSet();
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)ConstantHelper.GetInt32WithAllBitsSet();
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)ConstantHelper.GetInt64WithAllBitsSet();
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                return (T)(object)ConstantHelper.GetSingleWithAllBitsSet();
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                return (T)(object)ConstantHelper.GetDoubleWithAllBitsSet();
+                return (T)(object)(short)-1;
             }
             else if (typeof(T) == typeof(uint))
             {
-                return (T)(object)ConstantHelper.GetUInt32WithAllBitsSet();
+                return (T)(object)uint.MaxValue;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)(int)-1;
             }
             else if (typeof(T) == typeof(ulong))
             {
-                return (T)(object)ConstantHelper.GetUInt64WithAllBitsSet();
+                return (T)(object)ulong.MaxValue;
             }
-            throw new NotSupportedException();
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)(long)-1;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)BitConverter.Int32BitsToSingle(-1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return (T)(object)BitConverter.Int64BitsToDouble(-1);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
         #endregion
     }

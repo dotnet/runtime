@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Kerbose Logging
 mkdir -pv /var/log/kerberos/
 touch /var/log/kerberos/krb5.log
@@ -18,11 +20,12 @@ kadmin.local -q "add_principal -pw password user1@LINUX.CONTOSO.COM"
 
 # Add SPNs for services
 kadmin.local -q "add_principal -pw password HTTP/apacheweb.linux.contoso.com"
+kadmin.local -q "add_principal -pw password HTTP/altweb.linux.contoso.com:8080"
 kadmin.local -q "add_principal -pw password HOST/linuxclient.linux.contoso.com"
 kadmin.local -q "add_principal -pw password HOST/localhost"
 kadmin.local -q "add_principal -pw password NEWSERVICE/localhost"
 
 # Create keytab files for other machines
-kadmin.local ktadd -k /SHARED/apacheweb.keytab -norandkey HTTP/apacheweb.linux.contoso.com
+kadmin.local ktadd -k /SHARED/apacheweb.keytab -norandkey -glob "HTTP/*web*"
 kadmin.local ktadd -k /SHARED/linuxclient.keytab -norandkey HOST/linuxclient.linux.contoso.com
 kadmin.local ktadd -k /SHARED/linuxclient.keytab -norandkey HOST/localhost

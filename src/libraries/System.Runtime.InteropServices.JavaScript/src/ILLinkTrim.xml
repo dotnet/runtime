@@ -1,5 +1,0 @@
-﻿<linker>
-    <assembly fullname="System.Runtime.InteropServices.JavaScript">
-        <type fullname="System.Runtime.InteropServices.JavaScript.Runtime" />
-    </assembly>
-</linker>

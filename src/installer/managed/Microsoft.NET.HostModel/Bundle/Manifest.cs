@@ -11,22 +11,22 @@ namespace Microsoft.NET.HostModel.Bundle
     /// <summary>
     ///  BundleManifest is a description of the contents of a bundle file.
     ///  This class handles creation and consumption of bundle-manifests.
-    ///  
+    ///
     ///  Here is the description of the Bundle Layout:
     ///  _______________________________________________
-    ///  AppHost 
+    ///  AppHost
     ///
     ///
     /// ------------Embedded Files ---------------------
     /// The embedded files including the app, its
-    /// configuration files, dependencies, and 
+    /// configuration files, dependencies, and
     /// possibly the runtime.
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
+    ///
+    ///
+    ///
+    ///
+    ///
+    ///
     ///
     /// ------------ Bundle Header -------------
     ///     MajorVersion
@@ -43,9 +43,9 @@ namespace Microsoft.NET.HostModel.Bundle
     /// - - - - - - Manifest Entries - - - - - - - - - - -
     ///     Series of FileEntries (for each embedded file)
     ///     [File Type, Name, Offset, Size information]
-    ///     
-    ///     
-    /// 
+    ///
+    ///
+    ///
     /// _________________________________________________
     /// </summary>
     public class Manifest
@@ -55,46 +55,40 @@ namespace Microsoft.NET.HostModel.Bundle
         // by constructing the bundler with BundleAllConent option.
         // This mode is expected to be deprecated in future versions of .NET.
         [Flags]
-        enum HeaderFlags : ulong
+        private enum HeaderFlags : ulong
         {
             None = 0,
             NetcoreApp3CompatMode = 1
         }
 
-        // Bundle ID is a string that is used to uniquely 
+        // Bundle ID is a string that is used to uniquely
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
         public readonly string BundleID;
-
-        public const uint CurrentMajorVersion = 2;
-        public readonly uint DesiredMajorVersion;
+        public readonly uint BundleMajorVersion;
         // The Minor version is currently unused, and is always zero
-        public const uint MinorVersion = 0;
-
-        public static string CurrentVersion => $"{CurrentMajorVersion}.{MinorVersion}";
-        public string DesiredVersion => $"{DesiredMajorVersion}.{MinorVersion}";
-
-        FileEntry DepsJsonEntry = null;
-        FileEntry RuntimeConfigJsonEntry = null;
-        HeaderFlags Flags;
-
+        public const uint BundleMinorVersion = 0;
+        private FileEntry DepsJsonEntry;
+        private FileEntry RuntimeConfigJsonEntry;
+        private HeaderFlags Flags;
         public List<FileEntry> Files;
+        public string BundleVersion => $"{BundleMajorVersion}.{BundleMinorVersion}";
 
-        public Manifest(uint desiredVersion, bool netcoreapp3CompatMode = false)
+        public Manifest(uint bundleMajorVersion, bool netcoreapp3CompatMode = false)
         {
-            DesiredMajorVersion = desiredVersion;
+            BundleMajorVersion = bundleMajorVersion;
             Files = new List<FileEntry>();
             BundleID = Path.GetRandomFileName();
-            Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode: HeaderFlags.None;
+            Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode : HeaderFlags.None;
         }
 
-        public FileEntry AddEntry(FileType type, string relativePath, long offset, long size)
+        public FileEntry AddEntry(FileType type, string relativePath, long offset, long size, long compressedSize, uint bundleMajorVersion)
         {
-            FileEntry entry = new FileEntry(type, relativePath, offset, size);
+            FileEntry entry = new FileEntry(type, relativePath, offset, size, compressedSize, bundleMajorVersion);
             Files.Add(entry);
 
-            switch(entry.Type)
+            switch (entry.Type)
             {
                 case FileType.DepsJson:
                     DepsJsonEntry = entry;
@@ -118,12 +112,12 @@ namespace Microsoft.NET.HostModel.Bundle
             long startOffset = writer.BaseStream.Position;
 
             // Write the bundle header
-            writer.Write(DesiredMajorVersion); 
-            writer.Write(MinorVersion);
-            writer.Write(Files.Count());
+            writer.Write(BundleMajorVersion);
+            writer.Write(BundleMinorVersion);
+            writer.Write(Files.Count);
             writer.Write(BundleID);
 
-            if (DesiredMajorVersion == 2)
+            if (BundleMajorVersion >= 2)
             {
                 writer.Write((DepsJsonEntry != null) ? DepsJsonEntry.Offset : 0);
                 writer.Write((DepsJsonEntry != null) ? DepsJsonEntry.Size : 0);

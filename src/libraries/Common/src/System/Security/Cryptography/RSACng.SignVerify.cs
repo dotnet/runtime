@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -33,9 +32,9 @@ namespace System.Security.Cryptography
         {
             return s_hashSizes.GetOrAdd(
                 hashAlgorithm,
-                alg =>
+                static hashAlgorithm =>
                 {
-                    using (HashProviderCng hashProvider = new HashProviderCng(alg.Name!, null))
+                    using (HashProviderCng hashProvider = new HashProviderCng(hashAlgorithm.Name!, null))
                     {
                         return hashProvider.HashSizeInBytes;
                     }

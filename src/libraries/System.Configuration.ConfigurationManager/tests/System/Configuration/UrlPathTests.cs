@@ -14,7 +14,7 @@ namespace System.ConfigurationTests
         public void GetDirectoryOrRootName_Null()
         {
             string test = UrlPath.GetDirectoryOrRootName(null);
-            Assert.Null(null);
+            Assert.Null(test);
         }
 
         [Fact]

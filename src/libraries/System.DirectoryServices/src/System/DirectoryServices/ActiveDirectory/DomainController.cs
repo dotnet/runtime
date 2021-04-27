@@ -34,27 +34,27 @@ namespace System.DirectoryServices.ActiveDirectory
         ErrorReplicating = 1,
         ServerUnreachable = 2
     }
-    public delegate bool SyncUpdateCallback(SyncFromAllServersEvent eventType, string targetServer, string sourceServer, SyncFromAllServersOperationException exception);
+    public delegate bool SyncUpdateCallback(SyncFromAllServersEvent eventType, string? targetServer, string? sourceServer, SyncFromAllServersOperationException? exception);
     internal delegate bool SyncReplicaFromAllServersCallback(IntPtr data, IntPtr update);
 
     public class DomainController : DirectoryServer
     {
         private IntPtr _dsHandle = IntPtr.Zero;
         private IntPtr _authIdentity = IntPtr.Zero;
-        private readonly string[] _becomeRoleOwnerAttrs;
+        private readonly string[] _becomeRoleOwnerAttrs = null!;
         private bool _disposed;
 
         // internal variables for the public properties
-        private string _cachedComputerObjectName;
-        private string _cachedOSVersion;
+        private string? _cachedComputerObjectName;
+        private string? _cachedOSVersion;
         private double _cachedNumericOSVersion;
-        private Forest _currentForest;
-        private Domain _cachedDomain;
-        private ActiveDirectoryRoleCollection _cachedRoles;
+        private Forest? _currentForest;
+        private Domain? _cachedDomain;
+        private ActiveDirectoryRoleCollection? _cachedRoles;
         private bool _dcInfoInitialized;
 
-        internal SyncUpdateCallback userDelegate;
-        internal readonly SyncReplicaFromAllServersCallback syncAllFunctionPointer;
+        internal SyncUpdateCallback? userDelegate;
+        internal readonly SyncReplicaFromAllServersCallback syncAllFunctionPointer = null!;
 
         // this is twice the maximum allowed RIDPool size which is 15k
         internal const int UpdateRidPoolSeizureValue = 30000;
@@ -120,8 +120,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController GetDomainController(DirectoryContext context)
         {
-            string dcDnsName = null;
-            DirectoryEntryManager directoryEntryMgr = null;
+            string? dcDnsName = null;
+            DirectoryEntryManager? directoryEntryMgr = null;
 
             // check that the context argument is not null
             if (context == null)
@@ -152,7 +152,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFound, context.Name), typeof(DomainController), context.Name);
                 }
-                dcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
+                dcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName)!;
             }
             catch (COMException e)
             {
@@ -294,7 +294,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 int options = 0;
                 if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
                 {
-                    options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value;
+                    options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value!;
                 }
                 serverNtdsaEntry.Properties[PropertyManager.Options].Value = options | 1;
                 serverNtdsaEntry.CommitChanges();
@@ -320,7 +320,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 int options = 0;
                 if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
                 {
-                    options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value;
+                    options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value!;
                 }
                 if ((options & (1)) == 1)
                 {
@@ -355,7 +355,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (COMException e)
             {
-                throw ExceptionHelper.GetExceptionFromCOMException(context, e); ;
+                throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
 
             // invalidate the role collection so that it gets loaded again next time
@@ -366,7 +366,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // set the "fsmoRoleOwner" attribute on the appropriate role object
             // to the NTDSAObjectName of this DC
-            string roleObjectDN = null;
+            string? roleObjectDN = null;
 
             CheckIfDisposed();
 
@@ -401,7 +401,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(ActiveDirectoryRole));
             }
 
-            DirectoryEntry roleObjectEntry = null;
+            DirectoryEntry? roleObjectEntry = null;
             try
             {
                 roleObjectEntry = DirectoryEntryManager.GetDirectoryEntry(context, roleObjectDN);
@@ -410,7 +410,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Increment the RIDAvailablePool by 30k.
                 if (role == ActiveDirectoryRole.RidRole)
                 {
-                    System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value;
+                    System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value!;
 
                     // check the overflow of the low part
                     if (ridPool.LowPart + UpdateRidPoolSeizureValue < ridPool.LowPart)
@@ -630,11 +630,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                string serverUTCTime = null;
+                string? serverUTCTime = null;
 
                 try
                 {
-                    serverUTCTime = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.CurrentTime);
+                    serverUTCTime = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.CurrentTime)!;
                 }
                 finally
                 {
@@ -651,11 +651,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                string serverHighestCommittedUsn = null;
+                string? serverHighestCommittedUsn = null;
 
                 try
                 {
-                    serverHighestCommittedUsn = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.HighestCommittedUSN);
+                    serverHighestCommittedUsn = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.HighestCommittedUSN)!;
                 }
                 finally
                 {
@@ -675,7 +675,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the operating system version attribute
                     DirectoryEntry computerEntry = directoryEntryMgr.GetCachedDirectoryEntry(ComputerObjectName);
                     // is in the form Windows Server 2003
-                    _cachedOSVersion = (string)PropertyManager.GetPropertyValue(context, computerEntry, PropertyManager.OperatingSystem);
+                    _cachedOSVersion = (string)PropertyManager.GetPropertyValue(context, computerEntry, PropertyManager.OperatingSystem)!;
                 }
                 return _cachedOSVersion;
             }
@@ -692,7 +692,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry computerEntry = directoryEntryMgr.GetCachedDirectoryEntry(ComputerObjectName);
 
                     // is in the form Windows Server 2003
-                    string osVersion = (string)PropertyManager.GetPropertyValue(context, computerEntry, PropertyManager.OperatingSystemVersion);
+                    string osVersion = (string)PropertyManager.GetPropertyValue(context, computerEntry, PropertyManager.OperatingSystemVersion)!;
 
                     // this could be in the form 5.2 (3790), so we need to take out the (3790)
                     int index = osVersion.IndexOf('(');
@@ -727,7 +727,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
                 if (_cachedDomain == null)
                 {
-                    string domainName = null;
+                    string? domainName = null;
                     try
                     {
                         string defaultNCName = directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext);
@@ -747,7 +747,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public override string IPAddress
+        public override string? IPAddress
         {
             get
             {
@@ -868,7 +868,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public override SyncUpdateCallback SyncFromAllServersCallback
+        public override SyncUpdateCallback? SyncFromAllServersCallback
         {
             get
             {
@@ -913,7 +913,7 @@ namespace System.DirectoryServices.ActiveDirectory
             de.Bind(true);
         }
 
-        internal static DomainController FindOneWithCredentialValidation(DirectoryContext context, string siteName, LocatorOptions flag)
+        internal static DomainController FindOneWithCredentialValidation(DirectoryContext context, string? siteName, LocatorOptions flag)
         {
             DomainController dc;
             bool retry = false;
@@ -989,7 +989,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return dc;
         }
 
-        internal static DomainController FindOneInternal(DirectoryContext context, string domainName, string siteName, LocatorOptions flag)
+        internal static DomainController FindOneInternal(DirectoryContext context, string? domainName, string? siteName, LocatorOptions flag)
         {
             DomainControllerInfo domainControllerInfo;
             int errorCode = 0;
@@ -1037,7 +1037,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return new DomainController(dcContext, domainControllerName);
         }
 
-        internal static DomainControllerCollection FindAllInternal(DirectoryContext context, string domainName, bool isDnsDomainName, string siteName)
+        internal static DomainControllerCollection FindAllInternal(DirectoryContext context, string? domainName, bool isDnsDomainName, string? siteName)
         {
             ArrayList dcList = new ArrayList();
 
@@ -1272,7 +1272,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         // check if the role owner is this dc
                         if (dsNameResultItem.status == NativeMethods.DsNameNoError)
                         {
-                            if (dsNameResultItem.name.Equals(NtdsaObjectName))
+                            if (dsNameResultItem.name!.Equals(NtdsaObjectName))
                             {
                                 // add this role to the array
                                 // the index of the item in the result signifies

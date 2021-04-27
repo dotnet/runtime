@@ -52,13 +52,11 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(securityContext);
-
             X509Certificate2? result = null;
             SafeFreeCertContext? remoteContext = null;
             try
             {
-                int errorCode = QueryContextRemoteCertificate(securityContext, out remoteContext);
+                QueryContextRemoteCertificate(securityContext, out remoteContext);
 
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
@@ -108,11 +106,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Log.RemoteCertificate(result);
-                NetEventSource.Exit(securityContext, result);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
             return result;
         }
 

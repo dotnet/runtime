@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData(false, true, false, true)]
         public void GetHostFxrPath_GlobalInstallation(bool explicitLoad, bool useAssemblyPath, bool useRegisteredLocation, bool isValid)
         {
-            // Overide the registry key for self-registered global installs.
+            // Override the registry key for self-registered global installs.
             // If using the registered location, set the install location value to the valid/invalid root.
             // If not using the registered location, do not set the value. When the value does not exist,
             // the product falls back to the default install location.
@@ -263,7 +263,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // This is to make sure that we're using the unmodified product binary. If some previous test
             // enabled test-only product behavior on the binary and didn't correctly cleanup, this test would fail.
             File.Copy(
-                Path.Combine(sharedState.RepoDirectories.CorehostPackages, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
+                Path.Combine(sharedState.RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
                 sharedState.NethostPath,
                 overwrite: true);
 
@@ -302,7 +302,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string productDir = Path.Combine(BaseDirectory, "product");
                 Directory.CreateDirectory(productDir);
                 ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
-                File.Copy(Path.Combine(RepoDirectories.CorehostPackages, HostFxrName), ProductHostFxrPath);
+                File.Copy(Path.Combine(RepoDirectories.HostArtifacts, HostFxrName), ProductHostFxrPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

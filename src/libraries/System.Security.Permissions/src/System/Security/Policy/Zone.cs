@@ -3,6 +3,9 @@
 
 namespace System.Security.Policy
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed partial class Zone : EvidenceBase, IIdentityPermissionFactory
     {
         public Zone(SecurityZone zone) { }

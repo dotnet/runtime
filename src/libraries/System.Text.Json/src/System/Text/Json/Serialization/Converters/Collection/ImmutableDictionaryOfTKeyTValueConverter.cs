@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -19,21 +20,21 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            state.Current.ReturnValue = new Dictionary<string, TValue>();
+            state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
+            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)typeInfo.CreateObjectWithArgs;
             if (creator == null)
             {
-                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TValue, TCollection>();
-                classInfo.CreateObjectWithArgs = creator;
+                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
+                typeInfo.CreateObjectWithArgs = creator;
             }
 
-            state.Current.ReturnValue = creator((Dictionary<string, TValue>)state.Current.ReturnValue!);
+            state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
         }
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
@@ -44,6 +45,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = value.GetEnumerator();
                 if (!enumerator.MoveNext())
                 {
+                    enumerator.Dispose();
                     return true;
                 }
             }
@@ -52,8 +54,10 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
+            _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
+
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -67,11 +71,11 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.PropertyState = StackFramePropertyState.Name;
 
                     TKey key = enumerator.Current.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    _keyConverter.WriteWithQuotes(writer, key, options, ref state);
                 }
 
                 TValue element = enumerator.Current.Value;
-                if (!valueConverter.TryWrite(writer, element, options, ref state))
+                if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
@@ -80,6 +84,7 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.EndDictionaryElement();
             } while (enumerator.MoveNext());
 
+            enumerator.Dispose();
             return true;
         }
     }

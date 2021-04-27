@@ -83,7 +83,7 @@
 .class public auto ansi beforefieldinit ThisStateTestsType
         extends [System.Runtime]System.Object
 {
-    .method public hidebysig instance void 'special.ThrowThisUninit..ctor_Invalid_UninitStack'() cil managed { ret }
+    .method public hidebysig instance void 'special.ThrowThisUninit..ctor_Invalid_UninitStack.ThrowOrCatchOnlyExceptionType'() cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
     {
         ldarg.0

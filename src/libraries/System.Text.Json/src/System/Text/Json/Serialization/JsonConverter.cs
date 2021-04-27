@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -19,7 +20,7 @@ namespace System.Text.Json.Serialization
         /// <returns>True if the type can be converted, false otherwise.</returns>
         public abstract bool CanConvert(Type typeToConvert);
 
-        internal abstract ClassType ClassType { get; }
+        internal abstract ConverterStrategy ConverterStrategy { get; }
 
         /// <summary>
         /// Can direct Read or Write methods be called (for performance).
@@ -39,10 +40,22 @@ namespace System.Text.Json.Serialization
 
         internal abstract Type? ElementType { get; }
 
+        internal abstract Type? KeyType { get; }
+
         /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
         /// </summary>
         internal bool IsValueType { get; set; }
+
+        /// <summary>
+        /// Whether the converter is built-in.
+        /// </summary>
+        internal bool IsInternalConverter { get; set; }
+
+        /// <summary>
+        /// Whether the converter is built-in and handles a number type.
+        /// </summary>
+        internal bool IsInternalConverterForNumberType;
 
         /// <summary>
         /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
@@ -75,11 +88,16 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
 
-        // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
-        internal virtual bool ConstructorIsParameterized => false;
+        // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
+        internal virtual bool ConstructorIsParameterized { get; }
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
         internal virtual void Initialize(JsonSerializerOptions options) { }
+
+        /// <summary>
+        /// Creates the instance and assigns it to state.Current.ReturnValue.
+        /// </summary>
+        internal virtual void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options) { }
     }
 }

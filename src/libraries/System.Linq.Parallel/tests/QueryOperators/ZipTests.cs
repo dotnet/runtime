@@ -56,15 +56,27 @@ namespace System.Linq.Parallel.Tests
         {
             ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
             ParallelQuery<int> rightQuery = UnorderedSources.Default(leftCount, rightCount);
-            IntegerRangeSet seen = new IntegerRangeSet(0, Math.Min(leftCount, rightCount));
+            IntegerRangeSet seen_left = new IntegerRangeSet(0, leftCount);
+            IntegerRangeSet seen_right = new IntegerRangeSet(leftCount, rightCount);
+            var expected_seen = Math.Min(leftCount, rightCount);
             foreach (var pair in leftQuery.Zip(rightQuery, (x, y) => KeyValuePair.Create(x, y)))
             {
-                // For unordered collections the pairing isn't actually guaranteed, but an effect of the implementation.
-                // If this test starts failing it should be updated, and possibly mentioned in release notes.
-                Assert.Equal(pair.Key + leftCount, pair.Value);
-                seen.Add(pair.Key);
+                // Can only validate about whether the elements have been previously seen, not anything about the order.
+                seen_left.Add(pair.Key);
+                seen_right.Add(pair.Value);
             }
-            seen.AssertComplete();
+
+            // Zip truncates the longer collection, but which elements it leaves off is undefined when unordered.
+            Assert.Equal(expected_seen, seen_left.Count(kv => kv.Value));
+            Assert.Equal(expected_seen, seen_right.Count(kv => kv.Value));
+            if (leftCount <= rightCount)
+            {
+                seen_left.AssertComplete();
+            }
+            if (rightCount <= leftCount)
+            {
+                seen_right.AssertComplete();
+            }
         }
 
         [Fact]
@@ -106,16 +118,28 @@ namespace System.Linq.Parallel.Tests
         {
             ParallelQuery<int> leftQuery = UnorderedSources.Default(leftCount);
             ParallelQuery<int> rightQuery = UnorderedSources.Default(leftCount, rightCount);
-            IntegerRangeSet seen = new IntegerRangeSet(0, Math.Min(leftCount, rightCount));
+            IntegerRangeSet seen_left = new IntegerRangeSet(0, leftCount);
+            IntegerRangeSet seen_right = new IntegerRangeSet(leftCount, rightCount);
+            var expected_seen = Math.Min(leftCount, rightCount);
             Assert.All(leftQuery.Zip(rightQuery, (x, y) => KeyValuePair.Create(x, y)).ToList(),
                 pair =>
                 {
-                    // For unordered collections the pairing isn't actually guaranteed, but an effect of the implementation.
-                    // If this test starts failing it should be updated, and possibly mentioned in release notes.
-                    Assert.Equal(pair.Key + leftCount, pair.Value);
-                    seen.Add(pair.Key);
+                    // Can only validate about whether the elements have been previously seen, not anything about the order.
+                    seen_left.Add(pair.Key);
+                    seen_right.Add(pair.Value);
                 });
-            seen.AssertComplete();
+
+            // Zip truncates the longer collection, but which elements it leaves off is undefined when unordered.
+            Assert.Equal(expected_seen, seen_left.Count(kv => kv.Value));
+            Assert.Equal(expected_seen, seen_right.Count(kv => kv.Value));
+            if (leftCount <= rightCount)
+            {
+                seen_left.AssertComplete();
+            }
+            if (rightCount <= leftCount)
+            {
+                seen_right.AssertComplete();
+            }
         }
 
         [Fact]

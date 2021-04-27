@@ -8,7 +8,7 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class StackSpiller
+    internal sealed partial class StackSpiller
     {
         /// <summary>
         /// Creates a special block that is marked as not allowing jumps in.

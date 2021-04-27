@@ -167,7 +167,7 @@ namespace System.Linq.Expressions.Interpreter
     /// <summary>
     /// A hybrid dictionary which compares based upon object identity.
     /// </summary>
-    internal class HybridReferenceDictionary<TKey, TValue> where TKey : class
+    internal sealed class HybridReferenceDictionary<TKey, TValue> where TKey : class
     {
         private KeyValuePair<TKey, TValue>[]? _keysAndValues;
         private Dictionary<TKey, TValue>? _dict;
@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
             }
-            value = default(TValue)!;
+            value = default;
             return false;
         }
 
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 Debug.Assert(key != null);
 
-                TValue res;
+                TValue? res;
                 if (TryGetValue(key, out res))
                 {
                     return res;

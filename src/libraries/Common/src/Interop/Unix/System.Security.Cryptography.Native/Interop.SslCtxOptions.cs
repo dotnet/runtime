@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -23,7 +24,7 @@ internal static partial class Interop
         internal static extern void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetVerify")]
-        internal static extern void SslCtxSetVerify(SafeSslContextHandle ctx, SslCtxSetVerifyCallback callback);
+        internal static extern unsafe void SslCtxSetVerify(SafeSslContextHandle ctx, delegate* unmanaged<int, IntPtr, int> callback);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
         internal static extern unsafe bool SetCiphers(SafeSslContextHandle ctx, byte* cipherList, byte* cipherSuites);

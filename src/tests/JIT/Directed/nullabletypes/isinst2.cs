@@ -782,7 +782,7 @@ internal class Program
             Eval(18424, v is SealedClass[], false);
         }
         {
-            LongE?[] v = new LongE?[] { default(LongE) }; ;
+            LongE?[] v = new LongE?[] { default(LongE) };
             Eval(18425, v is EmptyStruct, false);
             Eval(18426, v is EmptyStruct[], false);
             Eval(18427, v is EmptyStruct?, false);
@@ -1740,7 +1740,7 @@ internal class Program
             Eval(19404, v is SealedClass[], false);
         }
         {
-            char?[] v = new char?[] { default(char) }; ;
+            char?[] v = new char?[] { default(char) };
             Eval(19405, v is EmptyStruct, false);
             Eval(19406, v is EmptyStruct[], false);
             Eval(19407, v is EmptyStruct?, false);
@@ -2698,7 +2698,7 @@ internal class Program
             Eval(20384, v is SealedClass[], false);
         }
         {
-            bool?[] v = new bool?[] { default(bool) }; ;
+            bool?[] v = new bool?[] { default(bool) };
             Eval(20385, v is EmptyStruct, false);
             Eval(20386, v is EmptyStruct[], false);
             Eval(20387, v is EmptyStruct?, false);
@@ -3656,7 +3656,7 @@ internal class Program
             Eval(21364, v is SealedClass[], false);
         }
         {
-            byte?[] v = new byte?[] { default(byte) }; ;
+            byte?[] v = new byte?[] { default(byte) };
             Eval(21365, v is EmptyStruct, false);
             Eval(21366, v is EmptyStruct[], false);
             Eval(21367, v is EmptyStruct?, false);
@@ -4614,7 +4614,7 @@ internal class Program
             Eval(22344, v is SealedClass[], false);
         }
         {
-            sbyte?[] v = new sbyte?[] { default(sbyte) }; ;
+            sbyte?[] v = new sbyte?[] { default(sbyte) };
             Eval(22345, v is EmptyStruct, false);
             Eval(22346, v is EmptyStruct[], false);
             Eval(22347, v is EmptyStruct?, false);
@@ -5572,7 +5572,7 @@ internal class Program
             Eval(23324, v is SealedClass[], false);
         }
         {
-            short?[] v = new short?[] { default(short) }; ;
+            short?[] v = new short?[] { default(short) };
             Eval(23325, v is EmptyStruct, false);
             Eval(23326, v is EmptyStruct[], false);
             Eval(23327, v is EmptyStruct?, false);
@@ -6530,7 +6530,7 @@ internal class Program
             Eval(24304, v is SealedClass[], false);
         }
         {
-            ushort?[] v = new ushort?[] { default(ushort) }; ;
+            ushort?[] v = new ushort?[] { default(ushort) };
             Eval(24305, v is EmptyStruct, false);
             Eval(24306, v is EmptyStruct[], false);
             Eval(24307, v is EmptyStruct?, false);
@@ -7488,7 +7488,7 @@ internal class Program
             Eval(25284, v is SealedClass[], false);
         }
         {
-            int?[] v = new int?[] { default(int) }; ;
+            int?[] v = new int?[] { default(int) };
             Eval(25285, v is EmptyStruct, false);
             Eval(25286, v is EmptyStruct[], false);
             Eval(25287, v is EmptyStruct?, false);
@@ -8446,7 +8446,7 @@ internal class Program
             Eval(26264, v is SealedClass[], false);
         }
         {
-            uint?[] v = new uint?[] { default(uint) }; ;
+            uint?[] v = new uint?[] { default(uint) };
             Eval(26265, v is EmptyStruct, false);
             Eval(26266, v is EmptyStruct[], false);
             Eval(26267, v is EmptyStruct?, false);
@@ -9404,7 +9404,7 @@ internal class Program
             Eval(27244, v is SealedClass[], false);
         }
         {
-            long?[] v = new long?[] { default(long) }; ;
+            long?[] v = new long?[] { default(long) };
             Eval(27245, v is EmptyStruct, false);
             Eval(27246, v is EmptyStruct[], false);
             Eval(27247, v is EmptyStruct?, false);
@@ -10362,7 +10362,7 @@ internal class Program
             Eval(28224, v is SealedClass[], false);
         }
         {
-            ulong?[] v = new ulong?[] { default(ulong) }; ;
+            ulong?[] v = new ulong?[] { default(ulong) };
             Eval(28225, v is EmptyStruct, false);
             Eval(28226, v is EmptyStruct[], false);
             Eval(28227, v is EmptyStruct?, false);
@@ -11320,7 +11320,7 @@ internal class Program
             Eval(29204, v is SealedClass[], false);
         }
         {
-            float?[] v = new float?[] { default(float) }; ;
+            float?[] v = new float?[] { default(float) };
             Eval(29205, v is EmptyStruct, false);
             Eval(29206, v is EmptyStruct[], false);
             Eval(29207, v is EmptyStruct?, false);
@@ -12278,7 +12278,7 @@ internal class Program
             Eval(30184, v is SealedClass[], false);
         }
         {
-            double?[] v = new double?[] { default(double) }; ;
+            double?[] v = new double?[] { default(double) };
             Eval(30185, v is EmptyStruct, false);
             Eval(30186, v is EmptyStruct[], false);
             Eval(30187, v is EmptyStruct?, false);
@@ -13236,7 +13236,7 @@ internal class Program
             Eval(31164, v is SealedClass[], false);
         }
         {
-            decimal?[] v = new decimal?[] { default(decimal) }; ;
+            decimal?[] v = new decimal?[] { default(decimal) };
             Eval(31165, v is EmptyStruct, false);
             Eval(31166, v is EmptyStruct[], false);
             Eval(31167, v is EmptyStruct?, false);
@@ -14194,7 +14194,7 @@ internal class Program
             Eval(32144, v is SealedClass[], false);
         }
         {
-            IntPtr?[] v = new IntPtr?[] { default(IntPtr) }; ;
+            IntPtr?[] v = new IntPtr?[] { default(IntPtr) };
             Eval(32145, v is EmptyStruct, false);
             Eval(32146, v is EmptyStruct[], false);
             Eval(32147, v is EmptyStruct?, false);
@@ -15152,7 +15152,7 @@ internal class Program
             Eval(33124, v is SealedClass[], false);
         }
         {
-            UIntPtr?[] v = new UIntPtr?[] { default(UIntPtr) }; ;
+            UIntPtr?[] v = new UIntPtr?[] { default(UIntPtr) };
             Eval(33125, v is EmptyStruct, false);
             Eval(33126, v is EmptyStruct[], false);
             Eval(33127, v is EmptyStruct?, false);
@@ -16110,7 +16110,7 @@ internal class Program
             Eval(34104, v is SealedClass[], false);
         }
         {
-            Guid?[] v = new Guid?[] { default(Guid) }; ;
+            Guid?[] v = new Guid?[] { default(Guid) };
             Eval(34105, v is EmptyStruct, false);
             Eval(34106, v is EmptyStruct[], false);
             Eval(34107, v is EmptyStruct?, false);
@@ -17068,7 +17068,7 @@ internal class Program
             Eval(35084, v is SealedClass[], false);
         }
         {
-            GCHandle?[] v = new GCHandle?[] { default(GCHandle) }; ;
+            GCHandle?[] v = new GCHandle?[] { default(GCHandle) };
             Eval(35085, v is EmptyStruct, false);
             Eval(35086, v is EmptyStruct[], false);
             Eval(35087, v is EmptyStruct?, false);

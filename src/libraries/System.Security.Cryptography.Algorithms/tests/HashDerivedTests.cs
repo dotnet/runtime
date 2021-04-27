@@ -36,6 +36,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
+        [SkipOnMono("Not supported on Browser")]
         public static void HashSize_SetForDerived_MD5()
         {
             using DerivedMD5 sha = new DerivedMD5();

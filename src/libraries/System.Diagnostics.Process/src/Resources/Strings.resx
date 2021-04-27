@@ -246,7 +246,7 @@
     <value>The {0} property is not supported on this platform.</value>
   </data>
   <data name="Process_PlatformNotSupported" xml:space="preserve">
-    <value>System.Diagnostics.Process is not supported on this platform</value>
+    <value>System.Diagnostics.Process is not supported on this platform.</value>
   </data>
   <data name="RUsageFailure" xml:space="preserve">
     <value>Failed to set or retrieve rusage information. See the error code for OS-specific error information.</value>

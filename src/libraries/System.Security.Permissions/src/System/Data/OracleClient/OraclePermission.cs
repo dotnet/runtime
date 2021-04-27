@@ -6,6 +6,9 @@ using System.Security.Permissions;
 
 namespace System.Data.OracleClient
 {
+#if NET5_0_OR_GREATER
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class OraclePermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public OraclePermission(PermissionState state) { }

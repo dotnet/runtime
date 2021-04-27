@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net5.0-Linux-Release-x64', used to name output directory.")
+usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net6.0-Linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
@@ -56,10 +56,10 @@ if [[ "$__BuildArch" == wasm ]]; then
 
     export CLR_CC=$(which emcc)
     export CLR_CXX=$(which em++)
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS ]]; then
+elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
@@ -69,7 +69,7 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 ]]; then
+    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 && "$__BuildArch" != "$__HostArch" ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__BuildArch build"
     fi
@@ -103,37 +103,50 @@ elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
         echo "Error: Unknown Android architecture $__BuildArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == iOS ]]; then
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS $__CMakeArgs"
+elif [[ "$__TargetOS" == iOSSimulator ]]; then
+    # set default iOS simulator deployment target
+    # keep in sync with src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
-        # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
-        # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == x86 ]]; then
-        # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
-        # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
-        # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
-        # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown iOSSimulator architecture $__BuildArch."
+        exit 1
+    fi
+elif [[ "$__TargetOS" == iOS ]]; then
+    # set default iOS device deployment target
+    # keep in sync with src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    if [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm ]]; then
-        # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
-        # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
     else
         echo "Error: Unknown iOS architecture $__BuildArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == tvOS ]]; then
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS $__CMakeArgs"
-    # set default tvOS device deployment target 
-    # keep in sync with tvOSVersionMin in src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=9.0 $__CMakeArgs"
+elif [[ "$__TargetOS" == tvOSSimulator ]]; then
+    # set default tvOS simulator deployment target
+    # keep in sync with src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown tvOSSimulator architecture $__BuildArch."
+        exit 1
+    fi
+elif [[ "$__TargetOS" == tvOS ]]; then
+    # set default tvOS device deployment target
+    # keep in sync with src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    if [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
         echo "Error: Unknown tvOS architecture $__BuildArch."
         exit 1
@@ -157,4 +170,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__BuildArch" "$__nativeroot" "$__nativeroot" "$__IntermediatesDir" "native libraries component"
+build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"

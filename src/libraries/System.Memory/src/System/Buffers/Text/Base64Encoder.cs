@@ -486,7 +486,14 @@ namespace System.Buffers.Text
             uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
             uint i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
 
-            return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
+            if (BitConverter.IsLittleEndian)
+            {
+                return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
+            }
+            else
+            {
+                return (i0 << 24) | (i1 << 16) | (i2 << 8) | i3;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -501,7 +508,14 @@ namespace System.Buffers.Text
             uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
             uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
 
-            return i0 | (i1 << 8) | (i2 << 16) | (EncodingPad << 24);
+            if (BitConverter.IsLittleEndian)
+            {
+                return i0 | (i1 << 8) | (i2 << 16) | (EncodingPad << 24);
+            }
+            else
+            {
+                return (i0 << 24) | (i1 << 16) | (i2 << 8) | EncodingPad;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -514,7 +528,14 @@ namespace System.Buffers.Text
             uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
             uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-            return i0 | (i1 << 8) | (EncodingPad << 16) | (EncodingPad << 24);
+            if (BitConverter.IsLittleEndian)
+            {
+                return i0 | (i1 << 8) | (EncodingPad << 16) | (EncodingPad << 24);
+            }
+            else
+            {
+                return (i0 << 24) | (i1 << 16) | (EncodingPad << 8) | EncodingPad;
+            }
         }
 
         private const uint EncodingPad = '='; // '=', for padding

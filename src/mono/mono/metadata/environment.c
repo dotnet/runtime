@@ -16,6 +16,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-compiler.h>
@@ -45,49 +46,18 @@ mono_environment_exitcode_set (gint32 value)
 	exitcode=value;
 }
 
-#ifndef ENABLE_NETCORE
-/* note: we better manipulate the string in managed code (easier and safer) */
-MonoStringHandle
-ves_icall_System_Environment_GetOSVersionString (MonoError *error)
+static int mini_argc = 0;
+static char **mini_argv = NULL;
+
+void
+mono_set_os_args (int argc, char **argv)
 {
-	error_init (error);
-#ifdef HOST_WIN32
-	OSVERSIONINFOEX verinfo;
-
-	verinfo.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
-	if (GetVersionEx ((OSVERSIONINFO*)&verinfo)) {
-		char version [128];
-		/* maximum string length is 45 bytes
-		   4 x 10 bytes per number, 1 byte for 0, 3 x 1 byte for dots, 1 for NULL */
-		sprintf (version, "%ld.%ld.%ld.%d",
-				 verinfo.dwMajorVersion,
-				 verinfo.dwMinorVersion,
-				 verinfo.dwBuildNumber,
-				 verinfo.wServicePackMajor << 16);
-		return mono_string_new_handle (mono_domain_get (), version, error);
-	}
-#elif defined(HAVE_SYS_UTSNAME_H) && defined(_AIX)
-	/*
-	 * AIX puts the major version number in .version and minor in .release; so make a
-	 * version string based on that; other Unices seem to cram everything in .release
-	 * and .version is for things like kernel variants.
-	 */
-	struct utsname name;
-	char version [sizeof(name)];
-
-	if (uname (&name) >= 0) {
-		sprintf (version, "%s.%s", name.version, name.release);
-		return mono_string_new_handle (mono_domain_get (), version, error);
-	}
-#elif defined(HAVE_SYS_UTSNAME_H)
-	struct utsname name;
-
-	memset (&name, 0, sizeof (name)); // WSL does not always nul terminate.
-
-	if (uname (&name) >= 0) {
-		return mono_string_new_handle (mono_domain_get (), name.release, error);
-	}
-#endif
-	return mono_string_new_handle (mono_domain_get (), "0.0.0.0", error);
+	mini_argc = argc;
+	mini_argv = argv;
 }
-#endif
+
+char *
+mono_get_os_cmd_line (void)
+{
+	return mono_runtime_get_cmd_line (mini_argc, mini_argv);
+}

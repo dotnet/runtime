@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdNetworkInterface : UnixNetworkInterface
+    internal sealed class BsdNetworkInterface : UnixNetworkInterface
     {
         private readonly BsdIpInterfaceProperties _ipProperties;
         private readonly OperationalStatus _operationalStatus;
         private readonly bool _supportsMulticast;
         private readonly long _speed;
 
-        protected unsafe BsdNetworkInterface(string name, int index) : base(name)
+        private unsafe BsdNetworkInterface(string name, int index) : base(name)
         {
             _index = index;
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;
@@ -43,7 +43,7 @@ namespace System.Net.NetworkInformation
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
                 // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
-                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // to propagate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr) =>
@@ -158,6 +158,6 @@ namespace System.Net.NetworkInformation
 
         public override bool SupportsMulticast { get { return _supportsMulticast; } }
 
-        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
+        public override bool IsReceiveOnly { get { return false; } }
     }
 }

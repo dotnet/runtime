@@ -10,10 +10,11 @@ using System.Xml.XPath;
 using MS.Internal.Xml;
 using System.Xml.Xsl.XPath;
 using System.Xml.Xsl.Qil;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Xslt
 {
-    internal class KeyMatchBuilder : XPathBuilder, XPathPatternParser.IPatternBuilder
+    internal sealed class KeyMatchBuilder : XPathBuilder, XPathPatternParser.IPatternBuilder
     {
         private int _depth;
         private readonly PathConvertor _convertor;
@@ -33,7 +34,8 @@ namespace System.Xml.Xsl.Xslt
             _depth++;
         }
 
-        public override QilNode EndBuild(QilNode result)
+        [return: NotNullIfNotNull("result")]
+        public override QilNode? EndBuild(QilNode? result)
         {
             _depth--;
             Debug.Assert(0 <= _depth && _depth <= 1, "this shouldn't happen");
@@ -53,17 +55,17 @@ namespace System.Xml.Xsl.Xslt
 
         // -------------------------------------- GetPredicateBuilder() ---------------------------------------
 
-        public virtual IXPathBuilder<QilNode> GetPredicateBuilder(QilNode ctx)
+        public IXPathBuilder<QilNode> GetPredicateBuilder(QilNode ctx)
         {
             return this;
         }
 
         // This code depends on particula shapes that XPathBuilder generates.
         // It works only on pathes.
-        internal class PathConvertor : QilReplaceVisitor
+        internal sealed class PathConvertor : QilReplaceVisitor
         {
             private new readonly XPathQilFactory f;
-            private QilNode _fixup;
+            private QilNode? _fixup;
             public PathConvertor(XPathQilFactory f) : base(f.BaseFactory)
             {
                 this.f = f;
@@ -96,7 +98,7 @@ namespace System.Xml.Xsl.Xslt
             // Filter($j= ... Filter($i = Content(fixup), ...))  -> Filter($j= ... Filter($i = Loop($j = DesendentOrSelf(Root(fixup)), Content($j), ...)))
             protected override QilNode VisitLoop(QilLoop n)
             {
-                if (n.Variable.Binding.NodeType == QilNodeType.Root || n.Variable.Binding.NodeType == QilNodeType.Deref)
+                if (n.Variable.Binding!.NodeType == QilNodeType.Root || n.Variable.Binding.NodeType == QilNodeType.Deref)
                 {
                     // This is absolute path already. We shouldn't touch it
                     return n;

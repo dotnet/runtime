@@ -12,7 +12,7 @@ namespace System.ComponentModel.DataAnnotations
         AllowMultiple = false)]
     public sealed class FileExtensionsAttribute : DataTypeAttribute
     {
-        private string _extensions;
+        private string? _extensions;
 
         public FileExtensionsAttribute()
             : base(DataType.Upload)
@@ -42,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations
         public override string FormatErrorMessage(string name) =>
             string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, ExtensionsFormatted);
 
-        public override bool IsValid(object value) =>
+        public override bool IsValid(object? value) =>
             value == null || value is string valueAsString && ValidateExtension(valueAsString);
 
         private bool ValidateExtension(string fileName)

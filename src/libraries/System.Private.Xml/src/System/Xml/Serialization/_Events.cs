@@ -9,18 +9,18 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Xml;
 
-    public delegate void XmlAttributeEventHandler(object sender, XmlAttributeEventArgs e);
+    public delegate void XmlAttributeEventHandler(object? sender, XmlAttributeEventArgs e);
 
     public class XmlAttributeEventArgs : EventArgs
     {
-        private readonly object _o;
+        private readonly object? _o;
         private readonly XmlAttribute _attr;
-        private readonly string _qnames;
+        private readonly string? _qnames;
         private readonly int _lineNumber;
         private readonly int _linePosition;
 
 
-        internal XmlAttributeEventArgs(XmlAttribute attr, int lineNumber, int linePosition, object o, string qnames)
+        internal XmlAttributeEventArgs(XmlAttribute attr, int lineNumber, int linePosition, object? o, string? qnames)
         {
             _attr = attr;
             _o = o;
@@ -29,7 +29,7 @@ namespace System.Xml.Serialization
             _linePosition = linePosition;
         }
 
-        public object ObjectBeingDeserialized
+        public object? ObjectBeingDeserialized
         {
             get { return _o; }
         }
@@ -64,17 +64,17 @@ namespace System.Xml.Serialization
         }
     }
 
-    public delegate void XmlElementEventHandler(object sender, XmlElementEventArgs e);
+    public delegate void XmlElementEventHandler(object? sender, XmlElementEventArgs e);
 
     public class XmlElementEventArgs : EventArgs
     {
-        private readonly object _o;
+        private readonly object? _o;
         private readonly XmlElement _elem;
-        private readonly string _qnames;
+        private readonly string? _qnames;
         private readonly int _lineNumber;
         private readonly int _linePosition;
 
-        internal XmlElementEventArgs(XmlElement elem, int lineNumber, int linePosition, object o, string qnames)
+        internal XmlElementEventArgs(XmlElement elem, int lineNumber, int linePosition, object? o, string? qnames)
         {
             _elem = elem;
             _o = o;
@@ -83,7 +83,7 @@ namespace System.Xml.Serialization
             _linePosition = linePosition;
         }
 
-        public object ObjectBeingDeserialized
+        public object? ObjectBeingDeserialized
         {
             get { return _o; }
         }
@@ -112,18 +112,18 @@ namespace System.Xml.Serialization
         }
     }
 
-    public delegate void XmlNodeEventHandler(object sender, XmlNodeEventArgs e);
+    public delegate void XmlNodeEventHandler(object? sender, XmlNodeEventArgs e);
 
 
     public class XmlNodeEventArgs : EventArgs
     {
-        private readonly object _o;
+        private readonly object? _o;
         private readonly XmlNode _xmlNode;
         private readonly int _lineNumber;
         private readonly int _linePosition;
 
 
-        internal XmlNodeEventArgs(XmlNode xmlNode, int lineNumber, int linePosition, object o)
+        internal XmlNodeEventArgs(XmlNode xmlNode, int lineNumber, int linePosition, object? o)
         {
             _o = o;
             _xmlNode = xmlNode;
@@ -131,7 +131,7 @@ namespace System.Xml.Serialization
             _linePosition = linePosition;
         }
 
-        public object ObjectBeingDeserialized
+        public object? ObjectBeingDeserialized
         {
             get { return _o; }
         }
@@ -156,7 +156,7 @@ namespace System.Xml.Serialization
             get { return _xmlNode.NamespaceURI; }
         }
 
-        public string Text
+        public string? Text
         {
             get { return _xmlNode.Value; }
         }
@@ -178,25 +178,25 @@ namespace System.Xml.Serialization
         }
     }
 
-    public delegate void UnreferencedObjectEventHandler(object sender, UnreferencedObjectEventArgs e);
+    public delegate void UnreferencedObjectEventHandler(object? sender, UnreferencedObjectEventArgs e);
 
     public class UnreferencedObjectEventArgs : EventArgs
     {
-        private readonly object _o;
-        private readonly string _id;
+        private readonly object? _o;
+        private readonly string? _id;
 
-        public UnreferencedObjectEventArgs(object o, string id)
+        public UnreferencedObjectEventArgs(object? o, string? id)
         {
             _o = o;
             _id = id;
         }
 
-        public object UnreferencedObject
+        public object? UnreferencedObject
         {
             get { return _o; }
         }
 
-        public string UnreferencedId
+        public string? UnreferencedId
         {
             get { return _id; }
         }

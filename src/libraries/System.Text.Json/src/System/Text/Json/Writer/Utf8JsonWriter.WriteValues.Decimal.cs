@@ -21,7 +21,11 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNumberValue(decimal value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteNumberValueIndented(value);
@@ -88,6 +92,14 @@ namespace System.Text.Json
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
+        }
+
+        internal void WriteNumberValueAsString(decimal value)
+        {
+            Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatDecimalLength];
+            bool result = Utf8Formatter.TryFormat(value, utf8Number, out int bytesWritten);
+            Debug.Assert(result);
+            WriteNumberValueAsStringUnescaped(utf8Number.Slice(0, bytesWritten));
         }
     }
 }

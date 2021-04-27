@@ -8,9 +8,9 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    internal class SslAuthenticationOptions
+    internal sealed class SslAuthenticationOptions
     {
-        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
+        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
 
@@ -78,6 +78,47 @@ namespace System.Net.Security
                     CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
                 }
             }
+
+            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
+            {
+                CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
+        }
+
+        internal SslAuthenticationOptions(ServerOptionsSelectionCallback optionCallback, object? state, RemoteCertificateValidationCallback? remoteCallback)
+        {
+            CheckCertName = false;
+            TargetHost = string.Empty;
+            IsServer = true;
+            UserState = state;
+            ServerOptionDelegate = optionCallback;
+            CertValidationDelegate = remoteCallback;
+        }
+
+        internal void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        {
+            AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
+            EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
+            EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
+            RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
+            CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
+            CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
+            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
+            {
+                CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
+            }
+            else if (sslServerAuthenticationOptions.ServerCertificate is X509Certificate2 certificateWithKey &&
+                    certificateWithKey.HasPrivateKey)
+            {
+                // given cert is X509Certificate2 with key. We can use it directly.
+                CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
+            }
+
+            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
+            {
+                CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
+            }
         }
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
@@ -98,7 +139,7 @@ namespace System.Net.Security
         internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }
-        internal List<SslApplicationProtocol>? ApplicationProtocols { get; }
+        internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
         internal SslStreamCertificateContext? CertificateContext { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
@@ -106,9 +147,11 @@ namespace System.Net.Security
         internal EncryptionPolicy EncryptionPolicy { get; set; }
         internal bool RemoteCertRequired { get; set; }
         internal bool CheckCertName { get; set; }
-        internal RemoteCertValidationCallback? CertValidationDelegate { get; set; }
+        internal RemoteCertificateValidationCallback? CertValidationDelegate { get; set; }
         internal LocalCertSelectionCallback? CertSelectionDelegate { get; set; }
         internal ServerCertSelectionCallback? ServerCertSelectionDelegate { get; set; }
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+        internal object? UserState { get; }
+        internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; }
     }
 }

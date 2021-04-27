@@ -8,9 +8,9 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal static unsafe partial class UnmanagedCertificateContext
+    internal static partial class UnmanagedCertificateContext
     {
-        internal static X509Certificate2Collection GetRemoteCertificatesFromStoreContext(IntPtr certContext)
+        internal static unsafe X509Certificate2Collection GetRemoteCertificatesFromStoreContext(IntPtr certContext)
         {
             X509Certificate2Collection result = new X509Certificate2Collection();
 
@@ -19,11 +19,7 @@ namespace System.Net
                 return result;
             }
 
-            Interop.Crypt32.CERT_CONTEXT context;
-            unsafe
-            {
-                context = *(Interop.Crypt32.CERT_CONTEXT*)certContext;
-            }
+            Interop.Crypt32.CERT_CONTEXT context = *(Interop.Crypt32.CERT_CONTEXT*)certContext;
 
             if (context.hCertStore != IntPtr.Zero)
             {

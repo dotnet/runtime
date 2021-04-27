@@ -276,7 +276,7 @@ namespace System.Buffers
         private sealed class VirtualAllocHandle : SafeHandle
         {
             // Called by P/Invoke when returning SafeHandles
-            private VirtualAllocHandle()
+            public VirtualAllocHandle()
                 : base(IntPtr.Zero, ownsHandle: true)
             {
             }
@@ -305,7 +305,6 @@ namespace System.Buffers
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366892(v=vs.85).aspx
             [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool VirtualFree(
                 [In] IntPtr lpAddress,

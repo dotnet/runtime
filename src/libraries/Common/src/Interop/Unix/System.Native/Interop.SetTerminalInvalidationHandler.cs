@@ -3,13 +3,12 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Sys
+    internal static partial class Sys
     {
-        internal delegate void TerminalInvalidationCallback();
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetTerminalInvalidationHandler")]
-        internal static extern void SetTerminalInvalidationHandler(TerminalInvalidationCallback handler);
+        [SuppressGCTransition]
+        internal static extern unsafe void SetTerminalInvalidationHandler(delegate* unmanaged<void> handler);
     }
 }

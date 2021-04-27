@@ -7,11 +7,13 @@ using System.Threading;
 
 namespace System.Net.Http
 {
-    internal static class HttpUtilities
+    internal static partial class HttpUtilities
     {
         internal static Version DefaultRequestVersion => HttpVersion.Version11;
 
         internal static Version DefaultResponseVersion => HttpVersion.Version11;
+
+        internal static HttpVersionPolicy DefaultVersionPolicy => HttpVersionPolicy.RequestVersionOrLower;
 
         internal static bool IsHttpUri(Uri uri)
         {
@@ -23,9 +25,6 @@ namespace System.Net.Http
             IsSupportedNonSecureScheme(scheme) ||
             IsSupportedSecureScheme(scheme);
 
-        internal static bool IsSupportedNonSecureScheme(string scheme) =>
-            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || IsNonSecureWebSocketScheme(scheme);
-
         internal static bool IsSupportedSecureScheme(string scheme) =>
             string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase) || IsSecureWebSocketScheme(scheme);
 
@@ -34,6 +33,14 @@ namespace System.Net.Http
 
         internal static bool IsSecureWebSocketScheme(string scheme) =>
             string.Equals(scheme, "wss", StringComparison.OrdinalIgnoreCase);
+
+        internal static bool IsSupportedProxyScheme(string scheme) =>
+            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || IsSocksScheme(scheme);
+
+        internal static bool IsSocksScheme(string scheme) =>
+            string.Equals(scheme, "socks5", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(scheme, "socks4a", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(scheme, "socks4", StringComparison.OrdinalIgnoreCase);
 
         // Always specify TaskScheduler.Default to prevent us from using a user defined TaskScheduler.Current.
         //

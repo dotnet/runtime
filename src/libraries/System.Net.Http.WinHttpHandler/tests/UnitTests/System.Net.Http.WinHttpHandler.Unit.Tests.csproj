@@ -1,14 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
-    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <DefineConstants>UNITTEST</DefineConstants>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />
+    <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
@@ -17,8 +17,6 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs"
@@ -65,8 +63,6 @@
              Link="ProductionCode\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs"
              Link="ProductionCode\WinHttpAuthHelper.cs" />
-    <Compile Include="..\..\src\System\Net\Http\WinHttpCertificateHelper.cs"
-             Link="ProductionCode\WinHttpCertificateHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs"
              Link="ProductionCode\WinHttpChannelBinding.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs"
@@ -89,6 +85,8 @@
              Link="ProductionCode\WinHttpResponseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTraceHelper.cs"
              Link="ProductionCode\WinHttpTraceHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTrailersHelper.cs"
+             Link="ProductionCode\WinHttpTrailersHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs"
              Link="ProductionCode\WinHttpTransportContext.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"

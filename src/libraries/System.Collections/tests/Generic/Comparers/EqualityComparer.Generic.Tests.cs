@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -74,7 +75,7 @@ namespace System.Collections.Generic.Tests
             // throw if the inputs are not reference-equal, both non-null and either of them
             // is not of type T.
             IEqualityComparer comparer = EqualityComparer<T>.Default;
-            Task<T> notOfTypeT = Task.FromResult(default(T));
+            StrongBox<T> notOfTypeT = new StrongBox<T>(default(T));
 
             Assert.True(comparer.Equals(default(T), default(T))); // This should not throw since both inputs will either be null or Ts.
             Assert.True(comparer.Equals(notOfTypeT, notOfTypeT)); // This should not throw since the inputs are reference-equal.
@@ -90,9 +91,9 @@ namespace System.Collections.Generic.Tests
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Equals(default(T), notOfTypeT)); // rhs is the problem
             }
 
-            if (!(notOfTypeT is T)) // catch cases where Task<T> actually is a T, like object or non-generic Task
+            if (!(notOfTypeT is T)) // catch cases where StrongBox<T> actually is a T, such as T == object
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Equals(notOfTypeT, Task.FromResult(default(T))));
+                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Equals(notOfTypeT, new StrongBox<T>(default(T))));
             }
         }
 

@@ -17,9 +17,11 @@
 #if HAVE_LINUX_RTNETLINK_H
 #include <linux/rtnetlink.h>
 #elif HAVE_RT_MSGHDR
-#include <net/route.h>
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
 #else
-#error System must have linux/rtnetlink.h or net/route.h.
+#include <net/route.h>
+#endif
 #endif
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
@@ -68,12 +70,9 @@ static NetworkChangeKind ReadNewLinkMessage(struct nlmsghdr* hdr)
     assert(hdr != NULL);
     struct ifinfomsg* ifimsg;
     ifimsg = (struct ifinfomsg*)NLMSG_DATA(hdr);
-    if (ifimsg->ifi_family == AF_INET)
+    if (ifimsg->ifi_family == AF_UNSPEC)
     {
-        if ((ifimsg->ifi_flags & IFF_UP) != 0)
-        {
-            return LinkAdded;
-        }
+        return AvailabilityChanged;
     }
 
     return None;
@@ -110,9 +109,6 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
                 break;
             case RTM_NEWLINK:
                 onNetworkChange(sock, ReadNewLinkMessage(hdr));
-                break;
-            case RTM_DELLINK:
-                onNetworkChange(sock, LinkRemoved);
                 break;
             case RTM_NEWROUTE:
             case RTM_DELROUTE:
@@ -167,5 +163,13 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
                 break;
         }
     }
+}
+#else
+void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+{
+    (void)sock;
+    (void)onNetworkChange;
+    // unreachable
+    abort();
 }
 #endif

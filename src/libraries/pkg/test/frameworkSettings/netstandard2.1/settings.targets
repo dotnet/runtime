@@ -1,5 +1,5 @@
 <Project>
-  <!-- Issue https://github.com/dotnet/corefx/issues/36719 NS2.1 overlaps with existing ns2.0 libs -->
+  <!-- Issue https://github.com/dotnet/runtime/issues/29209 NS2.1 overlaps with existing ns2.0 libs -->
   <ItemGroup>
     <!-- System.Buffers -->
     <IgnoredTypes Include="System.Buffers.ArrayPool`1" />

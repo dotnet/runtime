@@ -92,7 +92,7 @@ namespace System.Resources
 
     public partial class ResourceManager
     {
-        internal class CultureNameResourceSetPair
+        internal sealed class CultureNameResourceSetPair
         {
             public string? lastCultureName;
             public ResourceSet? lastResourceSet;
@@ -306,7 +306,9 @@ namespace System.Resources
             }
         }
 
-        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, Type? usingResourceSet)
+        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type? usingResourceSet)
         {
             return new ResourceManager(baseName, resourceDir, usingResourceSet);
         }
@@ -741,7 +743,7 @@ namespace System.Resources
             return ums;
         }
 
-        internal class ResourceManagerMediator
+        internal sealed class ResourceManagerMediator
         {
             private readonly ResourceManager _rm;
 

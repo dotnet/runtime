@@ -9,24 +9,13 @@ namespace System.Globalization
     internal static partial class GlobalizationMode
     {
         private static bool GetInvariantSwitchValue() =>
-            GetSwitchValue("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+            AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
         private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
             TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
 
-        private static bool GetSwitchValue(string switchName, string envVariable)
-        {
-            if (!AppContext.TryGetSwitch(switchName, out bool ret))
-            {
-                string? switchValue = Environment.GetEnvironmentVariable(envVariable);
-                if (switchValue != null)
-                {
-                    ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
-                }
-            }
-
-            return ret;
-        }
+        internal static bool PredefinedCulturesOnly { get; } =
+            AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
 
         private static bool TryGetStringValue(string switchName, string envVariable, [NotNullWhen(true)] out string? value)
         {
@@ -53,8 +42,8 @@ namespace System.Globalization
             int indexOfSeparator = icuSuffixAndVersion.IndexOf(':');
             if (indexOfSeparator >= 0)
             {
-                icuSuffix = icuSuffixAndVersion.AsSpan().Slice(0, indexOfSeparator);
-                version = icuSuffixAndVersion.AsSpan().Slice(icuSuffix.Length + 1);
+                icuSuffix = icuSuffixAndVersion.AsSpan(0, indexOfSeparator);
+                version = icuSuffixAndVersion.AsSpan(icuSuffix.Length + 1);
             }
             else
             {

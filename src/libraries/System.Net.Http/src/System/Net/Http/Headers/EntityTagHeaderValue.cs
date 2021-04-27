@@ -8,10 +8,8 @@ namespace System.Net.Http.Headers
 {
     public class EntityTagHeaderValue : ICloneable
     {
-        private static EntityTagHeaderValue? s_any;
-
-        private string _tag = null!;
-        private bool _isWeak;
+        private readonly string _tag;
+        private readonly bool _isWeak;
 
         public string Tag
         {
@@ -23,18 +21,11 @@ namespace System.Net.Http.Headers
             get { return _isWeak; }
         }
 
-        public static EntityTagHeaderValue Any
+        public static EntityTagHeaderValue Any { get; } = new EntityTagHeaderValue();
+
+        private EntityTagHeaderValue()
         {
-            get
-            {
-                if (s_any == null)
-                {
-                    s_any = new EntityTagHeaderValue();
-                    s_any._tag = "*";
-                    s_any._isWeak = false;
-                }
-                return s_any;
-            }
+            _tag = "*";
         }
 
         public EntityTagHeaderValue(string tag)
@@ -69,10 +60,6 @@ namespace System.Net.Http.Headers
             _isWeak = source._isWeak;
         }
 
-        private EntityTagHeaderValue()
-        {
-        }
-
         public override string ToString()
         {
             if (_isWeak)
@@ -82,7 +69,7 @@ namespace System.Net.Http.Headers
             return _tag;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             EntityTagHeaderValue? other = obj as EntityTagHeaderValue;
 
@@ -172,13 +159,11 @@ namespace System.Net.Http.Headers
                     // Most of the time we'll have strong ETags without leading/trailing whitespace.
                     Debug.Assert(startIndex == 0);
                     Debug.Assert(!isWeak);
-                    parsedValue._tag = input;
-                    parsedValue._isWeak = false;
+                    parsedValue = new EntityTagHeaderValue(input);
                 }
                 else
                 {
-                    parsedValue._tag = input.Substring(tagStartIndex, tagLength);
-                    parsedValue._isWeak = isWeak;
+                    parsedValue = new EntityTagHeaderValue(input.Substring(tagStartIndex, tagLength), isWeak);
                 }
 
                 current = current + tagLength;
@@ -188,16 +173,6 @@ namespace System.Net.Http.Headers
             return current - startIndex;
         }
 
-        object ICloneable.Clone()
-        {
-            if (this == s_any)
-            {
-                return s_any;
-            }
-            else
-            {
-                return new EntityTagHeaderValue(this);
-            }
-        }
+        object ICloneable.Clone() => ReferenceEquals(this, Any) ? Any : new EntityTagHeaderValue(this);
     }
 }

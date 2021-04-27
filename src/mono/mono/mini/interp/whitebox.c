@@ -78,10 +78,6 @@ verify_cprop_ldloc_stloc (TransformData *td)
 		return 1;
 	if (expect (&ins, NULL, MINT_CALL))
 		return 2;
-	if (expect (&ins, NULL, MINT_STLOC_NP_I4))
-		return 3;
-	if (expect (&ins, NULL, MINT_LDLOC_I4))
-		return 4;
 	if (expect (&ins, NULL, MINT_ADD_I4))
 		return 5;
 	if (expect (&ins, NULL, MINT_RET))
@@ -104,7 +100,7 @@ static MonoImage *
 load_assembly (const char *path, MonoDomain *root_domain)
 {
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (root_domain));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	MonoAssembly *ass = mono_assembly_request_open (path, &req, NULL);
 	if (!ass)
 		g_error ("failed to load assembly: %s", path);
@@ -167,9 +163,7 @@ transform_method (MonoDomain *domain, MonoImage *image, TestItem *ti)
 	td->verbose_level = determine_verbose_level (td);
 	td->mempool = mp;
 	td->rtm = rtm;
-	td->stack_height = (int*)g_malloc(header->code_size * sizeof(int));
 	td->clause_indexes = (int*)g_malloc (header->code_size * sizeof (int));
-	td->is_bb_start = (guint8*)g_malloc0(header->code_size);
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 	/* TODO: init more fields of `td` */

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Net.Security;
@@ -17,8 +16,6 @@ internal static partial class Interop
         internal const int OPENSSL_NPN_NEGOTIATED = 1;
         internal const int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
-
-        internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
         internal static extern void EnsureLibSslInitialized();
@@ -71,10 +68,10 @@ internal static partial class Interop
             return result;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
-        internal static extern unsafe int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]
+        internal static extern int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static extern unsafe int SslRead(SafeSslHandle ssl, byte* buf, int num);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslRenegotiatePending")]
@@ -90,7 +87,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static extern void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static extern int SslDoHandshake(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]
@@ -102,7 +99,7 @@ internal static partial class Interop
         internal static extern unsafe int BioWrite(SafeBioHandle b, byte* data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static extern unsafe int BioWrite(SafeBioHandle b, ref byte data, int len);
+        internal static extern int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static extern SafeX509Handle SslGetPeerCertificate(SafeSslHandle ssl);
@@ -370,7 +367,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private SafeSslHandle() : base(IntPtr.Zero, true)
+        public SafeSslHandle() : base(IntPtr.Zero, true)
         {
         }
 

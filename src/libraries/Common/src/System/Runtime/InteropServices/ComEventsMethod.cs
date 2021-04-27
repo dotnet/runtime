@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -13,7 +11,7 @@ namespace System.Runtime.InteropServices
     /// Part of ComEventHelpers APIs which allow binding
     /// managed delegates to COM's connection point based events.
     /// </summary>
-    internal class ComEventsMethod
+    internal sealed class ComEventsMethod
     {
         /// <summary>
         /// This delegate wrapper class handles dynamic invocation of delegates. The reason for the wrapper's
@@ -38,7 +36,7 @@ namespace System.Runtime.InteropServices
 
             public Delegate Delegate { get; set; }
 
-            public bool WrapArgs { get; private set; }
+            public bool WrapArgs { get; }
 
             public object? Invoke(object[] args)
             {
@@ -57,9 +55,9 @@ namespace System.Runtime.InteropServices
                 {
                     for (int i = 0; i < _expectedParamsCount; i++)
                     {
-                        if (_cachedTargetTypes[i] != null)
+                        if (_cachedTargetTypes[i] is Type t)
                         {
-                            args[i] = Enum.ToObject(_cachedTargetTypes[i]!, args[i]); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                            args[i] = Enum.ToObject(t, args[i]);
                         }
                     }
                 }

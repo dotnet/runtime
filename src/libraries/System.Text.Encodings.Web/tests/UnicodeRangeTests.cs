@@ -12,6 +12,7 @@ namespace System.Text.Encodings.Web.Tests
         [Theory]
         [InlineData(-1, 16)]
         [InlineData(0x10000, 16)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void Ctor_FailureCase_FirstCodePoint(int firstCodePoint, int rangeSize)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("firstCodePoint", () => new UnicodeRange(firstCodePoint, rangeSize));
@@ -20,6 +21,7 @@ namespace System.Text.Encodings.Web.Tests
         [Theory]
         [InlineData(0x0100, -1)]
         [InlineData(0x0100, 0x10000)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void Ctor_FailureCase_RangeSize(int firstCodePoint, int rangeSize)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new UnicodeRange(firstCodePoint, rangeSize));

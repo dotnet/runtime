@@ -55,6 +55,11 @@ namespace System.IO.Compression
         // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
         internal static DateTime DosTimeToDateTime(uint dateTime)
         {
+            if (dateTime == 0)
+            {
+                return s_invalidDateIndicator;
+            }
+
             // DosTime format 32 bits
             // Year: 7 bits, 0 is ValidZipDate_YearMin, unsigned (ValidZipDate_YearMin = 1980)
             // Month: 4 bits

@@ -16,7 +16,7 @@ namespace System.Net
 {
     public abstract class WebRequest : MarshalByRefObject, ISerializable
     {
-        internal class WebRequestPrefixElement
+        internal sealed class WebRequestPrefixElement
         {
             public readonly string Prefix;
             public readonly IWebRequestCreate Creator;
@@ -33,8 +33,10 @@ namespace System.Net
 
         internal const int DefaultTimeoutMilliseconds = 100 * 1000;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected WebRequest() { }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected WebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -66,8 +68,6 @@ namespace System.Net
         //     Newly created WebRequest.
         private static WebRequest Create(Uri requestUri, bool useUriBase)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(null, requestUri);
-
             string LookupUri;
             WebRequestPrefixElement? Current = null;
             bool Found = false;
@@ -125,12 +125,10 @@ namespace System.Net
             {
                 // We found a match, so just call the creator and return what it does.
                 WebRequest webRequest = Current!.Creator.Create(requestUri);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null, webRequest);
                 return webRequest;
             }
 
             // Otherwise no match, throw an exception.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(null);
             throw new NotSupportedException(SR.net_unknown_prefix);
         }
 
@@ -144,6 +142,7 @@ namespace System.Net
         //
         // Returns:
         //     Newly created WebRequest.
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest Create(string requestUriString)
         {
             if (requestUriString == null)
@@ -164,6 +163,7 @@ namespace System.Net
         //
         // Returns:
         //     Newly created WebRequest.
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest Create(Uri requestUri)
         {
             if (requestUri == null)
@@ -185,6 +185,7 @@ namespace System.Net
         //
         // Returns:
         //     Newly created WebRequest.
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest CreateDefault(Uri requestUri)
         {
             if (requestUri == null)
@@ -195,6 +196,7 @@ namespace System.Net
             return Create(requestUri, true);
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HttpWebRequest CreateHttp(string requestUriString)
         {
             if (requestUriString == null)
@@ -204,6 +206,7 @@ namespace System.Net
             return CreateHttp(new Uri(requestUriString));
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HttpWebRequest CreateHttp(Uri requestUri)
         {
             if (requestUri == null)
@@ -321,7 +324,7 @@ namespace System.Net
             return !Error;
         }
 
-        internal class HttpRequestCreator : IWebRequestCreate
+        internal sealed class HttpRequestCreator : IWebRequestCreate
         {
             // Create - Create an HttpWebRequest.
             //

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class ECDiffieHellmanPublicKeyTests
     {
         private class TestDerived : ECDiffieHellmanPublicKey

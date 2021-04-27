@@ -42,7 +42,7 @@ namespace System.Net.WebSockets.Client.Tests
             if (serverResponse != null)
             {
                 // We received a valid WebSocket opening handshake. Send the appropriate response.
-                await connection.Writer.WriteAsync(serverResponse).ConfigureAwait(false);
+                await connection.WriteStringAsync(serverResponse).ConfigureAwait(false);
                 return results;
             }
 
@@ -56,8 +56,7 @@ namespace System.Net.WebSockets.Client.Tests
             string combinedKey = secWebSocketKey + Rfc6455Guid;
 
             // Use of SHA1 hash is required by RFC 6455.
-            SHA1 sha1Provider = new SHA1CryptoServiceProvider();
-            byte[] sha1Hash = sha1Provider.ComputeHash(Encoding.UTF8.GetBytes(combinedKey));
+            byte[] sha1Hash = SHA1.HashData(Encoding.UTF8.GetBytes(combinedKey));
             return Convert.ToBase64String(sha1Hash);
         }
     }

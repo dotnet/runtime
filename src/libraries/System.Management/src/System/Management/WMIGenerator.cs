@@ -43,7 +43,7 @@ namespace System.Management
     /// <summary>
     ///    Used to generate a strongly-typed code class for a given WMI class.
     /// </summary>
-    internal class ManagementClassGenerator
+    internal sealed class ManagementClassGenerator
     {
         private readonly string VSVERSION = "8.0.0.0";
         private string OriginalServer = string.Empty;
@@ -316,7 +316,7 @@ namespace System.Management
 
             //public bool AutoCommit {
             //    get {
-            //            return AutoCommitProp;;
+            //            return AutoCommitProp;
             //        }
             //    set {
             //            AutoCommitProp; = value;
@@ -439,7 +439,7 @@ namespace System.Management
             //Now Enumerate all the methods
             GenerateMethods();
 
-            //Now declare the private class variables
+            //Now declare the private sealed class variables
             //private Wmi_SystemProps SystemProps
             GeneratePrivateMember(PrivateNamesUsed["SystemPropertiesObject"].ToString(), PublicNamesUsed["SystemPropertiesClass"].ToString(), null);
 
@@ -3036,7 +3036,7 @@ namespace System.Management
                                 {
                                     CodeTypeReference dateType = cmm.ReturnType;
                                     // Check if it is Time interval and if so change the type to Time Interval
-                                    bool isRetTypeTimeInterval = GetDateTimeType(prop, ref dateType);
+                                    GetDateTimeType(prop, ref dateType);
                                     cmm.ReturnType = dateType;
                                 }
                                 retRefType = cmm.ReturnType;
@@ -6116,7 +6116,6 @@ namespace System.Management
         private bool GetDateTimeType(PropertyData prop, ref CodeTypeReference codeType)
         {
             bool isTimeInterval = false;
-            codeType = null;
             if (prop.IsArray)
             {
                 codeType = new CodeTypeReference("System.DateTime", 1);
@@ -7338,11 +7337,6 @@ namespace System.Management
             cmie2.Method = new CodeMethodReferenceExpression(cmie, "PadLeft");
             cmie2.Parameters.Add(new CodePrimitiveExpression(2));
             cmie2.Parameters.Add(new CodePrimitiveExpression('0'));
-
-            CodeMethodInvokeExpression cmie3 = GenerateConcatStrings(cmie, cmie2);
-            /*                new CodeMethodInvokeExpression();
-                        cmie3.Method = new CodeMethodReferenceExpression(cmie,"Concat");
-                        cmie3.Parameters.Add(cmie2); */
 
             cmmdt.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(dmtfDateTime),
                 GenerateConcatStrings(new CodeVariableReferenceExpression(dmtfDateTime),

@@ -3,10 +3,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ClassType.{JsonClassInfo.ClassType}, {JsonClassInfo.Type.Name}")]
+    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
     internal struct ReadStackFrame
     {
         // Current property values.
@@ -29,22 +31,22 @@ namespace System.Text.Json
 
         // Current object (POCO or IEnumerable).
         public object? ReturnValue; // The current return value used for re-entry.
-        public JsonClassInfo JsonClassInfo;
+        public JsonTypeInfo JsonTypeInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
-        // Preserve reference.
-        public string? MetadataId;
+        // Validate EndObject token on array with preserve semantics.
+        public bool ValidateEndTokenOnArray;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
         public List<PropertyRef>? PropertyRefCache;
 
-        // Add method delegate for Non-generic Stack and Queue; and types that derive from them.
-        public object? AddMethodDelegate;
-
         // Holds relevant state when deserializing objects with parameterized constructors.
         public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
+
+        // Whether to use custom number handling.
+        public JsonNumberHandling? NumberHandling;
 
         public void EndConstructorParameter()
         {
@@ -59,9 +61,10 @@ namespace System.Text.Json
             JsonPropertyName = null;
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
-            MetadataId = null;
+            ValidateEndTokenOnArray = false;
 
             // No need to clear these since they are overwritten each time:
+            //  NumberHandling
             //  UseExtensionProperty
         }
 
@@ -76,7 +79,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingDictionary()
         {
-            return (JsonClassInfo.ClassType & ClassType.Dictionary) != 0;
+            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Dictionary) != 0;
         }
 
         /// <summary>
@@ -84,15 +87,14 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingEnumerable()
         {
-            return (JsonClassInfo.ClassType & ClassType.Enumerable) != 0;
+            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
         }
 
         public void Reset()
         {
-            AddMethodDelegate = null;
             CtorArgumentStateIndex = 0;
             CtorArgumentState = null;
-            JsonClassInfo = null!;
+            JsonTypeInfo = null!;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
             OriginalTokenType = JsonTokenType.None;

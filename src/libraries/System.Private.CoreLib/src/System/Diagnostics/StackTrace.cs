@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -205,6 +206,7 @@ namespace System.Diagnostics
             string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
             // We also want to pass in a default for inFileLineNumber.
             string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
+            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -227,8 +229,8 @@ namespace System.Diagnostics
                     bool methodChanged = false;
                     if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
                     {
-                        isAsync = typeof(IAsyncStateMachine).IsAssignableFrom(declaringType);
-                        if (isAsync || typeof(IEnumerator).IsAssignableFrom(declaringType))
+                        isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
+                        if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
                         {
                             methodChanged = TryResolveStateMachineMethod(ref mb, out declaringType);
                         }
@@ -322,6 +324,17 @@ namespace System.Diagnostics
                             sb.Append(' ');
                             sb.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, fileName, sf.GetFileLineNumber());
                         }
+                        else if (LocalAppContextSwitches.ShowILOffsets && mb.ReflectedType != null)
+                        {
+                            string assemblyName = mb.ReflectedType.Module.ScopeName;
+                            try
+                            {
+                                int token = mb.MetadataToken;
+                                sb.Append(' ');
+                                sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
+                            }
+                            catch (System.InvalidOperationException) {}
+                        }
                     }
 
                     // Skip EDI boundary for async
@@ -353,19 +366,28 @@ namespace System.Diagnostics
                 return false;
             }
 
-            if (mb.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+            try
             {
-                // Don't show where StackTraceHidden is applied to the method.
-                return false;
-            }
+                if (mb.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+                {
+                    // Don't show where StackTraceHidden is applied to the method.
+                    return false;
+                }
 
-            Type? declaringType = mb.DeclaringType;
-            // Methods don't always have containing types, for example dynamic RefEmit generated methods.
-            if (declaringType != null &&
-                declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+                Type? declaringType = mb.DeclaringType;
+                // Methods don't always have containing types, for example dynamic RefEmit generated methods.
+                if (declaringType != null &&
+                    declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+                {
+                    // Don't show where StackTraceHidden is applied to the containing Type of the method.
+                    return false;
+                }
+            }
+            catch
             {
-                // Don't show where StackTraceHidden is applied to the containing Type of the method.
-                return false;
+                // Getting the StackTraceHiddenAttribute has failed, behave as if it was not present.
+                // One of the reasons can be that the method mb or its declaring type use attributes
+                // defined in an assembly that is missing.
             }
 
             return true;
@@ -384,7 +406,13 @@ namespace System.Diagnostics
                 return false;
             }
 
-            MethodInfo[]? methods = parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "Using Reflection to find the state machine's corresponding method is safe because the corresponding method is the only " +
+                                "caller of the state machine. If the state machine is present, the corresponding method will be, too.")]
+            static MethodInfo[]? GetDeclaredMethods(Type type) =>
+                type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            MethodInfo[]? methods = GetDeclaredMethods(parentType);
             if (methods == null)
             {
                 return false;

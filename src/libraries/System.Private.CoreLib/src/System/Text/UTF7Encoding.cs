@@ -26,11 +26,11 @@ namespace System.Text
         private const string optionalChars =
             "!\"#$%&*;<=>@[]^_`{|}";
 
-#pragma warning disable MSLIB0001
+#pragma warning disable SYSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
-#pragma warning restore MSLIB0001
+#pragma warning restore SYSLIB0001
 
         // The set of base 64 characters.
         private byte[] _base64Bytes;
@@ -102,7 +102,7 @@ namespace System.Text
             this.decoderFallback = new DecoderUTF7Fallback();
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UTF7Encoding that)
             {
@@ -163,7 +163,9 @@ namespace System.Text
         {
             // Validate input
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -849,7 +851,7 @@ namespace System.Text
             // Maximum number of characters that this instance of this fallback could return
             public override int MaxCharCount => 1; // returns 1 char per bad byte
 
-            public override bool Equals(object? value) => value is DecoderUTF7Fallback;
+            public override bool Equals([NotNullWhen(true)] object? value) => value is DecoderUTF7Fallback;
 
             public override int GetHashCode() => 984;
         }

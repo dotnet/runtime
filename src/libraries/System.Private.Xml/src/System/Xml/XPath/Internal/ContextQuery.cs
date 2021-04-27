@@ -7,22 +7,24 @@ namespace MS.Internal.Xml.XPath
 {
     internal class ContextQuery : Query
     {
-        protected XPathNavigator contextNode;
+        protected XPathNavigator? contextNode;
 
         public ContextQuery()
         {
             this.count = 0;
         }
+
         protected ContextQuery(ContextQuery other) : base(other)
         {
             this.contextNode = other.contextNode;   // Don't need to clone here
         }
+
         public override void Reset()
         {
             count = 0;
         }
 
-        public override XPathNavigator Current { get { return contextNode; } }
+        public override XPathNavigator? Current { get { return contextNode; } }
 
         public override object Evaluate(XPathNodeIterator context)
         {
@@ -31,7 +33,7 @@ namespace MS.Internal.Xml.XPath
             return this;
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             if (count == 0)
             {
@@ -41,7 +43,7 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator current)
+        public override XPathNavigator? MatchNode(XPathNavigator? current)
         {
             return current;
         }

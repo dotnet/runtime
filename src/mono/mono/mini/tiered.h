@@ -17,7 +17,6 @@ typedef struct {
 } MiniTieredStats;
 
 typedef struct {
-	MonoDomain *domain;
 	MonoMethod *target_method;
 	int tier_level;
 } MiniTieredPatchPointContext;
@@ -28,7 +27,7 @@ void
 mini_tiered_init (void);
 
 void
-mini_tiered_inc (MonoDomain *domain, MonoMethod *method, MiniTieredCounter *tcnt, int level);
+mini_tiered_inc (MonoMethod *method, MiniTieredCounter *tcnt, int level);
 
 void
 mini_tiered_record_callsite (gpointer callsite, MonoMethod *target_method, int level);

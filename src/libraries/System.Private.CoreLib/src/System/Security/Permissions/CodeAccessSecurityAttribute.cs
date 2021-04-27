@@ -3,6 +3,7 @@
 
 namespace System.Security.Permissions
 {
+    [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
     public abstract partial class CodeAccessSecurityAttribute : SecurityAttribute
     {

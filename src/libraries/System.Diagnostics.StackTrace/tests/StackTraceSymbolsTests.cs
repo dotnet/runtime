@@ -12,7 +12,7 @@ namespace System.Diagnostics.SymbolStore.Tests
         [Fact]
         public void StackTraceSymbolsDoNotLockFile()
         {
-            var asmPath = typeof(StackTraceSymbolsTests).Assembly.Location;
+            var asmPath = AssemblyPathHelper.GetAssemblyLocation(typeof(StackTraceSymbolsTests).Assembly);
             var pdbPath = Path.ChangeExtension(asmPath, ".pdb");
 
             Assert.True(File.Exists(pdbPath));

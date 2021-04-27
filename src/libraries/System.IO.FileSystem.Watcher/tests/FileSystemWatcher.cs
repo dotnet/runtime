@@ -192,6 +192,7 @@ namespace System.IO.Tests
         /// <summary>
         /// EndInit will begin EnableRaisingEvents if we previously set EnableRaisingEvents=true
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24181", TestPlatforms.OSX)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

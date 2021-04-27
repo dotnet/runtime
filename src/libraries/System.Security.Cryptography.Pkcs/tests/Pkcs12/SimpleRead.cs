@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Assert.Equal(Pkcs12ConfidentialityMode.None, authSafe[1].ConfidentialityMode);
 
             Assert.ThrowsAny<CryptographicException>(
-                () => authSafe[0].Decrypt(loader.Password.AsSpan().Slice(1)));
+                () => authSafe[0].Decrypt(loader.Password.AsSpan(1)));
 
             Assert.Equal(Pkcs12ConfidentialityMode.Password, authSafe[0].ConfidentialityMode);
             authSafe[0].Decrypt(loader.Password);

@@ -100,6 +100,9 @@ namespace System.Text.RegularExpressions.Tests
 
             yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$+", RegexOptions.RightToLeft, -1, 10, "abc3!" };
             yield return new object[] { "([1-9])([1-9])([1-9])def", "abc123def!", "$_", RegexOptions.RightToLeft, -1, 10, "abcabc123def!!" };
+
+            // Anchors
+            yield return new object[] { @"\Ga", "aaaaa", "b", RegexOptions.None, 5, 0, "bbbbb" };
         }
 
         [Theory]
@@ -218,6 +221,26 @@ namespace System.Text.RegularExpressions.Tests
             string input = "";
             Assert.Same(input, Regex.Replace(input, "no-match", "replacement"));
             Assert.Same(input, Regex.Replace(input, "no-match", new MatchEvaluator(MatchEvaluator1)));
+        }
+
+        [Fact]
+        public void Replace_MatchEvaluator_UniqueMatchObjects()
+        {
+            const string Input = "abcdefghijklmnopqrstuvwxyz";
+
+            var matches = new List<Match>();
+
+            string result = Regex.Replace(Input, @"[a-z]", match =>
+            {
+                Assert.Equal(((char)('a' + matches.Count)).ToString(), match.Value);
+                matches.Add(match);
+                return match.Value.ToUpperInvariant();
+            });
+
+            Assert.Equal(26, matches.Count);
+            Assert.Equal("ABCDEFGHIJKLMNOPQRSTUVWXYZ", result);
+
+            Assert.Equal(Input, string.Concat(matches.Cast<Match>().Select(m => m.Value)));
         }
 
         [Theory]

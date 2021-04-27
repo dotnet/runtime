@@ -432,7 +432,7 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest3()
         {
@@ -523,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest15()
         {
@@ -540,7 +540,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest17()
         {
@@ -549,7 +549,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest18()
         {
@@ -557,7 +557,7 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest19()
         {
@@ -566,7 +566,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest20()
         {
@@ -590,7 +590,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest23()
         {
@@ -598,7 +598,7 @@ namespace System.Threading.Tasks.Tests
             TaskRunSyncTest test = new TaskRunSyncTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskRunSyncTest24()
         {

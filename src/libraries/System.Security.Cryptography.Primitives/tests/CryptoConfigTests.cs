@@ -10,12 +10,14 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void DefaultStaticCreateMethods()
         {
+#pragma warning disable SYSLIB0007 // These methods are marked as Obsolete
             // .NET Core does not allow the base classes to pick an algorithm.
             Assert.Throws<PlatformNotSupportedException>(() => AsymmetricAlgorithm.Create());
             Assert.Throws<PlatformNotSupportedException>(() => HashAlgorithm.Create());
             Assert.Throws<PlatformNotSupportedException>(() => KeyedHashAlgorithm.Create());
             Assert.Throws<PlatformNotSupportedException>(() => HMAC.Create());
             Assert.Throws<PlatformNotSupportedException>(() => SymmetricAlgorithm.Create());
+#pragma warning restore SYSLIB0007
         }
 
         [Fact]
@@ -53,7 +55,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
                 Assert.IsAssignableFrom(baseType, created);
 
                 using (HashAlgorithm equivalent =
-                    (HashAlgorithm)baseType.GetMethod("Create", Array.Empty<Type>()).Invoke(null, null))
+                    (HashAlgorithm)baseType.GetMethod("Create", Type.EmptyTypes).Invoke(null, null))
                 {
                     byte[] input = { 1, 2, 3, 4, 5 };
                     byte[] equivHash = equivalent.ComputeHash(input);

@@ -3,9 +3,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Sys
+    internal static partial class Sys
     {
         internal enum CtrlCode
         {
@@ -13,12 +13,12 @@ internal partial class Interop
             Break = 1
         }
 
-        internal delegate void CtrlCallback(CtrlCode ctrlCode);
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForCtrl")]
-        internal static extern void RegisterForCtrl(CtrlCallback handler);
+        [SuppressGCTransition]
+        internal static extern unsafe void RegisterForCtrl(delegate* unmanaged<CtrlCode, void> handler);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UnregisterForCtrl")]
+        [SuppressGCTransition]
         internal static extern void UnregisterForCtrl();
     }
 }

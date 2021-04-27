@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <ProductBrandPrefix>Microsoft .NET</ProductBrandPrefix>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PgoInstrument)' != 'true'">
+    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
+  </PropertyGroup>
+</Project>

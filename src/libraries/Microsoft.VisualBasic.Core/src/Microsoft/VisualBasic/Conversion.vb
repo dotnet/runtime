@@ -519,8 +519,6 @@ RangeCheck:
                             Throw ex
                         Catch ex As OutOfMemoryException
                             Throw ex
-                        Catch ex As System.Threading.ThreadAbortException
-                            Throw ex
                         Catch
                             'Throw our own exception below
                         End Try
@@ -917,8 +915,6 @@ NextOctCharacter:
                 Catch ex As StackOverflowException
                     Throw ex
                 Catch ex As OutOfMemoryException
-                    Throw ex
-                Catch ex As System.Threading.ThreadAbortException
                     Throw ex
                 Catch
                     Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Expression), VBFriendlyName(Expression))), vbErrors.OLENoPropOrMethod)

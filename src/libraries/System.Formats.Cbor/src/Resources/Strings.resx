@@ -121,7 +121,7 @@
     <value>The destination is too small to hold the encoded value.</value>
   </data>
   <data name="Cbor_PopMajorTypeMismatch" xml:space="preserve">
-    <value>Cannot perform the requested operation, the current context is '{0}'.</value>
+    <value>Cannot perform the requested operation, the current major type context is '{0}'.</value>
   </data>
   <data name="Cbor_NotAtEndOfDefiniteLengthDataItem" xml:space="preserve">
     <value>Not at end of the definite-length data item.</value>

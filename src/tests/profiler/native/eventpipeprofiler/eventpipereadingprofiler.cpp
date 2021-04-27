@@ -86,6 +86,8 @@ HRESULT EventPipeReadingProfiler::EventPipeEventDelivered(
     ULONG numStackFrames,
     UINT_PTR stackFrames[])
 {
+    SHUTDOWNGUARD();
+
     String name = GetOrAddProviderName(provider);
     wprintf(L"EventPipeReadingProfiler saw event %s\n", name.ToCStr());
 
@@ -112,6 +114,8 @@ HRESULT EventPipeReadingProfiler::EventPipeEventDelivered(
 
 HRESULT EventPipeReadingProfiler::EventPipeProviderCreated(EVENTPIPE_PROVIDER provider)
 {
+    SHUTDOWNGUARD();
+
     String name = GetOrAddProviderName(provider);
     wprintf(L"CorProfiler::EventPipeProviderCreated provider=%s\n", name.ToCStr());
 

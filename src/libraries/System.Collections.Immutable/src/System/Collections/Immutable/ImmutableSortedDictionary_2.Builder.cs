@@ -603,8 +603,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <returns>The value for the key, or the default value for type <typeparamref name="TValue"/> if no matching key was found.</returns>
-            [return: MaybeNull]
-            public TValue GetValueOrDefault(TKey key)
+            public TValue? GetValueOrDefault(TKey key)
             {
                 return this.GetValueOrDefault(key, default(TValue)!);
             }
@@ -656,7 +655,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
+    internal sealed class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// The collection to be enumerated.

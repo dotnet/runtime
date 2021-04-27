@@ -10,14 +10,14 @@ namespace System.Diagnostics.Tests
 {
     public static class PerformanceCounterCategoryTests
     {
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_CreatePerformanceCounterCategory_DefaultConstructor()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
             Assert.Equal(".", pcc.MachineName);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_CreatePerformanceCounterCategory_NullTests()
         {
             Assert.Throws<ArgumentNullException>(() => new PerformanceCounterCategory(null, "."));
@@ -25,7 +25,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => new PerformanceCounterCategory("category", string.Empty));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_SetCategoryName_Valid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("Processor", pcc.CategoryName);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_SetCategoryName_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => pcc.CategoryName = string.Empty);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_SetMachineName_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => pcc.MachineName = string.Empty);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_SetMachineName_ValidCategoryNameNull()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("machineName", pcc.MachineName);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_SetMachineName_ValidCategoryNameNotNull()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -69,7 +69,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("machineName", pcc.MachineName);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_GetCounterHelp_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -77,7 +77,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => pcc.CategoryHelp);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounterCategory_CategoryType_MultiInstance()
         {
             var name = nameof(PerformanceCounterCategory_CategoryType_MultiInstance) + "_Counter";
@@ -90,7 +90,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory.Delete(category);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounterCategory_CategoryType_SingleInstance()
         {
             var name = nameof(PerformanceCounterCategory_CategoryType_SingleInstance) + "_Counter";
@@ -152,7 +152,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => PerformanceCounterCategory.Create("Category name", maxCounter, PerformanceCounterCategoryType.SingleInstance, "Counter name", "counter help"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_GetCategories()
         {
             PerformanceCounterCategory[] categories = PerformanceCounterCategory.GetCategories();
@@ -160,13 +160,13 @@ namespace System.Diagnostics.Tests
             Assert.True(categories.Length > 0);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_GetCategories_StaticInvalid()
         {
             Assert.Throws<ArgumentException>(() => PerformanceCounterCategory.GetCategories(string.Empty));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_CounterExists_InterruptsPerSec()
         {
             PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tests
             Assert.True(pcc.CounterExists("Interrupts/sec"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_CounterExists_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -183,13 +183,13 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => pcc.CounterExists("Interrupts/sec"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_CounterExists_StaticInterruptsPerSec()
         {
             Assert.True(PerformanceCounterCategory.CounterExists("Interrupts/sec", "Processor"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_CounterExists_StaticInvalid()
         {
             Assert.Throws<ArgumentNullException>(() => PerformanceCounterCategory.CounterExists(null, "Processor"));
@@ -198,7 +198,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => PerformanceCounterCategory.CounterExists("Interrupts/sec", "Processor", string.Empty));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_DeleteCategory_Invalid()
         {
             Assert.Throws<InvalidOperationException>(() => PerformanceCounterCategory.Delete("Processor"));
@@ -215,7 +215,7 @@ namespace System.Diagnostics.Tests
             Assert.False(PerformanceCounterCategory.Exists(category));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_Exists_Invalid()
         {
             Assert.Throws<ArgumentNullException>(() => PerformanceCounterCategory.Exists(null, "."));
@@ -223,7 +223,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => PerformanceCounterCategory.Exists("Processor", string.Empty));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounterCategory_GetCounters()
         {
             var name = nameof(PerformanceCounterCategory_GetCounters) + "_Counter";
@@ -236,7 +236,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory.Delete(category);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_GetCounters_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -249,7 +249,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => pcc.GetCounters("Not An Instance"));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_GetInstanceNames_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -257,7 +257,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => pcc.GetInstanceNames());
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_InstanceExists_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();
@@ -266,7 +266,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => pcc.InstanceExists(""));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_InstanceExists_Static()
         {
             PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
@@ -280,7 +280,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_InstanceExists_StaticInvalid()
         {
             Assert.Throws<ArgumentNullException>(() => PerformanceCounterCategory.InstanceExists(null, "Processor", "."));
@@ -289,7 +289,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => PerformanceCounterCategory.InstanceExists("", "Processor", string.Empty));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_ReadCategory()
         {
             PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
@@ -299,7 +299,7 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(idColCol);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounterCategory_ReadCategory_Invalid()
         {
             PerformanceCounterCategory pcc = new PerformanceCounterCategory();

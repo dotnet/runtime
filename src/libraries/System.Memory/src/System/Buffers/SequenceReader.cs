@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers
@@ -101,7 +100,7 @@ namespace System.Buffers
                 if (_length < 0)
                 {
                     // Cast-away readonly to initialize lazy field
-                    Volatile.Write(ref Unsafe.AsRef(_length), Sequence.Length);
+                    Unsafe.AsRef(_length) = Sequence.Length;
                 }
                 return _length;
             }
@@ -161,7 +160,7 @@ namespace System.Buffers
             {
                 long remainingOffset = offset - (CurrentSpan.Length - CurrentSpanIndex);
                 SequencePosition nextPosition = _nextPosition;
-                ReadOnlyMemory<T> currentMemory = default;
+                ReadOnlyMemory<T> currentMemory;
 
                 while (Sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
                 {

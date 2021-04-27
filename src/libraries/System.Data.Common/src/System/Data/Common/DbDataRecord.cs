@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -20,11 +20,11 @@ namespace System.Data.Common
 
         public abstract byte GetByte(int i);
 
-        public abstract long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length);
+        public abstract long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length);
 
         public abstract char GetChar(int i);
 
-        public abstract long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length);
+        public abstract long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length);
 
         public IDataReader GetData(int i) => GetDbDataReader(i);
 
@@ -69,6 +69,7 @@ namespace System.Data.Common
         // ICustomTypeDescriptor
         //
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
         AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
 
@@ -76,21 +77,28 @@ namespace System.Data.Common
 
         string ICustomTypeDescriptor.GetComponentName() => null;
 
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter() => null;
 
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
 
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
 
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) => new EventDescriptorCollection(null);
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() =>
             ((ICustomTypeDescriptor)this).GetProperties(null);
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
             new PropertyDescriptorCollection(null);
 

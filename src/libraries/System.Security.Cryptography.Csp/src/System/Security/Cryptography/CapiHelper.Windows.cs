@@ -818,13 +818,13 @@ namespace Internal.NativeCrypto
             Debug.Assert(encryptedData != null, "Encrypted Data is null");
             Debug.Assert(encryptedDataLength >= 0, "Encrypted data length is less than 0");
 
-            byte[] dataTobeDecrypted = new byte[encryptedDataLength];
-            Buffer.BlockCopy(encryptedData, 0, dataTobeDecrypted, 0, encryptedDataLength);
-            Array.Reverse(dataTobeDecrypted);
+            byte[] dataToBeDecrypted = new byte[encryptedDataLength];
+            Buffer.BlockCopy(encryptedData, 0, dataToBeDecrypted, 0, encryptedDataLength);
+            Array.Reverse(dataToBeDecrypted);
 
             int dwFlags = fOAEP ? (int)Interop.Advapi32.CryptDecryptFlags.CRYPT_OAEP : 0;
             int decryptedDataLength = encryptedDataLength;
-            if (!Interop.Advapi32.CryptDecrypt(safeKeyHandle, SafeHashHandle.InvalidHandle, true, dwFlags, dataTobeDecrypted, ref decryptedDataLength))
+            if (!Interop.Advapi32.CryptDecrypt(safeKeyHandle, SafeHashHandle.InvalidHandle, true, dwFlags, dataToBeDecrypted, ref decryptedDataLength))
             {
                 int ErrCode = GetErrorCode();
                 // If we're using OAEP mode and we received an NTE_BAD_FLAGS error, then OAEP is not supported on
@@ -852,7 +852,7 @@ namespace Internal.NativeCrypto
 
 
             decryptedData = new byte[decryptedDataLength];
-            Buffer.BlockCopy(dataTobeDecrypted, 0, decryptedData, 0, decryptedDataLength);
+            Buffer.BlockCopy(dataToBeDecrypted, 0, decryptedData, 0, decryptedDataLength);
             return;
         }
 
@@ -905,27 +905,14 @@ namespace Internal.NativeCrypto
 
         internal static int EncryptData(
             SafeKeyHandle hKey,
-            byte[] input,
-            int inputOffset,
-            int inputCount,
-            byte[] output,
-            int outputOffset,
-            int outputCount,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
             bool isFinal)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(inputCount >= 0);
-            Debug.Assert(inputCount <= input.Length - inputOffset);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(outputCount >= 0);
-            Debug.Assert(outputCount <= output.Length - outputOffset);
-            Debug.Assert((inputCount % 8) == 0);
 
             // Figure out how big the encrypted data will be
-            int cbEncryptedData = inputCount;
+            int cbEncryptedData = input.Length;
             if (!Interop.Advapi32.CryptEncrypt(hKey, SafeHashHandle.InvalidHandle, isFinal, 0, null, ref cbEncryptedData, cbEncryptedData))
             {
                 throw GetErrorCode().ToCryptographicException();
@@ -934,67 +921,46 @@ namespace Internal.NativeCrypto
             // encryptedData is an in/out buffer for CryptEncrypt. Allocate space for the encrypted data, and copy the
             // plaintext data into that space.  Since encrypted data will have padding applied, the size of the encrypted
             // data should always be larger than the plaintext key, so use that to determine the buffer size.
-            Debug.Assert(cbEncryptedData >= inputCount);
+            Debug.Assert(cbEncryptedData >= input.Length);
             var encryptedData = new byte[cbEncryptedData];
-            Buffer.BlockCopy(input, inputOffset, encryptedData, 0, inputCount);
+            input.CopyTo(encryptedData);
 
             // Encrypt for real - the last parameter is the total size of the in/out buffer, while the second to last
             // parameter specifies the size of the plaintext to encrypt.
-            int encryptedDataLength = inputCount;
+            int encryptedDataLength = input.Length;
             if (!Interop.Advapi32.CryptEncrypt(hKey, SafeHashHandle.InvalidHandle, isFinal, 0, encryptedData, ref encryptedDataLength, cbEncryptedData))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
+
+            // If isFinal, padding was added so ignore it by using original input length as size
+            int outputCount = isFinal ? input.Length : encryptedDataLength;
             Debug.Assert(encryptedDataLength == cbEncryptedData);
+            Debug.Assert(outputCount <= output.Length);
 
-            if (isFinal)
-            {
-                Debug.Assert(outputCount == inputCount);
-            }
-            else
-            {
-                Debug.Assert(outputCount >= encryptedDataLength);
-                outputCount = encryptedDataLength;
-            }
-
-            // If isFinal, padding was added so ignore it by using outputCount as size
-            Buffer.BlockCopy(encryptedData, 0, output, outputOffset, outputCount);
-
+            encryptedData.AsSpan(0, outputCount).CopyTo(output);
             return outputCount;
         }
 
         internal static int DecryptData(
             SafeKeyHandle hKey,
-            byte[] input,
-            int inputOffset,
-            int inputCount,
-            byte[] output,
-            int outputOffset,
-            int outputCount)
+            ReadOnlySpan<byte> input,
+            Span<byte> output)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(inputCount >= 0);
-            Debug.Assert(inputCount <= input.Length - inputOffset);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(outputCount >= 0);
-            Debug.Assert(outputCount <= output.Length - outputOffset);
-            Debug.Assert((inputCount % 8) == 0);
 
-            byte[] dataTobeDecrypted = new byte[inputCount];
-            Buffer.BlockCopy(input, inputOffset, dataTobeDecrypted, 0, inputCount);
+            byte[] dataToBeDecrypted = new byte[input.Length];
+            input.CopyTo(dataToBeDecrypted);
 
-            int decryptedDataLength = inputCount;
+            int decryptedDataLength = input.Length;
+
             // Always call decryption with false (not final); deal with padding manually
-            if (!Interop.Advapi32.CryptDecrypt(hKey, SafeHashHandle.InvalidHandle, false, 0, dataTobeDecrypted, ref decryptedDataLength))
+            if (!Interop.Advapi32.CryptDecrypt(hKey, SafeHashHandle.InvalidHandle, false, 0, dataToBeDecrypted, ref decryptedDataLength))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
 
-            Buffer.BlockCopy(dataTobeDecrypted, 0, output, outputOffset, decryptedDataLength);
-
+            dataToBeDecrypted.AsSpan(0, decryptedDataLength).CopyTo(output);
             return decryptedDataLength;
         }
 
@@ -1115,7 +1081,7 @@ namespace Internal.NativeCrypto
             else
             {
                 Type? hashAlgType = hashAlg as Type;
-                if ((object?)hashAlgType != null)
+                if (hashAlgType is not null)
                 {
                     if (typeof(MD5).IsAssignableFrom(hashAlgType))
                         return CapiHelper.CALG_MD5;
@@ -1238,8 +1204,13 @@ namespace Internal.NativeCrypto
                     throw new InvalidOperationException();
             }
 
-            using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
+            using (SafeHashHandle? hHash = hProv.CreateHashHandle(hash, calgHash, throwOnSizeError: false))
             {
+                if (hHash == null)
+                {
+                    return false;
+                }
+
                 bool verified = Interop.Advapi32.CryptVerifySignature(hHash, signature, signature.Length, hKey, null, Interop.Advapi32.CryptSignAndVerifyHashFlags.None);
                 return verified;
             }
@@ -1392,6 +1363,11 @@ namespace Internal.NativeCrypto
         /// </summary>
         private static SafeHashHandle CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash)
         {
+            return CreateHashHandle(hProv, hash, calgHash, throwOnSizeError: true)!;
+        }
+
+        private static SafeHashHandle? CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash, bool throwOnSizeError)
+        {
             SafeHashHandle? hHash;
             if (!CryptCreateHash(hProv, calgHash, SafeKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
             {
@@ -1411,8 +1387,16 @@ namespace Internal.NativeCrypto
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
                 }
+
                 if (dwHashSize != hash.Length)
-                    throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
+                {
+                    if (throwOnSizeError)
+                    {
+                        throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
+                    }
+
+                    return null;
+                }
 
                 if (!Interop.Advapi32.CryptSetHashParam(hHash, Interop.Advapi32.CryptHashProperty.HP_HASHVAL, hash, 0))
                 {
