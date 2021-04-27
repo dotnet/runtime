@@ -668,7 +668,7 @@ namespace System.Net.Http
                             // Current .NET Desktop HttpClientHandler uses 'Content-Length' semantics and
                             // buffers the content as well in some cases.  But the WinHttpHandler can't access
                             // the protected internal TryComputeLength() method of the content.  So, it
-                            // will use'Transfer-Encoding: chunked' semantics.
+                            // will use 'Transfer-Encoding: chunked' semantics.
                             chunkedMode = WinHttpChunkMode.Manual;
                             requestMessage.Headers.TransferEncodingChunked = true;
                         }
@@ -1049,7 +1049,7 @@ namespace System.Net.Http
             {
                 int lastError = Marshal.GetLastWin32Error();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
-                if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
+                if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER || chunkedModeForSend != WinHttpChunkMode.Automatic)
                 {
                     ThrowOnInvalidHandle(requestHandle, nameof(Interop.WinHttp.WinHttpOpenRequest));
                 }

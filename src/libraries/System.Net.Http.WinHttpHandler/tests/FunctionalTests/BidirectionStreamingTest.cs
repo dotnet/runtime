@@ -78,11 +78,11 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                var responseStream = await response.Content.ReadAsStreamAsync();
+                using Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 // Read response data.
                 var buffer = new byte[1024];
-                var readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
+                int readCount = await responseStream.ReadAsync(buffer, 0, buffer.Length);
                 Assert.Equal(DataBytes.Length, readCount);
 
                 // Finish sending request data.
