@@ -58,6 +58,7 @@
 
     <!-- Installer args -->
     <InnerBuildArgs>$(InnerBuildArgs) --installer-args</InnerBuildArgs>
+    <!-- Restore and build?????????? -->
     <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) -cmakeargs</InnerBuildArgs>
@@ -80,6 +81,20 @@
   </ItemGroup>
 
   <Target Name="ApplySourceBuildPatchFiles"
+          AfterTargets="PrepareInnerSourceBuildRepoRoot"
+          BeforeTargets="RunInnerSourceBuildCommand">
+
+    <ItemGroup>
+      <SourceBuildPatchFile Include="$(RepositoryEngineeringDir)source-build-patches\*.patch" />
+    </ItemGroup>
+
+    <Exec
+      Command="git apply --ignore-whitespace --whitespace=nowarn &quot;%(SourceBuildPatchFile.FullPath)&quot;"
+      WorkingDirectory="$(InnerSourceBuildRepoRoot)"
+      Condition="'@(SourceBuildPatchFile)' != ''" />
+  </Target>
+
+  <!-- <Target Name="ApplySourceBuildPatchFiles"
           Condition="
             '$(ArcadeBuildFromSource)' == 'true' and
             '$(ArcadeInnerBuildFromSource)' == 'true'"
@@ -89,10 +104,10 @@
     </ItemGroup>
 
     <Exec
-      Command="git apply --ignore-whitespace --whitespace=nowarn &quot;%(SourceBuildPatchFile.FullPath)&quot;"
+      Command="git apply ignore-whitespace whitespace=nowarn &quot;%(SourceBuildPatchFile.FullPath)&quot;"
       WorkingDirectory="$(RepoRoot)"
       Condition="'@(SourceBuildPatchFile)' != ''" />
-  </Target>
+  </Target> -->
 
   <Target Name="CategorizeRuntimeSupplementalArtifacts"
           BeforeTargets="GetCategorizedIntermediateNupkgContents">

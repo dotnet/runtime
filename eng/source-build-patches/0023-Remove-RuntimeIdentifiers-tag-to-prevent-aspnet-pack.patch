@@ -5,22 +5,9 @@ Subject: [PATCH] Remove <RuntimeIdentifiers> tag to prevent aspnet pack from
  loading
 
 ---
- src/coreclr/tools/aot/crossgen2/crossgen2.csproj | 1 -
  src/coreclr/tools/dotnet-pgo/dotnet-pgo.csproj   | 1 -
- 2 files changed, 2 deletions(-)
+ 1 files changed, 1 deletions(-)
 
-diff --git a/src/coreclr/tools/aot/crossgen2/crossgen2.csproj b/src/coreclr/tools/aot/crossgen2/crossgen2.csproj
-index e4805e45bd9..eae0d51ff0b 100644
---- a/src/coreclr/tools/aot/crossgen2/crossgen2.csproj
-+++ b/src/coreclr/tools/aot/crossgen2/crossgen2.csproj
-@@ -12,7 +12,6 @@
-     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
-     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
--    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;win-x64</RuntimeIdentifiers>
-     <Configurations>Debug;Release;Checked</Configurations>
-     <ServerGarbageCollection>true</ServerGarbageCollection>
-     <!-- The default value for macOS is false -->
 diff --git a/src/coreclr/tools/dotnet-pgo/dotnet-pgo.csproj b/src/coreclr/tools/dotnet-pgo/dotnet-pgo.csproj
 index dbe495a3d24..781fd33ac42 100644
 --- a/src/coreclr/tools/dotnet-pgo/dotnet-pgo.csproj
@@ -30,9 +17,9 @@ index dbe495a3d24..781fd33ac42 100644
      <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
      <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
 -    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
-   </PropertyGroup>
- 
-   <ItemGroup>
+     <IsPackable>true</IsPackable>
+     <PackAsTool>true</PackAsTool>
+     <ToolCommandName>dotnet-pgo</ToolCommandName>
 -- 
 2.25.4
 

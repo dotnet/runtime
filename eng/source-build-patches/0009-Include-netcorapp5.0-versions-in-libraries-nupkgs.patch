@@ -26,7 +26,7 @@ index 0548b4468af..7460e44616b 100644
 +    <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true' and '$(DotNetBuildFromSource)' != 'true'">true</ExcludeFromPackage>
    </PropertyGroup>
  
-   <!-- Adds System.Runtime.Versioning*Platform* annotation attributes to < .NET 5 builds -->
+   <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
 -- 
 2.25.4
 

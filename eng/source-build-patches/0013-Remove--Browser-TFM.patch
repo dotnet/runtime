@@ -14,16 +14,15 @@ artifacts/src/runtime.bf456654f9a4f9a86c15d9d50095ff29cde5f0a4/src/libraries/Nat
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/libraries/System.Security.Cryptography.OpenSsl/src/System.Security.Cryptography.OpenSsl.csproj b/src/libraries/System.Security.Cryptography.OpenSsl/src/System.Security.Cryptography.OpenSsl.csproj
-index 90ccdc04e80..e29a3e3d909 100644
+index 133c02e..ad2eadd 100644
 --- a/src/libraries/System.Security.Cryptography.OpenSsl/src/System.Security.Cryptography.OpenSsl.csproj
 +++ b/src/libraries/System.Security.Cryptography.OpenSsl/src/System.Security.Cryptography.OpenSsl.csproj
-@@ -1,7 +1,7 @@
+@@ -1,6 +1,6 @@
  <Project Sdk="Microsoft.NET.Sdk">
    <PropertyGroup>
+-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
++    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppCurrent);net47</TargetFrameworks>
      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
--    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent);netcoreapp3.0-Unix;netcoreapp3.0;net47</TargetFrameworks>
-+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.0-Unix;netcoreapp3.0;net47;$(NetFrameworkCurrent)</TargetFrameworks>
-     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
      <Nullable>enable</Nullable>
    </PropertyGroup>
 -- 

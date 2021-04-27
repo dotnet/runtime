@@ -50,7 +50,7 @@ index 3daf1a941be..94606e51460 100644
 +  </PropertyGroup>
 +
    <!-- Define test projects and companions -->
-   <PropertyGroup>
+   <PropertyGroup Condition="'$(IsSourceProject)' != 'true'">
      <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
 -- 
 2.25.4

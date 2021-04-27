@@ -8,15 +8,15 @@ Subject: [PATCH] Update nuget versions to version in SBRP
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/eng/Versions.props b/eng/Versions.props
-index cef8de452b4..f17e627eda2 100644
+index f459c77..bc6d52a 100644
 --- a/eng/Versions.props
 +++ b/eng/Versions.props
-@@ -137,8 +137,8 @@
+@@ -148,8 +148,8 @@
      <RefOnlyMicrosoftBuildFrameworkVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildFrameworkVersion>
      <RefOnlyMicrosoftBuildTasksCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildTasksCoreVersion>
      <RefOnlyMicrosoftBuildUtilitiesCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildUtilitiesCoreVersion>
--    <RefOnlyNugetProjectModelVersion>4.9.4</RefOnlyNugetProjectModelVersion>
--    <RefOnlyNugetPackagingVersion>4.9.4</RefOnlyNugetPackagingVersion>
+-    <RefOnlyNugetProjectModelVersion>5.8.0</RefOnlyNugetProjectModelVersion>
+-    <RefOnlyNugetPackagingVersion>5.8.0</RefOnlyNugetPackagingVersion>
 +    <RefOnlyNugetProjectModelVersion>5.1.0</RefOnlyNugetProjectModelVersion>
 +    <RefOnlyNugetPackagingVersion>5.1.0</RefOnlyNugetPackagingVersion>
      <!-- Testing -->
