@@ -432,6 +432,9 @@ void
 ep_rt_mono_init (void);
 
 void
+ep_rt_mono_init_finish (void);
+
+void
 ep_rt_mono_fini (void);
 
 bool
@@ -1638,6 +1641,26 @@ ep_rt_mono_init (void)
 
 	MonoProfilerHandle profiler = mono_profiler_create (NULL);
 	mono_profiler_set_thread_stopped_callback (profiler, profiler_eventpipe_thread_exited);
+}
+
+void
+ep_rt_mono_init_finish (void)
+{
+	if (mono_runtime_get_no_exec ())
+		return;
+
+	// Managed init of diagnostics classes, like registration of RuntimeEventSource (if available).
+	ERROR_DECL (error);
+
+	MonoClass *runtime_event_source = mono_class_from_name_checked (mono_defaults.corlib, "System.Diagnostics.Tracing", "RuntimeEventSource", error);
+	if (is_ok (error) && runtime_event_source) {
+		MonoMethod *init = mono_class_get_method_from_name_checked (runtime_event_source, "Initialize", -1, 0, error);
+		if (is_ok (error) && init) {
+			mono_runtime_try_invoke_handle (init, NULL_HANDLE, NULL, error);
+		}
+	}
+
+	mono_error_cleanup (error);
 }
 
 void

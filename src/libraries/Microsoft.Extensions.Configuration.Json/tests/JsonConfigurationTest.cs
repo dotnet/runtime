@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Configuration
             var exception = Assert.Throws<FileNotFoundException>(() => config.Build());
 
             // Assert
-            Assert.StartsWith($"The configuration file 'NotExistingConfig.json' was not found and is not optional. The physical path is '", exception.Message);
+            Assert.StartsWith($"The configuration file 'NotExistingConfig.json' was not found and is not optional. The expected physical path was '", exception.Message);
         }
 
         [Fact]

@@ -106,7 +106,7 @@ namespace System.Text.Json
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteCoreBytes(value!, JsonHelpers.GetTypeInfo(context, runtimeType));
+            return WriteCoreBytes(value!, GetTypeInfo(context, runtimeType));
         }
 
         private static byte[] WriteCoreBytes<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
