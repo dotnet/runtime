@@ -81,7 +81,7 @@
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>
-    <SystemComponentModelAnnotationsVersion>4.7.0</SystemComponentModelAnnotationsVersion>
+    <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <SystemDataSqlClientVersion>4.8.1</SystemDataSqlClientVersion>
     <SystemDiagnosticsContractsVersion>4.3.0</SystemDiagnosticsContractsVersion>
     <SystemDiagnosticsDebugVersion>4.3.0</SystemDiagnosticsDebugVersion>
