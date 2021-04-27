@@ -42,7 +42,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Directory where the AOT'ed files will be emitted
     /// </summary>
+#if NETCOREAPP
     [NotNull]
+#endif
     [Required]
     public string? OutputDir { get; set; }
 
@@ -190,7 +192,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!Enum.TryParse(Mode, true, out parsedAotMode))
         {
-            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(',', Enum.GetNames(typeof(MonoAotMode)))}");
+            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(",", Enum.GetNames(typeof(MonoAotMode)))}");
             return false;
         }
 
@@ -222,7 +224,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         string? monoPaths = null;
         if (AdditionalAssemblySearchPaths != null)
-            monoPaths = string.Join(Path.PathSeparator, AdditionalAssemblySearchPaths);
+            monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         if (DisableParallelAot)
         {
@@ -257,13 +259,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(";", StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(";", StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly}");
@@ -276,7 +278,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.Add("--llvm");
 
             if (!string.IsNullOrEmpty(LLVMDebug))
-                aotArgs.Add(LLVMDebug);
+                aotArgs.Add(LLVMDebug!);
 
             aotArgs.Add($"llvm-path={LLVMPath}");
         }

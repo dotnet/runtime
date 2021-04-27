@@ -12,12 +12,16 @@ using Microsoft.Build.Utilities;
 
 public class WasmLoadAssembliesAndReferences : Task
 {
-    [Required]
+#if NETCOREAPP
     [NotNull]
+#endif
+    [Required]
     public string[]? Assemblies { get; set; }
 
-    [Required]
+#if NETCOREAPP
     [NotNull]
+#endif
+    [Required]
     public string[]? AssemblySearchPaths { get; set; }
 
     // If true, continue when a referenced assembly cannot be found.
@@ -38,9 +42,9 @@ public class WasmLoadAssembliesAndReferences : Task
             return false;
         }
 
-        SearchPathsAssemblyResolver resolver = new(AssemblySearchPaths);
+        SearchPathsAssemblyResolver resolver = new(AssemblySearchPaths!);
         MetadataLoadContext mlc = new(resolver, "System.Private.CoreLib");
-        foreach (var asm in Assemblies)
+        foreach (var asm in Assemblies!)
         {
             var asmFullPath = Path.GetFullPath(asm);
             if (!File.Exists(asmFullPath))
