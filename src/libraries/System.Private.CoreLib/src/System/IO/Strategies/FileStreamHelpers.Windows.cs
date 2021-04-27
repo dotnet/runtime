@@ -72,7 +72,7 @@ namespace System.IO.Strategies
                 Debug.Assert(path != null);
 
                 uint ntStatus = 0;
-                if (IsNonIgnorable(allocationSize, access, mode))
+                if (ShouldPreallocate(allocationSize, access, mode))
                 {
                     GetPathForNtCreateFile(path, out ReadOnlySpan<char> prefixedAbsolutePath, out char[]? rentedArray);
 
@@ -482,8 +482,6 @@ namespace System.IO.Strategies
 
         private static void GetPathForNtCreateFile(string fullPath, out ReadOnlySpan<char> prefixedAbsolutePath, out char[]? rentedArray)
         {
-            Debug.Assert(fullPath == Path.GetFullPath(fullPath));
-
             const string mandatoryNtPrefix = @"\??\";
 
             if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))

@@ -106,7 +106,7 @@ namespace System.IO.Strategies
             }
 
             // If allocationSize has been provided for a creatable and writeable file
-            if (FileStreamHelpers.IsNonIgnorable(allocationSize, _access, mode))
+            if (FileStreamHelpers.ShouldPreallocate(allocationSize, _access, mode))
             {
                 int fallocateResult = Interop.Sys.PosixFAllocate(_fileHandle, 0, allocationSize);
                 if (fallocateResult != 0)
@@ -118,13 +118,10 @@ namespace System.IO.Strategies
                     {
                         throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, _path, allocationSize));
                     }
-                    else
-                    {
-                        Debug.Assert(fallocateResult == -2);
-                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, _path, allocationSize));
-                    }
+
+                    Debug.Assert(fallocateResult == -2);
+                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, _path, allocationSize));
                 }
-                // ignore not supported and other failures (pipe, etc)
             }
         }
 
