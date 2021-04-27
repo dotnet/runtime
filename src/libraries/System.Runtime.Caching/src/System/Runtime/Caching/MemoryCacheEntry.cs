@@ -144,7 +144,7 @@ namespace System.Runtime.Caching
 
             _callback = removedCallback;
 
-            // CacheItemPolicy.ChangeMonitors is frequntly the source for 'dependencies', and that property
+            // CacheItemPolicy.ChangeMonitors is frequently the source for 'dependencies', and that property
             // is never null. So check that the collection of dependencies is not empty before allocating
             // the 'seldom' used fields.
             if (dependencies != null && dependencies.Count > 0)
