@@ -120,7 +120,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
                 AsnWriter keyWriter;

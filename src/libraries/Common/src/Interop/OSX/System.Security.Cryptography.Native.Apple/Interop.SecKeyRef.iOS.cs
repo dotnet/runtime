@@ -36,12 +36,16 @@ internal static partial class Interop
 
                 using (errorHandle)
                 {
-                    return result switch
+                    switch (result)
                     {
-                        kSuccess => dataKey,
-                        kErrorSeeError => throw CreateExceptionForCFError(errorHandle),
-                        _ => throw new CryptographicException { HResult = result }
-                    };
+                        case kSuccess:
+                            return dataKey;
+                        case kErrorSeeError:
+                            throw CreateExceptionForCFError(errorHandle);
+                        default:
+                            Debug.Fail($"SecKeyCreateWithData returned {result}");
+                            throw new CryptographicException();
+                    }
                 }
             }
         }
@@ -57,12 +61,16 @@ internal static partial class Interop
             using (errorHandle)
             using (data)
             {
-                return result switch
+                switch (result)
                 {
-                    kSuccess => CoreFoundation.CFGetData(data),
-                    kErrorSeeError => throw CreateExceptionForCFError(errorHandle),
-                    _ => throw new CryptographicException { HResult = result }
-                };
+                    case kSuccess:
+                        return CoreFoundation.CFGetData(data);
+                    case kErrorSeeError:
+                        throw CreateExceptionForCFError(errorHandle);
+                    default:
+                        Debug.Fail($"SecKeyCopyExternalRepresentation returned {result}");
+                        throw new CryptographicException();
+                }
             }
         }
 
