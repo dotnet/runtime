@@ -1980,7 +1980,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     }
     genProduceReg(lclNode);
 #else  // !UNIX_AMD64_ABI
-    assert(!"Multireg store to SIMD reg not supported on X64 Windows");
+    assert(!"Multireg store to SIMD reg not supported on Windows");
 #endif // !UNIX_AMD64_ABI
 }
 #endif // FEATURE_SIMD

@@ -3680,6 +3680,11 @@ namespace System
             Type[] aArgsTypes,
             Type retType)
         {
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             Debug.Assert(
                 aArgs.Length == aArgsIsByRef.Length
                 && aArgs.Length == aArgsTypes.Length

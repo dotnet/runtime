@@ -2607,24 +2607,28 @@ void Compiler::optIdentifyLoopsForAlignment()
 #endif
 }
 
-void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool addPreds)
+//------------------------------------------------------------------------
+// optRedirectBlock: Replace the branch successors of a block based on a block map.
+//
+// Updates the successors of `blk`: if `blk2` is a branch successor of `blk`, and there is a mapping
+// for `blk2->blk3` in `redirectMap`, change `blk` so that `blk3` is this branch successor.
+//
+// Arguments:
+//     blk          - block to redirect
+//     redirectMap  - block->block map specifying how the `blk` target will be redirected.
+//
+void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
 {
     BasicBlock* newJumpDest = nullptr;
     switch (blk->bbJumpKind)
     {
+        case BBJ_NONE:
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
         case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
             // These have no jump destination to update.
-            break;
-
-        case BBJ_NONE:
-            if (addPreds)
-            {
-                fgAddRefPred(blk->bbNext, blk);
-            }
             break;
 
         case BBJ_ALWAYS:
@@ -2635,15 +2639,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, c
             if (redirectMap->Lookup(blk->bbJumpDest, &newJumpDest))
             {
                 blk->bbJumpDest = newJumpDest;
-            }
-            if (addPreds)
-            {
-                fgAddRefPred(blk->bbJumpDest, blk);
-                if (blk->bbJumpKind == BBJ_COND)
-                {
-                    // Add a pred for the fall-through path.
-                    fgAddRefPred(blk->bbNext, blk);
-                }
             }
             break;
 
@@ -2659,12 +2654,8 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, c
                     blk->bbJumpSwt->bbsDstTab[i] = newJumpDest;
                     redirected                   = true;
                 }
-                if (addPreds)
-                {
-                    fgAddRefPred(switchDest, blk);
-                }
             }
-            // If any redirections happend, invalidate the switch table map for the switch.
+            // If any redirections happened, invalidate the switch table map for the switch.
             if (redirected)
             {
                 // Don't create a new map just to try to remove an entry.
@@ -5495,6 +5486,13 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Be safe by taking the max with the head block's weight.
     ambientWeight = max(ambientWeight, loop.lpHead->bbWeight);
 
+    // We assume that the fast path will run 99% of the time, and thus should get 99% of the block weights.
+    // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
+    // mark the slow path as "run rarely", since it really shouldn't execute (given the currently optimized loop
+    // conditions) except under exceptional circumstances.
+    const BasicBlock::weight_t fastPathWeightScaleFactor = 0.99f;
+    const BasicBlock::weight_t slowPathWeightScaleFactor = 1.0f - fastPathWeightScaleFactor;
+
     // This is the containing loop, if any -- to label any blocks we create that are outside
     // the loop being cloned.
     unsigned char ambientLoop = loop.lpParent;
@@ -5612,7 +5610,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // NOTE: 'h' is no longer the loop head; 'h2' is!
     }
 
-    // Now we'll clone the blocks of the loop body.
+    // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
     BasicBlock* newFirst = nullptr;
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
@@ -5630,6 +5628,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // We're going to create the preds below, which will set the bbRefs properly,
         // so clear out the cloned bbRefs field.
         newBlk->bbRefs = 0;
+
+        newBlk->scaleBBWeight(slowPathWeightScaleFactor);
+        blk->scaleBBWeight(fastPathWeightScaleFactor);
+
+// TODO: scale the pred edges of `blk`?
 
 #if FEATURE_LOOP_ALIGN
         // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
@@ -5672,10 +5675,38 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         optCopyBlkDest(blk, newblk);
 
         // Now redirect the new block according to "blockMap".
-        const bool addPreds = true;
-        optRedirectBlock(newblk, blockMap, addPreds);
+        optRedirectBlock(newblk, blockMap);
 
-        blk->ensurePredListOrder(this);
+        // Add predecessor edges for the new successors, as well as the fall-through paths.
+        switch (newblk->bbJumpKind)
+        {
+            case BBJ_NONE:
+                fgAddRefPred(newblk->bbNext, newblk);
+                break;
+
+            case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
+                fgAddRefPred(newblk->bbJumpDest, newblk);
+                break;
+
+            case BBJ_COND:
+                fgAddRefPred(newblk->bbNext, newblk);
+                fgAddRefPred(newblk->bbJumpDest, newblk);
+                break;
+
+            case BBJ_SWITCH:
+            {
+                for (unsigned i = 0; i < newblk->bbJumpSwt->bbsCount; i++)
+                {
+                    BasicBlock* switchDest = newblk->bbJumpSwt->bbsDstTab[i];
+                    fgAddRefPred(switchDest, newblk);
+                }
+            }
+            break;
+
+            default:
+                break;
+        }
     }
 
 #ifdef DEBUG
@@ -5732,7 +5763,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     JITDUMP("Create unique head block for slow path loop\n");
     BasicBlock* slowHead = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, h->bbNum);
-    slowHead->bbWeight     = h->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowHead->bbWeight = h->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowHead->scaleBBWeight(slowPathWeightScaleFactor);
     slowHead->bbNatLoopNum = ambientLoop;
     slowHead->bbJumpDest   = e2;
 
@@ -5852,6 +5884,10 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
 // preds of the entry to this new block. Sets the weight of the newly created
 // block to "ambientWeight".
 //
+// NOTE: this is currently dead code, because it is only called by loop cloning,
+// and loop cloning only works with single-entry loops where the immediately
+// preceding head block is the only predecessor of the loop entry.
+//
 // Arguments:
 //    loopInd       - index of loop to process
 //    ambientWeight - weight to give the new head, if created.
@@ -5875,20 +5911,16 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambien
     // and redirect the preds of the entry block to go to this.
 
     BasicBlock* beforeTop = t->bbPrev;
+    assert(!beforeTop->bbFallsThrough() || (beforeTop->bbNext == e));
+
     // Make sure that the new block is in the same region as the loop.
     // (We will only create loops that are entirely within a region.)
-    BasicBlock* h2 = fgNewBBafter(BBJ_ALWAYS, beforeTop, true);
+    BasicBlock* h2 = fgNewBBafter(BBJ_NONE, beforeTop, /*extendRegion*/ true);
+    assert(beforeTop->bbNext == h2);
+
     // This is in the containing loop.
     h2->bbNatLoopNum = loop.lpParent;
     h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-    // We don't care where it was put; splice it between beforeTop and top.
-    if (beforeTop->bbNext != h2)
-    {
-        h2->bbPrev->setNext(h2->bbNext); // Splice h2 out.
-        beforeTop->setNext(h2);          // Splice h2 in, between beforeTop and t.
-        h2->setNext(t);
-    }
 
     if (h2->bbNext != e)
     {
@@ -5897,11 +5929,13 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambien
     }
     BlockSetOps::Assign(this, h2->bbReach, e->bbReach);
 
+    fgAddRefPred(e, h2);
+
     // Redirect paths from preds of "e" to go to "h2" instead of "e".
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     blockMap->Set(e, h2);
 
-    for (flowList* predEntry = e->bbPreds; predEntry; predEntry = predEntry->flNext)
+    for (flowList* predEntry = e->bbPreds; predEntry != nullptr; predEntry = predEntry->flNext)
     {
         BasicBlock* predBlock = predEntry->getBlock();
 
@@ -5910,10 +5944,14 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambien
         {
             continue;
         }
+
         optRedirectBlock(predBlock, blockMap);
+
+        fgAddRefPred(h2, predBlock);
+        fgRemoveRefPred(e, predBlock);
     }
 
-    optUpdateLoopHead(loopInd, loop.lpHead, h2);
+    optUpdateLoopHead(loopInd, h, h2);
 }
 
 /*****************************************************************************

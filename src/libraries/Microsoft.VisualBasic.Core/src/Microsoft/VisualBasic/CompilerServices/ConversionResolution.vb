@@ -8,6 +8,7 @@ Imports System.Collections.Generic
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.ConversionResolution.OperatorCaches
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -120,6 +121,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #If DEBUG Then
         <System.Diagnostics.ConditionalAttribute("DEBUG")>
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:="This method only gets called in DEBUG mode.")>
         Private Shared Sub VerifyForLoopWidestType()
             Const Max As Integer = TypeCode.String
 
@@ -173,6 +176,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Debug.Assert(TypeCode.String = 18, "wrong value!")
         End Sub
 
+        <RequiresUnreferencedCode("Calls ClassifyUserDefinedConversion")>
         Friend Shared Function ClassifyConversion(ByVal targetType As System.Type, ByVal sourceType As System.Type, ByRef operatorMethod As Method) As ConversionClass
             'This function classifies the nature of the conversion from the source type to the target
             'type. If such a conversion requires a user-defined conversion, it will be supplied as an
@@ -514,6 +518,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <RequiresUnreferencedCode("Calls Operators.CollectOperators")>
         Private Shared Function CollectConversionOperators(
             ByVal targetType As System.Type,
             ByVal sourceType As System.Type,
@@ -855,6 +860,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <RequiresUnreferencedCode("Calls DoClassifyUserDefinedConversion")>
         Friend Shared Function ClassifyUserDefinedConversion(
             ByVal targetType As System.Type,
             ByVal sourceType As System.Type,
@@ -909,6 +915,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return result
         End Function
 
+        <RequiresUnreferencedCode("Calls CollectConversionOperators")>
         Private Shared Function DoClassifyUserDefinedConversion(
             ByVal targetType As System.Type,
             ByVal sourceType As System.Type,

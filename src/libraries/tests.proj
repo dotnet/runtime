@@ -225,6 +225,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51722 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51677 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Parallel/tests/System.Threading.Tasks.Parallel.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50965 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Encodings.Web\tests\System.Text.Encodings.Web.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51037 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections/tests/System.Collections.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50957 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
+
     <!-- Issue: https://github.com/dotnet/runtime/issues/50705 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
 
@@ -280,16 +295,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Reader\tests\System.Resources.Reader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Extensions\tests\System.Threading.Tasks.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel/tests/System.ObjectModel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
 

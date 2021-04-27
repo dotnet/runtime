@@ -1733,7 +1733,7 @@ namespace System.Xml.Serialization
                             {
                                 specifiedMethodInfo.Invoke(o, new object[] { true });
                             }
-                        };
+                        }
                     }
 
                     ChoiceIdentifierAccessor? choice = mapping.ChoiceIdentifier;
@@ -1754,7 +1754,7 @@ namespace System.Xml.Serialization
                                     break;
                                 }
                             }
-                        };
+                        }
                     }
 
                     allMemberMappingList.Add(mapping);

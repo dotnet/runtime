@@ -25,8 +25,12 @@
              Link="Common\System\Diagnostics\Tracing\ConsoleEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ByteLoggingStream.cs"
              Link="Common\System\IO\ByteLoggingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs"
+             Link="CommonTest\System\IO\DelegateDelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
              Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
+             Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
              Link="Common\System\Net\RemoteServerQuery.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"

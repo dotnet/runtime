@@ -139,7 +139,10 @@ namespace System.Net.Sockets.Tests
             return (socket, buffer);
         }
         public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
-            Task.Factory.FromAsync(s.BeginAccept, s.EndAccept, acceptSocket, 0, null);
+            Task.Factory.FromAsync(
+                (callback, state) => s.BeginAccept(acceptSocket, 0, callback, state),
+                result => s.EndAccept(out _, out _, result),
+                null);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Factory.FromAsync(s.BeginConnect, s.EndConnect, endPoint, null);
         public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
@@ -291,7 +294,7 @@ namespace System.Net.Sockets.Tests
     {
         public override bool UsesEap => true;
         public override bool ValidatesArrayArguments => false;
-        public override bool SupportsAcceptReceive => true;
+        public override bool SupportsAcceptReceive => PlatformDetection.IsWindows;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
             InvokeAsync(s, e => e.AcceptSocket, e => s.AcceptAsync(e));
