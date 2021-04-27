@@ -6554,12 +6554,15 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
 
                                         impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
                                                        typeInfo(TI_INT));
+                                                       
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                         return 1 + sizeof(mdToken);
                                     }
                                     else if (castResult == TypeCompareState::MustNot)
                                     {
                                         impPopStack();
                                         impPushOnStack(gtNewIconNode(0), typeInfo(TI_INT));
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
                                         return 1 + sizeof(mdToken);
                                     }
                                 }
