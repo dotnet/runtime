@@ -303,6 +303,7 @@ namespace System.Net.Http
         private void IncreaseRemainingStreamCount(long delta)
         {
             Debug.Assert(Monitor.IsEntered(SyncObj));
+            Debug.Assert(delta > 0);
 
             _requestStreamsRemaining += delta;
 
