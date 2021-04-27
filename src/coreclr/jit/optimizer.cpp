@@ -5632,7 +5632,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         newBlk->scaleBBWeight(slowPathWeightScaleFactor);
         blk->scaleBBWeight(fastPathWeightScaleFactor);
 
-        // TODO: scale the pred edges of `blk`?
+// TODO: scale the pred edges of `blk`?
 
 #if FEATURE_LOOP_ALIGN
         // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
@@ -5763,7 +5763,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     JITDUMP("Create unique head block for slow path loop\n");
     BasicBlock* slowHead = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, h->bbNum);
-    slowHead->bbWeight     = h->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowHead->bbWeight = h->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowHead->scaleBBWeight(slowPathWeightScaleFactor);
     slowHead->bbNatLoopNum = ambientLoop;
     slowHead->bbJumpDest   = e2;
