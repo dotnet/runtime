@@ -1487,31 +1487,30 @@
     ret
   } // end of method MethodImplOnDerived
 } // end of class DerivedScenario60`1
-.class interface public abstract auto ansi InterfaceScenario61
+.class interface public abstract auto ansi InterfaceScenario61`1<U>
 {
-  .method public newslot virtual abstract static object Method() cil managed noinlining
+  .method public newslot virtual abstract static int32 Method() cil managed noinlining
   {
   } // end of method Method
-} // end of class InterfaceScenario61
-.class public auto ansi BaseScenario61`1<T>
+} // end of class InterfaceScenario61`1
+.class public auto ansi BaseScenario61
        extends [System.Runtime]System.Object
-       implements InterfaceScenario61
+       implements class InterfaceScenario61`1<object>
 {
-  .method public static string Method() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method object InterfaceScenario61::Method()
-    .locals init (string V_O)
+    .override method int32 class InterfaceScenario61`1<object>::Method()
+    .locals init (int32 V_O)
     ldloca.s 0
-    initobj string
+    initobj int32
     ldloc.0
     ret
   } // end of method Method
-} // end of class BaseScenario61`1
-.class public auto ansi DerivedScenario61`1<V>
-       extends class BaseScenario61`1<!0>
-       implements InterfaceScenario61
+} // end of class BaseScenario61
+.class public auto ansi DerivedScenario61
+       extends BaseScenario61
 {
-} // end of class DerivedScenario61`1
+} // end of class DerivedScenario61
 .class interface public abstract auto ansi InterfaceScenario62`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -1534,6 +1533,7 @@
 } // end of class BaseScenario62
 .class public auto ansi DerivedScenario62
        extends BaseScenario62
+       implements class InterfaceScenario62`1<object>
 {
 } // end of class DerivedScenario62
 .class interface public abstract auto ansi InterfaceScenario63`1<U>
@@ -1542,11 +1542,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario63`1
-.class public auto ansi BaseScenario63
+.class public abstract auto ansi BaseScenario63
        extends [System.Runtime]System.Object
        implements class InterfaceScenario63`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario63
+.class public auto ansi DerivedScenario63
+       extends BaseScenario63
+       implements class InterfaceScenario63`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario63`1<object>::Method()
     .locals init (int32 V_O)
@@ -1554,12 +1559,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario63
-.class public auto ansi DerivedScenario63
-       extends BaseScenario63
-       implements class InterfaceScenario63`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario63
 .class interface public abstract auto ansi InterfaceScenario64`1<U>
 {
@@ -1567,16 +1567,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario64`1
-.class public abstract auto ansi BaseScenario64
+.class public auto ansi BaseScenario64
        extends [System.Runtime]System.Object
        implements class InterfaceScenario64`1<object>
 {
-} // end of class BaseScenario64
-.class public auto ansi DerivedScenario64
-       extends BaseScenario64
-       implements class InterfaceScenario64`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario64`1<object>::Method()
     .locals init (int32 V_O)
@@ -1584,8 +1579,12 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario64
+  } // end of method Method
+} // end of class BaseScenario64
+.class public auto ansi DerivedScenario64`1<V>
+       extends BaseScenario64
+{
+} // end of class DerivedScenario64`1
 .class interface public abstract auto ansi InterfaceScenario65`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -1608,6 +1607,7 @@
 } // end of class BaseScenario65
 .class public auto ansi DerivedScenario65`1<V>
        extends BaseScenario65
+       implements class InterfaceScenario65`1<object>
 {
 } // end of class DerivedScenario65`1
 .class interface public abstract auto ansi InterfaceScenario66`1<U>
@@ -1616,11 +1616,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario66`1
-.class public auto ansi BaseScenario66
+.class public abstract auto ansi BaseScenario66
        extends [System.Runtime]System.Object
        implements class InterfaceScenario66`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario66
+.class public auto ansi DerivedScenario66`1<V>
+       extends BaseScenario66
+       implements class InterfaceScenario66`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario66`1<object>::Method()
     .locals init (int32 V_O)
@@ -1628,12 +1633,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario66
-.class public auto ansi DerivedScenario66`1<V>
-       extends BaseScenario66
-       implements class InterfaceScenario66`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario66`1
 .class interface public abstract auto ansi InterfaceScenario67`1<U>
 {
@@ -1641,16 +1641,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario67`1
-.class public abstract auto ansi BaseScenario67
+.class public auto ansi BaseScenario67
        extends [System.Runtime]System.Object
        implements class InterfaceScenario67`1<object>
 {
-} // end of class BaseScenario67
-.class public auto ansi DerivedScenario67`1<V>
-       extends BaseScenario67
-       implements class InterfaceScenario67`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario67`1<object>::Method()
     .locals init (int32 V_O)
@@ -1658,7 +1653,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario67
+.class public auto ansi DerivedScenario67`1<V>
+       extends BaseScenario67
+{
 } // end of class DerivedScenario67`1
 .class interface public abstract auto ansi InterfaceScenario68`1<U>
 {
@@ -1682,6 +1681,7 @@
 } // end of class BaseScenario68
 .class public auto ansi DerivedScenario68`1<V>
        extends BaseScenario68
+       implements class InterfaceScenario68`1<object>
 {
 } // end of class DerivedScenario68`1
 .class interface public abstract auto ansi InterfaceScenario69`1<U>
@@ -1690,11 +1690,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario69`1
-.class public auto ansi BaseScenario69
+.class public abstract auto ansi BaseScenario69
        extends [System.Runtime]System.Object
        implements class InterfaceScenario69`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario69
+.class public auto ansi DerivedScenario69`1<V>
+       extends BaseScenario69
+       implements class InterfaceScenario69`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario69`1<object>::Method()
     .locals init (int32 V_O)
@@ -1702,12 +1707,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario69
-.class public auto ansi DerivedScenario69`1<V>
-       extends BaseScenario69
-       implements class InterfaceScenario69`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario69`1
 .class interface public abstract auto ansi InterfaceScenario70`1<U>
 {
@@ -1715,16 +1715,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario70`1
-.class public abstract auto ansi BaseScenario70
+.class public auto ansi BaseScenario70`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario70`1<object>
 {
-} // end of class BaseScenario70
-.class public auto ansi DerivedScenario70`1<V>
-       extends BaseScenario70
-       implements class InterfaceScenario70`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario70`1<object>::Method()
     .locals init (int32 V_O)
@@ -1732,8 +1727,12 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario70`1
+  } // end of method Method
+} // end of class BaseScenario70`1
+.class public auto ansi DerivedScenario70
+       extends class BaseScenario70`1<string>
+{
+} // end of class DerivedScenario70
 .class interface public abstract auto ansi InterfaceScenario71`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -1756,6 +1755,7 @@
 } // end of class BaseScenario71`1
 .class public auto ansi DerivedScenario71
        extends class BaseScenario71`1<string>
+       implements class InterfaceScenario71`1<object>
 {
 } // end of class DerivedScenario71
 .class interface public abstract auto ansi InterfaceScenario72`1<U>
@@ -1764,11 +1764,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario72`1
-.class public auto ansi BaseScenario72`1<T>
+.class public abstract auto ansi BaseScenario72`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario72`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario72`1
+.class public auto ansi DerivedScenario72
+       extends class BaseScenario72`1<string>
+       implements class InterfaceScenario72`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario72`1<object>::Method()
     .locals init (int32 V_O)
@@ -1776,12 +1781,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario72`1
-.class public auto ansi DerivedScenario72
-       extends class BaseScenario72`1<string>
-       implements class InterfaceScenario72`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario72
 .class interface public abstract auto ansi InterfaceScenario73`1<U>
 {
@@ -1789,16 +1789,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario73`1
-.class public abstract auto ansi BaseScenario73`1<T>
+.class public auto ansi BaseScenario73`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario73`1<object>
 {
-} // end of class BaseScenario73`1
-.class public auto ansi DerivedScenario73
-       extends class BaseScenario73`1<string>
-       implements class InterfaceScenario73`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario73`1<object>::Method()
     .locals init (int32 V_O)
@@ -1806,8 +1801,12 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario73
+  } // end of method Method
+} // end of class BaseScenario73`1
+.class public auto ansi DerivedScenario73`1<V>
+       extends class BaseScenario73`1<string>
+{
+} // end of class DerivedScenario73`1
 .class interface public abstract auto ansi InterfaceScenario74`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -1830,6 +1829,7 @@
 } // end of class BaseScenario74`1
 .class public auto ansi DerivedScenario74`1<V>
        extends class BaseScenario74`1<string>
+       implements class InterfaceScenario74`1<object>
 {
 } // end of class DerivedScenario74`1
 .class interface public abstract auto ansi InterfaceScenario75`1<U>
@@ -1838,11 +1838,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario75`1
-.class public auto ansi BaseScenario75`1<T>
+.class public abstract auto ansi BaseScenario75`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario75`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario75`1
+.class public auto ansi DerivedScenario75`1<V>
+       extends class BaseScenario75`1<string>
+       implements class InterfaceScenario75`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario75`1<object>::Method()
     .locals init (int32 V_O)
@@ -1850,12 +1855,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario75`1
-.class public auto ansi DerivedScenario75`1<V>
-       extends class BaseScenario75`1<string>
-       implements class InterfaceScenario75`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario75`1
 .class interface public abstract auto ansi InterfaceScenario76`1<U>
 {
@@ -1863,16 +1863,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario76`1
-.class public abstract auto ansi BaseScenario76`1<T>
+.class public auto ansi BaseScenario76`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario76`1<object>
 {
-} // end of class BaseScenario76`1
-.class public auto ansi DerivedScenario76`1<V>
-       extends class BaseScenario76`1<string>
-       implements class InterfaceScenario76`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario76`1<object>::Method()
     .locals init (int32 V_O)
@@ -1880,7 +1875,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario76`1
+.class public auto ansi DerivedScenario76`1<V>
+       extends class BaseScenario76`1<string>
+{
 } // end of class DerivedScenario76`1
 .class interface public abstract auto ansi InterfaceScenario77`1<U>
 {
@@ -1904,6 +1903,7 @@
 } // end of class BaseScenario77`1
 .class public auto ansi DerivedScenario77`1<V>
        extends class BaseScenario77`1<string>
+       implements class InterfaceScenario77`1<object>
 {
 } // end of class DerivedScenario77`1
 .class interface public abstract auto ansi InterfaceScenario78`1<U>
@@ -1912,11 +1912,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario78`1
-.class public auto ansi BaseScenario78`1<T>
+.class public abstract auto ansi BaseScenario78`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario78`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario78`1
+.class public auto ansi DerivedScenario78`1<V>
+       extends class BaseScenario78`1<string>
+       implements class InterfaceScenario78`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario78`1<object>::Method()
     .locals init (int32 V_O)
@@ -1924,12 +1929,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario78`1
-.class public auto ansi DerivedScenario78`1<V>
-       extends class BaseScenario78`1<string>
-       implements class InterfaceScenario78`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario78`1
 .class interface public abstract auto ansi InterfaceScenario79`1<U>
 {
@@ -1937,16 +1937,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario79`1
-.class public abstract auto ansi BaseScenario79`1<T>
+.class public auto ansi BaseScenario79`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario79`1<object>
 {
-} // end of class BaseScenario79`1
-.class public auto ansi DerivedScenario79`1<V>
-       extends class BaseScenario79`1<string>
-       implements class InterfaceScenario79`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario79`1<object>::Method()
     .locals init (int32 V_O)
@@ -1954,7 +1949,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario79`1
+.class public auto ansi DerivedScenario79`1<V>
+       extends class BaseScenario79`1<!0>
+{
 } // end of class DerivedScenario79`1
 .class interface public abstract auto ansi InterfaceScenario80`1<U>
 {
@@ -1978,6 +1977,7 @@
 } // end of class BaseScenario80`1
 .class public auto ansi DerivedScenario80`1<V>
        extends class BaseScenario80`1<!0>
+       implements class InterfaceScenario80`1<object>
 {
 } // end of class DerivedScenario80`1
 .class interface public abstract auto ansi InterfaceScenario81`1<U>
@@ -1986,11 +1986,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario81`1
-.class public auto ansi BaseScenario81`1<T>
+.class public abstract auto ansi BaseScenario81`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario81`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario81`1
+.class public auto ansi DerivedScenario81`1<V>
+       extends class BaseScenario81`1<!0>
+       implements class InterfaceScenario81`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario81`1<object>::Method()
     .locals init (int32 V_O)
@@ -1998,12 +2003,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario81`1
-.class public auto ansi DerivedScenario81`1<V>
-       extends class BaseScenario81`1<!0>
-       implements class InterfaceScenario81`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario81`1
 .class interface public abstract auto ansi InterfaceScenario82`1<U>
 {
@@ -2011,16 +2011,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario82`1
-.class public abstract auto ansi BaseScenario82`1<T>
+.class public auto ansi BaseScenario82`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario82`1<object>
 {
-} // end of class BaseScenario82`1
-.class public auto ansi DerivedScenario82`1<V>
-       extends class BaseScenario82`1<!0>
-       implements class InterfaceScenario82`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario82`1<object>::Method()
     .locals init (int32 V_O)
@@ -2028,7 +2023,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario82`1
+.class public auto ansi DerivedScenario82`1<V>
+       extends class BaseScenario82`1<!0>
+{
 } // end of class DerivedScenario82`1
 .class interface public abstract auto ansi InterfaceScenario83`1<U>
 {
@@ -2052,6 +2051,7 @@
 } // end of class BaseScenario83`1
 .class public auto ansi DerivedScenario83`1<V>
        extends class BaseScenario83`1<!0>
+       implements class InterfaceScenario83`1<object>
 {
 } // end of class DerivedScenario83`1
 .class interface public abstract auto ansi InterfaceScenario84`1<U>
@@ -2060,11 +2060,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario84`1
-.class public auto ansi BaseScenario84`1<T>
+.class public abstract auto ansi BaseScenario84`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario84`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario84`1
+.class public auto ansi DerivedScenario84`1<V>
+       extends class BaseScenario84`1<!0>
+       implements class InterfaceScenario84`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario84`1<object>::Method()
     .locals init (int32 V_O)
@@ -2072,12 +2077,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario84`1
-.class public auto ansi DerivedScenario84`1<V>
-       extends class BaseScenario84`1<!0>
-       implements class InterfaceScenario84`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario84`1
 .class interface public abstract auto ansi InterfaceScenario85`1<U>
 {
@@ -2085,16 +2085,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario85`1
-.class public abstract auto ansi BaseScenario85`1<T>
+.class public auto ansi BaseScenario85`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario85`1<object>
 {
-} // end of class BaseScenario85`1
-.class public auto ansi DerivedScenario85`1<V>
-       extends class BaseScenario85`1<!0>
-       implements class InterfaceScenario85`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario85`1<object>::Method()
     .locals init (int32 V_O)
@@ -2102,7 +2097,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario85`1
+.class public auto ansi DerivedScenario85`1<V>
+       extends class BaseScenario85`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario85`1
 .class interface public abstract auto ansi InterfaceScenario86`1<U>
 {
@@ -2126,6 +2125,7 @@
 } // end of class BaseScenario86`1
 .class public auto ansi DerivedScenario86`1<V>
        extends class BaseScenario86`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario86`1<object>
 {
 } // end of class DerivedScenario86`1
 .class interface public abstract auto ansi InterfaceScenario87`1<U>
@@ -2134,11 +2134,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario87`1
-.class public auto ansi BaseScenario87`1<T>
+.class public abstract auto ansi BaseScenario87`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario87`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario87`1
+.class public auto ansi DerivedScenario87`1<V>
+       extends class BaseScenario87`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario87`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario87`1<object>::Method()
     .locals init (int32 V_O)
@@ -2146,12 +2151,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario87`1
-.class public auto ansi DerivedScenario87`1<V>
-       extends class BaseScenario87`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario87`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario87`1
 .class interface public abstract auto ansi InterfaceScenario88`1<U>
 {
@@ -2159,16 +2159,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario88`1
-.class public abstract auto ansi BaseScenario88`1<T>
+.class public auto ansi BaseScenario88`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario88`1<object>
 {
-} // end of class BaseScenario88`1
-.class public auto ansi DerivedScenario88`1<V>
-       extends class BaseScenario88`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario88`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario88`1<object>::Method()
     .locals init (int32 V_O)
@@ -2176,7 +2171,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario88`1
+.class public auto ansi DerivedScenario88`1<V>
+       extends class BaseScenario88`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario88`1
 .class interface public abstract auto ansi InterfaceScenario89`1<U>
 {
@@ -2200,6 +2199,7 @@
 } // end of class BaseScenario89`1
 .class public auto ansi DerivedScenario89`1<V>
        extends class BaseScenario89`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario89`1<object>
 {
 } // end of class DerivedScenario89`1
 .class interface public abstract auto ansi InterfaceScenario90`1<U>
@@ -2208,11 +2208,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario90`1
-.class public auto ansi BaseScenario90`1<T>
+.class public abstract auto ansi BaseScenario90`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario90`1<object>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario90`1
+.class public auto ansi DerivedScenario90`1<V>
+       extends class BaseScenario90`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario90`1<object>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario90`1<object>::Method()
     .locals init (int32 V_O)
@@ -2220,12 +2225,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario90`1
-.class public auto ansi DerivedScenario90`1<V>
-       extends class BaseScenario90`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario90`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario90`1
 .class interface public abstract auto ansi InterfaceScenario91`1<U>
 {
@@ -2233,25 +2233,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario91`1
-.class public abstract auto ansi BaseScenario91`1<T>
+.class public auto ansi BaseScenario91`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario91`1<object>
+       implements class InterfaceScenario91`1<!0>
 {
-} // end of class BaseScenario91`1
-.class public auto ansi DerivedScenario91`1<V>
-       extends class BaseScenario91`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario91`1<object>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario91`1<object>::Method()
+    .override method int32 class InterfaceScenario91`1<!0>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario91`1
+  } // end of method Method
+} // end of class BaseScenario91`1
+.class public auto ansi DerivedScenario91
+       extends class BaseScenario91`1<string>
+{
+} // end of class DerivedScenario91
 .class interface public abstract auto ansi InterfaceScenario92`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -2274,6 +2273,7 @@
 } // end of class BaseScenario92`1
 .class public auto ansi DerivedScenario92
        extends class BaseScenario92`1<string>
+       implements class InterfaceScenario92`1<string>
 {
 } // end of class DerivedScenario92
 .class interface public abstract auto ansi InterfaceScenario93`1<U>
@@ -2282,24 +2282,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario93`1
-.class public auto ansi BaseScenario93`1<T>
+.class public abstract auto ansi BaseScenario93`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario93`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario93`1<!0>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario93`1
 .class public auto ansi DerivedScenario93
        extends class BaseScenario93`1<string>
        implements class InterfaceScenario93`1<string>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario93`1<string>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario93
 .class interface public abstract auto ansi InterfaceScenario94`1<U>
 {
@@ -2307,25 +2307,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario94`1
-.class public abstract auto ansi BaseScenario94`1<T>
+.class public auto ansi BaseScenario94`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario94`1<!0>
 {
-} // end of class BaseScenario94`1
-.class public auto ansi DerivedScenario94
-       extends class BaseScenario94`1<string>
-       implements class InterfaceScenario94`1<string>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario94`1<string>::Method()
+    .override method int32 class InterfaceScenario94`1<!0>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario94
+  } // end of method Method
+} // end of class BaseScenario94`1
+.class public auto ansi DerivedScenario94`1<V>
+       extends class BaseScenario94`1<string>
+{
+} // end of class DerivedScenario94`1
 .class interface public abstract auto ansi InterfaceScenario95`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -2348,6 +2347,7 @@
 } // end of class BaseScenario95`1
 .class public auto ansi DerivedScenario95`1<V>
        extends class BaseScenario95`1<string>
+       implements class InterfaceScenario95`1<string>
 {
 } // end of class DerivedScenario95`1
 .class interface public abstract auto ansi InterfaceScenario96`1<U>
@@ -2356,24 +2356,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario96`1
-.class public auto ansi BaseScenario96`1<T>
+.class public abstract auto ansi BaseScenario96`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario96`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario96`1<!0>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario96`1
 .class public auto ansi DerivedScenario96`1<V>
        extends class BaseScenario96`1<string>
        implements class InterfaceScenario96`1<string>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario96`1<string>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario96`1
 .class interface public abstract auto ansi InterfaceScenario97`1<U>
 {
@@ -2381,24 +2381,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario97`1
-.class public abstract auto ansi BaseScenario97`1<T>
+.class public auto ansi BaseScenario97`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario97`1<!0>
 {
-} // end of class BaseScenario97`1
-.class public auto ansi DerivedScenario97`1<V>
-       extends class BaseScenario97`1<string>
-       implements class InterfaceScenario97`1<string>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario97`1<string>::Method()
+    .override method int32 class InterfaceScenario97`1<!0>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario97`1
+.class public auto ansi DerivedScenario97`1<V>
+       extends class BaseScenario97`1<string>
+{
 } // end of class DerivedScenario97`1
 .class interface public abstract auto ansi InterfaceScenario98`1<U>
 {
@@ -2422,6 +2421,7 @@
 } // end of class BaseScenario98`1
 .class public auto ansi DerivedScenario98`1<V>
        extends class BaseScenario98`1<string>
+       implements class InterfaceScenario98`1<string>
 {
 } // end of class DerivedScenario98`1
 .class interface public abstract auto ansi InterfaceScenario99`1<U>
@@ -2430,24 +2430,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario99`1
-.class public auto ansi BaseScenario99`1<T>
+.class public abstract auto ansi BaseScenario99`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario99`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario99`1<!0>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario99`1
 .class public auto ansi DerivedScenario99`1<V>
        extends class BaseScenario99`1<string>
        implements class InterfaceScenario99`1<string>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario99`1<string>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario99`1
 .class interface public abstract auto ansi InterfaceScenario100`1<U>
 {
@@ -2455,24 +2455,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario100`1
-.class public abstract auto ansi BaseScenario100`1<T>
+.class public auto ansi BaseScenario100`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario100`1<!0>
 {
-} // end of class BaseScenario100`1
-.class public auto ansi DerivedScenario100`1<V>
-       extends class BaseScenario100`1<string>
-       implements class InterfaceScenario100`1<string>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario100`1<string>::Method()
+    .override method int32 class InterfaceScenario100`1<!0>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario100`1
+.class public auto ansi DerivedScenario100`1<V>
+       extends class BaseScenario100`1<!0>
+{
 } // end of class DerivedScenario100`1
 .class interface public abstract auto ansi InterfaceScenario101`1<U>
 {
@@ -2496,6 +2495,7 @@
 } // end of class BaseScenario101`1
 .class public auto ansi DerivedScenario101`1<V>
        extends class BaseScenario101`1<!0>
+       implements class InterfaceScenario101`1<!0>
 {
 } // end of class DerivedScenario101`1
 .class interface public abstract auto ansi InterfaceScenario102`1<U>
@@ -2504,11 +2504,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario102`1
-.class public auto ansi BaseScenario102`1<T>
+.class public abstract auto ansi BaseScenario102`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario102`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario102`1
+.class public auto ansi DerivedScenario102`1<V>
+       extends class BaseScenario102`1<!0>
+       implements class InterfaceScenario102`1<!0>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario102`1<!0>::Method()
     .locals init (int32 V_O)
@@ -2516,12 +2521,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario102`1
-.class public auto ansi DerivedScenario102`1<V>
-       extends class BaseScenario102`1<!0>
-       implements class InterfaceScenario102`1<!0>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario102`1
 .class interface public abstract auto ansi InterfaceScenario103`1<U>
 {
@@ -2529,16 +2529,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario103`1
-.class public abstract auto ansi BaseScenario103`1<T>
+.class public auto ansi BaseScenario103`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario103`1<!0>
 {
-} // end of class BaseScenario103`1
-.class public auto ansi DerivedScenario103`1<V>
-       extends class BaseScenario103`1<!0>
-       implements class InterfaceScenario103`1<!0>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario103`1<!0>::Method()
     .locals init (int32 V_O)
@@ -2546,7 +2541,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario103`1
+.class public auto ansi DerivedScenario103`1<V>
+       extends class BaseScenario103`1<!0>
+{
 } // end of class DerivedScenario103`1
 .class interface public abstract auto ansi InterfaceScenario104`1<U>
 {
@@ -2570,6 +2569,7 @@
 } // end of class BaseScenario104`1
 .class public auto ansi DerivedScenario104`1<V>
        extends class BaseScenario104`1<!0>
+       implements class InterfaceScenario104`1<!0>
 {
 } // end of class DerivedScenario104`1
 .class interface public abstract auto ansi InterfaceScenario105`1<U>
@@ -2578,11 +2578,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario105`1
-.class public auto ansi BaseScenario105`1<T>
+.class public abstract auto ansi BaseScenario105`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario105`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario105`1
+.class public auto ansi DerivedScenario105`1<V>
+       extends class BaseScenario105`1<!0>
+       implements class InterfaceScenario105`1<!0>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario105`1<!0>::Method()
     .locals init (int32 V_O)
@@ -2590,12 +2595,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario105`1
-.class public auto ansi DerivedScenario105`1<V>
-       extends class BaseScenario105`1<!0>
-       implements class InterfaceScenario105`1<!0>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario105`1
 .class interface public abstract auto ansi InterfaceScenario106`1<U>
 {
@@ -2603,16 +2603,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario106`1
-.class public abstract auto ansi BaseScenario106`1<T>
+.class public auto ansi BaseScenario106`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario106`1<!0>
 {
-} // end of class BaseScenario106`1
-.class public auto ansi DerivedScenario106`1<V>
-       extends class BaseScenario106`1<!0>
-       implements class InterfaceScenario106`1<!0>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario106`1<!0>::Method()
     .locals init (int32 V_O)
@@ -2620,7 +2615,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario106`1
+.class public auto ansi DerivedScenario106`1<V>
+       extends class BaseScenario106`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario106`1
 .class interface public abstract auto ansi InterfaceScenario107`1<U>
 {
@@ -2644,6 +2643,7 @@
 } // end of class BaseScenario107`1
 .class public auto ansi DerivedScenario107`1<V>
        extends class BaseScenario107`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario107`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario107`1
 .class interface public abstract auto ansi InterfaceScenario108`1<U>
@@ -2652,24 +2652,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario108`1
-.class public auto ansi BaseScenario108`1<T>
+.class public abstract auto ansi BaseScenario108`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario108`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario108`1<!0>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario108`1
 .class public auto ansi DerivedScenario108`1<V>
        extends class BaseScenario108`1<class [System.Runtime]System.Func`1<!0>>
        implements class InterfaceScenario108`1<class [System.Runtime]System.Func`1<!0>>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario108`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario108`1
 .class interface public abstract auto ansi InterfaceScenario109`1<U>
 {
@@ -2677,24 +2677,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario109`1
-.class public abstract auto ansi BaseScenario109`1<T>
+.class public auto ansi BaseScenario109`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario109`1<!0>
 {
-} // end of class BaseScenario109`1
-.class public auto ansi DerivedScenario109`1<V>
-       extends class BaseScenario109`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario109`1<class [System.Runtime]System.Func`1<!0>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario109`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .override method int32 class InterfaceScenario109`1<!0>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario109`1
+.class public auto ansi DerivedScenario109`1<V>
+       extends class BaseScenario109`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario109`1
 .class interface public abstract auto ansi InterfaceScenario110`1<U>
 {
@@ -2718,6 +2717,7 @@
 } // end of class BaseScenario110`1
 .class public auto ansi DerivedScenario110`1<V>
        extends class BaseScenario110`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario110`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario110`1
 .class interface public abstract auto ansi InterfaceScenario111`1<U>
@@ -2726,24 +2726,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario111`1
-.class public auto ansi BaseScenario111`1<T>
+.class public abstract auto ansi BaseScenario111`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario111`1<!0>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario111`1<!0>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario111`1
 .class public auto ansi DerivedScenario111`1<V>
        extends class BaseScenario111`1<class [System.Runtime]System.Func`1<!0>>
        implements class InterfaceScenario111`1<class [System.Runtime]System.Func`1<!0>>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario111`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario111`1
 .class interface public abstract auto ansi InterfaceScenario112`1<U>
 {
@@ -2751,25 +2751,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario112`1
-.class public abstract auto ansi BaseScenario112`1<T>
+.class public auto ansi BaseScenario112`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario112`1<!0>
+       implements class InterfaceScenario112`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario112`1
-.class public auto ansi DerivedScenario112`1<V>
-       extends class BaseScenario112`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario112`1<class [System.Runtime]System.Func`1<!0>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario112`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .override method int32 class InterfaceScenario112`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario112`1
+  } // end of method Method
+} // end of class BaseScenario112`1
+.class public auto ansi DerivedScenario112
+       extends class BaseScenario112`1<string>
+{
+} // end of class DerivedScenario112
 .class interface public abstract auto ansi InterfaceScenario113`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -2792,6 +2791,7 @@
 } // end of class BaseScenario113`1
 .class public auto ansi DerivedScenario113
        extends class BaseScenario113`1<string>
+       implements class InterfaceScenario113`1<class [System.Runtime]System.Action`1<string>>
 {
 } // end of class DerivedScenario113
 .class interface public abstract auto ansi InterfaceScenario114`1<U>
@@ -2800,24 +2800,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario114`1
-.class public auto ansi BaseScenario114`1<T>
+.class public abstract auto ansi BaseScenario114`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario114`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario114`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario114`1
 .class public auto ansi DerivedScenario114
        extends class BaseScenario114`1<string>
        implements class InterfaceScenario114`1<class [System.Runtime]System.Action`1<string>>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario114`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario114
 .class interface public abstract auto ansi InterfaceScenario115`1<U>
 {
@@ -2825,25 +2825,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario115`1
-.class public abstract auto ansi BaseScenario115`1<T>
+.class public auto ansi BaseScenario115`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario115`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario115`1
-.class public auto ansi DerivedScenario115
-       extends class BaseScenario115`1<string>
-       implements class InterfaceScenario115`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario115`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .override method int32 class InterfaceScenario115`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario115
+  } // end of method Method
+} // end of class BaseScenario115`1
+.class public auto ansi DerivedScenario115`1<V>
+       extends class BaseScenario115`1<string>
+{
+} // end of class DerivedScenario115`1
 .class interface public abstract auto ansi InterfaceScenario116`1<U>
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
@@ -2866,6 +2865,7 @@
 } // end of class BaseScenario116`1
 .class public auto ansi DerivedScenario116`1<V>
        extends class BaseScenario116`1<string>
+       implements class InterfaceScenario116`1<class [System.Runtime]System.Action`1<string>>
 {
 } // end of class DerivedScenario116`1
 .class interface public abstract auto ansi InterfaceScenario117`1<U>
@@ -2874,24 +2874,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario117`1
-.class public auto ansi BaseScenario117`1<T>
+.class public abstract auto ansi BaseScenario117`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario117`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario117`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario117`1
 .class public auto ansi DerivedScenario117`1<V>
        extends class BaseScenario117`1<string>
        implements class InterfaceScenario117`1<class [System.Runtime]System.Action`1<string>>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario117`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario117`1
 .class interface public abstract auto ansi InterfaceScenario118`1<U>
 {
@@ -2899,24 +2899,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario118`1
-.class public abstract auto ansi BaseScenario118`1<T>
+.class public auto ansi BaseScenario118`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario118`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario118`1
-.class public auto ansi DerivedScenario118`1<V>
-       extends class BaseScenario118`1<string>
-       implements class InterfaceScenario118`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario118`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .override method int32 class InterfaceScenario118`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario118`1
+.class public auto ansi DerivedScenario118`1<V>
+       extends class BaseScenario118`1<string>
+{
 } // end of class DerivedScenario118`1
 .class interface public abstract auto ansi InterfaceScenario119`1<U>
 {
@@ -2940,6 +2939,7 @@
 } // end of class BaseScenario119`1
 .class public auto ansi DerivedScenario119`1<V>
        extends class BaseScenario119`1<string>
+       implements class InterfaceScenario119`1<class [System.Runtime]System.Action`1<string>>
 {
 } // end of class DerivedScenario119`1
 .class interface public abstract auto ansi InterfaceScenario120`1<U>
@@ -2948,24 +2948,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario120`1
-.class public auto ansi BaseScenario120`1<T>
+.class public abstract auto ansi BaseScenario120`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario120`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario120`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario120`1
 .class public auto ansi DerivedScenario120`1<V>
        extends class BaseScenario120`1<string>
        implements class InterfaceScenario120`1<class [System.Runtime]System.Action`1<string>>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario120`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario120`1
 .class interface public abstract auto ansi InterfaceScenario121`1<U>
 {
@@ -2973,24 +2973,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario121`1
-.class public abstract auto ansi BaseScenario121`1<T>
+.class public auto ansi BaseScenario121`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario121`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario121`1
-.class public auto ansi DerivedScenario121`1<V>
-       extends class BaseScenario121`1<string>
-       implements class InterfaceScenario121`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario121`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .override method int32 class InterfaceScenario121`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario121`1
+.class public auto ansi DerivedScenario121`1<V>
+       extends class BaseScenario121`1<!0>
+{
 } // end of class DerivedScenario121`1
 .class interface public abstract auto ansi InterfaceScenario122`1<U>
 {
@@ -3014,6 +3013,7 @@
 } // end of class BaseScenario122`1
 .class public auto ansi DerivedScenario122`1<V>
        extends class BaseScenario122`1<!0>
+       implements class InterfaceScenario122`1<class [System.Runtime]System.Action`1<!0>>
 {
 } // end of class DerivedScenario122`1
 .class interface public abstract auto ansi InterfaceScenario123`1<U>
@@ -3022,11 +3022,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario123`1
-.class public auto ansi BaseScenario123`1<T>
+.class public abstract auto ansi BaseScenario123`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario123`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario123`1
+.class public auto ansi DerivedScenario123`1<V>
+       extends class BaseScenario123`1<!0>
+       implements class InterfaceScenario123`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario123`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
@@ -3034,12 +3039,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario123`1
-.class public auto ansi DerivedScenario123`1<V>
-       extends class BaseScenario123`1<!0>
-       implements class InterfaceScenario123`1<class [System.Runtime]System.Action`1<!0>>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario123`1
 .class interface public abstract auto ansi InterfaceScenario124`1<U>
 {
@@ -3047,16 +3047,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario124`1
-.class public abstract auto ansi BaseScenario124`1<T>
+.class public auto ansi BaseScenario124`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario124`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario124`1
-.class public auto ansi DerivedScenario124`1<V>
-       extends class BaseScenario124`1<!0>
-       implements class InterfaceScenario124`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario124`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
@@ -3064,7 +3059,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario124`1
+.class public auto ansi DerivedScenario124`1<V>
+       extends class BaseScenario124`1<!0>
+{
 } // end of class DerivedScenario124`1
 .class interface public abstract auto ansi InterfaceScenario125`1<U>
 {
@@ -3088,6 +3087,7 @@
 } // end of class BaseScenario125`1
 .class public auto ansi DerivedScenario125`1<V>
        extends class BaseScenario125`1<!0>
+       implements class InterfaceScenario125`1<class [System.Runtime]System.Action`1<!0>>
 {
 } // end of class DerivedScenario125`1
 .class interface public abstract auto ansi InterfaceScenario126`1<U>
@@ -3096,11 +3096,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario126`1
-.class public auto ansi BaseScenario126`1<T>
+.class public abstract auto ansi BaseScenario126`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario126`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
+} // end of class BaseScenario126`1
+.class public auto ansi DerivedScenario126`1<V>
+       extends class BaseScenario126`1<!0>
+       implements class InterfaceScenario126`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
     .override method int32 class InterfaceScenario126`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
@@ -3108,12 +3113,7 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario126`1
-.class public auto ansi DerivedScenario126`1<V>
-       extends class BaseScenario126`1<!0>
-       implements class InterfaceScenario126`1<class [System.Runtime]System.Action`1<!0>>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario126`1
 .class interface public abstract auto ansi InterfaceScenario127`1<U>
 {
@@ -3121,16 +3121,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario127`1
-.class public abstract auto ansi BaseScenario127`1<T>
+.class public auto ansi BaseScenario127`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario127`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario127`1
-.class public auto ansi DerivedScenario127`1<V>
-       extends class BaseScenario127`1<!0>
-       implements class InterfaceScenario127`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
     .override method int32 class InterfaceScenario127`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
@@ -3138,7 +3133,11 @@
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario127`1
+.class public auto ansi DerivedScenario127`1<V>
+       extends class BaseScenario127`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario127`1
 .class interface public abstract auto ansi InterfaceScenario128`1<U>
 {
@@ -3162,6 +3161,7 @@
 } // end of class BaseScenario128`1
 .class public auto ansi DerivedScenario128`1<V>
        extends class BaseScenario128`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario128`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
 } // end of class DerivedScenario128`1
 .class interface public abstract auto ansi InterfaceScenario129`1<U>
@@ -3170,24 +3170,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario129`1
-.class public auto ansi BaseScenario129`1<T>
+.class public abstract auto ansi BaseScenario129`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario129`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario129`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario129`1
 .class public auto ansi DerivedScenario129`1<V>
        extends class BaseScenario129`1<class [System.Runtime]System.Func`1<!0>>
        implements class InterfaceScenario129`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
+  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  {
+    .override method int32 class InterfaceScenario129`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .locals init (int32 V_O)
+    ldloca.s 0
+    initobj int32
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario129`1
 .class interface public abstract auto ansi InterfaceScenario130`1<U>
 {
@@ -3195,24 +3195,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario130`1
-.class public abstract auto ansi BaseScenario130`1<T>
+.class public auto ansi BaseScenario130`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario130`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario130`1
-.class public auto ansi DerivedScenario130`1<V>
-       extends class BaseScenario130`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario130`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-  .method public static int32 MethodImplOnDerived() cil managed noinlining
+  .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario130`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .override method int32 class InterfaceScenario130`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario130`1
+.class public auto ansi DerivedScenario130`1<V>
+       extends class BaseScenario130`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario130`1
 .class interface public abstract auto ansi InterfaceScenario131`1<U>
 {
@@ -3236,6 +3235,7 @@
 } // end of class BaseScenario131`1
 .class public auto ansi DerivedScenario131`1<V>
        extends class BaseScenario131`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario131`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
 } // end of class DerivedScenario131`1
 .class interface public abstract auto ansi InterfaceScenario132`1<U>
@@ -3244,50 +3244,49 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario132`1
-.class public auto ansi BaseScenario132`1<T>
+.class public abstract auto ansi BaseScenario132`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario132`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static int32 Method() cil managed noinlining
-  {
-    .override method int32 class InterfaceScenario132`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (int32 V_O)
-    ldloca.s 0
-    initobj int32
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario132`1
 .class public auto ansi DerivedScenario132`1<V>
        extends class BaseScenario132`1<class [System.Runtime]System.Func`1<!0>>
        implements class InterfaceScenario132`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
-} // end of class DerivedScenario132`1
-.class interface public abstract auto ansi InterfaceScenario133`1<U>
-{
-  .method public newslot virtual abstract static int32 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario133`1
-.class public abstract auto ansi BaseScenario133`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario133`1<class [System.Runtime]System.Action`1<!0>>
-{
-} // end of class BaseScenario133`1
-.class public auto ansi DerivedScenario133`1<V>
-       extends class BaseScenario133`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario133`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
   .method public static int32 MethodImplOnDerived() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario133`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .override method int32 class InterfaceScenario132`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
     ldloc.0
     ret
   } // end of method MethodImplOnDerived
-} // end of class DerivedScenario133`1
+} // end of class DerivedScenario132`1
+.class interface public abstract auto ansi InterfaceScenario133`1<U>
+{
+  .method public newslot virtual abstract static object Method() cil managed noinlining
+  {
+  } // end of method Method
+} // end of class InterfaceScenario133`1
+.class public auto ansi BaseScenario133
+       extends [System.Runtime]System.Object
+       implements class InterfaceScenario133`1<object>
+{
+  .method public static object Method() cil managed noinlining
+  {
+    .override method object class InterfaceScenario133`1<object>::Method()
+    .locals init (object V_O)
+    ldloca.s 0
+    initobj object
+    ldloc.0
+    ret
+  } // end of method Method
+} // end of class BaseScenario133
+.class public auto ansi DerivedScenario133
+       extends BaseScenario133
+{
+} // end of class DerivedScenario133
 .class interface public abstract auto ansi InterfaceScenario134`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -3310,6 +3309,7 @@
 } // end of class BaseScenario134
 .class public auto ansi DerivedScenario134
        extends BaseScenario134
+       implements class InterfaceScenario134`1<object>
 {
 } // end of class DerivedScenario134
 .class interface public abstract auto ansi InterfaceScenario135`1<U>
@@ -3318,11 +3318,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario135`1
-.class public auto ansi BaseScenario135
+.class public abstract auto ansi BaseScenario135
        extends [System.Runtime]System.Object
        implements class InterfaceScenario135`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario135
+.class public auto ansi DerivedScenario135
+       extends BaseScenario135
+       implements class InterfaceScenario135`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario135`1<object>::Method()
     .locals init (object V_O)
@@ -3330,12 +3335,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario135
-.class public auto ansi DerivedScenario135
-       extends BaseScenario135
-       implements class InterfaceScenario135`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario135
 .class interface public abstract auto ansi InterfaceScenario136`1<U>
 {
@@ -3343,16 +3343,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario136`1
-.class public abstract auto ansi BaseScenario136
+.class public auto ansi BaseScenario136
        extends [System.Runtime]System.Object
        implements class InterfaceScenario136`1<object>
 {
-} // end of class BaseScenario136
-.class public auto ansi DerivedScenario136
-       extends BaseScenario136
-       implements class InterfaceScenario136`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario136`1<object>::Method()
     .locals init (object V_O)
@@ -3360,8 +3355,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario136
+  } // end of method Method
+} // end of class BaseScenario136
+.class public auto ansi DerivedScenario136`1<V>
+       extends BaseScenario136
+{
+} // end of class DerivedScenario136`1
 .class interface public abstract auto ansi InterfaceScenario137`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -3384,6 +3383,7 @@
 } // end of class BaseScenario137
 .class public auto ansi DerivedScenario137`1<V>
        extends BaseScenario137
+       implements class InterfaceScenario137`1<object>
 {
 } // end of class DerivedScenario137`1
 .class interface public abstract auto ansi InterfaceScenario138`1<U>
@@ -3392,11 +3392,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario138`1
-.class public auto ansi BaseScenario138
+.class public abstract auto ansi BaseScenario138
        extends [System.Runtime]System.Object
        implements class InterfaceScenario138`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario138
+.class public auto ansi DerivedScenario138`1<V>
+       extends BaseScenario138
+       implements class InterfaceScenario138`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario138`1<object>::Method()
     .locals init (object V_O)
@@ -3404,12 +3409,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario138
-.class public auto ansi DerivedScenario138`1<V>
-       extends BaseScenario138
-       implements class InterfaceScenario138`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario138`1
 .class interface public abstract auto ansi InterfaceScenario139`1<U>
 {
@@ -3417,16 +3417,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario139`1
-.class public abstract auto ansi BaseScenario139
+.class public auto ansi BaseScenario139
        extends [System.Runtime]System.Object
        implements class InterfaceScenario139`1<object>
 {
-} // end of class BaseScenario139
-.class public auto ansi DerivedScenario139`1<V>
-       extends BaseScenario139
-       implements class InterfaceScenario139`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario139`1<object>::Method()
     .locals init (object V_O)
@@ -3434,7 +3429,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario139
+.class public auto ansi DerivedScenario139`1<V>
+       extends BaseScenario139
+{
 } // end of class DerivedScenario139`1
 .class interface public abstract auto ansi InterfaceScenario140`1<U>
 {
@@ -3458,6 +3457,7 @@
 } // end of class BaseScenario140
 .class public auto ansi DerivedScenario140`1<V>
        extends BaseScenario140
+       implements class InterfaceScenario140`1<object>
 {
 } // end of class DerivedScenario140`1
 .class interface public abstract auto ansi InterfaceScenario141`1<U>
@@ -3466,11 +3466,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario141`1
-.class public auto ansi BaseScenario141
+.class public abstract auto ansi BaseScenario141
        extends [System.Runtime]System.Object
        implements class InterfaceScenario141`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario141
+.class public auto ansi DerivedScenario141`1<V>
+       extends BaseScenario141
+       implements class InterfaceScenario141`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario141`1<object>::Method()
     .locals init (object V_O)
@@ -3478,12 +3483,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario141
-.class public auto ansi DerivedScenario141`1<V>
-       extends BaseScenario141
-       implements class InterfaceScenario141`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario141`1
 .class interface public abstract auto ansi InterfaceScenario142`1<U>
 {
@@ -3491,16 +3491,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario142`1
-.class public abstract auto ansi BaseScenario142
+.class public auto ansi BaseScenario142`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario142`1<object>
 {
-} // end of class BaseScenario142
-.class public auto ansi DerivedScenario142`1<V>
-       extends BaseScenario142
-       implements class InterfaceScenario142`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario142`1<object>::Method()
     .locals init (object V_O)
@@ -3508,8 +3503,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario142`1
+  } // end of method Method
+} // end of class BaseScenario142`1
+.class public auto ansi DerivedScenario142
+       extends class BaseScenario142`1<string>
+{
+} // end of class DerivedScenario142
 .class interface public abstract auto ansi InterfaceScenario143`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -3532,6 +3531,7 @@
 } // end of class BaseScenario143`1
 .class public auto ansi DerivedScenario143
        extends class BaseScenario143`1<string>
+       implements class InterfaceScenario143`1<object>
 {
 } // end of class DerivedScenario143
 .class interface public abstract auto ansi InterfaceScenario144`1<U>
@@ -3540,11 +3540,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario144`1
-.class public auto ansi BaseScenario144`1<T>
+.class public abstract auto ansi BaseScenario144`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario144`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario144`1
+.class public auto ansi DerivedScenario144
+       extends class BaseScenario144`1<string>
+       implements class InterfaceScenario144`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario144`1<object>::Method()
     .locals init (object V_O)
@@ -3552,12 +3557,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario144`1
-.class public auto ansi DerivedScenario144
-       extends class BaseScenario144`1<string>
-       implements class InterfaceScenario144`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario144
 .class interface public abstract auto ansi InterfaceScenario145`1<U>
 {
@@ -3565,16 +3565,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario145`1
-.class public abstract auto ansi BaseScenario145`1<T>
+.class public auto ansi BaseScenario145`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario145`1<object>
 {
-} // end of class BaseScenario145`1
-.class public auto ansi DerivedScenario145
-       extends class BaseScenario145`1<string>
-       implements class InterfaceScenario145`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario145`1<object>::Method()
     .locals init (object V_O)
@@ -3582,8 +3577,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario145
+  } // end of method Method
+} // end of class BaseScenario145`1
+.class public auto ansi DerivedScenario145`1<V>
+       extends class BaseScenario145`1<string>
+{
+} // end of class DerivedScenario145`1
 .class interface public abstract auto ansi InterfaceScenario146`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -3606,6 +3605,7 @@
 } // end of class BaseScenario146`1
 .class public auto ansi DerivedScenario146`1<V>
        extends class BaseScenario146`1<string>
+       implements class InterfaceScenario146`1<object>
 {
 } // end of class DerivedScenario146`1
 .class interface public abstract auto ansi InterfaceScenario147`1<U>
@@ -3614,11 +3614,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario147`1
-.class public auto ansi BaseScenario147`1<T>
+.class public abstract auto ansi BaseScenario147`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario147`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario147`1
+.class public auto ansi DerivedScenario147`1<V>
+       extends class BaseScenario147`1<string>
+       implements class InterfaceScenario147`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario147`1<object>::Method()
     .locals init (object V_O)
@@ -3626,12 +3631,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario147`1
-.class public auto ansi DerivedScenario147`1<V>
-       extends class BaseScenario147`1<string>
-       implements class InterfaceScenario147`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario147`1
 .class interface public abstract auto ansi InterfaceScenario148`1<U>
 {
@@ -3639,16 +3639,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario148`1
-.class public abstract auto ansi BaseScenario148`1<T>
+.class public auto ansi BaseScenario148`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario148`1<object>
 {
-} // end of class BaseScenario148`1
-.class public auto ansi DerivedScenario148`1<V>
-       extends class BaseScenario148`1<string>
-       implements class InterfaceScenario148`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario148`1<object>::Method()
     .locals init (object V_O)
@@ -3656,7 +3651,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario148`1
+.class public auto ansi DerivedScenario148`1<V>
+       extends class BaseScenario148`1<string>
+{
 } // end of class DerivedScenario148`1
 .class interface public abstract auto ansi InterfaceScenario149`1<U>
 {
@@ -3680,6 +3679,7 @@
 } // end of class BaseScenario149`1
 .class public auto ansi DerivedScenario149`1<V>
        extends class BaseScenario149`1<string>
+       implements class InterfaceScenario149`1<object>
 {
 } // end of class DerivedScenario149`1
 .class interface public abstract auto ansi InterfaceScenario150`1<U>
@@ -3688,11 +3688,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario150`1
-.class public auto ansi BaseScenario150`1<T>
+.class public abstract auto ansi BaseScenario150`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario150`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario150`1
+.class public auto ansi DerivedScenario150`1<V>
+       extends class BaseScenario150`1<string>
+       implements class InterfaceScenario150`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario150`1<object>::Method()
     .locals init (object V_O)
@@ -3700,12 +3705,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario150`1
-.class public auto ansi DerivedScenario150`1<V>
-       extends class BaseScenario150`1<string>
-       implements class InterfaceScenario150`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario150`1
 .class interface public abstract auto ansi InterfaceScenario151`1<U>
 {
@@ -3713,16 +3713,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario151`1
-.class public abstract auto ansi BaseScenario151`1<T>
+.class public auto ansi BaseScenario151`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario151`1<object>
 {
-} // end of class BaseScenario151`1
-.class public auto ansi DerivedScenario151`1<V>
-       extends class BaseScenario151`1<string>
-       implements class InterfaceScenario151`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario151`1<object>::Method()
     .locals init (object V_O)
@@ -3730,7 +3725,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario151`1
+.class public auto ansi DerivedScenario151`1<V>
+       extends class BaseScenario151`1<!0>
+{
 } // end of class DerivedScenario151`1
 .class interface public abstract auto ansi InterfaceScenario152`1<U>
 {
@@ -3754,6 +3753,7 @@
 } // end of class BaseScenario152`1
 .class public auto ansi DerivedScenario152`1<V>
        extends class BaseScenario152`1<!0>
+       implements class InterfaceScenario152`1<object>
 {
 } // end of class DerivedScenario152`1
 .class interface public abstract auto ansi InterfaceScenario153`1<U>
@@ -3762,11 +3762,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario153`1
-.class public auto ansi BaseScenario153`1<T>
+.class public abstract auto ansi BaseScenario153`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario153`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario153`1
+.class public auto ansi DerivedScenario153`1<V>
+       extends class BaseScenario153`1<!0>
+       implements class InterfaceScenario153`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario153`1<object>::Method()
     .locals init (object V_O)
@@ -3774,12 +3779,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario153`1
-.class public auto ansi DerivedScenario153`1<V>
-       extends class BaseScenario153`1<!0>
-       implements class InterfaceScenario153`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario153`1
 .class interface public abstract auto ansi InterfaceScenario154`1<U>
 {
@@ -3787,16 +3787,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario154`1
-.class public abstract auto ansi BaseScenario154`1<T>
+.class public auto ansi BaseScenario154`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario154`1<object>
 {
-} // end of class BaseScenario154`1
-.class public auto ansi DerivedScenario154`1<V>
-       extends class BaseScenario154`1<!0>
-       implements class InterfaceScenario154`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario154`1<object>::Method()
     .locals init (object V_O)
@@ -3804,7 +3799,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario154`1
+.class public auto ansi DerivedScenario154`1<V>
+       extends class BaseScenario154`1<!0>
+{
 } // end of class DerivedScenario154`1
 .class interface public abstract auto ansi InterfaceScenario155`1<U>
 {
@@ -3828,6 +3827,7 @@
 } // end of class BaseScenario155`1
 .class public auto ansi DerivedScenario155`1<V>
        extends class BaseScenario155`1<!0>
+       implements class InterfaceScenario155`1<object>
 {
 } // end of class DerivedScenario155`1
 .class interface public abstract auto ansi InterfaceScenario156`1<U>
@@ -3836,11 +3836,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario156`1
-.class public auto ansi BaseScenario156`1<T>
+.class public abstract auto ansi BaseScenario156`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario156`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario156`1
+.class public auto ansi DerivedScenario156`1<V>
+       extends class BaseScenario156`1<!0>
+       implements class InterfaceScenario156`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario156`1<object>::Method()
     .locals init (object V_O)
@@ -3848,12 +3853,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario156`1
-.class public auto ansi DerivedScenario156`1<V>
-       extends class BaseScenario156`1<!0>
-       implements class InterfaceScenario156`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario156`1
 .class interface public abstract auto ansi InterfaceScenario157`1<U>
 {
@@ -3861,16 +3861,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario157`1
-.class public abstract auto ansi BaseScenario157`1<T>
+.class public auto ansi BaseScenario157`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario157`1<object>
 {
-} // end of class BaseScenario157`1
-.class public auto ansi DerivedScenario157`1<V>
-       extends class BaseScenario157`1<!0>
-       implements class InterfaceScenario157`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario157`1<object>::Method()
     .locals init (object V_O)
@@ -3878,7 +3873,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario157`1
+.class public auto ansi DerivedScenario157`1<V>
+       extends class BaseScenario157`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario157`1
 .class interface public abstract auto ansi InterfaceScenario158`1<U>
 {
@@ -3902,6 +3901,7 @@
 } // end of class BaseScenario158`1
 .class public auto ansi DerivedScenario158`1<V>
        extends class BaseScenario158`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario158`1<object>
 {
 } // end of class DerivedScenario158`1
 .class interface public abstract auto ansi InterfaceScenario159`1<U>
@@ -3910,11 +3910,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario159`1
-.class public auto ansi BaseScenario159`1<T>
+.class public abstract auto ansi BaseScenario159`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario159`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario159`1
+.class public auto ansi DerivedScenario159`1<V>
+       extends class BaseScenario159`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario159`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario159`1<object>::Method()
     .locals init (object V_O)
@@ -3922,12 +3927,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario159`1
-.class public auto ansi DerivedScenario159`1<V>
-       extends class BaseScenario159`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario159`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario159`1
 .class interface public abstract auto ansi InterfaceScenario160`1<U>
 {
@@ -3935,16 +3935,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario160`1
-.class public abstract auto ansi BaseScenario160`1<T>
+.class public auto ansi BaseScenario160`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario160`1<object>
 {
-} // end of class BaseScenario160`1
-.class public auto ansi DerivedScenario160`1<V>
-       extends class BaseScenario160`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario160`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario160`1<object>::Method()
     .locals init (object V_O)
@@ -3952,7 +3947,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario160`1
+.class public auto ansi DerivedScenario160`1<V>
+       extends class BaseScenario160`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario160`1
 .class interface public abstract auto ansi InterfaceScenario161`1<U>
 {
@@ -3976,6 +3975,7 @@
 } // end of class BaseScenario161`1
 .class public auto ansi DerivedScenario161`1<V>
        extends class BaseScenario161`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario161`1<object>
 {
 } // end of class DerivedScenario161`1
 .class interface public abstract auto ansi InterfaceScenario162`1<U>
@@ -3984,11 +3984,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario162`1
-.class public auto ansi BaseScenario162`1<T>
+.class public abstract auto ansi BaseScenario162`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario162`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario162`1
+.class public auto ansi DerivedScenario162`1<V>
+       extends class BaseScenario162`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario162`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario162`1<object>::Method()
     .locals init (object V_O)
@@ -3996,12 +4001,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario162`1
-.class public auto ansi DerivedScenario162`1<V>
-       extends class BaseScenario162`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario162`1<object>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario162`1
 .class interface public abstract auto ansi InterfaceScenario163`1<U>
 {
@@ -4009,25 +4009,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario163`1
-.class public abstract auto ansi BaseScenario163`1<T>
+.class public auto ansi BaseScenario163`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario163`1<object>
+       implements class InterfaceScenario163`1<!0>
 {
-} // end of class BaseScenario163`1
-.class public auto ansi DerivedScenario163`1<V>
-       extends class BaseScenario163`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario163`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario163`1<object>::Method()
+    .override method object class InterfaceScenario163`1<!0>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario163`1
+  } // end of method Method
+} // end of class BaseScenario163`1
+.class public auto ansi DerivedScenario163
+       extends class BaseScenario163`1<string>
+{
+} // end of class DerivedScenario163
 .class interface public abstract auto ansi InterfaceScenario164`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4036,20 +4035,21 @@
 } // end of class InterfaceScenario164`1
 .class public auto ansi BaseScenario164`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario164`1<object>
+       implements class InterfaceScenario164`1<!0>
 {
-  .method public static string Method() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario164`1<object>::Method()
-    .locals init (string V_O)
+    .override method object class InterfaceScenario164`1<!0>::Method()
+    .locals init (object V_O)
     ldloca.s 0
-    initobj string
+    initobj object
     ldloc.0
     ret
   } // end of method Method
 } // end of class BaseScenario164`1
 .class public auto ansi DerivedScenario164
        extends class BaseScenario164`1<string>
+       implements class InterfaceScenario164`1<string>
 {
 } // end of class DerivedScenario164
 .class interface public abstract auto ansi InterfaceScenario165`1<U>
@@ -4060,23 +4060,23 @@
 } // end of class InterfaceScenario165`1
 .class public abstract auto ansi BaseScenario165`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario165`1<object>
+       implements class InterfaceScenario165`1<!0>
 {
 } // end of class BaseScenario165`1
-.class public auto ansi DerivedScenario165`1<V>
-       extends class BaseScenario165`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario165`1<object>
+.class public auto ansi DerivedScenario165
+       extends class BaseScenario165`1<string>
+       implements class InterfaceScenario165`1<string>
 {
-  .method public static string MethodImplOnDerived() cil managed noinlining
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario165`1<object>::Method()
-    .locals init (string V_O)
+    .override method object class InterfaceScenario165`1<string>::Method()
+    .locals init (object V_O)
     ldloca.s 0
-    initobj string
+    initobj object
     ldloc.0
     ret
   } // end of method MethodImplOnDerived
-} // end of class DerivedScenario165`1
+} // end of class DerivedScenario165
 .class interface public abstract auto ansi InterfaceScenario166`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4097,10 +4097,10 @@
     ret
   } // end of method Method
 } // end of class BaseScenario166`1
-.class public auto ansi DerivedScenario166
+.class public auto ansi DerivedScenario166`1<V>
        extends class BaseScenario166`1<string>
 {
-} // end of class DerivedScenario166
+} // end of class DerivedScenario166`1
 .class interface public abstract auto ansi InterfaceScenario167`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4121,11 +4121,11 @@
     ret
   } // end of method Method
 } // end of class BaseScenario167`1
-.class public auto ansi DerivedScenario167
+.class public auto ansi DerivedScenario167`1<V>
        extends class BaseScenario167`1<string>
        implements class InterfaceScenario167`1<string>
 {
-} // end of class DerivedScenario167
+} // end of class DerivedScenario167`1
 .class interface public abstract auto ansi InterfaceScenario168`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4137,7 +4137,7 @@
        implements class InterfaceScenario168`1<!0>
 {
 } // end of class BaseScenario168`1
-.class public auto ansi DerivedScenario168
+.class public auto ansi DerivedScenario168`1<V>
        extends class BaseScenario168`1<string>
        implements class InterfaceScenario168`1<string>
 {
@@ -4150,7 +4150,7 @@
     ldloc.0
     ret
   } // end of method MethodImplOnDerived
-} // end of class DerivedScenario168
+} // end of class DerivedScenario168`1
 .class interface public abstract auto ansi InterfaceScenario169`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4246,7 +4246,7 @@
   } // end of method Method
 } // end of class BaseScenario172`1
 .class public auto ansi DerivedScenario172`1<V>
-       extends class BaseScenario172`1<string>
+       extends class BaseScenario172`1<!0>
 {
 } // end of class DerivedScenario172`1
 .class interface public abstract auto ansi InterfaceScenario173`1<U>
@@ -4270,8 +4270,8 @@
   } // end of method Method
 } // end of class BaseScenario173`1
 .class public auto ansi DerivedScenario173`1<V>
-       extends class BaseScenario173`1<string>
-       implements class InterfaceScenario173`1<string>
+       extends class BaseScenario173`1<!0>
+       implements class InterfaceScenario173`1<!0>
 {
 } // end of class DerivedScenario173`1
 .class interface public abstract auto ansi InterfaceScenario174`1<U>
@@ -4286,12 +4286,12 @@
 {
 } // end of class BaseScenario174`1
 .class public auto ansi DerivedScenario174`1<V>
-       extends class BaseScenario174`1<string>
-       implements class InterfaceScenario174`1<string>
+       extends class BaseScenario174`1<!0>
+       implements class InterfaceScenario174`1<!0>
 {
   .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario174`1<string>::Method()
+    .override method object class InterfaceScenario174`1<!0>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
@@ -4394,7 +4394,7 @@
   } // end of method Method
 } // end of class BaseScenario178`1
 .class public auto ansi DerivedScenario178`1<V>
-       extends class BaseScenario178`1<!0>
+       extends class BaseScenario178`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario178`1
 .class interface public abstract auto ansi InterfaceScenario179`1<U>
@@ -4418,8 +4418,8 @@
   } // end of method Method
 } // end of class BaseScenario179`1
 .class public auto ansi DerivedScenario179`1<V>
-       extends class BaseScenario179`1<!0>
-       implements class InterfaceScenario179`1<!0>
+       extends class BaseScenario179`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario179`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario179`1
 .class interface public abstract auto ansi InterfaceScenario180`1<U>
@@ -4434,12 +4434,12 @@
 {
 } // end of class BaseScenario180`1
 .class public auto ansi DerivedScenario180`1<V>
-       extends class BaseScenario180`1<!0>
-       implements class InterfaceScenario180`1<!0>
+       extends class BaseScenario180`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario180`1<class [System.Runtime]System.Func`1<!0>>
 {
   .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario180`1<!0>::Method()
+    .override method object class InterfaceScenario180`1<class [System.Runtime]System.Func`1<!0>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
@@ -4529,11 +4529,11 @@
 } // end of class InterfaceScenario184`1
 .class public auto ansi BaseScenario184`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario184`1<!0>
+       implements class InterfaceScenario184`1<class [System.Runtime]System.Action`1<!0>>
 {
   .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario184`1<!0>::Method()
+    .override method object class InterfaceScenario184`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
@@ -4541,10 +4541,10 @@
     ret
   } // end of method Method
 } // end of class BaseScenario184`1
-.class public auto ansi DerivedScenario184`1<V>
-       extends class BaseScenario184`1<class [System.Runtime]System.Func`1<!0>>
+.class public auto ansi DerivedScenario184
+       extends class BaseScenario184`1<string>
 {
-} // end of class DerivedScenario184`1
+} // end of class DerivedScenario184
 .class interface public abstract auto ansi InterfaceScenario185`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4553,11 +4553,11 @@
 } // end of class InterfaceScenario185`1
 .class public auto ansi BaseScenario185`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario185`1<!0>
+       implements class InterfaceScenario185`1<class [System.Runtime]System.Action`1<!0>>
 {
   .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario185`1<!0>::Method()
+    .override method object class InterfaceScenario185`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
@@ -4565,11 +4565,11 @@
     ret
   } // end of method Method
 } // end of class BaseScenario185`1
-.class public auto ansi DerivedScenario185`1<V>
-       extends class BaseScenario185`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario185`1<class [System.Runtime]System.Func`1<!0>>
+.class public auto ansi DerivedScenario185
+       extends class BaseScenario185`1<string>
+       implements class InterfaceScenario185`1<class [System.Runtime]System.Action`1<string>>
 {
-} // end of class DerivedScenario185`1
+} // end of class DerivedScenario185
 .class interface public abstract auto ansi InterfaceScenario186`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4578,23 +4578,23 @@
 } // end of class InterfaceScenario186`1
 .class public abstract auto ansi BaseScenario186`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario186`1<!0>
+       implements class InterfaceScenario186`1<class [System.Runtime]System.Action`1<!0>>
 {
 } // end of class BaseScenario186`1
-.class public auto ansi DerivedScenario186`1<V>
-       extends class BaseScenario186`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario186`1<class [System.Runtime]System.Func`1<!0>>
+.class public auto ansi DerivedScenario186
+       extends class BaseScenario186`1<string>
+       implements class InterfaceScenario186`1<class [System.Runtime]System.Action`1<string>>
 {
   .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario186`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .override method object class InterfaceScenario186`1<class [System.Runtime]System.Action`1<string>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
   } // end of method MethodImplOnDerived
-} // end of class DerivedScenario186`1
+} // end of class DerivedScenario186
 .class interface public abstract auto ansi InterfaceScenario187`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4603,21 +4603,20 @@
 } // end of class InterfaceScenario187`1
 .class public auto ansi BaseScenario187`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario187`1<!0>
+       implements class InterfaceScenario187`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static string Method() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario187`1<!0>::Method()
-    .locals init (string V_O)
+    .override method object class InterfaceScenario187`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (object V_O)
     ldloca.s 0
-    initobj string
+    initobj object
     ldloc.0
     ret
   } // end of method Method
 } // end of class BaseScenario187`1
 .class public auto ansi DerivedScenario187`1<V>
-       extends class BaseScenario187`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario187`1<class [System.Runtime]System.Func`1<!0>>
+       extends class BaseScenario187`1<string>
 {
 } // end of class DerivedScenario187`1
 .class interface public abstract auto ansi InterfaceScenario188`1<U>
@@ -4640,60 +4639,60 @@
     ret
   } // end of method Method
 } // end of class BaseScenario188`1
-.class public auto ansi DerivedScenario188
+.class public auto ansi DerivedScenario188`1<V>
        extends class BaseScenario188`1<string>
+       implements class InterfaceScenario188`1<class [System.Runtime]System.Action`1<string>>
 {
-} // end of class DerivedScenario188
+} // end of class DerivedScenario188`1
 .class interface public abstract auto ansi InterfaceScenario189`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario189`1
-.class public auto ansi BaseScenario189`1<T>
+.class public abstract auto ansi BaseScenario189`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario189`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static object Method() cil managed noinlining
-  {
-    .override method object class InterfaceScenario189`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (object V_O)
-    ldloca.s 0
-    initobj object
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario189`1
-.class public auto ansi DerivedScenario189
+.class public auto ansi DerivedScenario189`1<V>
        extends class BaseScenario189`1<string>
        implements class InterfaceScenario189`1<class [System.Runtime]System.Action`1<string>>
 {
-} // end of class DerivedScenario189
-.class interface public abstract auto ansi InterfaceScenario190`1<U>
-{
-  .method public newslot virtual abstract static object Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario190`1
-.class public abstract auto ansi BaseScenario190`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario190`1<class [System.Runtime]System.Action`1<!0>>
-{
-} // end of class BaseScenario190`1
-.class public auto ansi DerivedScenario190
-       extends class BaseScenario190`1<string>
-       implements class InterfaceScenario190`1<class [System.Runtime]System.Action`1<string>>
-{
   .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario190`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .override method object class InterfaceScenario189`1<class [System.Runtime]System.Action`1<string>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
   } // end of method MethodImplOnDerived
-} // end of class DerivedScenario190
+} // end of class DerivedScenario189`1
+.class interface public abstract auto ansi InterfaceScenario190`1<U>
+{
+  .method public newslot virtual abstract static object Method() cil managed noinlining
+  {
+  } // end of method Method
+} // end of class InterfaceScenario190`1
+.class public auto ansi BaseScenario190`1<T>
+       extends [System.Runtime]System.Object
+       implements class InterfaceScenario190`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static object Method() cil managed noinlining
+  {
+    .override method object class InterfaceScenario190`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (object V_O)
+    ldloca.s 0
+    initobj object
+    ldloc.0
+    ret
+  } // end of method Method
+} // end of class BaseScenario190`1
+.class public auto ansi DerivedScenario190`1<V>
+       extends class BaseScenario190`1<string>
+{
+} // end of class DerivedScenario190`1
 .class interface public abstract auto ansi InterfaceScenario191`1<U>
 {
   .method public newslot virtual abstract static object Method() cil managed noinlining
@@ -4716,6 +4715,7 @@
 } // end of class BaseScenario191`1
 .class public auto ansi DerivedScenario191`1<V>
        extends class BaseScenario191`1<string>
+       implements class InterfaceScenario191`1<class [System.Runtime]System.Action`1<string>>
 {
 } // end of class DerivedScenario191`1
 .class interface public abstract auto ansi InterfaceScenario192`1<U>
@@ -4724,24 +4724,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario192`1
-.class public auto ansi BaseScenario192`1<T>
+.class public abstract auto ansi BaseScenario192`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario192`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static object Method() cil managed noinlining
-  {
-    .override method object class InterfaceScenario192`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (object V_O)
-    ldloca.s 0
-    initobj object
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario192`1
 .class public auto ansi DerivedScenario192`1<V>
        extends class BaseScenario192`1<string>
        implements class InterfaceScenario192`1<class [System.Runtime]System.Action`1<string>>
 {
+  .method public static object MethodImplOnDerived() cil managed noinlining
+  {
+    .override method object class InterfaceScenario192`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (object V_O)
+    ldloca.s 0
+    initobj object
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario192`1
 .class interface public abstract auto ansi InterfaceScenario193`1<U>
 {
@@ -4749,24 +4749,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario193`1
-.class public abstract auto ansi BaseScenario193`1<T>
+.class public auto ansi BaseScenario193`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario193`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario193`1
-.class public auto ansi DerivedScenario193`1<V>
-       extends class BaseScenario193`1<string>
-       implements class InterfaceScenario193`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario193`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .override method object class InterfaceScenario193`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario193`1
+.class public auto ansi DerivedScenario193`1<V>
+       extends class BaseScenario193`1<!0>
+{
 } // end of class DerivedScenario193`1
 .class interface public abstract auto ansi InterfaceScenario194`1<U>
 {
@@ -4789,7 +4788,8 @@
   } // end of method Method
 } // end of class BaseScenario194`1
 .class public auto ansi DerivedScenario194`1<V>
-       extends class BaseScenario194`1<string>
+       extends class BaseScenario194`1<!0>
+       implements class InterfaceScenario194`1<class [System.Runtime]System.Action`1<!0>>
 {
 } // end of class DerivedScenario194`1
 .class interface public abstract auto ansi InterfaceScenario195`1<U>
@@ -4798,11 +4798,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario195`1
-.class public auto ansi BaseScenario195`1<T>
+.class public abstract auto ansi BaseScenario195`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario195`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario195`1
+.class public auto ansi DerivedScenario195`1<V>
+       extends class BaseScenario195`1<!0>
+       implements class InterfaceScenario195`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario195`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
@@ -4810,12 +4815,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario195`1
-.class public auto ansi DerivedScenario195`1<V>
-       extends class BaseScenario195`1<string>
-       implements class InterfaceScenario195`1<class [System.Runtime]System.Action`1<string>>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario195`1
 .class interface public abstract auto ansi InterfaceScenario196`1<U>
 {
@@ -4823,24 +4823,23 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario196`1
-.class public abstract auto ansi BaseScenario196`1<T>
+.class public auto ansi BaseScenario196`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario196`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario196`1
-.class public auto ansi DerivedScenario196`1<V>
-       extends class BaseScenario196`1<string>
-       implements class InterfaceScenario196`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario196`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .override method object class InterfaceScenario196`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario196`1
+.class public auto ansi DerivedScenario196`1<V>
+       extends class BaseScenario196`1<!0>
+{
 } // end of class DerivedScenario196`1
 .class interface public abstract auto ansi InterfaceScenario197`1<U>
 {
@@ -4864,6 +4863,7 @@
 } // end of class BaseScenario197`1
 .class public auto ansi DerivedScenario197`1<V>
        extends class BaseScenario197`1<!0>
+       implements class InterfaceScenario197`1<class [System.Runtime]System.Action`1<!0>>
 {
 } // end of class DerivedScenario197`1
 .class interface public abstract auto ansi InterfaceScenario198`1<U>
@@ -4872,11 +4872,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario198`1
-.class public auto ansi BaseScenario198`1<T>
+.class public abstract auto ansi BaseScenario198`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario198`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario198`1
+.class public auto ansi DerivedScenario198`1<V>
+       extends class BaseScenario198`1<!0>
+       implements class InterfaceScenario198`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method object class InterfaceScenario198`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
@@ -4884,12 +4889,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario198`1
-.class public auto ansi DerivedScenario198`1<V>
-       extends class BaseScenario198`1<!0>
-       implements class InterfaceScenario198`1<class [System.Runtime]System.Action`1<!0>>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario198`1
 .class interface public abstract auto ansi InterfaceScenario199`1<U>
 {
@@ -4897,16 +4897,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario199`1
-.class public abstract auto ansi BaseScenario199`1<T>
+.class public auto ansi BaseScenario199`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario199`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario199`1
-.class public auto ansi DerivedScenario199`1<V>
-       extends class BaseScenario199`1<!0>
-       implements class InterfaceScenario199`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario199`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
@@ -4914,7 +4909,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario199`1
+.class public auto ansi DerivedScenario199`1<V>
+       extends class BaseScenario199`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario199`1
 .class interface public abstract auto ansi InterfaceScenario200`1<U>
 {
@@ -4937,7 +4936,8 @@
   } // end of method Method
 } // end of class BaseScenario200`1
 .class public auto ansi DerivedScenario200`1<V>
-       extends class BaseScenario200`1<!0>
+       extends class BaseScenario200`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario200`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
 } // end of class DerivedScenario200`1
 .class interface public abstract auto ansi InterfaceScenario201`1<U>
@@ -4946,24 +4946,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario201`1
-.class public auto ansi BaseScenario201`1<T>
+.class public abstract auto ansi BaseScenario201`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario201`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario201`1
+.class public auto ansi DerivedScenario201`1<V>
+       extends class BaseScenario201`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario201`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario201`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .override method object class InterfaceScenario201`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario201`1
-.class public auto ansi DerivedScenario201`1<V>
-       extends class BaseScenario201`1<!0>
-       implements class InterfaceScenario201`1<class [System.Runtime]System.Action`1<!0>>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario201`1
 .class interface public abstract auto ansi InterfaceScenario202`1<U>
 {
@@ -4971,16 +4971,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario202`1
-.class public abstract auto ansi BaseScenario202`1<T>
+.class public auto ansi BaseScenario202`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario202`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario202`1
-.class public auto ansi DerivedScenario202`1<V>
-       extends class BaseScenario202`1<!0>
-       implements class InterfaceScenario202`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method object class InterfaceScenario202`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (object V_O)
@@ -4988,7 +4983,11 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario202`1
+.class public auto ansi DerivedScenario202`1<V>
+       extends class BaseScenario202`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario202`1
 .class interface public abstract auto ansi InterfaceScenario203`1<U>
 {
@@ -5012,6 +5011,7 @@
 } // end of class BaseScenario203`1
 .class public auto ansi DerivedScenario203`1<V>
        extends class BaseScenario203`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario203`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
 } // end of class DerivedScenario203`1
 .class interface public abstract auto ansi InterfaceScenario204`1<U>
@@ -5020,146 +5020,146 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario204`1
-.class public auto ansi BaseScenario204`1<T>
+.class public abstract auto ansi BaseScenario204`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario204`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static object Method() cil managed noinlining
-  {
-    .override method object class InterfaceScenario204`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (object V_O)
-    ldloca.s 0
-    initobj object
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario204`1
 .class public auto ansi DerivedScenario204`1<V>
        extends class BaseScenario204`1<class [System.Runtime]System.Func`1<!0>>
        implements class InterfaceScenario204`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
+  .method public static object MethodImplOnDerived() cil managed noinlining
+  {
+    .override method object class InterfaceScenario204`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .locals init (object V_O)
+    ldloca.s 0
+    initobj object
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario204`1
 .class interface public abstract auto ansi InterfaceScenario205`1<U>
 {
-  .method public newslot virtual abstract static object Method() cil managed noinlining
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario205`1
-.class public abstract auto ansi BaseScenario205`1<T>
+.class public auto ansi BaseScenario205
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario205`1<class [System.Runtime]System.Action`1<!0>>
+       implements class InterfaceScenario205`1<object>
 {
-} // end of class BaseScenario205`1
-.class public auto ansi DerivedScenario205`1<V>
-       extends class BaseScenario205`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario205`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario205`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .override method !0 class InterfaceScenario205`1<object>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario205`1
+  } // end of method Method
+} // end of class BaseScenario205
+.class public auto ansi DerivedScenario205
+       extends BaseScenario205
+{
+} // end of class DerivedScenario205
 .class interface public abstract auto ansi InterfaceScenario206`1<U>
 {
-  .method public newslot virtual abstract static object Method() cil managed noinlining
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario206`1
-.class public auto ansi BaseScenario206`1<T>
+.class public auto ansi BaseScenario206
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario206`1<class [System.Runtime]System.Action`1<!0>>
+       implements class InterfaceScenario206`1<object>
 {
   .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario206`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .override method !0 class InterfaceScenario206`1<object>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
   } // end of method Method
-} // end of class BaseScenario206`1
-.class public auto ansi DerivedScenario206`1<V>
-       extends class BaseScenario206`1<class [System.Runtime]System.Func`1<!0>>
+} // end of class BaseScenario206
+.class public auto ansi DerivedScenario206
+       extends BaseScenario206
+       implements class InterfaceScenario206`1<object>
 {
-} // end of class DerivedScenario206`1
+} // end of class DerivedScenario206
 .class interface public abstract auto ansi InterfaceScenario207`1<U>
 {
-  .method public newslot virtual abstract static object Method() cil managed noinlining
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario207`1
-.class public auto ansi BaseScenario207`1<T>
+.class public abstract auto ansi BaseScenario207
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario207`1<class [System.Runtime]System.Action`1<!0>>
+       implements class InterfaceScenario207`1<object>
 {
-  .method public static object Method() cil managed noinlining
-  {
-    .override method object class InterfaceScenario207`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (object V_O)
-    ldloca.s 0
-    initobj object
-    ldloc.0
-    ret
-  } // end of method Method
-} // end of class BaseScenario207`1
-.class public auto ansi DerivedScenario207`1<V>
-       extends class BaseScenario207`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario207`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-} // end of class DerivedScenario207`1
-.class interface public abstract auto ansi InterfaceScenario208`1<U>
-{
-  .method public newslot virtual abstract static object Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario208`1
-.class public abstract auto ansi BaseScenario208`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario208`1<class [System.Runtime]System.Action`1<!0>>
-{
-} // end of class BaseScenario208`1
-.class public auto ansi DerivedScenario208`1<V>
-       extends class BaseScenario208`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario208`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
+} // end of class BaseScenario207
+.class public auto ansi DerivedScenario207
+       extends BaseScenario207
+       implements class InterfaceScenario207`1<object>
 {
   .method public static object MethodImplOnDerived() cil managed noinlining
   {
-    .override method object class InterfaceScenario208`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .override method !0 class InterfaceScenario207`1<object>::Method()
     .locals init (object V_O)
     ldloca.s 0
     initobj object
     ldloc.0
     ret
   } // end of method MethodImplOnDerived
-} // end of class DerivedScenario208`1
-.class interface public abstract auto ansi InterfaceScenario209`1<U>
+} // end of class DerivedScenario207
+.class interface public abstract auto ansi InterfaceScenario208`1<U>
 {
-  .method public newslot virtual abstract static object Method() cil managed noinlining
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
-} // end of class InterfaceScenario209`1
-.class public auto ansi BaseScenario209`1<T>
+} // end of class InterfaceScenario208`1
+.class public auto ansi BaseScenario208
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario209`1<class [System.Runtime]System.Action`1<!0>>
+       implements class InterfaceScenario208`1<object>
 {
-  .method public static string Method() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
-    .override method object class InterfaceScenario209`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (string V_O)
+    .override method !0 class InterfaceScenario208`1<object>::Method()
+    .locals init (object V_O)
     ldloca.s 0
-    initobj string
+    initobj object
     ldloc.0
     ret
   } // end of method Method
-} // end of class BaseScenario209`1
+} // end of class BaseScenario208
+.class public auto ansi DerivedScenario208`1<V>
+       extends BaseScenario208
+{
+} // end of class DerivedScenario208`1
+.class interface public abstract auto ansi InterfaceScenario209`1<U>
+{
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
+  {
+  } // end of method Method
+} // end of class InterfaceScenario209`1
+.class public auto ansi BaseScenario209
+       extends [System.Runtime]System.Object
+       implements class InterfaceScenario209`1<object>
+{
+  .method public static object Method() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario209`1<object>::Method()
+    .locals init (object V_O)
+    ldloca.s 0
+    initobj object
+    ldloc.0
+    ret
+  } // end of method Method
+} // end of class BaseScenario209
 .class public auto ansi DerivedScenario209`1<V>
-       extends class BaseScenario209`1<class [System.Runtime]System.Func`1<!0>>
+       extends BaseScenario209
+       implements class InterfaceScenario209`1<object>
 {
 } // end of class DerivedScenario209`1
 .class interface public abstract auto ansi InterfaceScenario210`1<U>
@@ -5168,11 +5168,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario210`1
-.class public auto ansi BaseScenario210
+.class public abstract auto ansi BaseScenario210
        extends [System.Runtime]System.Object
        implements class InterfaceScenario210`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario210
+.class public auto ansi DerivedScenario210`1<V>
+       extends BaseScenario210
+       implements class InterfaceScenario210`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario210`1<object>::Method()
     .locals init (object V_O)
@@ -5180,12 +5185,8 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario210
-.class public auto ansi DerivedScenario210
-       extends BaseScenario210
-{
-} // end of class DerivedScenario210
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario210`1
 .class interface public abstract auto ansi InterfaceScenario211`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
@@ -5206,27 +5207,21 @@
     ret
   } // end of method Method
 } // end of class BaseScenario211
-.class public auto ansi DerivedScenario211
+.class public auto ansi DerivedScenario211`1<V>
        extends BaseScenario211
-       implements class InterfaceScenario211`1<object>
 {
-} // end of class DerivedScenario211
+} // end of class DerivedScenario211`1
 .class interface public abstract auto ansi InterfaceScenario212`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario212`1
-.class public abstract auto ansi BaseScenario212
+.class public auto ansi BaseScenario212
        extends [System.Runtime]System.Object
        implements class InterfaceScenario212`1<object>
 {
-} // end of class BaseScenario212
-.class public auto ansi DerivedScenario212
-       extends BaseScenario212
-       implements class InterfaceScenario212`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario212`1<object>::Method()
     .locals init (object V_O)
@@ -5234,19 +5229,29 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario212
+  } // end of method Method
+} // end of class BaseScenario212
+.class public auto ansi DerivedScenario212`1<V>
+       extends BaseScenario212
+       implements class InterfaceScenario212`1<object>
+{
+} // end of class DerivedScenario212`1
 .class interface public abstract auto ansi InterfaceScenario213`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario213`1
-.class public auto ansi BaseScenario213
+.class public abstract auto ansi BaseScenario213
        extends [System.Runtime]System.Object
        implements class InterfaceScenario213`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario213
+.class public auto ansi DerivedScenario213`1<V>
+       extends BaseScenario213
+       implements class InterfaceScenario213`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario213`1<object>::Method()
     .locals init (object V_O)
@@ -5254,11 +5259,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario213
-.class public auto ansi DerivedScenario213`1<V>
-       extends BaseScenario213
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario213`1
 .class interface public abstract auto ansi InterfaceScenario214`1<U>
 {
@@ -5266,7 +5267,7 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario214`1
-.class public auto ansi BaseScenario214
+.class public auto ansi BaseScenario214`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario214`1<object>
 {
@@ -5279,28 +5280,22 @@
     ldloc.0
     ret
   } // end of method Method
-} // end of class BaseScenario214
-.class public auto ansi DerivedScenario214`1<V>
-       extends BaseScenario214
-       implements class InterfaceScenario214`1<object>
+} // end of class BaseScenario214`1
+.class public auto ansi DerivedScenario214
+       extends class BaseScenario214`1<string>
 {
-} // end of class DerivedScenario214`1
+} // end of class DerivedScenario214
 .class interface public abstract auto ansi InterfaceScenario215`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario215`1
-.class public abstract auto ansi BaseScenario215
+.class public auto ansi BaseScenario215`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario215`1<object>
 {
-} // end of class BaseScenario215
-.class public auto ansi DerivedScenario215`1<V>
-       extends BaseScenario215
-       implements class InterfaceScenario215`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario215`1<object>::Method()
     .locals init (object V_O)
@@ -5308,19 +5303,29 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario215`1
+  } // end of method Method
+} // end of class BaseScenario215`1
+.class public auto ansi DerivedScenario215
+       extends class BaseScenario215`1<string>
+       implements class InterfaceScenario215`1<object>
+{
+} // end of class DerivedScenario215
 .class interface public abstract auto ansi InterfaceScenario216`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario216`1
-.class public auto ansi BaseScenario216
+.class public abstract auto ansi BaseScenario216`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario216`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario216`1
+.class public auto ansi DerivedScenario216
+       extends class BaseScenario216`1<string>
+       implements class InterfaceScenario216`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario216`1<object>::Method()
     .locals init (object V_O)
@@ -5328,19 +5333,15 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario216
-.class public auto ansi DerivedScenario216`1<V>
-       extends BaseScenario216
-{
-} // end of class DerivedScenario216`1
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario216
 .class interface public abstract auto ansi InterfaceScenario217`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario217`1
-.class public auto ansi BaseScenario217
+.class public auto ansi BaseScenario217`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario217`1<object>
 {
@@ -5353,10 +5354,9 @@
     ldloc.0
     ret
   } // end of method Method
-} // end of class BaseScenario217
+} // end of class BaseScenario217`1
 .class public auto ansi DerivedScenario217`1<V>
-       extends BaseScenario217
-       implements class InterfaceScenario217`1<object>
+       extends class BaseScenario217`1<string>
 {
 } // end of class DerivedScenario217`1
 .class interface public abstract auto ansi InterfaceScenario218`1<U>
@@ -5365,16 +5365,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario218`1
-.class public abstract auto ansi BaseScenario218
+.class public auto ansi BaseScenario218`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario218`1<object>
 {
-} // end of class BaseScenario218
-.class public auto ansi DerivedScenario218`1<V>
-       extends BaseScenario218
-       implements class InterfaceScenario218`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario218`1<object>::Method()
     .locals init (object V_O)
@@ -5382,7 +5377,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario218`1
+.class public auto ansi DerivedScenario218`1<V>
+       extends class BaseScenario218`1<string>
+       implements class InterfaceScenario218`1<object>
+{
 } // end of class DerivedScenario218`1
 .class interface public abstract auto ansi InterfaceScenario219`1<U>
 {
@@ -5390,11 +5390,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario219`1
-.class public auto ansi BaseScenario219`1<T>
+.class public abstract auto ansi BaseScenario219`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario219`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario219`1
+.class public auto ansi DerivedScenario219`1<V>
+       extends class BaseScenario219`1<string>
+       implements class InterfaceScenario219`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario219`1<object>::Method()
     .locals init (object V_O)
@@ -5402,12 +5407,8 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario219`1
-.class public auto ansi DerivedScenario219
-       extends class BaseScenario219`1<string>
-{
-} // end of class DerivedScenario219
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario219`1
 .class interface public abstract auto ansi InterfaceScenario220`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
@@ -5428,27 +5429,21 @@
     ret
   } // end of method Method
 } // end of class BaseScenario220`1
-.class public auto ansi DerivedScenario220
+.class public auto ansi DerivedScenario220`1<V>
        extends class BaseScenario220`1<string>
-       implements class InterfaceScenario220`1<object>
 {
-} // end of class DerivedScenario220
+} // end of class DerivedScenario220`1
 .class interface public abstract auto ansi InterfaceScenario221`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario221`1
-.class public abstract auto ansi BaseScenario221`1<T>
+.class public auto ansi BaseScenario221`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario221`1<object>
 {
-} // end of class BaseScenario221`1
-.class public auto ansi DerivedScenario221
-       extends class BaseScenario221`1<string>
-       implements class InterfaceScenario221`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario221`1<object>::Method()
     .locals init (object V_O)
@@ -5456,19 +5451,29 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario221
+  } // end of method Method
+} // end of class BaseScenario221`1
+.class public auto ansi DerivedScenario221`1<V>
+       extends class BaseScenario221`1<string>
+       implements class InterfaceScenario221`1<object>
+{
+} // end of class DerivedScenario221`1
 .class interface public abstract auto ansi InterfaceScenario222`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario222`1
-.class public auto ansi BaseScenario222`1<T>
+.class public abstract auto ansi BaseScenario222`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario222`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario222`1
+.class public auto ansi DerivedScenario222`1<V>
+       extends class BaseScenario222`1<string>
+       implements class InterfaceScenario222`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario222`1<object>::Method()
     .locals init (object V_O)
@@ -5476,11 +5481,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario222`1
-.class public auto ansi DerivedScenario222`1<V>
-       extends class BaseScenario222`1<string>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario222`1
 .class interface public abstract auto ansi InterfaceScenario223`1<U>
 {
@@ -5503,8 +5504,7 @@
   } // end of method Method
 } // end of class BaseScenario223`1
 .class public auto ansi DerivedScenario223`1<V>
-       extends class BaseScenario223`1<string>
-       implements class InterfaceScenario223`1<object>
+       extends class BaseScenario223`1<!0>
 {
 } // end of class DerivedScenario223`1
 .class interface public abstract auto ansi InterfaceScenario224`1<U>
@@ -5513,16 +5513,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario224`1
-.class public abstract auto ansi BaseScenario224`1<T>
+.class public auto ansi BaseScenario224`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario224`1<object>
 {
-} // end of class BaseScenario224`1
-.class public auto ansi DerivedScenario224`1<V>
-       extends class BaseScenario224`1<string>
-       implements class InterfaceScenario224`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario224`1<object>::Method()
     .locals init (object V_O)
@@ -5530,7 +5525,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario224`1
+.class public auto ansi DerivedScenario224`1<V>
+       extends class BaseScenario224`1<!0>
+       implements class InterfaceScenario224`1<object>
+{
 } // end of class DerivedScenario224`1
 .class interface public abstract auto ansi InterfaceScenario225`1<U>
 {
@@ -5538,11 +5538,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario225`1
-.class public auto ansi BaseScenario225`1<T>
+.class public abstract auto ansi BaseScenario225`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario225`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario225`1
+.class public auto ansi DerivedScenario225`1<V>
+       extends class BaseScenario225`1<!0>
+       implements class InterfaceScenario225`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario225`1<object>::Method()
     .locals init (object V_O)
@@ -5550,11 +5555,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario225`1
-.class public auto ansi DerivedScenario225`1<V>
-       extends class BaseScenario225`1<string>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario225`1
 .class interface public abstract auto ansi InterfaceScenario226`1<U>
 {
@@ -5577,8 +5578,7 @@
   } // end of method Method
 } // end of class BaseScenario226`1
 .class public auto ansi DerivedScenario226`1<V>
-       extends class BaseScenario226`1<string>
-       implements class InterfaceScenario226`1<object>
+       extends class BaseScenario226`1<!0>
 {
 } // end of class DerivedScenario226`1
 .class interface public abstract auto ansi InterfaceScenario227`1<U>
@@ -5587,16 +5587,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario227`1
-.class public abstract auto ansi BaseScenario227`1<T>
+.class public auto ansi BaseScenario227`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario227`1<object>
 {
-} // end of class BaseScenario227`1
-.class public auto ansi DerivedScenario227`1<V>
-       extends class BaseScenario227`1<string>
-       implements class InterfaceScenario227`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario227`1<object>::Method()
     .locals init (object V_O)
@@ -5604,7 +5599,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario227`1
+.class public auto ansi DerivedScenario227`1<V>
+       extends class BaseScenario227`1<!0>
+       implements class InterfaceScenario227`1<object>
+{
 } // end of class DerivedScenario227`1
 .class interface public abstract auto ansi InterfaceScenario228`1<U>
 {
@@ -5612,11 +5612,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario228`1
-.class public auto ansi BaseScenario228`1<T>
+.class public abstract auto ansi BaseScenario228`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario228`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario228`1
+.class public auto ansi DerivedScenario228`1<V>
+       extends class BaseScenario228`1<!0>
+       implements class InterfaceScenario228`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario228`1<object>::Method()
     .locals init (object V_O)
@@ -5624,11 +5629,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario228`1
-.class public auto ansi DerivedScenario228`1<V>
-       extends class BaseScenario228`1<!0>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario228`1
 .class interface public abstract auto ansi InterfaceScenario229`1<U>
 {
@@ -5651,8 +5652,7 @@
   } // end of method Method
 } // end of class BaseScenario229`1
 .class public auto ansi DerivedScenario229`1<V>
-       extends class BaseScenario229`1<!0>
-       implements class InterfaceScenario229`1<object>
+       extends class BaseScenario229`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario229`1
 .class interface public abstract auto ansi InterfaceScenario230`1<U>
@@ -5661,16 +5661,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario230`1
-.class public abstract auto ansi BaseScenario230`1<T>
+.class public auto ansi BaseScenario230`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario230`1<object>
 {
-} // end of class BaseScenario230`1
-.class public auto ansi DerivedScenario230`1<V>
-       extends class BaseScenario230`1<!0>
-       implements class InterfaceScenario230`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario230`1<object>::Method()
     .locals init (object V_O)
@@ -5678,7 +5673,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario230`1
+.class public auto ansi DerivedScenario230`1<V>
+       extends class BaseScenario230`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario230`1<object>
+{
 } // end of class DerivedScenario230`1
 .class interface public abstract auto ansi InterfaceScenario231`1<U>
 {
@@ -5686,11 +5686,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario231`1
-.class public auto ansi BaseScenario231`1<T>
+.class public abstract auto ansi BaseScenario231`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario231`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario231`1
+.class public auto ansi DerivedScenario231`1<V>
+       extends class BaseScenario231`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario231`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario231`1<object>::Method()
     .locals init (object V_O)
@@ -5698,11 +5703,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario231`1
-.class public auto ansi DerivedScenario231`1<V>
-       extends class BaseScenario231`1<!0>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario231`1
 .class interface public abstract auto ansi InterfaceScenario232`1<U>
 {
@@ -5725,8 +5726,7 @@
   } // end of method Method
 } // end of class BaseScenario232`1
 .class public auto ansi DerivedScenario232`1<V>
-       extends class BaseScenario232`1<!0>
-       implements class InterfaceScenario232`1<object>
+       extends class BaseScenario232`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario232`1
 .class interface public abstract auto ansi InterfaceScenario233`1<U>
@@ -5735,16 +5735,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario233`1
-.class public abstract auto ansi BaseScenario233`1<T>
+.class public auto ansi BaseScenario233`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario233`1<object>
 {
-} // end of class BaseScenario233`1
-.class public auto ansi DerivedScenario233`1<V>
-       extends class BaseScenario233`1<!0>
-       implements class InterfaceScenario233`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static object Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario233`1<object>::Method()
     .locals init (object V_O)
@@ -5752,7 +5747,12 @@
     initobj object
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario233`1
+.class public auto ansi DerivedScenario233`1<V>
+       extends class BaseScenario233`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario233`1<object>
+{
 } // end of class DerivedScenario233`1
 .class interface public abstract auto ansi InterfaceScenario234`1<U>
 {
@@ -5760,11 +5760,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario234`1
-.class public auto ansi BaseScenario234`1<T>
+.class public abstract auto ansi BaseScenario234`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario234`1<object>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario234`1
+.class public auto ansi DerivedScenario234`1<V>
+       extends class BaseScenario234`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario234`1<object>
+{
+  .method public static object MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario234`1<object>::Method()
     .locals init (object V_O)
@@ -5772,11 +5777,7 @@
     initobj object
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario234`1
-.class public auto ansi DerivedScenario234`1<V>
-       extends class BaseScenario234`1<class [System.Runtime]System.Func`1<!0>>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario234`1
 .class interface public abstract auto ansi InterfaceScenario235`1<U>
 {
@@ -5786,72 +5787,72 @@
 } // end of class InterfaceScenario235`1
 .class public auto ansi BaseScenario235`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario235`1<object>
+       implements class InterfaceScenario235`1<!0>
 {
-  .method public static object Method() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario235`1<object>::Method()
-    .locals init (object V_O)
+    .override method !0 class InterfaceScenario235`1<!0>::Method()
+    .locals init (!0 V_O)
     ldloca.s 0
-    initobj object
+    initobj !0
     ldloc.0
     ret
   } // end of method Method
 } // end of class BaseScenario235`1
-.class public auto ansi DerivedScenario235`1<V>
-       extends class BaseScenario235`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario235`1<object>
+.class public auto ansi DerivedScenario235
+       extends class BaseScenario235`1<string>
 {
-} // end of class DerivedScenario235`1
+} // end of class DerivedScenario235
 .class interface public abstract auto ansi InterfaceScenario236`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario236`1
-.class public abstract auto ansi BaseScenario236`1<T>
+.class public auto ansi BaseScenario236`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario236`1<object>
+       implements class InterfaceScenario236`1<!0>
 {
-} // end of class BaseScenario236`1
-.class public auto ansi DerivedScenario236`1<V>
-       extends class BaseScenario236`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario236`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario236`1<object>::Method()
-    .locals init (object V_O)
+    .override method !0 class InterfaceScenario236`1<!0>::Method()
+    .locals init (!0 V_O)
     ldloca.s 0
-    initobj object
+    initobj !0
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario236`1
+  } // end of method Method
+} // end of class BaseScenario236`1
+.class public auto ansi DerivedScenario236
+       extends class BaseScenario236`1<string>
+       implements class InterfaceScenario236`1<string>
+{
+} // end of class DerivedScenario236
 .class interface public abstract auto ansi InterfaceScenario237`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario237`1
-.class public auto ansi BaseScenario237`1<T>
+.class public abstract auto ansi BaseScenario237`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario237`1<object>
+       implements class InterfaceScenario237`1<!0>
 {
-  .method public static object Method() cil managed noinlining
+} // end of class BaseScenario237`1
+.class public auto ansi DerivedScenario237
+       extends class BaseScenario237`1<string>
+       implements class InterfaceScenario237`1<string>
+{
+  .method public static string MethodImplOnDerived() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario237`1<object>::Method()
-    .locals init (object V_O)
+    .override method !0 class InterfaceScenario237`1<string>::Method()
+    .locals init (string V_O)
     ldloca.s 0
-    initobj object
+    initobj string
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario237`1
-.class public auto ansi DerivedScenario237`1<V>
-       extends class BaseScenario237`1<class [System.Runtime]System.Func`1<!0>>
-{
-} // end of class DerivedScenario237`1
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario237
 .class interface public abstract auto ansi InterfaceScenario238`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
@@ -5860,21 +5861,20 @@
 } // end of class InterfaceScenario238`1
 .class public auto ansi BaseScenario238`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario238`1<object>
+       implements class InterfaceScenario238`1<!0>
 {
-  .method public static object Method() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario238`1<object>::Method()
-    .locals init (object V_O)
+    .override method !0 class InterfaceScenario238`1<!0>::Method()
+    .locals init (!0 V_O)
     ldloca.s 0
-    initobj object
+    initobj !0
     ldloc.0
     ret
   } // end of method Method
 } // end of class BaseScenario238`1
 .class public auto ansi DerivedScenario238`1<V>
-       extends class BaseScenario238`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario238`1<object>
+       extends class BaseScenario238`1<string>
 {
 } // end of class DerivedScenario238`1
 .class interface public abstract auto ansi InterfaceScenario239`1<U>
@@ -5883,24 +5883,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario239`1
-.class public abstract auto ansi BaseScenario239`1<T>
+.class public auto ansi BaseScenario239`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario239`1<object>
+       implements class InterfaceScenario239`1<!0>
 {
-} // end of class BaseScenario239`1
-.class public auto ansi DerivedScenario239`1<V>
-       extends class BaseScenario239`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario239`1<object>
-{
-  .method public static object MethodImplOnDerived() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario239`1<object>::Method()
-    .locals init (object V_O)
+    .override method !0 class InterfaceScenario239`1<!0>::Method()
+    .locals init (!0 V_O)
     ldloca.s 0
-    initobj object
+    initobj !0
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario239`1
+.class public auto ansi DerivedScenario239`1<V>
+       extends class BaseScenario239`1<string>
+       implements class InterfaceScenario239`1<string>
+{
 } // end of class DerivedScenario239`1
 .class interface public abstract auto ansi InterfaceScenario240`1<U>
 {
@@ -5908,24 +5908,25 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario240`1
-.class public auto ansi BaseScenario240`1<T>
+.class public abstract auto ansi BaseScenario240`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario240`1<!0>
 {
-  .method public static !0 Method() cil managed noinlining
+} // end of class BaseScenario240`1
+.class public auto ansi DerivedScenario240`1<V>
+       extends class BaseScenario240`1<string>
+       implements class InterfaceScenario240`1<string>
+{
+  .method public static string MethodImplOnDerived() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario240`1<!0>::Method()
-    .locals init (!0 V_O)
+    .override method !0 class InterfaceScenario240`1<string>::Method()
+    .locals init (string V_O)
     ldloca.s 0
-    initobj !0
+    initobj string
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario240`1
-.class public auto ansi DerivedScenario240
-       extends class BaseScenario240`1<string>
-{
-} // end of class DerivedScenario240
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario240`1
 .class interface public abstract auto ansi InterfaceScenario241`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
@@ -5946,59 +5947,59 @@
     ret
   } // end of method Method
 } // end of class BaseScenario241`1
-.class public auto ansi DerivedScenario241
+.class public auto ansi DerivedScenario241`1<V>
        extends class BaseScenario241`1<string>
-       implements class InterfaceScenario241`1<string>
 {
-} // end of class DerivedScenario241
+} // end of class DerivedScenario241`1
 .class interface public abstract auto ansi InterfaceScenario242`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario242`1
-.class public abstract auto ansi BaseScenario242`1<T>
+.class public auto ansi BaseScenario242`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario242`1<!0>
 {
-} // end of class BaseScenario242`1
-.class public auto ansi DerivedScenario242
-       extends class BaseScenario242`1<string>
-       implements class InterfaceScenario242`1<string>
-{
-  .method public static string MethodImplOnDerived() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario242`1<string>::Method()
-    .locals init (string V_O)
-    ldloca.s 0
-    initobj string
-    ldloc.0
-    ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario242
-.class interface public abstract auto ansi InterfaceScenario243`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario243`1
-.class public auto ansi BaseScenario243`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario243`1<!0>
-{
   .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario243`1<!0>::Method()
+    .override method !0 class InterfaceScenario242`1<!0>::Method()
     .locals init (!0 V_O)
     ldloca.s 0
     initobj !0
     ldloc.0
     ret
   } // end of method Method
+} // end of class BaseScenario242`1
+.class public auto ansi DerivedScenario242`1<V>
+       extends class BaseScenario242`1<string>
+       implements class InterfaceScenario242`1<string>
+{
+} // end of class DerivedScenario242`1
+.class interface public abstract auto ansi InterfaceScenario243`1<U>
+{
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
+  {
+  } // end of method Method
+} // end of class InterfaceScenario243`1
+.class public abstract auto ansi BaseScenario243`1<T>
+       extends [System.Runtime]System.Object
+       implements class InterfaceScenario243`1<!0>
+{
 } // end of class BaseScenario243`1
 .class public auto ansi DerivedScenario243`1<V>
        extends class BaseScenario243`1<string>
+       implements class InterfaceScenario243`1<string>
 {
+  .method public static string MethodImplOnDerived() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario243`1<string>::Method()
+    .locals init (string V_O)
+    ldloca.s 0
+    initobj string
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario243`1
 .class interface public abstract auto ansi InterfaceScenario244`1<U>
 {
@@ -6021,8 +6022,7 @@
   } // end of method Method
 } // end of class BaseScenario244`1
 .class public auto ansi DerivedScenario244`1<V>
-       extends class BaseScenario244`1<string>
-       implements class InterfaceScenario244`1<string>
+       extends class BaseScenario244`1<!0>
 {
 } // end of class DerivedScenario244`1
 .class interface public abstract auto ansi InterfaceScenario245`1<U>
@@ -6031,24 +6031,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario245`1
-.class public abstract auto ansi BaseScenario245`1<T>
+.class public auto ansi BaseScenario245`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario245`1<!0>
 {
-} // end of class BaseScenario245`1
-.class public auto ansi DerivedScenario245`1<V>
-       extends class BaseScenario245`1<string>
-       implements class InterfaceScenario245`1<string>
-{
-  .method public static string MethodImplOnDerived() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario245`1<string>::Method()
-    .locals init (string V_O)
+    .override method !0 class InterfaceScenario245`1<!0>::Method()
+    .locals init (!0 V_O)
     ldloca.s 0
-    initobj string
+    initobj !0
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario245`1
+.class public auto ansi DerivedScenario245`1<V>
+       extends class BaseScenario245`1<!0>
+       implements class InterfaceScenario245`1<!0>
+{
 } // end of class DerivedScenario245`1
 .class interface public abstract auto ansi InterfaceScenario246`1<U>
 {
@@ -6056,11 +6056,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario246`1
-.class public auto ansi BaseScenario246`1<T>
+.class public abstract auto ansi BaseScenario246`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario246`1<!0>
 {
-  .method public static !0 Method() cil managed noinlining
+} // end of class BaseScenario246`1
+.class public auto ansi DerivedScenario246`1<V>
+       extends class BaseScenario246`1<!0>
+       implements class InterfaceScenario246`1<!0>
+{
+  .method public static !0 MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario246`1<!0>::Method()
     .locals init (!0 V_O)
@@ -6068,11 +6073,7 @@
     initobj !0
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario246`1
-.class public auto ansi DerivedScenario246`1<V>
-       extends class BaseScenario246`1<string>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario246`1
 .class interface public abstract auto ansi InterfaceScenario247`1<U>
 {
@@ -6095,8 +6096,7 @@
   } // end of method Method
 } // end of class BaseScenario247`1
 .class public auto ansi DerivedScenario247`1<V>
-       extends class BaseScenario247`1<string>
-       implements class InterfaceScenario247`1<string>
+       extends class BaseScenario247`1<!0>
 {
 } // end of class DerivedScenario247`1
 .class interface public abstract auto ansi InterfaceScenario248`1<U>
@@ -6105,24 +6105,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario248`1
-.class public abstract auto ansi BaseScenario248`1<T>
+.class public auto ansi BaseScenario248`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario248`1<!0>
 {
-} // end of class BaseScenario248`1
-.class public auto ansi DerivedScenario248`1<V>
-       extends class BaseScenario248`1<string>
-       implements class InterfaceScenario248`1<string>
-{
-  .method public static string MethodImplOnDerived() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario248`1<string>::Method()
-    .locals init (string V_O)
+    .override method !0 class InterfaceScenario248`1<!0>::Method()
+    .locals init (!0 V_O)
     ldloca.s 0
-    initobj string
+    initobj !0
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario248`1
+.class public auto ansi DerivedScenario248`1<V>
+       extends class BaseScenario248`1<!0>
+       implements class InterfaceScenario248`1<!0>
+{
 } // end of class DerivedScenario248`1
 .class interface public abstract auto ansi InterfaceScenario249`1<U>
 {
@@ -6130,11 +6130,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario249`1
-.class public auto ansi BaseScenario249`1<T>
+.class public abstract auto ansi BaseScenario249`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario249`1<!0>
 {
-  .method public static !0 Method() cil managed noinlining
+} // end of class BaseScenario249`1
+.class public auto ansi DerivedScenario249`1<V>
+       extends class BaseScenario249`1<!0>
+       implements class InterfaceScenario249`1<!0>
+{
+  .method public static !0 MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario249`1<!0>::Method()
     .locals init (!0 V_O)
@@ -6142,11 +6147,7 @@
     initobj !0
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario249`1
-.class public auto ansi DerivedScenario249`1<V>
-       extends class BaseScenario249`1<!0>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario249`1
 .class interface public abstract auto ansi InterfaceScenario250`1<U>
 {
@@ -6169,8 +6170,7 @@
   } // end of method Method
 } // end of class BaseScenario250`1
 .class public auto ansi DerivedScenario250`1<V>
-       extends class BaseScenario250`1<!0>
-       implements class InterfaceScenario250`1<!0>
+       extends class BaseScenario250`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario250`1
 .class interface public abstract auto ansi InterfaceScenario251`1<U>
@@ -6179,16 +6179,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario251`1
-.class public abstract auto ansi BaseScenario251`1<T>
+.class public auto ansi BaseScenario251`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario251`1<!0>
 {
-} // end of class BaseScenario251`1
-.class public auto ansi DerivedScenario251`1<V>
-       extends class BaseScenario251`1<!0>
-       implements class InterfaceScenario251`1<!0>
-{
-  .method public static !0 MethodImplOnDerived() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario251`1<!0>::Method()
     .locals init (!0 V_O)
@@ -6196,7 +6191,12 @@
     initobj !0
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario251`1
+.class public auto ansi DerivedScenario251`1<V>
+       extends class BaseScenario251`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario251`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario251`1
 .class interface public abstract auto ansi InterfaceScenario252`1<U>
 {
@@ -6204,23 +6204,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario252`1
-.class public auto ansi BaseScenario252`1<T>
+.class public abstract auto ansi BaseScenario252`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario252`1<!0>
 {
-  .method public static !0 Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario252`1<!0>::Method()
-    .locals init (!0 V_O)
-    ldloca.s 0
-    initobj !0
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario252`1
 .class public auto ansi DerivedScenario252`1<V>
-       extends class BaseScenario252`1<!0>
+       extends class BaseScenario252`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario252`1<class [System.Runtime]System.Func`1<!0>>
 {
+  .method public static class [System.Runtime]System.Func`1<!0> MethodImplOnDerived() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario252`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Func`1<!0> V_O)
+    ldloca.s 0
+    initobj class [System.Runtime]System.Func`1<!0>
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario252`1
 .class interface public abstract auto ansi InterfaceScenario253`1<U>
 {
@@ -6243,8 +6244,7 @@
   } // end of method Method
 } // end of class BaseScenario253`1
 .class public auto ansi DerivedScenario253`1<V>
-       extends class BaseScenario253`1<!0>
-       implements class InterfaceScenario253`1<!0>
+       extends class BaseScenario253`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario253`1
 .class interface public abstract auto ansi InterfaceScenario254`1<U>
@@ -6253,16 +6253,11 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario254`1
-.class public abstract auto ansi BaseScenario254`1<T>
+.class public auto ansi BaseScenario254`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario254`1<!0>
 {
-} // end of class BaseScenario254`1
-.class public auto ansi DerivedScenario254`1<V>
-       extends class BaseScenario254`1<!0>
-       implements class InterfaceScenario254`1<!0>
-{
-  .method public static !0 MethodImplOnDerived() cil managed noinlining
+  .method public static !0 Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario254`1<!0>::Method()
     .locals init (!0 V_O)
@@ -6270,7 +6265,12 @@
     initobj !0
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario254`1
+.class public auto ansi DerivedScenario254`1<V>
+       extends class BaseScenario254`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario254`1<class [System.Runtime]System.Func`1<!0>>
+{
 } // end of class DerivedScenario254`1
 .class interface public abstract auto ansi InterfaceScenario255`1<U>
 {
@@ -6278,23 +6278,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario255`1
-.class public auto ansi BaseScenario255`1<T>
+.class public abstract auto ansi BaseScenario255`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario255`1<!0>
 {
-  .method public static !0 Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario255`1<!0>::Method()
-    .locals init (!0 V_O)
-    ldloca.s 0
-    initobj !0
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario255`1
 .class public auto ansi DerivedScenario255`1<V>
        extends class BaseScenario255`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario255`1<class [System.Runtime]System.Func`1<!0>>
 {
+  .method public static class [System.Runtime]System.Func`1<!0> MethodImplOnDerived() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario255`1<class [System.Runtime]System.Func`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Func`1<!0> V_O)
+    ldloca.s 0
+    initobj class [System.Runtime]System.Func`1<!0>
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario255`1
 .class interface public abstract auto ansi InterfaceScenario256`1<U>
 {
@@ -6304,72 +6305,72 @@
 } // end of class InterfaceScenario256`1
 .class public auto ansi BaseScenario256`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario256`1<!0>
+       implements class InterfaceScenario256`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static !0 Method() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario256`1<!0>::Method()
-    .locals init (!0 V_O)
+    .override method !0 class InterfaceScenario256`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj !0
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
   } // end of method Method
 } // end of class BaseScenario256`1
-.class public auto ansi DerivedScenario256`1<V>
-       extends class BaseScenario256`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario256`1<class [System.Runtime]System.Func`1<!0>>
+.class public auto ansi DerivedScenario256
+       extends class BaseScenario256`1<string>
 {
-} // end of class DerivedScenario256`1
+} // end of class DerivedScenario256
 .class interface public abstract auto ansi InterfaceScenario257`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario257`1
-.class public abstract auto ansi BaseScenario257`1<T>
+.class public auto ansi BaseScenario257`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario257`1<!0>
+       implements class InterfaceScenario257`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario257`1
-.class public auto ansi DerivedScenario257`1<V>
-       extends class BaseScenario257`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario257`1<class [System.Runtime]System.Func`1<!0>>
-{
-  .method public static class [System.Runtime]System.Func`1<!0> MethodImplOnDerived() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario257`1<class [System.Runtime]System.Func`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Func`1<!0> V_O)
+    .override method !0 class InterfaceScenario257`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Func`1<!0>
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario257`1
+  } // end of method Method
+} // end of class BaseScenario257`1
+.class public auto ansi DerivedScenario257
+       extends class BaseScenario257`1<string>
+       implements class InterfaceScenario257`1<class [System.Runtime]System.Action`1<string>>
+{
+} // end of class DerivedScenario257
 .class interface public abstract auto ansi InterfaceScenario258`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario258`1
-.class public auto ansi BaseScenario258`1<T>
+.class public abstract auto ansi BaseScenario258`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario258`1<!0>
+       implements class InterfaceScenario258`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static !0 Method() cil managed noinlining
+} // end of class BaseScenario258`1
+.class public auto ansi DerivedScenario258
+       extends class BaseScenario258`1<string>
+       implements class InterfaceScenario258`1<class [System.Runtime]System.Action`1<string>>
+{
+  .method public static class [System.Runtime]System.Action`1<string> MethodImplOnDerived() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario258`1<!0>::Method()
-    .locals init (!0 V_O)
+    .override method !0 class InterfaceScenario258`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<string> V_O)
     ldloca.s 0
-    initobj !0
+    initobj class [System.Runtime]System.Action`1<string>
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario258`1
-.class public auto ansi DerivedScenario258`1<V>
-       extends class BaseScenario258`1<class [System.Runtime]System.Func`1<!0>>
-{
-} // end of class DerivedScenario258`1
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario258
 .class interface public abstract auto ansi InterfaceScenario259`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
@@ -6378,21 +6379,20 @@
 } // end of class InterfaceScenario259`1
 .class public auto ansi BaseScenario259`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario259`1<!0>
+       implements class InterfaceScenario259`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static !0 Method() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario259`1<!0>::Method()
-    .locals init (!0 V_O)
+    .override method !0 class InterfaceScenario259`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj !0
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
   } // end of method Method
 } // end of class BaseScenario259`1
 .class public auto ansi DerivedScenario259`1<V>
-       extends class BaseScenario259`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario259`1<class [System.Runtime]System.Func`1<!0>>
+       extends class BaseScenario259`1<string>
 {
 } // end of class DerivedScenario259`1
 .class interface public abstract auto ansi InterfaceScenario260`1<U>
@@ -6401,24 +6401,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario260`1
-.class public abstract auto ansi BaseScenario260`1<T>
+.class public auto ansi BaseScenario260`1<T>
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario260`1<!0>
+       implements class InterfaceScenario260`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario260`1
-.class public auto ansi DerivedScenario260`1<V>
-       extends class BaseScenario260`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario260`1<class [System.Runtime]System.Func`1<!0>>
-{
-  .method public static class [System.Runtime]System.Func`1<!0> MethodImplOnDerived() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario260`1<class [System.Runtime]System.Func`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Func`1<!0> V_O)
+    .override method !0 class InterfaceScenario260`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Func`1<!0>
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario260`1
+.class public auto ansi DerivedScenario260`1<V>
+       extends class BaseScenario260`1<string>
+       implements class InterfaceScenario260`1<class [System.Runtime]System.Action`1<string>>
+{
 } // end of class DerivedScenario260`1
 .class interface public abstract auto ansi InterfaceScenario261`1<U>
 {
@@ -6426,24 +6426,25 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario261`1
-.class public auto ansi BaseScenario261`1<T>
+.class public abstract auto ansi BaseScenario261`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario261`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
+} // end of class BaseScenario261`1
+.class public auto ansi DerivedScenario261`1<V>
+       extends class BaseScenario261`1<string>
+       implements class InterfaceScenario261`1<class [System.Runtime]System.Action`1<string>>
+{
+  .method public static class [System.Runtime]System.Action`1<string> MethodImplOnDerived() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario261`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
+    .override method !0 class InterfaceScenario261`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<string> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<!0>
+    initobj class [System.Runtime]System.Action`1<string>
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario261`1
-.class public auto ansi DerivedScenario261
-       extends class BaseScenario261`1<string>
-{
-} // end of class DerivedScenario261
+  } // end of method MethodImplOnDerived
+} // end of class DerivedScenario261`1
 .class interface public abstract auto ansi InterfaceScenario262`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
@@ -6464,59 +6465,59 @@
     ret
   } // end of method Method
 } // end of class BaseScenario262`1
-.class public auto ansi DerivedScenario262
+.class public auto ansi DerivedScenario262`1<V>
        extends class BaseScenario262`1<string>
-       implements class InterfaceScenario262`1<class [System.Runtime]System.Action`1<string>>
 {
-} // end of class DerivedScenario262
+} // end of class DerivedScenario262`1
 .class interface public abstract auto ansi InterfaceScenario263`1<U>
 {
   .method public newslot virtual abstract static !0 Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario263`1
-.class public abstract auto ansi BaseScenario263`1<T>
+.class public auto ansi BaseScenario263`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario263`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario263`1
-.class public auto ansi DerivedScenario263
-       extends class BaseScenario263`1<string>
-       implements class InterfaceScenario263`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>> MethodImplOnDerived() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario263`1<class [System.Runtime]System.Action`1<string>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>>
-    ldloc.0
-    ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario263
-.class interface public abstract auto ansi InterfaceScenario264`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario264`1
-.class public auto ansi BaseScenario264`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario264`1<class [System.Runtime]System.Action`1<!0>>
-{
   .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario264`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .override method !0 class InterfaceScenario263`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
     initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
   } // end of method Method
+} // end of class BaseScenario263`1
+.class public auto ansi DerivedScenario263`1<V>
+       extends class BaseScenario263`1<string>
+       implements class InterfaceScenario263`1<class [System.Runtime]System.Action`1<string>>
+{
+} // end of class DerivedScenario263`1
+.class interface public abstract auto ansi InterfaceScenario264`1<U>
+{
+  .method public newslot virtual abstract static !0 Method() cil managed noinlining
+  {
+  } // end of method Method
+} // end of class InterfaceScenario264`1
+.class public abstract auto ansi BaseScenario264`1<T>
+       extends [System.Runtime]System.Object
+       implements class InterfaceScenario264`1<class [System.Runtime]System.Action`1<!0>>
+{
 } // end of class BaseScenario264`1
 .class public auto ansi DerivedScenario264`1<V>
        extends class BaseScenario264`1<string>
+       implements class InterfaceScenario264`1<class [System.Runtime]System.Action`1<string>>
 {
+  .method public static class [System.Runtime]System.Action`1<string> MethodImplOnDerived() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario264`1<class [System.Runtime]System.Action`1<string>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<string> V_O)
+    ldloca.s 0
+    initobj class [System.Runtime]System.Action`1<string>
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario264`1
 .class interface public abstract auto ansi InterfaceScenario265`1<U>
 {
@@ -6539,8 +6540,7 @@
   } // end of method Method
 } // end of class BaseScenario265`1
 .class public auto ansi DerivedScenario265`1<V>
-       extends class BaseScenario265`1<string>
-       implements class InterfaceScenario265`1<class [System.Runtime]System.Action`1<string>>
+       extends class BaseScenario265`1<!0>
 {
 } // end of class DerivedScenario265`1
 .class interface public abstract auto ansi InterfaceScenario266`1<U>
@@ -6549,24 +6549,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario266`1
-.class public abstract auto ansi BaseScenario266`1<T>
+.class public auto ansi BaseScenario266`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario266`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario266`1
-.class public auto ansi DerivedScenario266`1<V>
-       extends class BaseScenario266`1<string>
-       implements class InterfaceScenario266`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>> MethodImplOnDerived() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario266`1<class [System.Runtime]System.Action`1<string>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>> V_O)
+    .override method !0 class InterfaceScenario266`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>>
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario266`1
+.class public auto ansi DerivedScenario266`1<V>
+       extends class BaseScenario266`1<!0>
+       implements class InterfaceScenario266`1<class [System.Runtime]System.Action`1<!0>>
+{
 } // end of class DerivedScenario266`1
 .class interface public abstract auto ansi InterfaceScenario267`1<U>
 {
@@ -6574,11 +6574,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario267`1
-.class public auto ansi BaseScenario267`1<T>
+.class public abstract auto ansi BaseScenario267`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario267`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
+} // end of class BaseScenario267`1
+.class public auto ansi DerivedScenario267`1<V>
+       extends class BaseScenario267`1<!0>
+       implements class InterfaceScenario267`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static class [System.Runtime]System.Action`1<!0> MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario267`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (class [System.Runtime]System.Action`1<!0> V_O)
@@ -6586,11 +6591,7 @@
     initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario267`1
-.class public auto ansi DerivedScenario267`1<V>
-       extends class BaseScenario267`1<string>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario267`1
 .class interface public abstract auto ansi InterfaceScenario268`1<U>
 {
@@ -6613,8 +6614,7 @@
   } // end of method Method
 } // end of class BaseScenario268`1
 .class public auto ansi DerivedScenario268`1<V>
-       extends class BaseScenario268`1<string>
-       implements class InterfaceScenario268`1<class [System.Runtime]System.Action`1<string>>
+       extends class BaseScenario268`1<!0>
 {
 } // end of class DerivedScenario268`1
 .class interface public abstract auto ansi InterfaceScenario269`1<U>
@@ -6623,24 +6623,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario269`1
-.class public abstract auto ansi BaseScenario269`1<T>
+.class public auto ansi BaseScenario269`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario269`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario269`1
-.class public auto ansi DerivedScenario269`1<V>
-       extends class BaseScenario269`1<string>
-       implements class InterfaceScenario269`1<class [System.Runtime]System.Action`1<string>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>> MethodImplOnDerived() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
-    .override method !0 class InterfaceScenario269`1<class [System.Runtime]System.Action`1<string>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>> V_O)
+    .override method !0 class InterfaceScenario269`1<class [System.Runtime]System.Action`1<!0>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<string>>
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario269`1
+.class public auto ansi DerivedScenario269`1<V>
+       extends class BaseScenario269`1<!0>
+       implements class InterfaceScenario269`1<class [System.Runtime]System.Action`1<!0>>
+{
 } // end of class DerivedScenario269`1
 .class interface public abstract auto ansi InterfaceScenario270`1<U>
 {
@@ -6648,11 +6648,16 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario270`1
-.class public auto ansi BaseScenario270`1<T>
+.class public abstract auto ansi BaseScenario270`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario270`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
+} // end of class BaseScenario270`1
+.class public auto ansi DerivedScenario270`1<V>
+       extends class BaseScenario270`1<!0>
+       implements class InterfaceScenario270`1<class [System.Runtime]System.Action`1<!0>>
+{
+  .method public static class [System.Runtime]System.Action`1<!0> MethodImplOnDerived() cil managed noinlining
   {
     .override method !0 class InterfaceScenario270`1<class [System.Runtime]System.Action`1<!0>>::Method()
     .locals init (class [System.Runtime]System.Action`1<!0> V_O)
@@ -6660,11 +6665,7 @@
     initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method Method
-} // end of class BaseScenario270`1
-.class public auto ansi DerivedScenario270`1<V>
-       extends class BaseScenario270`1<!0>
-{
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario270`1
 .class interface public abstract auto ansi InterfaceScenario271`1<U>
 {
@@ -6687,8 +6688,7 @@
   } // end of method Method
 } // end of class BaseScenario271`1
 .class public auto ansi DerivedScenario271`1<V>
-       extends class BaseScenario271`1<!0>
-       implements class InterfaceScenario271`1<class [System.Runtime]System.Action`1<!0>>
+       extends class BaseScenario271`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario271`1
 .class interface public abstract auto ansi InterfaceScenario272`1<U>
@@ -6697,24 +6697,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario272`1
-.class public abstract auto ansi BaseScenario272`1<T>
+.class public auto ansi BaseScenario272`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario272`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario272`1
-.class public auto ansi DerivedScenario272`1<V>
-       extends class BaseScenario272`1<!0>
-       implements class InterfaceScenario272`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<!0>> MethodImplOnDerived() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario272`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<!0>> V_O)
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<!0>>
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario272`1
+.class public auto ansi DerivedScenario272`1<V>
+       extends class BaseScenario272`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario272`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
+{
 } // end of class DerivedScenario272`1
 .class interface public abstract auto ansi InterfaceScenario273`1<U>
 {
@@ -6722,23 +6722,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario273`1
-.class public auto ansi BaseScenario273`1<T>
+.class public abstract auto ansi BaseScenario273`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario273`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario273`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<!0>
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario273`1
 .class public auto ansi DerivedScenario273`1<V>
-       extends class BaseScenario273`1<!0>
+       extends class BaseScenario273`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario273`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
+  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>> MethodImplOnDerived() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario273`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>> V_O)
+    ldloca.s 0
+    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario273`1
 .class interface public abstract auto ansi InterfaceScenario274`1<U>
 {
@@ -6761,8 +6762,7 @@
   } // end of method Method
 } // end of class BaseScenario274`1
 .class public auto ansi DerivedScenario274`1<V>
-       extends class BaseScenario274`1<!0>
-       implements class InterfaceScenario274`1<class [System.Runtime]System.Action`1<!0>>
+       extends class BaseScenario274`1<class [System.Runtime]System.Func`1<!0>>
 {
 } // end of class DerivedScenario274`1
 .class interface public abstract auto ansi InterfaceScenario275`1<U>
@@ -6771,24 +6771,24 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario275`1
-.class public abstract auto ansi BaseScenario275`1<T>
+.class public auto ansi BaseScenario275`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario275`1<class [System.Runtime]System.Action`1<!0>>
 {
-} // end of class BaseScenario275`1
-.class public auto ansi DerivedScenario275`1<V>
-       extends class BaseScenario275`1<!0>
-       implements class InterfaceScenario275`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<!0>> MethodImplOnDerived() cil managed noinlining
+  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
   {
     .override method !0 class InterfaceScenario275`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<!0>> V_O)
+    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
     ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<!0>>
+    initobj class [System.Runtime]System.Action`1<!0>
     ldloc.0
     ret
-  } // end of method MethodImplOnDerived
+  } // end of method Method
+} // end of class BaseScenario275`1
+.class public auto ansi DerivedScenario275`1<V>
+       extends class BaseScenario275`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario275`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
+{
 } // end of class DerivedScenario275`1
 .class interface public abstract auto ansi InterfaceScenario276`1<U>
 {
@@ -6796,148 +6796,25 @@
   {
   } // end of method Method
 } // end of class InterfaceScenario276`1
-.class public auto ansi BaseScenario276`1<T>
+.class public abstract auto ansi BaseScenario276`1<T>
        extends [System.Runtime]System.Object
        implements class InterfaceScenario276`1<class [System.Runtime]System.Action`1<!0>>
 {
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario276`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<!0>
-    ldloc.0
-    ret
-  } // end of method Method
 } // end of class BaseScenario276`1
 .class public auto ansi DerivedScenario276`1<V>
        extends class BaseScenario276`1<class [System.Runtime]System.Func`1<!0>>
+       implements class InterfaceScenario276`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
 {
+  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>> MethodImplOnDerived() cil managed noinlining
+  {
+    .override method !0 class InterfaceScenario276`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
+    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>> V_O)
+    ldloca.s 0
+    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>
+    ldloc.0
+    ret
+  } // end of method MethodImplOnDerived
 } // end of class DerivedScenario276`1
-.class interface public abstract auto ansi InterfaceScenario277`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario277`1
-.class public auto ansi BaseScenario277`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario277`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario277`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<!0>
-    ldloc.0
-    ret
-  } // end of method Method
-} // end of class BaseScenario277`1
-.class public auto ansi DerivedScenario277`1<V>
-       extends class BaseScenario277`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario277`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-} // end of class DerivedScenario277`1
-.class interface public abstract auto ansi InterfaceScenario278`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario278`1
-.class public abstract auto ansi BaseScenario278`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario278`1<class [System.Runtime]System.Action`1<!0>>
-{
-} // end of class BaseScenario278`1
-.class public auto ansi DerivedScenario278`1<V>
-       extends class BaseScenario278`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario278`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>> MethodImplOnDerived() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario278`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-    ldloc.0
-    ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario278`1
-.class interface public abstract auto ansi InterfaceScenario279`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario279`1
-.class public auto ansi BaseScenario279`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario279`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario279`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<!0>
-    ldloc.0
-    ret
-  } // end of method Method
-} // end of class BaseScenario279`1
-.class public auto ansi DerivedScenario279`1<V>
-       extends class BaseScenario279`1<class [System.Runtime]System.Func`1<!0>>
-{
-} // end of class DerivedScenario279`1
-.class interface public abstract auto ansi InterfaceScenario280`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario280`1
-.class public auto ansi BaseScenario280`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario280`1<class [System.Runtime]System.Action`1<!0>>
-{
-  .method public static class [System.Runtime]System.Action`1<!0> Method() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario280`1<class [System.Runtime]System.Action`1<!0>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<!0> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<!0>
-    ldloc.0
-    ret
-  } // end of method Method
-} // end of class BaseScenario280`1
-.class public auto ansi DerivedScenario280`1<V>
-       extends class BaseScenario280`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario280`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-} // end of class DerivedScenario280`1
-.class interface public abstract auto ansi InterfaceScenario281`1<U>
-{
-  .method public newslot virtual abstract static !0 Method() cil managed noinlining
-  {
-  } // end of method Method
-} // end of class InterfaceScenario281`1
-.class public abstract auto ansi BaseScenario281`1<T>
-       extends [System.Runtime]System.Object
-       implements class InterfaceScenario281`1<class [System.Runtime]System.Action`1<!0>>
-{
-} // end of class BaseScenario281`1
-.class public auto ansi DerivedScenario281`1<V>
-       extends class BaseScenario281`1<class [System.Runtime]System.Func`1<!0>>
-       implements class InterfaceScenario281`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-{
-  .method public static class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>> MethodImplOnDerived() cil managed noinlining
-  {
-    .override method !0 class InterfaceScenario281`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>::Method()
-    .locals init (class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>> V_O)
-    ldloca.s 0
-    initobj class [System.Runtime]System.Action`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<!0>>>
-    ldloc.0
-    ret
-  } // end of method MethodImplOnDerived
-} // end of class DerivedScenario281`1
 .class public auto ansi TestEntrypoint
        extends [System.Runtime]System.Object
 {
@@ -7543,8 +7420,8 @@
   } // end of method Test_Scenario60
   .method public static void Test_Scenario61() cil managed noinlining
   {
-    constrained. class DerivedScenario61`1<string>
-    call object InterfaceScenario61::Method()
+    constrained. DerivedScenario61
+    call int32 class InterfaceScenario61`1<object>::Method()
     pop
     ldstr "Scenario61"
     ldnull
@@ -7573,7 +7450,7 @@
   } // end of method Test_Scenario63
   .method public static void Test_Scenario64() cil managed noinlining
   {
-    constrained. DerivedScenario64
+    constrained. class DerivedScenario64`1<string>
     call int32 class InterfaceScenario64`1<object>::Method()
     pop
     ldstr "Scenario64"
@@ -7603,7 +7480,7 @@
   } // end of method Test_Scenario66
   .method public static void Test_Scenario67() cil managed noinlining
   {
-    constrained. class DerivedScenario67`1<string>
+    constrained. class DerivedScenario67`1<int32>
     call int32 class InterfaceScenario67`1<object>::Method()
     pop
     ldstr "Scenario67"
@@ -7633,7 +7510,7 @@
   } // end of method Test_Scenario69
   .method public static void Test_Scenario70() cil managed noinlining
   {
-    constrained. class DerivedScenario70`1<int32>
+    constrained. DerivedScenario70
     call int32 class InterfaceScenario70`1<object>::Method()
     pop
     ldstr "Scenario70"
@@ -7663,7 +7540,7 @@
   } // end of method Test_Scenario72
   .method public static void Test_Scenario73() cil managed noinlining
   {
-    constrained. DerivedScenario73
+    constrained. class DerivedScenario73`1<string>
     call int32 class InterfaceScenario73`1<object>::Method()
     pop
     ldstr "Scenario73"
@@ -7693,7 +7570,7 @@
   } // end of method Test_Scenario75
   .method public static void Test_Scenario76() cil managed noinlining
   {
-    constrained. class DerivedScenario76`1<string>
+    constrained. class DerivedScenario76`1<int32>
     call int32 class InterfaceScenario76`1<object>::Method()
     pop
     ldstr "Scenario76"
@@ -7723,7 +7600,7 @@
   } // end of method Test_Scenario78
   .method public static void Test_Scenario79() cil managed noinlining
   {
-    constrained. class DerivedScenario79`1<int32>
+    constrained. class DerivedScenario79`1<string>
     call int32 class InterfaceScenario79`1<object>::Method()
     pop
     ldstr "Scenario79"
@@ -7753,7 +7630,7 @@
   } // end of method Test_Scenario81
   .method public static void Test_Scenario82() cil managed noinlining
   {
-    constrained. class DerivedScenario82`1<string>
+    constrained. class DerivedScenario82`1<int32>
     call int32 class InterfaceScenario82`1<object>::Method()
     pop
     ldstr "Scenario82"
@@ -7783,7 +7660,7 @@
   } // end of method Test_Scenario84
   .method public static void Test_Scenario85() cil managed noinlining
   {
-    constrained. class DerivedScenario85`1<int32>
+    constrained. class DerivedScenario85`1<string>
     call int32 class InterfaceScenario85`1<object>::Method()
     pop
     ldstr "Scenario85"
@@ -7813,7 +7690,7 @@
   } // end of method Test_Scenario87
   .method public static void Test_Scenario88() cil managed noinlining
   {
-    constrained. class DerivedScenario88`1<string>
+    constrained. class DerivedScenario88`1<int32>
     call int32 class InterfaceScenario88`1<object>::Method()
     pop
     ldstr "Scenario88"
@@ -7843,8 +7720,8 @@
   } // end of method Test_Scenario90
   .method public static void Test_Scenario91() cil managed noinlining
   {
-    constrained. class DerivedScenario91`1<int32>
-    call int32 class InterfaceScenario91`1<object>::Method()
+    constrained. DerivedScenario91
+    call int32 class InterfaceScenario91`1<string>::Method()
     pop
     ldstr "Scenario91"
     ldnull
@@ -7873,7 +7750,7 @@
   } // end of method Test_Scenario93
   .method public static void Test_Scenario94() cil managed noinlining
   {
-    constrained. DerivedScenario94
+    constrained. class DerivedScenario94`1<string>
     call int32 class InterfaceScenario94`1<string>::Method()
     pop
     ldstr "Scenario94"
@@ -7903,7 +7780,7 @@
   } // end of method Test_Scenario96
   .method public static void Test_Scenario97() cil managed noinlining
   {
-    constrained. class DerivedScenario97`1<string>
+    constrained. class DerivedScenario97`1<int32>
     call int32 class InterfaceScenario97`1<string>::Method()
     pop
     ldstr "Scenario97"
@@ -7933,7 +7810,7 @@
   } // end of method Test_Scenario99
   .method public static void Test_Scenario100() cil managed noinlining
   {
-    constrained. class DerivedScenario100`1<int32>
+    constrained. class DerivedScenario100`1<string>
     call int32 class InterfaceScenario100`1<string>::Method()
     pop
     ldstr "Scenario100"
@@ -7963,8 +7840,8 @@
   } // end of method Test_Scenario102
   .method public static void Test_Scenario103() cil managed noinlining
   {
-    constrained. class DerivedScenario103`1<string>
-    call int32 class InterfaceScenario103`1<string>::Method()
+    constrained. class DerivedScenario103`1<int32>
+    call int32 class InterfaceScenario103`1<int32>::Method()
     pop
     ldstr "Scenario103"
     ldnull
@@ -7993,8 +7870,8 @@
   } // end of method Test_Scenario105
   .method public static void Test_Scenario106() cil managed noinlining
   {
-    constrained. class DerivedScenario106`1<int32>
-    call int32 class InterfaceScenario106`1<int32>::Method()
+    constrained. class DerivedScenario106`1<string>
+    call int32 class InterfaceScenario106`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario106"
     ldnull
@@ -8023,8 +7900,8 @@
   } // end of method Test_Scenario108
   .method public static void Test_Scenario109() cil managed noinlining
   {
-    constrained. class DerivedScenario109`1<string>
-    call int32 class InterfaceScenario109`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. class DerivedScenario109`1<int32>
+    call int32 class InterfaceScenario109`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario109"
     ldnull
@@ -8053,8 +7930,8 @@
   } // end of method Test_Scenario111
   .method public static void Test_Scenario112() cil managed noinlining
   {
-    constrained. class DerivedScenario112`1<int32>
-    call int32 class InterfaceScenario112`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. DerivedScenario112
+    call int32 class InterfaceScenario112`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario112"
     ldnull
@@ -8083,7 +7960,7 @@
   } // end of method Test_Scenario114
   .method public static void Test_Scenario115() cil managed noinlining
   {
-    constrained. DerivedScenario115
+    constrained. class DerivedScenario115`1<string>
     call int32 class InterfaceScenario115`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario115"
@@ -8113,7 +7990,7 @@
   } // end of method Test_Scenario117
   .method public static void Test_Scenario118() cil managed noinlining
   {
-    constrained. class DerivedScenario118`1<string>
+    constrained. class DerivedScenario118`1<int32>
     call int32 class InterfaceScenario118`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario118"
@@ -8143,7 +8020,7 @@
   } // end of method Test_Scenario120
   .method public static void Test_Scenario121() cil managed noinlining
   {
-    constrained. class DerivedScenario121`1<int32>
+    constrained. class DerivedScenario121`1<string>
     call int32 class InterfaceScenario121`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario121"
@@ -8173,8 +8050,8 @@
   } // end of method Test_Scenario123
   .method public static void Test_Scenario124() cil managed noinlining
   {
-    constrained. class DerivedScenario124`1<string>
-    call int32 class InterfaceScenario124`1<class [System.Runtime]System.Action`1<string>>::Method()
+    constrained. class DerivedScenario124`1<int32>
+    call int32 class InterfaceScenario124`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario124"
     ldnull
@@ -8203,8 +8080,8 @@
   } // end of method Test_Scenario126
   .method public static void Test_Scenario127() cil managed noinlining
   {
-    constrained. class DerivedScenario127`1<int32>
-    call int32 class InterfaceScenario127`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    constrained. class DerivedScenario127`1<string>
+    call int32 class InterfaceScenario127`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario127"
     ldnull
@@ -8233,8 +8110,8 @@
   } // end of method Test_Scenario129
   .method public static void Test_Scenario130() cil managed noinlining
   {
-    constrained. class DerivedScenario130`1<string>
-    call int32 class InterfaceScenario130`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
+    constrained. class DerivedScenario130`1<int32>
+    call int32 class InterfaceScenario130`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario130"
     ldnull
@@ -8263,8 +8140,8 @@
   } // end of method Test_Scenario132
   .method public static void Test_Scenario133() cil managed noinlining
   {
-    constrained. class DerivedScenario133`1<int32>
-    call int32 class InterfaceScenario133`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
+    constrained. DerivedScenario133
+    call object class InterfaceScenario133`1<object>::Method()
     pop
     ldstr "Scenario133"
     ldnull
@@ -8293,7 +8170,7 @@
   } // end of method Test_Scenario135
   .method public static void Test_Scenario136() cil managed noinlining
   {
-    constrained. DerivedScenario136
+    constrained. class DerivedScenario136`1<string>
     call object class InterfaceScenario136`1<object>::Method()
     pop
     ldstr "Scenario136"
@@ -8323,7 +8200,7 @@
   } // end of method Test_Scenario138
   .method public static void Test_Scenario139() cil managed noinlining
   {
-    constrained. class DerivedScenario139`1<string>
+    constrained. class DerivedScenario139`1<int32>
     call object class InterfaceScenario139`1<object>::Method()
     pop
     ldstr "Scenario139"
@@ -8353,7 +8230,7 @@
   } // end of method Test_Scenario141
   .method public static void Test_Scenario142() cil managed noinlining
   {
-    constrained. class DerivedScenario142`1<int32>
+    constrained. DerivedScenario142
     call object class InterfaceScenario142`1<object>::Method()
     pop
     ldstr "Scenario142"
@@ -8383,7 +8260,7 @@
   } // end of method Test_Scenario144
   .method public static void Test_Scenario145() cil managed noinlining
   {
-    constrained. DerivedScenario145
+    constrained. class DerivedScenario145`1<string>
     call object class InterfaceScenario145`1<object>::Method()
     pop
     ldstr "Scenario145"
@@ -8413,7 +8290,7 @@
   } // end of method Test_Scenario147
   .method public static void Test_Scenario148() cil managed noinlining
   {
-    constrained. class DerivedScenario148`1<string>
+    constrained. class DerivedScenario148`1<int32>
     call object class InterfaceScenario148`1<object>::Method()
     pop
     ldstr "Scenario148"
@@ -8443,7 +8320,7 @@
   } // end of method Test_Scenario150
   .method public static void Test_Scenario151() cil managed noinlining
   {
-    constrained. class DerivedScenario151`1<int32>
+    constrained. class DerivedScenario151`1<string>
     call object class InterfaceScenario151`1<object>::Method()
     pop
     ldstr "Scenario151"
@@ -8473,7 +8350,7 @@
   } // end of method Test_Scenario153
   .method public static void Test_Scenario154() cil managed noinlining
   {
-    constrained. class DerivedScenario154`1<string>
+    constrained. class DerivedScenario154`1<int32>
     call object class InterfaceScenario154`1<object>::Method()
     pop
     ldstr "Scenario154"
@@ -8503,7 +8380,7 @@
   } // end of method Test_Scenario156
   .method public static void Test_Scenario157() cil managed noinlining
   {
-    constrained. class DerivedScenario157`1<int32>
+    constrained. class DerivedScenario157`1<string>
     call object class InterfaceScenario157`1<object>::Method()
     pop
     ldstr "Scenario157"
@@ -8533,7 +8410,7 @@
   } // end of method Test_Scenario159
   .method public static void Test_Scenario160() cil managed noinlining
   {
-    constrained. class DerivedScenario160`1<string>
+    constrained. class DerivedScenario160`1<int32>
     call object class InterfaceScenario160`1<object>::Method()
     pop
     ldstr "Scenario160"
@@ -8563,8 +8440,8 @@
   } // end of method Test_Scenario162
   .method public static void Test_Scenario163() cil managed noinlining
   {
-    constrained. class DerivedScenario163`1<int32>
-    call object class InterfaceScenario163`1<object>::Method()
+    constrained. DerivedScenario163
+    call object class InterfaceScenario163`1<string>::Method()
     pop
     ldstr "Scenario163"
     ldnull
@@ -8574,7 +8451,7 @@
   .method public static void Test_Scenario164() cil managed noinlining
   {
     constrained. DerivedScenario164
-    call object class InterfaceScenario164`1<object>::Method()
+    call object class InterfaceScenario164`1<string>::Method()
     pop
     ldstr "Scenario164"
     ldnull
@@ -8583,8 +8460,8 @@
   } // end of method Test_Scenario164
   .method public static void Test_Scenario165() cil managed noinlining
   {
-    constrained. class DerivedScenario165`1<int32>
-    call object class InterfaceScenario165`1<object>::Method()
+    constrained. DerivedScenario165
+    call object class InterfaceScenario165`1<string>::Method()
     pop
     ldstr "Scenario165"
     ldnull
@@ -8593,7 +8470,7 @@
   } // end of method Test_Scenario165
   .method public static void Test_Scenario166() cil managed noinlining
   {
-    constrained. DerivedScenario166
+    constrained. class DerivedScenario166`1<string>
     call object class InterfaceScenario166`1<string>::Method()
     pop
     ldstr "Scenario166"
@@ -8603,7 +8480,7 @@
   } // end of method Test_Scenario166
   .method public static void Test_Scenario167() cil managed noinlining
   {
-    constrained. DerivedScenario167
+    constrained. class DerivedScenario167`1<string>
     call object class InterfaceScenario167`1<string>::Method()
     pop
     ldstr "Scenario167"
@@ -8613,7 +8490,7 @@
   } // end of method Test_Scenario167
   .method public static void Test_Scenario168() cil managed noinlining
   {
-    constrained. DerivedScenario168
+    constrained. class DerivedScenario168`1<string>
     call object class InterfaceScenario168`1<string>::Method()
     pop
     ldstr "Scenario168"
@@ -8623,7 +8500,7 @@
   } // end of method Test_Scenario168
   .method public static void Test_Scenario169() cil managed noinlining
   {
-    constrained. class DerivedScenario169`1<string>
+    constrained. class DerivedScenario169`1<int32>
     call object class InterfaceScenario169`1<string>::Method()
     pop
     ldstr "Scenario169"
@@ -8633,7 +8510,7 @@
   } // end of method Test_Scenario169
   .method public static void Test_Scenario170() cil managed noinlining
   {
-    constrained. class DerivedScenario170`1<string>
+    constrained. class DerivedScenario170`1<int32>
     call object class InterfaceScenario170`1<string>::Method()
     pop
     ldstr "Scenario170"
@@ -8643,7 +8520,7 @@
   } // end of method Test_Scenario170
   .method public static void Test_Scenario171() cil managed noinlining
   {
-    constrained. class DerivedScenario171`1<string>
+    constrained. class DerivedScenario171`1<int32>
     call object class InterfaceScenario171`1<string>::Method()
     pop
     ldstr "Scenario171"
@@ -8653,7 +8530,7 @@
   } // end of method Test_Scenario171
   .method public static void Test_Scenario172() cil managed noinlining
   {
-    constrained. class DerivedScenario172`1<int32>
+    constrained. class DerivedScenario172`1<string>
     call object class InterfaceScenario172`1<string>::Method()
     pop
     ldstr "Scenario172"
@@ -8663,7 +8540,7 @@
   } // end of method Test_Scenario172
   .method public static void Test_Scenario173() cil managed noinlining
   {
-    constrained. class DerivedScenario173`1<int32>
+    constrained. class DerivedScenario173`1<string>
     call object class InterfaceScenario173`1<string>::Method()
     pop
     ldstr "Scenario173"
@@ -8673,7 +8550,7 @@
   } // end of method Test_Scenario173
   .method public static void Test_Scenario174() cil managed noinlining
   {
-    constrained. class DerivedScenario174`1<int32>
+    constrained. class DerivedScenario174`1<string>
     call object class InterfaceScenario174`1<string>::Method()
     pop
     ldstr "Scenario174"
@@ -8683,8 +8560,8 @@
   } // end of method Test_Scenario174
   .method public static void Test_Scenario175() cil managed noinlining
   {
-    constrained. class DerivedScenario175`1<string>
-    call object class InterfaceScenario175`1<string>::Method()
+    constrained. class DerivedScenario175`1<int32>
+    call object class InterfaceScenario175`1<int32>::Method()
     pop
     ldstr "Scenario175"
     ldnull
@@ -8693,8 +8570,8 @@
   } // end of method Test_Scenario175
   .method public static void Test_Scenario176() cil managed noinlining
   {
-    constrained. class DerivedScenario176`1<string>
-    call object class InterfaceScenario176`1<string>::Method()
+    constrained. class DerivedScenario176`1<int32>
+    call object class InterfaceScenario176`1<int32>::Method()
     pop
     ldstr "Scenario176"
     ldnull
@@ -8703,8 +8580,8 @@
   } // end of method Test_Scenario176
   .method public static void Test_Scenario177() cil managed noinlining
   {
-    constrained. class DerivedScenario177`1<string>
-    call object class InterfaceScenario177`1<string>::Method()
+    constrained. class DerivedScenario177`1<int32>
+    call object class InterfaceScenario177`1<int32>::Method()
     pop
     ldstr "Scenario177"
     ldnull
@@ -8713,8 +8590,8 @@
   } // end of method Test_Scenario177
   .method public static void Test_Scenario178() cil managed noinlining
   {
-    constrained. class DerivedScenario178`1<int32>
-    call object class InterfaceScenario178`1<int32>::Method()
+    constrained. class DerivedScenario178`1<string>
+    call object class InterfaceScenario178`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario178"
     ldnull
@@ -8723,8 +8600,8 @@
   } // end of method Test_Scenario178
   .method public static void Test_Scenario179() cil managed noinlining
   {
-    constrained. class DerivedScenario179`1<int32>
-    call object class InterfaceScenario179`1<int32>::Method()
+    constrained. class DerivedScenario179`1<string>
+    call object class InterfaceScenario179`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario179"
     ldnull
@@ -8733,8 +8610,8 @@
   } // end of method Test_Scenario179
   .method public static void Test_Scenario180() cil managed noinlining
   {
-    constrained. class DerivedScenario180`1<int32>
-    call object class InterfaceScenario180`1<int32>::Method()
+    constrained. class DerivedScenario180`1<string>
+    call object class InterfaceScenario180`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario180"
     ldnull
@@ -8743,8 +8620,8 @@
   } // end of method Test_Scenario180
   .method public static void Test_Scenario181() cil managed noinlining
   {
-    constrained. class DerivedScenario181`1<string>
-    call object class InterfaceScenario181`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. class DerivedScenario181`1<int32>
+    call object class InterfaceScenario181`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario181"
     ldnull
@@ -8753,8 +8630,8 @@
   } // end of method Test_Scenario181
   .method public static void Test_Scenario182() cil managed noinlining
   {
-    constrained. class DerivedScenario182`1<string>
-    call object class InterfaceScenario182`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. class DerivedScenario182`1<int32>
+    call object class InterfaceScenario182`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario182"
     ldnull
@@ -8763,8 +8640,8 @@
   } // end of method Test_Scenario182
   .method public static void Test_Scenario183() cil managed noinlining
   {
-    constrained. class DerivedScenario183`1<string>
-    call object class InterfaceScenario183`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. class DerivedScenario183`1<int32>
+    call object class InterfaceScenario183`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario183"
     ldnull
@@ -8773,8 +8650,8 @@
   } // end of method Test_Scenario183
   .method public static void Test_Scenario184() cil managed noinlining
   {
-    constrained. class DerivedScenario184`1<int32>
-    call object class InterfaceScenario184`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. DerivedScenario184
+    call object class InterfaceScenario184`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario184"
     ldnull
@@ -8783,8 +8660,8 @@
   } // end of method Test_Scenario184
   .method public static void Test_Scenario185() cil managed noinlining
   {
-    constrained. class DerivedScenario185`1<int32>
-    call object class InterfaceScenario185`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. DerivedScenario185
+    call object class InterfaceScenario185`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario185"
     ldnull
@@ -8793,8 +8670,8 @@
   } // end of method Test_Scenario185
   .method public static void Test_Scenario186() cil managed noinlining
   {
-    constrained. class DerivedScenario186`1<int32>
-    call object class InterfaceScenario186`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. DerivedScenario186
+    call object class InterfaceScenario186`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario186"
     ldnull
@@ -8803,8 +8680,8 @@
   } // end of method Test_Scenario186
   .method public static void Test_Scenario187() cil managed noinlining
   {
-    constrained. class DerivedScenario187`1<int32>
-    call object class InterfaceScenario187`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. class DerivedScenario187`1<string>
+    call object class InterfaceScenario187`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario187"
     ldnull
@@ -8813,7 +8690,7 @@
   } // end of method Test_Scenario187
   .method public static void Test_Scenario188() cil managed noinlining
   {
-    constrained. DerivedScenario188
+    constrained. class DerivedScenario188`1<string>
     call object class InterfaceScenario188`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario188"
@@ -8823,7 +8700,7 @@
   } // end of method Test_Scenario188
   .method public static void Test_Scenario189() cil managed noinlining
   {
-    constrained. DerivedScenario189
+    constrained. class DerivedScenario189`1<string>
     call object class InterfaceScenario189`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario189"
@@ -8833,7 +8710,7 @@
   } // end of method Test_Scenario189
   .method public static void Test_Scenario190() cil managed noinlining
   {
-    constrained. DerivedScenario190
+    constrained. class DerivedScenario190`1<int32>
     call object class InterfaceScenario190`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario190"
@@ -8843,7 +8720,7 @@
   } // end of method Test_Scenario190
   .method public static void Test_Scenario191() cil managed noinlining
   {
-    constrained. class DerivedScenario191`1<string>
+    constrained. class DerivedScenario191`1<int32>
     call object class InterfaceScenario191`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario191"
@@ -8853,7 +8730,7 @@
   } // end of method Test_Scenario191
   .method public static void Test_Scenario192() cil managed noinlining
   {
-    constrained. class DerivedScenario192`1<string>
+    constrained. class DerivedScenario192`1<int32>
     call object class InterfaceScenario192`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario192"
@@ -8873,7 +8750,7 @@
   } // end of method Test_Scenario193
   .method public static void Test_Scenario194() cil managed noinlining
   {
-    constrained. class DerivedScenario194`1<int32>
+    constrained. class DerivedScenario194`1<string>
     call object class InterfaceScenario194`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario194"
@@ -8883,7 +8760,7 @@
   } // end of method Test_Scenario194
   .method public static void Test_Scenario195() cil managed noinlining
   {
-    constrained. class DerivedScenario195`1<int32>
+    constrained. class DerivedScenario195`1<string>
     call object class InterfaceScenario195`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario195"
@@ -8894,7 +8771,7 @@
   .method public static void Test_Scenario196() cil managed noinlining
   {
     constrained. class DerivedScenario196`1<int32>
-    call object class InterfaceScenario196`1<class [System.Runtime]System.Action`1<string>>::Method()
+    call object class InterfaceScenario196`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario196"
     ldnull
@@ -8903,8 +8780,8 @@
   } // end of method Test_Scenario196
   .method public static void Test_Scenario197() cil managed noinlining
   {
-    constrained. class DerivedScenario197`1<string>
-    call object class InterfaceScenario197`1<class [System.Runtime]System.Action`1<string>>::Method()
+    constrained. class DerivedScenario197`1<int32>
+    call object class InterfaceScenario197`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario197"
     ldnull
@@ -8913,8 +8790,8 @@
   } // end of method Test_Scenario197
   .method public static void Test_Scenario198() cil managed noinlining
   {
-    constrained. class DerivedScenario198`1<string>
-    call object class InterfaceScenario198`1<class [System.Runtime]System.Action`1<string>>::Method()
+    constrained. class DerivedScenario198`1<int32>
+    call object class InterfaceScenario198`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario198"
     ldnull
@@ -8924,7 +8801,7 @@
   .method public static void Test_Scenario199() cil managed noinlining
   {
     constrained. class DerivedScenario199`1<string>
-    call object class InterfaceScenario199`1<class [System.Runtime]System.Action`1<string>>::Method()
+    call object class InterfaceScenario199`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario199"
     ldnull
@@ -8933,8 +8810,8 @@
   } // end of method Test_Scenario199
   .method public static void Test_Scenario200() cil managed noinlining
   {
-    constrained. class DerivedScenario200`1<int32>
-    call object class InterfaceScenario200`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    constrained. class DerivedScenario200`1<string>
+    call object class InterfaceScenario200`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario200"
     ldnull
@@ -8943,8 +8820,8 @@
   } // end of method Test_Scenario200
   .method public static void Test_Scenario201() cil managed noinlining
   {
-    constrained. class DerivedScenario201`1<int32>
-    call object class InterfaceScenario201`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    constrained. class DerivedScenario201`1<string>
+    call object class InterfaceScenario201`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario201"
     ldnull
@@ -8954,7 +8831,7 @@
   .method public static void Test_Scenario202() cil managed noinlining
   {
     constrained. class DerivedScenario202`1<int32>
-    call object class InterfaceScenario202`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    call object class InterfaceScenario202`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario202"
     ldnull
@@ -8963,8 +8840,8 @@
   } // end of method Test_Scenario202
   .method public static void Test_Scenario203() cil managed noinlining
   {
-    constrained. class DerivedScenario203`1<string>
-    call object class InterfaceScenario203`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
+    constrained. class DerivedScenario203`1<int32>
+    call object class InterfaceScenario203`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario203"
     ldnull
@@ -8973,8 +8850,8 @@
   } // end of method Test_Scenario203
   .method public static void Test_Scenario204() cil managed noinlining
   {
-    constrained. class DerivedScenario204`1<string>
-    call object class InterfaceScenario204`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
+    constrained. class DerivedScenario204`1<int32>
+    call object class InterfaceScenario204`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario204"
     ldnull
@@ -8983,8 +8860,8 @@
   } // end of method Test_Scenario204
   .method public static void Test_Scenario205() cil managed noinlining
   {
-    constrained. class DerivedScenario205`1<string>
-    call object class InterfaceScenario205`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
+    constrained. DerivedScenario205
+    call !0 class InterfaceScenario205`1<object>::Method()
     pop
     ldstr "Scenario205"
     ldnull
@@ -8993,8 +8870,8 @@
   } // end of method Test_Scenario205
   .method public static void Test_Scenario206() cil managed noinlining
   {
-    constrained. class DerivedScenario206`1<int32>
-    call object class InterfaceScenario206`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
+    constrained. DerivedScenario206
+    call !0 class InterfaceScenario206`1<object>::Method()
     pop
     ldstr "Scenario206"
     ldnull
@@ -9003,8 +8880,8 @@
   } // end of method Test_Scenario206
   .method public static void Test_Scenario207() cil managed noinlining
   {
-    constrained. class DerivedScenario207`1<int32>
-    call object class InterfaceScenario207`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
+    constrained. DerivedScenario207
+    call !0 class InterfaceScenario207`1<object>::Method()
     pop
     ldstr "Scenario207"
     ldnull
@@ -9013,8 +8890,8 @@
   } // end of method Test_Scenario207
   .method public static void Test_Scenario208() cil managed noinlining
   {
-    constrained. class DerivedScenario208`1<int32>
-    call object class InterfaceScenario208`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
+    constrained. class DerivedScenario208`1<string>
+    call !0 class InterfaceScenario208`1<object>::Method()
     pop
     ldstr "Scenario208"
     ldnull
@@ -9023,8 +8900,8 @@
   } // end of method Test_Scenario208
   .method public static void Test_Scenario209() cil managed noinlining
   {
-    constrained. class DerivedScenario209`1<int32>
-    call object class InterfaceScenario209`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
+    constrained. class DerivedScenario209`1<string>
+    call !0 class InterfaceScenario209`1<object>::Method()
     pop
     ldstr "Scenario209"
     ldnull
@@ -9033,7 +8910,7 @@
   } // end of method Test_Scenario209
   .method public static void Test_Scenario210() cil managed noinlining
   {
-    constrained. DerivedScenario210
+    constrained. class DerivedScenario210`1<string>
     call !0 class InterfaceScenario210`1<object>::Method()
     pop
     ldstr "Scenario210"
@@ -9043,7 +8920,7 @@
   } // end of method Test_Scenario210
   .method public static void Test_Scenario211() cil managed noinlining
   {
-    constrained. DerivedScenario211
+    constrained. class DerivedScenario211`1<int32>
     call !0 class InterfaceScenario211`1<object>::Method()
     pop
     ldstr "Scenario211"
@@ -9053,7 +8930,7 @@
   } // end of method Test_Scenario211
   .method public static void Test_Scenario212() cil managed noinlining
   {
-    constrained. DerivedScenario212
+    constrained. class DerivedScenario212`1<int32>
     call !0 class InterfaceScenario212`1<object>::Method()
     pop
     ldstr "Scenario212"
@@ -9063,7 +8940,7 @@
   } // end of method Test_Scenario212
   .method public static void Test_Scenario213() cil managed noinlining
   {
-    constrained. class DerivedScenario213`1<string>
+    constrained. class DerivedScenario213`1<int32>
     call !0 class InterfaceScenario213`1<object>::Method()
     pop
     ldstr "Scenario213"
@@ -9073,7 +8950,7 @@
   } // end of method Test_Scenario213
   .method public static void Test_Scenario214() cil managed noinlining
   {
-    constrained. class DerivedScenario214`1<string>
+    constrained. DerivedScenario214
     call !0 class InterfaceScenario214`1<object>::Method()
     pop
     ldstr "Scenario214"
@@ -9083,7 +8960,7 @@
   } // end of method Test_Scenario214
   .method public static void Test_Scenario215() cil managed noinlining
   {
-    constrained. class DerivedScenario215`1<string>
+    constrained. DerivedScenario215
     call !0 class InterfaceScenario215`1<object>::Method()
     pop
     ldstr "Scenario215"
@@ -9093,7 +8970,7 @@
   } // end of method Test_Scenario215
   .method public static void Test_Scenario216() cil managed noinlining
   {
-    constrained. class DerivedScenario216`1<int32>
+    constrained. DerivedScenario216
     call !0 class InterfaceScenario216`1<object>::Method()
     pop
     ldstr "Scenario216"
@@ -9103,7 +8980,7 @@
   } // end of method Test_Scenario216
   .method public static void Test_Scenario217() cil managed noinlining
   {
-    constrained. class DerivedScenario217`1<int32>
+    constrained. class DerivedScenario217`1<string>
     call !0 class InterfaceScenario217`1<object>::Method()
     pop
     ldstr "Scenario217"
@@ -9113,7 +8990,7 @@
   } // end of method Test_Scenario217
   .method public static void Test_Scenario218() cil managed noinlining
   {
-    constrained. class DerivedScenario218`1<int32>
+    constrained. class DerivedScenario218`1<string>
     call !0 class InterfaceScenario218`1<object>::Method()
     pop
     ldstr "Scenario218"
@@ -9123,7 +9000,7 @@
   } // end of method Test_Scenario218
   .method public static void Test_Scenario219() cil managed noinlining
   {
-    constrained. DerivedScenario219
+    constrained. class DerivedScenario219`1<string>
     call !0 class InterfaceScenario219`1<object>::Method()
     pop
     ldstr "Scenario219"
@@ -9133,7 +9010,7 @@
   } // end of method Test_Scenario219
   .method public static void Test_Scenario220() cil managed noinlining
   {
-    constrained. DerivedScenario220
+    constrained. class DerivedScenario220`1<int32>
     call !0 class InterfaceScenario220`1<object>::Method()
     pop
     ldstr "Scenario220"
@@ -9143,7 +9020,7 @@
   } // end of method Test_Scenario220
   .method public static void Test_Scenario221() cil managed noinlining
   {
-    constrained. DerivedScenario221
+    constrained. class DerivedScenario221`1<int32>
     call !0 class InterfaceScenario221`1<object>::Method()
     pop
     ldstr "Scenario221"
@@ -9153,7 +9030,7 @@
   } // end of method Test_Scenario221
   .method public static void Test_Scenario222() cil managed noinlining
   {
-    constrained. class DerivedScenario222`1<string>
+    constrained. class DerivedScenario222`1<int32>
     call !0 class InterfaceScenario222`1<object>::Method()
     pop
     ldstr "Scenario222"
@@ -9183,7 +9060,7 @@
   } // end of method Test_Scenario224
   .method public static void Test_Scenario225() cil managed noinlining
   {
-    constrained. class DerivedScenario225`1<int32>
+    constrained. class DerivedScenario225`1<string>
     call !0 class InterfaceScenario225`1<object>::Method()
     pop
     ldstr "Scenario225"
@@ -9213,7 +9090,7 @@
   } // end of method Test_Scenario227
   .method public static void Test_Scenario228() cil managed noinlining
   {
-    constrained. class DerivedScenario228`1<string>
+    constrained. class DerivedScenario228`1<int32>
     call !0 class InterfaceScenario228`1<object>::Method()
     pop
     ldstr "Scenario228"
@@ -9243,7 +9120,7 @@
   } // end of method Test_Scenario230
   .method public static void Test_Scenario231() cil managed noinlining
   {
-    constrained. class DerivedScenario231`1<int32>
+    constrained. class DerivedScenario231`1<string>
     call !0 class InterfaceScenario231`1<object>::Method()
     pop
     ldstr "Scenario231"
@@ -9273,7 +9150,7 @@
   } // end of method Test_Scenario233
   .method public static void Test_Scenario234() cil managed noinlining
   {
-    constrained. class DerivedScenario234`1<string>
+    constrained. class DerivedScenario234`1<int32>
     call !0 class InterfaceScenario234`1<object>::Method()
     pop
     ldstr "Scenario234"
@@ -9283,8 +9160,8 @@
   } // end of method Test_Scenario234
   .method public static void Test_Scenario235() cil managed noinlining
   {
-    constrained. class DerivedScenario235`1<string>
-    call !0 class InterfaceScenario235`1<object>::Method()
+    constrained. DerivedScenario235
+    call !0 class InterfaceScenario235`1<string>::Method()
     pop
     ldstr "Scenario235"
     ldnull
@@ -9293,8 +9170,8 @@
   } // end of method Test_Scenario235
   .method public static void Test_Scenario236() cil managed noinlining
   {
-    constrained. class DerivedScenario236`1<string>
-    call !0 class InterfaceScenario236`1<object>::Method()
+    constrained. DerivedScenario236
+    call !0 class InterfaceScenario236`1<string>::Method()
     pop
     ldstr "Scenario236"
     ldnull
@@ -9303,8 +9180,8 @@
   } // end of method Test_Scenario236
   .method public static void Test_Scenario237() cil managed noinlining
   {
-    constrained. class DerivedScenario237`1<int32>
-    call !0 class InterfaceScenario237`1<object>::Method()
+    constrained. DerivedScenario237
+    call !0 class InterfaceScenario237`1<string>::Method()
     pop
     ldstr "Scenario237"
     ldnull
@@ -9313,8 +9190,8 @@
   } // end of method Test_Scenario237
   .method public static void Test_Scenario238() cil managed noinlining
   {
-    constrained. class DerivedScenario238`1<int32>
-    call !0 class InterfaceScenario238`1<object>::Method()
+    constrained. class DerivedScenario238`1<string>
+    call !0 class InterfaceScenario238`1<string>::Method()
     pop
     ldstr "Scenario238"
     ldnull
@@ -9323,8 +9200,8 @@
   } // end of method Test_Scenario238
   .method public static void Test_Scenario239() cil managed noinlining
   {
-    constrained. class DerivedScenario239`1<int32>
-    call !0 class InterfaceScenario239`1<object>::Method()
+    constrained. class DerivedScenario239`1<string>
+    call !0 class InterfaceScenario239`1<string>::Method()
     pop
     ldstr "Scenario239"
     ldnull
@@ -9333,7 +9210,7 @@
   } // end of method Test_Scenario239
   .method public static void Test_Scenario240() cil managed noinlining
   {
-    constrained. DerivedScenario240
+    constrained. class DerivedScenario240`1<string>
     call !0 class InterfaceScenario240`1<string>::Method()
     pop
     ldstr "Scenario240"
@@ -9343,7 +9220,7 @@
   } // end of method Test_Scenario240
   .method public static void Test_Scenario241() cil managed noinlining
   {
-    constrained. DerivedScenario241
+    constrained. class DerivedScenario241`1<int32>
     call !0 class InterfaceScenario241`1<string>::Method()
     pop
     ldstr "Scenario241"
@@ -9353,7 +9230,7 @@
   } // end of method Test_Scenario241
   .method public static void Test_Scenario242() cil managed noinlining
   {
-    constrained. DerivedScenario242
+    constrained. class DerivedScenario242`1<int32>
     call !0 class InterfaceScenario242`1<string>::Method()
     pop
     ldstr "Scenario242"
@@ -9363,7 +9240,7 @@
   } // end of method Test_Scenario242
   .method public static void Test_Scenario243() cil managed noinlining
   {
-    constrained. class DerivedScenario243`1<string>
+    constrained. class DerivedScenario243`1<int32>
     call !0 class InterfaceScenario243`1<string>::Method()
     pop
     ldstr "Scenario243"
@@ -9393,7 +9270,7 @@
   } // end of method Test_Scenario245
   .method public static void Test_Scenario246() cil managed noinlining
   {
-    constrained. class DerivedScenario246`1<int32>
+    constrained. class DerivedScenario246`1<string>
     call !0 class InterfaceScenario246`1<string>::Method()
     pop
     ldstr "Scenario246"
@@ -9404,7 +9281,7 @@
   .method public static void Test_Scenario247() cil managed noinlining
   {
     constrained. class DerivedScenario247`1<int32>
-    call !0 class InterfaceScenario247`1<string>::Method()
+    call !0 class InterfaceScenario247`1<int32>::Method()
     pop
     ldstr "Scenario247"
     ldnull
@@ -9414,7 +9291,7 @@
   .method public static void Test_Scenario248() cil managed noinlining
   {
     constrained. class DerivedScenario248`1<int32>
-    call !0 class InterfaceScenario248`1<string>::Method()
+    call !0 class InterfaceScenario248`1<int32>::Method()
     pop
     ldstr "Scenario248"
     ldnull
@@ -9423,8 +9300,8 @@
   } // end of method Test_Scenario248
   .method public static void Test_Scenario249() cil managed noinlining
   {
-    constrained. class DerivedScenario249`1<string>
-    call !0 class InterfaceScenario249`1<string>::Method()
+    constrained. class DerivedScenario249`1<int32>
+    call !0 class InterfaceScenario249`1<int32>::Method()
     pop
     ldstr "Scenario249"
     ldnull
@@ -9434,7 +9311,7 @@
   .method public static void Test_Scenario250() cil managed noinlining
   {
     constrained. class DerivedScenario250`1<string>
-    call !0 class InterfaceScenario250`1<string>::Method()
+    call !0 class InterfaceScenario250`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario250"
     ldnull
@@ -9444,7 +9321,7 @@
   .method public static void Test_Scenario251() cil managed noinlining
   {
     constrained. class DerivedScenario251`1<string>
-    call !0 class InterfaceScenario251`1<string>::Method()
+    call !0 class InterfaceScenario251`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario251"
     ldnull
@@ -9453,8 +9330,8 @@
   } // end of method Test_Scenario251
   .method public static void Test_Scenario252() cil managed noinlining
   {
-    constrained. class DerivedScenario252`1<int32>
-    call !0 class InterfaceScenario252`1<int32>::Method()
+    constrained. class DerivedScenario252`1<string>
+    call !0 class InterfaceScenario252`1<class [System.Runtime]System.Func`1<string>>::Method()
     pop
     ldstr "Scenario252"
     ldnull
@@ -9464,7 +9341,7 @@
   .method public static void Test_Scenario253() cil managed noinlining
   {
     constrained. class DerivedScenario253`1<int32>
-    call !0 class InterfaceScenario253`1<int32>::Method()
+    call !0 class InterfaceScenario253`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario253"
     ldnull
@@ -9474,7 +9351,7 @@
   .method public static void Test_Scenario254() cil managed noinlining
   {
     constrained. class DerivedScenario254`1<int32>
-    call !0 class InterfaceScenario254`1<int32>::Method()
+    call !0 class InterfaceScenario254`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario254"
     ldnull
@@ -9483,8 +9360,8 @@
   } // end of method Test_Scenario254
   .method public static void Test_Scenario255() cil managed noinlining
   {
-    constrained. class DerivedScenario255`1<string>
-    call !0 class InterfaceScenario255`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. class DerivedScenario255`1<int32>
+    call !0 class InterfaceScenario255`1<class [System.Runtime]System.Func`1<int32>>::Method()
     pop
     ldstr "Scenario255"
     ldnull
@@ -9493,8 +9370,8 @@
   } // end of method Test_Scenario255
   .method public static void Test_Scenario256() cil managed noinlining
   {
-    constrained. class DerivedScenario256`1<string>
-    call !0 class InterfaceScenario256`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. DerivedScenario256
+    call !0 class InterfaceScenario256`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario256"
     ldnull
@@ -9503,8 +9380,8 @@
   } // end of method Test_Scenario256
   .method public static void Test_Scenario257() cil managed noinlining
   {
-    constrained. class DerivedScenario257`1<string>
-    call !0 class InterfaceScenario257`1<class [System.Runtime]System.Func`1<string>>::Method()
+    constrained. DerivedScenario257
+    call !0 class InterfaceScenario257`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario257"
     ldnull
@@ -9513,8 +9390,8 @@
   } // end of method Test_Scenario257
   .method public static void Test_Scenario258() cil managed noinlining
   {
-    constrained. class DerivedScenario258`1<int32>
-    call !0 class InterfaceScenario258`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. DerivedScenario258
+    call !0 class InterfaceScenario258`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario258"
     ldnull
@@ -9523,8 +9400,8 @@
   } // end of method Test_Scenario258
   .method public static void Test_Scenario259() cil managed noinlining
   {
-    constrained. class DerivedScenario259`1<int32>
-    call !0 class InterfaceScenario259`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. class DerivedScenario259`1<string>
+    call !0 class InterfaceScenario259`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario259"
     ldnull
@@ -9533,8 +9410,8 @@
   } // end of method Test_Scenario259
   .method public static void Test_Scenario260() cil managed noinlining
   {
-    constrained. class DerivedScenario260`1<int32>
-    call !0 class InterfaceScenario260`1<class [System.Runtime]System.Func`1<int32>>::Method()
+    constrained. class DerivedScenario260`1<string>
+    call !0 class InterfaceScenario260`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario260"
     ldnull
@@ -9543,7 +9420,7 @@
   } // end of method Test_Scenario260
   .method public static void Test_Scenario261() cil managed noinlining
   {
-    constrained. DerivedScenario261
+    constrained. class DerivedScenario261`1<string>
     call !0 class InterfaceScenario261`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario261"
@@ -9553,7 +9430,7 @@
   } // end of method Test_Scenario261
   .method public static void Test_Scenario262() cil managed noinlining
   {
-    constrained. DerivedScenario262
+    constrained. class DerivedScenario262`1<int32>
     call !0 class InterfaceScenario262`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario262"
@@ -9563,7 +9440,7 @@
   } // end of method Test_Scenario262
   .method public static void Test_Scenario263() cil managed noinlining
   {
-    constrained. DerivedScenario263
+    constrained. class DerivedScenario263`1<int32>
     call !0 class InterfaceScenario263`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario263"
@@ -9573,7 +9450,7 @@
   } // end of method Test_Scenario263
   .method public static void Test_Scenario264() cil managed noinlining
   {
-    constrained. class DerivedScenario264`1<string>
+    constrained. class DerivedScenario264`1<int32>
     call !0 class InterfaceScenario264`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario264"
@@ -9603,7 +9480,7 @@
   } // end of method Test_Scenario266
   .method public static void Test_Scenario267() cil managed noinlining
   {
-    constrained. class DerivedScenario267`1<int32>
+    constrained. class DerivedScenario267`1<string>
     call !0 class InterfaceScenario267`1<class [System.Runtime]System.Action`1<string>>::Method()
     pop
     ldstr "Scenario267"
@@ -9614,7 +9491,7 @@
   .method public static void Test_Scenario268() cil managed noinlining
   {
     constrained. class DerivedScenario268`1<int32>
-    call !0 class InterfaceScenario268`1<class [System.Runtime]System.Action`1<string>>::Method()
+    call !0 class InterfaceScenario268`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario268"
     ldnull
@@ -9624,7 +9501,7 @@
   .method public static void Test_Scenario269() cil managed noinlining
   {
     constrained. class DerivedScenario269`1<int32>
-    call !0 class InterfaceScenario269`1<class [System.Runtime]System.Action`1<string>>::Method()
+    call !0 class InterfaceScenario269`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario269"
     ldnull
@@ -9633,8 +9510,8 @@
   } // end of method Test_Scenario269
   .method public static void Test_Scenario270() cil managed noinlining
   {
-    constrained. class DerivedScenario270`1<string>
-    call !0 class InterfaceScenario270`1<class [System.Runtime]System.Action`1<string>>::Method()
+    constrained. class DerivedScenario270`1<int32>
+    call !0 class InterfaceScenario270`1<class [System.Runtime]System.Action`1<int32>>::Method()
     pop
     ldstr "Scenario270"
     ldnull
@@ -9644,7 +9521,7 @@
   .method public static void Test_Scenario271() cil managed noinlining
   {
     constrained. class DerivedScenario271`1<string>
-    call !0 class InterfaceScenario271`1<class [System.Runtime]System.Action`1<string>>::Method()
+    call !0 class InterfaceScenario271`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario271"
     ldnull
@@ -9654,7 +9531,7 @@
   .method public static void Test_Scenario272() cil managed noinlining
   {
     constrained. class DerivedScenario272`1<string>
-    call !0 class InterfaceScenario272`1<class [System.Runtime]System.Action`1<string>>::Method()
+    call !0 class InterfaceScenario272`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario272"
     ldnull
@@ -9663,8 +9540,8 @@
   } // end of method Test_Scenario272
   .method public static void Test_Scenario273() cil managed noinlining
   {
-    constrained. class DerivedScenario273`1<int32>
-    call !0 class InterfaceScenario273`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    constrained. class DerivedScenario273`1<string>
+    call !0 class InterfaceScenario273`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
     pop
     ldstr "Scenario273"
     ldnull
@@ -9674,7 +9551,7 @@
   .method public static void Test_Scenario274() cil managed noinlining
   {
     constrained. class DerivedScenario274`1<int32>
-    call !0 class InterfaceScenario274`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    call !0 class InterfaceScenario274`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario274"
     ldnull
@@ -9684,7 +9561,7 @@
   .method public static void Test_Scenario275() cil managed noinlining
   {
     constrained. class DerivedScenario275`1<int32>
-    call !0 class InterfaceScenario275`1<class [System.Runtime]System.Action`1<int32>>::Method()
+    call !0 class InterfaceScenario275`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario275"
     ldnull
@@ -9693,64 +9570,14 @@
   } // end of method Test_Scenario275
   .method public static void Test_Scenario276() cil managed noinlining
   {
-    constrained. class DerivedScenario276`1<string>
-    call !0 class InterfaceScenario276`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
+    constrained. class DerivedScenario276`1<int32>
+    call !0 class InterfaceScenario276`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
     pop
     ldstr "Scenario276"
     ldnull
     call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Scenario276
-  .method public static void Test_Scenario277() cil managed noinlining
-  {
-    constrained. class DerivedScenario277`1<string>
-    call !0 class InterfaceScenario277`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
-    pop
-    ldstr "Scenario277"
-    ldnull
-    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
-    ret
-  } // end of method Test_Scenario277
-  .method public static void Test_Scenario278() cil managed noinlining
-  {
-    constrained. class DerivedScenario278`1<string>
-    call !0 class InterfaceScenario278`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<string>>>::Method()
-    pop
-    ldstr "Scenario278"
-    ldnull
-    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
-    ret
-  } // end of method Test_Scenario278
-  .method public static void Test_Scenario279() cil managed noinlining
-  {
-    constrained. class DerivedScenario279`1<int32>
-    call !0 class InterfaceScenario279`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
-    pop
-    ldstr "Scenario279"
-    ldnull
-    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
-    ret
-  } // end of method Test_Scenario279
-  .method public static void Test_Scenario280() cil managed noinlining
-  {
-    constrained. class DerivedScenario280`1<int32>
-    call !0 class InterfaceScenario280`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
-    pop
-    ldstr "Scenario280"
-    ldnull
-    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
-    ret
-  } // end of method Test_Scenario280
-  .method public static void Test_Scenario281() cil managed noinlining
-  {
-    constrained. class DerivedScenario281`1<int32>
-    call !0 class InterfaceScenario281`1<class [System.Runtime]System.Action`1<class [System.Runtime]System.Func`1<int32>>>::Method()
-    pop
-    ldstr "Scenario281"
-    ldnull
-    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
-    ret
-  } // end of method Test_Scenario281
   .method public static int32 Main() cil managed noinlining
   {
     .entrypoint
@@ -13343,71 +13170,6 @@ Scenario275Done: nop
         leave.s Scenario276Done
     }
 Scenario276Done: nop
-    .try {
-        call void TestEntrypoint::Test_Scenario277()
-        leave.s Scenario277Done
-    } catch [System.Runtime]System.Exception {
-        stloc.0
-        ldstr "Scenario277"
-        ldnull
-        ldloc.0
-        callvirt   instance string [System.Runtime]System.Object::ToString()
-        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
-        leave.s Scenario277Done
-    }
-Scenario277Done: nop
-    .try {
-        call void TestEntrypoint::Test_Scenario278()
-        leave.s Scenario278Done
-    } catch [System.Runtime]System.Exception {
-        stloc.0
-        ldstr "Scenario278"
-        ldnull
-        ldloc.0
-        callvirt   instance string [System.Runtime]System.Object::ToString()
-        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
-        leave.s Scenario278Done
-    }
-Scenario278Done: nop
-    .try {
-        call void TestEntrypoint::Test_Scenario279()
-        leave.s Scenario279Done
-    } catch [System.Runtime]System.Exception {
-        stloc.0
-        ldstr "Scenario279"
-        ldnull
-        ldloc.0
-        callvirt   instance string [System.Runtime]System.Object::ToString()
-        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
-        leave.s Scenario279Done
-    }
-Scenario279Done: nop
-    .try {
-        call void TestEntrypoint::Test_Scenario280()
-        leave.s Scenario280Done
-    } catch [System.Runtime]System.Exception {
-        stloc.0
-        ldstr "Scenario280"
-        ldnull
-        ldloc.0
-        callvirt   instance string [System.Runtime]System.Object::ToString()
-        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
-        leave.s Scenario280Done
-    }
-Scenario280Done: nop
-    .try {
-        call void TestEntrypoint::Test_Scenario281()
-        leave.s Scenario281Done
-    } catch [System.Runtime]System.Exception {
-        stloc.0
-        ldstr "Scenario281"
-        ldnull
-        ldloc.0
-        callvirt   instance string [System.Runtime]System.Object::ToString()
-        call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
-        leave.s Scenario281Done
-    }
-Scenario281Done: nop
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret
   } // end of method Main
