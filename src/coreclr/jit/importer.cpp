@@ -6542,9 +6542,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                         const CORINFO_FIELD_HANDLE hasValueFldHnd =
                                             info.compCompHnd->getFieldInClass(nullableCls, 0);
 
-                                        INDEBUG(assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0));
-                                        INDEBUG(assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
-                                                               "hasValue")));
+                                        assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
+                                        assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
+                                                               "hasValue"));
 
                                         GenTree* objToBox = impPopStack().val;
 
