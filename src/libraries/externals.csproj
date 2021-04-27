@@ -83,6 +83,9 @@
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <!-- Setup runtime pack native. -->
+      <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
+                               DestinationSubDirectory="cross/%(RecursiveDir)" />
       <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
                                DestinationSubDirectory="include/%(RecursiveDir)" />
     </ItemGroup>
