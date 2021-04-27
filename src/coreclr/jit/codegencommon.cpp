@@ -11863,9 +11863,28 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     // Is the first "VariableLiveRange" or the previous one has been closed so its "m_EndEmitLocation" is valid
     noway_assert(m_VariableLiveRanges->empty() || m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 
-    // Creates new live range with invalid end
-    m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
-    m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    if (!m_VariableLiveRanges->empty() &&
+        siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) &&
+        m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit))
+    {
+        JITDUMP("Extending debug range...\n");
+
+        // The variable is being born just after the instruction at which it died.
+        // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
+        m_VariableLiveRanges->back().m_EndEmitLocation.Init();
+    }
+    else
+    {
+        JITDUMP("New debug range: %s\n",
+                m_VariableLiveRanges->empty()
+                    ? "first"
+                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
+                          ? "new var or location"
+                          : "not adjacent");
+        // Creates new live range with invalid end
+        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+        m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    }
 
 #ifdef DEBUG
     if (!m_VariableLifeBarrier->hasLiveRangesToDump())
