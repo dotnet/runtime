@@ -408,9 +408,10 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
+#if NETCOREAPP
             if (IsBrowser)
                 return RuntimeFeature.IsDynamicCodeSupported;
-
+#endif
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
