@@ -1380,6 +1380,48 @@ namespace System.Net.Sockets
             return SendTo(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, remoteEP);
         }
 
+        public int SendTo(ReadOnlySpan<byte> buffer, EndPoint remoteEP)
+        {
+            return SendTo(buffer, SocketFlags.None, remoteEP);
+        }
+
+        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
+        {
+            ThrowIfDisposed();
+            if (remoteEP == null)
+            {
+                throw new ArgumentNullException(nameof(remoteEP));
+            }
+
+            ValidateBlockingMode();
+
+            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+
+            // Throw an appropriate SocketException if the native call fails.
+            if (errorCode != SocketError.Success)
+            {
+                UpdateSendSocketErrorForDisposed(ref errorCode);
+
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
+
+            if (_rightEndPoint == null)
+            {
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint = remoteEP;
+            }
+
+            return bytesTransferred;
+        }
+
         // Receives data from a connected socket.
         public int Receive(byte[] buffer, int size, SocketFlags socketFlags)
         {
@@ -1762,6 +1804,74 @@ namespace System.Net.Sockets
         public int ReceiveFrom(byte[] buffer, ref EndPoint remoteEP)
         {
             return ReceiveFrom(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, ref remoteEP);
+        }
+
+        public int ReceiveFrom(Span<byte> buffer, ref EndPoint remoteEP)
+        {
+            return ReceiveFrom(buffer, SocketFlags.None, ref remoteEP);
+        }
+
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, ref EndPoint remoteEP)
+        {
+            ThrowIfDisposed();
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
+
+            SocketPal.CheckDualModeReceiveSupport(this);
+
+            ValidateBlockingMode();
+
+            // We don't do a CAS demand here because the contents of remoteEP aren't used by
+            // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
+            // with the right address family.
+            EndPoint endPointSnapshot = remoteEP;
+            Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+            Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
+            // If the native call fails we'll throw a SocketException.
+            SocketException? socketException = null;
+            if (errorCode != SocketError.Success)
+            {
+                socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
+
+                if (socketException.SocketErrorCode != SocketError.MessageSize)
+                {
+                    throw socketException;
+                }
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
+
+            if (!socketAddressOriginal.Equals(socketAddress))
+            {
+                try
+                {
+                    remoteEP = endPointSnapshot.Create(socketAddress);
+                }
+                catch
+                {
+                }
+                if (_rightEndPoint == null)
+                {
+                    // Save a copy of the EndPoint so we can use it for Create().
+                    _rightEndPoint = endPointSnapshot;
+                }
+            }
+
+            if (socketException != null)
+            {
+                throw socketException;
+            }
+
+            return bytesTransferred;
         }
 
         public int IOControl(int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue)
