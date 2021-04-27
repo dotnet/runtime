@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Options
         public ValidateOptionsResult Validate(string name, TOptions options)
         {
             // Null name is used to configure all named options.
-            if (Name != null && !string.Equals(name, Name))
+            if (Name != null && Name != name)
             {
                 // Ignored if not validating this instance.
                 return ValidateOptionsResult.Skip;
