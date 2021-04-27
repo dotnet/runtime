@@ -23,6 +23,8 @@ namespace Microsoft.Extensions.Logging
         ParentId = 4,
         TraceState = 8,
         TraceFlags = 16,
+        Tags = 32,
+        Baggage = 64,
     }
     public static partial class FilterLoggingBuilderExtensions
     {
@@ -82,6 +84,15 @@ namespace Microsoft.Extensions.Logging
         public Microsoft.Extensions.Logging.LogLevel? LogLevel { get { throw null; } }
         public string ProviderName { get { throw null; } }
         public override string ToString() { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    public sealed partial class LoggerMessageAttribute : System.Attribute
+    {
+        public LoggerMessageAttribute() { }
+        public int EventId { get { throw null; } set { } }
+        public string? EventName { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.LogLevel Level { get { throw null; } set { } }
+        public string Message { get { throw null; } set { } }
     }
     public static partial class LoggingBuilderExtensions
     {

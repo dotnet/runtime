@@ -28,33 +28,5 @@ namespace System.DirectoryServices.AccountManagement.Tests
             UserPrincipal user = new UserPrincipal(DomainContext);
             user.Dispose();
         }
-
-        public void ComputedUACCheck()
-        {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
-            string username = "Administrator", password = "Adrumble@6";
-            //TODO: don't assume it exists, create it if its not
-            string OU = "TestNull";
-            string baseDomain =WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
-            string domain = $"{baseDomain}.nttest.microsoft.com";
-            string container = $"ou={OU},dc={baseDomain},dc=nttest,dc=microsoft,dc=com";
-
-            PrincipalContext context = new PrincipalContext(ContextType.Domain, domain, container, username, password);
-            UserPrincipal user = UserPrincipal.FindByIdentity(context, IdentityType.SamAccountName, "good");
-
-            // set the wrong password to force account lockout
-            // Is there a way of doing it programmatically except for NetUserSetInfo? (managed code)
-            context.ValidateCredentials("good", "wrong password");
-
-            //verify that the account is locked out
-            Assert.True(user.IsAccountLockedOut(), "trying wrong credentials did not lock the account");
-
-            // if uac is not set correctly, this call might clear the lockout
-            user.SmartcardLogonRequired = false;
-            user.Save();
-
-            //verify that the account is still locked out
-            Assert.True(user.IsAccountLockedOut(), "the account is no longer locked out after writing setting SmartCardLogonRequired");
-        }
     }
 }

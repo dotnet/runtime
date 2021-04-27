@@ -23,6 +23,9 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelMonitor_Wait")]
         internal static extern void LowLevelMonitor_Wait(IntPtr monitor);
 
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelMonitor_TimedWait")]
+        internal static extern bool LowLevelMonitor_TimedWait(IntPtr monitor, int timeoutMilliseconds);
+
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelMonitor_Signal_Release")]
         internal static extern void LowLevelMonitor_Signal_Release(IntPtr monitor);
     }

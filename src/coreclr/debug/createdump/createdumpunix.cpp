@@ -45,6 +45,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     if (!dumpWriter.WriteDump())
     {
+        fprintf(stderr, "Writing dump FAILED\n");
         goto exit;
     }
     result = true;

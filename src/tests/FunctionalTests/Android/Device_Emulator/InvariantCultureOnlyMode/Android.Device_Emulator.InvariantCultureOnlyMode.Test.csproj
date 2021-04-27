@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <MonoForceInterpreter>true</MonoForceInterpreter>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TestRuntime>true</TestRuntime>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <MainLibraryFileName>Android.Device_Emulator.InvariantCultureOnlyMode.Test.dll</MainLibraryFileName>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

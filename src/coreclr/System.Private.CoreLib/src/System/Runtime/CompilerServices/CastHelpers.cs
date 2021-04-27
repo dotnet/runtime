@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
+
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -207,34 +206,57 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
+            const int unrollSize = 4;
+
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                nuint interfaceCount = mt->InterfaceCount;
+                nint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount != 0)
                 {
                     MethodTable** interfaceMap = mt->InterfaceMap;
-                    for (nuint i = 0; ; i += 4)
+                    if (interfaceCount < unrollSize)
                     {
-                        if (interfaceMap[i + 0] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 1] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 2] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 3] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
+                        // If not enough for unrolled, jmp straight to small loop
+                        // as we already know there is one or more interfaces so don't need to check again.
+                        goto few;
                     }
+
+                    do
+                    {
+                        if (interfaceMap[0] == toTypeHnd ||
+                            interfaceMap[1] == toTypeHnd ||
+                            interfaceMap[2] == toTypeHnd ||
+                            interfaceMap[3] == toTypeHnd)
+                        {
+                            goto done;
+                        }
+
+                        interfaceMap += unrollSize;
+                        interfaceCount -= unrollSize;
+                    } while (interfaceCount >= unrollSize);
+
+                    if (interfaceCount == 0)
+                    {
+                        // If none remaining, skip the short loop
+                        goto extra;
+                    }
+
+                few:
+                    do
+                    {
+                        if (interfaceMap[0] == toTypeHnd)
+                        {
+                            goto done;
+                        }
+
+                        // Assign next offset
+                        interfaceMap++;
+                        interfaceCount--;
+                    } while (interfaceCount > 0);
                 }
 
+            extra:
                 if (mt->NonTrivialInterfaceCast)
                 {
                     goto slowPath;
@@ -374,35 +396,60 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
+            const int unrollSize = 4;
+
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                nuint interfaceCount = mt->InterfaceCount;
+                nint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount == 0)
                 {
                     goto slowPath;
                 }
 
                 MethodTable** interfaceMap = mt->InterfaceMap;
-                for (nuint i = 0; ; i += 4)
+                if (interfaceCount < unrollSize)
                 {
-                    if (interfaceMap[i + 0] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 1] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 2] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 3] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
+                    // If not enough for unrolled, jmp straight to small loop
+                    // as we already know there is one or more interfaces so don't need to check again.
+                    goto few;
                 }
+
+                do
+                {
+                    if (interfaceMap[0] == toTypeHnd ||
+                        interfaceMap[1] == toTypeHnd ||
+                        interfaceMap[2] == toTypeHnd ||
+                        interfaceMap[3] == toTypeHnd)
+                    {
+                        goto done;
+                    }
+
+                    // Assign next offset
+                    interfaceMap += unrollSize;
+                    interfaceCount -= unrollSize;
+                } while (interfaceCount >= unrollSize);
+
+                if (interfaceCount == 0)
+                {
+                    // If none remaining, skip the short loop
+                    goto slowPath;
+                }
+
+            few:
+                do
+                {
+                    if (interfaceMap[0] == toTypeHnd)
+                    {
+                        goto done;
+                    }
+
+                    // Assign next offset
+                    interfaceMap++;
+                    interfaceCount--;
+                } while (interfaceCount > 0);
+
+                goto slowPath;
             }
 
         done:

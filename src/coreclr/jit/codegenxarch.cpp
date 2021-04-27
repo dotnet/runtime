@@ -193,7 +193,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // we are generating GS cookie check after a GT_RETURN block.
         // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
         // as return register for two-register-returned structs.
-        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvRegister &&
+        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvIsInReg() &&
             (compiler->lvaTable[compiler->info.compThisArg].GetRegNum() == REG_ARG_0))
         {
             regGSCheck = REG_ARG_1;
@@ -1735,6 +1735,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLockedInstructions(treeNode->AsOp());
             break;
 
+        case GT_XORR:
+        case GT_XAND:
+            NYI("Interlocked.Or and Interlocked.And aren't implemented for x86 yet.");
+            break;
+
         case GT_MEMORYBARRIER:
         {
             CodeGen::BarrierKind barrierKind =
@@ -1975,7 +1980,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     }
     genProduceReg(lclNode);
 #else  // !UNIX_AMD64_ABI
-    assert(!"Multireg store to SIMD reg not supported on X64 Windows");
+    assert(!"Multireg store to SIMD reg not supported on Windows");
 #endif // !UNIX_AMD64_ABI
 }
 #endif // FEATURE_SIMD
@@ -2743,7 +2748,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            emit->emitIns_R_R(INS_mov_i2xmm, EA_PTRSIZE, srcXmmReg, srcIntReg);
+            emit->emitIns_R_R(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #ifdef TARGET_X86
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
@@ -3526,7 +3531,6 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
 
     // add it to the absolute address of fgFirstBB
-    compiler->fgFirstBB->bbFlags |= BBF_JMP_TARGET;
     GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, tmpReg);
     GetEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, baseReg, tmpReg);
     // jmp baseReg
@@ -3553,7 +3557,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_JMP_TARGET);
+        noway_assert(target->bbFlags & BBF_HAS_LABEL);
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -4225,7 +4229,6 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 {
     GenTree* data = storeInd->Data();
-    GenTree* addr = storeInd->Addr();
 
     assert(data->OperIsShift() || data->OperIsRotate());
 
@@ -4260,7 +4263,6 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
         // We must have the number of bits to shift stored in ECX, since we constrained this node to
         // sit in ECX. In case this didn't happen, LSRA expects the code generator to move it since it's a single
         // register destination requirement.
-        regNumber shiftReg = shiftBy->GetRegNum();
         genCopyRegIfNeeded(shiftBy, REG_RCX);
 
         // The shiftBy operand is implicit, so call the unary version of emitInsRMW.
@@ -5039,9 +5041,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // integer and floating point registers so, let's do that.
         if (call->IsVarargs() && varTypeIsFloating(argNode))
         {
-            regNumber   targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
-            instruction ins       = ins_CopyFloatToInt(argNode->TypeGet(), TYP_LONG);
-            inst_RV_RV(ins, argNode->GetRegNum(), targetReg);
+            regNumber srcReg    = argNode->GetRegNum();
+            regNumber targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
+            inst_RV_RV(ins_Copy(srcReg, TYP_LONG), targetReg, srcReg);
         }
 #endif // FEATURE_VARARG
     }
@@ -5783,9 +5785,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             if (varTypeIsFloating(loadType))
             {
-                intArgReg       = compiler->getCallArgIntRegister(argReg);
-                instruction ins = ins_CopyFloatToInt(loadType, TYP_LONG);
-                inst_RV_RV(ins, argReg, intArgReg, loadType);
+                intArgReg = compiler->getCallArgIntRegister(argReg);
+                inst_RV_RV(ins_Copy(argReg, TYP_LONG), intArgReg, argReg, loadType);
             }
             else
             {
@@ -5824,7 +5825,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
         if (remainingIntArgMask != RBM_NONE)
         {
-            instruction insCopyIntToFloat = ins_CopyIntToFloat(TYP_LONG, TYP_DOUBLE);
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
@@ -5838,7 +5838,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
                     // also load it in corresponding float arg reg
                     regNumber floatReg = compiler->getCallArgFloatRegister(argReg);
-                    inst_RV_RV(insCopyIntToFloat, floatReg, argReg);
+                    inst_RV_RV(ins_Copy(argReg, TYP_DOUBLE), floatReg, argReg);
                 }
 
                 argOffset += REGSIZE_BYTES;
@@ -6591,8 +6591,9 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     // Copy the floating-point value to an integer register. If we copied a float to a long, then
     // right-shift the value so the high 32 bits of the floating-point value sit in the low 32
     // bits of the integer register.
-    instruction ins = ins_CopyFloatToInt(targetType, (targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
-    inst_RV_RV(ins, op1->GetRegNum(), tmpReg, targetType);
+    regNumber srcReg        = op1->GetRegNum();
+    var_types targetIntType = ((targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
+    inst_RV_RV(ins_Copy(srcReg, targetIntType), tmpReg, srcReg, targetType);
     if (targetType == TYP_DOUBLE)
     {
         // right shift by 32 bits to get to exponent.
@@ -6661,7 +6662,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     // Copy only the low 32 bits. This will be the high order 32 bits of the floating-point
     // value, no matter the floating-point type.
-    inst_RV_RV(ins_CopyFloatToInt(TYP_FLOAT, TYP_INT), copyToTmpSrcReg, tmpReg, TYP_FLOAT);
+    inst_RV_RV(ins_Copy(copyToTmpSrcReg, TYP_INT), tmpReg, copyToTmpSrcReg, TYP_FLOAT);
 
     // Mask exponent with all 1's and check if the exponent is all 1's
     inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
@@ -7082,22 +7083,7 @@ void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types sr
     assert(dstFltReg == genIsValidFloatReg(targetReg));
     if (srcFltReg != dstFltReg)
     {
-        instruction ins;
-        regNumber   fltReg;
-        regNumber   intReg;
-        if (dstFltReg)
-        {
-            ins    = ins_CopyIntToFloat(srcType, targetType);
-            fltReg = targetReg;
-            intReg = srcReg;
-        }
-        else
-        {
-            ins    = ins_CopyFloatToInt(srcType, targetType);
-            intReg = targetReg;
-            fltReg = srcReg;
-        }
-        inst_RV_RV(ins, fltReg, intReg, targetType);
+        inst_RV_RV(ins_Copy(srcReg, targetType), targetReg, srcReg, targetType);
     }
     else if (targetReg != srcReg)
     {
@@ -8760,9 +8746,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 #if FEATURE_VARARG
         if (compiler->info.compIsVarArgs && varTypeIsFloating(loadType))
         {
-            regNumber   intArgReg = compiler->getCallArgIntRegister(argReg);
-            instruction ins       = ins_CopyFloatToInt(loadType, TYP_LONG);
-            inst_RV_RV(ins, argReg, intArgReg, loadType);
+            regNumber intArgReg = compiler->getCallArgIntRegister(argReg);
+            inst_RV_RV(ins_Copy(argReg, TYP_LONG), intArgReg, argReg, loadType);
         }
 #endif //  FEATURE_VARARG
     }
@@ -8961,5 +8946,62 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif // TARGET_AMD64
 
 #endif // PROFILING_SUPPORTED
+
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
+//
+void CodeGen::genPushCalleeSavedRegisters()
+{
+    assert(compiler->compGeneratingProlog);
+
+    // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
+    // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
+    // here.
+    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+
+#if ETW_EBP_FRAMED
+    if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
+    {
+        noway_assert(!"Used register RBM_FPBASE as a scratch register!");
+    }
+#endif
+
+    // On X86/X64 we have already pushed the FP (frame-pointer) prior to calling this method
+    if (isFramePointerUsed())
+    {
+        rsPushRegs &= ~RBM_FPBASE;
+    }
+
+#ifdef DEBUG
+    if (compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
+    {
+        printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
+               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
+        dspRegMask(rsPushRegs);
+        printf("\n");
+        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs));
+    }
+#endif // DEBUG
+
+    // Push backwards so we match the order we will pop them in the epilog
+    // and all the other code that expects it to be in this order.
+    for (regNumber reg = REG_INT_LAST; rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
+    {
+        regMaskTP regBit = genRegMask(reg);
+
+        if ((regBit & rsPushRegs) != 0)
+        {
+            inst_RV(INS_push, reg, TYP_REF);
+            compiler->unwindPush(reg);
+#ifdef USING_SCOPE_INFO
+            if (!doubleAlignOrFramePointerUsed())
+            {
+                psiAdjustStackLevel(REGSIZE_BYTES);
+            }
+#endif // USING_SCOPE_INFO
+            rsPushRegs &= ~regBit;
+        }
+    }
+}
 
 #endif // TARGET_XARCH

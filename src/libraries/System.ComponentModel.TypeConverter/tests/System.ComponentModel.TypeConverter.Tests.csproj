@@ -74,6 +74,7 @@
     <Compile Include="Design\DesignerVerbTests.cs" />
     <Compile Include="Design\DesignerVerbCollectionTests.cs" />
     <Compile Include="Design\DesigntimeLicenseContextTests.cs" />
+    <Compile Include="Design\DesigntimeLicenseContextSerializerTests.cs" />
     <Compile Include="Design\HelpKeywordAttributeTests.cs" />
     <Compile Include="Design\Serialization\MemberRelationshipServiceTests.cs" />
     <Compile Include="Design\ServiceContainerTests.cs" />
@@ -103,6 +104,7 @@
     <Compile Include="Mocks\MockServiceProvider.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
+    <Compile Include="ReflectionCachesUpdateHandlerTests.cs" />
     <Compile Include="PropertyDescriptorCollectionTests.cs" />
     <Compile Include="PropertyDescriptorTests.cs" />
     <Compile Include="ProvidePropertyAttributeTests.cs" />
@@ -160,5 +162,8 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

@@ -1,21 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
 {
     public static class CreateTransformCompat
     {
+        public static IEnumerable<object[]> CreateTransformTestData()
+        {
+            yield return new object[] { typeof(AesCryptoServiceProvider), null };
+            yield return new object[] { typeof(DESCryptoServiceProvider), 9 };
+            yield return new object[] { typeof(DESCryptoServiceProvider), 13 };
+
+            if (RC2Factory.IsSupported)
+            {
+                yield return new object[] { typeof(RC2CryptoServiceProvider), 9 };
+                yield return new object[] { typeof(RC2CryptoServiceProvider), 17 };
+            }
+
+            yield return new object[] { typeof(TripleDESCryptoServiceProvider), 9 };
+            yield return new object[] { typeof(TripleDESCryptoServiceProvider), 24 };
+            yield return new object[] { typeof(TripleDESCryptoServiceProvider), 31 };
+        }
+
         [Theory]
-        [InlineData(typeof(AesCryptoServiceProvider), null)]
-        [InlineData(typeof(DESCryptoServiceProvider), 9)]
-        [InlineData(typeof(DESCryptoServiceProvider), 13)]
-        [InlineData(typeof(RC2CryptoServiceProvider), 9)]
-        [InlineData(typeof(RC2CryptoServiceProvider), 17)]
-        [InlineData(typeof(TripleDESCryptoServiceProvider), 9)]
-        [InlineData(typeof(TripleDESCryptoServiceProvider), 24)]
-        [InlineData(typeof(TripleDESCryptoServiceProvider), 31)]
+        [MemberData(nameof(CreateTransformTestData))]
         public static void CreateTransform_IVTooBig(Type t, int? ivSizeBytes)
         {
             using (SymmetricAlgorithm alg = (SymmetricAlgorithm)Activator.CreateInstance(t))

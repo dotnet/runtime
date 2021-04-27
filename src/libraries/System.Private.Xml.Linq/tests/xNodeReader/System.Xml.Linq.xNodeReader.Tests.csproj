@@ -22,6 +22,7 @@
     <Compile Include="ReadToNextSibling.cs" />
     <Compile Include="ReadValue.cs" />
     <Compile Include="XNodeReaderAPI.cs" />
+    <Compile Include="XNodeReaderAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />

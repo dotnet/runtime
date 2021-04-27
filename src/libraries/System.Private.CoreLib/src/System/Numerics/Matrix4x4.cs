@@ -11,7 +11,10 @@ using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
 {
-    /// <summary>A structure encapsulating a 4x4 matrix.</summary>
+    /// <summary>Represents a 4x4 matrix.</summary>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
+    /// ]]></format></remarks>
     [Intrinsic]
     public struct Matrix4x4 : IEquatable<Matrix4x4>
     {
@@ -27,55 +30,71 @@ namespace System.Numerics
             0f, 0f, 0f, 1f
         );
 
-        /// <summary>Value at row 1, column 1 of the matrix.</summary>
+        /// <summary>The first element of the first row.</summary>
         public float M11;
 
-        /// <summary>Value at row 1, column 2 of the matrix.</summary>
+        /// <summary>The second element of the first row.</summary>
         public float M12;
 
-        /// <summary>Value at row 1, column 3 of the matrix.</summary>
+        /// <summary>The third element of the first row.</summary>
         public float M13;
 
-        /// <summary>Value at row 1, column 4 of the matrix.</summary>
+        /// <summary>The fourth element of the first row.</summary>
         public float M14;
 
-        /// <summary>Value at row 2, column 1 of the matrix.</summary>
+        /// <summary>The first element of the second row.</summary>
         public float M21;
 
-        /// <summary>Value at row 2, column 2 of the matrix.</summary>
+        /// <summary>The second element of the second row.</summary>
         public float M22;
 
-        /// <summary>Value at row 2, column 3 of the matrix.</summary>
+        /// <summary>The third element of the second row.</summary>
         public float M23;
 
-        /// <summary>Value at row 2, column 4 of the matrix.</summary>
+        /// <summary>The fourth element of the second row.</summary>
         public float M24;
 
-        /// <summary>Value at row 3, column 1 of the matrix.</summary>
+        /// <summary>The first element of the third row.</summary>
         public float M31;
 
-        /// <summary>Value at row 3, column 2 of the matrix.</summary>
+        /// <summary>The second element of the third row.</summary>
         public float M32;
 
-        /// <summary>Value at row 3, column 3 of the matrix.</summary>
+        /// <summary>The third element of the third row.</summary>
         public float M33;
 
-        /// <summary>Value at row 3, column 4 of the matrix.</summary>
+        /// <summary>The fourth element of the third row.</summary>
         public float M34;
 
-        /// <summary>Value at row 4, column 1 of the matrix.</summary>
+        /// <summary>The first element of the fourth row.</summary>
         public float M41;
 
-        /// <summary>Value at row 4, column 2 of the matrix.</summary>
+        /// <summary>The second element of the fourth row.</summary>
         public float M42;
 
-        /// <summary>Value at row 4, column 3 of the matrix.</summary>
+        /// <summary>The third element of the fourth row.</summary>
         public float M43;
 
-        /// <summary>Value at row 4, column 4 of the matrix.</summary>
+        /// <summary>The fourth element of the fourth row.</summary>
         public float M44;
 
-        /// <summary>Constructs a Matrix4x4 from the given components.</summary>
+        /// <summary>Creates a 4x4 matrix from the specified components.</summary>
+        /// <param name="m11">The value to assign to the first element in the first row.</param>
+        /// <param name="m12">The value to assign to the second element in the first row.</param>
+        /// <param name="m13">The value to assign to the third element in the first row.</param>
+        /// <param name="m14">The value to assign to the fourth element in the first row.</param>
+        /// <param name="m21">The value to assign to the first element in the second row.</param>
+        /// <param name="m22">The value to assign to the second element in the second row.</param>
+        /// <param name="m23">The value to assign to the third element in the second row.</param>
+        /// <param name="m24">The value to assign to the third element in the second row.</param>
+        /// <param name="m31">The value to assign to the first element in the third row.</param>
+        /// <param name="m32">The value to assign to the second element in the third row.</param>
+        /// <param name="m33">The value to assign to the third element in the third row.</param>
+        /// <param name="m34">The value to assign to the fourth element in the third row.</param>
+        /// <param name="m41">The value to assign to the first element in the fourth row.</param>
+        /// <param name="m42">The value to assign to the second element in the fourth row.</param>
+        /// <param name="m43">The value to assign to the third element in the fourth row.</param>
+        /// <param name="m44">The value to assign to the fourth element in the fourth row.</param>
         public Matrix4x4(float m11, float m12, float m13, float m14,
                          float m21, float m22, float m23, float m24,
                          float m31, float m32, float m33, float m34,
@@ -102,8 +121,9 @@ namespace System.Numerics
             M44 = m44;
         }
 
-        /// <summary>Constructs a Matrix4x4 from the given Matrix3x2.</summary>
-        /// <param name="value">The source Matrix3x2.</param>
+        /// <summary>Creates a <see cref="System.Numerics.Matrix4x4" /> object from a specified <see cref="System.Numerics.Matrix3x2" /> object.</summary>
+        /// <param name="value">A 3x2 matrix.</param>
+        /// <remarks>This constructor creates a 4x4 matrix whose <see cref="System.Numerics.Matrix4x4.M13" />, <see cref="System.Numerics.Matrix4x4.M14" />, <see cref="System.Numerics.Matrix4x4.M23" />, <see cref="System.Numerics.Matrix4x4.M24" />, <see cref="System.Numerics.Matrix4x4.M31" />, <see cref="System.Numerics.Matrix4x4.M32" />, <see cref="System.Numerics.Matrix4x4.M34" />, and <see cref="System.Numerics.Matrix4x4.M43" /> components are zero, and whose <see cref="System.Numerics.Matrix4x4.M33" /> and <see cref="System.Numerics.Matrix4x4.M44" /> components are one.</remarks>
         public Matrix4x4(Matrix3x2 value)
         {
             M11 = value.M11;
@@ -127,13 +147,15 @@ namespace System.Numerics
             M44 = 1f;
         }
 
-        /// <summary>Returns the multiplicative identity matrix.</summary>
+        /// <summary>Gets the multiplicative identity matrix.</summary>
+        /// <value>Gets the multiplicative identity matrix.</value>
         public static Matrix4x4 Identity
         {
             get => _identity;
         }
 
-        /// <summary>Returns whether the matrix is the identity matrix.</summary>
+        /// <summary>Indicates whether the current matrix is the identity matrix.</summary>
+        /// <value><see langword="true" /> if the current matrix is the identity matrix; otherwise, <see langword="false" />.</value>
         public readonly bool IsIdentity
         {
             get
@@ -147,6 +169,7 @@ namespace System.Numerics
         }
 
         /// <summary>Gets or sets the translation component of this matrix.</summary>
+        /// <value>The translation component of the current instance.</value>
         public Vector3 Translation
         {
             readonly get => new Vector3(M41, M42, M43);
@@ -159,10 +182,11 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Adds two matrices together.</summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The resulting matrix.</returns>
+        /// <summary>Adds each element in one matrix with its corresponding element in a second matrix.</summary>
+        /// <param name="value1">The first matrix.</param>
+        /// <param name="value2">The second matrix.</param>
+        /// <returns>The matrix that contains the summed values.</returns>
+        /// <remarks>The <see cref="System.Numerics.Matrix4x4.op_Addition" /> method defines the operation of the addition operator for <see cref="System.Numerics.Matrix4x4" /> objects.</remarks>
         public static unsafe Matrix4x4 operator +(Matrix4x4 value1, Matrix4x4 value2)
         {
             if (AdvSimd.IsSupported)
@@ -204,10 +228,11 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Returns a boolean indicating whether the given two matrices are equal.</summary>
+        /// <summary>Returns a value that indicates whether the specified matrices are equal.</summary>
         /// <param name="value1">The first matrix to compare.</param>
-        /// <param name="value2">The second matrix to compare.</param>
-        /// <returns>True if the given matrices are equal; False otherwise.</returns>
+        /// <param name="value2">The second matrix to care</param>
+        /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are equal; otherwise, <see langword="false" />.</returns>
+        /// <remarks>Two matrices are equal if all their corresponding elements are equal.</remarks>
         public static unsafe bool operator ==(Matrix4x4 value1, Matrix4x4 value2)
         {
             if (AdvSimd.Arm64.IsSupported)
@@ -231,10 +256,10 @@ namespace System.Numerics
                     value1.M34 == value2.M34 && value1.M41 == value2.M41 && value1.M42 == value2.M42 && value1.M43 == value2.M43);
         }
 
-        /// <summary>Returns a boolean indicating whether the given two matrices are not equal.</summary>
+        /// <summary>Returns a value that indicates whether the specified matrices are not equal.</summary>
         /// <param name="value1">The first matrix to compare.</param>
         /// <param name="value2">The second matrix to compare.</param>
-        /// <returns>True if the given matrices are not equal; False if they are equal.</returns>
+        /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are not equal; otherwise, <see langword="false" />.</returns>
         public static unsafe bool operator !=(Matrix4x4 value1, Matrix4x4 value2)
         {
             if (AdvSimd.Arm64.IsSupported)
@@ -259,10 +284,11 @@ namespace System.Numerics
                     value1.M41 != value2.M41 || value1.M42 != value2.M42 || value1.M43 != value2.M43 || value1.M44 != value2.M44);
         }
 
-        /// <summary>Multiplies a matrix by another matrix.</summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The result of the multiplication.</returns>
+        /// <summary>Multiplies two matrices together to compute the product.</summary>
+        /// <param name="value1">The first matrix.</param>
+        /// <param name="value2">The second matrix.</param>
+        /// <returns>The product matrix.</returns>
+        /// <remarks>The <see cref="System.Numerics.Matrix4x4.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="System.Numerics.Matrix4x4" /> objects.</remarks>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, Matrix4x4 value2)
         {
             if (AdvSimd.Arm64.IsSupported)
@@ -375,10 +401,11 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Multiplies a matrix by a scalar value.</summary>
-        /// <param name="value1">The source matrix.</param>
-        /// <param name="value2">The scaling factor.</param>
+        /// <summary>Multiplies a matrix by a float to compute the product.</summary>
+        /// <param name="value1">The matrix to scale.</param>
+        /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>
+        /// <remarks>The <see cref="System.Numerics.Matrix4x4.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="System.Numerics.Matrix4x4" /> objects.</remarks>
         public static unsafe Matrix4x4 operator *(Matrix4x4 value1, float value2)
         {
             if (AdvSimd.IsSupported)
@@ -421,10 +448,11 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Subtracts the second matrix from the first.</summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The result of the subtraction.</returns>
+        /// <summary>Subtracts each element in a second matrix from its corresponding element in a first matrix.</summary>
+        /// <param name="value1">The first matrix.</param>
+        /// <param name="value2">The second matrix.</param>
+        /// <returns>The matrix containing the values that result from subtracting each element in <paramref name="value2" /> from its corresponding element in <paramref name="value1" />.</returns>
+        /// <remarks>The <see cref="System.Numerics.Matrix4x4.op_Subtraction" /> method defines the operation of the subtraction operator for <see cref="System.Numerics.Matrix4x4" /> objects.</remarks>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value1, Matrix4x4 value2)
         {
             if (AdvSimd.IsSupported)
@@ -466,8 +494,8 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Returns a new matrix with the negated elements of the given matrix.</summary>
-        /// <param name="value">The source matrix.</param>
+        /// <summary>Negates the specified matrix by multiplying all its values by -1.</summary>
+        /// <param name="value">The matrix to negate.</param>
         /// <returns>The negated matrix.</returns>
         public static unsafe Matrix4x4 operator -(Matrix4x4 value)
         {
@@ -511,10 +539,10 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Adds two matrices together.</summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The resulting matrix.</returns>
+        /// <summary>Adds each element in one matrix with its corresponding element in a second matrix.</summary>
+        /// <param name="value1">The first matrix.</param>
+        /// <param name="value2">The second matrix.</param>
+        /// <returns>The matrix that contains the summed values of <paramref name="value1" /> and <paramref name="value2" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Add(Matrix4x4 value1, Matrix4x4 value2)
         {
@@ -522,11 +550,11 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a spherical billboard that rotates around a specified object position.</summary>
-        /// <param name="objectPosition">Position of the object the billboard will rotate around.</param>
-        /// <param name="cameraPosition">Position of the camera.</param>
+        /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
+        /// <param name="cameraPosition">The position of the camera.</param>
         /// <param name="cameraUpVector">The up vector of the camera.</param>
         /// <param name="cameraForwardVector">The forward vector of the camera.</param>
-        /// <returns>The created billboard matrix</returns>
+        /// <returns>The created billboard.</returns>
         public static Matrix4x4 CreateBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
         {
             Vector3 zaxis = objectPosition - cameraPosition;
@@ -570,12 +598,12 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a cylindrical billboard that rotates around a specified axis.</summary>
-        /// <param name="objectPosition">Position of the object the billboard will rotate around.</param>
-        /// <param name="cameraPosition">Position of the camera.</param>
-        /// <param name="rotateAxis">Axis to rotate the billboard around.</param>
-        /// <param name="cameraForwardVector">Forward vector of the camera.</param>
-        /// <param name="objectForwardVector">Forward vector of the object.</param>
-        /// <returns>The created billboard matrix.</returns>
+        /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
+        /// <param name="cameraPosition">The position of the camera.</param>
+        /// <param name="rotateAxis">The axis to rotate the billboard around.</param>
+        /// <param name="cameraForwardVector">The forward vector of the camera.</param>
+        /// <param name="objectForwardVector">The forward vector of the object.</param>
+        /// <returns>The billboard matrix.</returns>
         public static Matrix4x4 CreateConstrainedBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
         {
             // Treat the case when object and camera positions are too close.
@@ -646,7 +674,7 @@ namespace System.Numerics
 
         /// <summary>Creates a matrix that rotates around an arbitrary vector.</summary>
         /// <param name="axis">The axis to rotate around.</param>
-        /// <param name="angle">The angle to rotate around the given axis, in radians.</param>
+        /// <param name="angle">The angle to rotate around <paramref name="axis" />, in radians.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateFromAxisAngle(Vector3 axis, float angle)
         {
@@ -697,7 +725,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a rotation matrix from the given Quaternion rotation value.</summary>
+        /// <summary>Creates a rotation matrix from the specified Quaternion rotation value.</summary>
         /// <param name="quaternion">The source Quaternion.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateFromQuaternion(Quaternion quaternion)
@@ -731,9 +759,9 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a rotation matrix from the specified yaw, pitch, and roll.</summary>
-        /// <param name="yaw">Angle of rotation, in radians, around the Y-axis.</param>
-        /// <param name="pitch">Angle of rotation, in radians, around the X-axis.</param>
-        /// <param name="roll">Angle of rotation, in radians, around the Z-axis.</param>
+        /// <param name="yaw">The angle of rotation, in radians, around the Y axis.</param>
+        /// <param name="pitch">The angle of rotation, in radians, around the X axis.</param>
+        /// <param name="roll">The angle of rotation, in radians, around the Z axis.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateFromYawPitchRoll(float yaw, float pitch, float roll)
         {
@@ -774,10 +802,10 @@ namespace System.Numerics
         }
 
         /// <summary>Creates an orthographic perspective matrix from the given view volume dimensions.</summary>
-        /// <param name="width">Width of the view volume.</param>
-        /// <param name="height">Height of the view volume.</param>
-        /// <param name="zNearPlane">Minimum Z-value of the view volume.</param>
-        /// <param name="zFarPlane">Maximum Z-value of the view volume.</param>
+        /// <param name="width">The width of the view volume.</param>
+        /// <param name="height">The height of the view volume.</param>
+        /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
+        /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
         /// <returns>The orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
         {
@@ -791,13 +819,13 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Builds a customized, orthographic projection matrix.</summary>
-        /// <param name="left">Minimum X-value of the view volume.</param>
-        /// <param name="right">Maximum X-value of the view volume.</param>
-        /// <param name="bottom">Minimum Y-value of the view volume.</param>
-        /// <param name="top">Maximum Y-value of the view volume.</param>
-        /// <param name="zNearPlane">Minimum Z-value of the view volume.</param>
-        /// <param name="zFarPlane">Maximum Z-value of the view volume.</param>
+        /// <summary>Creates a customized orthographic projection matrix.</summary>
+        /// <param name="left">The minimum X-value of the view volume.</param>
+        /// <param name="right">The maximum X-value of the view volume.</param>
+        /// <param name="bottom">The minimum Y-value of the view volume.</param>
+        /// <param name="top">The maximum Y-value of the view volume.</param>
+        /// <param name="zNearPlane">The minimum Z-value of the view volume.</param>
+        /// <param name="zFarPlane">The maximum Z-value of the view volume.</param>
         /// <returns>The orthographic projection matrix.</returns>
         public static Matrix4x4 CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
         {
@@ -817,11 +845,16 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a perspective projection matrix from the given view volume dimensions.</summary>
-        /// <param name="width">Width of the view volume at the near view plane.</param>
-        /// <param name="height">Height of the view volume at the near view plane.</param>
-        /// <param name="nearPlaneDistance">Distance to the near view plane.</param>
-        /// <param name="farPlaneDistance">Distance to the far view plane.</param>
+        /// <param name="width">The width of the view volume at the near view plane.</param>
+        /// <param name="height">The height of the view volume at the near view plane.</param>
+        /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
+        /// <param name="farPlaneDistance">The distance to the far view plane.</param>
         /// <returns>The perspective projection matrix.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="nearPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
             if (nearPlaneDistance <= 0.0f)
@@ -853,11 +886,19 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a perspective projection matrix based on a field of view, aspect ratio, and near and far view plane distances.</summary>
-        /// <param name="fieldOfView">Field of view in the y direction, in radians.</param>
-        /// <param name="aspectRatio">Aspect ratio, defined as view space width divided by height.</param>
-        /// <param name="nearPlaneDistance">Distance to the near view plane.</param>
-        /// <param name="farPlaneDistance">Distance to the far view plane.</param>
+        /// <param name="fieldOfView">The field of view in the y direction, in radians.</param>
+        /// <param name="aspectRatio">The aspect ratio, defined as view space width divided by height.</param>
+        /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
+        /// <param name="farPlaneDistance">The distance to the far view plane.</param>
         /// <returns>The perspective projection matrix.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="fieldOfView" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="System.Math.PI" />.
+        /// <paramref name="nearPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
         {
             if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
@@ -894,14 +935,19 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a customized, perspective projection matrix.</summary>
-        /// <param name="left">Minimum x-value of the view volume at the near view plane.</param>
-        /// <param name="right">Maximum x-value of the view volume at the near view plane.</param>
-        /// <param name="bottom">Minimum y-value of the view volume at the near view plane.</param>
-        /// <param name="top">Maximum y-value of the view volume at the near view plane.</param>
-        /// <param name="nearPlaneDistance">Distance to the near view plane.</param>
-        /// <param name="farPlaneDistance">Distance to of the far view plane.</param>
+        /// <summary>Creates a customized perspective projection matrix.</summary>
+        /// <param name="left">The minimum x-value of the view volume at the near view plane.</param>
+        /// <param name="right">The maximum x-value of the view volume at the near view plane.</param>
+        /// <param name="bottom">The minimum y-value of the view volume at the near view plane.</param>
+        /// <param name="top">The maximum y-value of the view volume at the near view plane.</param>
+        /// <param name="nearPlaneDistance">The distance to the near view plane.</param>
+        /// <param name="farPlaneDistance">The distance to the far view plane.</param>
         /// <returns>The perspective projection matrix.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="nearPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
+        /// -or-
+        /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
         {
             if (nearPlaneDistance <= 0.0f)
@@ -933,8 +979,8 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a Matrix that reflects the coordinate system about a specified Plane.</summary>
-        /// <param name="value">The Plane about which to create a reflection.</param>
+        /// <summary>Creates a matrix that reflects the coordinate system about a specified plane.</summary>
+        /// <param name="value">The plane about which to create a reflection.</param>
         /// <returns>A new matrix expressing the reflection.</returns>
         public static Matrix4x4 CreateReflection(Plane value)
         {
@@ -969,8 +1015,8 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a matrix for rotating points around the X-axis.</summary>
-        /// <param name="radians">The amount, in radians, by which to rotate around the X-axis.</param>
+        /// <summary>Creates a matrix for rotating points around the X axis.</summary>
+        /// <param name="radians">The amount, in radians, by which to rotate around the X axis.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationX(float radians)
         {
@@ -992,8 +1038,8 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a matrix for rotating points around the X-axis, from a center point.</summary>
-        /// <param name="radians">The amount, in radians, by which to rotate around the X-axis.</param>
+        /// <summary>Creates a matrix for rotating points around the X axis from a center point.</summary>
+        /// <param name="radians">The amount, in radians, by which to rotate around the X axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationX(float radians, Vector3 centerPoint)
@@ -1021,7 +1067,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a matrix for rotating points around the Y-axis.</summary>
+        /// <summary>Creates a matrix for rotating points around the Y axis.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Y-axis.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationY(float radians)
@@ -1043,7 +1089,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a matrix for rotating points around the Y-axis, from a center point.</summary>
+        /// <summary>The amount, in radians, by which to rotate around the Y axis from a center point.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Y-axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The rotation matrix.</returns>
@@ -1071,7 +1117,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a matrix for rotating points around the Z-axis.</summary>
+        /// <summary>Creates a matrix for rotating points around the Z axis.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Z-axis.</param>
         /// <returns>The rotation matrix.</returns>
         public static Matrix4x4 CreateRotationZ(float radians)
@@ -1093,7 +1139,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a matrix for rotating points around the Z-axis, from a center point.</summary>
+        /// <summary>Creates a matrix for rotating points around the Z axis from a center point.</summary>
         /// <param name="radians">The amount, in radians, by which to rotate around the Z-axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The rotation matrix.</returns>
@@ -1121,10 +1167,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a scaling matrix.</summary>
-        /// <param name="xScale">Value to scale by on the X-axis.</param>
-        /// <param name="yScale">Value to scale by on the Y-axis.</param>
-        /// <param name="zScale">Value to scale by on the Z-axis.</param>
+        /// <summary>Creates a scaling matrix from the specified X, Y, and Z components.</summary>
+        /// <param name="xScale">The value to scale by on the X axis.</param>
+        /// <param name="yScale">The value to scale by on the Y axis.</param>
+        /// <param name="zScale">The value to scale by on the Z axis.</param>
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale)
         {
@@ -1135,10 +1181,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a scaling matrix with a center point.</summary>
-        /// <param name="xScale">Value to scale by on the X-axis.</param>
-        /// <param name="yScale">Value to scale by on the Y-axis.</param>
-        /// <param name="zScale">Value to scale by on the Z-axis.</param>
+        /// <summary>Creates a scaling matrix that is offset by a given center point.</summary>
+        /// <param name="xScale">The value to scale by on the X axis.</param>
+        /// <param name="yScale">The value to scale by on the Y axis.</param>
+        /// <param name="zScale">The value to scale by on the Z axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale, Vector3 centerPoint)
@@ -1158,8 +1204,8 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a scaling matrix.</summary>
-        /// <param name="scales">The vector containing the amount to scale by on each axis.</param>
+        /// <summary>Creates a scaling matrix from the specified vector scale.</summary>
+        /// <param name="scales">The scale to use.</param>
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales)
         {
@@ -1171,7 +1217,7 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a scaling matrix with a center point.</summary>
-        /// <param name="scales">The vector containing the amount to scale by on each axis.</param>
+        /// <param name="scales">The vector that contains the amount to scale on each axis.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales, Vector3 centerPoint)
@@ -1191,7 +1237,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a uniform scaling matrix that scales equally on each axis.</summary>
+        /// <summary>Creates a uniform scaling matrix that scale equally on each axis.</summary>
         /// <param name="scale">The uniform scaling factor.</param>
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale)
@@ -1228,10 +1274,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a Matrix that flattens geometry into a specified Plane as if casting a shadow from a specified light source.</summary>
+        /// <summary>Creates a matrix that flattens geometry into a specified plane as if casting a shadow from a specified light source.</summary>
         /// <param name="lightDirection">The direction from which the light that will cast the shadow is coming.</param>
-        /// <param name="plane">The Plane onto which the new matrix should flatten geometry so as to cast a shadow.</param>
-        /// <returns>A new Matrix that can be used to flatten geometry onto the specified plane from the specified direction.</returns>
+        /// <param name="plane">The plane onto which the new matrix should flatten geometry so as to cast a shadow.</param>
+        /// <returns>A new matrix that can be used to flatten geometry onto the specified plane from the specified direction.</returns>
         public static Matrix4x4 CreateShadow(Vector3 lightDirection, Plane plane)
         {
             Plane p = Plane.Normalize(plane);
@@ -1264,7 +1310,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a translation matrix.</summary>
+        /// <summary>Creates a translation matrix from the specified 3-dimensional vector.</summary>
         /// <param name="position">The amount to translate in each axis.</param>
         /// <returns>The translation matrix.</returns>
         public static Matrix4x4 CreateTranslation(Vector3 position)
@@ -1276,10 +1322,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Creates a translation matrix.</summary>
-        /// <param name="xPosition">The amount to translate on the X-axis.</param>
-        /// <param name="yPosition">The amount to translate on the Y-axis.</param>
-        /// <param name="zPosition">The amount to translate on the Z-axis.</param>
+        /// <summary>Creates a translation matrix from the specified X, Y, and Z components.</summary>
+        /// <param name="xPosition">The amount to translate on the X axis.</param>
+        /// <param name="yPosition">The amount to translate on the Y axis.</param>
+        /// <param name="zPosition">The amount to translate on the Z axis.</param>
         /// <returns>The translation matrix.</returns>
         public static Matrix4x4 CreateTranslation(float xPosition, float yPosition, float zPosition)
         {
@@ -1291,10 +1337,11 @@ namespace System.Numerics
         }
 
         /// <summary>Creates a world matrix with the specified parameters.</summary>
-        /// <param name="position">The position of the object; used in translation operations.</param>
-        /// <param name="forward">Forward direction of the object.</param>
-        /// <param name="up">Upward direction of the object; usually [0, 1, 0].</param>
+        /// <param name="position">The position of the object.</param>
+        /// <param name="forward">The forward direction of the object.</param>
+        /// <param name="up">The upward direction of the object. Its value is usually <c>[0, 1, 0]</c>.</param>
         /// <returns>The world matrix.</returns>
+        /// <remarks><paramref name="position" /> is used in translation operations.</remarks>
         public static Matrix4x4 CreateWorld(Vector3 position, Vector3 forward, Vector3 up)
         {
             Vector3 zaxis = Vector3.Normalize(-forward);
@@ -1322,11 +1369,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Attempts to calculate the inverse of the given matrix. If successful, result will contain the inverted matrix.</summary>
-        /// <param name="matrix">The source matrix to invert.</param>
-        /// <param name="result">If successful, contains the inverted matrix.</param>
-        /// <returns>True if the source matrix could be inverted; False otherwise.</returns>
-        ///
+        /// <summary>Tries to invert the specified matrix. The return value indicates whether the operation succeeded.</summary>
+        /// <param name="matrix">The matrix to invert.</param>
+        /// <param name="result">When this method returns, contains the inverted matrix if the operation succeeded.</param>
+        /// <returns><see langword="true" /> if <paramref name="matrix" /> was converted successfully; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool Invert(Matrix4x4 matrix, out Matrix4x4 result)
         {
@@ -1669,19 +1715,19 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Multiplies a matrix by another matrix.</summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The result of the multiplication.</returns>
+        /// <summary>Multiplies two matrices together to compute the product.</summary>
+        /// <param name="value1">The first matrix.</param>
+        /// <param name="value2">The second matrix.</param>
+        /// <returns>The product matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Multiply(Matrix4x4 value1, Matrix4x4 value2)
         {
             return value1 * value2;
         }
 
-        /// <summary>Multiplies a matrix by a scalar value.</summary>
-        /// <param name="value1">The source matrix.</param>
-        /// <param name="value2">The scaling factor.</param>
+        /// <summary>Multiplies a matrix by a float to compute the product.</summary>
+        /// <param name="value1">The matrix to scale.</param>
+        /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Multiply(Matrix4x4 value1, float value2)
@@ -1689,8 +1735,8 @@ namespace System.Numerics
             return value1 * value2;
         }
 
-        /// <summary>Returns a new matrix with the negated elements of the given matrix.</summary>
-        /// <param name="value">The source matrix.</param>
+        /// <summary>Negates the specified matrix by multiplying all its values by -1.</summary>
+        /// <param name="value">The matrix to negate.</param>
         /// <returns>The negated matrix.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Negate(Matrix4x4 value)
@@ -1698,10 +1744,10 @@ namespace System.Numerics
             return -value;
         }
 
-        /// <summary>Subtracts the second matrix from the first.</summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The result of the subtraction.</returns>
+        /// <summary>Subtracts each element in a second matrix from its corresponding element in a first matrix.</summary>
+        /// <param name="value1">The first matrix.</param>
+        /// <param name="value2">The second matrix.</param>
+        /// <returns>The matrix containing the values that result from subtracting each element in <paramref name="value2" /> from its corresponding element in <paramref name="value1" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix4x4 Subtract(Matrix4x4 value1, Matrix4x4 value2)
         {
@@ -1726,13 +1772,12 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Attempts to extract the scale, translation, and rotation components from the given scale/rotation/translation matrix.
-        /// If successful, the out parameters will contained the extracted values.</summary>
+        /// <summary>Attempts to extract the scale, translation, and rotation components from the given scale, rotation, or translation matrix. The return value indicates whether the operation succeeded.</summary>
         /// <param name="matrix">The source matrix.</param>
-        /// <param name="scale">The scaling component of the transformation matrix.</param>
-        /// <param name="rotation">The rotation component of the transformation matrix.</param>
-        /// <param name="translation">The translation component of the transformation matrix</param>
-        /// <returns>True if the source matrix was successfully decomposed; False otherwise.</returns>
+        /// <param name="scale">When this method returns, contains the scaling component of the transformation matrix if the operation succeeded.</param>
+        /// <param name="rotation">When this method returns, contains the rotation component of the transformation matrix if the operation succeeded.</param>
+        /// <param name="translation">When the method returns, contains the translation component of the transformation matrix if the operation succeeded.</param>
+        /// <returns><see langword="true" /> if <paramref name="matrix" /> was decomposed successfully; otherwise,  <see langword="false" />.</returns>
         public static bool Decompose(Matrix4x4 matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
         {
             bool result = true;
@@ -1924,10 +1969,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Linearly interpolates between the corresponding values of two matrices.</summary>
-        /// <param name="matrix1">The first source matrix.</param>
-        /// <param name="matrix2">The second source matrix.</param>
-        /// <param name="amount">The relative weight of the second source matrix.</param>
+        /// <summary>Performs a linear interpolation from one matrix to a second matrix based on a value that specifies the weighting of the second matrix.</summary>
+        /// <param name="matrix1">The first matrix.</param>
+        /// <param name="matrix2">The second matrix.</param>
+        /// <param name="amount">The relative weighting of <paramref name="matrix2" />.</param>
         /// <returns>The interpolated matrix.</returns>
         public static unsafe Matrix4x4 Lerp(Matrix4x4 matrix1, Matrix4x4 matrix2, float amount)
         {
@@ -1979,9 +2024,9 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Transforms the given matrix by applying the given Quaternion rotation.</summary>
-        /// <param name="value">The source matrix to transform.</param>
-        /// <param name="rotation">The rotation to apply.</param>
+        /// <summary>Transforms the specified matrix by applying the specified Quaternion rotation.</summary>
+        /// <param name="value">The matrix to transform.</param>
+        /// <param name="rotation">The rotation t apply.</param>
         /// <returns>The transformed matrix.</returns>
         public static Matrix4x4 Transform(Matrix4x4 value, Quaternion rotation)
         {
@@ -2042,7 +2087,7 @@ namespace System.Numerics
         }
 
         /// <summary>Transposes the rows and columns of a matrix.</summary>
-        /// <param name="matrix">The source matrix.</param>
+        /// <param name="matrix">The matrix to transpose.</param>
         /// <returns>The transposed matrix.</returns>
         public static unsafe Matrix4x4 Transpose(Matrix4x4 matrix)
         {
@@ -2112,25 +2157,26 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Returns a boolean indicating whether the given Object is equal to this matrix instance.</summary>
-        /// <param name="obj">The Object to compare against.</param>
-        /// <returns>True if the Object is equal to this matrix; False otherwise.</returns>
+        /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
+        /// <param name="obj">The object to compare with the current instance.</param>
+        /// <returns><see langword="true" /> if the current instance and <paramref name="obj" /> are equal; otherwise, <see langword="false" />. If <paramref name="obj" /> is <see langword="null" />, the method returns <see langword="false" />.</returns>
+        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="System.Numerics.Matrix4x4" /> object and the corresponding elements of each matrix are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
             return (obj is Matrix4x4 other) && Equals(other);
         }
 
-        /// <summary>Returns a boolean indicating whether this matrix instance is equal to the other given matrix.</summary>
-        /// <param name="other">The matrix to compare this instance to.</param>
-        /// <returns>True if the matrices are equal; False otherwise.</returns>
+        /// <summary>Returns a value that indicates whether this instance and another 4x4 matrix are equal.</summary>
+        /// <param name="other">The other matrix.</param>
+        /// <returns><see langword="true" /> if the two matrices are equal; otherwise, <see langword="false" />.</returns>
         public readonly bool Equals(Matrix4x4 other)
         {
             return this == other;
         }
 
-        /// <summary>Calculates the determinant of the matrix.</summary>
-        /// <returns>The determinant of the matrix.</returns>
+        /// <summary>Calculates the determinant of the current 4x4 matrix.</summary>
+        /// <returns>The determinant.</returns>
         public readonly float GetDeterminant()
         {
             // | a b c d |     | f g h |     | e g h |     | e f h |     | e f g |
@@ -2207,16 +2253,11 @@ namespace System.Numerics
             return hash.ToHashCode();
         }
 
-        /// <summary>Returns a String representing this matrix instance.</summary>
-        /// <returns>The string representation.</returns>
-        public override readonly string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "{{ {{M11:{0} M12:{1} M13:{2} M14:{3}}} {{M21:{4} M22:{5} M23:{6} M24:{7}}} {{M31:{8} M32:{9} M33:{10} M34:{11}}} {{M41:{12} M42:{13} M43:{14} M44:{15}}} }}",
-                                 M11, M12, M13, M14,
-                                 M21, M22, M23, M24,
-                                 M31, M32, M33, M34,
-                                 M41, M42, M43, M44);
-        }
+        /// <summary>Returns a string that represents this matrix.</summary>
+        /// <returns>The string representation of this matrix.</returns>
+        /// <remarks>The numeric values in the returned string are formatted by using the conventions of the current culture. For example, for the en-US culture, the returned string might appear as <c>{ {M11:1.1 M12:1.2 M13:1.3 M14:1.4} {M21:2.1 M22:2.2 M23:2.3 M24:2.4} {M31:3.1 M32:3.2 M33:3.3 M34:3.4} {M41:4.1 M42:4.2 M43:4.3 M44:4.4} }</c>.</remarks>
+        public override readonly string ToString() =>
+            $"{{ {{M11:{M11} M12:{M12} M13:{M13} M14:{M14}}} {{M21:{M21} M22:{M22} M23:{M23} M24:{M24}}} {{M31:{M31} M32:{M32} M33:{M33} M34:{M34}}} {{M41:{M41} M42:{M42} M43:{M43} M44:{M44}}} }}";
 
         private struct CanonicalBasis
         {

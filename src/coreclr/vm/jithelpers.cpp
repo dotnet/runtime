@@ -56,6 +56,7 @@
 #include "castcache.h"
 #include "onstackreplacement.h"
 #include "pgo.h"
+#include "pgo_formatprocessing.h"
 
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
@@ -3160,7 +3161,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-     ULONG dictionaryIndex = 0;
+     uint32_t dictionaryIndex = 0;
      MethodTable * pDeclaringMT = NULL;
 
     if (pMT != NULL)
@@ -3178,7 +3179,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         {
             SigPointer ptr((PCCOR_SIGNATURE)signature);
 
-            ULONG kind; // DictionaryEntryKind
+            uint32_t kind; // DictionaryEntryKind
             IfFailThrow(ptr.GetData(&kind));
 
             // We need to normalize the class passed in (if any) for reliability purposes. That's because preparation of a code region that
@@ -3945,7 +3946,6 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
     Thread *pCurThread = GetThread();
-
     if (pCurThread->CatchAtSafePointOpportunistic())
     {
         goto FramedLockHelper;
@@ -5260,12 +5260,13 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
 
     MethodTable* pMT = objRef->GetMethodTable();
 
-    // If the object class is collectible, record NULL
-    // for the class handle.
+    // If the object class is collectible, record an unknown typehandle.
+    // We do this instead of recording NULL so that we won't over-estimate
+    // the likelihood of known type handles.
     //
     if (pMT->GetLoaderAllocator()->IsCollectible())
     {
-        pMT = NULL;
+        pMT = (MethodTable*)DEFAULT_UNKNOWN_TYPEHANDLE;
     }
 
 #ifdef _DEBUG

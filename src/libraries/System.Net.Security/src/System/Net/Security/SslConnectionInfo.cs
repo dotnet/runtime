@@ -3,7 +3,7 @@
 
 namespace System.Net.Security
 {
-    internal partial class SslConnectionInfo
+    internal sealed partial class SslConnectionInfo
     {
         public int Protocol { get; }
         public TlsCipherSuite TlsCipherSuite { get; private set; }

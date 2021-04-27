@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class CompositionBatch
     {
         // Represents a part that exports a single export
-        private class SingleExportComposablePart : ComposablePart
+        private sealed class SingleExportComposablePart : ComposablePart
         {
             private readonly Export _export;
 

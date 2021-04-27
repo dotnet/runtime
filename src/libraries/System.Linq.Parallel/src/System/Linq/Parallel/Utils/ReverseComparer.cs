@@ -17,7 +17,7 @@ namespace System.Linq.Parallel
     /// opposite answer.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class ReverseComparer<T> : IComparer<T>
+    internal sealed class ReverseComparer<T> : IComparer<T>
     {
         private readonly IComparer<T> _comparer;
 

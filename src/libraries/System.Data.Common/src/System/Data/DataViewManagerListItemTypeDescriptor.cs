@@ -5,6 +5,7 @@
 #nullable disable
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -50,21 +51,25 @@ namespace System.Data
         /// <summary>
         /// Retrieves the type converter for this object.
         /// </summary>
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter() => null;
 
         /// <summary>
         /// Retrieves the default event.
         /// </summary>
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
 
         /// <summary>
         /// Retrieves the default property.
         /// </summary>
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
 
         /// <summary>
         /// Retrieves the an editor for this object.
         /// </summary>
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
 
         /// <summary>
@@ -82,6 +87,7 @@ namespace System.Data
         /// additional events.  The returned array of events will be
         /// filtered by the given set of attributes.
         /// </summary>
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) =>
             new EventDescriptorCollection(null);
 
@@ -91,8 +97,9 @@ namespace System.Data
         ///     provides.  If the component is sited, the site may add or remove
         ///     additional properties.
         /// </summary>
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() =>
-            ((ICustomTypeDescriptor)this).GetProperties(null);
+            GetPropertiesInternal();
 
         /// <summary>
         ///     Retrieves an array of properties that the given component instance
@@ -101,7 +108,11 @@ namespace System.Data
         ///     additional properties.  The returned array of properties will be
         ///     filtered by the given set of attributes.
         /// </summary>
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
+            GetPropertiesInternal();
+
+        internal PropertyDescriptorCollection GetPropertiesInternal()
         {
             if (_propsCollection == null)
             {

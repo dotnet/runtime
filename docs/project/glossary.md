@@ -18,13 +18,13 @@ terminology.
 | CLR | Common Language Runtime. |
 | COMPlus | An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx). |
 | COR | [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET. |
-| CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/master/src/libraries) |
+| CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/main/src/libraries) |
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | Execution Engine. |
-| GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/garbage-collection.md). |
+| GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
 | IPC | Inter-Process Communication. |
-| JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
-| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/master/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
+| JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
+| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/en-us/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
 | NGen | Native Image Generator. |
@@ -36,9 +36,11 @@ terminology.
 | ProjectN | Codename for the first version of [.NET Native for UWP](https://msdn.microsoft.com/en-us/vstudio/dotnetnative.aspx). |
 | R2R | Ready-to-Run. A flavor of native images - command line switch of [crossgen](../workflow/building/coreclr/crossgen.md). |
 | Redhawk | Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/). |
+| SEH | [Structured Exception Handling](https://docs.microsoft.com/windows/win32/debug/structured-exception-handling). Unified mechanism for handling hardware and software exceptions on Windows. |
 | SOS | [Son of Strike](https://docs.microsoft.com/en-us/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
-| SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/master/src/coreclr/ToolBox/superpmi/readme.txt). |
+| SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/main/src/coreclr/ToolBox/superpmi/readme.txt). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
+| TFM | [Target Framework Moniker](https://docs.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
 | UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
@@ -87,13 +89,13 @@ In this document, the following terms are used:
 
 ## .NET Runtimes
 
-### .NET Core / .NET 
+### .NET Core / .NET
 
-.NET Core has been the name for the open source, cross-platform stack that 
-ASP.NET Core and UWP applications are built on. For more details, 
+.NET Core has been the name for the open source, cross-platform stack that
+ASP.NET Core and UWP applications are built on. For more details,
 read [Introducing .NET Core][introducing-net-core].
 
-.NET Core has become future of the platform, and we refer to it just as .NET today. 
+.NET Core has become future of the platform, and we refer to it just as .NET today.
 For more details, read [Introducing .NET 5][introducing-net-5].
 
 ### .NET Framework
@@ -132,7 +134,7 @@ the same time the .NET Framework was first released. Since Microsoft didn't
 release Rotor as open source, Mono was forced to start from scratch and was thus
 a complete re-implementation of the .NET Framework with no shared code.
 
-Today, the [Mono VM](https://github.com/dotnet/runtime/tree/master/src/mono) is part
+Today, the [Mono VM](https://github.com/dotnet/runtime/tree/main/src/mono) is part
 of the unified .NET platform. It is optimized for mobile (e.g. Xamarin) and browser (e.g. Blazor) scenarios.
 
 "C# powered by Mono" has been scripting engine of choice for a number of game engines.
@@ -143,13 +145,13 @@ Unity - the world's most popular game engine - is scripted by C#, powered by a c
 Originally, CoreCLR was the runtime of Silverlight and was designed to run on multiple
 platforms, specifically Windows and OS X.
 
-Today, the [CoreCLR runtime](https://github.com/dotnet/runtime/tree/master/src/coreclr) 
+Today, the [CoreCLR runtime](https://github.com/dotnet/runtime/tree/main/src/coreclr)
 is part of unified .NET platform. It is optimized for cloud (e.g. ASP.NET) and
 desktop (e.g. WinForms, WPF) scenarios.
 
 ## Ahead-Of-Time Compilation (AOT)
 
-Most flavors of .NET runtime come with at least partial AOT compilation. A variety of AOT technologies 
+Most flavors of .NET runtime come with at least partial AOT compilation. A variety of AOT technologies
 with unique characteristics were developed for .NET runtimes over the years.
 
 ### ReadyToRun

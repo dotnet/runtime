@@ -4623,7 +4623,11 @@ namespace CorUnix
                 ptsAbsTmo->tv_nsec = tv.tv_usec * tccMicroSecondsToNanoSeconds;
             }
 #else
-            #error "Don't know how to get hi-res current time on this platform"
+#ifdef DBI_COMPONENT_MONO
+    return ERROR_INTERNAL_ERROR;
+#else
+    #error "Don't know how to get hi-res current time on this platform"
+#endif
 #endif // HAVE_WORKING_CLOCK_GETTIME, HAVE_WORKING_GETTIMEOFDAY
 #if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
         }

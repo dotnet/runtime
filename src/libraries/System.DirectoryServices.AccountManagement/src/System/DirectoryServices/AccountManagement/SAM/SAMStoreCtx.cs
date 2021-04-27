@@ -9,7 +9,7 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal partial class SAMStoreCtx : StoreCtx
+    internal sealed partial class SAMStoreCtx : StoreCtx
     {
         private readonly DirectoryEntry _ctxBase;
         private readonly object _ctxBaseLock = new object(); // when mutating ctxBase

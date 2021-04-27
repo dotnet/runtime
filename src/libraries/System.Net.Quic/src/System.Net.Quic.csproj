@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -15,7 +15,7 @@
     <Compile Include="System\Net\Quic\Implementations\Mock\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
-    <Compile Include="System\Net\Quic\Interop\*.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\*.cs" />
   </ItemGroup>
   <!-- System.Net common -->
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
@@ -30,7 +30,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- FreeBSD specific files -->
@@ -38,13 +38,14 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Project references -->
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
@@ -52,6 +53,7 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
@@ -62,11 +64,19 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="libmsquic.dylib" Condition="Exists('libmsquic.dylib')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <Content Include="libmsquic.so" Condition="Exists('libmsquic.so')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
+    <Content Include="libmsquic.lttng.so" Condition="Exists('libmsquic.lttng.so')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

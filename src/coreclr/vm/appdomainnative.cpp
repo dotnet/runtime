@@ -16,7 +16,7 @@
 using namespace clr::fs;
 
 // static
-void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyName, QCall::StackCrawlMarkHandle stackMark, INT32 access, QCall::ObjectHandleOnStack retAssembly)
+void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyName, QCall::StackCrawlMarkHandle stackMark, INT32 access, QCall::ObjectHandleOnStack assemblyLoadContext, QCall::ObjectHandleOnStack retAssembly)
 {
     QCALL_CONTRACT;
 
@@ -38,7 +38,17 @@ void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack
     args.access                 = access;
     args.stackMark              = stackMark;
 
-    Assembly *pAssembly = Assembly::CreateDynamic(GetAppDomain(), &args);
+    Assembly*       pAssembly = nullptr;
+    ICLRPrivBinder* pBinderContext = nullptr;
+
+    if (assemblyLoadContext.Get() != NULL)
+    {
+        INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
+
+        pBinderContext = reinterpret_cast<ICLRPrivBinder*>(nativeAssemblyLoadContext);
+    }
+
+    pAssembly = Assembly::CreateDynamic(GetAppDomain(), pBinderContext, &args);
 
     retAssembly.Set(pAssembly->GetExposedObject());
 

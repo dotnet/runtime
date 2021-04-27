@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class SimpleTcpConnectionInformation : TcpConnectionInformation
+    internal sealed class SimpleTcpConnectionInformation : TcpConnectionInformation
     {
         private IPEndPoint _localEndPoint;
         private IPEndPoint _remoteEndPoint;

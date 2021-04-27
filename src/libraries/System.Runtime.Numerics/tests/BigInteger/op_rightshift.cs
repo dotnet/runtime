@@ -146,6 +146,10 @@ namespace System.Numerics.Tests
             {
                 tempByteArray1 = GetRandomPosByteArray(s_random, 100);
                 tempByteArray2 = BitConverter.GetBytes(s_random.Next(8 * tempByteArray1.Length, 1000));
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(tempByteArray2);
+                }
                 VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b>>");
             }
 
@@ -154,6 +158,10 @@ namespace System.Numerics.Tests
             {
                 tempByteArray1 = GetRandomNegByteArray(s_random, 100);
                 tempByteArray2 = BitConverter.GetBytes(s_random.Next(8 * tempByteArray1.Length, 1000));
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(tempByteArray2);
+                }
                 VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b>>");
             }
         }

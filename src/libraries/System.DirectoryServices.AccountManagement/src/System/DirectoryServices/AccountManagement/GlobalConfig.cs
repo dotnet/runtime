@@ -9,7 +9,7 @@ namespace System.DirectoryServices.AccountManagement
     {
         public const DebugLevel DefaultDebugLevel =
 #if DEBUG
-            DebugLevel.Warn;
+            DebugLevel.Info;
 #else
             DebugLevel.None;
 #endif

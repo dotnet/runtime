@@ -210,7 +210,7 @@ void FillExceptionData(
 
     if (pErrInfo != NULL)
     {
-        Thread* pThread = GetThread();
+        Thread* pThread = GetThreadNULLOk();
         if (pThread != NULL)
         {
             GCX_PREEMP();
@@ -1471,7 +1471,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetThread() || !fCoInitCurrentThread);
+        PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
         PRECONDITION(g_fEEStarted);
     }
     CONTRACTL_END;
@@ -1502,7 +1502,7 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(g_fEEStarted);
-        PRECONDITION(GetThread() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
+        PRECONDITION(GetThreadNULLOk() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
     CONTRACTL_END;
 
@@ -3890,13 +3890,12 @@ void InitializeComInterop()
 //-------------------------------------------------------------------
 
 static int g_TraceCount = 0;
-static IUnknown* g_pTraceIUnknown = 0;
+static IUnknown* g_pTraceIUnknown = NULL;
 
 VOID IntializeInteropLogging()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_pTraceIUnknown = g_pConfig->GetTraceIUnknown();
     g_TraceCount = g_pConfig->GetTraceWrapper();
 }
 

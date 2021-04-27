@@ -34,7 +34,7 @@ namespace Generic.Dictionary
             }, TaskCreationOptions.LongRunning);
 
             // If Dictionary regresses, we do not want to hang here indefinitely
-            Assert.True((await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(60))) == task) && task.IsCompletedSuccessfully);
+            await task.WaitAsync(TimeSpan.FromSeconds(60));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

@@ -465,10 +465,7 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
     if (IsError())
         return FALSE;
 
-    Thread *pThread;
-    pThread = GetThread();
-    _ASSERTE(pThread);
-
+    Thread *pThread = GetThread();
     switch (level)
     {
     case FILE_LOAD_BEGIN:
@@ -1838,11 +1835,6 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
 }
 #endif // FEATURE_PREJIT
 
-// <TODO>@todo .INI file is a temporary workaround for Beta 1</TODO>
-#define DE_INI_FILE_SECTION_NAME          W(".NET Framework Debugging Control")
-#define DE_INI_FILE_KEY_TRACK_INFO        W("GenerateTrackingInfo")
-#define DE_INI_FILE_KEY_ALLOW_JIT_OPTS    W("AllowOptimize")
-
 DWORD DomainAssembly::ComputeDebuggingConfig()
 {
     CONTRACTL
@@ -1857,16 +1849,7 @@ DWORD DomainAssembly::ComputeDebuggingConfig()
 
 #ifdef DEBUGGING_SUPPORTED
     DWORD dacfFlags = DACF_ALLOW_JIT_OPTS;
-
-    if (GetDebuggingOverrides(&dacfFlags))
-    {
-        dacfFlags |= DACF_USER_OVERRIDE;
-    }
-    else
-    {
-        IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
-    }
-
+    IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return dacfFlags;
 #else // !DEBUGGING_SUPPORTED
     return 0;
@@ -1893,137 +1876,6 @@ void DomainAssembly::SetupDebuggingConfig(void)
     LOG((LF_CORDB, LL_INFO10, "Assembly %S: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 }
-
-// The format for the (temporary) .INI file is:
-
-// [.NET Framework Debugging Control]
-// GenerateTrackingInfo=<n> where n is 0 or 1
-// AllowOptimize=<n> where n is 0 or 1
-
-// Where neither x nor y equal INVALID_INI_INT:
-#define INVALID_INI_INT (0xFFFF)
-
-bool DomainAssembly::GetDebuggingOverrides(DWORD *pdwFlags)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-#if defined(DEBUGGING_SUPPORTED) && !defined(FEATURE_CORESYSTEM)
-    // TODO FIX in V5.0
-    // Any touch of the file system is relatively expensive even in the warm case.
-    //
-    // Ideally we remove the .INI feature completely (if we need something put it in the .exe.config file)
-    //
-    // However because of compatibility concerns, we won't do this until the next side-by-side release
-    // In the mean time don't check in the case where we have already loaded the NGEN image, as the
-    // JIT overrides don't mean anything in that case as we won't be jitting anyway.
-    // This avoids doing these probes for framework DLLs right away.
-    if (GetFile()->HasNativeImage())
-        return false;
-
-    _ASSERTE(pdwFlags);
-
-    bool fHasBits = false;
-    WCHAR *pFileName = NULL;
-    HRESULT hr = S_OK;
-    UINT cbExtOrValue = 4;
-    WCHAR *pTail = NULL;
-    size_t len = 0;
-    WCHAR *lpFileName = NULL;
-
-    const WCHAR *wszFileName = GetFile()->GetPath();
-
-    if (wszFileName == NULL)
-    {
-        return false;
-    }
-
-    // lpFileName is a copy of the original, and will be edited.
-    CQuickBytes qb;
-    len = wcslen(wszFileName);
-    size_t cchlpFileName = (len + 1);
-    lpFileName = (WCHAR*)qb.AllocThrows(cchlpFileName * sizeof(WCHAR));
-    wcscpy_s(lpFileName, cchlpFileName, wszFileName);
-
-    pFileName = wcsrchr(lpFileName, W('\\'));
-
-    if (pFileName == NULL)
-    {
-        pFileName = lpFileName;
-    }
-
-    if (*pFileName == W('\\'))
-    {
-        pFileName++; //move the pointer past the last '\'
-    }
-
-    _ASSERTE(wcslen(W(".INI")) == cbExtOrValue);
-
-    if (pFileName == NULL || (pTail=wcsrchr(pFileName, W('.'))) == NULL || (wcslen(pTail)<cbExtOrValue))
-    {
-        return false;
-    }
-
-    wcscpy_s(pTail, cchlpFileName - (pTail - lpFileName), W(".INI"));
-
-    // Win2K has a problem if multiple processes call GetPrivateProfile* on the same
-    // non-existent .INI file simultaneously.  The OS livelocks in the kernel (i.e.
-    // outside of user space) and remains there at full CPU for several minutes.  Then
-    // it breaks out.  Here is our work-around, while we pursue a fix in a future
-    // version of the OS.
-    if (WszGetFileAttributes(lpFileName) == INVALID_FILE_ATTRIBUTES)
-        return false;
-
-    // Having modified the filename, we use the full path
-    // to actually get the file.
-    if ((cbExtOrValue=WszGetPrivateProfileInt(DE_INI_FILE_SECTION_NAME,
-                                              DE_INI_FILE_KEY_TRACK_INFO,
-                                              INVALID_INI_INT,
-                                              lpFileName)) != INVALID_INI_INT)
-    {
-        if (cbExtOrValue != 0)
-        {
-            *pdwFlags |= DACF_OBSOLETE_TRACK_JIT_INFO;
-        }
-        else
-        {
-            *pdwFlags &= (~DACF_OBSOLETE_TRACK_JIT_INFO);
-        }
-
-        fHasBits = true;
-    }
-
-    if ((cbExtOrValue=WszGetPrivateProfileInt(DE_INI_FILE_SECTION_NAME,
-                                              DE_INI_FILE_KEY_ALLOW_JIT_OPTS,
-                                              INVALID_INI_INT,
-                                              lpFileName)) != INVALID_INI_INT)
-    {
-        if (cbExtOrValue != 0)
-        {
-            *pdwFlags |= DACF_ALLOW_JIT_OPTS;
-        }
-        else
-        {
-            *pdwFlags &= (~DACF_ALLOW_JIT_OPTS);
-        }
-
-        fHasBits = true;
-    }
-
-    return fHasBits;
-
-#else  // DEBUGGING_SUPPORTED && !FEATURE_CORESYSTEM
-    return false;
-#endif // DEBUGGING_SUPPORTED && !FEATURE_CORESYSTEM
-}
-
 
 // For right now, we only check to see if the DebuggableAttribute is present - later may add fields/properties to the
 // attributes.

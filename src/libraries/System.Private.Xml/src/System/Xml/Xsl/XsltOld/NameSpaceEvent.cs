@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class NamespaceEvent : Event
+    internal sealed class NamespaceEvent : Event
     {
         private string _namespaceUri;
         private string _name;

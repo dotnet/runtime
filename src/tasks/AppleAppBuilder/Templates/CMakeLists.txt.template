@@ -27,8 +27,24 @@ set_target_properties(%ProjectName% PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING "NO"
+    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
     RESOURCE "${APP_RESOURCES}"
 )
+
+set(HARDENED_RUNTIME
+%HardenedRuntime%
+)
+
+set(HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE
+%HardenedRuntimeUseEntitlementsFile%
+)
+
+if("${HARDENED_RUNTIME}")
+  set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES")
+  if("${HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE}")
+    set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
+  endif()
+endif()
 
 # FIXME: `XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING` should not be NO
 
@@ -39,6 +55,7 @@ target_link_libraries(
     "-framework UIKit"
     %FrameworksToLink%
     "-lz"
+    "-lc++"
     "-liconv"
 %NativeLibrariesToLink%
 )

@@ -28,11 +28,11 @@ namespace ILCompiler.PEWriter
             new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
         }
 
-        public void SavePerfMap(string perfMapPath, string dllFileName)
+        public void SavePerfMap(string perfMapPath, string dllFileName, Guid? perfMapMvid)
         {
-            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".perf.map");
+            string mvidComponent = (perfMapMvid.HasValue ? perfMapMvid.Value.ToString() : "composite");
+            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.{" + mvidComponent + "}.map");
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
-
             PerfMapWriter.Write(perfMapFileName, _outputInfoBuilder.EnumerateMethods());
         }
     }

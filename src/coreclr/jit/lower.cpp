@@ -243,7 +243,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_OBJ:
             if (node->AsBlk()->Data()->IsCall())
             {
-                assert(!comp->compDoOldStructRetyping());
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
@@ -318,10 +317,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
             break;
 
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
             if (node->IsUnusedValue())
             {
@@ -486,10 +489,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         unsigned lclNum               = comp->lvaGrabTemp(true DEBUGARG("Lowering is creating a new local variable"));
         comp->lvaTable[lclNum].lvType = rhs->TypeGet();
 
-        GenTreeLclVar* store = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, rhs->TypeGet(), lclNum);
-        store->gtOp1         = rhs;
-        store->gtFlags       = (rhs->gtFlags & GTF_COMMON_MASK);
-        store->gtFlags |= GTF_VAR_DEF;
+        GenTreeLclVar* store = comp->gtNewStoreLclVar(lclNum, rhs);
 
         switchBBRange.InsertAfter(node, store);
         switchBBRange.Remove(node);
@@ -1151,7 +1151,11 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
                 if (type == TYP_SIMD12)
                 {
+#if !defined(TARGET_64BIT) || defined(OSX_ARM64_ABI)
                     assert(info->GetByteSize() == 12);
+#else  // TARGET_64BIT && !OSX_ARM64_ABI
+                    assert(info->GetByteSize() == 16);
+#endif // FEATURE_SIMD && FEATURE_PUT_STRUCT_ARG_STK
                 }
                 else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -1315,13 +1319,13 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
             GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
 
             // For HWIntrinsic, there are some intrinsics like ExtractVector128 which have
-            // a gtType of TYP_SIMD16 but a gtSIMDSize of 32, so we need to include that in
+            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we need to include that in
             // the assert below.
 
-            assert((jitIntrinsic->gtSIMDSize == 12) || (jitIntrinsic->gtSIMDSize == 16) ||
-                   (jitIntrinsic->gtSIMDSize == 32));
+            assert((jitIntrinsic->GetSimdSize() == 12) || (jitIntrinsic->GetSimdSize() == 16) ||
+                   (jitIntrinsic->GetSimdSize() == 32));
 
-            if (jitIntrinsic->gtSIMDSize == 12)
+            if (jitIntrinsic->GetSimdSize() == 12)
             {
                 type = TYP_SIMD12;
             }
@@ -1556,7 +1560,8 @@ void Lowering::LowerCall(GenTree* node)
     LowerArgsForCall(call);
 
     // note that everything generated from this point on runs AFTER the outgoing args are placed
-    GenTree* controlExpr = nullptr;
+    GenTree* controlExpr          = nullptr;
+    bool     callWasExpandedEarly = false;
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
@@ -1577,8 +1582,17 @@ void Lowering::LowerCall(GenTree* node)
                 break;
 
             case GTF_CALL_VIRT_VTABLE:
-                // stub dispatching is off or this is not a virtual call (could be a tailcall)
-                controlExpr = LowerVirtualVtableCall(call);
+                assert(call->IsVirtualVtable());
+                if (!call->IsExpandedEarly())
+                {
+                    assert(call->gtControlExpr == nullptr);
+                    controlExpr = LowerVirtualVtableCall(call);
+                }
+                else
+                {
+                    callWasExpandedEarly = true;
+                    controlExpr          = call->gtControlExpr;
+                }
                 break;
 
             case GTF_CALL_NONVIRT:
@@ -1615,7 +1629,9 @@ void Lowering::LowerCall(GenTree* node)
         controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
     }
 
-    if (controlExpr != nullptr)
+    // Check if we need to thread a newly created controlExpr into the LIR
+    //
+    if ((controlExpr != nullptr) && !callWasExpandedEarly)
     {
         LIR::Range controlExprRange = LIR::SeqTree(comp, controlExpr);
 
@@ -2047,24 +2063,14 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
             comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->GetLclNum()].lvDoNotEnregister;
             GenTree* value                              = comp->gtNewLclvNode(lclNum, tmpTyp);
 
-            // TODO-1stClassStructs: This can be simplified with 1st class structs work.
             if (tmpTyp == TYP_STRUCT)
             {
                 comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
-                GenTree* loc = new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_STRUCT, tmpLclNum);
-                loc->gtType  = TYP_BYREF;
-                GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
-                    GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, loc, value, comp->typGetBlkLayout(callerArgDsc->lvExactSize));
-                storeBlk->gtFlags |= GTF_ASG;
-                BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeBlk));
-                LowerNode(storeBlk);
             }
-            else
-            {
-                GenTree* assignExpr = comp->gtNewTempAssign(tmpLclNum, value);
-                ContainCheckRange(value, assignExpr);
-                BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, assignExpr));
-            }
+            GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
+            ContainCheckRange(value, storeLclVar);
+            BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
+            LowerNode(storeLclVar);
         }
 
         lcl->SetLclNum(tmpLclNum);
@@ -2974,33 +2980,15 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
-        if (comp->compDoOldStructRetyping())
-        {
-            // `struct A { SIMD12/16 }` on `UNIX_AMD64_ABI` is an example when
-            // `varTypeUsesFloatReg` returns different values for `ret` and `ret->gtGetOp1()`,
-            // but doesn't need a primitive bitcase.
-            doPrimitiveBitcast = !ret->TypeIs(TYP_STRUCT);
-        }
-        else
-        {
-            doPrimitiveBitcast = (!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
-        }
+        doPrimitiveBitcast = (!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
     }
 
     if (doPrimitiveBitcast)
     {
-// Add a simple bitcast for an old retyping or when both types are not structs.
-// If one type is a struct it will be handled below for !compDoOldStructRetyping.
+// Add a simple bitcast when both types are not structs.
+// If one type is a struct it will be handled below.
 #if defined(DEBUG)
-        if (comp->compDoOldStructRetyping())
-        {
-            assert(varTypeIsSIMD(ret) || !varTypeIsStruct(ret));
-            assert(varTypeIsSIMD(retVal) || !varTypeIsStruct(retVal));
-        }
-        else
-        {
-            assert(!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
-        }
+        assert(!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
 #endif
 
         GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
@@ -3026,9 +3014,8 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 #ifdef DEBUG
         if (varTypeIsStruct(ret->TypeGet()) != varTypeIsStruct(retVal->TypeGet()))
         {
-            if (!comp->compDoOldStructRetyping() && varTypeIsStruct(ret->TypeGet()))
+            if (varTypeIsStruct(ret->TypeGet()))
             {
-                assert(!comp->compDoOldStructRetyping());
                 assert(comp->info.compRetNativeType != TYP_STRUCT);
 
                 var_types retActualType    = genActualType(comp->info.compRetNativeType);
@@ -3052,22 +3039,9 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         }
         else if (!ret->TypeIs(TYP_VOID) && varTypeIsStruct(retVal))
         {
-            if (comp->compDoOldStructRetyping())
-            {
-#ifdef FEATURE_SIMD
-                assert(ret->TypeIs(TYP_DOUBLE));
-                assert(retVal->TypeIs(TYP_SIMD8));
-#else
-                unreached();
-#endif
-            }
-            else
-            {
-                // Return struct as a primitive using Unsafe cast.
-                assert(!comp->compDoOldStructRetyping());
-                assert(retVal->OperIs(GT_LCL_VAR));
-                LowerRetSingleRegStructLclVar(ret);
-            }
+            // Return struct as a primitive using Unsafe cast.
+            assert(retVal->OperIs(GT_LCL_VAR));
+            LowerRetSingleRegStructLclVar(ret);
         }
     }
 
@@ -3104,7 +3078,6 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         assert(varDsc->CanBeReplacedWithItsField(comp) || varDsc->lvDoNotEnregister || !varDsc->lvPromoted);
         if (varDsc->CanBeReplacedWithItsField(comp))
         {
-            assert(!comp->compDoOldStructRetyping());
             assert(varDsc->lvFieldCnt == 1);
             unsigned   fldNum = varDsc->lvFieldLclStart;
             LclVarDsc* fldDsc = comp->lvaGetDesc(fldNum);
@@ -3158,7 +3131,6 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #if defined(TARGET_XARCH) && !defined(UNIX_AMD64_ABI)
             // Windows x64 doesn't have multireg returns,
             // x86 uses it only for long return type, not for structs.
-            assert(!comp->compDoOldStructRetyping());
             assert(slotCount == 1);
             assert(regType != TYP_UNDEF);
 #else  // !TARGET_XARCH || UNIX_AMD64_ABI
@@ -3170,7 +3142,6 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 }
                 else
                 {
-                    assert(!comp->compDoOldStructRetyping());
                     unsigned size = layout->GetSize();
                     assert((size <= 8) || (size == 16));
                     bool isPowerOf2    = (((size - 1) & size) == 0);
@@ -3236,45 +3207,37 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 //
 void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 {
-#if defined(FEATURE_HFA) && defined(TARGET_ARM64)
-    if (varTypeIsSIMD(ret))
+#ifdef TARGET_ARM64
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        if (comp->info.compRetNativeType == TYP_STRUCT)
+        if (varTypeIsSIMD(ret))
         {
-            assert(varTypeIsSIMD(ret->gtGetOp1()));
-            assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
-            if (!comp->compDoOldStructRetyping())
+            if (comp->info.compRetNativeType == TYP_STRUCT)
             {
+                assert(varTypeIsSIMD(ret->gtGetOp1()));
+                assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
                 ret->ChangeType(comp->info.compRetNativeType);
             }
             else
             {
-                // With old struct retyping a value that is returned as HFA
-                // could have both SIMD* or STRUCT types, keep it as it.
+                assert(comp->info.compRetNativeType == ret->TypeGet());
+                GenTree* retVal = ret->gtGetOp1();
+                if (retVal->TypeGet() != ret->TypeGet())
+                {
+                    assert(retVal->OperIs(GT_LCL_VAR));
+                    LowerRetSingleRegStructLclVar(ret);
+                }
                 return;
             }
         }
-        else
-        {
-            assert(comp->info.compRetNativeType == ret->TypeGet());
-            GenTree* retVal = ret->gtGetOp1();
-            if (retVal->TypeGet() != ret->TypeGet())
-            {
-                assert(retVal->OperIs(GT_LCL_VAR));
-                assert(!comp->compDoOldStructRetyping());
-                LowerRetSingleRegStructLclVar(ret);
-            }
-            return;
-        }
     }
-#endif
+#endif // TARGET_ARM64
 
     if (comp->compMethodReturnsMultiRegRegTypeAlternate())
     {
         return;
     }
 
-    assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     assert(varTypeIsStruct(ret));
 
@@ -3384,7 +3347,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
     assert(!comp->compMethodReturnsMultiRegRegTypeAlternate());
-    assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
     assert(lclVar->OperIs(GT_LCL_VAR));
@@ -3454,27 +3416,27 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
         return;
     }
 
-#if defined(FEATURE_HFA)
-    if (comp->IsHfa(call))
+    if (GlobalJitOptions::compFeatureHfa)
     {
-#if defined(TARGET_ARM64)
-        assert(comp->GetHfaCount(call) == 1);
-#elif defined(TARGET_ARM)
-        // ARM returns double in 2 float registers, but
-        // `call->HasMultiRegRetVal()` count double registers.
-        assert(comp->GetHfaCount(call) <= 2);
-#elif  // !TARGET_ARM64 && !TARGET_ARM
-        unreached();
-#endif // !TARGET_ARM64 && !TARGET_ARM
-        var_types hfaType = comp->GetHfaType(call);
-        if (call->TypeIs(hfaType))
+        if (comp->IsHfa(call))
         {
-            return;
+#if defined(TARGET_ARM64)
+            assert(comp->GetHfaCount(call) == 1);
+#elif defined(TARGET_ARM)
+            // ARM returns double in 2 float registers, but
+            // `call->HasMultiRegRetVal()` count double registers.
+            assert(comp->GetHfaCount(call) <= 2);
+#else  // !TARGET_ARM64 && !TARGET_ARM
+            NYI("Unknown architecture");
+#endif // !TARGET_ARM64 && !TARGET_ARM
+            var_types hfaType = comp->GetHfaType(call);
+            if (call->TypeIs(hfaType))
+            {
+                return;
+            }
         }
     }
-#endif // FEATURE_HFA
 
-    assert(!comp->compDoOldStructRetyping());
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
     Compiler::structPassingKind howToReturnStruct;
     var_types returnType = comp->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
@@ -3535,8 +3497,6 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 //
 void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 {
-    assert(!comp->compDoOldStructRetyping());
-    assert(varTypeIsStruct(store));
     assert(store->Data()->IsCall());
     GenTreeCall* call = store->Data()->AsCall();
     assert(!call->HasMultiRegRetVal());
@@ -3544,7 +3504,6 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     const ClassLayout* layout  = store->GetLayout();
     const var_types    regType = layout->GetRegisterType();
 
-    unsigned storeSize = store->GetLayout()->GetSize();
     if (regType != TYP_UNDEF)
     {
         store->ChangeType(regType);
@@ -3864,8 +3823,9 @@ GenTree* Lowering::CreateReturnTrapSeq()
 
     // The only thing to do here is build up the expression that evaluates 'g_TrapReturningThreads'.
 
-    void* pAddrOfCaptureThreadGlobal = nullptr;
-    LONG* addrOfCaptureThreadGlobal = comp->info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
+    void*    pAddrOfCaptureThreadGlobal = nullptr;
+    int32_t* addrOfCaptureThreadGlobal =
+        comp->info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
 
     GenTree* testTree;
     if (addrOfCaptureThreadGlobal != nullptr)
@@ -4495,7 +4455,12 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         switch (lookup.accessType)
         {
             case IAT_VALUE:
-                if (!IsCallTargetInRange(addr))
+                // IsCallTargetInRange always return true on x64. It wants to use rip-based addressing
+                // for this call. Unfortunately, in case of pinvokes (+suppressgctransition) to external libs
+                // (e.g. kernel32.dll) the relative offset is unlikely to fit into int32 and we will have to
+                // turn fAllowRel32 off globally.
+                if ((call->IsSuppressGCTransition() && !comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
+                    !IsCallTargetInRange(addr))
                 {
                     result = AddrGen(addr);
                 }
@@ -5375,10 +5340,9 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // For -3 we need:
         //     mulhi -= dividend                    ; requires sub adjust
         //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
-        bool                 requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
-        bool                 requiresShiftAdjust      = shift != 0;
-        bool                 requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
-        BasicBlock::weight_t curBBWeight              = comp->compCurBB->getBBWeight(comp);
+        bool requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
+        bool requiresShiftAdjust      = shift != 0;
+        bool requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
 
         if (requiresDividendMultiuse)
         {

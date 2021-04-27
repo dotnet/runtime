@@ -76,14 +76,15 @@
 #endif
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
-#include "nativeeventsource.h"
 #include "eventpipeadapter.h"
 #include "eventpipeinternal.h"
+#include "nativeeventsource.h"
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
 #include "eventpipeinternal.h"
+#include "nativeeventsource.h"
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"

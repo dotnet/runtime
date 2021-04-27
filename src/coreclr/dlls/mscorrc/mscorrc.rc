@@ -413,7 +413,7 @@ BEGIN
 
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
-    IDS_INVALID_PINVOKE_CALLCONV            "Invalid unmanaged calling convention: must be one of stdcall, cdecl, or thiscall."
+    IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
     IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 
@@ -524,6 +524,7 @@ BEGIN
     IDS_EE_INVALIDCOMDEFITF                 "Type '%1' has an invalid default COM interface: '%2'."
     IDS_EE_COMDEFITFNOTSUPPORTED            "Type '%1' does not support the specified default COM interface: '%2'"
 
+    IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     "Type '%1' cannot be marshalled to a Variant. Type library is not registered."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
 
     IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"

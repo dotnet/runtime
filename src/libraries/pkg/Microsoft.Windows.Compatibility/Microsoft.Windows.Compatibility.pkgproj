@@ -51,7 +51,7 @@
     <NS21PrereleaseLibraryPackage Include="System.ComponentModel.Composition.Registration" />
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
-    <!-- Packages we don't build in master anymore -->
+    <!-- Packages we don't build in main anymore -->
     <LibraryPackage Include="System.Data.DataSetExtensions">
       <Version>4.5.0</Version>
     </LibraryPackage>

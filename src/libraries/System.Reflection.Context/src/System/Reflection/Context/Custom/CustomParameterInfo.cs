@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomParameterInfo : ProjectingParameterInfo
+    internal sealed class CustomParameterInfo : ProjectingParameterInfo
     {
         public CustomParameterInfo(ParameterInfo template, CustomReflectionContext context)
             : base(template, context.Projector)

@@ -129,7 +129,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     assert(block->bbNext->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
 
     bbFinallyRet = block->bbNext->bbJumpDest;
-    bbFinallyRet->bbFlags |= BBF_JMP_TARGET;
 
     // Load the address where the finally funclet should return into LR.
     // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
@@ -581,7 +580,7 @@ ALLOC_DONE:
         }
         else
         {
-            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment);
+            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, regTmp);
         }
 
         // Return the stackalloc'ed address in result register.
@@ -633,7 +632,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_JMP_TARGET);
+        noway_assert(target->bbFlags & BBF_HAS_LABEL);
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -1849,28 +1848,22 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     {
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
     }
-    else if (frameSize < compiler->getVeryLargeFrameSize())
-    {
-        for (target_size_t probeOffset = pageSize; probeOffset <= frameSize; probeOffset += pageSize)
-        {
-            // Generate:
-            //    movw initReg, -probeOffset
-            //    ldr initReg, [SP + initReg]
-
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)probeOffset);
-            GetEmitter()->emitIns_R_R_R(INS_ldr, EA_PTRSIZE, initReg, REG_SPBASE, initReg);
-        }
-
-        regSet.verifyRegUsed(initReg);
-        *pInitRegZeroed = false; // The initReg does not contain zero
-
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
-        compiler->unwindPadding();
-        GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, initReg);
-    }
     else
     {
-        assert(frameSize >= compiler->getVeryLargeFrameSize());
+        // Generate the following code:
+        //
+        //    movw  r4, #frameSize
+        //    sub   r4, sp, r4
+        //    bl    CORINFO_HELP_STACK_PROBE
+        //    mov   sp, r4
+        //
+        // If frameSize can not be encoded by movw immediate this becomes:
+        //
+        //    movw  r4, #frameSizeLo16
+        //    movt  r4, #frameSizeHi16
+        //    sub   r4, sp, r4
+        //    bl    CORINFO_HELP_STACK_PROBE
+        //    mov   sp, r4
 
         genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, frameSize,
                              INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);

@@ -41,6 +41,8 @@ namespace Internal.Pgo
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
+        GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
     }
 
     public interface IPgoSchemaDataLoader<TType>
@@ -550,7 +552,6 @@ namespace Internal.Pgo
 
             void MergeInSchemaElem(Dictionary<PgoSchemaElem, PgoSchemaElem> dataMerger, PgoSchemaElem schema)
             {
-                long sortKey = ((long)schema.ILOffset) << 32 | (long)schema.InstrumentationKind;
                 if (dataMerger.TryGetValue(schema, out var existingSchemaItem))
                 {
                     // Actually merge two schema items
@@ -559,6 +560,7 @@ namespace Internal.Pgo
                     switch (existingSchemaItem.InstrumentationKind)
                     {
                         case PgoInstrumentationKind.BasicBlockIntCount:
+                        case PgoInstrumentationKind.EdgeIntCount:
                         case PgoInstrumentationKind.TypeHandleHistogramCount:
                             if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {

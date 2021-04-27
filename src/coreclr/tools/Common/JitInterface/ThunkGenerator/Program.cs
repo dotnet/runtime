@@ -375,6 +375,7 @@ namespace Internal.JitInterface
             tw.Write(@"
 
 #include ""corinfoexception.h""
+#include ""../../../inc/corjit.h""
 
 struct JitInterfaceCallbacks
 {
@@ -393,7 +394,7 @@ struct JitInterfaceCallbacks
             tw.Write(@"
 };
 
-class JitInterfaceWrapper
+class JitInterfaceWrapper : public ICorJitInfo
 {
     void * _thisHandle;
     JitInterfaceCallbacks * _callbacks;

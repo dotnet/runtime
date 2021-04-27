@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -11,51 +11,36 @@ namespace System.IO.Pipelines
     [DebuggerDisplay("IsCompleted: {" + nameof(IsCompleted) + "}")]
     internal struct PipeCompletion
     {
-        private static readonly ArrayPool<PipeCompletionCallback> s_completionCallbackPool = ArrayPool<PipeCompletionCallback>.Shared;
+        private static readonly object s_completedSuccessfully = new object();
 
-        private const int InitialCallbacksSize = 1;
+        private object? _state;
+        private List<PipeCompletionCallback>? _callbacks;
 
-        private bool _isCompleted;
-        private ExceptionDispatchInfo? _exceptionInfo;
+        public bool IsCompleted => _state != null;
 
-        private PipeCompletionCallback _firstCallback;
-        private PipeCompletionCallback[]? _callbacks;
-        private int _callbackCount;
-
-        public bool IsCompleted => _isCompleted;
-
-        public bool IsFaulted => _exceptionInfo != null;
+        public bool IsFaulted => _state is ExceptionDispatchInfo;
 
         public PipeCompletionCallbacks? TryComplete(Exception? exception = null)
         {
-            if (!_isCompleted)
+            if (_state == null)
             {
-                _isCompleted = true;
                 if (exception != null)
                 {
-                    _exceptionInfo = ExceptionDispatchInfo.Capture(exception);
+                    _state = ExceptionDispatchInfo.Capture(exception);
+                }
+                else
+                {
+                    _state = s_completedSuccessfully;
                 }
             }
+
             return GetCallbacks();
         }
 
         public PipeCompletionCallbacks? AddCallback(Action<Exception?, object?> callback, object? state)
         {
-            if (_callbackCount == 0)
-            {
-                _firstCallback = new PipeCompletionCallback(callback, state);
-                _callbackCount++;
-            }
-            else
-            {
-                EnsureSpace();
-
-                // -1 to adjust for _firstCallback
-                var callbackIndex = _callbackCount - 1;
-                _callbackCount++;
-                Debug.Assert(_callbacks != null);
-                _callbacks[callbackIndex] = new PipeCompletionCallback(callback, state);
-            }
+            _callbacks ??= new List<PipeCompletionCallback>();
+            _callbacks.Add(new PipeCompletionCallback(callback, state));
 
             if (IsCompleted)
             {
@@ -65,35 +50,17 @@ namespace System.IO.Pipelines
             return null;
         }
 
-        private void EnsureSpace()
-        {
-            if (_callbacks == null)
-            {
-                _callbacks = s_completionCallbackPool.Rent(InitialCallbacksSize);
-            }
-
-            int newLength = _callbackCount - 1;
-
-            if (newLength == _callbacks.Length)
-            {
-                PipeCompletionCallback[] newArray = s_completionCallbackPool.Rent(_callbacks.Length * 2);
-                Array.Copy(_callbacks, newArray, _callbacks.Length);
-                s_completionCallbackPool.Return(_callbacks, clearArray: true);
-                _callbacks = newArray;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsCompletedOrThrow()
         {
-            if (!_isCompleted)
+            if (!IsCompleted)
             {
                 return false;
             }
 
-            if (_exceptionInfo != null)
+            if (_state is ExceptionDispatchInfo edi)
             {
-                ThrowLatchedException();
+                edi.Throw();
             }
 
             return true;
@@ -102,36 +69,23 @@ namespace System.IO.Pipelines
         private PipeCompletionCallbacks? GetCallbacks()
         {
             Debug.Assert(IsCompleted);
-            if (_callbackCount == 0)
+
+            var callbacks = _callbacks;
+            if (callbacks == null)
             {
                 return null;
             }
 
-            var callbacks = new PipeCompletionCallbacks(s_completionCallbackPool,
-                _callbackCount,
-                _exceptionInfo?.SourceException,
-                _firstCallback,
-                _callbacks);
-
-            _firstCallback = default;
             _callbacks = null;
-            _callbackCount = 0;
-            return callbacks;
+
+            return new PipeCompletionCallbacks(callbacks, _state as ExceptionDispatchInfo);
         }
 
         public void Reset()
         {
             Debug.Assert(IsCompleted);
             Debug.Assert(_callbacks == null);
-            _isCompleted = false;
-            _exceptionInfo = null;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void ThrowLatchedException()
-        {
-            Debug.Assert(_exceptionInfo != null);
-            _exceptionInfo.Throw();
+            _state = null;
         }
 
         public override string ToString()

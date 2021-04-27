@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class AuthZSet : ResultSet
+    internal sealed class AuthZSet : ResultSet
     {
         internal AuthZSet(
                     byte[] userSid,

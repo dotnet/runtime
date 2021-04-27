@@ -4011,8 +4011,7 @@ VirtualCallStubManager *VirtualCallStubManagerManager::FindVirtualCallStubManage
 
     // Check the current and shared domains.
     {
-        Thread *pThread = GetThread();
-
+        Thread *pThread = GetThreadNULLOk();
         if (pThread != NULL)
         {
             // Check the current domain

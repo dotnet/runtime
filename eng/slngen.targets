@@ -11,6 +11,6 @@
     <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' == 'System.Runtime.CompilerServices.Unsafe'">true</IncludeInSolutionFile>
   </PropertyGroup>
   <ItemGroup>
-    <SlnGenCustomProjectTypeGuid Include=".ilproj" ProjectTypeGuid="{F571AB99-FB84-49F4-A0DF-F27AA55F3F3F}" />
+    <SlnGenCustomProjectTypeGuid Include=".ilproj" ProjectTypeGuid="{9A19103F-16F7-4668-BE54-9A1E7A4F7556}" />
   </ItemGroup>
 </Project>

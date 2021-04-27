@@ -84,7 +84,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// A runtime function corresponds to a contiguous fragment of code that implements a method.
     /// </summary>
     /// <remarks>
-    /// Based on <a href="https://github.com/dotnet/runtime/blob/master/src/coreclr/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
+    /// Based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
     /// </remarks>
     public class RuntimeFunction
     {

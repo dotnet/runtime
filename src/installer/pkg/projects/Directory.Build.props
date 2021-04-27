@@ -8,8 +8,6 @@
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>
 
-    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(RuntimeIdentifier)</PackageTargetRuntime>
-
     <BuildRuntimePackages Condition="'$(BuildRuntimePackages)' == ''">true</BuildRuntimePackages>
     <BuildLineupPackage Condition="'$(BuildLineupPackage)' == ''">true</BuildLineupPackage>
 
@@ -59,21 +57,6 @@
     <SkipValidatePackage>true</SkipValidatePackage>
     <IncludeRuntimeJson Condition="'$(IncludeRuntimeJson)' == ''">true</IncludeRuntimeJson>
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
-    <!--
-      we don't want any analyzers by ResolveNuGetPackageAssets
-      null-refs when this isn't set and an analyzer is in the packages
-    -->
-    <Language>unused</Language>
-    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
-    <PackageTargetFramework>$(NetCoreAppCurrent)</PackageTargetFramework>
-    <CrossGenOutputPath>$(CrossGenRootPath)$(MSBuildProjectName)\</CrossGenOutputPath>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <RidSpecificAssets Condition="'$(RuntimeIdentifier)' != ''">true</RidSpecificAssets>
-    <CrossGenSymbolsOutputPath>$(PackageSymbolsBinDir)/$(MSBuildProjectName)</CrossGenSymbolsOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>

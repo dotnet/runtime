@@ -418,6 +418,7 @@ namespace System.Drawing
         public int TextContrast { get { throw null; } set { } }
         public System.Drawing.Text.TextRenderingHint TextRenderingHint { get { throw null; } set { } }
         public System.Drawing.Drawing2D.Matrix Transform { get { throw null; } set { } }
+        public System.Numerics.Matrix3x2 TransformElements { get { throw null; } set { } }
         public System.Drawing.RectangleF VisibleClipBounds { get { throw null; } }
         public void AddMetafileComment(byte[] data) { }
         public System.Drawing.Drawing2D.GraphicsContainer BeginContainer() { throw null; }
@@ -594,7 +595,13 @@ namespace System.Drawing
         public static System.Drawing.Graphics FromHwndInternal(System.IntPtr hwnd) { throw null; }
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetContextInfo() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void GetContextInfo(out PointF offset) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
         public static System.IntPtr GetHalftonePalette() { throw null; }
         public System.IntPtr GetHdc() { throw null; }
         public System.Drawing.Color GetNearestColor(System.Drawing.Color color) { throw null; }
@@ -1653,7 +1660,9 @@ namespace System.Drawing.Drawing2D
         public Matrix(System.Drawing.Rectangle rect, System.Drawing.Point[] plgpts) { }
         public Matrix(System.Drawing.RectangleF rect, System.Drawing.PointF[] plgpts) { }
         public Matrix(float m11, float m12, float m21, float m22, float dx, float dy) { }
+        public Matrix(System.Numerics.Matrix3x2 matrix) { }
         public float[] Elements { get { throw null; } }
+        public System.Numerics.Matrix3x2 MatrixElements { get { throw null; } set { } }
         public bool IsIdentity { get { throw null; } }
         public bool IsInvertible { get { throw null; } }
         public float OffsetX { get { throw null; } }

@@ -228,6 +228,9 @@ private:
     template <typename T, typename NumMap>
     inline ValueNum VnForConst(T cnsVal, NumMap* numMap, var_types varType);
 
+    // returns true iff vn is known to be a constant int32 that is > 0
+    bool IsVNPositiveInt32Constant(ValueNum vn);
+
 public:
     // Initializes any static variables of ValueNumStore.
     static void InitValueNumStoreStatics();
@@ -264,7 +267,7 @@ public:
     ValueNum VNForLongCon(INT64 cnsVal);
     ValueNum VNForFloatCon(float cnsVal);
     ValueNum VNForDoubleCon(double cnsVal);
-    ValueNum VNForByrefCon(size_t byrefVal);
+    ValueNum VNForByrefCon(target_size_t byrefVal);
 
 #ifdef TARGET_64BIT
     ValueNum VNForPtrSizeIntCon(INT64 cnsVal)

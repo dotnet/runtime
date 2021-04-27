@@ -4594,7 +4594,7 @@ BOOL GetClassLayout(mdTypeDef cl, ULONG* pulPackSize, ULONG* pulClassSize)
             {
                 COR_FIELD_OFFSET* pFO = g_rFieldOffset;
                 for(g_cFieldOffsets=0;
-                    SUCCEEDED(g_pImport->GetClassLayoutNext(&Layout,&(pFO->ridOfField),&(pFO->ulOffset)))
+                    SUCCEEDED(g_pImport->GetClassLayoutNext(&Layout,&(pFO->ridOfField),(ULONG*)&(pFO->ulOffset)))
                         &&RidFromToken(pFO->ridOfField);
                     g_cFieldOffsets++, pFO++) ret = TRUE;
             }

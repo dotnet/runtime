@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode()
         {
-            return Name == null ? 0 : Name.GetHashCode(StringComparison.OrdinalIgnoreCase);
+            return Name == null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
         }
 
         public override string ToString()

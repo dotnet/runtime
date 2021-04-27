@@ -10,7 +10,7 @@ namespace System.Net.Quic.Implementations
     {
         internal abstract bool Connected { get; }
 
-        internal abstract IPEndPoint LocalEndPoint { get; }
+        internal abstract IPEndPoint? LocalEndPoint { get; }
 
         internal abstract EndPoint RemoteEndPoint { get; }
 

@@ -13,7 +13,6 @@
 
 #include "textualidentityparser.hpp"
 #include "assemblyidentity.hpp"
-#include "utils.hpp"
 
 #include "ex.h"
 
@@ -94,11 +93,9 @@ namespace BINDER_SPACE
             }
         }
 
-        inline BOOL EqualsCaseInsensitive(SString &a, LPCWSTR wzB)
+        inline bool EqualsCaseInsensitive(const SString &a, LPCWSTR wzB)
         {
-            SString b(SString::Literal, wzB);
-
-            return ::BINDER_SPACE::EqualsCaseInsensitive(a, b);
+            return SString::_wcsicmp(a.GetUnicode(), wzB) == 0;
         }
 
         BOOL ValidateHex(SString &publicKeyOrToken)

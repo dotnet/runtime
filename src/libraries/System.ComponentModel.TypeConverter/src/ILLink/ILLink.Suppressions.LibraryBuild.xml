@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.ComponentModel.TypeConverter, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.Design.DesigntimeLicenseContextSerializer.SerializeWithBinaryFormatter(System.IO.Stream,System.String,System.ComponentModel.Design.DesigntimeLicenseContext)</property>
+      <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization=true.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.Design.DesigntimeLicenseContextSerializer.DeserializeUsingBinaryFormatter(System.ComponentModel.Design.DesigntimeLicenseContextSerializer.StreamWrapper,System.String,System.ComponentModel.Design.RuntimeLicenseContext)</property>
+      <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization=true.</property>
+    </attribute>
+  </assembly>
+</linker>

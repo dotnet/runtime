@@ -143,7 +143,8 @@ ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
-ValueNumFuncDef(StrCns, 2, false, true, false)
+ValueNumFuncDef(LazyStrCns, 2, false, true, false)  // lazy-initialized string literal (helper)
+ValueNumFuncDef(NonNullIndirect, 1, false, true, false)  // this indirect is expected to always return a non-null value
 ValueNumFuncDef(Unbox, 2, false, true, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons

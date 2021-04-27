@@ -63,7 +63,7 @@ namespace System.Threading.Tasks.Tests
 
             try
             {
-                await tcs.Task.TimeoutAfter(60_000); // finalizable object should have been collected and finalized
+                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60)); // finalizable object should have been collected and finalized
             }
             catch (Exception e)
             {
@@ -107,7 +107,7 @@ namespace System.Threading.Tasks.Tests
                 GC.WaitForPendingFinalizers();
             }
 
-            await tcs.Task.TimeoutAfter(60_000); // finalizable object should have been collected and finalized
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60)); // finalizable object should have been collected and finalized
             GC.KeepAlive(t); // ensure the TCS is stored in the state machine
         }
 

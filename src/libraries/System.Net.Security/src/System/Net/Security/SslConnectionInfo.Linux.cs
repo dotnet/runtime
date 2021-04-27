@@ -6,7 +6,7 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-    internal partial class SslConnectionInfo
+    internal sealed partial class SslConnectionInfo
     {
         public SslConnectionInfo(SafeSslHandle sslContext)
         {

@@ -29,6 +29,10 @@ namespace Internal.TypeSystem
         /// </summary>
         CoreRT,
         /// <summary>
+        /// model for armel execution model
+        /// </summary>
+        CoreRTArmel,
+        /// <summary>
         /// Jit runtime ABI
         /// </summary>
         Jit,

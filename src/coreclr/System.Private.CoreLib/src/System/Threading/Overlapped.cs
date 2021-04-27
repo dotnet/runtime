@@ -132,6 +132,8 @@ namespace System.Threading
             return AllocateNativeOverlapped();
         }
 
+        internal bool IsUserObject(byte[]? buffer) => ReferenceEquals(_userObject, buffer);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern NativeOverlapped* AllocateNativeOverlapped();
 
@@ -258,6 +260,8 @@ namespace System.Threading
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped._overlappedData = null;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);
         }
+
+        internal bool IsUserObject(byte[]? buffer) => _overlappedData!.IsUserObject(buffer);
     }
 
     #endregion class Overlapped

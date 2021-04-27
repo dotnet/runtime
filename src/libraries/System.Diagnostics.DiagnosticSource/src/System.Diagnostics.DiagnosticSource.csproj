@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard1.3;net45;net46;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netstandard1.1;netstandard1.3;net45;net46;netstandard2.0</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -19,7 +20,7 @@
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
-    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT</DefineConstants>
+    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
@@ -27,9 +28,11 @@
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
     <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
@@ -48,7 +51,7 @@
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
     <Compile Include="System\Diagnostics\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
@@ -60,25 +63,30 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp' or
+                        '$(TargetFramework)' == 'netstandard1.1' or
+                        '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp' or
+                        '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp' and
+                        '$(TargetFramework)' != 'netstandard2.1' and
+                        '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netfx.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netfx.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
     <Compile Include="AssemblyInfo.netfx.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -86,14 +94,17 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and
+                        $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

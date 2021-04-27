@@ -44,7 +44,7 @@ class MyCounter<T> where T : IncrDecr, new()
         T2[] cnters = new T2[1];
         cnters[index] = (T2)(IncrDecr)counters[index];
         cnters[index].Decr(100);
-        counters[index] = (T)(IncrDecr)cnters[index]; ;
+        counters[index] = (T)(IncrDecr)cnters[index];
     }
     public virtual void Increment2<T2>(T2 cnter) where T2 : IncrDecr, new()
     {

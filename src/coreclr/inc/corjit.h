@@ -33,6 +33,65 @@
 
 #include "corjitflags.h"
 
+
+#ifndef MAKE_HRESULT
+// If this header is included without including the windows or PAL headers, then define
+// MAKE_HRESULT, and associated macros
+
+/******************* HRESULT types ****************************************/
+
+#define FACILITY_WINDOWS                 8
+#define FACILITY_URT                     19
+#define FACILITY_UMI                     22
+#define FACILITY_SXS                     23
+#define FACILITY_STORAGE                 3
+#define FACILITY_SSPI                    9
+#define FACILITY_SCARD                   16
+#define FACILITY_SETUPAPI                15
+#define FACILITY_SECURITY                9
+#define FACILITY_RPC                     1
+#define FACILITY_WIN32                   7
+#define FACILITY_CONTROL                 10
+#define FACILITY_NULL                    0
+#define FACILITY_MSMQ                    14
+#define FACILITY_MEDIASERVER             13
+#define FACILITY_INTERNET                12
+#define FACILITY_ITF                     4
+#define FACILITY_DPLAY                   21
+#define FACILITY_DISPATCH                2
+#define FACILITY_COMPLUS                 17
+#define FACILITY_CERT                    11
+#define FACILITY_ACS                     20
+#define FACILITY_AAF                     18
+
+#define NO_ERROR 0L
+
+#define SEVERITY_SUCCESS    0
+#define SEVERITY_ERROR      1
+
+#define SUCCEEDED(Status) ((JITINTERFACE_HRESULT)(Status) >= 0)
+#define FAILED(Status) ((JITINTERFACE_HRESULT)(Status)<0)
+#define IS_ERROR(Status) ((uint32_t)(Status) >> 31 == SEVERITY_ERROR) // diff from win32
+#define HRESULT_CODE(hr)    ((hr) & 0xFFFF)
+#define SCODE_CODE(sc)      ((sc) & 0xFFFF)
+#define HRESULT_FACILITY(hr)  (((hr) >> 16) & 0x1fff)
+#define SCODE_FACILITY(sc)    (((sc) >> 16) & 0x1fff)
+#define HRESULT_SEVERITY(hr)  (((hr) >> 31) & 0x1)
+#define SCODE_SEVERITY(sc)    (((sc) >> 31) & 0x1)
+
+// both macros diff from Win32
+#define MAKE_HRESULT(sev,fac,code) \
+    ((JITINTERFACE_HRESULT) (((uint32_t)(sev)<<31) | ((uint32_t)(fac)<<16) | ((uint32_t)(code))) )
+#define MAKE_SCODE(sev,fac,code) \
+    ((SCODE) (((uint32_t)(sev)<<31) | ((uint32_t)(fac)<<16) | ((LONG)(code))) )
+
+#define FACILITY_NT_BIT                 0x10000000
+#define HRESULT_FROM_WIN32(x) ((JITINTERFACE_HRESULT)(x) <= 0 ? ((JITINTERFACE_HRESULT)(x)) : ((JITINTERFACE_HRESULT) (((x) & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000)))
+#define __HRESULT_FROM_WIN32(x) HRESULT_FROM_WIN32(x)
+
+#define HRESULT_FROM_NT(x)      ((JITINTERFACE_HRESULT) ((x) | FACILITY_NT_BIT))
+#endif // MAKE_HRESULT
+
 /*****************************************************************************/
     // These are error codes returned by CompileMethod
 enum CorJitResult
@@ -85,12 +144,12 @@ enum CheckedWriteBarrierKinds {
 
 #include "corjithost.h"
 
-extern "C" void __stdcall jitStartup(ICorJitHost* host);
+extern "C" void jitStartup(ICorJitHost* host);
 
 class ICorJitCompiler;
 class ICorJitInfo;
 
-extern "C" ICorJitCompiler* __stdcall getJit();
+extern "C" ICorJitCompiler* getJit();
 
 // #EEToJitInterface
 // ICorJitCompiler is the interface that the EE uses to get IL bytecode converted to native code. Note that
@@ -111,14 +170,12 @@ public:
     //
     // * In the 32 bit jit this is implemented by code:CILJit.compileMethod
     // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
-    //
-    // Note: Obfuscators that are hacking the JIT depend on this method having __stdcall calling convention
-    virtual CorJitResult __stdcall compileMethod (
+    virtual CorJitResult compileMethod (
             ICorJitInfo                 *comp,               /* IN */
             struct CORINFO_METHOD_INFO  *info,               /* IN */
             unsigned /* code:CorJitFlag */   flags,          /* IN */
-            BYTE                        **nativeEntry,       /* OUT */
-            ULONG                       *nativeSizeOfCode    /* OUT */
+            uint8_t                        **nativeEntry,       /* OUT */
+            uint32_t                       *nativeSizeOfCode    /* OUT */
             ) = 0;
 
     // Do any appropriate work at process shutdown.  Default impl is to do nothing.
@@ -155,10 +212,10 @@ class ICorJitInfo : public ICorDynamicInfo
 public:
     // get a block of memory for the code, readonly data, and read-write data
     virtual void allocMem (
-            ULONG               hotCodeSize,    /* IN */
-            ULONG               coldCodeSize,   /* IN */
-            ULONG               roDataSize,     /* IN */
-            ULONG               xcptnsCount,    /* IN */
+            uint32_t               hotCodeSize,    /* IN */
+            uint32_t               coldCodeSize,   /* IN */
+            uint32_t               roDataSize,     /* IN */
+            uint32_t               xcptnsCount,    /* IN */
             CorJitAllocMemFlag  flag,           /* IN */
             void **             hotCodeBlock,   /* OUT */
             void **             coldCodeBlock,  /* OUT */
@@ -179,7 +236,7 @@ public:
     virtual void reserveUnwindInfo (
             bool                isFunclet,             /* IN */
             bool                isColdCode,            /* IN */
-            ULONG               unwindSize             /* IN */
+            uint32_t               unwindSize             /* IN */
             ) = 0;
 
     // Allocate and initialize the .rdata and .pdata for this method or
@@ -200,12 +257,12 @@ public:
     //    funcKind        type of funclet (main method code, handler, filter)
     //
     virtual void allocUnwindInfo (
-            BYTE *              pHotCode,              /* IN */
-            BYTE *              pColdCode,             /* IN */
-            ULONG               startOffset,           /* IN */
-            ULONG               endOffset,             /* IN */
-            ULONG               unwindSize,            /* IN */
-            BYTE *              pUnwindBlock,          /* IN */
+            uint8_t *              pHotCode,              /* IN */
+            uint8_t *              pColdCode,             /* IN */
+            uint32_t               startOffset,           /* IN */
+            uint32_t               endOffset,             /* IN */
+            uint32_t               unwindSize,            /* IN */
+            uint8_t *              pUnwindBlock,          /* IN */
             CorJitFuncKind      funcKind               /* IN */
             ) = 0;
 
@@ -247,8 +304,8 @@ public:
 
     struct BlockCounts  // Also defined by:  CORBBTPROF_BLOCK_DATA
     {
-        UINT32 ILOffset;
-        UINT32 ExecutionCount;
+        uint32_t ILOffset;
+        uint32_t ExecutionCount;
     };
 
     // Data structure for a single class probe.
@@ -272,7 +329,7 @@ public:
             OFFSET_MASK    = 0x3FFFFFFF
         };
 
-        UINT32 Count;
+        uint32_t Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
     };
 
@@ -305,6 +362,8 @@ public:
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
+        GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
     };
 
     struct PgoInstrumentationSchema
@@ -316,14 +375,23 @@ public:
         int32_t Other;
     };
 
+#define DEFAULT_UNKNOWN_TYPEHANDLE 1
+#define UNKNOWN_TYPEHANDLE_MIN 1
+#define UNKNOWN_TYPEHANDLE_MAX 33
+
+    static inline bool IsUnknownTypeHandle(intptr_t typeHandle)
+    {
+        return ((typeHandle >= UNKNOWN_TYPEHANDLE_MIN) && (typeHandle <= UNKNOWN_TYPEHANDLE_MAX));
+    }
+
     // get profile information to be used for optimizing a current method.  The format
     // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
-    virtual HRESULT getPgoInstrumentationResults(
+    virtual JITINTERFACE_HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
                                                                    // (pointer will not remain valid after jit completes).
-            UINT32 *                   pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
-            BYTE **                    pInstrumentationData        // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
+            uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
+            uint8_t **                 pInstrumentationData        // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
             ) = 0;
 
@@ -338,30 +406,12 @@ public:
     //
     //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
     //  instrumentation helper functions
-    virtual HRESULT allocPgoInstrumentationBySchema(
+    virtual JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE     ftnHnd,
             PgoInstrumentationSchema *pSchema,                     // IN OUT: pointer to the schema table (array) which describes the instrumentation results. `Offset` field
                                                                    // is filled in by VM; other fields are set and passed in by caller.
-            UINT32                    countSchemaItems,            // IN: count of schema items in `pSchema` array.
-            BYTE **                   pInstrumentationData         // OUT: `*pInstrumentationData` is set to the address of the instrumentation data.
-            ) = 0;
-
-    // Get the likely implementing class for a virtual call or interface call made by ftnHnd
-    // at the indicated IL offset. baseHnd is the interface class or base class for the method
-    // being called. May returns NULL.
-    // 
-    // pLikelihood is the estimated percent chance that the class at runtime is the class
-    // returned by this method. A well-estimated monomorphic call site will return a likelihood
-    // of 100.
-    // 
-    // pNumberOfClasses is the estimated number of different classes seen at the site.
-    // A well-estimated monomorphic call site will return 1.
-    virtual CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            UINT32                ilOffset,
-            UINT32 *              pLikelihood,      // OUT, estimated likelihood of the class (0...100)
-            UINT32 *              pNumberOfClasses  // OUT, estimated number of possible classes
+            uint32_t                  countSchemaItems,            // IN: count of schema items in `pSchema` array.
+            uint8_t **                pInstrumentationData         // OUT: `*pInstrumentationData` is set to the address of the instrumentation data.
             ) = 0;
 
     // Associates a native call site, identified by its offset in the native code stream, with
@@ -369,7 +419,7 @@ public:
     // the call site has no signature information (e.g. a helper call) or has no method handle
     // (e.g. a CALLI P/Invoke), then null should be passed instead.
     virtual void recordCallSite(
-            ULONG                 instrOffset,  /* IN */
+            uint32_t                 instrOffset,  /* IN */
             CORINFO_SIG_INFO *    callSig,      /* IN */
             CORINFO_METHOD_HANDLE methodHandle  /* IN */
             ) = 0;
@@ -379,25 +429,25 @@ public:
     virtual void recordRelocation(
             void *                 location,   /* IN  */
             void *                 target,     /* IN  */
-            WORD                   fRelocType, /* IN  */
-            WORD                   slotNum = 0,  /* IN  */
-            INT32                  addlDelta = 0 /* IN  */
+            uint16_t                   fRelocType, /* IN  */
+            uint16_t                   slotNum = 0,  /* IN  */
+            int32_t                  addlDelta = 0 /* IN  */
             ) = 0;
 
-    virtual WORD getRelocTypeHint(void * target) = 0;
+    virtual uint16_t getRelocTypeHint(void * target) = 0;
 
     // For what machine does the VM expect the JIT to generate code? The VM
     // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
     // is cross-compiling (such as the case for crossgen), it will return a
     // different value than if it was compiling for the host architecture.
     //
-    virtual DWORD getExpectedTargetArchitecture() = 0;
+    virtual uint32_t getExpectedTargetArchitecture() = 0;
 
     // Fetches extended flags for a particular compilation instance. Returns
     // the number of bytes written to the provided buffer.
-    virtual DWORD getJitFlags(
+    virtual uint32_t getJitFlags(
         CORJIT_FLAGS* flags,       /* IN: Points to a buffer that will hold the extended flags. */
-        DWORD        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
+        uint32_t        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
                                           version number for the CORJIT_FLAGS value. */
         ) = 0;
 };

@@ -81,6 +81,9 @@ namespace System.Reflection.Tests
         [Fact]
         public void FullyQualifiedName()
         {
+#if SINGLE_FILE_TEST_RUNNER
+            Assert.Equal("<Unknown>", Module.FullyQualifiedName);
+#else
             var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
 
             // Browser will include the path (/), so strip it
@@ -90,12 +93,17 @@ namespace System.Reflection.Tests
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);
+#endif
         }
 
         [Fact]
         public void Name()
         {
+#if SINGLE_FILE_TEST_RUNNER
+            Assert.Equal("<Unknown>", Module.Name, ignoreCase: true);
+#else
             Assert.Equal("system.runtime.tests.dll", Module.Name, ignoreCase: true);
+#endif
         }
 
         [Fact]
@@ -176,6 +184,60 @@ namespace System.Reflection.Tests
             Assert.Equal(TestModule.GetField("TestLong", BindingFlags.NonPublic | BindingFlags.Static), fields[1]);
         }
 
+        [Fact]
+        public void GetMethod_NullName()
+        {
+            var ex = AssertExtensions.Throws<ArgumentNullException>("name", () => Module.GetMethod(null));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+
+            ex = AssertExtensions.Throws<ArgumentNullException>("name", () => Module.GetMethod(null, Type.EmptyTypes));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+        }
+
+        [Fact]
+        public void GetMethod_NullTypes()
+        {
+            var ex = AssertExtensions.Throws<ArgumentNullException>("types", () => Module.GetMethod("TestMethodFoo", null));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+        }
+
+        [Fact]
+        public void GetMethod_AmbiguousMatch()
+        {
+            var ex = Assert.Throws<AmbiguousMatchException>(() => TestModule.GetMethod("TestMethodFoo"));
+            Assert.Null(ex.InnerException);
+            Assert.NotNull(ex.Message);
+        }
+
+        [Fact]
+        public void GetMethod()
+        {
+            var method = TestModule.GetMethod("TestMethodFoo", Type.EmptyTypes);
+            Assert.True(method.IsPublic);
+            Assert.True(method.IsStatic);
+            Assert.Equal(typeof(void), method.ReturnType);
+            Assert.Empty(method.GetParameters());
+
+            method = TestModule.GetMethod("TestMethodBar", BindingFlags.NonPublic | BindingFlags.Static, null, CallingConventions.Any, new[] { typeof(int) }, null);
+            Assert.False(method.IsPublic);
+            Assert.True(method.IsStatic);
+            Assert.Equal(typeof(int), method.ReturnType);
+            Assert.Equal(typeof(int), method.GetParameters().Single().ParameterType);
+        }
+
+        [Fact]
+        public void GetMethods()
+        {
+            var methodNames = TestModule.GetMethods().Select(m => m.Name).ToArray();
+            AssertExtensions.SequenceEqual(new[]{ "TestMethodFoo", "TestMethodFoo" }, methodNames );
+
+            methodNames = TestModule.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Select(m => m.Name).ToArray();
+            AssertExtensions.SequenceEqual(new[]{ "TestMethodFoo", "TestMethodFoo", "TestMethodBar" }, methodNames );
+        }
+
         public static IEnumerable<object[]> Types =>
             Module.GetTypes().Select(t => new object[] { t });
 
@@ -205,7 +267,7 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Methods =>
-            Module.GetMethods().Select(m => new object[] { m });
+            typeof(ModuleTests).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(m => new object[] { m });
 
         [Theory]
         [MemberData(nameof(Methods))]
@@ -234,7 +296,7 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Fields =>
-            Module.GetFields().Select(f => new object[] { f });
+            typeof(ModuleTests).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(f => new object[] { f });
 
         [Theory]
         [MemberData(nameof(Fields))]

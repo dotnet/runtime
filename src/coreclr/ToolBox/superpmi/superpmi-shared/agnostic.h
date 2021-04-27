@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // agnostic.h - Definition of platform-agnostic data types used by SuperPMI.
@@ -493,20 +491,6 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD data_index;
     DWORD dataByteCount;
     DWORD result;
-};
-
-struct Agnostic_GetLikelyClass
-{
-    DWORDLONG ftnHnd;
-    DWORDLONG baseHnd;
-    DWORD     ilOffset;
-};
-
-struct Agnostic_GetLikelyClassResult
-{
-    DWORDLONG classHnd;
-    DWORD     likelihood;
-    DWORD     numberOfClasses;
 };
 
 struct Agnostic_GetProfilingHandle

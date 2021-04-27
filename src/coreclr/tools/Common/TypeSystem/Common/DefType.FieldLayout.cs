@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Bit flags for layout
         /// </summary>
-        private class FieldLayoutFlags
+        private static class FieldLayoutFlags
         {
             /// <summary>
             /// True if ContainsGCPointers has been computed

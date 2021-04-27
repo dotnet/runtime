@@ -7,7 +7,7 @@ using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-    internal class WinHttpAuthHelper
+    internal sealed class WinHttpAuthHelper
     {
         // Fast lookup table to convert WINHTTP_AUTH constants to strings.
         // WINHTTP_AUTH_SCHEME_BASIC = 0x00000001;

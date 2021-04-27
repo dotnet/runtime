@@ -3,7 +3,7 @@
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
@@ -19,7 +19,6 @@
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
@@ -37,6 +36,10 @@
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsTVOS)' != 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs" />
+    <Compile Condition="'$(TargetsiOS)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.iOS.cs" />
+    <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.tvOS.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
@@ -176,6 +179,8 @@
     <Compile Include="System\Net\Http\HttpTelemetry.AnyOS.cs" />
     <Compile Include="System\Net\Http\HttpUtilities.AnyOS.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocksHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
@@ -657,20 +662,6 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="libmsquic.so" Condition="Exists('libmsquic.so')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\SR.resx" />

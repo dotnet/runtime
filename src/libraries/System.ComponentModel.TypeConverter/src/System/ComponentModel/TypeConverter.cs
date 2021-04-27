@@ -13,6 +13,8 @@ namespace System.ComponentModel
     /// </summary>
     public class TypeConverter
     {
+        internal const string RequiresUnreferencedCodeMessage = "Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.";
+
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object in the
         /// given source type to the native type of the converter.
@@ -224,6 +226,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for the type of array specified by the value parameter.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         public PropertyDescriptorCollection GetProperties(object value) => GetProperties(null, value);
 
         /// <summary>
@@ -232,6 +235,8 @@ namespace System.ComponentModel
         /// the specified context.
         ///
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(BrowsableAttribute))]
         public PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value)
         {
             return GetProperties(context, value, new Attribute[] { BrowsableAttribute.Yes });
@@ -243,6 +248,7 @@ namespace System.ComponentModel
         /// the specified context and attributes.
         ///
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return null;
@@ -364,7 +370,12 @@ namespace System.ComponentModel
             /// <summary>
             /// Gets a value indicating whether this property is read-only.
             /// </summary>
-            public override bool IsReadOnly => Attributes.Contains(ReadOnlyAttribute.Yes);
+            public override bool IsReadOnly
+            {
+                [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(ReadOnlyAttribute))]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
+                get { return Attributes.Contains(ReadOnlyAttribute.Yes); }
+            }
 
             /// <summary>
             /// Gets the type of the property.

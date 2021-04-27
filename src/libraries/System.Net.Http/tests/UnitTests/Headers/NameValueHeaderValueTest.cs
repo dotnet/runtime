@@ -16,7 +16,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_NameNull_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue((string)null); });
         }
 
         [Fact]
@@ -26,35 +26,50 @@ namespace System.Net.Http.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(string.Empty); });
         }
 
-        [Fact]
-        public void Ctor_NameInvalidFormat_ThrowFormatException()
+        [Theory]
+        [InlineData(" text ")]
+        [InlineData("text ")]
+        [InlineData(" text")]
+        [InlineData("\ttext\t")]
+        [InlineData("text\t")]
+        [InlineData("\ttext")]
+        [InlineData("te xt")]
+        // The ctor takes a name which must not contain '='.
+        [InlineData("te=xt")]
+        [InlineData("te\u00E4xt")]
+        public void Ctor_NameInvalidFormat_ThrowFormatException(string value)
         {
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            AssertFormatException(" text ", null);
-            AssertFormatException("text ", null);
-            AssertFormatException(" text", null);
-            AssertFormatException("te xt", null);
-            AssertFormatException("te=xt", null); // The ctor takes a name which must not contain '='.
-            AssertFormatException("te\u00E4xt", null);
+            AssertFormatException(value, null);
         }
 
-        [Fact]
-        public void Ctor_NameValidFormat_SuccessfullyCreated()
+        [Theory]
+        [InlineData("text", null)]
+        [InlineData("host", "server.example.com:80")]
+        [InlineData("quoted", "\"value\"")]
+        [InlineData("empty", "")]
+        public void Ctor_NameValidFormat_SuccessfullyCreated(string name, string value)
         {
-            NameValueHeaderValue nameValue = new NameValueHeaderValue("text", null);
-            Assert.Equal("text", nameValue.Name);
+            NameValueHeaderValue nameValue = new NameValueHeaderValue(name, value);
+            Assert.Equal(name, nameValue.Name);
+            Assert.Equal(value, nameValue.Value);
         }
 
-        [Fact]
-        public void Ctor_ValueInvalidFormat_ThrowFormatException()
+        [Theory]
+        [InlineData(" token ")]
+        [InlineData("token ")]
+        [InlineData(" token")]
+        [InlineData("\ttoken")]
+        [InlineData("\ttoken\t")]
+        [InlineData("token\t")]
+        [InlineData("\"quoted string with \" quotes\"")]
+        [InlineData("\"quoted string with \"two\" quotes\"")]
+        [InlineData("\"")]
+        [InlineData(" ")]
+        public void Ctor_ValueInvalidFormat_ThrowFormatException(string value)
         {
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            AssertFormatException("text", " token ");
-            AssertFormatException("text", "token ");
-            AssertFormatException("text", " token");
-            AssertFormatException("text", "token string");
-            AssertFormatException("text", "\"quoted string with \" quotes\"");
-            AssertFormatException("text", "\"quoted string with \"two\" quotes\"");
+            AssertFormatException("text", value);
         }
 
         [Fact]
@@ -72,7 +87,6 @@ namespace System.Net.Http.Tests
         {
             // Just verify that the setter calls the same validation the ctor invokes.
             Assert.Throws<FormatException>(() => { var x = new NameValueHeaderValue("name"); x.Value = " x "; });
-            Assert.Throws<FormatException>(() => { var x = new NameValueHeaderValue("name"); x.Value = "x y"; });
         }
 
         [Fact]

@@ -736,8 +736,8 @@ public:
         RID        *pFoundRid)  // First RID found, or 0.
     {
         HRESULT hr;
-        ULONG   ridBegin;   // RID of first entry.
-        ULONG   ridEnd;     // RID of first entry past last entry.
+        RID     ridBegin;   // RID of first entry.
+        RID     ridEnd;     // RID of first entry past last entry.
 
         // Search for any entry in the table.
         IfFailRet(static_cast<Impl*>(this)->vSearchTable(ixTbl, sColumn, ulTarget, &ridBegin));
@@ -1368,7 +1368,7 @@ public:
             break;
         case mdtString:
         default:
-            if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 0))
+            if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat))
                 _ASSERTE(!"Unexpected token type in FindCustomAttributeByName");
             hr = COR_E_BADIMAGEFORMAT;
             goto ErrExit;

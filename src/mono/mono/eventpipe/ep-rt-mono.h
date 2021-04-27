@@ -10,6 +10,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
+
 #include <glib.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>
@@ -17,11 +18,11 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-rand.h>
+#include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/w32api.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
-#include <mono/utils/mono-lazy-init.h>
-#include <mono/utils/w32api.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -347,164 +348,12 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
 
-// Rundown callbacks.
-typedef
-bool
-(*ep_rt_mono_fire_method_rundown_events_func)(
-	const uint64_t method_id,
-	const uint64_t module_id,
-	const uint64_t method_start_address,
-	const uint32_t method_size,
-	const uint32_t method_token,
-	const uint32_t method_flags,
-	const ep_char8_t *method_namespace,
-	const ep_char8_t *method_name,
-	const ep_char8_t *method_signature,
-	const uint16_t count_of_map_entries,
-	const uint32_t *il_offsets,
-	const uint32_t *native_offsets,
-	void *user_data);
-
-typedef
-bool
-(*ep_rt_mono_fire_assembly_rundown_events_func)(
-	const uint64_t domain_id,
-	const uint64_t assembly_id,
-	const uint32_t assembly_flags,
-	const uint32_t binding_id,
-	const ep_char8_t *assembly_name,
-	const uint64_t module_id,
-	const uint32_t module_flags,
-	const uint32_t reserved_flags,
-	const ep_char8_t *module_il_path,
-	const ep_char8_t *module_native_path,
-	const uint8_t *managed_pdb_signature,
-	const uint32_t managed_pdb_age,
-	const ep_char8_t *managed_pdb_build_path,
-	const uint8_t *native_pdb_signature,
-	const uint32_t native_pdb_age,
-	const ep_char8_t *native_pdb_build_path,
-	void *user_data);
-
-typedef
-bool
-(*ep_rt_mono_fire_domain_rundown_events_func)(
-	const uint64_t domain_id,
-	const uint32_t domain_flags,
-	const ep_char8_t *domain_name,
-	const uint32_t domain_index,
-	void *user_data);
-
-typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
-typedef void (*ep_rt_thread_holder_free_func)(EventPipeThreadHolder *thread_holder);
-
-typedef int (*ep_rt_mono_cpu_count_func)(void);
-typedef int (*ep_rt_mono_process_current_pid_func)(void);
-typedef MonoNativeThreadId (*ep_rt_mono_native_thread_id_get_func)(void);
-typedef gboolean (*ep_rt_mono_native_thread_id_equals_func)(MonoNativeThreadId, MonoNativeThreadId);
-typedef gboolean (*ep_rt_mono_runtime_is_shutting_down_func)(void);
-typedef gboolean (*ep_rt_mono_rand_try_get_bytes_func)(guchar *buffer, gssize buffer_size, MonoError *error);
-typedef EventPipeThread * (*ep_rt_mono_thread_get_func)(void);
-typedef EventPipeThread * (*ep_rt_mono_thread_get_or_create_func)(void);
-typedef void (*ep_rt_mono_thread_exited_func)(void);
-typedef gint (*ep_rt_mono_thread_info_sleep_func)(guint32 ms, gboolean *alerted);
-typedef gboolean (*ep_rt_mono_thread_info_yield_func)(void);
-typedef gpointer (*ep_rt_mono_w32file_create_func)(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
-typedef gboolean (*ep_rt_mono_w32file_write_func)(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error);
-typedef gboolean (*ep_rt_mono_w32file_close_func)(gpointer handle);
-typedef gpointer (*ep_rt_mono_w32event_create_func)(gboolean manual, gboolean initial);
-typedef gboolean (*ep_rt_mono_w32event_close_func)(gpointer handle);
-typedef void (*ep_rt_mono_w32event_set_func)(gpointer handle);
-typedef MonoW32HandleWaitRet (*ep_rt_mono_w32handle_wait_one_func)(gpointer handle, guint32 timeout, gboolean alertable);
-typedef void* (*ep_rt_mono_valloc_func)(void *addr, size_t length, int flags, MonoMemAccountType type);
-typedef int (*ep_rt_mono_vfree_func)(void *addr, size_t length, MonoMemAccountType type);
-typedef int (*ep_rt_mono_valloc_granule_func)(void);
-typedef gboolean (*ep_rt_mono_thread_platform_create_thread_func)(ep_rt_thread_start_func thread_func, gpointer thread_data, gsize * const stack_size, ep_rt_thread_id_t *thread_id);
-typedef gpointer (*ep_rt_mono_thread_attach_func)(gboolean);
-typedef void (*ep_rt_mono_thread_detach_func)(void);
-typedef char* (*ep_rt_mono_get_os_cmd_line_func)(void);
-typedef char* (*ep_rt_mono_get_managed_cmd_line_func)(void);
-typedef gboolean (*ep_rt_mono_execute_rundown_func)(ep_rt_mono_fire_domain_rundown_events_func domain_events_func, ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func, ep_rt_mono_fire_method_rundown_events_func methods_events_func);
-typedef gboolean (*ep_rt_mono_walk_managed_stack_for_thread_func)(ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
-typedef gboolean (*ep_rt_mono_method_get_simple_assembly_name_func)(ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
-typedef gboolean (*ep_rt_mono_method_get_full_name_func)(ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
-
-typedef struct _EventPipeMonoFuncTable {
-	ep_rt_mono_process_current_pid_func ep_rt_mono_process_current_pid;
-	ep_rt_mono_cpu_count_func ep_rt_mono_cpu_count;
-	ep_rt_mono_native_thread_id_get_func ep_rt_mono_native_thread_id_get;
-	ep_rt_mono_native_thread_id_equals_func ep_rt_mono_native_thread_id_equals;
-	ep_rt_mono_runtime_is_shutting_down_func ep_rt_mono_runtime_is_shutting_down;
-	ep_rt_mono_rand_try_get_bytes_func ep_rt_mono_rand_try_get_bytes;
-	ep_rt_mono_thread_get_func ep_rt_mono_thread_get;
-	ep_rt_mono_thread_get_or_create_func ep_rt_mono_thread_get_or_create;
-	ep_rt_mono_thread_exited_func ep_rt_mono_thread_exited;
-	ep_rt_mono_thread_info_sleep_func ep_rt_mono_thread_info_sleep;
-	ep_rt_mono_thread_info_yield_func ep_rt_mono_thread_info_yield;
-	ep_rt_mono_w32file_create_func ep_rt_mono_w32file_create;
-	ep_rt_mono_w32file_write_func ep_rt_mono_w32file_write;
-	ep_rt_mono_w32file_close_func ep_rt_mono_w32file_close;
-	ep_rt_mono_w32event_create_func ep_rt_mono_w32event_create;
-	ep_rt_mono_w32event_close_func ep_rt_mono_w32event_close;
-	ep_rt_mono_w32event_set_func ep_rt_mono_w32event_set;
-	ep_rt_mono_w32handle_wait_one_func ep_rt_mono_w32hadle_wait_one;
-	ep_rt_mono_valloc_func ep_rt_mono_valloc;
-	ep_rt_mono_vfree_func ep_rt_mono_vfree;
-	ep_rt_mono_valloc_granule_func ep_rt_mono_valloc_granule;
-	ep_rt_mono_thread_platform_create_thread_func ep_rt_mono_thread_platform_create_thread;
-	ep_rt_mono_thread_attach_func ep_rt_mono_thread_attach;
-	ep_rt_mono_thread_detach_func ep_rt_mono_thread_detach;
-	ep_rt_mono_get_os_cmd_line_func ep_rt_mono_get_os_cmd_line;
-	ep_rt_mono_get_managed_cmd_line_func ep_rt_mono_get_managed_cmd_line;
-	ep_rt_mono_execute_rundown_func ep_rt_mono_execute_rundown;
-	ep_rt_mono_walk_managed_stack_for_thread_func ep_rt_mono_walk_managed_stack_for_thread;
-	ep_rt_mono_method_get_simple_assembly_name_func ep_rt_mono_method_get_simple_assembly_name;
-	ep_rt_mono_method_get_full_name_func ep_rt_mono_method_get_full_name;
-} EventPipeMonoFuncTable;
-
-int64_t
-ep_rt_mono_perf_counter_query (void);
-
-int64_t
-ep_rt_mono_perf_frequency_query (void);
-
-void
-ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
-
-int64_t
-ep_rt_mono_system_timestamp_get (void);
-
-void
-ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
-
-void
-ep_rt_mono_init_providers_and_events (void);
-
-void
-ep_rt_mono_fini_providers_and_events (void);
-
-void
-ep_rt_mono_execute_rundown (void);
-
-static
-inline
-EventPipeMonoFuncTable *
-ep_rt_mono_func_table_get (void)
-{
-	extern EventPipeMonoFuncTable _ep_rt_mono_func_table;
-	return &_ep_rt_mono_func_table;
-}
-
 static
 inline
 char *
 os_command_line_get (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return mono_get_os_cmd_line ();
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_get_os_cmd_line ();
-#endif
 }
 
 static
@@ -548,11 +397,7 @@ inline
 char *
 managed_command_line_get (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return mono_runtime_get_managed_cmd_line ();
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_get_managed_cmd_line ();
-#endif
 }
 
 static
@@ -600,17 +445,6 @@ ep_rt_mono_config_lock_get (void)
 	return &_ep_rt_mono_config_lock;
 }
 
-MONO_PROFILER_API
-void
-mono_eventpipe_init (
-	EventPipeMonoFuncTable *table,
-	ep_rt_thread_holder_alloc_func thread_holder_alloc_func,
-	ep_rt_thread_holder_free_func thread_holder_free_func);
-
-MONO_PROFILER_API
-void
-mono_eventpipe_fini (void);
-
 /*
 * Helpers
 */
@@ -642,11 +476,7 @@ inline
 MonoNativeThreadId
 ep_rt_mono_native_thread_id_get (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return mono_native_thread_id_get ();
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_native_thread_id_get ();
-#endif
 }
 
 static
@@ -654,27 +484,7 @@ inline
 gboolean
 ep_rt_mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return mono_native_thread_id_equals (id1, id2);
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_native_thread_id_equals (id1, id2);
-#endif
-}
-
-static
-inline
-gboolean
-ep_rt_mono_rand_try_get_bytes (guchar *buffer, gssize buffer_size, MonoError *error)
-{
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_rand_try_get_bytes (buffer, buffer_size, error);
-}
-
-static
-inline
-void
-ep_rt_mono_thread_exited (void)
-{
-	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_exited ();
 }
 
 static
@@ -682,11 +492,8 @@ inline
 gpointer
 ep_rt_mono_w32file_create (const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	//TODO, replace with low level PAL implementation.
 	return mono_w32file_create (name, fileaccess, sharemode, createmode, attrs);
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_w32file_create (name, fileaccess, sharemode, createmode, attrs);
-#endif
 }
 
 static
@@ -694,11 +501,8 @@ inline
 gboolean
 ep_rt_mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	//TODO, replace with low level PAL implementation.
 	return mono_w32file_write (handle, buffer, numbytes, byteswritten, win32error);
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_w32file_write (handle, buffer, numbytes, byteswritten, win32error);
-#endif
 }
 
 static
@@ -706,11 +510,8 @@ inline
 gboolean
 ep_rt_mono_w32file_close (gpointer handle)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	//TODO, replace with low level PAL implementation.
 	return mono_w32file_close (handle);
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_w32file_close (handle);
-#endif
 }
 
 static
@@ -718,7 +519,8 @@ inline
 void
 ep_rt_mono_thread_setup (bool background_thread)
 {
-	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_attach (background_thread);
+	extern void * ep_rt_mono_thread_attach (bool background_thread);
+	ep_rt_mono_thread_attach (background_thread);
 }
 
 static
@@ -726,7 +528,8 @@ inline
 void
 ep_rt_mono_thread_teardown (void)
 {
-	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_detach ();
+	extern void ep_rt_mono_thread_detach (void);
+	ep_rt_mono_thread_detach ();
 }
 
 /*
@@ -781,6 +584,14 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 	return (int64_t)mono_atomic_dec_i64 ((volatile gint64 *)value);
 }
 
+static
+inline
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
+{
+	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+}
+
 /*
  * EventPipe.
  */
@@ -793,8 +604,19 @@ inline
 void
 ep_rt_init (void)
 {
-	mono_eventpipe_init (ep_rt_mono_func_table_get (), thread_holder_alloc_func, thread_holder_free_func);
+	extern void ep_rt_mono_init (void);
+	ep_rt_mono_init ();
+
 	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_init_finish (void)
+{
+	extern void ep_rt_mono_init_finish (void);
+	ep_rt_mono_init_finish ();
 }
 
 static
@@ -806,7 +628,9 @@ ep_rt_shutdown (void)
 	mono_lazy_cleanup (os_command_line_get_init (), os_command_line_lazy_clean);
 
 	ep_rt_spin_lock_free (ep_rt_mono_config_lock_get ());
-	mono_eventpipe_fini ();
+
+	extern void ep_rt_mono_fini (void);
+	ep_rt_mono_fini ();
 }
 
 static
@@ -850,7 +674,8 @@ ep_rt_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents)
 {
-	return (ep_rt_mono_func_table_get ()->ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents) == TRUE) ? true : false;
+	extern bool ep_rt_mono_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
+	return ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents);
 }
 
 static
@@ -861,7 +686,8 @@ ep_rt_method_get_simple_assembly_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	return (ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_simple_assembly_name (method, name, name_len) == TRUE) ? true : false;
+	extern bool ep_rt_mono_method_get_simple_assembly_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
+	return ep_rt_mono_method_get_simple_assembly_name (method, name, name_len);
 }
 
 static
@@ -872,7 +698,8 @@ ep_rt_method_get_full_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	return (ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_full_name (method, name, name_len) == TRUE) ? true : false;
+	extern bool ep_rt_mono_method_get_full_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
+	return ep_rt_mono_method_get_full_name (method, name, name_len);
 }
 
 static
@@ -888,6 +715,7 @@ inline
 void
 ep_rt_init_providers_and_events (void)
 {
+	extern void ep_rt_mono_init_providers_and_events (void);
 	ep_rt_mono_init_providers_and_events ();
 }
 
@@ -1079,17 +907,15 @@ static
 void
 ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event)
 {
-	// TODO: Implement.
-	// Suspend threads.
-	// Stack walk each thread, write sample event.
-	// Resume threads.
+	extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
+	ep_rt_mono_sample_profiler_write_sampling_event_for_threads (sampling_thread, sampling_event);
 }
 
 static
 void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
-	// TODO: Not supported.
+	;
 }
 
 /*
@@ -1189,12 +1015,9 @@ ep_rt_wait_event_alloc (
 	bool manual,
 	bool initial)
 {
+	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL);
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	wait_event->event = mono_w32event_create (manual, initial);
-#else
-	wait_event->event = ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_create (manual, initial);
-#endif
 }
 
 static
@@ -1202,12 +1025,9 @@ inline
 void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
+	//TODO, replace with low level PAL implementation.
 	if (wait_event != NULL && wait_event->event != NULL) {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 		mono_w32event_close (wait_event->event);
-#else
-		ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_close (wait_event->event);
-#endif
 		wait_event->event = NULL;
 	}
 }
@@ -1217,12 +1037,9 @@ inline
 bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
 {
+	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	mono_w32event_set (wait_event->event);
-#else
-	ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_set (wait_event->event);
-#endif
 	return true;
 }
 
@@ -1234,12 +1051,9 @@ ep_rt_wait_event_wait (
 	uint32_t timeout,
 	bool alertable)
 {
+	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return (int32_t)mono_w32handle_wait_one (wait_event->event, timeout, alertable);
-#else
-	return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_w32hadle_wait_one (wait_event->event, timeout, alertable);
-#endif
 }
 
 static
@@ -1283,11 +1097,7 @@ inline
 bool
 ep_rt_process_detach (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return (mono_runtime_is_shutting_down () == TRUE) ? true : false;
-#else
-	return (ep_rt_mono_func_table_get ()->ep_rt_mono_runtime_is_shutting_down () == TRUE) ? true : false;
-#endif
 }
 
 static
@@ -1308,8 +1118,8 @@ ep_rt_create_activity_id (
 	EP_ASSERT (activity_id != NULL);
 	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-	ERROR_DECL (error);
-	ep_rt_mono_rand_try_get_bytes ((guchar *)activity_id, EP_ACTIVITY_ID_SIZE, error);
+	extern bool ep_rt_mono_rand_try_get_bytes (uint8_t *buffer,size_t buffer_size);
+	ep_rt_mono_rand_try_get_bytes ((guchar *)activity_id, EP_ACTIVITY_ID_SIZE);
 
 	const uint16_t version_mask = 0xF000;
 	const uint16_t random_guid_version = 0x4000;
@@ -1340,7 +1150,7 @@ inline
 bool
 ep_rt_is_running (void)
 {
-	return ep_rt_process_detach ();
+	return !ep_rt_process_detach ();
 }
 
 static
@@ -1350,8 +1160,10 @@ ep_rt_execute_rundown (void)
 {
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
-		if (/*is_running &&*/ !ep_rt_process_shutdown ())
+		if (/*is_running &&*/ !ep_rt_process_shutdown ()) {
+			extern void ep_rt_mono_execute_rundown (void);
 			ep_rt_mono_execute_rundown ();
+		}
 	}
 }
 
@@ -1424,11 +1236,7 @@ ep_rt_thread_create (
 		thread_params->thread_params.thread_func = thread_func;
 		thread_params->thread_params.thread_params = params;
 		thread_params->background_thread = true;
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 		return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
-#else
-		return (ep_rt_mono_func_table_get ()->ep_rt_mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
-#endif
 	}
 
 	return false;
@@ -1447,11 +1255,7 @@ inline
 uint32_t
 ep_rt_current_process_get_id (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return (uint32_t)mono_process_current_pid ();
-#else
-	return (uint32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_process_current_pid ();
-#endif
 }
 
 static
@@ -1467,11 +1271,7 @@ inline
 uint32_t
 ep_rt_processors_get_count (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return (uint32_t)mono_cpu_count ();
-#else
-	return (uint32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_cpu_count ();
-#endif
 }
 
 static
@@ -1479,11 +1279,7 @@ inline
 ep_rt_thread_id_t
 ep_rt_current_thread_get_id (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return mono_native_thread_id_get ();
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_native_thread_id_get ();
-#endif
 }
 
 static
@@ -1491,6 +1287,7 @@ inline
 int64_t
 ep_rt_perf_counter_query (void)
 {
+	extern int64_t ep_rt_mono_perf_counter_query (void);
 	return ep_rt_mono_perf_counter_query ();
 }
 
@@ -1499,6 +1296,7 @@ inline
 int64_t
 ep_rt_perf_frequency_query (void)
 {
+	extern int64_t ep_rt_mono_perf_frequency_query (void);
 	return ep_rt_mono_perf_frequency_query ();
 }
 
@@ -1507,6 +1305,7 @@ inline
 void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
+	extern void ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
 	ep_rt_mono_system_time_get (system_time);
 }
 
@@ -1515,6 +1314,7 @@ inline
 int64_t
 ep_rt_system_timestamp_get (void)
 {
+	extern int64_t ep_rt_mono_system_timestamp_get (void);
 	return ep_rt_mono_system_timestamp_get ();
 }
 
@@ -1523,11 +1323,7 @@ inline
 int32_t
 ep_rt_system_get_alloc_granularity (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return (int32_t)mono_valloc_granule ();
-#else
-	return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_valloc_granule ();
-#endif
 }
 
 static
@@ -1595,11 +1391,8 @@ inline
 uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	uint8_t *buffer = (uint8_t *)mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
-#else
-	uint8_t *buffer = (uint8_t *)ep_rt_mono_func_table_get ()->ep_rt_mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
-#endif
+
 	if (buffer)
 		memset (buffer, 0, buffer_size);
 	return buffer;
@@ -1613,11 +1406,7 @@ ep_rt_vfree (
 	size_t buffer_size)
 {
 	if (buffer)
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 		mono_vfree (buffer, buffer_size, MONO_MEM_ACCOUNT_PROFILER);
-#else
-		ep_rt_mono_func_table_get ()->ep_rt_mono_vfree (buffer, buffer_size, MONO_MEM_ACCOUNT_PROFILER);
-#endif
 }
 
 static
@@ -1656,6 +1445,7 @@ inline
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 {
+	extern void ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 	ep_rt_mono_os_environment_get_utf16 (env_array);
 }
 
@@ -1699,13 +1489,43 @@ ep_rt_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
 * SpinLock.
 */
 
+#ifdef EP_CHECKED_BUILD
+static
+inline
+void
+ep_rt_spin_lock_set_owning_thread_id (
+	ep_rt_spin_lock_handle_t *spin_lock,
+	MonoNativeThreadId thread_id)
+{
+	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
+		ep_rt_volatile_store_uint32_t ((uint32_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
+	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
+		ep_rt_volatile_store_uint64_t ((uint64_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
+	else
+		spin_lock->owning_thread_id = thread_id;
+}
+
+static
+inline
+MonoNativeThreadId
+ep_rt_spin_lock_get_owning_thread_id (const ep_rt_spin_lock_handle_t *spin_lock)
+{
+	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
+		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint32_t ((const uint32_t *)&spin_lock->owning_thread_id));
+	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
+		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint64_t ((const uint64_t *)&spin_lock->owning_thread_id));
+	else
+		return spin_lock->owning_thread_id;
+}
+#endif
+
 static
 inline
 void
 ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 {
 #ifdef EP_CHECKED_BUILD
-	spin_lock->lock_is_held = false;
+	ep_rt_spin_lock_set_owning_thread_id (spin_lock, MONO_UINT_TO_NATIVE_THREAD_ID (0));
 #endif
 	spin_lock->lock = g_new0 (MonoCoopMutex, 1);
 	if (spin_lock->lock)
@@ -1732,8 +1552,7 @@ ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
 	if (spin_lock && spin_lock->lock) {
 		mono_coop_mutex_lock (spin_lock->lock);
 #ifdef EP_CHECKED_BUILD
-		spin_lock->owning_thread_id = ep_rt_mono_native_thread_id_get ();
-		spin_lock->lock_is_held = true;
+		ep_rt_spin_lock_set_owning_thread_id (spin_lock, ep_rt_mono_native_thread_id_get ());
 #endif
 	}
 	return true;
@@ -1746,8 +1565,7 @@ ep_rt_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	if (spin_lock && spin_lock->lock) {
 #ifdef EP_CHECKED_BUILD
-		spin_lock->lock_is_held = false;
-		spin_lock->owning_thread_id = MONO_UINT_TO_NATIVE_THREAD_ID (0);
+		ep_rt_spin_lock_set_owning_thread_id (spin_lock, MONO_UINT_TO_NATIVE_THREAD_ID (0));
 #endif
 		mono_coop_mutex_unlock (spin_lock->lock);
 	}
@@ -1760,7 +1578,7 @@ inline
 void
 ep_rt_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	g_assert (spin_lock->lock_is_held && ep_rt_mono_native_thread_id_equals (spin_lock->owning_thread_id, ep_rt_mono_native_thread_id_get ()));
+	g_assert (ep_rt_mono_native_thread_id_equals (ep_rt_spin_lock_get_owning_thread_id (spin_lock), ep_rt_mono_native_thread_id_get ()));
 }
 
 static
@@ -1768,7 +1586,7 @@ inline
 void
 ep_rt_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	g_assert (!spin_lock->lock_is_held || (spin_lock->lock_is_held && !ep_rt_mono_native_thread_id_equals (spin_lock->owning_thread_id, ep_rt_mono_native_thread_id_get ())));
+	g_assert (!ep_rt_mono_native_thread_id_equals (ep_rt_spin_lock_get_owning_thread_id (spin_lock), ep_rt_mono_native_thread_id_get ()));
 }
 #endif
 
@@ -1830,6 +1648,22 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = g_new(ep_char8_t, byte_len + 1);
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -1844,6 +1678,37 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 g_snprintf ((gchar *)str, (gulong)str_len, (const gchar *)format, __VA_ARGS__)
+
+static
+inline
+bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+)
+{
+	if ((*str) == NULL)
+		return false;
+
+	ep_char8_t* strFound = strstr(*str, strSearch);
+	if (strFound != NULL)
+	{
+		size_t strSearchLen = strlen(strSearch);
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		ep_char8_t *newStr =  g_new(ep_char8_t, newStrSize);
+		if (newStr == NULL)
+		{
+			*str = NULL;
+			return false;
+		}
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", (int)(strFound - (*str)), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_free(*str);
+		*str = newStr;
+		return true;
+	}
+	return false;
+}
 
 static
 inline
@@ -1947,13 +1812,9 @@ inline
 EventPipeThread *
 ep_rt_thread_get (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	extern MonoNativeTlsKey ep_rt_mono_thread_holder_tls_id;
-	EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (ep_rt_mono_thread_holder_tls_id);
+	extern MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
+	EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
 	return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_thread_get ();
-#endif
 }
 
 static
@@ -1962,8 +1823,10 @@ EventPipeThread *
 ep_rt_thread_get_or_create (void)
 {
 	EventPipeThread *thread = ep_rt_thread_get ();
-	if (!thread)
-		thread = ep_rt_mono_func_table_get ()->ep_rt_mono_thread_get_or_create ();
+	if (!thread) {
+		extern EventPipeThread * ep_rt_mono_thread_get_or_create (void);
+		thread = ep_rt_mono_thread_get_or_create ();
+	}
 	return thread;
 }
 
@@ -2060,17 +1923,10 @@ int32_t
 ep_rt_mono_thread_sleep (uint32_t ms, bool alertable)
 {
 	gboolean alerted = false;
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	if (alertable)
 		return (int32_t)mono_thread_info_sleep (ms, &alerted);
 	else
 		return (int32_t)mono_thread_info_sleep (ms, NULL);
-#else
-	if (alertable)
-		return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_sleep (ms, &alerted);
-	else
-		return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_sleep (ms, NULL);
-#endif
 }
 
 static
@@ -2078,11 +1934,7 @@ inline
 bool
 ep_rt_mono_thread_yield (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
 	return (mono_thread_info_yield () == TRUE) ? true : false;
-#else
-	return (ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield () == TRUE) ? true : false;
-#endif
 }
 
 // See src/coreclr/vm/spinlock.h for details.
@@ -2109,7 +1961,7 @@ ep_rt_mono_thread_yield (void)
  * ThreadSequenceNumberMap.
  */
 
-EP_RT_DEFINE_HASH_MAP(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
+EP_RT_DEFINE_HASH_MAP_REMOVE(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
 EP_RT_DEFINE_HASH_MAP_ITERATOR(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, ep_rt_thread_sequence_number_hash_map_iterator_t, EventPipeThreadSessionState *, uint32_t)
 
 /*
@@ -2262,6 +2114,13 @@ ep_rt_volatile_store_ptr_without_barrier (
 {
 	*ptr = value;
 }
+
+/*
+ * EventPipe Native Events.
+ */
+
+bool
+ep_rt_mono_write_event_ee_startup_start (void);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_MONO_H__ */

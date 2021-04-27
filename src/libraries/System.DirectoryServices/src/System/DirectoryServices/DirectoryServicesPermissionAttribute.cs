@@ -14,7 +14,7 @@ namespace System.DirectoryServices
     {
         public DirectoryServicesPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public DirectoryServicesPermissionAccess PermissionAccess { get; set; }
-        public string Path { get; set; }
-        public override IPermission CreatePermission() { return default(IPermission); }
+        public string? Path { get; set; }
+        public override IPermission? CreatePermission() { return default(IPermission); }
     }
 }

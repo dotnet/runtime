@@ -1,0 +1,195 @@
+<Project>
+  <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
+  <PropertyGroup>
+    <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
+         so, just setting it true by default -->
+    <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
+    <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
+    <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
+    <JSEngine Condition="'$(JSEngine)' == ''">V8</JSEngine>
+    <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
+
+    <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT'">wasm %XHARNESS_COMMAND% --app=. --output-directory=%XHARNESS_OUT%</_XHarnessArgs>
+
+    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
+
+    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
+    <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll --testing</_AppArgs>
+
+    <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
+
+    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
+    <_AOTBuildCommand>dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+
+    <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
+    <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
+
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) &amp;&amp; cd wasm_build/AppBundle</_AOTBuildCommand>
+
+    <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) &amp;&amp; $(RunScriptCommand)</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>false</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+
+    <!-- we want to default to what Blazor has, except if we are building in Debug config -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
+  </PropertyGroup>
+
+  <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"
+          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"
+          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+      <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+
+      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmBuildApp</BundleTestWasmAppDependsOn>
+      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'helix'">StageEmSdkForHelix</BundleTestWasmAppDependsOn>
+
+      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
+
+  <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
+             TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
+
+  <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
+    <ItemGroup>
+      <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
+      <BundleFiles Include="@(WasmSatelliteAssemblies)"         TargetDir="publish/%(WasmSatelliteAssemblies.CultureName)" />
+      <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish" />
+
+      <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
+      <!-- Add any pdb files, if available -->
+      <_BundlePdbFiles Include="$([System.IO.Path]::ChangeExtension('%(WasmAssembliesToBundle.Identity)', '.pdb'))" />
+      <BundleFiles Include="@(_BundlePdbFiles)" TargetDir="publish" Condition="Exists(%(_BundlePdbFiles.Identity))" />
+    </ItemGroup>
+
+    <!-- To recreate the original project on helix, we need to set the wasm properties also, same as the
+         library test project. Eg. $(InvariantGlobalization) -->
+    <ItemGroup>
+      <_WasmPropertyNames Include="InvariantGlobalization" />
+      <_WasmPropertyNames Include="AOTMode" />
+      <_WasmPropertyNames Include="WasmDebugLevel" />
+      <_WasmPropertyNames Include="WasmBuildNative" />
+      <_WasmPropertyNames Include="_WasmDevel" />
+      <_WasmPropertyNames Include="WasmLinkIcalls" />
+      <_WasmPropertyNames Include="WasmDedup" />
+      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
+
+      <_WasmPropertiesToPass
+        Include="$(%(_WasmPropertyNames.Identity))"
+        Name="%(_WasmPropertyNames.Identity)"
+        ConditionToUse="%(_WasmPropertyNames.ConditionToUse)" />
+
+      <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
+      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
+    </ItemGroup>
+
+    <!-- This file gets imported by the project file on helix -->
+    <GenerateAOTProps
+        Properties="@(_WasmPropertiesToPass)"
+        OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
+
+    <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
+    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
+  </Target>
+
+  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
+   attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
+   payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
+  <Target Name="StageEmSdkForHelix" Condition="'$(EmSdkDirForHelixPayload)' == '' or !Exists($(EmSdkDirForHelixPayload))">
+    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDirForHelixPayload) or in EMSDK_PATH=$(EMSDK_PATH)" />
+
+    <ItemGroup>
+      <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
+    <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+  </Target>
+
+  <Target Name="PrepareForWasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <WasmNativeStrip>false</WasmNativeStrip>
+
+      <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+
+      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
+
+      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem
+              Include="@(WasmSatelliteAssemblies)"
+              TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.FileName)%(WasmSatelliteAssemblies.Extension)"
+              Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'" />
+
+      <_CopyLocalPaths
+              Include="@(PublishItemsOutputGroupOutputs)"
+              Condition="'%(PublishItemsOutputGroupOutputs.BuildReference)' == 'true' and
+                         !$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.resources.dll'))" />
+
+      <_CopyLocalPaths TargetPath="%(_CopyLocalPaths.RelativePath)" Condition="'%(_CopyLocalPaths.RelativePath)' != ''" />
+      <_CopyLocalPaths TargetPath="%(FileName)%(Extension)"         Condition="'%(_CopyLocalPaths.RelativePath)' == ''" />
+      <WasmFilesToIncludeInFileSystem Include="@(_CopyLocalPaths)" />
+
+      <!-- Include files specified by test projects from publish dir -->
+      <WasmFilesToIncludeInFileSystem
+              Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+              TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+              Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <!-- linker automatically picks up the .pdb files, but they are not added to the publish list.
+       Add them explicitly here, so they can be used with WasmAppBuilder -->
+  <Target Name="AddPdbFilesToPublishList" AfterTargets="ILLink" Condition="'$(DebuggerSupport)' == 'true'">
+    <ItemGroup>
+      <_PdbFilesToCheck Include="$([System.IO.Path]::ChangeExtension('%(ResolvedFileToPublish.Identity)', '.pdb'))"
+                        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll'" />
+
+      <ResolvedFileToPublish Include="@(_PdbFilesToCheck)"
+                             Condition="Exists(%(_PdbFilesToCheck.Identity))"
+                             RelativePath="%(_PdbFilesToCheck.FileName)%(_PdbFilesToCheck.Extension)" />
+    </ItemGroup>
+  </Target>
+</Project>

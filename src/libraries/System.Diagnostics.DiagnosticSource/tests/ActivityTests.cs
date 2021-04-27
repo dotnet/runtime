@@ -889,7 +889,7 @@ namespace System.Diagnostics.Tests
 
                 Activity parent = new Activity("parent").Start();
                 Activity activity = new Activity("child").Start();
-                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString()); ;
+                Assert.Equal(parent.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
             }).Dispose();
         }
 
@@ -1547,6 +1547,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestTagObjects()
         {
             Activity activity = new Activity("TagObjects");
@@ -1607,6 +1608,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestGetTagItem()
         {
             Activity a = new Activity("GetTagItem");
@@ -1695,6 +1697,32 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestParentTraceFlags()
+        {
+            Activity a = new Activity("ParentFlagsA");
+            a.SetIdFormat(ActivityIdFormat.W3C);
+            a.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.Recorded);
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01", a.ParentId);
+
+            Activity b = new Activity("ParentFlagsB");
+            b.SetIdFormat(ActivityIdFormat.W3C);
+            b.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.None);
+            b.ActivityTraceFlags = ActivityTraceFlags.Recorded; // Setting ActivityTraceFlags shouldn't affect the parent
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00", b.ParentId);
+
+            using ActivitySource aSource = new ActivitySource("CheckParentTraceFlags");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+            ActivitySource.AddActivityListener(listener);
+
+            ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
+            a = aSource.CreateActivity("WithContext", ActivityKind.Internal, parentContext, default, default, ActivityIdFormat.W3C);
+            Assert.NotNull(a);
+            Assert.Equal("00-" + parentContext.TraceId + "-" + parentContext.SpanId + "-01", a.ParentId);
+        }
+
+        [Fact]
         public void TestStatus()
         {
             Activity a = new Activity("Status");
@@ -1749,6 +1777,68 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(method);
             Assert.False(method.ReturnType.IsInterface);
             Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Null(Activity.Current);
+
+                Activity a = new Activity("Root");
+                a.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                // Create Activity with the parent context to not use Activity.Current as a parent
+                Activity b = new Activity("Child");
+                b.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
+                b.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Child", Activity.Current.OperationName);
+
+                b.Stop();
+
+                // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                // the original parent stored in Activity.Current before we started the Activity.
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                a.Stop();
+                Assert.Null(Activity.Current);
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TraceIdCustomGenerationTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Random random = new Random();
+                byte [] traceIdBytes = new byte[16];
+
+                Activity.TraceIdGenerator = () =>
+                {
+                    random.NextBytes(traceIdBytes);
+                    return ActivityTraceId.CreateFromBytes(traceIdBytes);
+                };
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.Null(Activity.Current);
+                    Activity a = new Activity("CustomTraceId");
+                    a.Start();
+
+                    Assert.Equal(ActivityTraceId.CreateFromBytes(traceIdBytes), a.TraceId);
+
+                    a.Stop();
+                }
+            }).Dispose();
         }
 
         public void Dispose()

@@ -132,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
                 Version = HttpVersion.Version30,
                 VersionPolicy = HttpVersionPolicy.RequestVersionExact
             };
-            using HttpResponseMessage response = await client.SendAsync(request).TimeoutAfter(20_000);
+            using HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(20));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
@@ -155,7 +155,7 @@ namespace System.Net.Http.Functional.Tests
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
-                using HttpResponseMessage responseA = await client.SendAsync(requestA).TimeoutAfter(20_000);
+                using HttpResponseMessage responseA = await client.SendAsync(requestA).WaitAsync(TimeSpan.FromSeconds(20));
                 Assert.Equal(HttpStatusCode.OK, responseA.StatusCode);
                 Assert.NotEqual(3, responseA.Version.Major);
             }
@@ -170,7 +170,7 @@ namespace System.Net.Http.Functional.Tests
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
-                using HttpResponseMessage responseB = await client.SendAsync(requestB).TimeoutAfter(20_000);
+                using HttpResponseMessage responseB = await client.SendAsync(requestB).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Assert.Equal(HttpStatusCode.OK, responseB.StatusCode);
                 Assert.NotEqual(3, responseB.Version.Major);

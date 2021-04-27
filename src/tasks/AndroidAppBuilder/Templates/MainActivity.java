@@ -44,7 +44,7 @@ public class MainActivity extends Activity
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
-                int retcode = MonoRunner.initialize(entryPointLibName, ctx);
+                int retcode = MonoRunner.initialize(entryPointLibName, new String[0], ctx);
                 textView.setText("Mono Runtime returned: " + retcode);
             }
         }, 1000);

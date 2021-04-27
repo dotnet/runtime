@@ -6,12 +6,19 @@
 #define HEADER_LENGTH 11
 #define REPLY_PACKET 0x80
 
+#ifdef TARGET_AMD64
+#define POS_RAX 0x78
+#else
+#define POS_RAX 0 //TODO fix for other platforms
+#endif
+
+
 /* 
  * Wire Protocol definitions
  */
 
-#define MAJOR_VERSION 3
-#define MINOR_VERSION 0
+#define MAJOR_VERSION 2
+#define MINOR_VERSION 60
 
 typedef enum {
 	MDBGPROT_CMD_COMPOSITE = 100
@@ -32,7 +39,9 @@ typedef enum {
 	MDBGPROT_CMD_VM_GET_TYPES = 12,
 	MDBGPROT_CMD_VM_INVOKE_METHODS = 13,
 	MDBGPROT_CMD_VM_START_BUFFERING = 14,
-	MDBGPROT_CMD_VM_STOP_BUFFERING = 15
+	MDBGPROT_CMD_VM_STOP_BUFFERING = 15,
+	MDBGPROT_CMD_VM_READ_MEMORY = 16,
+	MDBGPROT_CMD_VM_WRITE_MEMORY = 17
 } MdbgProtCmdVM;
 
 typedef enum {
@@ -109,7 +118,10 @@ typedef enum {
 	MDBGPROT_CMD_THREAD_GET_ID = 5,
 	MDBGPROT_CMD_THREAD_GET_TID = 6,
 	MDBGPROT_CMD_THREAD_SET_IP = 7,
-	MDBGPROT_CMD_THREAD_ELAPSED_TIME = 8
+	MDBGPROT_CMD_THREAD_ELAPSED_TIME = 8,
+	MDBGPROT_CMD_THREAD_GET_APPDOMAIN = 9,
+	MDBGPROT_CMD_THREAD_GET_CONTEXT = 10,
+	MDBGPROT_CMD_THREAD_SET_CONTEXT = 11
 } MdbgProtCmdThread;
 
 typedef enum {
@@ -138,11 +150,13 @@ typedef enum {
 	MDBGPROT_CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12,
 	MDBGPROT_CMD_ASSEMBLY_HAS_DEBUG_INFO = 13,
 	MDBGPROT_CMD_ASSEMBLY_GET_CATTRS = 14,
-	MDBGPROT_CMD_ASSEMBLY_GET_CUSTOM_ATTRIBUTES = 15
+	MDBGPROT_CMD_ASSEMBLY_GET_CUSTOM_ATTRIBUTES = 15,
+	MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS = 16,
 } MdbgProtCmdAssembly;
 
 typedef enum {
 	MDBGPROT_CMD_MODULE_GET_INFO = 1,
+	MDBGPROT_CMD_MODULE_APPLY_CHANGES = 2,
 } MdbgProtCmdModule;
 
 typedef enum {
@@ -165,7 +179,8 @@ typedef enum {
 	MDBGPROT_CMD_METHOD_GET_CATTRS = 9,
 	MDBGPROT_CMD_METHOD_MAKE_GENERIC_METHOD = 10,
 	MDBGPROT_CMD_METHOD_TOKEN = 11,
-	MDBGPROT_CMD_METHOD_ASSEMBLY = 12
+	MDBGPROT_CMD_METHOD_ASSEMBLY = 12,
+	MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN = 13
 } MdbgProtCmdMethod;
 
 typedef enum {
@@ -188,7 +203,8 @@ typedef enum {
 	MDBGPROT_CMD_TYPE_GET_INTERFACE_MAP = 17,
 	MDBGPROT_CMD_TYPE_IS_INITIALIZED = 18,
 	MDBGPROT_CMD_TYPE_CREATE_INSTANCE = 19,
-	MDBGPROT_CMD_TYPE_GET_VALUE_SIZE = 20
+	MDBGPROT_CMD_TYPE_GET_VALUE_SIZE = 20,
+	MDBGPROT_CMD_TYPE_GET_VALUES_ICORDBG = 21
 } MdbgProtCmdType;
 
 typedef enum {
@@ -198,6 +214,7 @@ typedef enum {
 	MDBGPROT_CMD_STACK_FRAME_GET_DOMAIN = 4,
 	MDBGPROT_CMD_STACK_FRAME_SET_THIS = 5,
 	MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENT = 6,
+	MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENTS = 7
 } MdbgProtCmdStackFrame;
 
 typedef enum {
@@ -340,22 +357,23 @@ int m_dbgprot_decode_int (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int64_t m_dbgprot_decode_long (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int m_dbgprot_decode_id (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 char* m_dbgprot_decode_string (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
-uint8_t* m_dbgprot_decode_byte_array(uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int *len);
+char* m_dbgprot_decode_string_with_len(uint8_t* buf, uint8_t** endbuf, uint8_t* limit, int *len);
+uint8_t* m_dbgprot_decode_byte_array(uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int32_t *len);
 
 /*
  * Functions to encode protocol data
  */
 
-void m_dbgprot_buffer_init (MdbgProtBuffer *buf, int size);
-int m_dbgprot_buffer_len (MdbgProtBuffer *buf);
-void m_dbgprot_buffer_make_room (MdbgProtBuffer *buf, int size);
+void m_dbgprot_buffer_init (MdbgProtBuffer *buf, uint32_t size);
+uint32_t m_dbgprot_buffer_len (MdbgProtBuffer *buf);
+void m_dbgprot_buffer_make_room (MdbgProtBuffer *buf, uint32_t size);
 void m_dbgprot_buffer_add_byte (MdbgProtBuffer *buf, uint8_t val);
 void m_dbgprot_buffer_add_short (MdbgProtBuffer *buf, uint32_t val);
 void m_dbgprot_buffer_add_int (MdbgProtBuffer *buf, uint32_t val);
 void m_dbgprot_buffer_add_long (MdbgProtBuffer *buf, uint64_t l);
-void m_dbgprot_buffer_add_id (MdbgProtBuffer *buf, int id);
-void m_dbgprot_buffer_add_data (MdbgProtBuffer *buf, uint8_t *data, int len);
-void m_dbgprot_buffer_add_utf16 (MdbgProtBuffer *buf, uint8_t *data, int len);
+void m_dbgprot_buffer_add_id (MdbgProtBuffer *buf, uint32_t id);
+void m_dbgprot_buffer_add_data (MdbgProtBuffer *buf, uint8_t *data, uint32_t len);
+void m_dbgprot_buffer_add_utf16 (MdbgProtBuffer *buf, uint8_t *data, uint32_t len);
 void m_dbgprot_buffer_add_string (MdbgProtBuffer *buf, const char *str);
 void m_dbgprot_buffer_add_byte_array (MdbgProtBuffer *buf, uint8_t *bytes, uint32_t arr_len);
 void m_dbgprot_buffer_add_buffer (MdbgProtBuffer *buf, MdbgProtBuffer *data);

@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
             yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 } };
 
-            if (PlatformDetection.IsNotBrowser && !PlatformDetection.IsUbuntu && !PlatformDetection.IsWindows7 && !PlatformDetection.IsWindows8x && !PlatformDetection.IsFedora)
+            if (PlatformDetection.IsNotUsingLimitedCultures && !PlatformDetection.IsUbuntu && !PlatformDetection.IsWindows7 && !PlatformDetection.IsWindows8x && !PlatformDetection.IsFedora)
             {
                 yield return new object[] { CultureInfo.GetCultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 } };
             }

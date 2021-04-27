@@ -68,8 +68,7 @@ struct _rt_mono_event_internal_t {
 struct _rt_mono_lock_internal_t {
 	MonoCoopMutex *lock;
 #ifdef EP_CHECKED_BUILD
-	MonoNativeThreadId owning_thread_id;
-	bool lock_is_held;
+	volatile MonoNativeThreadId owning_thread_id;
 #endif
 };
 

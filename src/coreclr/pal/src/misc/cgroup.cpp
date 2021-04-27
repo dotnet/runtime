@@ -415,6 +415,7 @@ private:
             }
         }
 
+        free(mem_usage_filename);
         return result;
     }
 

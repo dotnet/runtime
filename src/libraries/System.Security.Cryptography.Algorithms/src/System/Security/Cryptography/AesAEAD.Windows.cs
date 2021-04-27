@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    internal partial class AesAEAD
+    internal static partial class AesAEAD
     {
         public static unsafe void Encrypt(
             SafeAlgorithmHandle algorithm,

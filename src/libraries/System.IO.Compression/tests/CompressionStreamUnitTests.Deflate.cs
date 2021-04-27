@@ -30,6 +30,7 @@ namespace System.IO.Compression
         /// <summary>Test to pass GZipStream data and ZLibStream data to a DeflateStream</summary>
         [Theory]
         [MemberData(nameof(DecompressFailsWithWrapperStream_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36845", TestPlatforms.Android)]
         public async Task DecompressFailsWithWrapperStream(string uncompressedPath, string newDirectory, string newSuffix)
         {
             string fileName = Path.Combine(newDirectory, Path.GetFileName(uncompressedPath) + newSuffix);

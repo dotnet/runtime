@@ -2,7 +2,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
+    - main
     - release/*
     - internal/release/*
   paths:
@@ -40,6 +40,11 @@ variables:
 stages:
 - stage: Build
   jobs:
+
+  #
+  # Source Index Build
+  #
+  - template: ./source-index.yml
 
   #
   # Build CoreCLR
@@ -98,13 +103,18 @@ stages:
       - Android_x86
       - Android_arm
       - Android_arm64
-      - tvOS_x64
+      - MacCatalyst_x64
+      - MacCatalyst_arm64
+      - tvOSSimulator_x64
+      - tvOSSimulator_arm64
       - tvOS_arm64
-      - iOS_x64
-      - iOS_x86
+      - iOSSimulator_x64
+      - iOSSimulator_x86
+      - iOSSimulator_arm64
       - iOS_arm
       - iOS_arm64
       - OSX_x64
+      - OSX_arm64
       - Linux_x64
       - Linux_arm
       - Linux_arm64
@@ -117,7 +127,7 @@ stages:
       # - windows_arm
       # - windows_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -133,8 +143,8 @@ stages:
       platforms:
       - Android_x64
       - Browser_wasm
-      - tvOS_x64
-      - iOS_x64
+      - tvOS_arm64
+      - iOS_arm64
 
   #
   # Build Mono release AOT cross-compilers
@@ -146,6 +156,29 @@ stages:
       buildConfig: release
       platforms:
       - Linux_x64
+      jobParameters:
+        buildArgs: -s mono+packs -c $(_BuildConfig)
+                   /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        nameSuffix: CrossAOT_Mono
+        runtimeVariant: crossaot
+        dependsOn:
+        - mono_android_offsets
+        - mono_browser_offsets
+        monoCrossAOTTargetOS:
+        - Android
+        - Browser
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - Windows_x64
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
                    /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
@@ -294,6 +327,37 @@ stages:
       - windows_x64
       - windows_arm
       - windows_arm64
+
+  #
+  # Build PGO CoreCLR release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      buildConfig: release
+      platforms:
+      - windows_x64
+      - windows_x86
+      - Linux_x64
+      jobParameters:
+        testGroup: innerloop
+        pgoType: 'PGO'
+
+  #
+  # PGO Build
+  #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      buildConfig: Release
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+        pgoType: 'PGO'
+      platforms:
+      - windows_x64
+      - windows_x86
+      - Linux_x64
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

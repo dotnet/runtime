@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
@@ -23,32 +24,52 @@ namespace System.Linq
                     return element!;
                 }
             }
-            else
+            else if (source is IList<TSource> list)
             {
-                if (source is IList<TSource> list)
-                {
-                    return list[index];
-                }
-
-                if (index >= 0)
-                {
-                    using (IEnumerator<TSource> e = source.GetEnumerator())
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (index == 0)
-                            {
-                                return e.Current;
-                            }
-
-                            index--;
-                        }
-                    }
-                }
+                return list[index];
+            }
+            else if (TryGetElement(source, index, out TSource? element))
+            {
+                return element;
             }
 
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             return default;
+        }
+
+        /// <summary>Returns the element at a specified index in a sequence.</summary>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return an element from.</param>
+        /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence.
+        /// </exception>
+        /// <returns>The element at the specified position in the <paramref name="source" /> sequence.</returns>
+        public static TSource ElementAt<TSource>(this IEnumerable<TSource> source, Index index)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (!index.IsFromEnd)
+            {
+                return source.ElementAt(index.Value);
+            }
+
+            if (source.TryGetNonEnumeratedCount(out int count))
+            {
+                return source.ElementAt(count - index.Value);
+            }
+
+            if (!TryGetElementFromEnd(source, index.Value, out TSource? element))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            return element;
         }
 
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
@@ -63,33 +84,101 @@ namespace System.Linq
                 return partition.TryGetElementAt(index, out bool _);
             }
 
+            if (source is IList<TSource> list)
+            {
+                return index >= 0 && index < list.Count ? list[index] : default;
+            }
+
+            TryGetElement(source, index, out TSource? element);
+            return element;
+
+        }
+
+        /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return an element from.</param>
+        /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="default" /> if <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence; otherwise, the element at the specified position in the <paramref name="source" /> sequence.
+        /// </returns>
+        public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, Index index)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (!index.IsFromEnd)
+            {
+                return source.ElementAtOrDefault(index.Value);
+            }
+
+            if (source.TryGetNonEnumeratedCount(out int count))
+            {
+                return source.ElementAtOrDefault(count - index.Value);
+            }
+
+            TryGetElementFromEnd(source, index.Value, out TSource? element);
+            return element;
+        }
+
+        private static bool TryGetElement<TSource>(IEnumerable<TSource> source, int index, [MaybeNullWhen(false)] out TSource element)
+        {
+            Debug.Assert(source != null);
+
             if (index >= 0)
             {
-                if (source is IList<TSource> list)
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                while (e.MoveNext())
                 {
-                    if (index < list.Count)
+                    if (index == 0)
                     {
-                        return list[index];
+                        element = e.Current;
+                        return true;
                     }
-                }
-                else
-                {
-                    using (IEnumerator<TSource> e = source.GetEnumerator())
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (index == 0)
-                            {
-                                return e.Current;
-                            }
 
-                            index--;
+                    index--;
+                }
+            }
+
+            element = default;
+            return false;
+        }
+
+        private static bool TryGetElementFromEnd<TSource>(IEnumerable<TSource> source, int indexFromEnd, [MaybeNullWhen(false)] out TSource element)
+        {
+            Debug.Assert(source != null);
+
+            if (indexFromEnd > 0)
+            {
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                if (e.MoveNext())
+                {
+                    Queue<TSource> queue = new();
+                    queue.Enqueue(e.Current);
+                    while (e.MoveNext())
+                    {
+                        if (queue.Count == indexFromEnd)
+                        {
+                            queue.Dequeue();
                         }
+
+                        queue.Enqueue(e.Current);
+                    }
+
+                    if (queue.Count == indexFromEnd)
+                    {
+                        element = queue.Dequeue();
+                        return true;
                     }
                 }
             }
 
-            return default;
+            element = default;
+            return false;
         }
     }
 }

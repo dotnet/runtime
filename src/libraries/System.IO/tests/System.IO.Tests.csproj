@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.ToArrayTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
     <Compile Include="StreamReader\StreamReader.cs" />
     <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
@@ -52,11 +53,12 @@
     <Compile Include="TextReader\TextReaderTests.cs" />
     <Compile Include="TextWriter\CharArrayTextWriter.cs" />
     <Compile Include="TextWriter\TextWriterTests.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

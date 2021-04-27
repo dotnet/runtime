@@ -1,6 +1,10 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <PropertyGroup>
+    <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes> <!-- Justification: HttpListener.ctor() throws PNSE on wasm -->
+  </PropertyGroup>
+
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="CookieExtensionsTest.Clone.cs">
       <AdditionalSourceFiles>CookieExtensionsTest.Helper.cs</AdditionalSourceFiles>

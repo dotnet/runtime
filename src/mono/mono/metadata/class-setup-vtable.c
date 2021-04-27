@@ -23,9 +23,7 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-#ifdef ENABLE_NETCORE
 #define FEATURE_COVARIANT_RETURNS
-#endif
 
 static void mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup);
 
@@ -485,9 +483,6 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			TRACE_INTERFACE_VTABLE (printf ("]"));
 			return FALSE;
 		}
-		TRACE_INTERFACE_VTABLE (printf ("[SECURITY CHECKS]"));
-		if (mono_security_core_clr_enabled ())
-			mono_security_core_clr_check_override (klass, cm, im);
 
 		TRACE_INTERFACE_VTABLE (printf ("[NAME CHECK OK]"));
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
@@ -565,10 +560,6 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 			TRACE_INTERFACE_VTABLE (printf ("[METHOD NAME CHECK FAILED]"));
 			return FALSE;
 		}
-		
-		TRACE_INTERFACE_VTABLE (printf ("[SECURITY CHECKS (INJECTED CASE)]"));
-		if (mono_security_core_clr_enabled ())
-			mono_security_core_clr_check_override (klass, cm, im);
 
 		TRACE_INTERFACE_VTABLE (printf ("[INJECTED INTERFACE CHECK OK]"));
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
@@ -1906,9 +1897,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					if (!strcmp(cm->name, m1->name) && 
 					    mono_metadata_signature_equal (cmsig, m1sig)) {
 
-						if (mono_security_core_clr_enabled ())
-							mono_security_core_clr_check_override (klass, cm, m1);
-
 						slot = mono_method_get_vtable_slot (m1);
 						if (slot == -1)
 							goto fail;
@@ -2028,9 +2016,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				}
 			}
 #endif /* FEATURE_COVARIANT_RETURNS */
-
-			if (mono_security_core_clr_enabled ())
-				mono_security_core_clr_check_override (klass, impl, decl);
 		}
 	}
 

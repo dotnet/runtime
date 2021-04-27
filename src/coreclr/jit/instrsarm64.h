@@ -1194,6 +1194,12 @@ INST1(ldadda,      "ldadda",       LD|ST,  IF_LS_3E,  0xB8A00000)
 INST1(ldaddal,     "ldaddal",      LD|ST,  IF_LS_3E,  0xB8E00000)
                                    //  ldaddal  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 000000nnnnnttttt   B8E0 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 
+INST1(ldclral,     "ldclral",      LD|ST,  IF_LS_3E,  0xB8E01000)
+                                   //  ldclral  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 000100nnnnnttttt   B8E0 1000   Rm Rt Rn ARMv8.1 LSE Atomics
+
+INST1(ldsetal,     "ldsetal",      LD|ST,  IF_LS_3E,  0xB8E03000)
+                                   //  ldsetal  Rm, Rt, [Xn]        LS_3E  1X111000111mmmmm 001100nnnnnttttt   B8E0 3000   Rm Rt Rn ARMv8.1 LSE Atomics
+
 INST1(ldaddl,      "ldaddl",       LD|ST,  IF_LS_3E,  0xB8600000)
                                    //  ldaddl   Rm, Rt, [Xn]        LS_3E  1X111000011mmmmm 000000nnnnnttttt   B860 0000   Rm Rt Rn ARMv8.1 LSE Atomics
 

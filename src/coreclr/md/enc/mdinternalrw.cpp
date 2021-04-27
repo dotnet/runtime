@@ -720,7 +720,7 @@ ULONG MDInternalRW::GetCountWithTokenKind(     // return hresult
         break;
     default:
 #ifdef _DEBUG
-        if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
             _ASSERTE(!"Invalid Blob Offset");
 #endif
         ulCount = 0;
@@ -957,8 +957,8 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
     HENUMInternal *phEnum)              // [OUT] the enumerator to fill
 {
     HRESULT     hr = S_OK;
-    ULONG       ulStart, ulEnd, ulMax;
-    ULONG       index;
+    uint32_t    ulStart, ulEnd, ulMax;
+    uint32_t    index;
     LOCKREAD();
 
     // Vars for query.
@@ -2367,7 +2367,7 @@ MDInternalRW::GetSigFromToken(
 
     // not a known token type.
 #ifdef _DEBUG
-        if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat, 1))
             _ASSERTE(!"Unexpected token type");
 #endif
     *pcbSig = 0;
@@ -2445,7 +2445,7 @@ HRESULT MDInternalRW::GetFieldRVA(
 {
     _ASSERTE(TypeFromToken(fd) == mdtFieldDef);
     _ASSERTE(pulCodeRVA);
-    ULONG       iRecord;
+    uint32_t       iRecord;
     HRESULT     hr = NOERROR;
 
     LOCKREAD();
@@ -3802,7 +3802,7 @@ HRESULT MDInternalRW::GetPinvokeMap(
     mdModuleRef *pmrImportDLL)          // [OUT] ModuleRef token for the target DLL.
 {
     ImplMapRec  *pRecord;
-    ULONG       iRecord;
+    uint32_t    iRecord;
     HRESULT     hr = S_OK;
 
     LOCKREAD();

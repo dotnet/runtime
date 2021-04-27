@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.IO
+Imports System.Runtime.Versioning
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -120,6 +121,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             CloseTheFile()
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
@@ -134,6 +136,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             m_file.Lock(lStartByte, lLength)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))

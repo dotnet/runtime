@@ -1437,7 +1437,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         break;
     }
     const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
-    const int cbArg = StackElemSize(argSize, isValueType, thValueType.IsFloatHfa());
+    const bool isFloatHfa = thValueType.IsFloatHfa();
+    const int cbArg = StackElemSize(argSize, isValueType, isFloatHfa);
     if (cFPRegs>0 && !this->IsVarArg())
     {
         if (cFPRegs + m_idxFPReg <= 8)
@@ -1494,6 +1495,24 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             }
         }
     }
+
+#ifdef OSX_ARM64_ABI
+    int alignment;
+    if (!isValueType)
+    {
+        _ASSERTE((cbArg & (cbArg - 1)) == 0);
+        alignment = cbArg;
+    }
+    else if (isFloatHfa)
+    {
+        alignment = 4;
+    }
+    else
+    {
+        alignment = 8;
+    }
+    m_ofsStack = (int)ALIGN_UP(m_ofsStack, alignment);
+#endif // OSX_ARM64_ABI
 
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += cbArg;

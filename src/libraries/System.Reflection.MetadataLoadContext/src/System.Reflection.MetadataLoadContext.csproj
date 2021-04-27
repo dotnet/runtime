@@ -7,10 +7,6 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- We conditionally apply net5.0+ obsoletions -->
-  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
-    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />
     <Compile Include="System\Reflection\DefaultBinder.cs" />
@@ -150,11 +146,9 @@
                         '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.Immutable" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Reflection.Metadata" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
@@ -164,8 +158,22 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or
                         $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
   </ItemGroup>
+
+  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+  <Choose>
+    <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <ItemGroup>
+        <Reference Include="System.Collections.Immutable" />
+        <Reference Include="System.Reflection.Metadata" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+        <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 </Project>

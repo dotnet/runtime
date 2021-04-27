@@ -105,7 +105,7 @@ Rules can either be imposed by invariants or team policy.
 
 Team policy rules are not necessarily less important than invariants. For example, the rule to use [safemath.h][safemath.h] rather that coding your own integer overflow check is a policy rule. But because it deals with security, we'd probably treat it as higher priority than a very obscure (non-security) related bug.
 
-[safemath.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/safemath.h
+[safemath.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/safemath.h
 
 One type of rule you won't find here are purely syntactic "code formatting" rules such as brace placement. While there is value in uniform stylistic conventions, we don't want to "lay down the law" on these to the extent that we do for the more semantic-oriented issues covered here. The rules included in this document are here because breaking them would do one of the following:
 
@@ -238,8 +238,8 @@ The solution is the OBJECTHANDLE. OBJECTHANDLE allocates a location from special
 
 Handles are implemented through several layers of abstraction – the "official" interface for public use is the one described here and is exposed through [objecthandle.h][objecthandle.h]. Don't confuse this with [handletable.h][handletable.h] which contains the internals. The CreateHandle() api allocates a new location. ObjectFromHandle() dereferences the handle and returns an up-to-date reference. DestroyHandle() frees the location.
 
-[objecthandle.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/gc/objecthandle.h
-[handletable.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/gc/handletable.h
+[objecthandle.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/gc/objecthandle.h
+[handletable.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/gc/handletable.h
 
 The following code fragment shows how handles are used. In practice, of course, people use GCPROTECT rather than handles for situations this simple.
 
@@ -551,7 +551,7 @@ First, look for a prebaked holder that does what you want. Some common ones are 
 
 If no existing holder fits your need, make one. If it's your first holder, start by reading [src\inc\holder.h][holder.h]. Decide if you want a holder or a wrapper. If you don't do much with a resource except acquire and release it, use a holder. Otherwise, you want the wrapper since its overloaded operators make it much easier to replace the resource variable with the wrapper.
 
-[holder.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/holder.h
+[holder.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/holder.h
 
 Instantiate the holder or wrapper template with the required parameters. You must supply the data type being managed, the RELEASE function, the default value for uninitialized constructions, the IS_NULL function and the ACQUIRE function. Unless you're implementing a critical section holder, you can probably supply a NOP for ACQUIRE . Most resources can't be meaningfully released and reacquired so it's easier to allocate the resource outside the holder and pass it in through its constructor. For convenience, [holder.h][holder.h] defines a DoNothing<Type> template that creates a NOP ACQUIRE function for any given resource type. There are also convenience templates for writing RELEASE functions. See [holder.h][holder.h] for their definitions and examples of their use.
 
@@ -716,7 +716,7 @@ SString is the abstraction to use for unmanaged strings in CLR code. It is impor
 
 This section will provide an overview for SString. For specific details on methods and use, see the file [src\inc\sstring.h][sstring.h]. SString has been in use in our codebase for quite a few years now so examples of its use should be easy to find.
 
-[sstring.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/sstring.h
+[sstring.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/sstring.h
 
 An SString object represents a Unicode string. It has its own buffer which it internally manages. The string buffer is typically not referenced directly by user code; instead the string is manipulated indirectly by methods defined on SString. Ultimately there are several ways to get at the raw string buffer if such functionality is needed to interface to existing APIs. But these should be used only when absolutely necessary.
 
@@ -822,7 +822,7 @@ We used to assign levels manually, but this leads to problems when it comes time
 
 Instead we now record the explicit dependencies as a set of rules in the src\inc\CrstTypes.def file and use a tool to automatically assign compatible levels to each Crst type. See CrstTypes.def for a description of the rule syntax and other instructions for updating Crst types.
 
-[crst.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/crst.h
+[crst.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/crst.h
 
 ### <a name="2.6.3"></a>2.6.3 Creating Crsts
 
@@ -1034,7 +1034,7 @@ Here are some immediate tips for working well with the managed-debugging service
   - GetFoo() - fails if a Foo does not exist. Being non-mutating, this should also be GC_NOTRIGGER. Non-mutating will also make it much easier to DAC-ize. This is what the debugger will call.
   - and GetOrCreateFoo() that is built around GetFoo(). The rest of the runtime can call this.
   - The debugger can then just call GetFoo(), and deal with the failure accordingly.
-- If you add a new stub (or way to call managed code), make sure that you can source-level step-in (F11) it under the debugger. The debugger is not psychic. A source-level step-in needs to be able to go from the source-line before a call to the source-line after the call, or managed code developers will be very confused. If you make that call transition be a giant 500 line stub, you must cooperate with the debugger for it to know how to step-through it. (This is what StubManagers are all about. See [src\vm\stubmgr.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/stubmgr.h)). Try doing a step-in through your new codepath under the debugger.
+- If you add a new stub (or way to call managed code), make sure that you can source-level step-in (F11) it under the debugger. The debugger is not psychic. A source-level step-in needs to be able to go from the source-line before a call to the source-line after the call, or managed code developers will be very confused. If you make that call transition be a giant 500 line stub, you must cooperate with the debugger for it to know how to step-through it. (This is what StubManagers are all about. See [src\vm\stubmgr.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/stubmgr.h)). Try doing a step-in through your new codepath under the debugger.
 - **Beware of timeouts** : The debugger may completely suspend your process at arbitrary points. In most cases, the debugger will do the right thing (and suspend your timeout too), but not always. For example, if you have some other process waiting for info from the debuggee, it [may hit a timeout](https://docs.microsoft.com/en-us/archive/blogs/jmstall/why-you-sometimes-get-a-bogus-contextswitchdeadlock-mda-under-the-debugger).
 - **Use CLR synchronization primitives (like Crst)**. In addition to all the reasons listed in the synchronization section, the CLR-aware primitives can cooperate with the debugging services. For example:
   - The debugger needs to know when threads are modifying sensitive data (which correlates to when the threads lock that data).
@@ -1057,7 +1057,7 @@ Here are some immediate tips for working well with the managed-debugging service
 
 Because the CLR is ultimately compiled on several different platforms, we have to be careful about the primitive types which are used in our code. Some compilers can have slightly different declarations in standard header files, and different processor word sizes can require values to have different representations on different platforms.
 
-Because of this, we have gathered definition all of the "blessed" CLR types in a single header file, [clrtypes.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/clrtypes.h). In general, you should only use primitive types which are defined in this file. As an exception, you may use built-in primitive types like int and short when precision isn't particularly interesting.
+Because of this, we have gathered definition all of the "blessed" CLR types in a single header file, [clrtypes.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/clrtypes.h). In general, you should only use primitive types which are defined in this file. As an exception, you may use built-in primitive types like int and short when precision isn't particularly interesting.
 
 The types are grouped into several categories.
 
@@ -1133,7 +1133,7 @@ This item asserts that the thread is in a particular mode or declares that the f
 
 #### <a name="2.10.1.5"></a>2.10.1.5 LOADS_TYPE(_loadlevel_)
 
-This item asserts that the function may invoke the loader and cause a type to loaded up to (and including) the indicated loadlevel. Valid load levels are taken from ClassLoadLevel enumerationin [classLoadLevel.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/classloadlevel.h).
+This item asserts that the function may invoke the loader and cause a type to loaded up to (and including) the indicated loadlevel. Valid load levels are taken from ClassLoadLevel enumerationin [classLoadLevel.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/classloadlevel.h).
 
 The CLR asserts if any attempt is made to load a type past the current limit set by LOADS_TYPE. A call to any function that has a LOADS_TYPE contract is treated as an attempt to load a type up to that limit.
 
@@ -1143,7 +1143,7 @@ These declare whether a function or callee takes any kind of EE or user lock: Cr
 
 In TLS we keep track of the current intent (whether to lock), and actual reality (what locks are actually taken). Enforcement occurs as follows:
 
-[contract.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/contract.h
+[contract.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/contract.h
 
 - SCAN
   - A CANNOT_TAKE_LOCK function calling a CAN_TAKE_LOCK function is illegal (just like THROWS/NOTHROWS)
@@ -1258,4 +1258,4 @@ At a high level, DAC is a technique to enable execution of CLR algorithms from o
 
 Various tools (most notably the debugger and SOS) rely on portions of the CLR code being properly "DACized". Writing code in this way can be tricky and error-prone. Use the following references for more details:
 
-- The best documentation is in the code itself. See the large comments at the top of [src\inc\daccess.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/daccess.h).
+- The best documentation is in the code itself. See the large comments at the top of [src\inc\daccess.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/daccess.h).

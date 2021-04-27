@@ -5,14 +5,13 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(MsQuicTests), nameof(MsQuicTests.IsMsQuicSupported))]
+    [ConditionalClass(typeof(MsQuicTests), nameof(IsMsQuicSupported))]
     public class MsQuicTests : MsQuicTestBase
     {
         public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
@@ -50,14 +49,14 @@ namespace System.Net.Quic.Tests
             ValueTask clientTask = clientConnection.ConnectAsync();
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
-            Assert.Equal(20, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
-            Assert.Equal(10, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
-            Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
-            Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(100, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(100, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(10, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(20, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
         }
 
         [Fact]
-        [OuterLoop("May take serveral seconds")]
+        [OuterLoop("May take several seconds")]
         public async Task SetListenerTimeoutWorksWithSmallTimeout()
         {
             var quicOptions = new QuicListenerOptions();
@@ -66,7 +65,6 @@ namespace System.Net.Quic.Tests
             quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
             using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
-            listener.Start();
 
             QuicClientConnectionOptions options = new QuicClientConnectionOptions()
             {
@@ -79,9 +77,10 @@ namespace System.Net.Quic.Tests
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
 
-            await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().TimeoutAfter(100000));
+            await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Theory]
         [MemberData(nameof(WriteData))]
         public async Task WriteTests(int[][] writes, WriteType writeType)
@@ -126,7 +125,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     stream.Shutdown();
-                    await stream.ShutdownWriteCompleted();
+                    await stream.ShutdownCompleted();
                 },
                 async serverConnection =>
                 {
@@ -144,7 +143,7 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(expectedTotalBytes, totalBytes);
 
                     stream.Shutdown();
-                    await stream.ShutdownWriteCompleted();
+                    await stream.ShutdownCompleted();
                 });
         }
 
@@ -173,6 +172,7 @@ namespace System.Net.Quic.Tests
             GatheredSequence
         }
 
+        // will induce failure (byte mixing) in QuicStreamTests_MsQuicProvider.LargeDataSentAndReceived if run in parallel with it
         [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
@@ -204,6 +204,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public async Task CloseAsync_ByServer_AcceptThrows()
         {
             await RunClientServer(
@@ -220,7 +221,7 @@ namespace System.Net.Quic.Tests
                 });
         }
 
-        private static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
+        internal static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
         {
             List<byte[]> segments = new List<byte[]>
             {

@@ -489,12 +489,12 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInit);
 
     GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
     SIMDLevel level      = compiler->getSIMDSupportLevel();
-    unsigned  size       = simdNode->gtSIMDSize;
+    unsigned  size       = simdNode->GetSimdSize();
 
     // Should never see small int base type vectors except for zero initialization.
     noway_assert(!varTypeIsSmallInt(baseType) || op1->IsIntegralConst(0));
@@ -531,17 +531,13 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             // For AVX2, move it to all 4 of the 64-bit lanes using:
             //     vpbroadcastq targetReg, targetReg
 
-            instruction ins;
-
             regNumber op1loReg = genConsumeReg(op1lo);
-            ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
-            inst_RV_RV(ins, targetReg, op1loReg, TYP_INT, emitTypeSize(TYP_INT));
+            inst_RV_RV(ins_Copy(op1loReg, TYP_FLOAT), targetReg, op1loReg, TYP_INT);
 
             regNumber tmpReg = simdNode->GetSingleTempReg();
 
             regNumber op1hiReg = genConsumeReg(op1hi);
-            ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
-            inst_RV_RV(ins, tmpReg, op1hiReg, TYP_INT, emitTypeSize(TYP_INT));
+            inst_RV_RV(ins_Copy(op1loReg, TYP_FLOAT), tmpReg, op1hiReg, TYP_INT);
 
             ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
             GetEmitter()->emitIns_R_I(ins, EA_16BYTE, tmpReg, 4); // shift left by 4 bytes
@@ -600,9 +596,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         regNumber srcReg = genConsumeReg(op1);
         if (baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG)
         {
-            ins = ins_CopyIntToFloat(baseType, TYP_FLOAT);
-            assert(ins != INS_invalid);
-            inst_RV_RV(ins, targetReg, srcReg, baseType, emitTypeSize(baseType));
+            inst_RV_RV(ins_Copy(srcReg, TYP_FLOAT), targetReg, srcReg, baseType, emitTypeSize(baseType));
             srcReg = targetReg;
         }
 
@@ -653,17 +647,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         {
             if (op1Reg != targetReg)
             {
-                if (varTypeIsFloating(baseType))
-                {
-                    ins = ins_Copy(targetType);
-                }
-                else if (baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG)
-                {
-                    ins = ins_CopyIntToFloat(baseType, TYP_FLOAT);
-                }
-
-                assert(ins != INS_invalid);
-                inst_RV_RV(ins, targetReg, op1Reg, baseType, emitTypeSize(baseType));
+                inst_RV_RV(ins_Copy(op1Reg, TYP_FLOAT), targetReg, op1Reg, baseType, emitTypeSize(baseType));
             }
         }
 
@@ -690,7 +674,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitN);
 
     // Right now this intrinsic is supported only on TYP_FLOAT vectors
-    var_types baseType = simdNode->gtSIMDBaseType;
+    var_types baseType = simdNode->GetSimdBaseType();
     noway_assert(baseType == TYP_FLOAT);
 
     regNumber targetReg = simdNode->GetRegNum();
@@ -749,7 +733,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
         offset += baseTypeSize;
     }
 
-    noway_assert(offset == simdNode->gtSIMDSize);
+    noway_assert(offset == simdNode->GetSimdSize());
 
     // Load the initialized value.
     if (targetReg != vectorReg)
@@ -773,7 +757,7 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast);
 
     GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
@@ -802,7 +786,7 @@ void CodeGen::genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode)
     assert((intrinsicID == SIMDIntrinsicConvertToSingle) || (intrinsicID == SIMDIntrinsicConvertToInt32));
 
     GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
@@ -845,12 +829,12 @@ void CodeGen::genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode)
 // prepare mask
 #ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X5300000053000000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_ULONG);
 #else
         if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X53000000);
-            inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+            inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         }
         else
         {
@@ -910,14 +894,13 @@ void CodeGen::genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
     instruction ins = getOpForSIMDIntrinsic(intrinsicID, baseType);
     if (intrinsicID == SIMDIntrinsicConvertToDouble)
     {
-        // Note that for mov_xmm2i, the int register is always in the reg2 position
-        inst_RV_RV(INS_mov_xmm2i, tmpReg, tmpIntReg, TYP_LONG);
+        inst_RV_RV(INS_movd, tmpIntReg, tmpReg, TYP_LONG);
         inst_RV_RV(ins, targetReg, tmpIntReg, baseType, emitActualTypeSize(baseType));
     }
     else
     {
         inst_RV_RV(ins, tmpIntReg, tmpReg, baseType, emitActualTypeSize(baseType));
-        inst_RV_RV(INS_mov_i2xmm, targetReg, tmpIntReg, TYP_LONG);
+        inst_RV_RV(INS_movd, targetReg, tmpIntReg, TYP_LONG);
     }
 }
 
@@ -937,7 +920,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
     assert((intrinsicID == SIMDIntrinsicConvertToDouble) || (intrinsicID == SIMDIntrinsicConvertToInt64));
 
     GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType  = simdNode->TypeGet();
@@ -1008,10 +991,10 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 // prepare mask for converting upper 32 bits
 #ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4530000000000000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_ULONG);
 #else
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X45300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 #endif
         if (level == SIMD_AVX2_Supported)
@@ -1030,10 +1013,10 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 // prepare mask for converting lower 32 bits
 #ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4330000000000000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_ULONG);
 #else
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X43300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 #endif
         if (level == SIMD_AVX2_Supported)
@@ -1123,7 +1106,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 
         // prepare mask for converting upper 32 bits
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X45300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 
         if (level == SIMD_AVX2_Supported)
@@ -1141,7 +1124,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 
         // prepare mask for converting lower 32 bits
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X43300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 
         if (level == SIMD_AVX2_Supported)
@@ -1229,7 +1212,7 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
     emitAttr  emitSize = emitActualTypeSize(simdType);
     if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
     {
-        instruction extractIns = varTypeIsFloating(simdNode->gtSIMDBaseType) ? INS_vextractf128 : INS_vextracti128;
+        instruction extractIns = varTypeIsFloating(simdNode->GetSimdBaseType()) ? INS_vextractf128 : INS_vextracti128;
         GetEmitter()->emitIns_R_R_I(extractIns, EA_32BYTE, tgtReg, srcReg, 0x01);
     }
     else
@@ -1258,7 +1241,7 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
            (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi));
 
     GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType = simdNode->TypeGet();
@@ -1351,7 +1334,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType = simdNode->TypeGet();
@@ -1499,11 +1482,10 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 
     GenTree*  op1       = simdNode->gtGetOp1();
     GenTree*  op2       = simdNode->gtGetOp2();
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
-    SIMDLevel level      = compiler->getSIMDSupportLevel();
 
     genConsumeOperands(simdNode);
     regNumber op1Reg   = op1->GetRegNum();
@@ -1550,7 +1532,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 {
     GenTree*  op1        = simdNode->gtGetOp1();
     GenTree*  op2        = simdNode->gtGetOp2();
-    var_types baseType   = simdNode->gtSIMDBaseType;
+    var_types baseType   = simdNode->GetSimdBaseType();
     regNumber targetReg  = simdNode->GetRegNum();
     var_types targetType = simdNode->TypeGet();
     SIMDLevel level      = compiler->getSIMDSupportLevel();
@@ -1639,7 +1621,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         simdType = TYP_SIMD16;
     }
 
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
@@ -1883,8 +1865,6 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         {
             // We need a temp xmm register if the baseType is not floating point and
             // accessing non-zero'th element.
-            instruction ins;
-
             if (byteShiftCnt != 0)
             {
                 assert(tmpReg != REG_NA);
@@ -1895,7 +1875,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
                 }
 
                 assert((byteShiftCnt > 0) && (byteShiftCnt <= 32));
-                ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
+                instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
                 GetEmitter()->emitIns_R_I(ins, emitActualTypeSize(simdType), tmpReg, byteShiftCnt);
             }
             else
@@ -1904,9 +1884,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             }
 
             assert(tmpReg != REG_NA);
-            ins = ins_CopyFloatToInt(TYP_FLOAT, baseType);
-            // (Note that for mov_xmm2i, the int register is always in the reg2 position.)
-            inst_RV_RV(ins, tmpReg, targetReg, baseType);
+            inst_RV_RV(ins_Copy(tmpReg, baseType), targetReg, tmpReg, baseType);
         }
     }
 
@@ -1953,7 +1931,7 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
     GenTree* op1 = simdNode->gtGetOp1();
     GenTree* op2 = simdNode->gtGetOp2();
 
-    var_types baseType  = simdNode->gtSIMDBaseType;
+    var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
@@ -1963,7 +1941,7 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
     // supported only on vector2f/3f/4f right now
     noway_assert(baseType == TYP_FLOAT);
     assert(op2->TypeGet() == baseType);
-    assert(simdNode->gtSIMDSize >= ((index + 1) * genTypeSize(baseType)));
+    assert(simdNode->GetSimdSize() >= ((index + 1) * genTypeSize(baseType)));
 
     genConsumeOperands(simdNode);
     regNumber op1Reg = op1->GetRegNum();
@@ -1987,9 +1965,7 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
         assert(genIsValidIntReg(tmpReg));
 
         // Move the value from xmm reg to an int reg
-        instruction ins = ins_CopyFloatToInt(TYP_FLOAT, TYP_INT);
-        // (Note that for mov_xmm2i, the int register is always in the reg2 position.
-        inst_RV_RV(ins, op2Reg, tmpReg, baseType);
+        inst_RV_RV(ins_Copy(op2Reg, TYP_INT), tmpReg, op2Reg, baseType);
 
         assert((index >= 0) && (index <= 15));
 
@@ -2030,7 +2006,7 @@ void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
     assert(op2->isContained());
     assert(op2->IsCnsIntOrI());
     ssize_t   shuffleControl = op2->AsIntConCommon()->IconValue();
-    var_types baseType       = simdNode->gtSIMDBaseType;
+    var_types baseType       = simdNode->GetSimdBaseType();
     var_types targetType     = simdNode->TypeGet();
     regNumber targetReg      = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
@@ -2155,7 +2131,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     {
         // This is only possible for a zero-init.
         assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
-        genSIMDZero(TYP_SIMD16, op1->AsSIMD()->gtSIMDBaseType, tmpReg);
+        genSIMDZero(TYP_SIMD16, op1->AsSIMD()->GetSimdBaseType(), tmpReg);
 
         // store lower 8 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, tmpReg, varNum, offs);
@@ -2377,11 +2353,11 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 {
     // NYI for unsupported base types
-    if (simdNode->gtSIMDBaseType != TYP_INT && simdNode->gtSIMDBaseType != TYP_LONG &&
-        simdNode->gtSIMDBaseType != TYP_FLOAT && simdNode->gtSIMDBaseType != TYP_DOUBLE &&
-        simdNode->gtSIMDBaseType != TYP_USHORT && simdNode->gtSIMDBaseType != TYP_UBYTE &&
-        simdNode->gtSIMDBaseType != TYP_SHORT && simdNode->gtSIMDBaseType != TYP_BYTE &&
-        simdNode->gtSIMDBaseType != TYP_UINT && simdNode->gtSIMDBaseType != TYP_ULONG)
+    if (simdNode->GetSimdBaseType() != TYP_INT && simdNode->GetSimdBaseType() != TYP_LONG &&
+        simdNode->GetSimdBaseType() != TYP_FLOAT && simdNode->GetSimdBaseType() != TYP_DOUBLE &&
+        simdNode->GetSimdBaseType() != TYP_USHORT && simdNode->GetSimdBaseType() != TYP_UBYTE &&
+        simdNode->GetSimdBaseType() != TYP_SHORT && simdNode->GetSimdBaseType() != TYP_BYTE &&
+        simdNode->GetSimdBaseType() != TYP_UINT && simdNode->GetSimdBaseType() != TYP_ULONG)
     {
         noway_assert(!"SIMD intrinsic with unsupported base type.");
     }

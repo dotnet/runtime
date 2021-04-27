@@ -178,6 +178,7 @@ namespace System.Data
         /// <summary>
         /// Gets or sets the data stored in the column specified by index.
         /// </summary>
+        [AllowNull]
         public object this[int columnIndex]
         {
             get

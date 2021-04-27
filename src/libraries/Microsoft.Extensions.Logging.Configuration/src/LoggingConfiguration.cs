@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Logging.Configuration
 {
-    internal class LoggingConfiguration
+    internal sealed class LoggingConfiguration
     {
         public IConfiguration Configuration { get; }
 

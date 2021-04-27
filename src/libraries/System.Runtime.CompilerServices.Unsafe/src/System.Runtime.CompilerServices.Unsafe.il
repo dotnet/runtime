@@ -28,6 +28,10 @@
     01 00 0b 53 65 72 76 69 63 65 61 62 6c 65 04 54
     72 75 65 00 00
   ) // "Serviceable", "True"
+  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyMetadataAttribute::.ctor(string, string) = (
+    01 00 0b 49 73 54 72 69 6d 6d 61 62 6c 65 04 54
+    72 75 65 00 00
+  ) // "IsTrimmable", "True"
   .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyCopyrightAttribute::.ctor(string) = ( 01 00 2F C2 A9 20 4D 69 63 72 6F 73 6F 66 74 20   // ../.. Microsoft
                                                                                         43 6F 72 70 6F 72 61 74 69 6F 6E 2E 20 20 41 6C   // Corporation.  Al
                                                                                         6C 20 72 69 67 68 74 73 20 72 65 73 65 72 76 65   // l rights reserve

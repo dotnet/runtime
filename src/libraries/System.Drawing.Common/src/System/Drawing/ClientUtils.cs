@@ -44,7 +44,7 @@ namespace System.Drawing
         /// Also avoid calling Remove(item). Instead call RemoveByHashCode(item)
         /// to make sure dead refs are removed.
         /// </summary>
-        internal class WeakRefCollection : IList
+        internal sealed class WeakRefCollection : IList
         {
             internal WeakRefCollection() : this(4) { }
 
@@ -227,7 +227,7 @@ namespace System.Drawing
             /// added to a collection since Contains(WeakRef(item)) and Remove(WeakRef(item)) would not be able to
             /// identify the item.
             /// </summary>
-            internal class WeakRefObject
+            internal sealed class WeakRefObject
             {
                 private readonly int _hash;
                 private readonly WeakReference _weakHolder;

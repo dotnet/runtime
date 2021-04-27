@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -31,8 +32,11 @@ namespace System
             if (!IsSupported)
                 return;
 
-            // Initialize tracing before any user code can be called.
-            System.Diagnostics.Tracing.RuntimeEventSource.Initialize();
+            // Initialize tracing before any user code can be called if EventSource is enabled.
+            if (EventSource.IsSupported)
+            {
+                System.Diagnostics.Tracing.RuntimeEventSource.Initialize();
+            }
 
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
             if (startupHooksVariable == null)

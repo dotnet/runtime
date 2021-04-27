@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIcmpV4Statistics : IcmpV4Statistics
+    internal sealed class BsdIcmpV4Statistics : IcmpV4Statistics
     {
         private readonly long _addressMaskRepliesReceived;
         private readonly long _addressMaskRepliesSent;

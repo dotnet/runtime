@@ -4,6 +4,7 @@
 #nullable disable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml.Xsl.IlGen;
 using System.Xml.Xsl.Qil;
@@ -13,7 +14,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Contains all static data that is used by the runtime.
     /// </summary>
-    internal class XmlQueryStaticData
+    internal sealed class XmlQueryStaticData
     {
         // Name of the field to serialize to
         public const string DataFieldName = "staticData";
@@ -35,6 +36,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Constructor.
         /// </summary>
+        [RequiresUnreferencedCode("This method will create a copy that uses earlybound types which cannot be statically analyzed.")]
         public XmlQueryStaticData(XmlWriterSettings defaultWriterSettings, IList<WhitespaceRule> whitespaceRules, StaticDataManager staticData)
         {
             Debug.Assert(defaultWriterSettings != null && staticData != null);
@@ -70,6 +72,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Deserialize XmlQueryStaticData object from a byte array.
         /// </summary>
+        [RequiresUnreferencedCode("This method will create EarlyBoundInfo from passed in ebTypes array which cannot be statically analyzed.")]
         public XmlQueryStaticData(byte[] data, Type[] ebTypes)
         {
             MemoryStream dataStream = new MemoryStream(data, /*writable:*/false);
@@ -399,7 +402,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Subclass of BinaryReader used to serialize query static data.
     /// </summary>
-    internal class XmlQueryDataReader : BinaryReader
+    internal sealed class XmlQueryDataReader : BinaryReader
     {
         public XmlQueryDataReader(Stream input) : base(input) { }
 
@@ -429,7 +432,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Subclass of BinaryWriter used to deserialize query static data.
     /// </summary>
-    internal class XmlQueryDataWriter : BinaryWriter
+    internal sealed class XmlQueryDataWriter : BinaryWriter
     {
         public XmlQueryDataWriter(Stream output) : base(output) { }
 

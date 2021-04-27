@@ -81,7 +81,12 @@ public:
 
         JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
+#if defined(TARGET_ARM)
+        JIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
+#else // !defined(TARGET_ARM)
         JIT_FLAG_UNUSED16                = 43,
+#endif // !defined(TARGET_ARM)
+
         JIT_FLAG_UNUSED17                = 44,
         JIT_FLAG_UNUSED18                = 45,
         JIT_FLAG_UNUSED19                = 46,
@@ -215,6 +220,13 @@ public:
 #endif // TARGET_ARM
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
+
+#if defined(TARGET_ARM)
+
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
+
+#endif // TARGET_ARM
+
 #undef FLAGS_EQUAL
     }
 

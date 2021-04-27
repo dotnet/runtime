@@ -58,7 +58,7 @@ else()
         ../gcenv.unix.cpp)
 endif()
 
-_add_executable(gcsample
+add_executable_clr(gcsample
     ${SOURCES}
 )
 

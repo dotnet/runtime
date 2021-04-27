@@ -1541,7 +1541,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         slowNode     = slowNode->gtNext;
     }
 
-    SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocator());
+    SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocatorDebugOnly());
 
     bool     pastPhis = false;
     GenTree* prev     = nullptr;

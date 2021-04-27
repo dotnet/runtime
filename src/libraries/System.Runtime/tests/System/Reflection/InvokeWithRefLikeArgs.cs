@@ -38,7 +38,7 @@ namespace System.Reflection.Tests
             Assert.Null(args[0]); // no value should have been copied back
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
         public static void MethodTakesRefToRefStructAsArg_ThrowsNSE()
         {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -216,7 +217,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(AddressFamily.Packet)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public void Ctor_Netcoreapp_Throws(AddressFamily addressFamily)
         {
             // All protocols are Linux specific and throw on other platforms
@@ -249,12 +250,18 @@ namespace System.Net.Sockets.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("handle", () => new Socket(null));
             AssertExtensions.Throws<ArgumentException>("handle", () => new Socket(new SafeSocketHandle((IntPtr)(-1), false)));
+        }
 
-            using (var pipe = new AnonymousPipeServerStream())
-            {
-                SocketException se = Assert.Throws<SocketException>(() => new Socket(new SafeSocketHandle(pipe.ClientSafePipeHandle.DangerousGetHandle(), false)));
-                Assert.Equal(SocketError.NotSocket, se.SocketErrorCode);
-            }
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Ctor_Socket_FromPipeHandle_Ctor_Dispose_Success(bool ownsHandle)
+        {
+            (int fd1, int fd2) = pipe2();
+            close(fd2);
+
+            using var _ = new Socket(new SafeSocketHandle(new IntPtr(fd1), ownsHandle));
         }
 
         [Theory]
@@ -623,6 +630,25 @@ namespace System.Net.Sockets.Tests
 
         [DllImport("libc")]
         private static extern int close(int fd);
+
+        [DllImport("libc", SetLastError = true)]
+        private static unsafe extern int pipe2(int* pipefd, int flags);
+
+        private static unsafe (int, int) pipe2(int flags = 0)
+        {
+            Span<int> pipefd = stackalloc int[2];
+            fixed (int* ptr = pipefd)
+            {
+                if (pipe2(ptr, flags) == 0)
+                {
+                    return (pipefd[0], pipefd[1]);
+                }
+                else
+                {
+                    throw new Win32Exception();
+                }
+            }
+        }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

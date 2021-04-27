@@ -4,8 +4,7 @@
     <TargetOS>Browser</TargetOS>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
 
-    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Publish</WasmBuildAppAfterThisTarget>
-    <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative;_WasmGenerateAppBundle</WasmBuildAppDependsOn>
+    <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative;_WasmGenerateAppBundle;_AfterWasmBuildApp</WasmBuildAppDependsOn>
   </PropertyGroup>
 </Project>

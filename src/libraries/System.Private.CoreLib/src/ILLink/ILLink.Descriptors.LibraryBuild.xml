@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="Interop/Globalization">
+      <!-- Internal API used by tests only. -->
+      <method name="GetICUVersion" />
+    </type>
+  </assembly>
+</linker>

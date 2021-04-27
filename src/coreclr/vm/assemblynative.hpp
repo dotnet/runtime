@@ -127,6 +127,8 @@ public:
     static void QCALLTYPE TraceAssemblyResolveHandlerInvoked(LPCWSTR assemblyName, LPCWSTR handlerName, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath);
     static void QCALLTYPE TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath);
     static void QCALLTYPE TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr);
+
+    static void QCALLTYPE ApplyUpdate(QCall::AssemblyHandle assembly, UINT8* metadataDelta, INT32 metadataDeltaLength, UINT8* ilDelta, INT32 ilDeltaLength, UINT8* pdbDelta, INT32 pdbDeltaLength);
 };
 
 #endif

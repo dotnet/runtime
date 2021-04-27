@@ -9,6 +9,7 @@ namespace System.Runtime.Serialization.Json
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Runtime;
@@ -28,22 +29,25 @@ namespace System.Runtime.Serialization.Json
             _helper = new CriticalHelper();
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
         {
             return _helper.GenerateClassReader(classContract);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
         {
             return _helper.GenerateCollectionReader(collectionContract);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
         {
             return _helper.GenerateGetOnlyCollectionReader(collectionContract);
         }
 
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXReader
             private LocalBuilder _objectLocal = null!; // initialized in CreateObject and ReadCollection
@@ -54,6 +58,7 @@ namespace System.Runtime.Serialization.Json
             private ArgBuilder? _collectionContractArg;
             private ArgBuilder _emptyDictionaryStringArg = null!; // initialized in InitArgs
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
             {
                 _ilg = new CodeGenerator();
@@ -115,6 +120,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatClassReaderDelegate)_ilg.EndMethod();
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
             {
                 _ilg = GenerateCollectionReaderHelper(collectionContract, false /*isGetOnlyCollection*/);
@@ -124,6 +130,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatCollectionReaderDelegate)_ilg.EndMethod();
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
             {
                 _ilg = GenerateCollectionReaderHelper(collectionContract, true /*isGetOnlyCollection*/);
@@ -164,7 +171,7 @@ namespace System.Runtime.Serialization.Json
 
             private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
-                MethodInfo signature = delegateType.GetMethod("Invoke")!;
+                MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
@@ -182,6 +189,7 @@ namespace System.Runtime.Serialization.Json
                 _memberNamesArg = _ilg.GetArg(3);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void CreateObject(ClassDataContract classContract)
             {
                 _objectType = classContract.UnderlyingType;
@@ -264,6 +272,7 @@ namespace System.Runtime.Serialization.Json
                 return false;
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadClass(ClassDataContract classContract)
             {
                 if (classContract.HasExtensionData)
@@ -288,6 +297,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal)
             {
                 int memberCount = classContract.MemberNames!.Length;
@@ -335,6 +345,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.MarkLabel(endOfTypeLabel);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private int ReadMembers(ClassDataContract classContract, BitFlagsGenerator expectedElements,
                 Label[] memberLabels, Label throwDuplicateMemberLabel, LocalBuilder memberIndexLocal)
             {
@@ -428,6 +439,7 @@ namespace System.Runtime.Serialization.Json
                 expectedElements.Store(index, false);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadISerializable(ClassDataContract classContract)
             {
                 ConstructorInfo? ctor = classContract.UnderlyingType.GetConstructor(Globals.ScanAllMembers, JsonFormatGeneratorStatics.SerInfoCtorArgs);
@@ -441,6 +453,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(ctor);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder ReadValue(Type type, string name)
             {
                 LocalBuilder value = _ilg.DeclareLocal(type, "valueRead");
@@ -531,6 +544,7 @@ namespace System.Runtime.Serialization.Json
                 return value;
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void InternalDeserialize(LocalBuilder value, Type type, string name)
             {
                 _ilg.Load(_contextArg);
@@ -547,6 +561,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Stloc(value);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void WrapNullableObject(LocalBuilder innerValue, LocalBuilder outerValue, int nullables)
             {
                 Type innerType = innerValue.LocalType, outerType = outerValue.LocalType;
@@ -561,6 +576,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(outerType.GetConstructor(new Type[] { innerType })!);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadCollection(CollectionDataContract collectionContract)
             {
                 Type type = collectionContract.UnderlyingType;
@@ -648,7 +664,7 @@ namespace System.Runtime.Serialization.Json
                 if (isArray)
                 {
                     Debug.Assert(growingCollection != null);
-                    MethodInfo ensureArraySizeMethod = XmlFormatGeneratorStatics.EnsureArraySizeMethod.MakeGenericMethod(itemType);
+                    MethodInfo ensureArraySizeMethod = MakeGenericMethod(XmlFormatGeneratorStatics.EnsureArraySizeMethod, itemType);
                     _ilg.Call(null, ensureArraySizeMethod, growingCollection, i);
                     _ilg.Stloc(growingCollection);
                     _ilg.StoreArrayElement(growingCollection, i, value);
@@ -667,7 +683,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.EndFor();
                 if (isArray)
                 {
-                    MethodInfo trimArraySizeMethod = XmlFormatGeneratorStatics.TrimArraySizeMethod.MakeGenericMethod(itemType);
+                    MethodInfo trimArraySizeMethod = MakeGenericMethod(XmlFormatGeneratorStatics.TrimArraySizeMethod, itemType);
                     _ilg.Call(null, trimArraySizeMethod, growingCollection, i);
                     _ilg.Stloc(_objectLocal);
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.AddNewObjectWithIdMethod, objectId, _objectLocal);
@@ -684,8 +700,13 @@ namespace System.Runtime.Serialization.Json
                 {
                     _ilg.EndIf();
                 }
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "The call to MakeGenericMethod is safe due to the fact that EnsureArraySizeMethod and TrimArraySizeMethod are not annotated.")]
+                static MethodInfo MakeGenericMethod(MethodInfo method, Type itemType) => method.MakeGenericMethod(itemType);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadSimpleDictionary(CollectionDataContract collectionContract, Type keyValueType)
             {
                 Type[] keyValueTypes = keyValueType.GetGenericArguments();
@@ -778,6 +799,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void ReadGetOnlyCollection(CollectionDataContract collectionContract)
             {
                 Type type = collectionContract.UnderlyingType;
@@ -866,6 +888,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private bool TryReadPrimitiveArray(Type itemType)
             {
                 PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
@@ -916,6 +939,7 @@ namespace System.Runtime.Serialization.Json
                 return false;
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder ReadCollectionItem(CollectionDataContract collectionContract, Type itemType)
             {
                 if (collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary)
@@ -938,6 +962,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void StoreCollectionValue(LocalBuilder collection, LocalBuilder value, CollectionDataContract collectionContract)
             {
                 if (collectionContract.Kind == CollectionKind.GenericDictionary || collectionContract.Kind == CollectionKind.Dictionary)

@@ -51,7 +51,7 @@ namespace System.Net.Http.Headers
             _value = value;
         }
 
-        protected NameValueHeaderValue(NameValueHeaderValue source)
+        protected internal NameValueHeaderValue(NameValueHeaderValue source)
         {
             Debug.Assert(source != null);
 
@@ -353,10 +353,26 @@ namespace System.Net.Http.Headers
 
         private static void CheckValueFormat(string? value)
         {
-            // Either value is null/empty or a valid token/quoted string
-            if (!(string.IsNullOrEmpty(value) || (GetValueLength(value, 0) == value.Length)))
+            // Either value is null/empty or a valid token/quoted string https://tools.ietf.org/html/rfc7230#section-3.2.6
+            if (string.IsNullOrEmpty(value))
+            {
+                return;
+            }
+
+            // Trailing/leading space are not allowed
+            if (value[0] == ' ' || value[0] == '\t' || value[^1] == ' ' || value[^1] == '\t')
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+            }
+
+            // If it's not a token we check if it's a valid quoted string
+            if (HttpRuleParser.GetTokenLength(value, 0) == 0)
+            {
+                HttpParseResult parseResult = HttpRuleParser.GetQuotedStringLength(value, 0, out int valueLength);
+                if ((parseResult == HttpParseResult.Parsed && valueLength != value.Length) || parseResult != HttpParseResult.Parsed)
+                {
+                    throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                }
             }
         }
 

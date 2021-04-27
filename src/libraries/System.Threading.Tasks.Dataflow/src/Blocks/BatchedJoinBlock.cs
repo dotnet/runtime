@@ -72,9 +72,9 @@ namespace System.Threading.Tasks.Dataflow
             // messages, and thus when there may be a few stragglers we need to make a batch out of.
             Action createBatchAction = () =>
             {
-                if (_target1.Count > 0 || _target2.Count > 0)
+                if (_target1!.Count > 0 || _target2!.Count > 0)
                 {
-                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2.GetAndEmptyMessages()));
+                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2!.GetAndEmptyMessages()));
                 }
             };
 
@@ -208,16 +208,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, BatchSize={1}, OutputCount={2}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    BatchSize,
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, BatchSize={BatchSize}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -329,9 +322,9 @@ namespace System.Threading.Tasks.Dataflow
             // messages, and thus when there may be a few stragglers we need to make a batch out of.
             Action createBatchAction = () =>
             {
-                if (_target1.Count > 0 || _target2.Count > 0 || _target3.Count > 0)
+                if (_target1!.Count > 0 || _target2!.Count > 0 || _target3!.Count > 0)
                 {
-                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2.GetAndEmptyMessages(), _target3.GetAndEmptyMessages()));
+                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2!.GetAndEmptyMessages(), _target3!.GetAndEmptyMessages()));
                 }
             };
 
@@ -472,16 +465,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, BatchSize={1}, OutputCount={2}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    BatchSize,
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, BatchSize={BatchSize}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -598,7 +584,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                     bool consumed;
-                    messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
+                    messageValue = source.ConsumeMessage(messageHeader, this, out consumed)!;
                     if (!consumed) return DataflowMessageStatus.NotAvailable;
                 }
                 _messages.Add(messageValue!);
@@ -642,15 +628,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0} InputCount={1}",
-                    Common.GetNameForDebugger(this),
-                    _messages.Count);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this)} InputCount={_messages.Count}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
      # CMake 3.14.5 contains bug fixes for iOS
      cmake_minimum_required(VERSION 3.14.5)
  endif()
@@ -13,7 +13,7 @@ include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()
@@ -74,6 +74,30 @@ if(CLR_CMAKE_TARGET_BROWSER)
 
     set(GEN_SHARED_LIB 0)
     set(STATIC_LIB_DESTINATION .)
+endif()
+
+if(CLR_CMAKE_TARGET_MACCATALYST)
+    # -target overrides -mmacosx-version-min so suppress warning about that
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    add_compile_options(-Wno-overriding-t-option)
+    add_link_options(-Wno-overriding-t-option)
+    if (CLR_CMAKE_TARGET_ARCH_AMD64)
+        add_compile_options(-target x86_64-apple-ios13.5-macabi)
+        add_link_options(-target x86_64-apple-ios13.5-macabi)
+    elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+        add_compile_options(-target arm64-apple-ios14.2-macabi)
+        add_link_options(-target arm64-apple-ios14.2-macabi)
+    endif()
+endif()
+
+if(CLR_CMAKE_TARGET_TVOS)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
+    add_compile_options(-fembed-bitcode)
+    add_link_options(-fembed-bitcode)
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -168,7 +192,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_BROWSER)
-elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -188,7 +212,7 @@ endif ()
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DTARGET_OSX)
             set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-bind_at_load")
@@ -216,7 +240,7 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
 endif()
 
@@ -228,6 +252,10 @@ add_subdirectory(System.Native)
 
 if(CLR_CMAKE_TARGET_BROWSER)
     # skip for now
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    add_subdirectory(System.Net.Security.Native)
+    # System.Security.Cryptography.Native is intentionally disabled on iOS
+    # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Net.Security.Native)
     # System.Security.Cryptography.Native is intentionally disabled on iOS
@@ -236,23 +264,14 @@ elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
-elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
-        set(PREFER_OPENSSL_ANDROID 1)
-        add_subdirectory(System.Security.Cryptography.Native)
-    endif()
+elseif(CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
-endif()
-
-# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
-if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
-    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

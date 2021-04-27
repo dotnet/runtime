@@ -32,7 +32,7 @@ namespace ILCompiler
             {
                 if (!type.IsArrayTypeWithoutGenericInterfaces())
                 {
-                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", throwIfNotFound: false);
+                    MetadataType arrayShadowType = type.Context.SystemModule.GetType("System", "Array`1", NotFoundBehavior.ReturnNull);
                     if (arrayShadowType != null)
                     {
                         return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
@@ -486,6 +486,17 @@ namespace ILCompiler
             }
 
             return constrainedType ?? genericParam.Context.GetWellKnownType(WellKnownType.Object);
+        }
+
+        public static bool ContainsSignatureVariables(this Instantiation instantiation, bool treatGenericParameterLikeSignatureVariable = false)
+        {
+            foreach (var arg in instantiation)
+            {
+                if (arg.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ schedules:
   displayName: HttpStress nightly run
   branches:
     include:
-    - master
+    - main
 
 variables:
   - template: ../variables.yml
@@ -28,7 +28,7 @@ jobs:
   timeoutInMinutes: 150
   pool:
     name: NetCorePublic-Pool
-    queue: BuildPool.Ubuntu.1604.Amd64.Open
+    queue: BuildPool.Ubuntu.1804.Amd64.Open
 
   steps:
   - checkout: self

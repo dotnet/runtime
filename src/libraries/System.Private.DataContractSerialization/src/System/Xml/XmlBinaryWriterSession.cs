@@ -101,7 +101,7 @@ namespace System.Xml
             return false;
         }
 
-        private class PriorityDictionary<K, V> where K : class
+        private sealed class PriorityDictionary<K, V> where K : class
         {
             private Dictionary<K, V>? _dictionary;
             private readonly Entry[] _list;
@@ -226,7 +226,7 @@ namespace System.Xml
             }
         }
 
-        private class IntArray
+        private sealed class IntArray
         {
             private int[] _array;
 

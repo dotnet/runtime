@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="RuntimeConfigParser.cs" />
+  </ItemGroup>
+
+  <!-- GetFilesToPackage assists to place `RuntimeConfigParser.dll` in a NuGet package in Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj for external use -->
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(AssemblyName).dll" TargetPath="tasks" />
+    </ItemGroup>
+  </Target>
+
+</Project>

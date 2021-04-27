@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -19,11 +20,12 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
         /// type.
         /// </summary>
-        public EnumConverter(Type type)
+        public EnumConverter([DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type type)
         {
             EnumType = type;
         }
 
+        [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
         protected Type EnumType { get; }
 
         protected StandardValuesCollection Values { get; set; }

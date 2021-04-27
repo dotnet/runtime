@@ -144,7 +144,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // entry assembly won't be xunit.console on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "entry assembly won't be xunit.console on browser")]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -728,6 +728,7 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
         }
 
+#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
         [Fact]
         public void AssemblyReflectionOnlyLoadFromString()
         {
@@ -750,6 +751,7 @@ namespace System.Reflection.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(string.Empty));
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad((byte[])null));
         }
+#pragma warning restore SYSLIB0018
 
         public static IEnumerable<object[]> GetModules_TestData()
         {
@@ -856,7 +858,7 @@ namespace System.Reflection.Tests
         private static Assembly LoadSystemRuntimeAssembly()
         {
             // Load System.Runtime
-            return Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)); ;
+            return Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName));
         }
 
         private static Assembly GetGetCallingAssembly()

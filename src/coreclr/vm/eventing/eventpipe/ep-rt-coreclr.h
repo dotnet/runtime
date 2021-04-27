@@ -1219,6 +1219,15 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 	return static_cast<int64_t>(InterlockedDecrement64 ((volatile LONG64 *)(value)));
 }
 
+static
+inline
+size_t
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -1253,6 +1262,14 @@ ep_rt_init (void)
 		}
 #endif
 	}
+}
+
+static
+inline
+void
+ep_rt_init_finish (void)
+{
+	STATIC_CONTRACT_NOTHROW;
 }
 
 static
@@ -2455,6 +2472,21 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = reinterpret_cast<ep_char8_t *>(malloc(byte_len + 1));
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -2471,6 +2503,38 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 sprintf_s (reinterpret_cast<char *>(str), static_cast<size_t>(str_len), reinterpret_cast<const char *>(format), __VA_ARGS__)
+
+static
+inline
+bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if ((*str) == NULL)
+		return false;
+
+	ep_char8_t* strFound = strstr(*str, strSearch);
+	if (strFound != NULL)
+	{
+		size_t strSearchLen = strlen(strSearch);
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		ep_char8_t *newStr =  reinterpret_cast<ep_char8_t *>(malloc(newStrSize));
+		if (newStr == NULL)
+		{
+			*str = NULL;
+			return false;
+		}
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", (int)(strFound - (*str)), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_free(*str);
+		*str = newStr;
+		return true;
+	}
+	return false;
+}
 
 static
 ep_char16_t *
@@ -2720,7 +2784,7 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return GetThread ();
+	return GetThreadNULLOk ();
 }
 
 static
@@ -2818,7 +2882,7 @@ ep_rt_thread_set_activity_id (
  * ThreadSequenceNumberMap.
  */
 
-EP_RT_DEFINE_HASH_MAP(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
+EP_RT_DEFINE_HASH_MAP_REMOVE(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, EventPipeThreadSessionState *, uint32_t)
 EP_RT_DEFINE_HASH_MAP_ITERATOR(thread_sequence_number_map, ep_rt_thread_sequence_number_hash_map_t, ep_rt_thread_sequence_number_hash_map_iterator_t, EventPipeThreadSessionState *, uint32_t)
 
 /*

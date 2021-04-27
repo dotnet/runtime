@@ -3,14 +3,23 @@
 
 var DotNetEntropyLib = {
     $DOTNETENTROPY: {
+        // batchedQuotaMax is the max number of bytes as specified by the api spec.
+        // If the byteLength of array is greater than 65536, throw a QuotaExceededError and terminate the algorithm.
+        // https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
+        batchedQuotaMax: 65536,
+        getBatchedRandomValues: function (buffer, bufferLength) {
+            // for modern web browsers
+            // map the work array to the memory buffer passed with the length
+            for (var i = 0; i < bufferLength; i += this.batchedQuotaMax) {
+                var view = new Uint8Array(Module.HEAPU8.buffer, buffer + i, Math.min(bufferLength - i, this.batchedQuotaMax));
+                crypto.getRandomValues(view)
+            }
+        }
     },
     dotnet_browser_entropy : function (buffer, bufferLength) {
         // check that we have crypto available
         if (typeof crypto === 'object' && typeof crypto['getRandomValues'] === 'function') {
-            // for modern web browsers
-            // map the work array to the memory buffer passed with the length
-            var wrkArray = new Uint8Array(Module.HEAPU8.buffer, buffer, bufferLength);
-            crypto.getRandomValues(wrkArray);
+            DOTNETENTROPY.getBatchedRandomValues(buffer, bufferLength)
             return 0;
         } else {
             // we couldn't find a proper implementation, as Math.random() is not suitable

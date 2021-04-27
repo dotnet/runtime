@@ -11,10 +11,11 @@ parameters:
   runtimeType: 'coreclr'
   pool: ''
   codeGenType: 'JIT'
-  projetFile: ''
+  projectFile: ''
   runKind: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-performance-job.yml'
   additionalSetupParameters: ''
+  logicalMachine: ''
 
 ### Perf job
 
@@ -25,8 +26,8 @@ jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -39,29 +40,42 @@ jobs:
     projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
+    container: ${{ parameters.container }}
+    logicalmachine: ${{ parameters.logicalmachine }}
     # Test job depends on the corresponding build job
     dependsOn:
-    - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.runtimeType, 'AndroidMono')}}:
+      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-    - ${{ if eq(parameters.runtimeType, 'mono') }}:
+    - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
       - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     - ${{ if eq(parameters.runtimeType, 'wasm') }}:
       - ${{ format('build_{0}{1}_{2}_{3}_{4}', 'Browser', '', 'wasm', parameters.buildConfig, parameters.runtimeType) }}
+    - ${{ if eq(parameters.codeGenType, 'AOT')}}:
+      - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
+    - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
+      - ${{ 'build_Android_arm64_release_AndroidMono' }}
 
-    ${{ if eq(parameters.osGroup, 'windows') }}:
+    ${{ if and(eq(parameters.osGroup, 'windows'), ne(parameters.runtimeType, 'AndroidMono')) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
         extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono
       ${{ if eq(parameters.runtimeType, 'coreclr') }}:
         extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
-    ${{ if ne(parameters.osGroup, 'windows') }}:
-      ${{ if eq(parameters.runtimeType, 'mono') }}:
+    ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.runtimeType, 'AndroidMono')) }}:
+      ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
       ${{ if eq(parameters.runtimeType, 'wasm') }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --wasm $(librariesDownloadDir)/bin/wasm
-      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
+      ${{ if eq(parameters.codeGenType, 'AOT') }}:
+        extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
+      ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
-    
+      ${{ if and(eq(parameters.runtimeType, 'coreclr'), eq(parameters.osSubGroup, '_musl')) }}:
+        extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }} --alpine
+    ${{ if eq(parameters.runtimeType, 'AndroidMono') }}:
+      extraSetupParameters: -Architecture ${{ parameters.archType }} -AndroidMono
+
     variables: ${{ parameters.variables }}
 
     frameworks:
@@ -80,21 +94,22 @@ jobs:
           displayName: 'live-built libraries'
 
     # Download coreclr
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'Coreclr product build'
+    - ${{ if ne(parameters.runtimeType, 'AndroidMono') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(buildProductRootFolderPath)
+          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+          artifactName: '$(buildProductArtifactName)'
+          displayName: 'Coreclr product build'
 
     # Download mono 
-    - ${{ if eq(parameters.runtimeType, 'mono') }}:
+    - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)
           cleanUnpackFolder: false
-          artifactFileName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
-          artifactName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
+          artifactFileName: 'MonoProduct__${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
+          artifactName: 'MonoProduct__${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
           displayName: 'Mono runtime'
 
     # Download wasm
@@ -109,6 +124,29 @@ jobs:
       - script: "mkdir $(librariesDownloadDir)/bin/wasm;unzip -o $(librariesDownloadDir)/BrowserWasm/artifacts/packages/Release/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.6.0.0-ci.nupkg data/* runtimes/* -d $(librariesDownloadDir)/bin/wasm;cp src/mono/wasm/runtime-test.js $(librariesDownloadDir)/bin/wasm/runtime-test.js;find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \\;"
         displayName: "Create wasm directory (Linux)"
 
+    # Download AOT
+    - ${{ if eq(parameters.codeGenType, 'AOT') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)/LinuxMonoAOT
+          artifactFileName: LinuxMonoAOT${{ parameters.archType }}.tar.gz
+          artifactName: LinuxMonoAOT${{ parameters.archType }}
+          displayName: AOT Mono Artifacts
+
+      - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/Linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
+        displayName: "Create aot directory (Linux)"
+
+    # Download AndroidMono
+    - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'AndroidMonoarm64.tar.gz'
+          artifactName: 'AndroidMonoarm64'
+          displayName: 'Mono Android runtime'
+
+
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
@@ -117,8 +155,8 @@ jobs:
     # Copy the runtime directory into the testhost folder to include OOBs.
     - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\6.0.0 /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\6.0.0\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
-      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'))
+      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), ne('${{ parameters.runtimeType }}', 'AndroidMono'))
 
     - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/6.0.0 -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/6.0.0/corerun"
       displayName: "Create mono dotnet (Linux)"
-      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'))
+      condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), ne('${{ parameters.runtimeType }}', 'AndroidMono'))

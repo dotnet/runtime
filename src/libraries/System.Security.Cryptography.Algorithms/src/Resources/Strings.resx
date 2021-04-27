@@ -96,6 +96,9 @@
   <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
     <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
   </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
     <value>The keys from both parties must be the same size to generate a secret agreement.</value>
   </data>

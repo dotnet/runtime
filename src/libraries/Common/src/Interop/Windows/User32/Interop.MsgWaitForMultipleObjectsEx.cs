@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class User32
+    internal static partial class User32
     {
         [DllImport(Libraries.User32, ExactSpelling = true)]
         public static extern int MsgWaitForMultipleObjectsEx(int nCount, IntPtr pHandles, int dwMilliseconds, int dwWakeMask, int dwFlags);

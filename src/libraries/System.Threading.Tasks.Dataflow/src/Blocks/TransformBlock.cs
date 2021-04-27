@@ -171,7 +171,7 @@ namespace System.Threading.Tasks.Dataflow
         private void ProcessMessage(Func<TInput, TOutput> transform, KeyValuePair<TInput, long> messageWithId)
         {
             // Process the input message to get the output message
-            TOutput outputItem = default(TOutput);
+            TOutput? outputItem = default(TOutput);
             bool itemIsValid = false;
             try
             {
@@ -272,7 +272,7 @@ namespace System.Threading.Tasks.Dataflow
 
             bool isBounded = _target.IsBounded;
             bool gotOutputItem = false;
-            TOutput outputItem = default(TOutput);
+            TOutput? outputItem = default(TOutput);
 
             switch (completed.Status)
             {
@@ -394,16 +394,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, InputCount={1}, OutputCount={2}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    InputCountForDebugger,
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, InputCount={InputCountForDebugger}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 

@@ -40,7 +40,6 @@ Assembler::Assembler()
 
     m_fStdMapping   = FALSE;
     m_fDisplayTraceOutput= FALSE;
-    m_fENCMode = FALSE;
     m_fTolerateDupMethods = FALSE;
 
     m_pCurOutputPos = NULL;
@@ -253,16 +252,6 @@ void Assembler::SetDLL(BOOL IsDll)
 
     m_fDLL = IsDll;
 }
-
-void Assembler::SetOBJ(BOOL IsObj)
-{
-    HRESULT OK;
-    OK = m_pCeeFileGen->SetObjSwitch(m_pCeeFile, IsObj);
-    _ASSERTE(SUCCEEDED(OK));
-
-    m_fOBJ = IsObj;
-}
-
 
 void Assembler::ResetArgNameList()
 {
@@ -534,41 +523,21 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
                 BYTE* outBuff;
                 unsigned align = (headerSize == 1)? 1 : 4;
                 ULONG    PEFileOffset, methodRVA;
-                if(m_fENCMode)
-                {
-                    if(pbsOut)
-                    {
-                        PEFileOffset = pbsOut->length();
-                        align--;
-                        while(PEFileOffset & align)
-                        {
-                            pbsOut->appendInt8(0);
-                            PEFileOffset++;
-                        }
-                        pbsOut->append(pbsBody);
-                        outBuff = (BYTE*)(pbsOut->ptr()) + (pbsOut->length() - pbsBody->length());
-                    }
-                    else return FALSE;
 
-                }
-                else
-                {
-                    if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, totalSize,
-                            align, (void **) &outBuff)))    return FALSE;
-                    memcpy(outBuff,pbsBody->ptr(),totalSize);
-                    // The offset where we start, (not where the alignment bytes start!
-                    if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset)))
-                        return FALSE;
-                    PEFileOffset -= totalSize;
-                }
+                if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, totalSize,
+                        align, (void **) &outBuff)))    return FALSE;
+                memcpy(outBuff,pbsBody->ptr(),totalSize);
+                // The offset where we start, (not where the alignment bytes start!
+                if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset)))
+                    return FALSE;
+                PEFileOffset -= totalSize;
 
                 pMethod->m_pCode = outBuff + headerSize;
                 pMethod->m_headerOffset= PEFileOffset;
                 pMethod->m_methodOffset= PEFileOffset + headerSize;
                 DoDeferredILFixups(pMethod);
 
-                if(m_fENCMode) methodRVA = PEFileOffset;
-                else m_pCeeFileGen->GetMethodRVA(m_pCeeFile, PEFileOffset,&methodRVA);
+                m_pCeeFileGen->GetMethodRVA(m_pCeeFile, PEFileOffset,&methodRVA);
 
                 pMethod->m_headerOffset= methodRVA;
                 pMethod->m_methodOffset= methodRVA + headerSize;
@@ -881,7 +850,6 @@ BOOL Assembler::EmitMethodImpls()
     int i;
     for(i=0; (pMID = m_MethodImplDList.PEEK(i)); i++)
     {
-        if(m_fENCMode && (!pMID->m_fNew)) continue;
         pMID->m_tkImplementingMethod = ResolveLocalMemberRef(pMID->m_tkImplementingMethod);
         pMID->m_tkImplementedMethod = ResolveLocalMemberRef(pMID->m_tkImplementedMethod);
         if(FAILED(m_pEmitter->DefineMethodImpl( pMID->m_tkDefiningClass,

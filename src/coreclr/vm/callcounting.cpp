@@ -822,7 +822,7 @@ void CallCountingManager::CompleteCallCounting()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == TieredCompilationManager::GetBackgroundWorkerThread());
+    _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
     AppDomain *appDomain = GetAppDomain();
     TieredCompilationManager *tieredCompilationManager = appDomain->GetTieredCompilationManager();
@@ -943,7 +943,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == TieredCompilationManager::GetBackgroundWorkerThread());
+    _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
 
     // If a number of call counting stubs have completed, we can try to delete them to reclaim some memory. Deleting
     // involves suspending the runtime and will delete all call counting stubs, and after that some call counting stubs may
@@ -1001,7 +1001,7 @@ void CallCountingManager::StopAllCallCounting(TieredCompilationManager *tieredCo
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == TieredCompilationManager::GetBackgroundWorkerThread());
+    _ASSERTE(GetThreadNULLOk() == TieredCompilationManager::GetBackgroundWorkerThread());
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(tieredCompilationManager != nullptr);

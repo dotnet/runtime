@@ -15,6 +15,21 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/metadata/image.h>
 
+typedef struct {
+	uint32_t kind; // 0 = Path of runtimeconfig.blob, 1 = pointer to image data, >= 2 undefined
+	union {
+		struct {
+			const char *path;
+		} name;
+		struct {
+			const char *data;
+			uint32_t data_len;
+		} data;
+	} runtimeconfig;
+} MonovmRuntimeConfigArguments;
+
+typedef void (*MonovmRuntimeConfigArgumentsCleanup)          (MonovmRuntimeConfigArguments *args, void *user_data);
+
 /* These are used to load the AOT data for aot images compiled with MONO_AOT_FILE_FLAG_SEPARATE_DATA */
 /*
  * Return the AOT data for ASSEMBLY. SIZE is the size of the data. OUT_HANDLE should be set to a handle which is later
@@ -28,6 +43,9 @@ mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataF
 
 MONO_API int
 monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
+
+MONO_API int 
+monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data);
 
 //#ifdef HOST_WASM
 typedef void* (*MonoWasmGetNativeToInterpTramp) (MonoMethod *method, void *extra_arg);

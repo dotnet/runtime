@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -159,7 +158,12 @@ namespace System.Text
 
             int remaining = _pos - index;
             _chars.Slice(index, remaining).CopyTo(_chars.Slice(index + count));
-            s.AsSpan().CopyTo(_chars.Slice(index));
+#if SYSTEM_PRIVATE_CORELIB
+            s
+#else
+            s.AsSpan()
+#endif
+                .CopyTo(_chars.Slice(index));
             _pos += count;
         }
 
@@ -206,7 +210,12 @@ namespace System.Text
                 Grow(s.Length);
             }
 
-            s.AsSpan().CopyTo(_chars.Slice(pos));
+#if SYSTEM_PRIVATE_CORELIB
+            s
+#else
+            s.AsSpan()
+#endif
+                .CopyTo(_chars.Slice(pos));
             _pos += s.Length;
         }
 

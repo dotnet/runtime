@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
-    public class GraphicsTests
+    public partial class GraphicsTests
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]

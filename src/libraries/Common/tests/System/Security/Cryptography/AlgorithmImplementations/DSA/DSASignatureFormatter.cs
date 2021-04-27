@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class DSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
         [Fact]
@@ -59,11 +59,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 DSAParameters dsaParameters;
                 DSATestData.GetDSA1024_186_2(out dsaParameters, out signature, out data);
 
-                byte[] hash;
-                using (SHA1 alg = SHA1.Create())
-                {
-                    hash = alg.ComputeHash(data);
-                }
+                byte[] hash = SHA1.HashData(data);
 
                 dsa.ImportParameters(dsaParameters);
                 var deformatter = new DSASignatureDeformatter(dsa);

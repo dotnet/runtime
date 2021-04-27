@@ -5,63 +5,70 @@
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
-var consoleWebSocket;
-var print;
+
+// if the engine doesn't provide a console
+if (typeof (console) === "undefined") {
+	var console = {
+		log: globalThis.print,
+		clear: function () { }
+	};
+}
+
+globalThis.testConsole = console;
+
+function proxyMethod (prefix, func, asJson) {
+	return function() {
+		var args = [...arguments];
+		if (asJson) {
+			func (JSON.stringify({
+				method: prefix,
+				payload: args[0],
+				arguments: args
+			}));
+		} else {
+			func([prefix + args[0], ...args.slice(1)]);
+		}
+	};
+};
+
+var methods = ["debug", "trace", "warn", "info", "error"];
+for (var m of methods) {
+	if (typeof(console[m]) != "function") {
+		console[m] = proxyMethod(`console.${m}: `, console.log, false);
+	}
+}
+
+function proxyJson (func) {
+	for (var m of ["log", ...methods])
+		console[m] = proxyMethod(`console.${m}`,func, true);
+}
 
 if (is_browser) {
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	window.real_print = console.log;
-	print = function(_msg) { window.real_print(_msg); };
-	console.log = print;
-	console.debug = print;
-	console.error = print;
-	console.trace = print;
-	console.warn = print;
-	console.info = print;
-
 	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
-	consoleWebSocket = new WebSocket(consoleUrl);
+	let consoleWebSocket = new WebSocket(consoleUrl);
 	consoleWebSocket.onopen = function(event) {
-		consoleWebSocket.send("browser: Console websocket connected.");
-
-		window.real_print = function(msg) {
-			consoleWebSocket.send(msg);
-		};
+		proxyJson(function (msg) { consoleWebSocket.send (msg); });
+		globalThis.testConsole.log("browser: Console websocket connected.");
 	};
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
 	};
 
+	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
 	var url = new URL (decodeURI (window.location));
 	arguments = [];
 	for (var v of url.searchParams) {
 		if (v [0] == "arg") {
-			console.log ("URL ARG: " + v [0] + "=" + v [1]);
 			arguments.push (v [1]);
 		}
 	}
 }
+//proxyJson(console.log);
 
-// JavaScript core does not have a console defined
-if (typeof console === "undefined") {
-	var Console = function () {
-		this.log = function(msg){ print(msg) };
-		this.clear = function() { };
-	};
-	console = new Console();
-}
 
-if (typeof console !== "undefined") {
-	if (!console.debug)
-		console.debug = console.log;
-	if (!console.trace)
-		console.trace = console.log;
-	if (!console.warn)
-		console.warn = console.log;
-	if (!console.error)
-		console.error = console.log;
-}
+let print = globalThis.testConsole.log;
+let printErr = globalThis.testConsole.error;
 
 if (typeof crypto === 'undefined') {
 	// **NOTE** this is a simple insecure polyfill for testing purposes only
@@ -112,7 +119,7 @@ function test_exit (exit_code) {
 	if (is_browser) {
 		// Notify the selenium script
 		Module.exit_code = exit_code;
-		print ("WASM EXIT " + exit_code);
+		Module.print ("WASM EXIT " + exit_code);
 		var tests_done_elem = document.createElement ("label");
 		tests_done_elem.id = "tests_done";
 		tests_done_elem.innerHTML = exit_code.toString ();
@@ -123,7 +130,7 @@ function test_exit (exit_code) {
 }
 
 function fail_exec (reason) {
-	print (reason);
+	Module.print (reason);
 	test_exit (1);
 }
 
@@ -138,7 +145,7 @@ function inspect_object (o) {
 
 // Preprocess arguments
 var args = testArguments;
-print("Arguments: " + testArguments);
+console.info("Arguments: " + testArguments);
 profilers = [];
 setenv = {};
 runtime_args = [];
@@ -202,8 +209,8 @@ loadScript ("mono-config.js");
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print: print,
-	printErr: function(x) { print ("WASM-ERR: " + x) },
+	print,
+	printErr,
 
 	onAbort: function(x) {
 		print ("ABORT: " + x);
@@ -283,21 +290,12 @@ const IGNORE_PARAM_COUNT = -1;
 
 var App = {
 	init: function () {
-
-		var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'])
-		var runtime_invoke = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
-		var string_from_js = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
-		var assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
-		var string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'string', ['number']);
-		var string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
-		var obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
-		var unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
 
 		Module.wasm_exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
 
-		Module.print("Initializing.....");
+		console.info("Initializing.....");
 
 		for (var i = 0; i < profilers.length; ++i) {
 			var init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
@@ -340,10 +338,7 @@ var App = {
 			}
 
 			main_assembly_name = args[1];
-			var app_args = string_array_new (args.length - 2);
-			for (var i = 2; i < args.length; ++i) {
-				obj_array_set (app_args, i - 2, string_from_js (args [i]));
-			}
+			var app_args = args.slice (2);
 
 			var main_argc = args.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
@@ -356,37 +351,22 @@ var App = {
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
-			function isThenable (js_obj) {
-				// When using an external Promise library the Promise.resolve may not be sufficient
-				// to identify the object as a Promise.
-				return Promise.resolve (js_obj) === js_obj ||
-						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
-			}
+			// Automatic signature isn't working correctly
+			let result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+			let onError = function (error)
+			{
+				console.error (error);
+				if (error.stack)
+					console.error (error.stack);
 
-			try {
-				// Automatic signature isn't working correctly
-				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
-
-				if (isThenable (exit_code))
-				{
-					exit_code.then (
-						(result) => {
-							test_exit (result);
-						},
-						(reason) => {
-							console.error (reason);
-							test_exit (1);
-						});
-				} else {
-					test_exit (exit_code);
-					return;
-				}
-			} catch (ex) {
-				print ("JS exception: " + ex);
-				print (ex.stack);
 				test_exit (1);
-				return;
 			}
+			try {
+				result.then (test_exit).catch (onError);
+			} catch (error) {
+				onError(error);
+			}
+
 		} else {
 			fail_exec ("Unhandled argument: " + args [0]);
 		}

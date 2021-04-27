@@ -6,5 +6,6 @@
 Commonly Used Types:
 Microsoft.Extensions.Caching.Distributed.IDistributedCache
 Microsoft.Extensions.Caching.Memory.IMemoryCache</PackageDescription>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

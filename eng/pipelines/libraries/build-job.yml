@@ -96,7 +96,7 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

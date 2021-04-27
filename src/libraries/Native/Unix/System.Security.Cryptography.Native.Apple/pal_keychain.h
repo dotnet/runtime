@@ -8,7 +8,7 @@
 
 #include <Security/Security.h>
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Get a CFRetain()ed SecKeychainRef value for the keychain to which the keychain item belongs.
 

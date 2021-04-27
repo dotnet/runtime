@@ -6,7 +6,6 @@
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(TargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
-    <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +17,7 @@
           BeforeTargets="Build"
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
+      <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
         then we should consider calling Environment.ProcessorCount
@@ -44,7 +44,10 @@
           BeforeTargets="Build"
           Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                      '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
+    <PropertyGroup>
+        <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
+    </PropertyGroup>
+    <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
   </Target>

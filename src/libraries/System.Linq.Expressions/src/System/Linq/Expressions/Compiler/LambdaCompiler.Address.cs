@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
         private void EmitAddress(Expression node, Type type)
         {
@@ -162,7 +162,6 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Ldloca, temp);
         }
 
-
         private void AddressOf(MethodCallExpression node, Type type)
         {
             // An array index of a multi-dimensional array is represented by a call to Array.Get,
@@ -172,9 +171,9 @@ namespace System.Linq.Expressions.Compiler
             // this situation and replace it with a call to the Address method.
             if (!node.Method.IsStatic &&
                 node.Object!.Type.IsArray &&
-                node.Method == node.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
+                node.Method == TypeUtils.GetArrayGetMethod(node.Object.Type))
             {
-                MethodInfo mi = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
+                MethodInfo mi = TypeUtils.GetArrayAddressMethod(node.Object.Type);
 
                 EmitMethodCall(node.Object, mi, node);
             }
@@ -200,7 +199,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                MethodInfo address = node.Object!.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
+                MethodInfo address = TypeUtils.GetArrayAddressMethod(node.Object!.Type);
                 EmitMethodCall(node.Object, address, node);
             }
         }

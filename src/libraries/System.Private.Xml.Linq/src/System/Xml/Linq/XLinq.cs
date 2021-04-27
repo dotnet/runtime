@@ -408,7 +408,7 @@ namespace System.Xml.Linq
 
     internal struct NamespaceResolver
     {
-        private class NamespaceDeclaration
+        private sealed class NamespaceDeclaration
         {
             public string prefix = null!;
             public XNamespace ns = null!;

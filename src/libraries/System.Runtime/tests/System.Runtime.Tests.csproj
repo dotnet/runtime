@@ -5,6 +5,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
@@ -58,6 +59,7 @@
     <Compile Include="System\ByteTests.cs" />
     <Compile Include="System\CharTests.cs" />
     <Compile Include="System\CLSCompliantAttributeTests.cs" />
+    <Compile Include="System\DateOnlyTests.cs" />
     <Compile Include="System\DateTimeTests.cs" />
     <Compile Include="System\DateTimeOffsetTests.cs" />
     <Compile Include="System\DBNullTests.cs" />
@@ -126,6 +128,7 @@
     <Compile Include="System\StringSplitExtensions.cs" />
     <Compile Include="System\StringTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
+    <Compile Include="System\TimeOnlyTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />
     <Compile Include="System\TimeZoneInfoTests.cs" />
@@ -205,6 +208,7 @@
     <Compile Include="System\Reflection\ObfuscateAssemblyAttributeTests.cs" />
     <Compile Include="System\Reflection\ObfuscationAttributeTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
+    <Compile Include="System\Reflection\ReflectionCacheTests.cs" />
     <Compile Include="System\Reflection\ReflectionContextTests.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadExceptionTests.cs" />
     <Compile Include="System\Reflection\StrongNameKeyPairTests.cs" />
@@ -216,6 +220,7 @@
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\FormattableStringFactoryTests.cs" />
+    <Compile Include="System\Runtime\CompilerServices\InterpolatedStringBuilderTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBoxTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttributeTests.cs" />

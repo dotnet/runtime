@@ -349,6 +349,28 @@ private:
     };
 
     //----------------------------------------------------------------------------------------------
+    // VectorConstantIsBroadcastedI64: Check N i64 elements in a constant vector for equality
+    //
+    //  Arguments:
+    //     vecCns  - Constant vector
+    //     count   - Amount of i64 components to compare
+    //
+    //  Returns:
+    //     true if N i64 elements of the given vector are equal
+    static bool VectorConstantIsBroadcastedI64(VectorConstant& vecCns, int count)
+    {
+        assert(count >= 1 && count <= 4);
+        for (int i = 1; i < count; i++)
+        {
+            if (vecCns.i64[i] != vecCns.i64[0])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //----------------------------------------------------------------------------------------------
     // ProcessArgForHWIntrinsicCreate: Processes an argument for the Lowering::LowerHWIntrinsicCreate method
     //
     //  Arguments:

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Tests;
@@ -552,8 +553,40 @@ namespace System.Text.RegularExpressions.Tests
                 string input = new string('a', 50) + "@a.a";
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+
+                if ((RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture) == RegexOptions.None)
+                {
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).IsMatch(input));
+                    Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Matches(input).Count);
+
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern));
+                    Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern).Count);
+                }
+
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).IsMatch(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Matches(input).Count);
+
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Match(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)));
+                Assert.Throws<RegexMatchTimeoutException>(() => Regex.Matches(input, Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Count);
             }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
+        }
+
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_CachedPattern_NewTimeoutApplies(RegexOptions options)
+        {
+            const string PatternLeadingToLotsOfBacktracking = @"^(\w+\s?)*$";
+            Assert.True(Regex.IsMatch("", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromDays(1)));
+            var sw = Stopwatch.StartNew();
+            Assert.Throws<RegexMatchTimeoutException>(() => Regex.IsMatch("An input string that takes a very very very very very very very very very very very long time!", PatternLeadingToLotsOfBacktracking, options, TimeSpan.FromMilliseconds(1)));
+            Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
         }
 
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.

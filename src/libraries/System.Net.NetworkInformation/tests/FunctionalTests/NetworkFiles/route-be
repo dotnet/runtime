@@ -1,0 +1,5 @@
+Iface	Destination	Gateway 	Flags	RefCnt	Use	Metric	Mask		MTU	Window	IRTT                                                       
+wlan0	00000000	0A698001	0003	0	0	400	00000000	0	0	0                                                                            
+wlan0	0A698000	67452301	0001	0	0	400	FFFFFC00	0	0	0                                                                            
+wlan0	A9FE0000	98BADCFE	0001	0	0	1000	FFFF0000	0	0	0                                                                           
+eth0	00000000	11111111	0001	0	0	1000	FFFF0000	0	0	0                                                                           

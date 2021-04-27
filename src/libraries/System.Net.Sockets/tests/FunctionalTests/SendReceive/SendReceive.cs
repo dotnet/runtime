@@ -479,7 +479,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
         {
@@ -571,6 +571,39 @@ namespace System.Net.Sockets.Tests
             finally
             {
                 listener.Stop();
+            }
+        }
+
+        [Fact]
+        public async Task Send_0ByteSend_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        // Zero byte send should be a no-op 
+                        int bytesSent = await SendAsync(client, new ArraySegment<byte>(Array.Empty<byte>()));
+                        Assert.Equal(0, bytesSent);
+
+                        // Socket should still be usable
+                        await SendAsync(client, new byte[] { 99 });
+                        byte[] buffer = new byte[10];
+                        int bytesReceived = await ReceiveAsync(server, buffer);
+                        Assert.Equal(1, bytesReceived);
+                        Assert.Equal(99, buffer[0]);
+                    }
+                }
             }
         }
 
@@ -684,7 +717,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // SendBufferSize, ReceiveBufferSize = 0 not supported on BSD like stacks.
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "SendBufferSize, ReceiveBufferSize = 0 not supported on BSD like stacks.")]
         public async Task SendRecv_NoBuffering_Success()
         {
             if (UsesSync) return;
@@ -862,7 +895,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
-        [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
@@ -882,7 +915,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
-                await Task.WhenAny(disposeTask, receiveTask).TimeoutAfter(30000);
+                await Task.WhenAny(disposeTask, receiveTask).WaitAsync(TimeSpan.FromSeconds(30));
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -966,7 +999,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
+                    await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));
                     await disposeTask;
 
                     SocketError? localSocketError = null;
@@ -1149,6 +1182,39 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceive_SpanSync : SendReceive<SocketHelperSpanSync>
     {
         public SendReceive_SpanSync(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task Send_0ByteSend_Span_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        // Zero byte send should be a no-op 
+                        int bytesSent = client.Send(ReadOnlySpan<byte>.Empty, SocketFlags.None);
+                        Assert.Equal(0, bytesSent);
+
+                        // Socket should still be usable
+                        await SendAsync(client, new byte[] { 99 });
+                        byte[] buffer = new byte[10];
+                        int bytesReceived = await ReceiveAsync(server, buffer);
+                        Assert.Equal(1, bytesReceived);
+                        Assert.Equal(99, buffer[0]);
+                    }
+                }
+            }
+        }
     }
 
     public sealed class SendReceive_SpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
@@ -1159,6 +1225,40 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceive_MemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
     {
         public SendReceive_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task Send_0ByteSend_Memory_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        // Zero byte send should be a no-op and complete immediately
+                        Task<int> sendTask = client.SendAsync(ReadOnlyMemory<byte>.Empty, SocketFlags.None).AsTask();
+                        Assert.True(sendTask.IsCompleted);
+                        Assert.Equal(0, await sendTask);
+
+                        // Socket should still be usable
+                        await SendAsync(client, new byte[] { 99 });
+                        byte[] buffer = new byte[10];
+                        int bytesReceived = await ReceiveAsync(server, buffer);
+                        Assert.Equal(1, bytesReceived);
+                        Assert.Equal(99, buffer[0]);
+                    }
+                }
+            }
+        }
 
         [Fact]
         public async Task Precanceled_Throws()

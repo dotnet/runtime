@@ -714,7 +714,7 @@ EEClass::CheckVarianceInSig(
 
         case ELEMENT_TYPE_VAR:
         {
-            DWORD index;
+            uint32_t index;
             IfFailThrow(psig.GetData(&index));
 
             // This will be checked later anyway; so give up and don't indicate a variance failure
@@ -736,7 +736,7 @@ EEClass::CheckVarianceInSig(
             IfFailThrow(psig.GetToken(&typeref));
 
             // The number of type parameters follows
-            DWORD ntypars;
+            uint32_t ntypars;
             IfFailThrow(psig.GetData(&ntypars));
 
             // If this is a value type, or position == gpNonVariant, then
@@ -810,7 +810,7 @@ EEClass::CheckVarianceInSig(
                 IfFailThrow(psig.GetData(NULL));
 
                 // Get arg count;
-                ULONG cArgs;
+                uint32_t cArgs;
                 IfFailThrow(psig.GetData(&cArgs));
 
                 // Conservatively, assume non-variance of function pointer types
@@ -1168,6 +1168,12 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
 
             if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
                 continue;
+
+            // Locate the MethodTable defining the pParentMD.
+            while (pParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
+            {
+                pParentMT = pParentMT->GetParentMethodTable();
+            }
 
             SigTypeContext context1(pParentMT->GetInstantiation(), pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
@@ -2433,7 +2439,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "GC description for '%s':\n\n", pszClassName));
         }
 
-        if (ContainsPointersOrCollectible())
+        if (ContainsPointers())
         {
             CGCDescSeries *pSeries;
             CGCDescSeries *pHighest;

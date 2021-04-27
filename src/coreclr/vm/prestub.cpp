@@ -1921,11 +1921,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
 
     // Attempt to check what GC mode we are running under.
     if (CURRENT_THREAD == NULL
@@ -1994,7 +1990,13 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-        pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+            auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -3083,7 +3085,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                 pResult->indirectFirstOffset = 1;
             }
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
 
@@ -3095,7 +3097,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[2] = sizeof(TypeHandle) * data;
 

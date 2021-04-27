@@ -477,7 +477,7 @@ namespace System.DirectoryServices.Protocols
                     int certError = LdapPal.SetClientCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _connection._clientCertificateRoutine);
                     if (certError != (int)ResultCode.Success)
                     {
-                        if (Utility.IsLdapError((LdapError)certError))
+                        if (LdapErrorMappings.IsLdapError(certError))
                         {
                             string certerrorMessage = LdapErrorMappings.MapResultCode(certError);
                             throw new LdapException(certError, certerrorMessage);
@@ -524,6 +524,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        // In practice, this apparently rarely if ever contains useful text
         internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_SERVER_ERROR, true);
 
         internal DereferenceAlias DerefAlias
@@ -664,7 +665,7 @@ namespace System.DirectoryServices.Protocols
                         response.ResponseName = "1.3.6.1.4.1.1466.20037";
                         throw new TlsOperationException(response);
                     }
-                    else if (Utility.IsLdapError((LdapError)error))
+                    else if (LdapErrorMappings.IsLdapError(error))
                     {
                         string errorMessage = LdapErrorMappings.MapResultCode(error);
                         throw new LdapException(error, errorMessage);

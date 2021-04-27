@@ -1,22 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
+    <Compile Include="System\Net\Http\Json\JsonContentOfT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' and '$(TargetFramework)' != 'net461'">
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
+    <Compile Include="System\Net\Http\Json\JsonContentOfT.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
-                        $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
@@ -28,18 +30,29 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
-                        $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
+
+  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+  <Choose>
+    <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <ItemGroup>
+        <Reference Include="System.Text.Json" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 </Project>

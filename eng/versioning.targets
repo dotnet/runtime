@@ -20,45 +20,68 @@
     <AssemblyMetadata Include="PreferInbox">
       <Value>True</Value>
     </AssemblyMetadata>
-  </ItemGroup>
-
-  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
-  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
-    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
-        <_Parameter1>windows</_Parameter1>
-    </AssemblyAttribute>
+    <AssemblyMetadata Include="IsTrimmable" Condition="'$(SetIsTrimmable)' != 'false'">
+      <Value>True</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
       <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
-  
-  <!-- Enables browser warnings for cross platform or Brwoser targeted builds -->
+
+  <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
+  <ItemGroup>
+    <SupportedPlatform Include="Android" />
+    <SupportedPlatform Include="iOS" />
+    <SupportedPlatform Include="tvOS" />
+    <SupportedPlatform Include="macCatalyst" />
+  </ItemGroup>
+
+  <!-- Enables browser warnings for cross platform or Browser targeted builds -->
   <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
-  <ItemGroup>
-    <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+  <!-- Add target platforms into MSBuild SupportedPlatform list -->
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
+    <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
+    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvOS"/>
+    <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
   </ItemGroup>
 
-  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild" Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
+  <!-- Adds UnsupportedOSPlatform and SupportedOSPlatform attributes to the assembly when:
+      * This isn't a test project
+      * This is a cross-platform target
+      * The build isn't targeting .NET Framework
+    -->
+  <Target Name="AddOSPlatformAttributes" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
+    Condition="'$(TargetsAnyOS)' == 'true' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <!-- Defensively de-dupe the values -->
     <ItemGroup>
+      <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+      <_supportedOSPlatforms Include="$(SupportedOSPlatforms)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_unsupportedOSPlatforms)' != ''">
+      <!-- Add the assembly attribute -->
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
+
+      <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
+      <SupportedPlatform Include="%(_unsupportedOSPlatforms.Identity)" />
     </ItemGroup>
-  </Target>
 
-  <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
-          Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
+    <ItemGroup Condition="'@(_supportedOSPlatforms)' != ''">
+      <!-- Add the assembly attribute -->
+      <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
+      </AssemblyAttribute>
 
-    <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all DotNet assemblies (non test) that have a reference to System.Runtime.InteropServices -->
-    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)'==''">
-      <IncludeDllSafeSearchPathAttribute>false</IncludeDllSafeSearchPathAttribute> <!-- We don't need to include it by default. -->
-      <IncludeDllSafeSearchPathAttribute Condition="'%(ProjectReference.Filename)'=='System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'%(Reference.Identity)'=='System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
-    </PropertyGroup>
+      <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
+      <SupportedPlatform Include="%(_supportedOSPlatforms.Identity)" />
+    </ItemGroup>
   </Target>
 
   <PropertyGroup>
@@ -71,7 +94,6 @@
   </PropertyGroup>
 
   <Target Name="_ComputeBuildToolsAssemblyInfoAttributes"
-          DependsOnTargets="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
           BeforeTargets="GetAssemblyAttributes">
     <ItemGroup>
       <AssemblyAttribute Include="System.Reflection.AssemblyDefaultAliasAttribute">
@@ -83,7 +105,7 @@
       </AssemblyAttribute>
 
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"
-                         Condition="'$(SkipFrameworkAssemblyMetadata)' != 'true' and '@(AssemblyMetadata)' != ''">
+                         Condition="'@(AssemblyMetadata)' != ''">
         <_Parameter1>%(AssemblyMetadata.Identity)</_Parameter1>
         <_Parameter2>%(AssemblyMetadata.Value)</_Parameter2>
       </AssemblyAttribute>
@@ -93,10 +115,21 @@
   <!-- Work around https://github.com/Microsoft/msbuild/issues/3412 by writing the non-string assembly attributes manually -->
   <!-- Note: ReferenceAssemblies.targets still uses @(AssemblyInfoLines) as well. So if you remove this, those need to migrate too. -->
   <Target Name="_WriteNonStringAssemblyInfoAttributes"
+          DependsOnTargets="ResolveReferences"
           AfterTargets="CoreGenerateAssemblyInfo"
           BeforeTargets="BeforeCompile;CoreCompile"
           Inputs="$(MSBuildProjectFile)"
           Outputs="$(AssemblyInfoFile)">
+
+    <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all source assemblies that may contain DllImport -->
+    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)'=='' and '$(IsSourceProject)'== 'true'">
+      <IncludeDllSafeSearchPathAttribute>false</IncludeDllSafeSearchPathAttribute>
+      <!-- We don't need to include it by default. -->
+      <IncludeDllSafeSearchPathAttribute Condition="'%(ReferencePath.Filename)' == 'System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'%(ReferencePath.Filename)' == 'System.Private.CoreLib'">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and '%(ReferencePath.Filename)' == 'netstandard'">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '%(ReferencePath.Filename)' == 'mscorlib'">true</IncludeDllSafeSearchPathAttribute>
+    </PropertyGroup>
 
     <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
       <AssemblyInfoLines Condition="'$(CLSCompliant)'=='true'" Include="[assembly:System.CLSCompliant(true)]" />
@@ -158,8 +191,8 @@
 
   </Target>
 
-  <!-- Removes assembly level attributes for Browser. -->
-  <Target Name="RemoveSupportedPlatformAssemblyAttributeForBrowser" AfterTargets="GetAssemblyAttributes" Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(IsTestProject)' == 'true'">
+  <!-- Removes assembly level attributes from test projects. -->
+  <Target Name="RemoveSupportedOSPlatformAttributeFromTestProjects" AfterTargets="GetAssemblyAttributes" Condition="'$(IsTestProject)' == 'true'">
     <ItemGroup>
       <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
       <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />

@@ -60,10 +60,6 @@
 #if HAVE_LINUX_CAN_H
 #include <linux/can.h>
 #endif
-#if HAVE_GETADDRINFO_A
-#include <signal.h>
-#include <stdatomic.h>
-#endif
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
@@ -339,13 +335,36 @@ static int32_t CopySockAddrToIPAddress(sockaddr* addr, sa_family_t family, IPAdd
     return -1;
 }
 
-static int32_t GetHostEntries(const uint8_t* address, struct addrinfo* info, HostEntry* entry)
+int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
 {
+    if (address == NULL || entry == NULL)
+    {
+        return GetAddrInfoErrorFlags_EAI_BADARG;
+    }
+
     int32_t ret = GetAddrInfoErrorFlags_EAI_SUCCESS;
 
+    struct addrinfo* info = NULL;
 #if HAVE_GETIFADDRS
     struct ifaddrs* addrs = NULL;
 #endif
+
+    sa_family_t platformFamily;
+    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
+    {
+        return GetAddrInfoErrorFlags_EAI_FAMILY;
+    }
+
+    struct addrinfo hint;
+    memset(&hint, 0, sizeof(struct addrinfo));
+    hint.ai_flags = AI_CANONNAME;
+    hint.ai_family = platformFamily;
+
+    int result = getaddrinfo((const char*)address, NULL, &hint, &info);
+    if (result != 0)
+    {
+        return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
+    }
 
     entry->CanonicalName = NULL;
     entry->Aliases = NULL;
@@ -374,8 +393,7 @@ static int32_t GetHostEntries(const uint8_t* address, struct addrinfo* info, Hos
 
 #if HAVE_GETIFADDRS
     char name[_POSIX_HOST_NAME_MAX];
-
-    int result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
+    result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
     bool includeIPv4Loopback = true;
     bool includeIPv6Loopback = true;
@@ -425,8 +443,6 @@ static int32_t GetHostEntries(const uint8_t* address, struct addrinfo* info, Hos
             }
         }
     }
-#else
-    (void)address;
 #endif
 
     if (entry->IPAddressCount > 0)
@@ -501,158 +517,6 @@ cleanup:
     }
 
     return ret;
-}
-
-#if HAVE_GETADDRINFO_A
-struct GetAddrInfoAsyncState
-{
-    struct gaicb gai_request;
-    struct gaicb* gai_requests;
-    struct sigevent sigevent;
-
-    struct addrinfo hint;
-    HostEntry* entry;
-    GetHostEntryForNameCallback callback;
-    char address[];
-};
-
-static void GetHostEntryForNameAsyncComplete(sigval_t context)
-{
-    struct GetAddrInfoAsyncState* state = (struct GetAddrInfoAsyncState*)context.sival_ptr;
-
-    atomic_thread_fence(memory_order_acquire);
-
-    GetHostEntryForNameCallback callback = state->callback;
-
-    int ret = ConvertGetAddrInfoAndGetNameInfoErrorsToPal(gai_error(&state->gai_request));
-
-    if (ret == 0)
-    {
-        const uint8_t* address = (const uint8_t*)state->address;
-        struct addrinfo* info = state->gai_request.ar_result;
-
-        ret = GetHostEntries(address, info, state->entry);
-    }
-
-    assert(callback != NULL);
-    callback(state->entry, ret);
-
-    free(state);
-}
-#endif
-
-static bool TrySetAddressFamily(int32_t addressFamily, struct addrinfo* hint)
-{
-    sa_family_t platformFamily;
-    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
-    {
-        return false;
-    }
-
-    memset(hint, 0, sizeof(struct addrinfo));
-
-    hint->ai_flags = AI_CANONNAME;
-    hint->ai_family = platformFamily;
-
-    return true;
-}
-
-int32_t SystemNative_PlatformSupportsGetAddrInfoAsync()
-{
-    return HAVE_GETADDRINFO_A;
-}
-
-int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
-{
-    if (address == NULL || entry == NULL)
-    {
-        return GetAddrInfoErrorFlags_EAI_BADARG;
-    }
-
-    struct addrinfo hint;
-    if (!TrySetAddressFamily(addressFamily, &hint))
-    {
-        return GetAddrInfoErrorFlags_EAI_FAMILY;
-    }
-
-    struct addrinfo* info = NULL;
-
-    int result = getaddrinfo((const char*)address, NULL, &hint, &info);
-    if (result != 0)
-    {
-        return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
-    }
-
-    return GetHostEntries(address, info, entry);
-}
-
-int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t addressFamily, HostEntry* entry, GetHostEntryForNameCallback callback)
-{
-#if HAVE_GETADDRINFO_A
-    if (address == NULL || entry == NULL)
-    {
-        return GetAddrInfoErrorFlags_EAI_BADARG;
-    }
-
-    size_t addrlen = strlen((const char*)address);
-
-    if (addrlen > _POSIX_HOST_NAME_MAX)
-    {
-        return GetAddrInfoErrorFlags_EAI_BADARG;
-    }
-
-    struct GetAddrInfoAsyncState* state = malloc(sizeof(*state) + addrlen + 1);
-
-    if (state == NULL)
-    {
-        return GetAddrInfoErrorFlags_EAI_MEMORY;
-    }
-
-    if (!TrySetAddressFamily(addressFamily, &state->hint))
-    {
-        free(state);
-        return GetAddrInfoErrorFlags_EAI_FAMILY;
-    }
-
-    memcpy(state->address, address, addrlen + 1);
-
-    state->gai_request = (struct gaicb) {
-        .ar_name = state->address,
-        .ar_service = NULL,
-        .ar_request = &state->hint,
-        .ar_result = NULL
-    };
-    state->gai_requests = &state->gai_request;
-    state->sigevent = (struct sigevent) {
-        .sigev_notify = SIGEV_THREAD,
-        .sigev_value = {
-            .sival_ptr = state
-        },
-        .sigev_notify_function = GetHostEntryForNameAsyncComplete
-    };
-    state->entry = entry;
-    state->callback = callback;
-
-    atomic_thread_fence(memory_order_release);
-
-    int32_t result = getaddrinfo_a(GAI_NOWAIT, &state->gai_requests, 1, &state->sigevent);
-
-    if (result != 0)
-    {
-        free(state);
-        return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
-    }
-
-    return result;
-#else
-    (void)address;
-    (void)addressFamily;
-    (void)entry;
-    (void)callback;
-
-    // GetHostEntryForNameAsync is not supported on this platform.
-    return -1;
-#endif
 }
 
 void SystemNative_FreeHostEntry(HostEntry* entry)
@@ -2167,7 +2031,14 @@ int32_t SystemNative_GetSockOpt(
     {
         if (socketOptionName == SocketOptionName_SO_IP_DONTFRAGMENT)
         {
-            *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            if (optLen >= (socklen_t)sizeof(int))
+            {
+                *(int*)optionValue = *(int*)optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            }
+            else
+            {
+                *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            }
         }
     }
 #endif
@@ -2275,7 +2146,14 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     {
         if (socketOptionName == SocketOptionName_SO_IP_DONTFRAGMENT)
         {
-            *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            if ((socklen_t)optionLen >= (socklen_t)sizeof(int))
+            {
+                *(int*)optionValue = *(int*)optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            }
+            else
+            {
+                *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            }
         }
     }
 #endif

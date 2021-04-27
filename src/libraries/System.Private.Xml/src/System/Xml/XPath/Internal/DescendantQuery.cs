@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class DescendantQuery : DescendantBaseQuery
+    internal sealed class DescendantQuery : DescendantBaseQuery
     {
         private XPathNodeIterator? _nodeIterator;
 

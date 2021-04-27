@@ -117,9 +117,9 @@ mono_array_class_get_cached_function (MonoClass *eclass, MonoClass **aclass)
 #define mono_array_class_get_cached(eclass) (mono_array_class_get_cached_function ((eclass), &(eclass ## _array)))
 
 static inline MonoArray*
-mono_array_new_cached_function (MonoDomain *domain, MonoClass *aclass, int size, MonoError *error)
+mono_array_new_cached_function (MonoClass *aclass, int size, MonoError *error)
 {
-	MonoVTable *vtable = mono_class_vtable_checked (domain, aclass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (aclass, error);
 	MonoArray *arr = NULL;
 	if (is_ok (error))
 		arr = mono_array_new_specific_checked (vtable, size, error);
@@ -129,13 +129,13 @@ mono_array_new_cached_function (MonoDomain *domain, MonoClass *aclass, int size,
 // eclass should be a run-time constant
 // If you get an error using this macro, you need to manually instantiate the MonoClass *foo ## _array cache.
 // See for example object_class_array.
-#define mono_array_new_cached(domain, eclass, size, error) \
-	mono_array_new_cached_function ((domain), mono_array_class_get_cached (eclass), (size), (error))
+#define mono_array_new_cached(eclass, size, error) \
+	mono_array_new_cached_function (mono_array_class_get_cached (eclass), (size), (error))
 
 static inline MonoArrayHandle
-mono_array_new_cached_handle_function (MonoDomain *domain, MonoClass *aclass, int size, MonoError *error)
+mono_array_new_cached_handle_function (MonoClass *aclass, int size, MonoError *error)
 {
-	MonoVTable *vtable = mono_class_vtable_checked (domain, aclass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (aclass, error);
 	MonoArrayHandle arr = NULL_HANDLE_ARRAY;
 	if (is_ok (error))
 		arr = mono_array_new_specific_handle (vtable, size, error);
@@ -145,8 +145,8 @@ mono_array_new_cached_handle_function (MonoDomain *domain, MonoClass *aclass, in
 // eclass should be a run-time constant
 // If you get an error using this macro, you need to manually instantiate the MonoClass *foo ## _array cache.
 // See for example object_class_array.
-#define mono_array_new_cached_handle(domain, eclass, size, error) \
-	mono_array_new_cached_handle_function ((domain), mono_array_class_get_cached (eclass), (size), (error))
+#define mono_array_new_cached_handle(eclass, size, error) \
+	mono_array_new_cached_handle_function (mono_array_class_get_cached (eclass), (size), (error))
 
 #ifdef MONO_BIG_ARRAYS
 typedef uint64_t mono_array_size_t;
@@ -278,9 +278,6 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 typedef struct {
 	MonoObject obj;
-#ifndef ENABLE_NETCORE
-	MonoObject *identity;
-#endif
 } MonoMarshalByRefObject;
 
 TYPED_HANDLE_DECL (MonoMarshalByRefObject);
@@ -288,18 +285,10 @@ TYPED_HANDLE_DECL (MonoMarshalByRefObject);
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
-#ifndef ENABLE_NETCORE
-	MonoDomain *data;
-#endif
 };
 
 /* Safely access System.AppDomain from native code */
 TYPED_HANDLE_DECL (MonoAppDomain);
-
-#ifndef ENABLE_NETCORE
-/* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
-TYPED_HANDLE_DECL (MonoAppDomainSetup);
-#endif
 
 typedef struct _MonoStringBuilder MonoStringBuilder;
 TYPED_HANDLE_DECL (MonoStringBuilder);
@@ -358,11 +347,7 @@ struct _MonoException {
 	MonoString *remote_stack_trace;
 	gint32	    remote_stack_index;
 	/* Dynamic methods referenced by the stack trace */
-#ifdef ENABLE_NETCORE
 	MonoArray *dynamic_methods;
-#else
-	MonoObject *dynamic_methods;
-#endif
 	gint32	    hresult;
 	MonoString *source;
 	MonoObject *serialization_manager;
@@ -376,13 +361,6 @@ typedef struct {
 } MonoSystemException;
 
 TYPED_HANDLE_DECL (MonoSystemException);
-
-#ifndef ENABLE_NETCORE
-typedef struct {
-	MonoSystemException base;
-	MonoString *param_name;
-} MonoArgumentException;
-#endif
 
 typedef struct {
 	MonoObject   object;
@@ -408,14 +386,6 @@ typedef struct {
 } MonoWaitHandle;
 
 TYPED_HANDLE_DECL (MonoWaitHandle);
-
-/* This is a copy of System.Runtime.Remoting.Messaging.CallType */
-typedef enum {
-	CallType_Sync = 0,
-	CallType_BeginInvoke = 1,
-	CallType_EndInvoke = 2,
-	CallType_OneWay = 3
-} MonoCallType;
 
 /* System.Threading.StackCrawlMark */
 /*
@@ -565,7 +535,6 @@ TYPED_HANDLE_DECL (MonoStackFrame);
 typedef enum {
 	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
 	MONO_THREAD_FLAG_NAME_SET = 2, // Thread name set from managed code
-	MONO_THREAD_FLAG_APPDOMAIN_ABORT = 4, // Current requested abort originates from appdomain unload
 } MonoThreadFlags;
 
 struct _MonoThreadInfo;
@@ -579,15 +548,9 @@ typedef struct MonoThreadName {
 void
 mono_gstring_append_thread_name (GString*, MonoInternalThread*);
 
-
-/*
- * NETCORE: There is only one thread object,
- * thread->internal_thread points to itself.
- */
 struct _MonoInternalThread {
-	// FIXME: Mechanize keeping this in sync with managed.
 	MonoObject  obj;
-	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
+	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks */
 	MonoThreadHandle *handle;
 	gpointer native_handle;
 	MonoThreadName name;
@@ -598,13 +561,6 @@ struct _MonoInternalThread {
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
 	struct _MonoThreadInfo *thread_info;
-#ifndef ENABLE_NETCORE
-	MonoAppContext *current_appcontext;
-#endif
-	MonoThread *root_domain_thread;
-	MonoObject *_serialized_principal;
-	int _serialized_principal_version;
-	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 __interruption_requested;
 	/* data that must live as long as this managed object is not finalized
@@ -612,29 +568,22 @@ struct _MonoInternalThread {
 	 * longer */
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
-	MonoBoolean thread_interrupt_requested;
-	int stack_size;
 	guint8	apartment_state;
-	gint32 critical_region_level;
 	gint32 managed_id;
 	guint32 small_id;
 	MonoThreadManageCallback manage_callback;
 	gsize    flags;
 	gpointer thread_pinning_ref;
-	gsize __abort_protected_block_count;
 	gint32 priority;
 	GPtrArray *owned_mutexes;
 	MonoOSEvent *suspended;
 	gint32 self_suspended; // TRUE | FALSE
 	gsize thread_state;
 
-#ifdef ENABLE_NETCORE
+	/* Points to self, set when starting up/attaching */
 	struct _MonoInternalThread *internal_thread;
-	MonoObject *start_obj;
 	MonoException *pending_exception;
-#else
-	void* unused [3]; // same size as netcore
-#endif
+
 	/* This is used only to check that we are in sync between the representation
 	 * of MonoInternalThread in native and InternalThread in managed
 	 *
@@ -642,169 +591,10 @@ struct _MonoInternalThread {
 	gpointer last;
 };
 
-#ifndef ENABLE_NETCORE
-struct _MonoThread {
-	MonoObject obj;
-	MonoInternalThread *internal_thread;
-	MonoObject *start_obj;
-	MonoException *pending_exception;
-};
-#endif
-
 typedef struct {
 	guint32 state;
 	MonoObject *additional;
 } MonoStreamingContext;
-
-#if !ENABLE_NETCORE
-typedef struct {
-	MonoObject obj;
-	MonoBoolean readOnly;
-	MonoString *AMDesignator;
-	MonoString *PMDesignator;
-	MonoString *DateSeparator;
-	MonoString *TimeSeparator;
-	MonoString *ShortDatePattern;
-	MonoString *LongDatePattern;
-	MonoString *ShortTimePattern;
-	MonoString *LongTimePattern;
-	MonoString *MonthDayPattern;
-	MonoString *YearMonthPattern;
-	guint32 FirstDayOfWeek;
-	guint32 CalendarWeekRule;
-	MonoArray *AbbreviatedDayNames;
-	MonoArray *DayNames;
-	MonoArray *MonthNames;
-	MonoArray *GenitiveMonthNames;
-	MonoArray *AbbreviatedMonthNames;
-	MonoArray *GenitiveAbbreviatedMonthNames;
-	MonoArray *ShortDatePatterns;
-	MonoArray *LongDatePatterns;
-	MonoArray *ShortTimePatterns;
-	MonoArray *LongTimePatterns;
-	MonoArray *MonthDayPatterns;
-	MonoArray *YearMonthPatterns;
-	MonoArray *ShortestDayNames;
-} MonoDateTimeFormatInfo;
-
-typedef struct 
-{
-	MonoObject obj;
-	MonoArray *numberGroupSizes;
-	MonoArray *currencyGroupSizes;
-	MonoArray *percentGroupSizes;
-	MonoString *positiveSign;
-	MonoString *negativeSign;
-	MonoString *numberDecimalSeparator;
-	MonoString *numberGroupSeparator;
-	MonoString *currencyGroupSeparator;
-	MonoString *currencyDecimalSeparator;
-	MonoString *currencySymbol;
-	MonoString *ansiCurrencySymbol;	/* unused */
-	MonoString *naNSymbol;
-	MonoString *positiveInfinitySymbol;
-	MonoString *negativeInfinitySymbol;
-	MonoString *percentDecimalSeparator;
-	MonoString *percentGroupSeparator;
-	MonoString *percentSymbol;
-	MonoString *perMilleSymbol;
-	MonoString *nativeDigits; /* unused */
-	gint32 dataItem; /* unused */
-	guint32 numberDecimalDigits;
-	gint32 currencyDecimalDigits;
-	gint32 currencyPositivePattern;
-	gint32 currencyNegativePattern;
-	gint32 numberNegativePattern;
-	gint32 percentPositivePattern;
-	gint32 percentNegativePattern;
-	gint32 percentDecimalDigits;
-} MonoNumberFormatInfo;
-
-typedef struct {
-	MonoObject obj;
-	gint32 lcid;
-	MonoString *icu_name;
-	gpointer ICU_collator;
-} MonoCompareInfo;
-
-typedef struct {
-	MonoObject obj;
-	MonoString *NativeName;
-	MonoArray *ShortDatePatterns;
-	MonoArray *YearMonthPatterns;
-	MonoArray *LongDatePatterns;
-	MonoString *MonthDayPattern;
-
-	MonoArray *EraNames;
-	MonoArray *AbbreviatedEraNames;
-	MonoArray *AbbreviatedEnglishEraNames;
-	MonoArray *DayNames;
-	MonoArray *AbbreviatedDayNames;
-	MonoArray *SuperShortDayNames;
-	MonoArray *MonthNames;
-	MonoArray *AbbreviatedMonthNames;
-	MonoArray *GenitiveMonthNames;
-	MonoArray *GenitiveAbbreviatedMonthNames;
-} MonoCalendarData;
-
-TYPED_HANDLE_DECL (MonoCalendarData);
-
-typedef struct {
-	MonoObject obj;
-	MonoString *AMDesignator;
-	MonoString *PMDesignator;
-	MonoString *TimeSeparator;
-	MonoArray *LongTimePatterns;
-	MonoArray *ShortTimePatterns;
-	guint32 FirstDayOfWeek;
-	guint32 CalendarWeekRule;
-} MonoCultureData;
-
-TYPED_HANDLE_DECL (MonoCultureData);
-
-typedef struct {
-	MonoObject obj;
-	MonoBoolean is_read_only;
-	gint32 lcid;
-	gint32 parent_lcid;
-	gint32 datetime_index;
-	gint32 number_index;
-	gint32 calendar_type;
-	MonoBoolean use_user_override;
-	MonoNumberFormatInfo *number_format;
-	MonoDateTimeFormatInfo *datetime_format;
-	MonoObject *textinfo;
-	MonoString *name;
-	MonoString *englishname;
-	MonoString *nativename;
-	MonoString *iso3lang;
-	MonoString *iso2lang;
-	MonoString *win3lang;
-	MonoString *territory;
-	MonoArray *native_calendar_names;
-	MonoCompareInfo *compareinfo;
-	const void* text_info_data;
-} MonoCultureInfo;
-
-TYPED_HANDLE_DECL (MonoCultureInfo);
-
-typedef struct {
-	MonoObject obj;
-	gint32 geo_id;
-	MonoString *iso2name;
-	MonoString *iso3name;
-	MonoString *win3name;
-	MonoString *english_name;
-	MonoString *native_name;
-	MonoString *currency_symbol;
-	MonoString *iso_currency_symbol;
-	MonoString *currency_english_name;
-	MonoString *currency_native_name;
-} MonoRegionInfo;
-
-TYPED_HANDLE_DECL (MonoRegionInfo);
-
-#endif /* !ENABLE_NETCORE */
 
 typedef struct {
 	MonoObject object;
@@ -825,7 +615,7 @@ TYPED_HANDLE_DECL (MonoDelegate);
  * a new 'install' function for every callback.
  */
 typedef struct {
-	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
+	gpointer (*create_ftnptr) (gpointer addr);
 	gpointer (*get_addr_from_ftnptr) (gpointer descr);
 	char*    (*get_runtime_build_info) (void);
 	const char*    (*get_runtime_build_version) (void);
@@ -838,19 +628,21 @@ typedef struct {
 	void     (*init_delegate) (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 	void*    (*compile_method) (MonoMethod *method, MonoError *error);
-	gpointer (*create_jit_trampoline) (MonoDomain *domain, MonoMethod *method, MonoError *error);
+	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
-	void     (*free_method) (MonoDomain *domain, MonoMethod *method);
-	gpointer (*create_remoting_trampoline) (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error);
-	gpointer (*create_delegate_trampoline) (MonoDomain *domain, MonoClass *klass);
-	gpointer (*interp_get_remoting_invoke) (MonoMethod *method, gpointer imethod, MonoError *error);
+	void     (*free_method) (MonoMethod *method);
+	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
+	void (*init_mem_manager)(MonoMemoryManager*);
+	void (*free_mem_manager)(MonoMemoryManager*);
 #ifdef ENABLE_METADATA_UPDATE
 	void     (*metadata_update_init) (MonoError *error);
-	void     (*metadata_update_published) (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
+	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
+	void (*get_exception_stats)(guint32 *exception_count);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -877,28 +669,6 @@ typedef struct {
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);
 
-/* remoting and async support */
-
-MonoAsyncResult *
-mono_async_result_new	    (MonoDomain *domain, gpointer handle, 
-			     MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error);
-MonoWaitHandle *
-mono_wait_handle_new	    (MonoDomain *domain, gpointer handle, MonoError *error);
-
-gpointer
-mono_wait_handle_get_handle (MonoWaitHandle *handle);
-
-gboolean
-mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args, MonoError *error);
-
-MonoMethodMessage *
-mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state, MonoError *error);
-
-void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
-
 void
 mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 
@@ -912,7 +682,7 @@ MonoMethod *
 mono_get_delegate_end_invoke_checked (MonoClass *klass, MonoError *error);
 
 void
-mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
+mono_runtime_free_method    (MonoMethod *method);
 
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs);
@@ -923,6 +693,7 @@ mono_get_runtime_callbacks (void);
 void
 mono_install_eh_callbacks (MonoRuntimeExceptionHandlingCallbacks *cbs);
 
+MONO_COMPONENT_API
 MonoRuntimeExceptionHandlingCallbacks *
 mono_get_eh_callbacks (void);
 
@@ -937,9 +708,6 @@ mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx);
 
 void
 mono_type_initialization_init (void);
-
-void
-mono_type_initialization_cleanup (void);
 
 int
 mono_thread_kill           (MonoInternalThread *thread, int signal);
@@ -1058,9 +826,6 @@ TYPED_HANDLE_DECL (MonoReflectionProperty);
 /*This is System.EventInfo*/
 struct _MonoReflectionEvent {
 	MonoObject object;
-#ifndef ENABLE_NETCORE
-	MonoObject *cached_add_event;
-#endif
 };
 
 /* Safely access System.Reflection.EventInfo from native code */
@@ -1093,8 +858,6 @@ TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
-	/* CAS related */
-	MonoObject *evidence;	/* Evidence */
 };
 
 typedef struct {
@@ -1240,7 +1003,6 @@ typedef struct {
 	MonoBoolean init_locals;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
-	MonoArray *permissions;
 } MonoReflectionCtorBuilder;
 
 /* Safely access System.Reflection.Emit.ConstructorBuilder from native code */
@@ -1274,7 +1036,6 @@ typedef struct {
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
-	MonoArray *permissions;
 } MonoReflectionMethodBuilder;
 
 /* Safely access System.Reflection.Emit.MethodBuilder from native code */
@@ -1295,54 +1056,15 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoReflectionArrayMethod);
 
 typedef struct {
-	MonoArray *data;
-	MonoString *name;
-	MonoString *filename;
-	guint32 attrs;
-	guint32 offset;
-	MonoObject *stream;
-} MonoReflectionResource;
-
-typedef struct {
-	guint32 res_type;
-	guint32 res_id;
-	guint32 lang_id;
-	MonoArray *res_data;
-} MonoReflectionWin32Resource;
-
-typedef struct {
-	guint32 action;
-	MonoString *pset;
-} MonoReflectionPermissionSet;
-
-typedef struct {
 	MonoReflectionAssembly assembly;
 	MonoDynamicAssembly *dynamic_assembly;
-	MonoReflectionMethod *entry_point;
 	MonoArray *modules;
 	MonoString *name;
-	MonoString *dir;
 	MonoArray *cattrs;
-	MonoArray *resources;
-	MonoArray *public_key;
 	MonoString *version;
 	MonoString *culture;
-	guint32 algid;
-	guint32 flags;
-	guint32 pekind;
-	MonoBoolean delay_sign;
-	guint32 access;
 	MonoArray *loaded_modules;
-	MonoArray *win32_resources;
-	/* CAS related */
-	MonoArray *permissions_minimum;
-	MonoArray *permissions_optional;
-	MonoArray *permissions_refused;
-	gint32 pe_kind;
-	gint32 machine;
-	MonoBoolean corlib_internal;
-	MonoArray *type_forwarders;
-	MonoArray *pktoken; /* as hexadecimal byte[] */
+	guint32 access;
 } MonoReflectionAssemblyBuilder;
 
 /* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
@@ -1407,11 +1129,8 @@ typedef struct {
 	gint32     num_types;
 	MonoArray *types;
 	MonoArray *cattrs;
-	MonoArray *guid;
 	guint32    table_idx;
 	MonoReflectionAssemblyBuilder *assemblyb;
-	MonoArray *global_methods;
-	MonoArray *global_fields;
 	gboolean is_main;
 	MonoArray *resources;
 	GHashTable *unparented_classes;
@@ -1450,7 +1169,6 @@ struct _MonoReflectionTypeBuilder {
 	gint32 packing_size;
 	MonoGenericContainer *generic_container;
 	MonoArray *generic_params;
-	MonoArray *permissions;
 	MonoReflectionType *created;
 	gint32 state;
 };
@@ -1527,7 +1245,6 @@ typedef struct {
 
 TYPED_HANDLE_DECL (MonoReflectionCustomAttr);
 
-#if ENABLE_NETCORE
 typedef struct {
 	MonoObject object;
 	guint32 utype;
@@ -1541,21 +1258,6 @@ typedef struct {
 	MonoReflectionType *marshal_type_ref;
 	MonoString *marshal_cookie;
 } MonoReflectionMarshalAsAttribute;
-#else
-typedef struct {
-	MonoObject object;
-	MonoString *marshal_cookie;
-	MonoString *marshal_type;
-	MonoReflectionType *marshal_type_ref;
-	MonoReflectionType *marshal_safe_array_user_defined_subtype;
-	guint32 utype;
-	guint32 array_subtype;
-	gint32 safe_array_subtype;
-	gint32 size_const;
-	gint32 IidParameterIndex;
-	gint16 size_param_index;
-} MonoReflectionMarshalAsAttribute;
-#endif
 
 /* Safely access System.Runtime.InteropServices.MarshalAsAttribute */
 TYPED_HANDLE_DECL (MonoReflectionMarshalAsAttribute);
@@ -1662,7 +1364,6 @@ typedef struct {
 	MonoProperty *prop;
 } CattrNamedArg;
 
-#ifdef ENABLE_NETCORE
 // Keep in sync with System.Runtime.Loader.AssemblyLoadContext.InternalState
 typedef enum {
 	ALIVE = 0,
@@ -1676,7 +1377,6 @@ typedef struct {
 } MonoManagedAssemblyLoadContext;
 
 TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
-#endif
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
@@ -1691,7 +1391,6 @@ mono_internal_thread_handle_ptr (MonoInternalThreadHandle h)
 	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (h));
 }
 
-gboolean          mono_image_create_pefile (MonoReflectionModuleBuilder *module, gpointer file, MonoError *error);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilderHandle module, MonoStringHandle str, MonoError *error);
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObjectHandle obj, gboolean create_methodspec, gboolean register_token, MonoError *error);
 void          mono_dynamic_image_free (MonoDynamicImage *image);
@@ -1712,7 +1411,7 @@ void        mono_reflection_register_with_runtime (MonoReflectionType *type);
 
 MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token, MonoError *error);
 
-MonoArrayHandle mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
+MonoArrayHandle mono_param_get_objects_internal  (MonoMethod *method, MonoClass *refclass, MonoError *error);
 
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
@@ -1726,7 +1425,7 @@ MonoReflectionEvent *
 ves_icall_TypeBuilder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
 
 MonoReflectionMarshalAsAttributeHandle
-mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
+mono_reflection_marshal_as_attribute_from_marshal_spec (MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
@@ -1735,10 +1434,7 @@ gboolean
 mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, MonoError *error);
 
 gboolean
-mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
-
-gboolean
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error);
+mono_get_constant_value_from_blob (MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
 gboolean
 mono_metadata_read_constant_value (const char *blob, MonoTypeEnum type, void *value, MonoError *error);
@@ -1772,7 +1468,7 @@ char *
 mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error);
 
 MonoArrayHandle
-mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array, MonoError *error);
+mono_array_clone_in_domain (MonoArrayHandle array, MonoError *error);
 
 MonoArray*
 mono_array_clone_checked (MonoArray *array, MonoError *error);
@@ -1787,52 +1483,17 @@ gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res);
 
 MonoArray*
-mono_array_new_checked (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error);
 
 MonoArray*
-mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
-
-ICALL_EXPORT
-MonoArray*
-ves_icall_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
+mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
 ICALL_EXPORT
 MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
 
-#ifndef DISABLE_REMOTING
-MonoRemoteClass*
-mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *proxy_class, MonoError *error);
-
-gboolean
-mono_remote_class_is_interface_proxy (MonoRemoteClass *remote_class);
-
-MonoObject *
-mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject **exc, MonoArray **out_args, MonoError *error);
-
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxyHandle real_proxy, MonoError *error);
-
-gboolean
-mono_upgrade_remote_class (MonoDomain *domain, MonoObjectHandle tproxy, MonoClass *klass, MonoError *error);
-
-void*
-mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res, MonoError *error);
-
-MonoObject *
-mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoError *error);
-
-gboolean
-mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val, MonoError *error);
-
-gboolean
-mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg, MonoError *error);
-
-
-#endif
-
-gpointer
-mono_create_ftnptr (MonoDomain *domain, gpointer addr);
+mono_create_ftnptr (gpointer addr);
 
 gpointer
 mono_get_addr_from_ftnptr (gpointer descr);
@@ -1847,10 +1508,10 @@ void
 mono_nullable_init_unboxed (guint8 *buf, gpointer value, MonoClass *klass);
 
 MonoObject *
-mono_value_box_checked (MonoDomain *domain, MonoClass *klass, void* val, MonoError *error);
+mono_value_box_checked (MonoClass *klass, void* val, MonoError *error);
 
 MonoObjectHandle
-mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer val, MonoError *error);
+mono_value_box_handle (MonoClass *klass, gpointer val, MonoError *error);
 
 MonoObject*
 mono_nullable_box (gpointer buf, MonoClass *klass, MonoError *error);
@@ -1896,8 +1557,7 @@ struct _MonoIMTCheckItem {
 	guint8            has_target_code;
 };
 
-typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoDomain *domain,
-		MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
+typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
 
 void
 mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func);
@@ -1912,59 +1572,39 @@ guint32
 mono_method_get_imt_slot (MonoMethod *method);
 
 void
-mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
+mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code);
-
-gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoMemoryManager *mem_manager, int size);
-
-#define mono_method_alloc_generic_virtual_trampoline(mem_manager, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((mem_manager), (size))))
-
-typedef enum {
-	MONO_UNHANDLED_POLICY_LEGACY,
-	MONO_UNHANDLED_POLICY_CURRENT
-} MonoRuntimeUnhandledExceptionPolicy;
-
-MonoRuntimeUnhandledExceptionPolicy
-mono_runtime_unhandled_exception_policy_get (void);
-void
-mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy);
 
 void
 mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
 
-#ifdef ENABLE_NETCORE
 void
 mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error);
 
 void
 mono_first_chance_exception_internal (MonoObject *exc_raw);
-#endif
 
 MonoVTable *
-mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass);
+mono_class_try_get_vtable (MonoClass *klass);
 
 gboolean
-mono_runtime_run_module_cctor (MonoImage *image, MonoDomain *domain, MonoError *error);
+mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
 gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
 
 void
-mono_method_clear_object (MonoDomain *domain, MonoMethod *method);
+mono_method_clear_object (MonoMethod *method);
 
 gsize*
 mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields);
-
-MonoObjectHandle
-mono_object_xdomain_representation (MonoObjectHandle obj, MonoDomain *target_domain, MonoError *error);
 
 gboolean
 mono_class_is_reflection_method_or_constructor (MonoClass *klass);
 
 MonoObjectHandle
-mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error);
+mono_get_object_from_blob (MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error);
 
 gboolean
 mono_class_has_ref_info (MonoClass *klass);
@@ -1979,17 +1619,17 @@ void
 mono_class_free_ref_info (MonoClass *klass);
 
 MonoObject *
-mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_pinned (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
-mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_pinned_handle (MonoClass *klass, MonoError *error);
 
 MonoObject *
 mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 
 ICALL_EXPORT
 MonoObject *
-ves_icall_object_new (MonoDomain *domain, MonoClass *klass);
+ves_icall_object_new (MonoClass *klass);
 	
 ICALL_EXPORT
 MonoObject *
@@ -2015,10 +1655,13 @@ MONO_API void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
 
 MonoObject *
-mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, MonoObject *obj, MonoError *error);
+mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, MonoError *error);
 
 MonoObjectHandle
-mono_static_field_get_value_handle (MonoDomain *domain, MonoClassField *field, MonoError *error);
+mono_static_field_get_value_handle (MonoClassField *field, MonoError *error);
+
+gpointer
+mono_special_static_field_get_offset (MonoClassField *field, MonoError *error);
 
 gboolean
 mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void **params, MonoError *error);
@@ -2082,10 +1725,10 @@ MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);
 
 MonoObject *
-mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_checked (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
-mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_handle (MonoClass *klass, MonoError *error);
 
 // This function skips handling of remoting and COM.
 // "alloc" means "less".
@@ -2117,34 +1760,34 @@ gboolean
 mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
 MonoStringHandle
-mono_string_new_size_handle (MonoDomain *domain, gint32 len, MonoError *error);
+mono_string_new_size_handle (gint32 len, MonoError *error);
 
 MonoString*
-mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_len_checked (const char *text, guint length, MonoError *error);
 
 MonoString *
-mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
+mono_string_new_size_checked (gint32 len, MonoError *error);
 
 MonoString*
-mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
+mono_ldstr_checked (MonoImage *image, uint32_t str_index, MonoError *error);
 
 MonoStringHandle
-mono_ldstr_handle (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
+mono_ldstr_handle (MonoImage *image, uint32_t str_index, MonoError *error);
 
 MONO_PROFILER_API MonoString*
-mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror);
+mono_string_new_checked (const char *text, MonoError *merror);
 
 MonoString*
-mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_wtf8_len_checked (const char *text, guint length, MonoError *error);
 
 MonoString *
-mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
+mono_string_new_utf16_checked (const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
+mono_string_new_utf16_handle (const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_utf8_len (const char *text, guint length, MonoError *error);
 
 MonoString *
 mono_string_from_utf16_checked (const mono_unichar2 *data, MonoError *error);
@@ -2155,6 +1798,7 @@ mono_string_from_utf32_checked (const mono_unichar4 *data, MonoError *error);
 char*
 mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);
 
+MONO_COMPONENT_API
 char*
 mono_utf16_to_utf8 (const mono_unichar2 *s, gsize slength, MonoError *error);
 
@@ -2171,7 +1815,7 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 // In particular, if an exception is returned from underlying otherwise succeeded call,
 // is set into the MonoError with mono_error_set_exception_instance.
 // The result is that caller need only check MonoError.
-MonoObjectHandle
+MONO_COMPONENT_API MonoObjectHandle
 mono_runtime_try_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
 MonoObject*
@@ -2220,7 +1864,7 @@ int
 mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc);
 
 MonoAssembly*
-mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, MonoError *error);
 
 gboolean
 mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error);
@@ -2230,10 +1874,10 @@ void
 mono_gc_wbarrier_object_copy_handle (MonoObjectHandle obj, MonoObjectHandle src);
 
 MonoMethod*
-mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error);
+mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *error);
 
 MonoStringHandle
-mono_string_empty_handle (MonoDomain *domain);
+mono_string_empty_handle (void);
 
 /*
  * mono_object_get_data:
@@ -2430,7 +2074,7 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 
-char *
+MONO_COMPONENT_API char *
 mono_runtime_get_managed_cmd_line (void);
 
 char *

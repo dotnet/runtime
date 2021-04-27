@@ -292,7 +292,7 @@
 !**/src/pal/prebuilt/idl/*_i.c
 
 # Valid 'debug' folder, that contains CLR debugging code
-!**/src/debug
+!**/src/**/debug
 
 # Ignore folders created by the CLR test build
 **/TestWrappers_x64_[d|D]ebug

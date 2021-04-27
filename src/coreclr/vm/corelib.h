@@ -16,7 +16,7 @@
 
 //
 // Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
+// Specifically, this (https://github.com/mono/linker/blob/main/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -120,7 +120,7 @@ DEFINE_FIELD_U(_hashAlgorithm,             AssemblyNameBaseObject, _hashAlgorith
 DEFINE_FIELD_U(_versionCompatibility,      AssemblyNameBaseObject, _versionCompatibility)
 DEFINE_FIELD_U(_flags,                     AssemblyNameBaseObject, _flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_SNKP_RetV)
+DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV)
 DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
 
 DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
@@ -477,6 +477,11 @@ DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTa
 DEFINE_METHOD(MARSHAL,              FREE_CO_TASK_MEM,                  FreeCoTaskMem,                 SM_IntPtr_RetVoid)
 DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMaxDBCSCharSize)
 
+DEFINE_METHOD(MARSHAL,              STRUCTURE_TO_PTR,                  StructureToPtr,                SM_Obj_IntPtr_Bool_RetVoid)
+DEFINE_METHOD(MARSHAL,              PTR_TO_STRUCTURE,                  PtrToStructure,                SM_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(MARSHAL,              DESTROY_STRUCTURE,                 DestroyStructure,              SM_IntPtr_Type_RetVoid)
+DEFINE_METHOD(MARSHAL,              SIZEOF_TYPE,                       SizeOf,                        SM_Type_RetInt)
+
 DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
 DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_Str_AssemblyBase_Bool_UInt_RetIntPtr)
 
@@ -772,6 +777,7 @@ DEFINE_CLASS(CALLCONV_STDCALL,               CompilerServices,       CallConvStd
 DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThiscall)
 DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
+DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)
@@ -857,8 +863,6 @@ DEFINE_METHOD(STRING_BUILDER,       TO_STRING,              ToString,           
 DEFINE_METHOD(STRING_BUILDER,       INTERNAL_COPY,          InternalCopy,               IM_IntPtr_Int_RetVoid)
 DEFINE_METHOD(STRING_BUILDER,       REPLACE_BUFFER_INTERNAL,ReplaceBufferInternal,      IM_PtrChar_Int_RetVoid)
 DEFINE_METHOD(STRING_BUILDER,       REPLACE_BUFFER_ANSI_INTERNAL,ReplaceBufferAnsiInternal, IM_PtrSByt_Int_RetVoid)
-
-DEFINE_CLASS(STRONG_NAME_KEY_PAIR,  Reflection,             StrongNameKeyPair)
 
 DEFINE_CLASS_U(Threading,              SynchronizationContext, SynchronizationContextObject)
 DEFINE_FIELD_U(_requireWaitNotification, SynchronizationContextObject, _requireWaitNotification)
@@ -1188,6 +1192,13 @@ DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
 DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)
 DEFINE_CLASS(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqualityComparer`1)
+
+// Classes referenced in Comparer<T>.Default optimization
+
+DEFINE_CLASS(GENERIC_COMPARER, CollectionsGeneric, GenericComparer`1)
+DEFINE_CLASS(OBJECT_COMPARER, CollectionsGeneric, ObjectComparer`1)
+DEFINE_CLASS(ENUM_COMPARER, CollectionsGeneric, EnumComparer`1)
+DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 

@@ -56,6 +56,7 @@
       COMPlus_JitObjectStackAllocation;
       COMPlus_JitInlinePolicyProfile;
       COMPlus_JitClassProfiling;
+      COMPlus_JitEdgeProfiling;
       RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
@@ -135,6 +136,7 @@
     <TestEnvironment Include="tailcallstress" TailcallStress="1" />
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
+    <TestEnvironment Include="gcstress0xf" GCStress="0xF" />
     <TestEnvironment Include="zapdisable" ZapDisable="1" ReadyToRun="0" />
     <TestEnvironment Include="heapverify1" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_zapdisable" GCStress="0xC" ZapDisable="1" ReadyToRun="0" />
@@ -146,10 +148,8 @@
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
-    <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" />
-    <TestEnvironment Include="jitpgo_inline" TieredPGO="1" TieredCompilation="1" JitInlinePolicyProfile="1"/>
-    <TestEnvironment Include="jitpgo_classes" TieredPGO="1" TieredCompilation="1" JitEnableGuardedDevirtualization="1" JitClassProfiling="1"/>
-    <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
+    <TestEnvironment Include="jitpgo_inline" TieredPGO="1" TieredCompilation="1" JitInlinePolicyProfile="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />

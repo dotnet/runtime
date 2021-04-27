@@ -105,6 +105,16 @@ namespace Internal.TypeSystem.Ecma
                 _mappedViewAccessor.Dispose();
         }
 
+        public override int GetStateMachineKickoffMethod(int methodToken)
+        {
+            var debugInformationHandle = ((MethodDefinitionHandle)MetadataTokens.EntityHandle(methodToken)).ToDebugInformationHandle();
+
+            var debugInformation = _reader.GetMethodDebugInformation(debugInformationHandle);
+
+            var kickoffMethod = debugInformation.GetStateMachineKickoffMethod();
+            return kickoffMethod.IsNil ? 0 : MetadataTokens.GetToken(kickoffMethod);
+        }
+
         public override IEnumerable<ILSequencePoint> GetSequencePointsForMethod(int methodToken)
         {
             var debugInformationHandle = ((MethodDefinitionHandle)MetadataTokens.EntityHandle(methodToken)).ToDebugInformationHandle();

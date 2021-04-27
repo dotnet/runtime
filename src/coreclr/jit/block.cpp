@@ -419,10 +419,6 @@ void BasicBlock::dspFlags()
     {
         printf("label ");
     }
-    if (bbFlags & BBF_JMP_TARGET)
-    {
-        printf("target ");
-    }
     if (bbFlags & BBF_HAS_JMP)
     {
         printf("jmp ");
@@ -917,18 +913,37 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     return ptr->bbNum;
 }
 
+//------------------------------------------------------------------------
+// isEmpty: check if block is empty or contains only ignorable statements
+//
+// Return Value:
+//    True if block is empty, or contains only PHI assignments,
+//    or contains zero or more PHI assignments followed by NOPs.
+//
 bool BasicBlock::isEmpty()
 {
     if (!IsLIR())
     {
-        return (this->FirstNonPhiDef() == nullptr);
-    }
+        Statement* stmt = FirstNonPhiDef();
 
-    for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
-    {
-        if (node->OperGet() != GT_IL_OFFSET)
+        while (stmt != nullptr)
         {
-            return false;
+            if (!stmt->GetRootNode()->OperIs(GT_NOP))
+            {
+                return false;
+            }
+
+            stmt = stmt->GetNextStmt();
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
+        {
+            if (node->OperGet() != GT_IL_OFFSET)
+            {
+                return false;
+            }
         }
     }
 
@@ -991,21 +1006,6 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
         stmt = stmt->GetNextStmt();
     }
     return stmt;
-}
-
-/*****************************************************************************
- *
- *  Mark a block as rarely run, we also don't want to have a loop in a
- *   rarely run block, and we set it's weight to zero.
- */
-
-void BasicBlock::bbSetRunRarely()
-{
-    setBBWeight(BB_ZERO_WEIGHT);
-    if (bbWeight == BB_ZERO_WEIGHT)
-    {
-        bbFlags |= BBF_RUN_RARELY; // This block is never/rarely run
-    }
 }
 
 /*****************************************************************************
@@ -1554,7 +1554,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 }
 
 //------------------------------------------------------------------------
-// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
+// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
 //
 // Return Value:
 //    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair

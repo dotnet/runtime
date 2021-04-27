@@ -454,7 +454,7 @@ jobs:
           - jitstressregs0x1000
           - jitminopts
           - forcerelocs
-          - gcstress15
+          - gcstress0xf
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -471,12 +471,10 @@ jobs:
           scenarios:
           - jitosr
           - jitosr_stress
-          - jitguardeddevirtualization
           - jitehwritethru
           - jitobjectstackallocation
           - jitpgo
           - jitpgo_inline
-          - jitpgo_classes
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip

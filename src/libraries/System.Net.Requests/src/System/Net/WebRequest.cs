@@ -16,7 +16,7 @@ namespace System.Net
 {
     public abstract class WebRequest : MarshalByRefObject, ISerializable
     {
-        internal class WebRequestPrefixElement
+        internal sealed class WebRequestPrefixElement
         {
             public readonly string Prefix;
             public readonly IWebRequestCreate Creator;
@@ -324,7 +324,7 @@ namespace System.Net
             return !Error;
         }
 
-        internal class HttpRequestCreator : IWebRequestCreate
+        internal sealed class HttpRequestCreator : IWebRequestCreate
         {
             // Create - Create an HttpWebRequest.
             //

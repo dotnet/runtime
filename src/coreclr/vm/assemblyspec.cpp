@@ -553,7 +553,6 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         (ARG_SLOT) 1, // AssemblyVersionCompatibility.SameMachine
         ObjToArgSlot(gc.CodeBase),
         (ARG_SLOT) m_dwFlags,
-        (ARG_SLOT) NULL // key pair
     };
 
     init.Call(MethodArgs);
@@ -578,6 +577,35 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     }
 
     GCPROTECT_END();
+}
+
+/* static */
+void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+        PRECONDITION(assemblyName != NULL);
+        PRECONDITION(IsProtectedByGCFrame(assemblyNameRef));
+    }
+    CONTRACTL_END;
+
+    AssemblySpec spec;
+    spec.InitializeWithAssemblyIdentity(assemblyName);
+
+    StackScratchBuffer nameBuffer;
+    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+
+    StackScratchBuffer cultureBuffer;
+    if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
+    {
+        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        spec.SetCulture(culture);
+    }
+
+    spec.AssemblyNameInit(assemblyNameRef, NULL);
 }
 
 #endif // CROSSGEN_COMPILE
@@ -859,9 +887,7 @@ HRESULT AssemblySpec::CheckFriendAssemblyName()
 
 HRESULT AssemblySpec::EmitToken(
     IMetaDataAssemblyEmit *pEmit,
-    mdAssemblyRef *pToken,
-    BOOL fUsePublicKeyToken, /*=TRUE*/
-    BOOL fMustBeBindable /*=FALSE*/)
+    mdAssemblyRef *pToken)
 {
     CONTRACTL
     {
@@ -902,7 +928,7 @@ HRESULT AssemblySpec::EmitToken(
 
         // If we've been asked to emit a public key token in the reference but we've
         // been given a public key then we need to generate the token now.
-        if (m_cbPublicKeyOrToken && fUsePublicKeyToken && IsAfPublicKey(m_dwFlags)) {
+        if (m_cbPublicKeyOrToken && IsAfPublicKey(m_dwFlags)) {
             StrongNameBufferHolder<BYTE> pbPublicKeyToken;
             DWORD cbPublicKeyToken;
             IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
@@ -938,11 +964,6 @@ HRESULT AssemblySpec::EmitToken(
 
     return hr;
 }
-
-//===========================================================================================
-// Constructs an AssemblySpec for the given IAssemblyName. Recognizes IAssemblyName objects
-// that were built from WinRT AssemblySpec objects, extracts the encoded type name, and sets
-// the type namespace and class name properties appropriately.
 
 AssemblySpecBindingCache::AssemblySpecBindingCache()
 {
@@ -1550,92 +1571,6 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
 
     return a1->CompareEx(a2);
 }
-
-/* static */
-BOOL DomainAssemblyCache::CompareBindingSpec(UPTR spec1, UPTR spec2)
-{
-    WRAPPER_NO_CONTRACT;
-
-    AssemblySpec* pSpec1 = (AssemblySpec*) (spec1 << 1);
-    AssemblyEntry* pEntry2 = (AssemblyEntry*) spec2;
-
-    return pSpec1->CompareEx(&pEntry2->spec);
-}
-
-DomainAssemblyCache::AssemblyEntry* DomainAssemblyCache::LookupEntry(AssemblySpec* pSpec)
-{
-    CONTRACT (DomainAssemblyCache::AssemblyEntry*)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END
-
-    DWORD hashValue = pSpec->Hash();
-
-    LPVOID pResult = m_Table.LookupValue(hashValue, pSpec);
-    if(pResult == (LPVOID) INVALIDENTRY)
-        RETURN NULL;
-    else
-        RETURN (AssemblyEntry*) pResult;
-}
-
-VOID DomainAssemblyCache::InsertEntry(AssemblySpec* pSpec, LPVOID pData1, LPVOID pData2/*=NULL*/)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LPVOID ptr = LookupEntry(pSpec);
-    if(ptr == NULL) {
-
-        BaseDomain::CacheLockHolder lh(m_pDomain);
-
-        ptr = LookupEntry(pSpec);
-        if(ptr == NULL) {
-            AllocMemTracker amTracker;
-            AllocMemTracker *pamTracker = &amTracker;
-
-            AssemblyEntry* pEntry = (AssemblyEntry*) pamTracker->Track( m_pDomain->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(AssemblyEntry))) );
-            new (&pEntry->spec) AssemblySpec ();
-
-            pEntry->spec.CopyFrom(pSpec);
-            pEntry->spec.CloneFieldsToLoaderHeap(AssemblySpec::ALL_OWNED, m_pDomain->GetLowFrequencyHeap(), pamTracker);
-
-            // Clear the parent assembly, it is not needed for the AssemblySpec in the cache entry and it could contain stale
-            // pointer when the parent was a collectible assembly that was collected.
-            pEntry->spec.SetParentAssembly(NULL);
-
-            pEntry->pData[0] = pData1;
-            pEntry->pData[1] = pData2;
-            DWORD hashValue = pEntry->Hash();
-            m_Table.InsertValue(hashValue, pEntry);
-
-            pamTracker->SuppressRelease();
-        }
-        // lh goes out of scope here
-    }
-#ifdef _DEBUG
-    else {
-        _ASSERTE(pData1 == ((AssemblyEntry*) ptr)->pData[0]);
-        _ASSERTE(pData2 == ((AssemblyEntry*) ptr)->pData[1]);
-    }
-#endif
-
-}
-
-
-
 
 DomainAssembly * AssemblySpec::GetParentAssembly()
 {

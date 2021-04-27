@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 
 namespace System.Collections.Generic
@@ -13,7 +12,6 @@ namespace System.Collections.Generic
     internal struct ArrayBuilder<T>
     {
         private const int DefaultCapacity = 4;
-        private const int MaxCoreClrArrayLength = 0x7fefffff; // For byte arrays the limit is slightly larger
 
         private T[]? _array; // Starts out null, initialized on first Add.
         private int _count; // Number of items into _array we're using.
@@ -145,9 +143,9 @@ namespace System.Collections.Generic
             int capacity = Capacity;
             int nextCapacity = capacity == 0 ? DefaultCapacity : 2 * capacity;
 
-            if ((uint)nextCapacity > (uint)MaxCoreClrArrayLength)
+            if ((uint)nextCapacity > (uint)Array.MaxLength)
             {
-                nextCapacity = Math.Max(capacity + 1, MaxCoreClrArrayLength);
+                nextCapacity = Math.Max(capacity + 1, Array.MaxLength);
             }
 
             nextCapacity = Math.Max(nextCapacity, minimum);

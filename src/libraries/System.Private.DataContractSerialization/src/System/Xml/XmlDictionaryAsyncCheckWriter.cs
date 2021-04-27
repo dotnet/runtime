@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal class XmlDictionaryAsyncCheckWriter : XmlDictionaryWriter
+    internal sealed class XmlDictionaryAsyncCheckWriter : XmlDictionaryWriter
     {
         private readonly XmlDictionaryWriter _coreWriter;
         private Task? _lastTask;

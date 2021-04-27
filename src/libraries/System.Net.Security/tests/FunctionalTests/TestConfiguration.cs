@@ -14,6 +14,7 @@ namespace System.Net.Security.Tests
     internal static class TestConfiguration
     {
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
+        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
         public const string Realm = "TEST.COREFX.NET";
         public const string KerberosUser = "krb_user";
@@ -40,8 +41,8 @@ namespace System.Net.Security.Tests
                 return true;
             }
 
-            // On macOS, the null cipher (no encryption) is not supported.
-            if (OperatingSystem.IsMacOS())
+            // On macOS and Android, the null cipher (no encryption) is not supported.
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsAndroid())
             {
                 return false;
             }

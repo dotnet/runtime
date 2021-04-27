@@ -8,10 +8,12 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyExtensionsTest.cs" />
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
     <Compile Include="ContextualReflection.cs" />
     <Compile Include="CustomTPALoadContext.cs" />
+    <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />

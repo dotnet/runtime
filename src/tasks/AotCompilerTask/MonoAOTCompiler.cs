@@ -31,6 +31,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Paths to be passed as MONO_PATH environment variable, when running mono-cross-aot.
+    /// These are in addition to the directory containing the assembly being precompiled.
+    ///
+    /// MONO_PATH=${dir_containing_assembly}:${AdditionalAssemblySearchPaths}
+    ///
+    /// </summary>
+    public string[]? AdditionalAssemblySearchPaths { get; set; }
+
+    /// <summary>
     /// Directory where the AOT'ed files will be emitted
     /// </summary>
     [NotNull]
@@ -111,6 +120,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// Path to the directory where msym artifacts are stored.
     /// </summary>
     public string? MsymPath { get; set; }
+
+    /// <summary>
+    /// The assembly whose AOT image will contained dedup-ed generic instances
+    /// </summary>
+    public string? DedupAssembly { get; set; }
+
+    /// Debug option in llvm aot mode
+    /// defaults to "nodebug" since some targes can't generate debug info
+    /// </summary>
+    public string? LLVMDebug { get; set; } = "nodebug";
 
     [Output]
     public string[]? FileWrites { get; private set; }
@@ -201,11 +220,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             GenerateAotModulesTable(Assemblies, Profilers);
         }
 
+        string? monoPaths = null;
+        if (AdditionalAssemblySearchPaths != null)
+            monoPaths = string.Join(Path.PathSeparator, AdditionalAssemblySearchPaths);
+
         if (DisableParallelAot)
         {
             foreach (var assemblyItem in Assemblies)
             {
-                if (!PrecompileLibrary(assemblyItem))
+                if (!PrecompileLibrary(assemblyItem, monoPaths))
                     return !Log.HasLoggedErrors;
             }
         }
@@ -213,7 +236,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Parallel.ForEach(Assemblies,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                assemblyItem => PrecompileLibrary (assemblyItem));
+                assemblyItem => PrecompileLibrary(assemblyItem, monoPaths));
         }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
@@ -222,13 +245,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool PrecompileLibrary(ITaskItem assemblyItem)
+    private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)
     {
         string assembly = assemblyItem.ItemSpec;
-        string directory = Path.GetDirectoryName(assembly)!;
+        string assemblyDir = Path.GetDirectoryName(assembly)!;
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
+        bool isDedup = assembly == DedupAssembly;
 
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
@@ -242,7 +266,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.AddRange(p.Split(";", StringSplitOptions.RemoveEmptyEntries));
         }
 
-        Utils.LogInfo($"[AOT] {assembly}");
+        Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly}");
 
         processArgs.Add("--debug");
 
@@ -251,7 +275,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             processArgs.Add("--llvm");
 
-            aotArgs.Add($"nodebug"); // can't use debug symbols with LLVM
+            if (!string.IsNullOrEmpty(LLVMDebug))
+                aotArgs.Add(LLVMDebug);
+
             aotArgs.Add($"llvm-path={LLVMPath}");
         }
         else
@@ -260,6 +286,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         string assemblyFilename = Path.GetFileName(assembly);
+
+        if (isDedup)
+        {
+            aotArgs.Add($"dedup-include={assemblyFilename}");
+        }
+        else if (!string.IsNullOrEmpty (DedupAssembly))
+        {
+            aotArgs.Add("dedup-skip");
+        }
 
         // compute output mode and file names
         if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
@@ -337,18 +372,46 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         // values, which wont work.
         processArgs.Add($"\"--aot={string.Join(",", aotArgs)}\"");
 
-        processArgs.Add(assembly);
+        string paths = "";
+        if (isDedup)
+        {
+            StringBuilder sb = new StringBuilder();
+            HashSet<string> allPaths = new HashSet<string>();
+            foreach (var aItem in Assemblies)
+            {
+                string filename = aItem.ItemSpec;
+                processArgs.Add(filename);
+                string dir = Path.GetDirectoryName(filename)!;
+                if (!allPaths.Contains(dir))
+                {
+                    allPaths.Add(dir);
+                    if (sb.Length > 0)
+                        sb.Append(Path.PathSeparator);
+                    sb.Append(dir);
+                }
+            }
+            if (sb.Length > 0)
+                sb.Append(Path.PathSeparator);
+            sb.Append(monoPaths);
+            paths = sb.ToString();
+        }
+        else
+        {
+            paths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
+            processArgs.Add(assemblyFilename);
+        }
 
         var envVariables = new Dictionary<string, string>
         {
-            {"MONO_PATH", directory},
+            {"MONO_PATH", paths},
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
         try
         {
             // run the AOT compiler
-            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory, silent: false, outputMessageImportance: MessageImportance.Low);
+            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, assemblyDir, silent: false,
+                    outputMessageImportance: MessageImportance.Low, debugMessageImportance: MessageImportance.Low);
         }
         catch (Exception ex)
         {
@@ -377,11 +440,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
+                writer.WriteLine("#include <mono/jit/jit.h>");
+
                 foreach (var symbol in symbols)
                 {
                     writer.WriteLine($"extern void *{symbol};");
                 }
-                writer.WriteLine("static void register_aot_modules ()");
+                writer.WriteLine("void register_aot_modules ()");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
                 {

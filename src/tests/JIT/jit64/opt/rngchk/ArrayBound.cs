@@ -88,7 +88,7 @@ namespace ArrayBound
         public static void Test3()
         {
             int[] numbers = new int[100];
-            int upper = int.MinValue; ;
+            int upper = int.MinValue;
             int index;
             for (index = 0; index < upper - 1; index++)
             {

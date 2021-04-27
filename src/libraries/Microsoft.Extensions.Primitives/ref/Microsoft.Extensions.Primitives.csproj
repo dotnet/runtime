@@ -7,6 +7,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                         '$(TargetFramework)' == 'net461'">
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <!-- PrivateAssets=all is a workaround to issue: https://github.com/NuGet/Home/issues/10617 -->
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

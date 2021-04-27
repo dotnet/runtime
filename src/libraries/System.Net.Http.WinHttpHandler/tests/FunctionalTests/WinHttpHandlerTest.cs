@@ -199,12 +199,12 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             aboveLimitRequest.Content = new StringContent($"{payloadText}-{maxActiveStreamsLimit + 1}");
             Task<HttpResponseMessage> aboveLimitResponseTask = client.SendAsync(aboveLimitRequest, HttpCompletionOption.ResponseContentRead);
 
-            await aboveLimitResponseTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            await aboveLimitResponseTask.WaitAsync(TestHelper.PassingTestTimeout);
             await VerifyResponse(aboveLimitResponseTask, $"{payloadText}-{maxActiveStreamsLimit + 1}");
 
             delaySource.SetResult(true);
 
-            await Task.WhenAll(requests.Select(r => r.task).ToArray()).TimeoutAfter(15000);
+            await Task.WhenAll(requests.Select(r => r.task).ToArray()).WaitAsync(TimeSpan.FromSeconds(15));
 
             foreach ((Task<HttpResponseMessage> task, DelayedStream stream) in requests)
             {
@@ -212,7 +212,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpResponseMessage response = task.Result;
                 Assert.True(response.IsSuccessStatusCode);
                 Assert.Equal(HttpVersion20.Value, response.Version);
-                string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                string responsePayload = await response.Content.ReadAsStringAsync().WaitAsync(TestHelper.PassingTestTimeout);
                 Assert.Contains(payloadText, responsePayload);
             }
         }
@@ -245,7 +245,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             HttpResponseMessage response = task.Result;
             Assert.True(response.IsSuccessStatusCode);
             Assert.Equal(HttpVersion20.Value, response.Version);
-            string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            string responsePayload = await response.Content.ReadAsStringAsync().WaitAsync(TestHelper.PassingTestTimeout);
             Assert.Contains(payloadText, responsePayload);
         }
 

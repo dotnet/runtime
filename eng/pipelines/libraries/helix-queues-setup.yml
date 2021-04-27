@@ -52,7 +52,7 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
-      - ${{ if eq(parameters.jobParameters.interpreter, '') }}:
+      - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
           - RedHat.7.Amd64.Open
@@ -81,9 +81,13 @@ jobs:
             - Ubuntu.1804.Amd64.Open
             - SLES.15.Amd64.Open
             - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-20200512010621-4f8cef7
-      - ${{ if eq(parameters.jobParameters.interpreter, 'true') }}:
+      - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
         - Debian.9.Amd64.Open
+
+    # OSX arm64
+    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
+      - OSX.1100.ARM64.Open
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
@@ -101,9 +105,17 @@ jobs:
     - ${{ if in(parameters.platform, 'Android_arm', 'Android_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
-    # iOS x64/x86
-    - ${{ if in(parameters.platform, 'iOS_x64', 'iOS_x86') }}:
+    # iOS/tvOS simulator x64/x86
+    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86', 'tvOSSimulator_x64') }}:
       - OSX.1015.Amd64.Open
+
+    # iOS devices
+    - ${{ if in(parameters.platform, 'iOS_arm64') }}:
+      - OSX.1015.Amd64.Iphone.Open
+
+    # tvOS devices
+    - ${{ if in(parameters.platform, 'tvOS_arm64') }}:
+      - OSX.1015.Amd64.AppleTV.Open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
@@ -120,7 +132,7 @@ jobs:
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+          - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
@@ -131,7 +143,7 @@ jobs:
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
-      
+
       # AllConfigurations
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
         - Windows.10.Amd64.Server19H1.Open
@@ -148,7 +160,7 @@ jobs:
             - Windows.7.Amd64.Open
             - Windows.10.Amd64.ServerRS5.Open
             - Windows.10.Amd64.Server19H1.Open
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+          - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
               - Windows.10.Amd64.Server19H1.ES.Open
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:

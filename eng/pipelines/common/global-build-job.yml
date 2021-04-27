@@ -19,6 +19,7 @@ parameters:
   shouldContinueOnError: false
   dependOnEvaluatePaths: false
   isOfficialBuild: false
+  buildingOnSourceBuildImage: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
   enablePublishTestResults: false
@@ -51,7 +52,7 @@ jobs:
       dependsOn: ${{ parameters.dependsOn }}
 
     ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      dependsOn: 
+      dependsOn:
       - evaluate_paths
       - ${{ if ne(parameters.dependsOn,'') }}:
         - ${{ parameters.dependsOn }}
@@ -59,7 +60,7 @@ jobs:
     variables:
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
-      
+
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
           value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
@@ -79,16 +80,19 @@ jobs:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
-      
+
       - name: _richCodeNavigationParam
         ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
           value: /p:EnableRichCodeNavigation=true
         ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
           value: ''
 
-      - ${{ if eq(parameters.osGroup, 'Android') }}:
-        - name: ANDROID_OPENSSL_AAR
-          value: /tmp/openssl-android
+      - name: _sclEnableCommand
+        ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
+          value: scl enable llvm-toolset-7.0 --
+        ${{ if ne(parameters.buildingOnSourceBuildImage, true) }}:
+          value: ''
+
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
@@ -108,7 +112,7 @@ jobs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
         displayName: Install Build Dependencies
 
@@ -117,8 +121,18 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
+      # Update machine certs
+      - task: PowerShell@2
+        displayName: Update machine certs
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
+
+      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
+    - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
       displayName: Build product
       ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
         continueOnError: ${{ parameters.shouldContinueOnError }}

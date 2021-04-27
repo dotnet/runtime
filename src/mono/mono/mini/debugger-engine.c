@@ -327,7 +327,7 @@ mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 				if (jmethod->is_inflated) {
 					MonoJitInfo *seq_ji;
 					MonoMethod *declaring = mono_method_get_declaring_generic_method (jmethod);
-					mono_jit_search_all_backends_for_jit_info (domain, declaring, &seq_ji);
+					mono_jit_search_all_backends_for_jit_info (declaring, &seq_ji);
 					seq_points = (MonoSeqPointInfo *) seq_ji->seq_points;
 				}
 			}
@@ -351,7 +351,7 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 	if (error)
 		error_init (error);
 
-	(void)mono_jit_search_all_backends_for_jit_info (domain, method, &ji);
+	(void)mono_jit_search_all_backends_for_jit_info (method, &ji);
 	g_assert (ji);
 
 	insert_breakpoint (seq_points, domain, ji, bp, error);
@@ -373,11 +373,10 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	CollectDomainData *ud = (CollectDomainData*)user_data;
 	MonoMethod *m;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
-	mono_domain_lock (domain);
-	g_hash_table_iter_init (&iter, domain_jit_info (domain)->seq_points);
+	// FIXME:
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	g_hash_table_iter_init (&iter, jit_mm->seq_points);
 	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
 		if (bp_matches_method (ud->bp, m)) {
 			/* Save the info locally to simplify the code inside the domain lock */
@@ -386,7 +385,7 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 			g_ptr_array_add (ud->method_seq_points, seq_points);
 		}
 	}
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 }
 
 void
@@ -649,8 +648,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -860,7 +861,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * The ip points to the instruction causing the single step event, which is before
 	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-	if (!mono_find_next_seq_point_for_native_offset (domain, method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp)) {
+	if (!mono_find_next_seq_point_for_native_offset (method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp)) {
 		g_assert_not_reached ();
 		goto exit;
 	}
@@ -1079,7 +1080,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	 * The ip points to the instruction causing the breakpoint event, which is after
 	 * the offset recorded in the seq point map, so find the prev seq point before ip.
 	 */
-	found_sp = mono_find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info, &sp);
+	found_sp = mono_find_prev_seq_point_for_native_offset (method, native_offset, &info, &sp);
 
 	if (!found_sp)
 		no_seq_points_found (method, native_offset);
@@ -1344,7 +1345,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 						break;
 					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
-					if (mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
+					if (mono_find_next_seq_point_for_native_offset (frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
 						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, local_sp.il_offset);
 				}
 			}
@@ -1400,7 +1401,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 				DbgEngineStackFrame *frame = frames [frame_index];
 
 				method = frame->method;
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &local_sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->method, frame->native_offset, &ss_args->info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				frame_index ++;
 				if (sp && sp->next_len != 0)
@@ -1415,7 +1416,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 					DbgEngineStackFrame *frame = frames [frame_index];
 
 					method = frame->method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &local_sp);
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->method, frame->native_offset, &ss_args->info, &local_sp);
 					sp = (found_sp)? &local_sp : NULL;
 					if (sp && sp->next_len != 0)
 						break;
@@ -1428,7 +1429,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 					DbgEngineStackFrame *frame = frames [frame_index];
 
 					parent_sp_method = frame->method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->method, frame->native_offset, &parent_info, &local_parent_sp);
 					parent_sp = found_sp ? &local_parent_sp : NULL;
 					if (found_sp && parent_sp->next_len != 0)
 						break;
@@ -1753,5 +1754,24 @@ get_notify_debugger_of_wait_completion_method (void)
 	return notify_debugger_of_wait_completion_method_cache;
 }
 
+DbgEngineErrorCode
+mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
+{
+	int size;
+
+	if (t->byref) {
+		addr = *(gpointer*)addr;
+		if (!addr)
+			return ERR_INVALID_OBJECT;
+	}
+
+	if (MONO_TYPE_IS_REFERENCE (t))
+		size = sizeof (gpointer);
+	else
+		size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+
+	memcpy (addr, val_buf, size);
+	return ERR_NONE;
+}
 
 #endif

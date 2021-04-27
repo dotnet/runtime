@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.EcPublicKey, new ECDsaCmsSignature(null, default));
         }
 
-        private partial class ECDsaCmsSignature : CmsSignature
+        private sealed partial class ECDsaCmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
             private readonly string? _signatureAlgorithm;

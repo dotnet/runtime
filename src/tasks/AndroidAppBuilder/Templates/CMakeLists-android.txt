@@ -2,10 +2,21 @@ cmake_minimum_required(VERSION 3.10)
 
 project(monodroid)
 
+enable_language(C ASM)
+
+if(NOT USE_LLVM)
+    # the assembler code we generate is GNU which isn't understood by llvm
+    add_compile_options(-no-integrated-as)
+endif()
+
 add_library(
     monodroid
     SHARED
-    monodroid.c)
+    monodroid.c
+    %AotModulesSource%
+    %AotSources%)
+
+%Defines%
 
 include_directories("%MonoInclude%")
 

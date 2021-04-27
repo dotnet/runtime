@@ -12,29 +12,28 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     public struct FilePatternMatch : IEquatable<FilePatternMatch>
     {
         /// <summary>
-        /// The path to the file matched
+        /// The path to the file matched, relative to the beginning of the matching search pattern.
         /// </summary>
         /// <remarks>
-        /// If the matcher searched for "**/*.cs" using "src/Project" as the directory base and the pattern matcher found
-        /// "src/Project/Interfaces/IFile.cs", then Stem = "Interfaces/IFile.cs" and Path = "src/Project/Interfaces/IFile.cs".
+        /// If the matcher searched for "src/Project/**/*.cs" and the pattern matcher found "src/Project/Interfaces/IFile.cs",
+        /// then <see cref="Stem" /> = "Interfaces/IFile.cs" and <see cref="Path" /> = "src/Project/Interfaces/IFile.cs".
         /// </remarks>
         public string Path { get; }
 
         /// <summary>
-        /// The subpath to the matched file under the base directory searched
+        /// The subpath to the file matched, relative to the first wildcard in the matching search pattern.
         /// </summary>
         /// <remarks>
-        /// If the matcher searched for "**/*.cs" using "src/Project" as the directory base and the pattern matcher found
-        /// "src/Project/Interfaces/IFile.cs",
-        /// then Stem = "Interfaces/IFile.cs" and Path = "src/Project/Interfaces/IFile.cs".
+        /// If the matcher searched for "src/Project/**/*.cs" and the pattern matcher found "src/Project/Interfaces/IFile.cs",
+        /// then <see cref="Stem" /> = "Interfaces/IFile.cs" and <see cref="Path" /> = "src/Project/Interfaces/IFile.cs".
         /// </remarks>
         public string Stem { get; }
 
         /// <summary>
         /// Initializes new instance of <see cref="FilePatternMatch" />
         /// </summary>
-        /// <param name="path">The path to the matched file</param>
-        /// <param name="stem">The stem</param>
+        /// <param name="path">The path to the file matched, relative to the beginning of the matching search pattern.</param>
+        /// <param name="stem">The subpath to the file matched, relative to the first wildcard in the matching search pattern.</param>
         public FilePatternMatch(string path, string stem)
         {
             Path = path;

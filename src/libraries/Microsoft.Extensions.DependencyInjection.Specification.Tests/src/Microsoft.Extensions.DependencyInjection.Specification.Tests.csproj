@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <CLSCompliant>false</CLSCompliant>
+    <IsPackable>true</IsPackable>
+    <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.extensibility.core" Version="$(XUnitVersion)" />
+  </ItemGroup>
+
+</Project>

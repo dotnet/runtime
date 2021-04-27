@@ -1038,11 +1038,11 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c"));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
-			
+
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#"));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
-			
+
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0"));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
@@ -1544,7 +1544,15 @@ namespace System.Tests
         [Fact]
         public static void ParseExact_EscapedSingleQuotes()
         {
-            var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+            DateTimeFormatInfo formatInfo;
+            if (PlatformDetection.IsBrowser)
+            {
+                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("id-ID"));
+            }
+            else
+            {
+                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+            }
             const string format = @"dddd, d' ta\' 'MMMM yyyy";
 
             DateTime expected = new DateTime(1999, 2, 28, 17, 00, 01);
@@ -1728,8 +1736,16 @@ namespace System.Tests
                 hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
                 yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
 
-                var mongolianCulture = new CultureInfo("mn-MN");
-                yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
+                CultureInfo culture;
+                if (PlatformDetection.IsBrowser)
+                {
+                    culture = new CultureInfo("pl-PL");
+                }
+                else
+                {
+                    culture = new CultureInfo("mn-MN");
+                }
+                yield return new object[] { today.ToString(culture), culture, today };
             }
         }
 
@@ -2045,6 +2061,54 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
+        public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
+        {
+            Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
+        public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
+        {
+            DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);
+            DateTime result2 = DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style);
+
+            Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
+            Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
+
+            Assert.Equal(result1, result2);
+            Assert.Equal(result1, result3);
+            Assert.Equal(result1, result4);
+
+            if (expected != null) // some inputs don't roundtrip well
+            {
+                // Normalize values to make comparison easier
+                if (expected.Value.Kind != DateTimeKind.Utc)
+                {
+                    expected = expected.Value.ToUniversalTime();
+                }
+                if (result1.Kind != DateTimeKind.Utc)
+                {
+                    result1 = result1.ToUniversalTime();
+                }
+
+                Assert.Equal(expected, result1);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
+        public static void ParseExact_Span_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), format, culture, style));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style));
+
+            Assert.False(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result));
+            Assert.False(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out result));
+        }
+
+        [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         public void ToString_Invoke_ReturnsExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
@@ -2300,54 +2364,6 @@ namespace System.Tests
             Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
             Assert.Equal(destination.Length, charsWritten);
             Assert.Equal(expected, new string(destination));
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
-        public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
-        {
-            Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
-        }
-
-        [Theory]
-        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
-        public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
-        {
-            DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);
-            DateTime result2 = DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style);
-
-            Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
-            Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
-
-            Assert.Equal(result1, result2);
-            Assert.Equal(result1, result3);
-            Assert.Equal(result1, result4);
-
-            if (expected != null) // some inputs don't roundtrip well
-            {
-                // Normalize values to make comparison easier
-                if (expected.Value.Kind != DateTimeKind.Utc)
-                {
-                    expected = expected.Value.ToUniversalTime();
-                }
-                if (result1.Kind != DateTimeKind.Utc)
-                {
-                    result1 = result1.ToUniversalTime();
-                }
-
-                Assert.Equal(expected, result1);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
-        public static void ParseExact_Span_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
-        {
-            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), format, culture, style));
-            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style));
-
-            Assert.False(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result));
-            Assert.False(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out result));
         }
 
         [Fact]

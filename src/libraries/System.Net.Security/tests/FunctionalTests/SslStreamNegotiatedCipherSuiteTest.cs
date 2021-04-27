@@ -639,8 +639,8 @@ namespace System.Net.Security.Tests
 
             try
             {
-                task = await Task.WhenAny(serverTask, clientTask).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
-                await task ;
+                task = await Task.WhenAny(serverTask, clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await task;
             }
             catch (Exception e) when (e is AuthenticationException || e is Win32Exception)
             {
@@ -660,7 +660,7 @@ namespace System.Net.Security.Tests
             {
                 // Now wait for the other task to finish.
                 task = (task == serverTask ? clientTask : serverTask);
-                await task.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await task.WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // Fail if server has failed but client has succeeded
                 Assert.Null(failure);

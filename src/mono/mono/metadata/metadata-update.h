@@ -11,11 +11,21 @@
 
 #ifdef ENABLE_METADATA_UPDATE
 
-void
-mono_metadata_update_init (void);
+enum MonoModifiableAssemblies {
+	/* modifiable assemblies are disabled */
+	MONO_MODIFIABLE_ASSM_NONE = 0,
+	/* assemblies with the Debug flag are modifiable */
+	MONO_MODIFIABLE_ASSM_DEBUG = 1,
+};
+
+gboolean
+mono_metadata_update_enabled (int *modifiable_assemblies_out);
+
+gboolean
+mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee);
 
 void
-mono_metadata_update_cleanup (void);
+mono_metadata_update_init (void);
 
 gboolean
 mono_metadata_update_available (void);
@@ -30,10 +40,10 @@ gboolean
 mono_metadata_wait_for_update (uint32_t timeout_ms);
 
 uint32_t
-mono_metadata_update_prepare (MonoDomain *domain);
+mono_metadata_update_prepare (void);
 
 void
-mono_metadata_update_publish (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+mono_metadata_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation);
 
 void
 mono_metadata_update_cancel (uint32_t generation);
@@ -44,6 +54,21 @@ mono_metadata_update_cleanup_on_close (MonoImage *base_image);
 MonoImage *
 mono_table_info_get_base_image (const MonoTableInfo *t);
 
+#else /* ENABLE_METADATA_UPDATE */
+
+static inline gboolean
+mono_metadata_update_enabled (int *modifiable_assemblies_out)
+{
+        if (modifiable_assemblies_out)
+                *modifiable_assemblies_out = 0;
+        return FALSE;
+}
+
+static inline gboolean
+mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
+{
+        return FALSE;
+}
 
 #endif /* ENABLE_METADATA_UPDATE */
 

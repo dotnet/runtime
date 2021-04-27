@@ -1257,7 +1257,7 @@ namespace System
             String = 1 << TypeCode.String,
         }
 
-        internal class BinderState
+        internal sealed class BinderState
         {
             internal readonly int[] _argsMap;
             internal readonly int _originalSize;

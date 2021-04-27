@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -11,20 +12,42 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamNetworkStreamTest
+    public class CertificateSetup : IDisposable
     {
-        private static readonly X509Certificate2 _serverCert;
-        private static readonly X509Certificate2Collection _serverChain;
+        public readonly X509Certificate2 serverCert;
+        public readonly X509Certificate2Collection serverChain;
 
-        static SslStreamNetworkStreamTest()
+        public CertificateSetup()
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+            (serverCert, serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+        }
+
+        public void Dispose()
+        {
+            serverCert.Dispose();
+            foreach (var c in serverChain)
+            {
+                c.Dispose();
+            }
+        }
+    }
+
+    public class SslStreamNetworkStreamTest : IClassFixture<CertificateSetup>
+    {
+        readonly ITestOutputHelper _output;
+        readonly CertificateSetup certificates;
+
+        public SslStreamNetworkStreamTest(ITestOutputHelper output, CertificateSetup setup)
+        {
+            _output = output;
+            certificates = setup;
         }
 
         [ConditionalFact]
@@ -219,23 +242,22 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
-            var rnd = new Random();
-            int split = rnd.Next(0, _serverChain.Count - 1);
+            int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback =
                 (sender, certificate, chain, sslPolicyErrors) =>
                 {
                     // add our custom root CA
-                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count - 1]);
+                    chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                     // Add only one CA to verify that peer did send intermediate CA cert.
                     // In case of partial chain, we need to make missing certs available.
                     if (usePartialChain)
                     {
-                        for (int i = split; i < _serverChain.Count - 1; i++)
+                        for (int i = split; i < certificates.serverChain.Count - 1; i++)
                         {
-                            chain.ChainPolicy.ExtraStore.Add(_serverChain[i]);
+                            chain.ChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
                         }
                     }
 
@@ -253,15 +275,15 @@ namespace System.Net.Security.Tests
                 serverChain = new X509Certificate2Collection();
                 for (int i = 0; i < split; i++)
                 {
-                    serverChain.Add(_serverChain[i]);
+                    serverChain.Add(certificates.serverChain[i]);
                 }
             }
             else
             {
-                serverChain = _serverChain;
+                serverChain = certificates.serverChain;
             }
 
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -291,7 +313,7 @@ namespace System.Net.Security.Tests
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
                         // Add only root CA to verify that peer did send intermediate CA cert.
-                        chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                        chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
                         chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                         // This should work and we should be able to trust the chain.
                         Assert.True(chain.Build((X509Certificate2)certificate));
@@ -308,7 +330,7 @@ namespace System.Net.Security.Tests
             }
 
             var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, _serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -323,6 +345,84 @@ namespace System.Net.Security.Tests
                 Assert.Contains(errorMessage, e.Message);
                 // Server side should finish since we run custom callback after handshake is done.
                 await t2;
+            }
+        }
+
+        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
+        public async Task SslStream_ClientCertificate_SendsChain()
+        {
+            List<SslStream> streams = new List<SslStream>();
+            TestHelper.CleanupCertificates();
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
+            using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            {
+                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
+                store.Open(OpenFlags.ReadWrite);
+                store.AddRange(clientChain);
+                store.Close();
+            }
+
+            using (var chain = new X509Chain())
+            {
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.DisableCertificateDownloads = false;
+                bool chainStatus = chain.Build(clientCertificate);
+                // Verify we can construct full chain
+                if (chain.ChainElements.Count < clientChain.Count)
+                {
+                    throw new SkipTestException($"chain cannot be built {chain.ChainElements.Count}");
+                }
+            }
+
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
+
+            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
+            serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
+                // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
+                // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
+                _output.WriteLine("RemoteCertificateValidationCallback called with {0} and {1} extra certificates", sslPolicyErrors, chain.ChainPolicy.ExtraStore.Count);
+                foreach (X509Certificate c in chain.ChainPolicy.ExtraStore)
+                {
+                    _output.WriteLine("received {0}", c.Subject);
+                }
+
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1, "client did not sent expected chain");
+                return true;
+            };
+
+            // run the test multiple times while holding established SSL so we could hit credential cache.
+            for (int i = 0; i < 3; i++)
+            {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                SslStream client = new SslStream(clientStream);
+                SslStream server = new SslStream(serverStream);
+
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                await Task.WhenAll(t1, t2).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                // hold to the streams so they stay in credential cache
+                streams.Add(client);
+                streams.Add(server);
+            }
+
+            TestHelper.CleanupCertificates();
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
+
+            foreach (SslStream s in  streams)
+            {
+                s.Dispose();
             }
         }
 

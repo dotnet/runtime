@@ -805,7 +805,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static Dictionary<int, Dictionary<Type, StringCollection>> TypeToLdapPropListMap;
 
-        private class PropertyMappingTableEntry
+        private sealed class PropertyMappingTableEntry
         {
             internal string propertyName;               // PAPI name
             internal string suggestedADPropertyName;    // LDAP attribute name

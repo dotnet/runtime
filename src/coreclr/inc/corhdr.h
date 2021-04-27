@@ -16,24 +16,13 @@
 #ifndef __CORHDR_H__
 #define __CORHDR_H__
 
-#define FRAMEWORK_REGISTRY_KEY          "Software\\Microsoft\\.NETFramework"
-#define FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
-
-// keys for HKCU
-#ifdef HOST_64BIT
-#define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework64"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework64")
-#else
-#define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
-#endif
-
+#include <stdint.h>
 
 #ifdef _MSC_VER
 #pragma warning(disable:4200) // nonstandard extension used : zero-sized array in struct/union.
 #endif
-typedef LPVOID  mdScope;                // Obsolete; not used in the runtime.
-typedef ULONG32 mdToken;                // Generic token
+typedef void*  mdScope;                // Obsolete; not used in the runtime.
+typedef uint32_t mdToken;                // Generic token
 
 
 // Token  definitions
@@ -76,7 +65,7 @@ typedef mdToken mdString;               // User literal string token.
 typedef mdToken mdCPToken;              // constantpool token
 
 #ifndef MACROS_NOT_SUPPORTED
-typedef ULONG RID;
+typedef uint32_t RID;
 #else
 typedef unsigned RID;
 #endif // MACROS_NOT_SUPPORTED
@@ -173,6 +162,19 @@ typedef enum ReplacesCorHdrNumericDefines
     MAX_PACKAGE_NAME                    =1024,
 } ReplacesCorHdrNumericDefines;
 
+//
+// Directory format.
+//
+#ifndef IMAGE_DATA_DIRECTORY_DEFINED
+
+#define IMAGE_DATA_DIRECTORY_DEFINED
+typedef struct _IMAGE_DATA_DIRECTORY {
+    uint32_t   VirtualAddress;
+    uint32_t   Size;
+} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
+
+#endif // IMAGE_DATA_DIRECTORY_DEFINED
+
 // #ManagedHeader
 //
 // A managed code EXE or DLL uses the same basic format that unmanaged executables use call the Portable
@@ -207,21 +209,21 @@ typedef enum ReplacesCorHdrNumericDefines
 typedef struct IMAGE_COR20_HEADER
 {
     // Header versioning
-    DWORD                   cb;
-    WORD                    MajorRuntimeVersion;
-    WORD                    MinorRuntimeVersion;
+    uint32_t                cb;
+    uint16_t                MajorRuntimeVersion;
+    uint16_t                MinorRuntimeVersion;
 
     // Symbol table and startup information
     IMAGE_DATA_DIRECTORY    MetaData;
-    DWORD                   Flags;
+    uint32_t                Flags;
 
 	// The main program if it is an EXE (not used if a DLL?)
     // If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is not set, EntryPointToken represents a managed entrypoint.
 	// If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is set, EntryPointRVA represents an RVA to a native entrypoint
 	// (depricated for DLLs, use modules constructors intead).
     union {
-        DWORD               EntryPointToken;
-        DWORD               EntryPointRVA;
+        uint32_t            EntryPointToken;
+        uint32_t            EntryPointRVA;
     };
 
     // This is the blob of managed resources. Fetched using code:AssemblyNative.GetResource and
@@ -848,7 +850,7 @@ typedef enum CorGenericParamAttr
 } CorGenericParamAttr;
 
 // structures and enums moved from COR.H
-typedef unsigned __int8 COR_SIGNATURE;
+typedef uint8_t COR_SIGNATURE;
 
 typedef COR_SIGNATURE* PCOR_SIGNATURE;      // pointer to a cor sig.  Not void* so that
                                             // the bytes can be incremented easily
@@ -1115,8 +1117,8 @@ typedef enum CorILMethodSect                             // codes that identify 
 
 typedef struct IMAGE_COR_ILMETHOD_SECT_SMALL
 {
-    BYTE Kind;
-    BYTE DataSize;
+    uint8_t Kind;
+    uint8_t DataSize;
 
 } IMAGE_COR_ILMETHOD_SECT_SMALL;
 
@@ -1152,13 +1154,13 @@ typedef enum CorExceptionFlag                       // definitions for the Flags
 typedef struct IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT
 {
     CorExceptionFlag    Flags;
-    DWORD               TryOffset;
-    DWORD               TryLength;      // relative to start of try block
-    DWORD               HandlerOffset;
-    DWORD               HandlerLength;  // relative to start of handler
+    uint32_t            TryOffset;
+    uint32_t            TryLength;      // relative to start of try block
+    uint32_t            HandlerOffset;
+    uint32_t            HandlerLength;  // relative to start of handler
     union {
-        DWORD           ClassToken;     // use for type-based exception handlers
-        DWORD           FilterOffset;   // use for filter-based exception handlers (COR_ILEXCEPTION_FILTER is set)
+        uint32_t        ClassToken;     // use for type-based exception handlers
+        uint32_t        FilterOffset;   // use for filter-based exception handlers (COR_ILEXCEPTION_FILTER is set)
     };
 } IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT;
 
@@ -1181,8 +1183,8 @@ typedef struct IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL
     unsigned            HandlerOffset : 16;
     unsigned            HandlerLength : 8;  // relative to start of handler
     union {
-        DWORD       ClassToken;
-        DWORD       FilterOffset;
+        uint32_t        ClassToken;
+        uint32_t        FilterOffset;
     };
 } IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL;
 
@@ -1190,7 +1192,7 @@ typedef struct IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL
 typedef struct IMAGE_COR_ILMETHOD_SECT_EH_SMALL
 {
     IMAGE_COR_ILMETHOD_SECT_SMALL SectSmall;
-    WORD Reserved;
+    uint16_t Reserved;
     IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL Clauses[1];   // actually variable size
 } IMAGE_COR_ILMETHOD_SECT_EH_SMALL;
 
@@ -1229,7 +1231,7 @@ typedef enum CorILMethodFlags
 /* Used when the method is tiny (< 64 bytes), and there are no local vars */
 typedef struct IMAGE_COR_ILMETHOD_TINY
 {
-    BYTE Flags_CodeSize;
+    uint8_t Flags_CodeSize;
 } IMAGE_COR_ILMETHOD_TINY;
 
 /************************************/
@@ -1240,7 +1242,7 @@ typedef struct IMAGE_COR_ILMETHOD_FAT
     unsigned Flags    : 12;     // Flags see code:CorILMethodFlags
     unsigned Size     :  4;     // size in DWords of this structure (currently 3)
     unsigned MaxStack : 16;     // maximum number of items (I4, I, I8, obj ...), on the operand stack
-    DWORD   CodeSize;           // size of the code
+    uint32_t CodeSize;          // size of the code
     mdSignature   LocalVarSigTok;     // token that indicates the signature of the local vars (0 means none)
 
 } IMAGE_COR_ILMETHOD_FAT;
@@ -1266,9 +1268,9 @@ typedef union IMAGE_COR_ILMETHOD
 
 typedef struct IMAGE_COR_VTABLEFIXUP
 {
-    ULONG       RVA;                    // Offset of v-table array in image.
-    USHORT      Count;                  // How many entries at location.
-    USHORT      Type;                   // COR_VTABLE_xxx type of entries.
+    uint32_t       RVA;                    // Offset of v-table array in image.
+    uint16_t       Count;                  // How many entries at location.
+    uint16_t       Type;                   // COR_VTABLE_xxx type of entries.
 } IMAGE_COR_VTABLEFIXUP;
 
 
@@ -1464,7 +1466,7 @@ typedef enum CorLocalRefPreservation
 typedef struct COR_FIELD_OFFSET
 {
     mdFieldDef  ridOfField;
-    ULONG       ulOffset;
+    uint32_t       ulOffset;
 } COR_FIELD_OFFSET;
 
 #endif
@@ -1807,10 +1809,6 @@ typedef enum CorAttributeTargets
 #define SUBJECT_ASSEMBLY_TYPE_NAME              "IgnoresAccessChecksToAttribute"
 #define SUBJECT_ASSEMBLY_SIG                    {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define DISABLED_PRIVATE_REFLECTION_TYPE_W      W("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")
-#define DISABLED_PRIVATE_REFLECTION_TYPE         "System.Runtime.CompilerServices.DisablePrivateReflectionAttribute"
-#define DISABLED_PRIVATE_REFLECTION_SIG         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
-
 #define DEFAULTDOMAIN_STA_TYPE_W                W("System.STAThreadAttribute")
 #define DEFAULTDOMAIN_STA_TYPE                   "System.STAThreadAttribute"
 #define DEFAULTDOMAIN_STA_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
@@ -1884,6 +1882,7 @@ typedef enum LoadHintEnum
 #define CMOD_CALLCONV_NAME_THISCALL             "CallConvThiscall"
 #define CMOD_CALLCONV_NAME_FASTCALL             "CallConvFastcall"
 #define CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION "CallConvSuppressGCTransition"
+#define CMOD_CALLCONV_NAME_MEMBERFUNCTION       "CallConvMemberFunction"
 
 #endif // MACROS_NOT_SUPPORTED
 
@@ -1940,8 +1939,8 @@ typedef void ** PPSECURITY_VALUE ;
 // Descriptor for a single security custom attribute.
 typedef struct COR_SECATTR {
     mdMemberRef     tkCtor;         // Ref to constructor of security attribute.
-    const void      *pCustomAttribute;  // Blob describing ctor args and field/property values.
-    ULONG           cbCustomAttribute;  // Length of the above blob.
+    const void     *pCustomAttribute;  // Blob describing ctor args and field/property values.
+    uint32_t        cbCustomAttribute;  // Length of the above blob.
 } COR_SECATTR;
 
 #endif // __CORHDR_H__

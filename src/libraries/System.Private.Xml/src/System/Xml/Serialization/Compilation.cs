@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
-    internal class TempAssembly
+    internal sealed class TempAssembly
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
         private readonly Assembly? _assembly;
@@ -23,7 +23,7 @@ namespace System.Xml.Serialization
         private IDictionary? _readerMethods;
         private TempMethodDictionary? _methods;
 
-        internal class TempMethod
+        internal sealed class TempMethod
         {
             internal MethodInfo? writeMethod;
             internal MethodInfo? readMethod;
@@ -44,6 +44,7 @@ namespace System.Xml.Serialization
             _contract = contract;
         }
 
+        [RequiresUnreferencedCode("calls GenerateRefEmitAssembly")]
         internal TempAssembly(XmlMapping[] xmlMappings, Type?[] types, string? defaultNamespace, string? location)
         {
             bool containsSoapMapping = false;
@@ -101,6 +102,7 @@ namespace System.Xml.Serialization
 
         internal XmlSerializerImplementation Contract
         {
+            [RequiresUnreferencedCode("calls GetTypeFromAssembly")]
             get
             {
                 if (_contract == null)
@@ -137,6 +139,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
+        [RequiresUnreferencedCode("calls LoadFile")]
         internal static Assembly? LoadGeneratedAssembly(Type type, string? defaultNamespace, out XmlSerializerImplementation? contract)
         {
             Assembly? serializer = null;
@@ -276,6 +279,7 @@ namespace System.Xml.Serialization
             return sb.ToString();
         }
 
+        [RequiresUnreferencedCode("calls GenerateBegin")]
         internal static bool GenerateSerializerToStream(XmlMapping[] xmlMappings, Type?[] types, string? defaultNamespace, Assembly? assembly, Hashtable assemblies, Stream stream)
         {
             var compiler = new Compiler();
@@ -420,6 +424,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls GenerateElement")]
         internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[]? types, string? defaultNamespace)
         {
             var scopeTable = new Dictionary<TypeScope, XmlMapping>();
@@ -497,7 +502,8 @@ namespace System.Xml.Serialization
             return writerType.Assembly;
         }
 
-        private static MethodInfo GetMethodFromType(Type type, string methodName)
+        private static MethodInfo GetMethodFromType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type, string methodName)
         {
             MethodInfo? method = type.GetMethod(methodName);
             if (method != null)
@@ -508,6 +514,7 @@ namespace System.Xml.Serialization
             throw missingMethod;
         }
 
+        [RequiresUnreferencedCode("calls GetType")]
         internal static Type GetTypeFromAssembly(Assembly assembly, string typeName)
         {
             typeName = GeneratedAssemblyNamespace + "." + typeName;
@@ -557,6 +564,7 @@ namespace System.Xml.Serialization
             return encodingStyle;
         }
 
+        [RequiresUnreferencedCode("calls Contract")]
         internal object? InvokeReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
             XmlSerializationReader? reader = null;
@@ -591,6 +599,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls Contract")]
         internal void InvokeWriter(XmlMapping mapping, XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id)
         {
             XmlSerializationWriter? writer = null;
@@ -630,7 +639,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TempAssemblyCacheKey
+    internal sealed class TempAssemblyCacheKey
     {
         private readonly string? _ns;
         private readonly object _type;
@@ -655,7 +664,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TempAssemblyCache
+    internal sealed class TempAssemblyCache
     {
         private Dictionary<TempAssemblyCacheKey, TempAssembly> _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
 

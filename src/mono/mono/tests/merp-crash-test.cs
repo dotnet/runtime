@@ -410,7 +410,7 @@ class C
 		var pi = new Diag.ProcessStartInfo ();
 		pi.UseShellExecute = false;
 		pi.FileName = runtime;
-		pi.Arguments = String.Format ("{0} {1}", asm, testNum);;
+		pi.Arguments = String.Format ("{0} {1}", asm, testNum);
 		pi.Environment ["MONO_PATH"] = env;
 
 		if (!silent) {

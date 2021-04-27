@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
+    [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
     public static class AiaTests
     {
         [Fact]
@@ -16,28 +17,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 PkiOptions.AllRevocation,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
-                out CertificateAuthority intermediate,
+                out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
-                pkiOptionsInSubject: false);
+                intermediateAuthorityCount: 2,
+                pkiOptionsInSubject: false,
+                testName: nameof(EmptyAiaResponseIsIgnored));
 
             using (responder)
             using (root)
-            using (intermediate)
+            using (CertificateAuthority intermediate1 = intermediates[0])
+            using (CertificateAuthority intermediate2 = intermediates[1])
             using (endEntity)
             using (ChainHolder holder = new ChainHolder())
-            using (X509Certificate2 rootCert = root.CloneIssuerCert())
-            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            using (X509Certificate2 intermediate2Cert = intermediate2.CloneIssuerCert())
             {
                 responder.RespondEmpty = true;
 
                 X509Chain chain = holder.Chain;
+                chain.ChainPolicy.ExtraStore.Add(intermediate2Cert);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
                 chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 Assert.False(chain.Build(endEntity));
-                Assert.True(chain.AllStatusFlags().HasFlag(X509ChainStatusFlags.PartialChain), "expected partial chain");
+                X509ChainStatusFlags chainFlags = chain.AllStatusFlags();
+                Assert.True(chainFlags.HasFlag(X509ChainStatusFlags.PartialChain), $"expected partial chain flags, got {chainFlags}");
+                Assert.Equal(2, chain.ChainElements.Count);
             }
         }
 
@@ -50,7 +56,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,
                 out X509Certificate2 endEntity,
-                pkiOptionsInSubject: false);
+                pkiOptionsInSubject: false,
+                testName: nameof(DisableAiaOptionWorks));
 
             using (responder)
             using (root)

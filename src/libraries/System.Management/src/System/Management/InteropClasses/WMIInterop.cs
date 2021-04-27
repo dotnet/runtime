@@ -464,7 +464,7 @@ namespace System.Management
         }
     }
 
-    internal class MarshalWbemObject : ICustomMarshaler
+    internal sealed class MarshalWbemObject : ICustomMarshaler
     {
         public static ICustomMarshaler GetInstance(string cookie)
         {
@@ -1377,10 +1377,9 @@ namespace System.Management
     }
     #endregion
 
-    internal class MTAHelper
+    internal static class MTAHelper
     {
-
-        private class MTARequest
+        private sealed class MTARequest
         {
             public AutoResetEvent evtDone = new AutoResetEvent(false);
             public Type typeToCreate;
@@ -1592,7 +1591,7 @@ namespace System.Management
     ///     4. Delegate with parameter and return value.
     ///
     /// </summary>
-    internal class ThreadDispatch
+    internal sealed class ThreadDispatch
     {
         #region Private fields
         private Thread thread;

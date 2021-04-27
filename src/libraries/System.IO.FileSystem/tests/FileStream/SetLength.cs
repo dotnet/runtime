@@ -25,5 +25,25 @@ namespace System.IO.Tests
                 Assert.Equal(length, fs.Length);
             }
         }
+
+        [Fact]
+        public void SetLengthThrowsForUnseekableFileStream()
+        {
+            string fileName = GetTestFilePath();
+            using (FileStream fs = new UnseekableFileStream(fileName, FileMode.Create))
+            {
+                Assert.Throws<NotSupportedException>(() => fs.SetLength(1));
+            }
+        }
+
+        [Fact]
+        public void GetLengthThrowsForUnseekableFileStream()
+        {
+            string fileName = GetTestFilePath();
+            using (FileStream fs = new UnseekableFileStream(fileName, FileMode.Create))
+            {
+                Assert.Throws<NotSupportedException>(() => _ = fs.Length);
+            }
+        }
     }
 }

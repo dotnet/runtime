@@ -69,11 +69,11 @@ namespace System.Threading.Tasks.Dataflow
             _sharedResources = new JoinBlockTargetSharedResources(this, targets,
                 () =>
                 {
-                    _source.AddMessage(Tuple.Create(_target1.GetOneMessage(), _target2.GetOneMessage()));
+                    _source.AddMessage(Tuple.Create(_target1!.GetOneMessage(), _target2!.GetOneMessage()));
                 },
                 exception =>
                 {
-                    Volatile.Write(ref _sharedResources._hasExceptions, true);
+                    Volatile.Write(ref _sharedResources!._hasExceptions, true);
                     _source.AddException(exception);
                 },
                 dataflowBlockOptions);
@@ -187,15 +187,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, OutputCount={1}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -297,10 +291,10 @@ namespace System.Threading.Tasks.Dataflow
             // Configure the targets
             var targets = new JoinBlockTargetBase[3];
             _sharedResources = new JoinBlockTargetSharedResources(this, targets,
-                () => _source.AddMessage(Tuple.Create(_target1.GetOneMessage(), _target2.GetOneMessage(), _target3.GetOneMessage())),
+                () => _source.AddMessage(Tuple.Create(_target1!.GetOneMessage(), _target2!.GetOneMessage(), _target3!.GetOneMessage())),
                 exception =>
                 {
-                    Volatile.Write(ref _sharedResources._hasExceptions, true);
+                    Volatile.Write(ref _sharedResources!._hasExceptions, true);
                     _source.AddException(exception);
                 },
                 dataflowBlockOptions);
@@ -420,15 +414,9 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0} OutputCount={1}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    OutputCountForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent =>
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)} OutputCount={OutputCountForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -660,7 +648,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(_nonGreedy!.ReservedMessage.Key != null, "This target must have a reserved message");
 
             bool consumed;
-            T consumedValue = _nonGreedy.ReservedMessage.Key.ConsumeMessage(_nonGreedy.ReservedMessage.Value, this, out consumed);
+            T? consumedValue = _nonGreedy.ReservedMessage.Key.ConsumeMessage(_nonGreedy.ReservedMessage.Value, this, out consumed);
 
             // Null out our reservation
             _nonGreedy.ReservedMessage = default(KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>);
@@ -721,7 +709,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // Try to consume the popped message
                 bool consumed;
-                T consumedValue = next.Key.ConsumeMessage(next.Value, this, out consumed);
+                T? consumedValue = next.Key.ConsumeMessage(next.Value, this, out consumed);
                 if (consumed)
                 {
                     lock (_sharedResources.IncomingLock)
@@ -861,7 +849,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
-                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
+                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed)!;
                         if (!consumed) return DataflowMessageStatus.NotAvailable;
                     }
                     if (_sharedResources._boundingState != null && HasTheHighestNumberOfMessagesAvailable) _sharedResources._boundingState.CurrentCount += 1; // track this new item against our bound
@@ -961,10 +949,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayJoin = _sharedResources._ownerJoin as IDebuggerDisplay;
-                return string.Format("{0} InputCount={1}, Join=\"{2}\"",
-                    Common.GetNameForDebugger(this),
-                    InputCountForDebugger,
-                    displayJoin != null ? displayJoin.Content : _sharedResources._ownerJoin);
+                return $"{Common.GetNameForDebugger(this)} InputCount={InputCountForDebugger}, Join=\"{(displayJoin != null ? displayJoin.Content : _sharedResources._ownerJoin)}\"";
             }
         }
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -1456,8 +1441,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displayJoin = _ownerJoin as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displayJoin != null ? displayJoin.Content : _ownerJoin);
+                return $"Block=\"{(displayJoin != null ? displayJoin.Content : _ownerJoin)}\"";
             }
         }
     }

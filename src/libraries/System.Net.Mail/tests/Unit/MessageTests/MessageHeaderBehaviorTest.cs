@@ -172,7 +172,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void MessageSubject_Unicode_Accepted()
         {
-            _message.From = new MailAddress("from@example.com"); ;
+            _message.From = new MailAddress("from@example.com");
 
             string input = "Hi \u00DC Bob";
             _message.Subject = input;
@@ -188,7 +188,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void MessageSubject_Utf8EncodedUnicode_Accepted()
         {
-            _message.From = new MailAddress("from@example.com"); ;
+            _message.From = new MailAddress("from@example.com");
 
             string input = "=?utf-8?B?SGkgw5wgQm9i?=";
             _message.Subject = input;
@@ -204,7 +204,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void MessageSubject_UnknownEncodingEncodedUnicode_Accepted()
         {
-            _message.From = new MailAddress("from@example.com"); ;
+            _message.From = new MailAddress("from@example.com");
 
             string input = "=?utf-99?B?SGkgw5wgQm9i?=";
             _message.Subject = input;
@@ -220,7 +220,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void MessageSubject_BadBase64EncodedUnicode_Accepted()
         {
-            _message.From = new MailAddress("from@example.com"); ;
+            _message.From = new MailAddress("from@example.com");
 
             string input = "=?utf-8?B?SGkgw5.wgQm9i?="; // Extra . in the middle
             _message.Subject = input;
@@ -236,7 +236,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void MessageSubject_MultiLineEncodedUnicode_Accepted()
         {
-            _message.From = new MailAddress("from@example.com"); ;
+            _message.From = new MailAddress("from@example.com");
 
             string input = "=?utf-8?B?SGkgw5wg?=\r\n =?utf-8?B?Qm9i?=";
             _message.Subject = input;

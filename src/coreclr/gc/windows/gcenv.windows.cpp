@@ -677,7 +677,6 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  address   - starting virtual address, it can be NULL to let the function choose the starting address
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching

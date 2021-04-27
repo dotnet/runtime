@@ -9,7 +9,7 @@ namespace System.ComponentModel.Composition.Registration
 {
     public class PartBuilder<T> : PartBuilder
     {
-        private class PropertyExpressionAdapter
+        private sealed class PropertyExpressionAdapter
         {
             private readonly PropertyInfo _propertyInfo;
             private readonly Action<ImportBuilder> _configureImport;
@@ -58,7 +58,7 @@ namespace System.ComponentModel.Composition.Registration
                 throw new ArgumentException(SR.Format(SR.Argument_ExpressionMustBePropertyMember, nameof(propertyFilter)), nameof(propertyFilter));
             }
 
-            protected static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
+            private static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
             {
                 while (expr.CanReduce)
                 {
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.Registration
             }
         }
 
-        private class ConstructorExpressionAdapter
+        private sealed class ConstructorExpressionAdapter
         {
             private ConstructorInfo _constructorInfo;
             private Dictionary<ParameterInfo, Action<ImportBuilder>> _importBuilders;

@@ -17,7 +17,9 @@ namespace System.Net.Http.Functional.Tests
 {
     public static class TestHelper
     {
+        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
         public static int PassingTestTimeoutMilliseconds => 60 * 1000;
+
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
             // Deal with JSON encoding of '\' and '"' in value

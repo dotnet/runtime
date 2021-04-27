@@ -6,7 +6,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition
 {
-    internal class CompositionErrorDebuggerProxy
+    internal sealed class CompositionErrorDebuggerProxy
     {
         private readonly CompositionError _error;
 

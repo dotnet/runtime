@@ -80,7 +80,7 @@ namespace System.Xml.Tests
 
             Assert.True(reader.Read());
             Assert.True(reader.Read());
-            XmlException ex = Assert.Throws<XmlException>(() => reader.Read());;
+            XmlException ex = Assert.Throws<XmlException>(() => reader.Read());
         }
 
         [Fact]

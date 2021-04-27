@@ -223,7 +223,7 @@ namespace System.ServiceModel.Syndication
         }
 
         // this class holds the extension data and the associated serializer (either DataContractSerializer or XmlSerializer but not both)
-        private class ExtensionDataWriter
+        private sealed class ExtensionDataWriter
         {
             private readonly XmlObjectSerializer _dataContractSerializer;
             private readonly object _extensionData;

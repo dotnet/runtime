@@ -44,6 +44,12 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_BB "BB%02u"
 
+// Use this format for loop table indices.
+#define FMT_LP "L%02u"
+
+// And this format for profile weights
+#define FMT_WT "%.7g"
+
 /*****************************************************************************
  *
  *  Each basic block ends with a jump which is described as a value
@@ -405,7 +411,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_LOOP_CALL1          MAKE_BBFLAG(15) // BB starts a loop that will always     call
 
 #define BBF_HAS_LABEL           MAKE_BBFLAG(16) // BB needs a label
-#define BBF_JMP_TARGET          MAKE_BBFLAG(17) // BB is a target of an implicit/explicit jump
+// Unused                       MAKE_BBFLAG(17)
 #define BBF_HAS_JMP             MAKE_BBFLAG(18) // BB executes a JMP instruction (instead of return)
 #define BBF_GC_SAFE_POINT       MAKE_BBFLAG(19) // BB has a GC safe point (a call).  More abstractly, BB does not require a
                                                 // (further) poll -- this may be because this BB has a call, or, in some
@@ -495,9 +501,8 @@ struct BasicBlock : private LIR::Range
 // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
 #define BBF_SPLIT_GAINED                                                                                               \
-    (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
-     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
-     BBF_HAS_CLASS_PROFILE)
+    (BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY | BBF_PROF_WEIGHT |        \
+     BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_CLASS_PROFILE)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
@@ -531,7 +536,7 @@ struct BasicBlock : private LIR::Range
     weight_t bbWeight; // The dynamic execution weight of this block
 
     // getCalledCount -- get the value used to normalize weights for this method
-    weight_t getCalledCount(Compiler* comp);
+    static weight_t getCalledCount(Compiler* comp);
 
     // getBBWeight -- get the normalized weight of this block
     weight_t getBBWeight(Compiler* comp);
@@ -542,31 +547,20 @@ struct BasicBlock : private LIR::Range
         return ((this->bbFlags & BBF_PROF_WEIGHT) != 0);
     }
 
-    // setBBWeight -- if the block weight is not derived from a profile,
-    // then set the weight to the input weight, making sure to not overflow BB_MAX_WEIGHT
-    // Note to set the weight from profile data, instead use setBBProfileWeight
-    void setBBWeight(weight_t weight)
-    {
-        if (!hasProfileWeight())
-        {
-            this->bbWeight = min(weight, BB_MAX_WEIGHT);
-        }
-    }
-
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
+    // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
         this->bbWeight = weight;
-    }
 
-    // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
-    // way, and if it's not rarely run then its weight never drops below 1.
-    void modifyBBWeight(weight_t weight)
-    {
-        if (this->bbWeight != BB_ZERO_WEIGHT)
+        if (weight == BB_ZERO_WEIGHT)
         {
-            setBBWeight(max(weight, 1));
+            this->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            this->bbFlags &= ~BBF_RUN_RARELY;
         }
     }
 
@@ -580,19 +574,13 @@ struct BasicBlock : private LIR::Range
     // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
     // So, specify a percentage (0 to 100) of the weight the block should inherit.
     //
+    // Can be invoked as a self-rescale, eg: block->inheritWeightPecentage(block, 50))
+    //
     void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
     {
         assert(0 <= percentage && percentage <= 100);
 
-        // Check for overflow
-        if ((bSrc->bbWeight * 100) <= bSrc->bbWeight)
-        {
-            this->bbWeight = bSrc->bbWeight;
-        }
-        else
-        {
-            this->bbWeight = (bSrc->bbWeight * percentage) / 100;
-        }
+        this->bbWeight = (bSrc->bbWeight * percentage) / 100;
 
         if (bSrc->hasProfileWeight())
         {
@@ -603,7 +591,7 @@ struct BasicBlock : private LIR::Range
             this->bbFlags &= ~BBF_PROF_WEIGHT;
         }
 
-        if (this->bbWeight == 0)
+        if (this->bbWeight == BB_ZERO_WEIGHT)
         {
             this->bbFlags |= BBF_RUN_RARELY;
         }
@@ -611,6 +599,29 @@ struct BasicBlock : private LIR::Range
         {
             this->bbFlags &= ~BBF_RUN_RARELY;
         }
+    }
+
+    // Scale a blocks' weight by some factor.
+    //
+    void scaleBBWeight(BasicBlock::weight_t scale)
+    {
+        this->bbWeight = this->bbWeight * scale;
+
+        if (this->bbWeight == BB_ZERO_WEIGHT)
+        {
+            this->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            this->bbFlags &= ~BBF_RUN_RARELY;
+        }
+    }
+
+    // Set block weight to zero, and set run rarely flag.
+    //
+    void bbSetRunRarely()
+    {
+        this->scaleBBWeight(BB_ZERO_WEIGHT);
     }
 
     // makeBlockHot()
@@ -635,9 +646,9 @@ struct BasicBlock : private LIR::Range
         }
     }
 
-    bool isMaxBBWeight()
+    bool isMaxBBWeight() const
     {
-        return (bbWeight == BB_MAX_WEIGHT);
+        return (bbWeight >= BB_MAX_WEIGHT);
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement
@@ -882,9 +893,14 @@ struct BasicBlock : private LIR::Range
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    BlockSet    bbReach; // Set of all blocks that can reach this one
-    BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
-                         // Dominator) used to compute the dominance tree.
+    BlockSet bbReach; // Set of all blocks that can reach this one
+
+    union {
+        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
+                                 // Dominator) used to compute the dominance tree.
+        void* bbSparseProbeList; // Used early on by fgInstrument
+        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
+    };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
 
@@ -1023,7 +1039,6 @@ struct BasicBlock : private LIR::Range
     unsigned      bbStackDepthOnEntry();
     void bbSetStack(void* stackBuffer);
     StackEntry* bbStackOnEntry();
-    void        bbSetRunRarely();
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
     // zero-based number for use as an array index.
@@ -1286,9 +1301,15 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight);
+    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight, BasicBlock* bDst);
 
     flowList(BasicBlock* block, flowList* rest)
         : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
