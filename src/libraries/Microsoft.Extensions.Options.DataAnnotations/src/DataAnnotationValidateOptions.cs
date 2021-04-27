@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -41,11 +42,14 @@ namespace Microsoft.Extensions.Options
                 return ValidateOptionsResult.Skip;
             }
 
+            // Ensure options are provided to validate against
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             var validationResults = new List<ValidationResult>();
-            if (Validator.TryValidateObject(options,
-                new ValidationContext(options, serviceProvider: null, items: null),
-                validationResults,
-                validateAllProperties: true))
+            if (Validator.TryValidateObject(options, new ValidationContext(options), validationResults, validateAllProperties: true))
             {
                 return ValidateOptionsResult.Success;
             }
