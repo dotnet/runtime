@@ -9,6 +9,7 @@ public static class Statics
     public static string String;
     public static int Failures;
     public static int Successes;
+    public static string BangBang1Param = "string";
     public static volatile IntPtr FtnHolder;
     public static volatile Action ActionHolder;
 
@@ -16,12 +17,12 @@ public static class Statics
     {
         if (expectedResult != actualResult)
         {
-            Console.WriteLine($"Scenario {scenario} failed - expected {expectedResult ?? "<null>"}, got {actualResult ?? "<null>"}");
+            Console.WriteLine($"FAILURE({Failures}) - Scenario {scenario} failed - expected {expectedResult ?? "<null>"}, got {actualResult ?? "<null>"}");
             Failures++;
         }
         else
         {
-            Console.WriteLine($"Scenario {scenario} succeeded ({expectedResult ?? "<null>"})");
+            Console.WriteLine($"Scenario {scenario} succeeded ({expectedResult ?? "<null>"}) Success ({Successes})");
             Successes++;
         }
     }

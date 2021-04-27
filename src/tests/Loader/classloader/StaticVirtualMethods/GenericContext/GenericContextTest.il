@@ -3857,6 +3857,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3871,6 +3874,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3888,6 +3894,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3897,6 +3906,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3911,6 +3923,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3928,6 +3943,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3937,6 +3955,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3951,6 +3972,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3968,6 +3992,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3977,6 +4004,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -3991,6 +4021,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4008,6 +4041,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4017,6 +4053,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4031,6 +4070,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4048,6 +4090,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4057,6 +4102,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4071,6 +4119,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4088,6 +4139,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4097,6 +4151,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<class NonGenericClass>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4111,6 +4168,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<class NonGenericClass>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4128,6 +4188,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<class NonGenericClass>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4137,6 +4200,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<valuetype NonGenericValuetype>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4151,6 +4217,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<valuetype NonGenericValuetype>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4168,6 +4237,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<valuetype NonGenericValuetype>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4177,6 +4249,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4191,6 +4266,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4208,6 +4286,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4217,6 +4298,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4231,6 +4315,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4248,6 +4335,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4257,6 +4347,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4271,6 +4364,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4288,6 +4384,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4297,6 +4396,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4311,6 +4413,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4328,6 +4433,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4337,6 +4445,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4351,6 +4462,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4368,6 +4482,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4377,6 +4494,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4391,6 +4511,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4408,6 +4531,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4417,6 +4543,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<class NonGenericClass>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4431,6 +4560,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<class NonGenericClass>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4448,6 +4580,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class NonGenericClass'IFaceGeneric`1<!!1>.GenericMethod'<class NonGenericClass>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4457,6 +4592,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<valuetype NonGenericValuetype>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4471,6 +4609,9 @@
     calli      void()
     ldstr "Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<valuetype NonGenericValuetype>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -4488,6 +4629,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype NonGenericValuetype'IFaceGeneric`1<!!1>.GenericMethod'<valuetype NonGenericValuetype>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8657,6 +8801,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8671,6 +8818,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8688,6 +8838,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8697,6 +8850,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8711,6 +8867,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8728,6 +8887,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8737,6 +8899,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8751,6 +8916,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8768,6 +8936,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8777,6 +8948,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8791,6 +8965,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8808,6 +8985,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8817,6 +8997,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8831,6 +9014,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8848,6 +9034,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8857,6 +9046,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8871,6 +9063,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8888,6 +9083,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8897,6 +9095,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8911,6 +9112,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8928,6 +9132,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8937,6 +9144,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8951,6 +9161,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8968,6 +9181,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8977,6 +9193,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -8991,6 +9210,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9008,6 +9230,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9017,6 +9242,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9031,6 +9259,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9048,6 +9279,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9057,6 +9291,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9071,6 +9308,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9088,6 +9328,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9097,6 +9340,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9111,6 +9357,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9128,6 +9377,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9137,6 +9389,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9151,6 +9406,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9168,6 +9426,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9177,6 +9438,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9191,6 +9455,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9208,6 +9475,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9217,6 +9487,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9231,6 +9504,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9248,6 +9524,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9257,6 +9536,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9271,6 +9553,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -9288,6 +9573,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<int32>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<int32>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16017,6 +16305,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16031,6 +16322,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16048,6 +16342,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16057,6 +16354,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16071,6 +16371,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16088,6 +16391,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16097,6 +16403,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16111,6 +16420,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16128,6 +16440,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16137,6 +16452,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16151,6 +16469,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16168,6 +16489,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16177,6 +16501,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16191,6 +16518,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16208,6 +16538,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16217,6 +16550,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16231,6 +16567,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16248,6 +16587,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16257,6 +16599,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16271,6 +16616,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16288,6 +16636,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16297,6 +16648,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16311,6 +16665,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16328,6 +16685,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16337,6 +16697,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16351,6 +16714,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16368,6 +16734,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16377,6 +16746,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::NormalMethod()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16391,6 +16763,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16408,6 +16783,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.NormalMethod'"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16417,6 +16795,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16431,6 +16812,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16448,6 +16832,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16457,6 +16844,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<int32>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16471,6 +16861,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16488,6 +16881,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<int32>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16497,6 +16893,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16511,6 +16910,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16528,6 +16930,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16537,6 +16942,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<string>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16551,6 +16959,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16568,6 +16979,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<string>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16577,6 +16991,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16591,6 +17008,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16608,6 +17028,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "class GenericClass`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<class GenericClass`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16617,6 +17040,9 @@
     call void class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!1>::GenericMethod<!!0>()
     ldstr "Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16631,6 +17057,9 @@
     calli      void()
     ldstr "Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -16648,6 +17077,9 @@
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter"
     ldstr "valuetype GenericValuetype`1<object>'IFaceGeneric`1<!!1>.GenericMethod'<valuetype GenericValuetype`1<object>>"
+    ldstr "!!1"
+    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<(class [GenericContextCommonAndImplementation]IFaceGeneric`1<!!U>, [GenericContextCommonAndImplementation]IFaceNonGeneric, class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>
@@ -23280,6 +23712,8 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_Generi
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23293,6 +23727,8 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_NonGener
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23306,6 +23742,8 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Norm
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23319,6 +23757,8 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Nor
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23332,6 +23772,8 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverS
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23345,6 +23787,8 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23358,6 +23802,8 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23371,6 +23817,8 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23384,6 +23832,8 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Gene
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23397,6 +23847,8 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Gen
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23410,6 +23862,8 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverS
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23423,6 +23877,8 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23436,6 +23892,8 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23449,6 +23907,8 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23462,6 +23922,8 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Gene
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23475,6 +23937,8 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Gen
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23488,6 +23952,8 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverS
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23501,6 +23967,8 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23514,6 +23982,8 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23527,6 +23997,8 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23540,6 +24012,8 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Gene
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23553,6 +24027,8 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_Gen
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23566,6 +24042,8 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverS
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23579,6 +24057,8 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23592,7 +24072,11 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23606,7 +24090,11 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23620,7 +24108,11 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Norm
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23634,7 +24126,11 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Nor
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23648,7 +24144,11 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverO
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23662,7 +24162,11 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -23676,7 +24180,11 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23690,7 +24198,11 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23704,7 +24216,11 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Gene
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23718,7 +24234,11 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Gen
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23732,7 +24252,11 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverO
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23746,7 +24270,11 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -23760,7 +24288,11 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23774,7 +24306,11 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23788,7 +24324,11 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Gene
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23802,7 +24342,11 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Gen
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23816,7 +24360,11 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverO
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23830,7 +24378,11 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -23844,7 +24396,11 @@ Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23858,7 +24414,11 @@ CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericO
     }
 Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23872,7 +24432,11 @@ Call_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Gene
     }
 Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]NonGenericClass,object>()
         leave.s CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23886,7 +24450,11 @@ Ldftn_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_Gen
     }
 CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23900,7 +24468,11 @@ CreateDelegate_NonGenericNonGenericClass_GenericOverConstrainedType_GenericOverO
     }
 Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -23914,7 +24486,11 @@ Call_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]NonGenericValuetype,object>()
         leave.s CreateDelegate_NonGenericNonGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -27984,6 +28560,8 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_Ge
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -27997,6 +28575,8 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_NonG
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28010,6 +28590,8 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28023,6 +28605,8 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28036,6 +28620,8 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28049,6 +28635,8 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverStr
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28062,6 +28650,8 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverSt
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28075,6 +28665,8 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28088,6 +28680,8 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28101,6 +28695,8 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28114,6 +28710,8 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28127,6 +28725,8 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverStr
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28140,6 +28740,8 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverSt
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28153,6 +28755,8 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28166,6 +28770,8 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28179,6 +28785,8 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28192,6 +28800,8 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28205,6 +28815,8 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverStr
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28218,6 +28830,8 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverSt
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28231,6 +28845,8 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28244,6 +28860,8 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28257,6 +28875,8 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28270,6 +28890,8 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28283,6 +28905,8 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverStr
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28296,7 +28920,11 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverSt
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28310,7 +28938,11 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28324,7 +28956,11 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28338,7 +28974,11 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28352,7 +28992,11 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28366,7 +29010,11 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObj
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -28380,7 +29028,11 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverOb
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28394,7 +29046,11 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28408,7 +29064,11 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28422,7 +29082,11 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28436,7 +29100,11 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28450,7 +29118,11 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObj
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -28464,7 +29136,11 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverOb
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28478,7 +29154,11 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28492,7 +29172,11 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28506,7 +29190,11 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28520,7 +29208,11 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28534,7 +29226,11 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObj
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -28548,7 +29244,11 @@ Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverOb
     }
 CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28562,7 +29262,11 @@ CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_Gene
     }
 Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28576,7 +29280,11 @@ Call_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_
     }
 Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28590,7 +29298,11 @@ Ldftn_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject
     }
 CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28604,7 +29316,11 @@ CreateDelegate_GenericOverStructGenericClass_GenericOverConstrainedType_GenericO
     }
 Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -28618,7 +29334,11 @@ Call_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObj
     }
 Ldftn_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<int32>,object>()
         leave.s CreateDelegate_GenericOverStructGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35184,6 +35904,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_NonGeneric_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35197,6 +35919,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35210,6 +35934,8 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35223,6 +35949,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35236,6 +35964,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35249,6 +35979,8 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35262,6 +35994,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35275,6 +36009,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35288,6 +36024,8 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35301,6 +36039,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35314,6 +36054,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35327,6 +36069,8 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35340,6 +36084,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35353,6 +36099,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35366,6 +36114,8 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35379,6 +36129,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35392,6 +36144,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35405,6 +36159,8 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35418,6 +36174,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35431,6 +36189,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35444,6 +36204,8 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35457,6 +36219,8 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35470,6 +36234,8 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35483,6 +36249,8 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35496,7 +36264,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverString_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35510,7 +36282,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35524,7 +36300,11 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethod<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35538,7 +36318,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35552,7 +36336,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35566,7 +36354,11 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethod<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone
     } catch [System.Runtime]System.Exception {
@@ -35580,7 +36372,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_NormalMethodDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35594,7 +36390,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35608,7 +36408,11 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35622,7 +36426,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35636,7 +36444,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35650,7 +36462,11 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverInt<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone
     } catch [System.Runtime]System.Exception {
@@ -35664,7 +36480,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverIntDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35678,7 +36498,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35692,7 +36516,11 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35706,7 +36534,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35720,7 +36552,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35734,7 +36570,11 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverString<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone
     } catch [System.Runtime]System.Exception {
@@ -35748,7 +36588,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverStringDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35762,7 +36606,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstr
     }
 Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35776,7 +36624,11 @@ Call_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gene
     }
 Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<class [GenericContextCommonAndImplementation]GenericClass`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35790,7 +36642,11 @@ Ldftn_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_Gen
     }
 CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35804,7 +36660,11 @@ CreateDelegate_GenericOverReferenceType_ClassAGenericClass_GenericOverConstraine
     }
 Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {
@@ -35818,7 +36678,11 @@ Call_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_
     }
 Ldftn_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone: nop
     .try {
+    ldstr "string"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
     call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,string>()
+    ldstr "object"
+    stsfld string [GenericContextCommonCs]Statics::BangBang1Param
         call void TestEntrypoint::Test_CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameter<valuetype [GenericContextCommonAndImplementation]GenericValuetype`1<object>,object>()
         leave.s CreateDelegate_GenericOverReferenceType_ClassAGenericValuetype_GenericOverConstrainedType_GenericOverObject_GenericMethodOverTypeParameterDone
     } catch [System.Runtime]System.Exception {

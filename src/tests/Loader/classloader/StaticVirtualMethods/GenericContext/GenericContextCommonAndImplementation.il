@@ -25,8 +25,8 @@
     .method public newslot virtual abstract static void GenericMethod<U>() {}
 }
 
-.class public auto ansi GenericStruct`1<T>
-       extends[System.Runtime] System.Valuetype
+.class public sealed auto ansi GenericStruct`1<T>
+       extends[System.Runtime] System.ValueType
 {
 }
 .class public auto ansi NonGenericClass
@@ -351,6 +351,10 @@
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "!0"
+    ldtoken !0
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
@@ -361,6 +365,10 @@
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'"
+    ldstr "!0"
+    ldtoken !0
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call instance string [System.Runtime]System.String::Replace(string, string)
     ldstr "<"
     ldtoken !!0
     call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
@@ -460,6 +468,10 @@
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.NormalMethod'"
+    ldstr "!0"
+    ldtoken !0
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call instance string [System.Runtime]System.String::Replace(string, string)
     call string[System.Runtime] System.String::Concat(string, string)
     stsfld string [GenericContextCommonCs]Statics::String
     ret
@@ -470,6 +482,10 @@
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGeneric`1<valuetype GenericValuetype`1<!0>>.GenericMethod'"
+    ldstr "!0"
+    ldtoken !0
+    call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)
+    call instance string [System.Runtime]System.String::Replace(string, string)
     ldstr "<"
     ldtoken !!0
     call string [GenericContextCommonCs]Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)

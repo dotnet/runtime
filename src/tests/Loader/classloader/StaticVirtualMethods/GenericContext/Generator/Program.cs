@@ -134,8 +134,8 @@ namespace VirtualStaticInterfaceMethodTestGen
             tw.WriteLine(@"    .method public newslot virtual abstract static void GenericMethod<U>() {}");
             tw.WriteLine(@"}");
             tw.WriteLine(@"");
-            tw.WriteLine(@".class public auto ansi GenericStruct`1<T>");
-            tw.WriteLine(@"       extends[System.Runtime] System.Valuetype");
+            tw.WriteLine(@".class public sealed auto ansi GenericStruct`1<T>");
+            tw.WriteLine(@"       extends[System.Runtime] System.ValueType");
             tw.WriteLine(@"{");
             tw.WriteLine(@"}");
         }
@@ -319,6 +319,27 @@ namespace VirtualStaticInterfaceMethodTestGen
                             methodNameToEmit = methodNameToEmit.Substring(0, methodNameToEmit.Length - 3);
                         }
                         implsGenerated.WriteLine($"    ldstr \"{methodNameToEmit}\"");
+                        if (methodNameToEmit.Contains("!!0"))
+                        {
+                            implsGenerated.WriteLine($"    ldstr \"!!0\"");
+                            implsGenerated.WriteLine($"    ldtoken !!0");
+                            implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
+                            implsGenerated.WriteLine($"    call instance string [System.Runtime]System.String::Replace(string, string)");
+                        }
+                        if (methodNameToEmit.Contains("!!1"))
+                        {
+                            implsGenerated.WriteLine($"    ldstr \"!!1\"");
+                            implsGenerated.WriteLine($"    ldtoken !!1");
+                            implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
+                            implsGenerated.WriteLine($"    call instance string [System.Runtime]System.String::Replace(string, string)");
+                        }
+                        if (methodNameToEmit.Contains("!0"))
+                        {
+                            implsGenerated.WriteLine($"    ldstr \"!0\"");
+                            implsGenerated.WriteLine($"    ldtoken !0");
+                            implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
+                            implsGenerated.WriteLine($"    call instance string [System.Runtime]System.String::Replace(string, string)");
+                        }
                         if (genericMethod)
                         {
                             implsGenerated.WriteLine($"    ldstr \"<\"");
@@ -546,10 +567,22 @@ namespace VirtualStaticInterfaceMethodTestGen
 
                             EmitTestMethod();
 
-                            string callCommand = $"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},string>()";
+                            string callCommand = GetSetBangBang1IfNeeded("string") + $"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},string>()";
                             if (scenario.InterfaceType == InterfaceType.GenericOverObject)
-                                callCommand = callCommand + Environment.NewLine + $"        call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},object>()";
+                                callCommand = callCommand + Environment.NewLine + GetSetBangBang1IfNeeded("object") + $"        call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},object>()";
                             CallTestEntrypoint(callCommand);
+
+                            string GetSetBangBang1IfNeeded(string bangBang1Expected)
+                            {
+                                if (expectedString.Contains("!!1"))
+                                {
+                                    return $"    ldstr \"{bangBang1Expected}\"" + Environment.NewLine + "    stsfld string [GenericContextCommonCs]Statics::BangBang1Param" + Environment.NewLine;
+                                }
+                                else
+                                {
+                                    return "";
+                                }
+                            }
                             break;
                         default:
                             throw new Exception("AACLL");
@@ -589,6 +622,12 @@ namespace VirtualStaticInterfaceMethodTestGen
                     EmitILToCallActualMethod(swTestClassMethods);
                     swTestClassMethods.WriteLine($"    ldstr \"{scenario.ToString()}\"");
                     swTestClassMethods.WriteLine($"    ldstr \"{expectedString}\"");
+                    if (expectedString.Contains("!!1"))
+                    {
+                        swTestClassMethods.WriteLine("    ldstr \"!!1\"");
+                        swTestClassMethods.WriteLine("    ldsfld string [GenericContextCommonCs]Statics::BangBang1Param");
+                        swTestClassMethods.WriteLine("    call instance string [System.Runtime]System.String::Replace(string, string)");
+                    }
                     swTestClassMethods.WriteLine($"    call void {CommonCsPrefix}Statics::CheckForFailure(string,string)");
                     swTestClassMethods.WriteLine($"    ret");
                     twIL = swTestClassMethods;
