@@ -100,11 +100,11 @@ jobs:
         - OSX.1015.Amd64.Open
 
     # Mac Catalyst arm64
-    - ${{ if eq(parameters.platform, 'MacCatalyst_arm64) }}:
+    - ${{ if eq(parameters.platform, 'MacCatalyst_arm64') }}:
       - OSX.1100.ARM64.Open
 
     # Mac Catalyst x64
-    - ${{ if eq(parameters.platform, 'MacCatalyst_x64) }}:
+    - ${{ if eq(parameters.platform, 'MacCatalyst_x64') }}:
       - OSX.1015.Amd64.Open
 
     # Android
