@@ -32,8 +32,15 @@ namespace System.Collections.Generic
 
             if (!dictionary.ContainsKey(key))
             {
-                dictionary.Add(key, value);
-                return true;
+                try
+                {
+                    dictionary.Add(key, value);
+                    return true;
+                }
+                catch (ArgumentException)
+                {
+                    // this exception will be raised if an entry with the same key is added by another thread between the contains key and the add
+                }
             }
 
             return false;
