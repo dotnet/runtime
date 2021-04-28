@@ -201,16 +201,17 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 #if LLVM_API_VERSION >= 900
 
 #if LLVM_API_VERSION >= 1100
-using symbol_t = llvm::StringRef;
+using symbol_t = const llvm::StringRef;
 static inline std::string
 to_str(symbol_t s)
 {
 	return s.str();
 }
 #else
-using symbol_t = std::string;
+using symbol_t = const std::string &;
 static inline const std::string &
-to_str(const symbol_t s) {
+to_str(symbol_t s)
+{
 	return s;
 }
 #endif
@@ -250,9 +251,9 @@ struct MonoLLVMJIT {
 	add_module (std::unique_ptr<Module> m)
 	{
 		auto k = execution_session.allocateVModule();
-		auto lookup_name = [this] (const symbol_t nameref) {
+		auto lookup_name = [this] (symbol_t nameref) {
 			const auto &namestr = to_str (nameref);
-			auto jit_sym = compile_layer.findSymbol(namestr, false);
+			auto jit_sym = compile_layer.findSymbol (namestr, false);
 			if (jit_sym) {
 				return jit_sym;
 			}
@@ -260,7 +261,7 @@ struct MonoLLVMJIT {
 			if (namestr == "___bzero") {
 				return JITSymbol{(uint64_t)(gssize)(void*)bzero, flags};
 			}
-			auto namebuf = namestr.c_str();
+			auto namebuf = namestr.c_str ();
 			auto current = mono_dl_open (NULL, 0, NULL);
 			g_assert (current);
 			auto name = namebuf[0] == '_' ? namebuf + 1 : namebuf;

@@ -335,8 +335,8 @@ static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
 	#define INTRINS_OVR(sym, ...) 0,
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) spec,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, spec) spec,
+	#define INTRINS_OVR_TAG(sym, _, arch, spec) spec,
+	#define INTRINS_OVR_TAG_KIND(sym, _, kind, arch, spec) spec,
 	#include "llvm-intrinsics.h"
 };
 
@@ -352,8 +352,8 @@ static const uint8_t intrin_kind [] = {
 	#define INTRINS_OVR(sym, ...) 0,
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) 0,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, spec) kind,
+	#define INTRINS_OVR_TAG(sym, _, arch, spec) 0,
+	#define INTRINS_OVR_TAG_KIND(sym, _, arch, kind, spec) kind,
 	#include "llvm-intrinsics.h"
 };
 
