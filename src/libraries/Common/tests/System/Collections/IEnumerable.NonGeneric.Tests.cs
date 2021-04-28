@@ -247,6 +247,7 @@ namespace System.Collections.Tests
                 current = enumerator.Current;
         }
 
+
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public virtual void Enumerator_Current_ModifiedDuringEnumeration_UndefinedBehavior(int count)
