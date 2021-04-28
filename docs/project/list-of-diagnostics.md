@@ -33,7 +33,7 @@ The acceptance criteria for adding an obsoletion includes:
     * The documentation team will produce a PR that adds the obsoletion to the [SYSLIB warnings](https://docs.microsoft.com/en-us/dotnet/core/compatibility/syslib-obsoletions) page
     * That PR will also add a new URL specific to this diagnostic ID; e.g. [SYSLIB0001](https://docs.microsoft.com/en-us/dotnet/core/compatibility/syslib-warnings/syslib0001)
     * Connect with `@gewarren` or `@BillWagner` with any questions
-* Register the `SYSLIB0###` URL in `aka .ms`
+* Register the `SYSLIB0###` URL in `aka.ms`
     * The vanity name will be `dotnet-warnings/syslib0###`
     * Ensure the link's group owner matches the group owner of `dotnet-warnings/syslib0001`
     * Connect with `@jeffhandley`, `@GrabYourPitchforks`, or `@gewarren` with any questions
@@ -71,7 +71,6 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException. |
 |  __`SYSLIB0020`__ | JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull. |
 |  __`SYSLIB0021`__ | Creating and unloading AppDomains is not supported. |
-
 
 ## Analyzer Warnings
 
