@@ -5,7 +5,8 @@
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
 
-    <!-- these tests depend on the pdb files -->
+    <!-- these tests depend on the pdb files. Causes test failures like:
+          [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
