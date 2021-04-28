@@ -41,6 +41,10 @@
 #include "llvm/CodeGen/GCs.h"
 #endif
 
+#if LLVM_API_VERSION >= 1100
+#include "llvm/InitializePasses.h"
+#endif
+
 #include <cstdlib>
 
 #include <mono/utils/mono-dl.h>

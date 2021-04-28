@@ -36,8 +36,13 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/DIBuilder.h>
-#include <llvm/IR/CallSite.h>
 #include <llvm/IR/MDBuilder.h>
+
+#if LLVM_API_VERSION >= 1100
+#include <llvm/IR/InstrTypes.h>
+#else
+#include <llvm/IR/CallSite.h>
+#endif
 
 #include "mini-llvm-cpp.h"
 
@@ -494,7 +499,11 @@ mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind)
 void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
+	#if LLVM_API_VERSION >= 1100
+	unwrap<CallBase> (val).addAttribute (index, convert_attr (kind));
+	#else
 	CallSite (unwrap<Instruction> (val)).addAttribute (index, convert_attr (kind));
+	#endif
 }
 
 void*
