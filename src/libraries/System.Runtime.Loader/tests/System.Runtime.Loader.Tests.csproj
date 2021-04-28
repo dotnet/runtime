@@ -6,8 +6,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Some tests rely on no deps.json file being present. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
-    <!-- Mono doesn't support hot reload in every configuration. -->
-    <DefineConstants Condition="'$(MonoMetadataUpdate)' == 'true'">FEATURE_MONO_APPLY_UPDATE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />

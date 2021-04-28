@@ -23,7 +23,7 @@ namespace System.Reflection.Metadata
         /// 2. Either Mono in a supported configuration (interpreter as the execution engine, and the hot reload feature enabled), or CoreCLR; and,
         /// 3. The test assemblies are compiled in the Debug configuration.
         public static bool IsSupported => (IsModifiableAssembliesSet || IsRemoteExecutorSupported) &&
-            (!IsMonoRuntime || IsSupportedMonoConfiguration()) &&
+            (!IsMonoRuntime || IsSupportedMonoConfiguration) &&
             IsSupportedTestConfiguration();
 
         public static bool IsModifiableAssembliesSet =>
@@ -35,19 +35,30 @@ namespace System.Reflection.Metadata
         private static readonly Lazy<bool> s_isMonoRuntime = new Lazy<bool>(() => Type.GetType("Mono.RuntimeStructs") != null);
         public static bool IsMonoRuntime => s_isMonoRuntime.Value;
 
+	private static readonly Lazy<bool> s_isSupportedMonoConfiguration = new Lazy<bool>(CheckSupportedMonoConfiguration);
+
+	public static bool IsSupportedMonoConfiguration => s_isSupportedMonoConfiguration.Value;
+
         // Not every build of Mono supports ApplyUpdate
-        internal static bool IsSupportedMonoConfiguration()
+        internal static bool CheckSupportedMonoConfiguration()
         {
-#if FEATURE_MONO_APPLY_UPDATE
-            // crude check for interp mode
-	    // TODO: invoke API from https://github.com/dotnet/runtime/issues/50111 to check if mono is built with hot reload support.
-            // return System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported && !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled;
-	    return false;
-#else
-            return false;
-#endif
+	    // check that interpreter is enabled, and the build has hot reload capabilities enabled.
+	    return System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported && !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled && HasApplyUpdateCapabilities();
         }
 
+	internal static bool HasApplyUpdateCapabilities()
+	{
+	    var ty = typeof(AssemblyExtensions);
+            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+
+	    if (mi == null)
+		return false;
+
+	    var caps = mi.Invoke(null, null);
+
+	    // any non-empty string, assumed to be at least "baseline"
+	    return caps is string {Length: > 0};
+	}
 
         // Only Debug assemblies are editable
         internal static bool IsSupportedTestConfiguration()
