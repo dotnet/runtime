@@ -300,13 +300,24 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+      <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
+      <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
+      <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
+      <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
+      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%/xharness-output</XHarnessOutput>
+      <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
       <!-- Create a work item for run-only WASM console app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- --run %(FileName).dll</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -316,7 +327,7 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- %(FileName).dll --testing</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome  --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 
