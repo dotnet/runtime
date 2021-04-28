@@ -212,13 +212,16 @@ namespace Mono.Linker.Steps
 				var reducer = new BodyReducer (method.Body, _context);
 
 				//
-				// Temporary inlines any calls which return contant expression.
+				// Temporarily inlines any calls which return contant expression.
 				// If it needs to know the result of analysis of other methods and those has not been processed yet
-				// it will still scan the entire body, but we will return the full processing one more time.
+				// it will still scan the entire body, but we will rerun the full processing one more time later.
 				//
 				if (!TryInlineBodyDependencies (ref reducer, treatUnprocessedDependenciesAsNonConst, out bool changed)) {
 					// Method has unprocessed dependencies - so back off and try again later
-					// Leave it in the stack on its current position (it should not be on the first position anymore)
+					// Leave it in the stack on its current position.
+					// It should not be on the first position anymore:
+					//   - There are unprocessed dependencies
+					//   - Those should be moved to the top of the stack above this method
 					Debug.Assert (_processingStack.First != stackNode);
 					continue;
 				}
@@ -1026,7 +1029,7 @@ namespace Mono.Linker.Steps
 				var instrs = body.Instructions;
 
 				//
-				// Reusing same reachable map and altering it at indexes which
+				// Reusing same reachable map and altering it at indexes
 				// which will remain same during replacement processing
 				//
 				for (int i = 0; i < instrs.Count; ++i) {
