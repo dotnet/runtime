@@ -88,6 +88,7 @@ namespace System.IO.Pipelines
     internal enum ExceptionArgument
     {
         minimumSize,
+        minimumBytes,
         bytes,
         callback,
         options,
