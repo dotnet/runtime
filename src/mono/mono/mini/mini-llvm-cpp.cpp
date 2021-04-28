@@ -85,13 +85,13 @@ mono_llvm_dump_type (LLVMTypeRef type)
 
 #if LLVM_API_VERSION >= 1100
 static inline llvm::Align
-to_align(int alignment)
+to_align (int alignment)
 {
-	return llvm::Align(alignment);
+	return llvm::Align (alignment);
 }
 #else
 static inline int
-to_align(int alignment)
+to_align (int alignment)
 {
 	return alignment;
 }

@@ -119,7 +119,7 @@ INTRINS(SSE_PSLL_W, x86_sse2_psll_w, X86)
 INTRINS(SSE_PSLL_D, x86_sse2_psll_d, X86)
 INTRINS(SSE_PSLL_Q, x86_sse2_psll_q, X86)
 #if LLVM_API_VERSION < 700
-// These intrinsics were removed in LLVM 7 (bcaab53d479e7005ee69e06321bbb493f9b7f5e6, X86).
+// These intrinsics were removed in LLVM 7 (bcaab53d479e7005ee69e06321bbb493f9b7f5e6).
 INTRINS(SSE_SQRT_PS, x86_sse_sqrt_ps, X86)
 INTRINS(SSE_SQRT_SS, x86_sse_sqrt_ss, X86)
 INTRINS(SSE_SQRT_PD, x86_sse2_sqrt_pd, X86)

@@ -203,14 +203,14 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 #if LLVM_API_VERSION >= 1100
 using symbol_t = const llvm::StringRef;
 static inline std::string
-to_str(symbol_t s)
+to_str (symbol_t s)
 {
-	return s.str();
+	return s.str ();
 }
 #else
 using symbol_t = const std::string &;
 static inline const std::string &
-to_str(symbol_t s)
+to_str (symbol_t s)
 {
 	return s;
 }
