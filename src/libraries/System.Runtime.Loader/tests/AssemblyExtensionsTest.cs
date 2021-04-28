@@ -51,6 +51,7 @@ namespace System.Reflection.Metadata
             var result = mi.Invoke(null, null);
 
             Assert.NotNull(result);
+            Assert.Equal(typeof(string), result.GetType());
         }
     }
 }
