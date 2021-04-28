@@ -5937,7 +5937,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
                 // add     r1, sp, 48   // r1 contains address of a lclVar V01.
                 // str     r0, [r1]     // a gc ref becomes live in V01, but emitter would not report it.
                 // Make sure that we use uncontained address nodes only for variables
-                // that will be marked as mustInit and will be alive throught the whole block even when tracked.
+                // that will be marked as mustInit and will be alive throughout the whole block even when tracked.
                 assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
                 // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
             }
