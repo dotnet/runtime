@@ -72,8 +72,10 @@ namespace System.IO.Strategies
             {
                 Debug.Assert(path != null);
 
-                if (TryNtCreateFile(path, mode, access, share, options, allocationSize, out uint ntStatus, out IntPtr fileHandle))
+                if (ShouldPreallocate(allocationSize, access, mode))
                 {
+                    IntPtr fileHandle = NtCreateFile(path, mode, access, share, options, allocationSize);
+
                     return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
                 }
 
@@ -104,43 +106,14 @@ namespace System.IO.Strategies
                     path,
                     (options & FileOptions.Asynchronous) != 0);
 
-                if (ntStatus == NT_STATUS_INVALID_PARAMETER)
-                {
-                    // It seems that NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
-                    // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
-                    // Since Linux reports EFBIG for such cases, we are using the following workaround to get the right exception.
-                    // TrySetFileLength uses SetFileInformationByHandle which fails with a clear error if the file is too big.
-                    if (!TrySetFileLength(safeFileHandle, allocationSize, out int errorCode))
-                    {
-                        // Since we have failed to extend the file, we mimic the NtCreateFile behaviour
-                        // which does not create a file if there is not enough space on the disk.
-                        // So we close the handle, remove the file and then throw an exception.
-                        safeFileHandle.Dispose();
-                        Interop.Kernel32.DeleteFile(path);
-
-                        if (errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE // this is what we would expect in such a case
-                            || errorCode == Interop.Errors.ERROR_DISK_FULL) // but this is what we get (verified with Windows 10.0.18363.1500)
-                        {
-                            throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
-                        }
-
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
-                    }
-                }
-
                 return safeFileHandle;
             }
         }
 
-        private static bool TryNtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize,
-            out uint ntStatus, out IntPtr fileHandle)
+        private static IntPtr NtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
         {
-            if (!ShouldPreallocate(allocationSize, access, mode))
-            {
-                ntStatus = 0;
-                fileHandle = default;
-                return false;
-            }
+            uint ntStatus;
+            IntPtr fileHandle;
 
             const string mandatoryNtPrefix = @"\??\";
             if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
@@ -165,24 +138,21 @@ namespace System.IO.Strategies
                 vsb.Dispose();
             }
 
-            if (ntStatus == 0)
+            switch (ntStatus)
             {
-                return true;
+                case 0:
+                    return fileHandle;
+                case NT_ERROR_STATUS_DISK_FULL:
+                    throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, allocationSize));
+                // NtCreateFile has a bug and it reports STATUS_INVALID_PARAMETER for files
+                // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
+                case NT_STATUS_INVALID_PARAMETER:
+                case NT_ERROR_STATUS_FILE_TOO_LARGE:
+                    throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, allocationSize));
+                default:
+                    int error = (int)Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
+                    throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
             }
-            else if (ntStatus == NT_ERROR_STATUS_DISK_FULL)
-            {
-                throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, allocationSize));
-            }
-            else if (ntStatus == NT_ERROR_STATUS_FILE_TOO_LARGE)
-            {
-                throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, allocationSize));
-            }
-
-            // NtCreateFile has failed for some other reason than a full disk or too large file.
-            // Instead of implementing the mapping for every NS Status value (there are plenty of them: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55)
-            // or using RtlNtStatusToDosError & GetExceptionForWin32Error that end up throwing a different exception compared to when NtCreateFile is not involved,
-            // the code falls back to CreateFileW that just throws the right exception.
-            return false;
         }
 
         internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync)
