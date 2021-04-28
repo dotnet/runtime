@@ -17,7 +17,7 @@ namespace DllImportGenerator.UnitTests
                     @"
 using System.Runtime.InteropServices;
 
-[BlittableType]
+[{|#0:BlittableType|}]
 struct S
 {
     public bool field;
@@ -29,7 +29,7 @@ struct S
                     @"
 using System.Runtime.InteropServices;
 
-[BlittableType]
+[{|#0:BlittableType|}]
 struct S
 {
     public char field;
@@ -38,11 +38,11 @@ struct S
                 };
                 yield return new object[]
                 {
-                    
+
 @"
 using System.Runtime.InteropServices;
 
-[BlittableType]
+[{|#0:BlittableType|}]
 struct S
 {
     public string field;
@@ -56,7 +56,7 @@ struct S
         [Theory]
         public async Task NonBlittableTypeMarkedBlittable_ReportsDiagnostic(string source)
         {
-            var diagnostic = VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("S");
+            var diagnostic = VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S");
             await VerifyCS.VerifyAnalyzerAsync(source, diagnostic);
         }
 
@@ -127,13 +127,13 @@ struct S
     public T field;
 }
 
-[BlittableType]
+[{|#0:BlittableType|}]
 struct T
 {
     public bool field;
 }
 ";
-            var diagnostic = VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(10, 2, 10, 15).WithArguments("T");
+            var diagnostic = VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("T");
             await VerifyCS.VerifyAnalyzerAsync(source, diagnostic);
         }
 
@@ -149,14 +149,14 @@ struct S
     public T field;
 }
 
-[BlittableType]
+[{|#0:BlittableType|}]
 struct T
 {
     public string field;
 }
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(10, 2, 10, 15).WithArguments("T"));
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("T"));
         }
 
         [Fact]
@@ -181,14 +181,14 @@ struct S
             string source = @"
 using System.Runtime.InteropServices;
 
-[NativeMarshalling(null)]
+[{|#0:NativeMarshalling(null)|}]
 struct S
 {
     public string s;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeNonNullRule).WithSpan(4, 2, 4, 25).WithArguments("S"));
+                VerifyCS.Diagnostic(NativeTypeMustBeNonNullRule).WithLocation(0).WithArguments("S"));
         }
 
         [Fact]
@@ -197,14 +197,14 @@ struct S
             string source = @"
 using System.Runtime.InteropServices;
 
-[NativeMarshalling(typeof(int*))]
+[{|#0:NativeMarshalling(typeof(int*))|}]
 struct S
 {
     public string s;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithSpan(4, 2, 4, 33).WithArguments("int*", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithLocation(0).WithArguments("int*", "S"));
         }
 
         [Fact]
@@ -219,7 +219,7 @@ struct S
     public string s;
 }
 
-struct Native
+struct {|#0:Native|}
 {
     private string value;
 
@@ -231,7 +231,7 @@ struct Native
     public S ToManaged() => new S { s = value };
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithSpan(10, 1, 20, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -247,7 +247,7 @@ struct S
     public string s;
 }
 
-class Native
+class {|#0:Native|}
 {
     private IntPtr value;
 
@@ -258,7 +258,7 @@ class Native
     public S ToManaged() => new S();
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithSpan(11, 1, 20, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -315,11 +315,11 @@ struct Native
 
     public S ToManaged() => new S();
 
-    public string Value { get => null; set {} }
+    public string {|#0:Value|} { get => null; set {} }
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithSpan(23, 5, 23, 48).WithArguments("string", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("string", "S"));
         }
 
         [Fact]
@@ -365,7 +365,7 @@ struct S
     public string s;
 }
 
-class Native
+class {|#0:Native|}
 {
     private string value;
 
@@ -380,7 +380,7 @@ class Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithSpan(11, 1, 23, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -395,7 +395,7 @@ class S
 {
     public char c;
 
-    public ref char GetPinnableReference() => ref c;
+    public ref char {|#0:GetPinnableReference|}() => ref c;
 }
 
 unsafe struct Native
@@ -413,7 +413,7 @@ unsafe struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(GetPinnableReferenceReturnTypeBlittableRule).WithSpan(10, 5, 10, 53));
+                VerifyCS.Diagnostic(GetPinnableReferenceReturnTypeBlittableRule).WithLocation(0));
         }
 
         
@@ -475,11 +475,11 @@ unsafe struct Native
 
     public S ToManaged() => new S();
 
-    public int Value { get => 0; set {} }
+    public int {|#0:Value|} { get => 0; set {} }
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBePointerSizedRule).WithSpan(24, 5, 24, 42).WithArguments("int", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustBePointerSizedRule).WithLocation(0).WithArguments("int", "S"));
         }
 
         [Fact]
@@ -538,12 +538,11 @@ unsafe struct Native
         value = s;
     }
 
-    public ref byte Value { get => ref value.GetPinnableReference(); }
+    public ref byte {|#0:Value|} { get => ref value.GetPinnableReference(); }
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBePointerSizedRule).WithSpan(22, 5, 22, 71).WithArguments("ref byte", "S"),
-                VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithSpan(22, 5, 22, 71).WithArguments("Native"));
+                VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithLocation(0).WithArguments("Native"));
         }
 
         [Fact]
@@ -570,12 +569,11 @@ unsafe struct Native
 
     public ref byte GetPinnableReference() => ref value.c;
 
-    public ref byte Value { get => ref GetPinnableReference(); }
+    public ref byte {|#0:Value|} { get => ref GetPinnableReference(); }
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBePointerSizedRule).WithSpan(22, 5, 22, 65).WithArguments("ref byte", "Native"),
-                VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithSpan(22, 5, 22, 65).WithArguments("Native"));
+                VerifyCS.Diagnostic(RefValuePropertyUnsupportedRule).WithLocation(0).WithArguments("Native"));
         }
 
         [Fact]
@@ -607,12 +605,12 @@ class S
 }
 
 [BlittableType]
-struct Native
+struct {|#0:Native|}
 {
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithSpan(11, 1, 14, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustHaveRequiredShapeRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -673,7 +671,7 @@ class S
 }
 
 [BlittableType]
-struct Native
+struct {|#0:Native|}
 {
     public Native(S s, Span<byte> buffer) {}
 
@@ -681,7 +679,7 @@ struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithSpan(11, 1, 17, 2).WithArguments("Native"));
+                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("Native"));
         }
 
         [Fact]
@@ -691,14 +689,14 @@ struct Native
 using System;
 using System.Runtime.InteropServices;
 
-[NativeMarshalling(typeof(Native))]
+[{|#0:NativeMarshalling(typeof(Native))|}]
 class S
 {
     public byte c;
     public ref byte GetPinnableReference() => ref c;
 }
 
-struct Native
+struct {|#1:Native|}
 {
     public Native(S s, Span<byte> buffer) {}
 
@@ -708,8 +706,8 @@ struct Native
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithSpan(12, 1, 19, 2).WithArguments("Native"),
-                VerifyCS.Diagnostic(GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule).WithSpan(5, 2, 5, 35).WithArguments("S", "Native"));
+                VerifyCS.Diagnostic(StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule).WithLocation(1).WithArguments("Native"),
+                VerifyCS.Diagnostic(GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule).WithLocation(0).WithArguments("S", "Native"));
         }
 
         [Fact]
@@ -729,11 +727,11 @@ struct Native
 {
     public Native(S s) {}
 
-    public IntPtr Value { set {} }
+    public IntPtr {|#0:Value|} { set {} }
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(ValuePropertyMustHaveGetterRule).WithSpan(15, 5, 15, 35).WithArguments("Native"));
+                VerifyCS.Diagnostic(ValuePropertyMustHaveGetterRule).WithLocation(0).WithArguments("Native"));
         }
 
         [Fact]
@@ -753,11 +751,11 @@ struct Native
 {
     public S ToManaged() => new S();
 
-    public IntPtr Value => IntPtr.Zero;
+    public IntPtr {|#0:Value|} => IntPtr.Zero;
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(ValuePropertyMustHaveSetterRule).WithSpan(15, 5, 15, 40).WithArguments("Native"));
+                VerifyCS.Diagnostic(ValuePropertyMustHaveSetterRule).WithLocation(0).WithArguments("Native"));
         }
         
         [Fact]
@@ -807,7 +805,7 @@ struct S
     public string s;
 }
 
-struct Native
+struct {|#0:Native|}
 {
     private string value;
 
@@ -826,7 +824,7 @@ static class Test
 }
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithSpan(10, 1, 19, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -841,7 +839,7 @@ struct S
     public string s;
 }
 
-struct Native
+struct {|#0:Native|}
 {
     private string value;
 
@@ -860,7 +858,7 @@ static class Test
 }
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithSpan(10, 1, 19, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         [Fact]
@@ -875,7 +873,7 @@ struct S
     public string s;
 }
 
-struct Native
+struct {|#0:Native|}
 {
     private string value;
 
@@ -894,7 +892,7 @@ struct Test
 }
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithSpan(10, 1, 19, 2).WithArguments("Native", "S"));
+                VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
         
@@ -928,7 +926,7 @@ struct Native<T>
         [Fact]
         public async Task GenericNativeTypeWithGenericMemberInstantiatedWithBlittable_DoesNotReportDiagnostic()
         {
-            
+
             string source = @"
 using System.Runtime.InteropServices;
 
@@ -954,6 +952,34 @@ struct Native<T>
         }
 
         [Fact]
+        public async Task UninstantiatedGenericNativeType_ReportsDiagnostic()
+        {
+
+            string source = @"
+using System.Runtime.InteropServices;
+
+[{|#0:NativeMarshalling(typeof(Native<>))|}]
+struct S
+{
+    public string s;
+}
+
+struct Native<T>
+    where T : new()
+{
+    public Native(S s)
+    {
+        Value = new T();
+    }
+
+    public S ToManaged() => new S();
+
+    public T Value { get; set; }
+}";
+            await VerifyCS.VerifyAnalyzerAsync(source, VerifyCS.Diagnostic(NativeGenericTypeMustBeClosedRule).WithLocation(0).WithArguments("Native<>", "S"));
+        }
+
+        [Fact]
         public async Task ValueTypeContainingPointerBlittableType_DoesNotReportDiagnostic()
         {
             var source = @"
@@ -973,13 +999,13 @@ unsafe struct S
             var source = @"
 using System.Runtime.InteropServices;
 
-[BlittableType]
+[{|#0:BlittableType|}]
 unsafe struct S
 {
     private bool* ptr;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("S"));
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S"));
         }
 
         [Fact]
@@ -1004,14 +1030,14 @@ unsafe struct S
             var source = @"
 using System.Runtime.InteropServices;
 
-[BlittableType]
+[{|#0:BlittableType|}]
 unsafe struct S
 {
     private bool fld;
     private S* ptr;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("S"));
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S"));
         }
 
         [Fact]
@@ -1061,13 +1087,13 @@ struct G<T>
     T fld;
 }
 
-[BlittableType]
+[{|#0:BlittableType|}]
 unsafe struct S
 {
     private G<string> field;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(10, 2, 10, 15).WithArguments("S"));
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("S"));
         }
 
         [Fact]
@@ -1076,13 +1102,13 @@ unsafe struct S
             var source = @"
 using System.Runtime.InteropServices;
 
-[BlittableType]
+[{|#0:BlittableType|}]
 struct G<T> where T : class
 {
     T fld;
 }";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(4, 2, 4, 15).WithArguments("G<T>"));
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("G<T>"));
         }
 
         [Fact]
@@ -1138,7 +1164,7 @@ using System.Runtime.InteropServices;
 
 struct C<T> where T : class
 {
-    [BlittableType]
+    [{|#0:BlittableType|}]
     struct G
     {
         T fld;
@@ -1146,7 +1172,7 @@ struct C<T> where T : class
 }
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithSpan(6, 6, 6, 19).WithArguments("C<T>.G"));
+                VerifyCS.Diagnostic(BlittableTypeMustBeBlittableRule).WithLocation(0).WithArguments("C<T>.G"));
         }
 
         [Fact]
@@ -1180,11 +1206,11 @@ class S
 struct Native
 {
     public Native(S s) {}
-    public Native(S s, Span<byte> buffer) {}
+    public {|#0:Native|}(S s, Span<byte> buffer) {}
 }";
 
             await VerifyCS.VerifyAnalyzerAsync(source,
-                VerifyCS.Diagnostic(StackallocConstructorMustHaveStackBufferSizeConstantRule).WithSpan(15, 5, 15, 45).WithArguments("Native"));
+                VerifyCS.Diagnostic(StackallocConstructorMustHaveStackBufferSizeConstantRule).WithLocation(0).WithArguments("Native"));
         }
     }
 }

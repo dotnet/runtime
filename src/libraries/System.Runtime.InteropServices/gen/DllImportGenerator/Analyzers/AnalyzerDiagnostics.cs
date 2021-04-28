@@ -25,6 +25,7 @@ namespace Microsoft.Interop.Analyzers
             public const string StackallocMarshallingShouldSupportAllocatingMarshallingFallback = Prefix + "011";
             public const string StackallocConstructorMustHaveStackBufferSizeConstant = Prefix + "012";
             public const string RefValuePropertyUnsupported = Prefix + "014";
+            public const string NativeGenericTypeMustBeClosed = Prefix + "016";
 
             // GeneratedDllImport
             public const string GeneratedDllImportMissingRequiredModifiers = Prefix + "013";

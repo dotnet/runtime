@@ -358,6 +358,24 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic so the emitted code can use a specific instantiation..
+        /// </summary>
+        internal static string NativeGenericTypeMustBeClosedDescription {
+            get {
+                return ResourceManager.GetString("NativeGenericTypeMustBeClosedDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for managed type &apos;{1}&apos; must be a closed generic type..
+        /// </summary>
+        internal static string NativeGenericTypeMustBeClosedMessage {
+            get {
+                return ResourceManager.GetString("NativeGenericTypeMustBeClosedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A native type for a given type must be blittable..
         /// </summary>
         internal static string NativeTypeMustBeBlittableDescription {

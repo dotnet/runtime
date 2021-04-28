@@ -217,6 +217,12 @@
   <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
     <value>Marshalling string or char without explicit marshalling information is not supported. Specify either 'GeneratedDllImportAttribute.CharSet' or 'MarshalAsAttribute'.</value>
   </data>
+  <data name="NativeGenericTypeMustBeClosedDescription" xml:space="preserve">
+    <value>The native type '{0}' must be a closed generic so the emitted code can use a specific instantiation.</value>
+  </data>
+  <data name="NativeGenericTypeMustBeClosedMessage" xml:space="preserve">
+    <value>The native type '{0}' for managed type '{1}' must be a closed generic type.</value>
+  </data>
   <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A native type for a given type must be blittable.</value>
   </data>

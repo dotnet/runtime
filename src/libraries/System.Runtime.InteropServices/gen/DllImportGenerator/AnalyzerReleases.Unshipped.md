@@ -20,3 +20,4 @@ DLLIMPORTGENANALYZER012 | Usage            | Error    | StackallocConstructorMus
 DLLIMPORTGENANALYZER013 | Usage            | Warning  | GeneratedDllImportMissingRequiredModifiers
 DLLIMPORTGENANALYZER014 | Usage            | Error    | RefValuePropertyUnsupported
 DLLIMPORTGENANALYZER015 | Interoperability | Disabled | ConvertToGeneratedDllImportAnalyzer
+DLLIMPORTGENANALYZER016 | Usage            | Error    | GenericTypeMustBeClosed
