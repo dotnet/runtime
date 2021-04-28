@@ -13,8 +13,6 @@ namespace System.Buffers
 #if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
 #endif
-        internal static readonly ArrayPoolEventSource Log = new ArrayPoolEventSource();
-
         /// <summary>Bucket ID used when renting/returning an array that's too large for a pool.</summary>
         internal const int NoBucketId = -1;
 
@@ -37,10 +35,6 @@ namespace System.Buffers
             /// <summary>The buffer size was too large to be pooled.</summary>
             OverMaximumSize,
         }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private ArrayPoolEventSource(int _) { }
 
         /// <summary>
         /// Event for when a buffer is rented.  This is invoked once for every successful call to Rent,

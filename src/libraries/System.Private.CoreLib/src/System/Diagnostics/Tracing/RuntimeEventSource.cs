@@ -45,10 +45,6 @@ namespace System.Diagnostics.Tracing
             s_RuntimeEventSource = new RuntimeEventSource();
         }
 
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private RuntimeEventSource(int _) { }
-
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
