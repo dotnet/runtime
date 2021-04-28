@@ -198,7 +198,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         bool foundLogger = false;
                                         bool foundException = false;
                                         bool foundLogLevel = level != null;
-                                        foreach (var paramSymbol in methodSymbol.Parameters)
+                                        foreach (IParameterSymbol paramSymbol in methodSymbol.Parameters)
                                         {
                                             string paramName = paramSymbol.Name;
                                             if (string.IsNullOrWhiteSpace(paramName))
