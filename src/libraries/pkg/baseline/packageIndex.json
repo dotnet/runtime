@@ -2030,7 +2030,7 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.2.0.0",
         "netcoreapp2.1": "4.2.1.0",
@@ -2059,8 +2059,7 @@
         "4.2.0.0": "4.4.0",
         "4.2.1.0": "4.5.0",
         "4.3.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.ComponentModel.Composition": {
@@ -4907,10 +4906,7 @@
       "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0",
-        "portable46-net451+win81": "4.0.0.0",
-        "portable45-net45+win8": "4.0.0.0",
-        "uap10.0.16299": "4.0.3.0",
-        "win8": "4.0.0.0"
+        "uap10.0.16299": "4.0.3.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
@@ -6079,10 +6075,11 @@
         "4.6.1",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
+      "BaselineVersion": "5.0.0",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
+        "net6.0": "6.0.0.0",
         "uap10.0.16299": "4.3.1.0",
         "xamarinios10": "Any",
         "xamarinmac20": "Any",
@@ -6098,8 +6095,7 @@
         "4.3.1.0": "4.5.0",
         "4.3.2.0": "4.6.0",
         "4.3.2.1": "4.6.1",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.Security.Cryptography.Csp": {
@@ -6169,8 +6165,10 @@
         "4.7.0",
         "5.0.0"
       ],
-      "BaselineVersion": "6.0.0",
-      "InboxOn": {},
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {
+        "net6.0": "6.0.0.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -6178,8 +6176,7 @@
         "4.1.1.0": "4.5.0",
         "4.1.1.1": "4.5.1",
         "4.1.2.0": "4.6.0",
-        "5.0.0.0": "5.0.0",
-        "6.0.0.0": "6.0.0"
+        "5.0.0.0": "5.0.0"
       }
     },
     "System.Security.Cryptography.Pkcs": {

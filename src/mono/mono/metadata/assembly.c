@@ -70,6 +70,7 @@ static char **assemblies_path = NULL;
 
 /* keeps track of loaded assemblies, excluding dynamic ones */
 static GList *loaded_assemblies = NULL;
+static guint32 loaded_assembly_count = 0;
 static MonoAssembly *corlib;
 
 static char* unquote (const char *str);
@@ -1934,34 +1935,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		status = &def_status;
 	*status = MONO_IMAGE_OK;
 
-	if (strncmp (filename, "file://", 7) == 0) {
-		GError *gerror = NULL;
-		gchar *uri = (gchar *) filename;
-		gchar *tmpuri;
-
-		/*
-		 * MS allows file://c:/... and fails on file://localhost/c:/... 
-		 * They also throw an IndexOutOfRangeException if "file://"
-		 */
-		if (uri [7] != '/')
-			uri = g_strdup_printf ("file:///%s", uri + 7);
-	
-		tmpuri = uri;
-		uri = mono_escape_uri_string (tmpuri);
-		fname = g_filename_from_uri (uri, NULL, &gerror);
-		g_free (uri);
-
-		if (tmpuri != filename)
-			g_free (tmpuri);
-
-		if (gerror != NULL) {
-			g_warning ("%s\n", gerror->message);
-			g_error_free (gerror);
-			fname = g_strdup (filename);
-		}
-	} else {
-		fname = g_strdup (filename);
-	}
+	fname = g_strdup (filename);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", fname);
@@ -2414,6 +2388,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		image->assembly = ass;
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
+	loaded_assembly_count++;
 	mono_assemblies_unlock ();
 
 #ifdef HOST_WIN32
@@ -3312,6 +3287,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 
 	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
+	loaded_assembly_count--;
 	mono_assemblies_unlock ();
 
 	assembly->image->assembly = NULL;
@@ -3749,4 +3725,10 @@ mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
 
 	return disable_opts;
 
+}
+
+guint32
+mono_assembly_get_count (void)
+{
+	return loaded_assembly_count;
 }

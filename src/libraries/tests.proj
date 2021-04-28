@@ -224,101 +224,118 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
-    <!-- condition `<disabled>` not met - https://github.com/dotnet/runtime/issues/46698 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Win32.Primitives\tests\Microsoft.Win32.Primitives.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Handles/tests/System.Runtime.Handles.Tests.csproj" />
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51722 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
 
-    <!-- AOT Compilation failed + memory access out of bounds - https://github.com/dotnet/runtime/issues/46700 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.Tests/Microsoft.Extensions.DependencyInjection.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.UnmanagedMemoryStream/tests/System.IO.UnmanagedMemoryStream.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51677 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Parallel/tests/System.Threading.Tasks.Parallel.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50965 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Encodings.Web\tests\System.Text.Encodings.Web.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51037 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections/tests/System.Collections.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression/tests/System.IO.Compression.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/FunctionalTests/System.Private.Uri.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Primitives/tests/System.Security.Cryptography.Primitives.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels/tests/System.Threading.Channels.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq/tests/System.Linq.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata/tests/System.Reflection.Metadata.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit/tests/System.Reflection.Emit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration/tests/Microsoft.Extensions.Configuration.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.DataSetExtensions/tests/System.Data.DataSetExtensions.Tests.csproj" />
 
-    <!-- ArgumentNull_Generic Arg_ParamName_Name, type - https://github.com/dotnet/runtime/issues/46709 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.AsyncInterfaces/tests/Microsoft.Bcl.AsyncInterfaces.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq/tests/Schema/System.Xml.Schema.Extensions.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50957 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
 
-    <!-- Attempting to JIT compile method - https://github.com/dotnet/runtime/issues/46708 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition.Registration/tests/System.ComponentModel.Composition.Registration.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSerializer/ReflectionOnly/System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSerializer/System.Xml.XmlSerializer.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable/tests/System.Linq.Queryable.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight/tests/System.Reflection.Emit.Lightweight.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json/tests/System.Runtime.Serialization.Json.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50705 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
 
-    <!-- invalid index into function table - https://github.com/dotnet/runtime/issues/46731 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50709 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\tests\Microsoft.Extensions.Configuration.FileExtensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration\tests\Microsoft.Extensions.Configuration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Composite\tests\Microsoft.Extensions.FileProviders.Composite.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\tests\Microsoft.Extensions.Primitives.Tests.csproj" />
 
-    <!-- IOCompressionBrotli_PlatformNotSupported -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
-    <!-- SystemSecurityCryptographyEncoding_PlatformNotSupported - https://github.com/dotnet/runtime/issues/46762 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Encoding/tests/System.Security.Cryptography.Encoding.Tests.csproj" />
-    <!-- SystemNetHttpListener_PlatformNotSupported -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.HttpListener/tests/System.Net.HttpListener.Tests.csproj" />
-    <!-- SystemNetNetworkInformation_PlatformNotSupported -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />
-    <!-- SystemSecurityCryptographyAlgorithms_PlatformNotSupported -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp/tests/System.Security.Cryptography.Csp.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50710 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http\tests\Microsoft.Extensions.Http.Tests\Microsoft.Extensions.Http.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter\tests\System.ComponentModel.TypeConverter.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
 
-    <!-- System.Runtime.Serialization.InvalidDataContractException NoSetMethodForProperty - https://github.com/dotnet/runtime/issues/46757 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json/tests/ReflectionOnly/System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50713 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj" />
 
-    <!-- Invalid character in the given encoding - https://github.com/dotnet/runtime/issues/46755 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlReader/Tests/System.Xml.RW.XmlReader.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50714 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj" />
 
-    <!-- System.ArgumentNullException - https://github.com/dotnet/runtime/issues/46758 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileSystemGlobbing/tests/Microsoft.Extensions.FileSystemGlobbing.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Runtime.InteropServices.JavaScript/tests/System.Private.Runtime.InteropServices.JavaScript.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51570-->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50715 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50717 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50718 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50720 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50721 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50723 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\ReaderSettings\System.Xml.RW.ReaderSettings.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Writers\RwFactory\System.Xml.RW.RwFactory.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\SubtreeReader\System.Xml.RW.SubtreeReader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\WrappedReader\System.Xml.RW.WrappedReader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50724 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel/tests/System.ObjectModel.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging/tests/System.IO.Packaging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder/tests/Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Ini/tests/Microsoft.Extensions.Configuration.Ini.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaSet/System.Xml.XmlSchemaSet.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.ILGeneration/tests/System.Reflection.Emit.ILGeneration.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions/tests/System.Reflection.TypeExtensions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Reader/tests/System.Resources.Reader.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution/tests/PalTests/System.Net.NameResolution.Pal.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices/tests/System.Runtime.InteropServices.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
 
-    <!-- System.InvalidOperationException - https://github.com/dotnet/runtime/issues/46759 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable/tests/System.Collections.Immutable.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50726 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Caching/tests/System.Runtime.Caching.Tests.csproj" />
 
-    <!-- System.ArgumentException - https://github.com/dotnet/runtime/issues/46760 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives/tests/Microsoft.Extensions.Primitives.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50730 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\ReflectionOnly\System.Runtime.Serialization.Xml.ReflectionOnly.Tests.csproj" />
 
-    <!-- function signature mismatch - https://github.com/dotnet/runtime/issues/46761 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ValueTuple/tests/System.ValueTuple.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51211 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.VisualC\tests\System.Runtime.CompilerServices.VisualC.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions\tests\System.Reflection.TypeExtensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
 
-    <!-- System.Xml.Tests.VerifyException - https://github.com/dotnet/runtime/issues/46764 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaValidatorApi/System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51602-->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Primitives\tests\System.ComponentModel.Primitives.Tests.csproj" />
 
-    <!-- unreachable - https://github.com/dotnet/runtime/issues/46766 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe/tests/System.Runtime.CompilerServices.Unsafe.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51369 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
 
-    <!-- https://github.com/dotnet/runtime/issues/46768 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51244 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
 
-    <!-- https://github.com/dotnet/runtime/issues/46856 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)/System.Diagnostics.FileVersionInfo/tests/System.Diagnostics.FileVersionInfo.Tests/System.Diagnostics.FileVersionInfo.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51646 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter\tests\System.ComponentModel.TypeConverter.Tests.csproj" />
 
-    <!-- Run only a small randomly chosen set of passing test suites on CI because running all suites is expected to take longer than a day -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Buffers\tests\System.Buffers.Tests.csproj" />
+    <!-- MarkTypeForDynamicallyAccessedMembers stack overflow https://github.com/mono/linker/issues/1881 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
+
+    <!-- IL2103 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAppleSiliconTests)' != 'true'">

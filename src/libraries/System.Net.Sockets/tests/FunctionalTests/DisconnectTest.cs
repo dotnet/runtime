@@ -120,27 +120,6 @@ namespace System.Net.Sockets.Tests
                 AssertExtensions.Throws<ArgumentException>("asyncResult", () => s.EndDisconnect(Task.CompletedTask));
             }
         }
-
-        [Fact]
-        public void BeginDisconnect_NotConnected_ThrowSync()
-        {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<SocketException>(() => s.BeginDisconnect(true, null, null));
-                Assert.Throws<SocketException>(() => s.BeginDisconnect(false, null, null));
-            }
-        }
-
-        [Fact]
-        public void BeginDisconnection_ObjectDisposed_ThrowSync()
-        {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                s.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(true, null, null));
-                Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(false, null, null));
-            }
-        }
     }
 
     public sealed class Disconnect_Task : Disconnect<SocketHelperTask>

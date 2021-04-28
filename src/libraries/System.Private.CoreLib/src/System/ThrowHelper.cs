@@ -270,8 +270,11 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowEndOfFileException()
         {
-            throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+            throw CreateEndOfFileException();
         }
+
+        internal static Exception CreateEndOfFileException() =>
+            new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
 
         [DoesNotReturn]
         internal static void ThrowInvalidOperationException()
@@ -543,11 +546,28 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 
-        // Throws if 'T' is disallowed in Vector<T> / Vector128<T> / other related types in the
-        // Numerics or Intrinsics namespaces. If 'T' is allowed, no-ops. JIT will elide the method
-        // entirely if 'T' is supported and we're on an optimized release build.
+        // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedVectorBaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
+        {
+            if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
+                typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
+                typeof(T) != typeof(int) && typeof(T) != typeof(uint) &&
+                typeof(T) != typeof(long) && typeof(T) != typeof(ulong) &&
+                typeof(T) != typeof(float) && typeof(T) != typeof(double) &&
+                typeof(T) != typeof(nint) && typeof(T) != typeof(nuint))
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
+        // Throws if 'T' is disallowed in Vector64/128/256<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVectorBaseType<T>() where T : struct
         {
             if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
                 typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&

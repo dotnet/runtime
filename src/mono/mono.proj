@@ -19,24 +19,24 @@
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
-    <LibExt Condition="'$(TargetsWindows)' == 'true'">.dll</LibExt>
-    <LibExt Condition="'$(TargetsOSX)' == 'true'">.dylib</LibExt>
-    <LibExt Condition="'$(TargetsMacCatalyst)' == 'true'">.dylib</LibExt>
-    <LibExt Condition="'$(LibExt)' == ''">.so</LibExt>
-    <LibPrefix Condition="'$(TargetsOSX)' == 'true'">lib</LibPrefix>
-    <LibPrefix Condition="'$(TargetsMacCatalyst)' == 'true'">lib</LibPrefix>
+    <LibPrefix Condition="'$(TargetsWindows)' != 'true'">lib</LibPrefix>
+    <SharedLibExt Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">.dylib</SharedLibExt>
+    <SharedLibExt Condition="'$(TargetsWindows)' == 'true'">.dll</SharedLibExt>
+    <SharedLibExt Condition="'$(SharedLibExt)' == ''">.so</SharedLibExt>
+    <StaticLibExt Condition="'$(TargetsWindows)' == 'true'">.lib</StaticLibExt>
+    <StaticLibExt Condition="'$(StaticLibExt)' == ''">.a</StaticLibExt>
     <EscapedQuoteW Condition="'$(OS)' == 'Windows_NT'">\&quot;</EscapedQuoteW>
     <PythonCmd Condition="'$(OS)' != 'Windows_NT'">python3</PythonCmd>
     <PythonCmd Condition="'$(OS)' == 'Windows_NT'">python</PythonCmd>
-    <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
-    <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
-    <CoreClrFileName Condition="'$(TargetsMacCatalyst)' == 'true'">libcoreclr.dylib</CoreClrFileName>
-    <CoreClrFileName Condition="'$(CoreClrFileName)' == ''">libcoreclr.so</CoreClrFileName>
-    <MonoFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">libmonosgen-2.0.dylib</MonoFileName>
-    <MonoFileName Condition="'$(TargetsAndroid)' == 'true'">libmonosgen-2.0.so</MonoFileName>
-    <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmonosgen-2.0.a</MonoFileName>
-    <MonoFileName Condition="'$(MonoFileName)' == ''">$(CoreClrFileName)</MonoFileName>
-    <MonoStaticFileName Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
+    <CoreClrLibName>coreclr</CoreClrLibName>
+    <CoreClrFileName>$(LibPrefix)$(CoreClrLibName)$(SharedLibExt)</CoreClrFileName>
+    <MonoLibName>monosgen-2.0</MonoLibName>
+    <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
+    <MonoSharedLibName Condition="'$(MonoSharedLibName)' == ''">$(CoreClrLibName)</MonoSharedLibName>
+    <MonoSharedLibFileName>$(LibPrefix)$(MonoSharedLibName)$(SharedLibExt)</MonoSharedLibFileName>
+    <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibExt)</MonoStaticLibFileName>
+    <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">$(MonoStaticLibFileName)</MonoFileName>
+    <MonoFileName Condition="'$(MonoFileName)' == ''">$(MonoSharedLibFileName)</MonoFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -72,6 +72,16 @@
     <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(MonoThreadSuspend)' == ''">preemptive</MonoThreadSuspend>
     <!-- all other platforms -->
     <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
+  </PropertyGroup>
+
+  <!-- How to build runtime components? Static or dynamic. -->
+  <PropertyGroup>
+    <MonoComponentsStatic Condition="'$(TargetsBrowser)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <!-- by default, do dynamic components -->
+    <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
+    <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
@@ -190,6 +200,8 @@
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir.TrimEnd('\/'))" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
+      <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
+      <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
     </ItemGroup>
 
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
@@ -268,14 +280,15 @@
     </ItemGroup>
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent</_MonoMinimal>
+      <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,log_dest,perf_counters</_MonoMinimal>
       <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,shared_perfcounters,interpreter,threads,eventpipe,qcalls$(_MonoMinimal)"/>
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,shared_perfcounters,interpreter,threads,qcalls$(_MonoMinimal)"/>
       <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
+      <_MonoCMakeArgs Include="-DDISABLE_COMPONENTS=1"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LLVM_RUNTIME=1"/>
@@ -349,7 +362,6 @@
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,logging" />
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
-      <_MonoCMakeArgs Include="-DENABLE_PERFTRACING=0"/>
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-mtune=cortex-a8" />
@@ -394,6 +406,17 @@
 
     <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_LISTEN_PORTS=1"/>
+      <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" />
+    </ItemGroup>
+
+    <!-- Components -->
+    <ItemGroup Condition="'$(MonoComponentsStatic)' == 'true'">
+      <_MonoCMakeArgs Include="-DSTATIC_COMPONENTS=1" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -546,6 +569,7 @@
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_COMPONENTS=1" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir.TrimEnd('\/'))" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
@@ -607,14 +631,9 @@
   <!-- General targets -->
   <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="$(MonoDependsOnTargets)">
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
-      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\monosgen-2.0.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsMacCatalyst)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\$(MonoFileName)</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\$(MonoFileName)</_MonoRuntimeFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\$(MonoStaticLibFileName)</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
       <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
@@ -624,11 +643,20 @@
 
     <!-- Copy Mono runtime files to artifacts directory -->
     <ItemGroup>
-      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)">
+      <_MonoRuntimeComponentsStaticFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(StaticLibExt)" Condition="Exists($(_MonoRuntimeFilePath))" />
+      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" Condition="Exists($(_MonoRuntimeFilePath))" />
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)" Condition="Exists($(_MonoRuntimeFilePath))">
         <Destination>$(RuntimeBinDir)$(MonoFileName)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)">
-        <Destination>$(RuntimeBinDir)$(MonoStaticFileName)</Destination>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)" Condition="Exists($(_MonoRuntimeStaticFilePath)) and '$(_MonoRuntimeStaticFilePath)' != '$(_MonoRuntimeFilePath)'">
+        <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <!-- copy the mono runtime component shared or static libraries -->
+      <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsStaticFilePath)">
+        <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsStaticFilePath.Filename)%(_MonoRuntimeComponentsStaticFilePath.Extension)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsSharedFilePath)">
+        <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\mono-aot-cross$(ExeExt)</Destination>
@@ -658,11 +686,11 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibExt)">
-        <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibExt)</Destination>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(SharedLibExt)">
+        <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(SharedLibExt)</Destination>
       </_MonoICorDebugArtifacts>
-      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibExt)">
-        <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibExt)</Destination>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(SharedLibExt)">
+        <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(SharedLibExt)</Destination>
       </_MonoICorDebugArtifacts>
 
       <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"

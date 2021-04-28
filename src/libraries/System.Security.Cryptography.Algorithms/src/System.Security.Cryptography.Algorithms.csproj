@@ -515,10 +515,12 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SignVerify.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SignVerify.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs" />
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs" Condition="'$(TargetsOSX)' == 'true'" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
@@ -540,7 +542,8 @@
     <Compile Include="Internal\Cryptography\DesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.OSX.cs" />
-    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.OSX.cs" />
+    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.OSX.cs" Condition="'$(TargetsOSX)' == 'true'" />
+    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.Managed.cs" Condition="'$(TargetsOSX)' != 'true'" />
     <Compile Include="Internal\Cryptography\RC2Implementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.OSX.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.SecurityTransforms.cs" />
@@ -657,7 +660,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
-    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.Android.cs" />
+    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.Managed.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
@@ -674,6 +677,7 @@
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoConfig.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />

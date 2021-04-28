@@ -167,7 +167,7 @@
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
     </ItemGroup>
 
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
              Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(BundleDir)" />
 
@@ -243,7 +243,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
     </ItemGroup>
   </Target>
 

@@ -8,6 +8,7 @@
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn />
     <Nullable>enable</Nullable>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -172,6 +173,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonDefaultNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Helpers.cs" />
@@ -254,6 +256,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\TypeExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />

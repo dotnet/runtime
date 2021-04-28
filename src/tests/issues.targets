@@ -11,6 +11,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/49881</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_49826/test49826/*">
+            <Issue>https://github.com/dotnet/runtime/issues/51542</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -1295,6 +1298,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/**">
             <Issue>https://github.com/dotnet/runtime/issues/48084</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51600</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/Invalid/InvalidParamIndex/**">
             <Issue>needs triage</Issue>
@@ -3373,6 +3379,24 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/ServerModel/servermodel/*">
             <Issue>https://github.com/dotnet/runtime/issues/44643</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/V8/Crypto/Crypto/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fasta/fasta-1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regex-redux-5/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/SIMD/RayTracer/RayTracer/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/complus_config/name_config_with_pid/**">
+            <Issue>https://github.com/dotnet/runtime/issues/51513</Issue>
         </ExcludeList>
     </ItemGroup>
 

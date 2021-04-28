@@ -1,15 +1,52 @@
-List of Obsoletions
-==================
+# List of Diagnostics Produced by .NET Libraries APIs
 
-Per https://github.com/dotnet/designs/blob/master/accepted/2020/better-obsoletion/better-obsoletion.md, we now have a strategy in place for marking existing APIs as `[Obsolete]`. This takes advantage of the new diagnostic id and URL template mechanisms introduced to `ObsoleteAttribute` in .NET 5.
+## Obsoletions
 
-When obsoleting an API, use the diagnostic ID `SYSLIB####`, where _\#\#\#\#_ is the next four-digit identifier in the sequence, and add it to the list below. This helps us maintain a centralized location of all APIs that were obsoleted using this mechanism.
+Per https://github.com/dotnet/designs/blob/master/accepted/2020/better-obsoletion/better-obsoletion.md, we now have a strategy for marking existing APIs as `[Obsolete]`. This takes advantage of the new diagnostic id and URL template mechanisms introduced to `ObsoleteAttribute` in .NET 5.
 
-The URL template we use for obsoletions is `https://aka.ms/dotnet-warnings/{0}`.
+The diagnostic id values reserved for obsoletions are `SYSLIB0001` through `SYSLIB0999`. When obsoleting an API, claim the next three-digit identifier in the `SYSLIB0###` sequence and add it to the list below. The URL template for all obsoletions is `https://aka.ms/dotnet-warnings/{0}`. The `{0}` placeholder is replaced by the compiler with the `SYSLIB0###` identifier.
 
-Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for obsoletions. If we wish to introduce analyzer warnings not related to obsoletion in the future, we should begin at a different range, such as `SYSLIB2000`.
+The acceptance criteria for adding an obsoletion includes:
 
-## Current obsoletions (`SYSLIB0001` - `SYSLIB0999`)
+* Add the obsoletion to the table below, claiming the next diagnostic id
+    * Ensure the description is meaningful within the context of this table, and without requiring the context of the calling code
+* Add new constants to `src\libraries\Common\src\System\Obsoletions.cs`, following the existing conventions
+    * A `...Message` const using the same description added to the table below
+    * A `...DiagId` const for the `SYSLIB0###` id
+* Annotate `src` files by referring to the constants defined from `Obsoletions.cs`
+    * Specify the `UrlFormat = Obsoletions.SharedUrlFormat`
+    * Example: `[Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]`
+    * If the `Obsoletions` type is not available in the project, link it into the project
+        * `<Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />`
+* Annotate `ref` files using the hard-coded strings copied from `Obsoletions.cs`
+    * This matches our general pattern of `ref` files using hard-coded attribute strings
+    * Example: `[System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]`
+* If the library builds against downlevel targets earlier than .NET 5.0, then add an internal copy of `ObsoleteAttribute`
+    * The compiler recognizes internal implementations of `ObsoleteAttribute` to enable the `DiagnosticId` and `UrlFormat` properties to light up downlevel
+    * An MSBuild property can be added to the project's first `<PropertyGroup>` to achieve this easily
+    * Example: `<IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>`
+    * This will need to be specified in both the `src` and `ref` projects
+* Apply the `breaking-change` label to the PR that introduces the obsoletion
+    * A bot will automatically apply the `needs-breaking-change-doc-created` label when the `breaking-change` label is detected
+* Follow up with the breaking change process to communicate and document the breaking change
+    * In the breaking-change issue filed in [dotnet/docs](https://github.com/dotnet/docs), specifically mention that this breaking change is an obsoletion with a `SYSLIB` diagnostic id
+    * The documentation team will produce a PR that adds the obsoletion to the [SYSLIB warnings](https://docs.microsoft.com/en-us/dotnet/core/compatibility/syslib-obsoletions) page
+    * That PR will also add a new URL specific to this diagnostic ID; e.g. [SYSLIB0001](https://docs.microsoft.com/en-us/dotnet/core/compatibility/syslib-warnings/syslib0001)
+    * Connect with `@gewarren` or `@BillWagner` with any questions
+* Register the `SYSLIB0###` URL in `aka.ms`
+    * The vanity name will be `dotnet-warnings/syslib0###`
+    * Ensure the link's group owner matches the group owner of `dotnet-warnings/syslib0001`
+    * Connect with `@jeffhandley`, `@GrabYourPitchforks`, or `@gewarren` with any questions
+
+An example obsoletion PR that can be referenced where each of the above criteria was met is:
+
+* [Implement new GetContextAPI overloads (#49186)](https://github.com/dotnet/runtime/pull/49186/files)
+
+The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute>` property was:
+
+* [Mark DirectoryServices CAS APIs as Obsolete (#40756)](https://github.com/dotnet/runtime/pull/40756/files)
+
+### Obsoletion Diagnostics (`SYSLIB0001` - `SYSLIB0999`)
 
 | Diagnostic ID     | Description |
 | :---------------- | :---------- |
@@ -26,10 +63,20 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB0011`__ | `BinaryFormatter` serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for recommended alternatives. |
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
 |  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |
+|  __`SYSLIB0014`__ | WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. |
 |  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+ applications. |
 |  __`SYSLIB0016`__ | Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations. |
+|  __`SYSLIB0017`__ | Strong name signing is not supported and throws PlatformNotSupportedException. |
+|  __`SYSLIB0018`__ | ReflectionOnly loading is not supported and throws PlatformNotSupportedException. |
+|  __`SYSLIB0019`__ | RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException. |
+|  __`SYSLIB0020`__ | JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull. |
 
-### Analyzer warnings (`SYSLIB1001` - `SYSLIB1999`)
+## Analyzer Warnings
+
+The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSLIB1001` through `SYSLIB1999`. When creating a new analyzer that ships as part of the Libraries (and not part of the SDK), claim the next three-digit identifier in the `SYSLIB1###` sequence and add it to the list below.
+
+### Analyzer Diagnostics (`SYSLIB1001` - `SYSLIB1999`)
+
 | Diagnostic ID     | Description |
 | :---------------- | :---------- |
 |  __`SYSLIB1001`__ | Logging method names cannot start with _ |
@@ -55,4 +102,9 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB1021`__ | Can't have the same template with different casing |
 |  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
-|  __`SYSLIB1029`__ | *_Blocked range `SYSLIB1024`-`SYSLIB1029` for logging._* |
+|  __`SYSLIB1024`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1025`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1026`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
