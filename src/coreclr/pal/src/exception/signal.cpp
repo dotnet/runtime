@@ -271,6 +271,7 @@ void SEHCleanupSignals()
 #endif
         restore_signal(SIGFPE, &g_previous_sigfpe);
         restore_signal(SIGBUS, &g_previous_sigbus);
+        restore_signal(SIGABRT, &g_previous_sigabrt);
         restore_signal(SIGSEGV, &g_previous_sigsegv);
         restore_signal(SIGINT, &g_previous_sigint);
         restore_signal(SIGQUIT, &g_previous_sigquit);
