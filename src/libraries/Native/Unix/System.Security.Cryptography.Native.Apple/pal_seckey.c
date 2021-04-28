@@ -161,6 +161,9 @@ int32_t AppleCryptoNative_SecKeyCreateWithData(uint8_t* pKey,
     assert(pKeyOut != NULL);
     assert(pErrorOut != NULL);
 
+    *pKeyOut = NULL;
+    *pErrorOut = NULL;
+
     CFMutableDictionaryRef dataAttributes = CFDictionaryCreateMutable(
         kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
@@ -193,6 +196,8 @@ int32_t AppleCryptoNative_SecKeyCopyExternalRepresentation(SecKeyRef pKey,
     assert(pKey != NULL);
     assert(ppDataOut != NULL);
     assert(pErrorOut != NULL);
+
+    *pErrorOut = NULL;
 
     *ppDataOut = SecKeyCopyExternalRepresentation(pKey, pErrorOut);
     return *ppDataOut == NULL ? kErrorSeeError : 1;
