@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Versioning;
 
 namespace System.Net
 {
+    [UnsupportedOSPlatform("tvos")]
     internal static class ContextFlagsAdapterPal
     {
         internal static ContextFlagsPal GetContextFlagsPalFromInterop(Interop.NetSecurityNative.GssFlags gssFlags, bool isServer)

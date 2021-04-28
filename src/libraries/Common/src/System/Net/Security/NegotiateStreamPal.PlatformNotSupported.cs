@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -21,6 +22,7 @@ namespace System.Net.Security
     // It encapsulates security context and does the real work in authentication and
     // user data encryption with NEGO SSPI package.
     //
+    [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
         internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)

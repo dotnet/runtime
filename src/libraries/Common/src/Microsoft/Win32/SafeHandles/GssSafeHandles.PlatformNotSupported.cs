@@ -4,10 +4,12 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    [UnsupportedOSPlatform("tvos")]
     internal sealed class SafeGssNameHandle : SafeHandle
     {
         public override bool IsInvalid
@@ -22,6 +24,7 @@ namespace Microsoft.Win32.SafeHandles
         }
     }
 
+    [UnsupportedOSPlatform("tvos")]
     internal sealed class SafeGssCredHandle : SafeHandle
     {
         private SafeGssCredHandle()
@@ -37,6 +40,7 @@ namespace Microsoft.Win32.SafeHandles
         protected override bool ReleaseHandle() => throw new PlatformNotSupportedException();
     }
 
+    [UnsupportedOSPlatform("tvos")]
     internal sealed class SafeGssContextHandle : SafeHandle
     {
         private SafeGssContextHandle()

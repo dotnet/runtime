@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 
 namespace System.Net.Security
@@ -11,6 +12,7 @@ namespace System.Net.Security
     // It encapsulates security context and does the real work in authentication and
     // user data encryption with NEGO SSPI package.
     //
+    [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
         internal static IIdentity GetIdentity(NTAuthentication context)
