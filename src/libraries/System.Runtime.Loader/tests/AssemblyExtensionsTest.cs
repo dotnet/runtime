@@ -26,18 +26,9 @@ namespace System.Reflection.Metadata
             Assert.Throws<ArgumentException>(() =>
                 AssemblyExtensions.ApplyUpdate(new NonRuntimeAssembly(), new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
 
-            if (PlatformDetection.IsNotMonoRuntime && PlatformDetection.IsArmOrArm64Process)
-            {
-                // Not implemented on .NET Core arm and arm64
-                Assert.Throws<NotImplementedException>(() =>
-                    AssemblyExtensions.ApplyUpdate(typeof(AssemblyExtensions).Assembly, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
-            }
-            else
-            {
-                // Tests that this assembly isn't not editable
-                Assert.Throws<InvalidOperationException>(() =>
-                    AssemblyExtensions.ApplyUpdate(typeof(AssemblyExtensions).Assembly, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
-            }
+            // Tests that this assembly isn't not editable
+            Assert.Throws<InvalidOperationException>(() =>
+                AssemblyExtensions.ApplyUpdate(typeof(AssemblyExtensions).Assembly, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
         }
     }
 }
