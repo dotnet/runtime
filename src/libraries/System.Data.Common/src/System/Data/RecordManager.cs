@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -26,6 +27,7 @@ namespace System.Data
             _table = table;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GrowRecordCapacity()
         {
             RecordCapacity = NewCapacity(_recordCapacity) < NormalizedMinimumCapacity(_minimumCapacity) ?
@@ -62,6 +64,7 @@ namespace System.Data
         internal int RecordCapacity
         {
             get { return _recordCapacity; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_recordCapacity != value)
@@ -94,6 +97,8 @@ namespace System.Data
 
             return (((capacity + 10) >> 10) + 1) << 10;
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewRecordBase()
         {
             int record;
@@ -200,12 +205,14 @@ namespace System.Data
         }
 
         // Increases AutoIncrementCurrent
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int ImportRecord(DataTable src, int record)
         {
             return CopyRecord(src, record, -1);
         }
 
         // No impact on AutoIncrementCurrent if over written
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int CopyRecord(DataTable src, int record, int copy)
         {
             Debug.Assert(src != null, "Can not Merge record without a table");

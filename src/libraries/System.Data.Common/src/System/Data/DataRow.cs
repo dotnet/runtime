@@ -89,6 +89,7 @@ namespace System.Data
         public string RowError
         {
             get { return _error == null ? string.Empty : _error.Text; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataRow.set_RowError|API> {0}, value='{1}'", _objectID, value);
@@ -108,6 +109,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void RowErrorChanged()
         {
             // We don't know wich record was used by view index. try to use both.
@@ -189,6 +191,7 @@ namespace System.Data
                 VerifyValueFromStorage(column, DataRowVersion.Default, column[record]);
                 return column[record];
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataColumn column = _columns[columnIndex];
@@ -261,6 +264,7 @@ namespace System.Data
                 VerifyValueFromStorage(column, DataRowVersion.Default, column[record]);
                 return column[record];
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataColumn column = GetDataColumn(columnName);
@@ -282,6 +286,7 @@ namespace System.Data
                 VerifyValueFromStorage(column, DataRowVersion.Default, column[record]);
                 return column[record];
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 CheckColumn(column);
@@ -431,6 +436,7 @@ namespace System.Data
                 }
                 return values;
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (null == value)
@@ -535,6 +541,7 @@ namespace System.Data
         /// <summary>
         /// Commits all the changes made to this row since the last time <see cref='System.Data.DataRow.AcceptChanges'/> was called.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void AcceptChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRow.AcceptChanges|API> {0}", _objectID);
@@ -572,8 +579,10 @@ namespace System.Data
         /// Begins an edit operation on a <see cref='System.Data.DataRow'/>object.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void BeginEdit() => BeginEditInternal();
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private bool BeginEditInternal()
         {
             if (_inChangingEvent)
@@ -654,6 +663,7 @@ namespace System.Data
         /// <summary>
         /// Deletes the row.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Delete()
         {
             if (_inDeletingEvent)
@@ -673,6 +683,7 @@ namespace System.Data
         /// Ends the edit occurring on the row.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void EndEdit()
         {
             if (_inChangingEvent)
@@ -703,6 +714,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error description for a column specified by index.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetColumnError(int columnIndex, string? error)
         {
             DataColumn column = _columns[columnIndex];
@@ -716,6 +728,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error description for a column specified by name.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetColumnError(string columnName, string? error)
         {
             DataColumn column = GetDataColumn(columnName);
@@ -725,6 +738,7 @@ namespace System.Data
         /// <summary>
         /// Sets the error description for a column specified as a <see cref='System.Data.DataColumn'/>.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetColumnError(DataColumn column, string? error)
         {
             CheckColumn(column);
@@ -769,6 +783,7 @@ namespace System.Data
         /// Clears the errors for the row, including the <see cref='System.Data.DataRow.RowError'/>
         /// and errors set with <see cref='System.Data.DataRow.SetColumnError(DataColumn, string)'/>
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void ClearErrors()
         {
             if (_error != null)
@@ -778,6 +793,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ClearError(DataColumn column)
         {
             if (_error != null)
@@ -1174,6 +1190,7 @@ namespace System.Data
         /// Rejects all changes made to the row since <see cref='System.Data.DataRow.AcceptChanges'/>
         /// was last called.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RejectChanges()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRow.RejectChanges|API> {0}", _objectID);
@@ -1233,6 +1250,7 @@ namespace System.Data
             _countColumnChange = 0;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetKeyValues(DataKey key, object[] keyValues)
         {
             bool fFirstCall = true;
@@ -1260,11 +1278,13 @@ namespace System.Data
         /// <summary>
         /// Sets the specified column's value to a null value.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected void SetNull(DataColumn column)
         {
             this[column] = DBNull.Value;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetNestedParentRow(DataRow? parentRow, bool setNonNested)
         {
             if (parentRow == null)
@@ -1298,6 +1318,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetParentRow(DataRow? parentRow)
         {
             SetNestedParentRow(parentRow, true);
@@ -1306,6 +1327,7 @@ namespace System.Data
         /// <summary>
         /// Sets current row's parent row with specified relation.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetParentRow(DataRow? parentRow, DataRelation? relation)
         {
             if (relation == null)
@@ -1339,6 +1361,7 @@ namespace System.Data
             SetKeyValues(relation.ChildKey, parentKeyValues);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetParentRowToDBNull()
         {
             foreach (DataRelation relation in _table.ParentRelations)
@@ -1347,6 +1370,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetParentRowToDBNull(DataRelation relation)
         {
             Debug.Assert(relation != null, "The relation should not be null here.");
@@ -1360,6 +1384,8 @@ namespace System.Data
             parentKeyValues[0] = DBNull.Value;
             SetKeyValues(relation.ChildKey, parentKeyValues);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetAdded()
         {
             if (RowState == DataRowState.Unchanged)
@@ -1372,6 +1398,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void SetModified()
         {
             if (RowState == DataRowState.Unchanged)

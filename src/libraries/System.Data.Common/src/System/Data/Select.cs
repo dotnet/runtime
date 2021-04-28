@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -34,6 +35,7 @@ namespace System.Data
         private int _nCandidates;
         private int _matchedCandidates;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public Select(DataTable table, string? filterExpression, string? sort, DataViewRowState recordStates)
         {
             _table = table;

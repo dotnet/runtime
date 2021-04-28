@@ -129,11 +129,13 @@ namespace System.Data
         /// Adds the specified <see cref='System.Data.DataColumn'/>
         /// to the columns collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Add(DataColumn column)
         {
             AddAt(-1, column);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddAt(int index, DataColumn column)
         {
             if (column != null && column.ColumnMapping == MappingType.SimpleContent)
@@ -187,6 +189,7 @@ namespace System.Data
             OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, column));
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void AddRange(DataColumn[] columns)
         {
             if (_table.fInitInProgress)
@@ -211,6 +214,7 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name, type, and compute expression to the columns collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn Add(string? columnName, Type type, string expression)
         {
             var column = new DataColumn(columnName, type, expression);
@@ -223,6 +227,7 @@ namespace System.Data
         /// with the
         /// specified name and type to the columns collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn Add(string? columnName, Type type)
         {
             var column = new DataColumn(columnName, type);
@@ -234,6 +239,7 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name to the columns collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn Add(string? columnName)
         {
             var column = new DataColumn(columnName);
@@ -244,6 +250,7 @@ namespace System.Data
         /// <summary>
         /// Creates and adds a <see cref='System.Data.DataColumn'/> to a columns collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn Add()
         {
             var column = new DataColumn();
@@ -315,6 +322,7 @@ namespace System.Data
         /// A DuplicateNameException is thrown if this collection already has a column with the same
         /// name (case insensitive).
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BaseAdd([NotNull] DataColumn? column)
         {
             if (column == null)
@@ -374,6 +382,7 @@ namespace System.Data
         /// <summary>
         /// BaseGroupSwitch will intelligently remove and add tables from the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BaseGroupSwitch(DataColumn[] oldArray, int oldLength, DataColumn[] newArray, int newLength)
         {
             // We're doing a smart diff of oldArray and newArray to find out what
@@ -426,6 +435,7 @@ namespace System.Data
         /// if this column doesn't belong to this collection or if this column is part of a relationship.
         /// An ArgumentException is thrown if another column's compute expression depends on this column.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BaseRemove(DataColumn column)
         {
             if (CanRemove(column, true))
@@ -588,6 +598,8 @@ namespace System.Data
         /// <summary>
         /// Clears the collection of any columns.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "BaseGroupSwitch with empty collection is safe.")]
         public void Clear()
         {
             int oldLength = _list.Count;
@@ -742,6 +754,7 @@ namespace System.Data
             return cachedI;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void FinishInitCollection()
         {
             if (_delayedAddRangeColumns != null)
@@ -874,6 +887,7 @@ namespace System.Data
         /// Removes the specified <see cref='System.Data.DataColumn'/>
         /// from the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Remove(DataColumn column)
         {
             OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Remove, column));
@@ -890,6 +904,7 @@ namespace System.Data
         /// <summary>
         /// Removes the column at the specified index from the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RemoveAt(int index)
         {
             DataColumn dc = this[index];
@@ -903,6 +918,7 @@ namespace System.Data
         /// <summary>
         /// Removes the column with the specified name from the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Remove(string name)
         {
             DataColumn? dc = this[name];

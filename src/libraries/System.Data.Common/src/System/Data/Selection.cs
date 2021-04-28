@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -265,6 +266,7 @@ namespace System.Data
             return count;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ApplyChangeAction(int record, int action, int changeRecord)
         {
             if (action != 0)
@@ -396,6 +398,7 @@ namespace System.Data
         }
 
         // DeleteRecordFromIndex deletes the given record from index and does not fire any Event. IT SHOULD NOT FIRE EVENT
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void DeleteRecordFromIndex(int recordIndex)
         {
             // this is for expression use, to maintain expression columns's sort , filter etc. do not fire event
@@ -403,11 +406,13 @@ namespace System.Data
         }
 
         // old and existing DeleteRecord behavior, we can not use this for silently deleting
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void DeleteRecord(int recordIndex)
         {
             DeleteRecord(recordIndex, true);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void DeleteRecord(int recordIndex, bool fireEvent)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.DeleteRecord|INFO> {0}, recordIndex={1}, fireEvent={2}", ObjectID, recordIndex, fireEvent);
@@ -669,6 +674,7 @@ namespace System.Data
             return GetRangeFromNode(nodeId);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void FireResetEvent()
         {
             DataCommonEventSource.Log.Trace("<ds.Index.FireResetEvent|API> {0}", ObjectID);
@@ -771,6 +777,7 @@ namespace System.Data
         // InsertRecordToIndex inserts the given record to index and does not fire any Event. IT SHOULD NOT FIRE EVENT
         // I added this since I can not use existing InsertRecord which is not silent operation
         // it returns the position that record is inserted
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public int InsertRecordToIndex(int record)
         {
             int pos = -1;
@@ -782,6 +789,7 @@ namespace System.Data
         }
 
         // existing functionality, it calls the overlaod with fireEvent== true, so it still fires the event
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int InsertRecord(int record, bool fireEvent)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.InsertRecord|INFO> {0}, record={1}, fireEvent={2}", ObjectID, record, fireEvent);
@@ -836,6 +844,7 @@ namespace System.Data
 
         private bool DoListChanged => (!_suspendEvents && _listeners.HasListeners && !_table.AreIndexEventsSuspended);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnListChanged(ListChangedType changedType, int newIndex, int oldIndex)
         {
             if (DoListChanged)
@@ -844,6 +853,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnListChanged(ListChangedType changedType, int index)
         {
             if (DoListChanged)
@@ -852,6 +862,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void OnListChanged(ListChangedEventArgs e)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.OnListChanged|INFO> {0}", ObjectID);
@@ -860,10 +871,18 @@ namespace System.Data
             _listeners.Notify(e, false, false,
                 delegate (DataViewListener listener, ListChangedEventArgs args, bool arg2, bool arg3)
                 {
-                    listener.IndexListChanged(args);
+                    ListenerIndexListChanged(listener, args);
                 });
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1981")]
+        private static void ListenerIndexListChanged(DataViewListener listener, ListChangedEventArgs args)
+        {
+            listener.IndexListChanged(args);
+        }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void MaintainDataView(ListChangedType changedType, int record, bool trackAddRemove)
         {
             Debug.Assert(-1 <= record, "bad record#");
@@ -871,10 +890,18 @@ namespace System.Data
             _listeners.Notify(changedType, ((0 <= record) ? _table._recordManager[record] : null), trackAddRemove,
                 delegate (DataViewListener listener, ListChangedType type, DataRow? row, bool track)
                 {
-                    listener.MaintainDataView(changedType, row, track);
+                    ListenerMaintainDataView(listener, changedType, row, track);
                 });
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1981")]
+        private static void ListenerMaintainDataView(DataViewListener listener, ListChangedType changedType, DataRow? row, bool track)
+        {
+            listener.MaintainDataView(changedType, row, track);
+        }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Reset()
         {
             DataCommonEventSource.Log.Trace("<ds.Index.Reset|API> {0}", ObjectID);
@@ -883,6 +910,7 @@ namespace System.Data
             FireResetEvent();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RecordChanged(int record)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.RecordChanged|API> {0}, record={1}", ObjectID, record);
@@ -896,6 +924,7 @@ namespace System.Data
             }
         }
         // new RecordChanged which takes oldIndex and newIndex and fires _onListChanged
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RecordChanged(int oldIndex, int newIndex)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.RecordChanged|API> {0}, oldIndex={1}, newIndex={2}", ObjectID, oldIndex, newIndex);
@@ -923,6 +952,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RecordStateChanged(int record, DataViewRowState oldState, DataViewRowState newState)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.RecordStateChanged|API> {0}, record={1}, oldState={2}, newState={3}", ObjectID, record, oldState, newState);
@@ -931,6 +961,7 @@ namespace System.Data
             ApplyChangeAction(record, action, GetReplaceAction(oldState));
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RecordStateChanged(int oldRecord, DataViewRowState oldOldState, DataViewRowState oldNewState,
                                        int newRecord, DataViewRowState newOldState, DataViewRowState newNewState)
         {

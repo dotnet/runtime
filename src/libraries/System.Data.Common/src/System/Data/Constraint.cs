@@ -110,6 +110,7 @@ namespace System.Data
         internal abstract void CheckCanAddToCollection(ConstraintCollection constraint);
         internal abstract bool CanBeRemovedFromCollection(ConstraintCollection constraint, bool fThrowException);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal abstract void CheckConstraint(DataRow row, DataRowAction action);
         internal abstract void CheckState();
 
@@ -136,6 +137,7 @@ namespace System.Data
         /// </summary>
         protected internal void SetDataSet(DataSet dataSet) => _dataSet = dataSet;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal abstract bool IsConstraintViolated();
 
         public override string ToString() => ConstraintName;

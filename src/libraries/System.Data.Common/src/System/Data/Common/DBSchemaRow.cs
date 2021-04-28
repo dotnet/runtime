@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.Common
@@ -12,6 +13,7 @@ namespace System.Data.Common
         private readonly DbSchemaTable _schemaTable;
         private readonly DataRow _dataRow;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {
             DataColumn? sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -269,18 +270,25 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public abstract object ConvertXmlToObject(string s);
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public virtual object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
             return ConvertXmlToObject(xmlReader.Value);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public abstract string ConvertObjectToXml(object value);
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public virtual void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             xmlWriter.WriteString(ConvertObjectToXml(value)); // should it be NO OP?
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DataStorage CreateStorage(DataColumn column, Type dataType, StorageType typeCode)
         {
             Debug.Assert(typeCode == GetStorageType(dataType), "Incorrect storage type specified");
@@ -557,6 +565,7 @@ namespace System.Data.Common
         /// Types like "System.Data.SqlTypes.SqlString" will load because they are in the same assembly as this code
         /// Types like "System.Numerics.BigInteger" won't load because they are not special and not same assembly as this code
         /// </remarks>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal static Type GetType(string value)
         {
             Type? dataType = Type.GetType(value); // throwOnError=false, ignoreCase=fase

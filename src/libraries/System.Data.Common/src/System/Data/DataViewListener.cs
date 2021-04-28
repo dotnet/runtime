@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -22,6 +23,7 @@ namespace System.Data
             _dvWeak = new WeakReference(dv);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
@@ -35,6 +37,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
@@ -48,6 +51,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
@@ -64,6 +68,7 @@ namespace System.Data
         /// <summary>
         /// Maintain the DataView before <see cref="DataView.ListChanged"/> is raised.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MaintainDataView(ListChangedType changedType, DataRow? row, bool trackAddRemove)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
@@ -77,6 +82,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void IndexListChanged(ListChangedEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
@@ -90,6 +96,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void RegisterMetaDataEvents(DataTable? table)
         {
             Debug.Assert(null == _table, "DataViewListener already registered table");
@@ -114,8 +121,10 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void UnregisterMetaDataEvents() => UnregisterMetaDataEvents(true);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UnregisterMetaDataEvents(bool updateListeners)
         {
             DataTable? table = _table;
@@ -178,12 +187,14 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void CleanUp(bool updateListeners)
         {
             UnregisterMetaDataEvents(updateListeners);
             UnregisterListChangedEvent();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void RegisterListener(DataTable table)
         {
             List<DataViewListener> listeners = table.GetListeners();

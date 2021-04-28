@@ -14,6 +14,7 @@ namespace System.Data
 
         private static readonly PropertyDescriptorCollection s_zeroPropertyDescriptorCollection = new PropertyDescriptorCollection(null);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRowView(DataView dataView, DataRow row)
         {
             _dataView = dataView;
@@ -53,6 +54,7 @@ namespace System.Data
         public object this[int ndx]
         {
             get { return Row[ndx, RowVersionDefault]; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (!_dataView.AllowEdit && !IsNew)
@@ -72,6 +74,7 @@ namespace System.Data
         [AllowNull]
         public object this[string property]
         {
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 DataColumn? column = _dataView.Table!.Columns[property];
@@ -85,6 +88,7 @@ namespace System.Data
                 }
                 throw ExceptionBuilder.PropertyNotFound(property, _dataView.Table.TableName);
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataColumn? column = _dataView.Table!.Columns[property];
@@ -124,6 +128,7 @@ namespace System.Data
 
         internal object GetColumnValue(DataColumn column) => Row[column, RowVersionDefault];
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetColumnValue(DataColumn column, object? value)
         {
             if (_delayBeginEdit)
@@ -146,6 +151,7 @@ namespace System.Data
         /// <param name="relation">Specified <see cref="System.Data.DataRelation"/>.</param>
         /// <param name="followParent">The parent object.</param>
         /// <exception cref="ArgumentException">null or mismatch between <paramref name="relation"/> and <see cref="System.Data.DataView.get_Table"/>.</exception>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView CreateChildView(DataRelation relation, bool followParent)
         {
             if (relation == null || relation.ParentKey.Table != DataView.Table)
@@ -170,6 +176,7 @@ namespace System.Data
             return childView;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView CreateChildView(DataRelation relation) =>
             CreateChildView(relation, followParent: false);
 
@@ -177,9 +184,11 @@ namespace System.Data
         /// <param name="relationName">Specified <see cref="System.Data.DataRelation"/> name.</param>
         /// <param name="followParent">The parent object.</param>
         /// <exception cref="ArgumentException">Unmatched <paramref name="relationName"/>.</exception>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView CreateChildView(string relationName, bool followParent) =>
             CreateChildView(DataView.Table!.ChildRelations[relationName]!, followParent);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView CreateChildView(string relationName) =>
             CreateChildView(relationName, followParent: false);
 
@@ -187,6 +196,8 @@ namespace System.Data
 
         public void BeginEdit() => _delayBeginEdit = true;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public void CancelEdit()
         {
             DataRow tmpRow = Row;
@@ -201,6 +212,8 @@ namespace System.Data
             _delayBeginEdit = false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public void EndEdit()
         {
             if (IsNew)
@@ -220,6 +233,7 @@ namespace System.Data
             Row.HasVersion(DataRowVersion.Proposed) ||  // It was edited or
             _delayBeginEdit;                            // DataRowView.BegingEdit() was called, but not edited yet.
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Delete() => _dataView.Delete(Row);
 
         // When the PropertyChanged event happens, it must happen on the same DataRowView reference.

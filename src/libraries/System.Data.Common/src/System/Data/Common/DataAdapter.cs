@@ -251,6 +251,7 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, string srcTable, IDataReader dataReader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable, dataReader", ObjectID, schemaType);
@@ -283,6 +284,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual DataTable? FillSchema(DataTable dataTable, SchemaType schemaType, IDataReader dataReader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataTable, schemaType, dataReader", ObjectID);
@@ -311,6 +313,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object? FillSchemaFromReader(DataSet? dataset, DataTable? datatable, SchemaType schemaType, string? srcTable, IDataReader dataReader)
         {
             DataTable[]? dataTables = null;
@@ -364,6 +367,7 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Fill(DataSet dataSet, string srcTable, IDataReader dataReader, int startRecord, int maxRecords)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.Fill|API> {0}, dataSet, srcTable, dataReader, startRecord, maxRecords", ObjectID);
@@ -403,12 +407,14 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Fill(DataTable dataTable, IDataReader dataReader)
         {
             DataTable[] dataTables = new DataTable[] { dataTable };
             return Fill(dataTables, dataReader, 0, 0);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual int Fill(DataTable[] dataTables, IDataReader dataReader, int startRecord, int maxRecords)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.Fill|API> {0}, dataTables[], dataReader, startRecord, maxRecords", ObjectID);
@@ -501,6 +507,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int FillFromReader(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             int rowsAddedToDataSet = 0;
@@ -561,6 +568,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int FillLoadDataRowChunk(SchemaMapping mapping, int startRecord, int maxRecords)
         {
             DataReaderContainer dataReader = mapping.DataReader;
@@ -608,6 +616,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int FillLoadDataRow(SchemaMapping mapping)
         {
             int rowsAddedToDataSet = 0;
@@ -642,6 +651,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private SchemaMapping FillMappingInternal(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             bool withKeyInfo = (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction);
@@ -653,6 +663,7 @@ namespace System.Data.Common
             return new SchemaMapping(this, dataset, datatable, dataReader, withKeyInfo, SchemaType.Mapped, tmp, true, parentChapterColumn, parentChapterValue);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private SchemaMapping? FillMapping(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             SchemaMapping? mapping = null;
@@ -779,6 +790,7 @@ namespace System.Data.Common
     {
         internal LoadAdapter() { }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int FillFromReader(DataTable[] dataTables, IDataReader dataReader, int startRecord, int maxRecords)
         {
             return Fill(dataTables, dataReader, startRecord, maxRecords);

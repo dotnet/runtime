@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data
@@ -156,6 +157,7 @@ namespace System.Data
 
         // CONSIDER: configure the scanner : local info
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal ExpressionNode Parse()
         {
             // free all nodes

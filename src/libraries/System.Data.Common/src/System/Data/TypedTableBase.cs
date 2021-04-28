@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace System.Data
@@ -18,6 +19,7 @@ namespace System.Data
         /// Default constructor for generic TypedTableBase.
         /// Will be called by generated Typed DataSet classes and is not for public use.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected TypedTableBase() : base() { }
 
         /// <summary>
@@ -27,6 +29,7 @@ namespace System.Data
         /// </summary>
         /// <param name="info">SerializationInfo containing data to construct the object.</param>
         /// <param name="context">The streaming context for the object being deserialized.</param>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected TypedTableBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 

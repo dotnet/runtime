@@ -112,6 +112,7 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn? GetDataColumn(string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
             return DataColumnMappingCollection.GetDataColumn(_columnMappings, sourceColumn, dataType, dataTable, mappingAction, schemaAction);
@@ -124,6 +125,7 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable? GetDataTableBySchemaAction(DataSet dataSet, MissingSchemaAction schemaAction)
         {
             if (null == dataSet)

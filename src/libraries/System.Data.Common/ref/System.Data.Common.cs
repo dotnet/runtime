@@ -100,8 +100,11 @@ namespace System.Data
     {
         public DataColumn() { }
         public DataColumn(string? columnName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataColumn(string? columnName, System.Type dataType) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataColumn(string? columnName, System.Type dataType, string? expr) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataColumn(string? columnName, System.Type dataType, string? expr, System.Data.MappingType type) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AllowDBNull { get { throw null; } set { } }
@@ -115,18 +118,18 @@ namespace System.Data
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Caption { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MappingType.Element)]
-        public virtual System.Data.MappingType ColumnMapping { get { throw null; } set { } }
+        public virtual System.Data.MappingType ColumnMapping { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string ColumnName { get { throw null; } set { } }
+        public string ColumnName { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataSetDateTime.UnspecifiedLocal)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public System.Data.DataSetDateTime DateTimeMode { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string Expression { get { throw null; } set { } }
+        public string Expression { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(-1)]
@@ -171,11 +174,17 @@ namespace System.Data
         public System.Data.DataColumn? this[string name] { get { throw null; } }
         protected override System.Collections.ArrayList List { get { throw null; } }
         public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanged { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn Add() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Add(System.Data.DataColumn column) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn Add(string? columnName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn Add(string? columnName, System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn Add(string? columnName, System.Type type, string expression) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void AddRange(System.Data.DataColumn[] columns) { }
         public bool CanRemove(System.Data.DataColumn? column) { throw null; }
         public void Clear() { }
@@ -183,8 +192,11 @@ namespace System.Data
         public void CopyTo(System.Data.DataColumn[] array, int index) { }
         public int IndexOf(System.Data.DataColumn? column) { throw null; }
         public int IndexOf(string? columnName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Remove(System.Data.DataColumn column) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Remove(string name) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void RemoveAt(int index) { }
     }
     public partial class DataException : System.SystemException
@@ -296,30 +308,35 @@ namespace System.Data
         protected internal DataRow(System.Data.DataRowBuilder builder) { }
         public bool HasErrors { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public object this[System.Data.DataColumn column] { get { throw null; } set { } }
+        public object this[System.Data.DataColumn column] { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[System.Data.DataColumn column, System.Data.DataRowVersion version] { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public object this[int columnIndex] { get { throw null; } set { } }
+        public object this[int columnIndex] { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[int columnIndex, System.Data.DataRowVersion version] { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public object this[string columnName] { get { throw null; } set { } }
+        public object this[string columnName] { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public object this[string columnName, System.Data.DataRowVersion version] { get { throw null; } }
-        public object?[] ItemArray { get { throw null; } set { } }
+        public object?[] ItemArray { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string RowError { get { throw null; } set { } }
+        public string RowError { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         public System.Data.DataRowState RowState { get { throw null; } }
         public System.Data.DataTable Table { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void AcceptChanges() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void BeginEdit() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public void CancelEdit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ClearErrors() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Delete() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void EndEdit() { }
         public System.Data.DataRow[] GetChildRows(System.Data.DataRelation? relation) { throw null; }
         public System.Data.DataRow[] GetChildRows(System.Data.DataRelation? relation, System.Data.DataRowVersion version) { throw null; }
@@ -342,14 +359,23 @@ namespace System.Data
         public bool IsNull(System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
         public bool IsNull(int columnIndex) { throw null; }
         public bool IsNull(string columnName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void RejectChanges() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetAdded() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetColumnError(System.Data.DataColumn column, string? error) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetColumnError(int columnIndex, string? error) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetColumnError(string columnName, string? error) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetModified() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void SetNull(System.Data.DataColumn column) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetParentRow(System.Data.DataRow? parentRow) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void SetParentRow(System.Data.DataRow? parentRow, System.Data.DataRelation? relation) { }
     }
     [System.FlagsAttribute]
@@ -380,19 +406,27 @@ namespace System.Data
         internal DataRowCollection() { }
         public override int Count { get { throw null; } }
         public System.Data.DataRow this[int index] { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Add(System.Data.DataRow row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow Add(params object?[] values) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Clear() { }
         public bool Contains(object? key) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public bool Contains(object?[] keys) { throw null; }
         public override void CopyTo(System.Array ar, int index) { }
         public void CopyTo(System.Data.DataRow[] array, int index) { }
         public System.Data.DataRow? Find(object? key) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow? Find(object?[] keys) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int IndexOf(System.Data.DataRow? row) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void InsertAt(System.Data.DataRow row, int pos) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Remove(System.Data.DataRow row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void RemoveAt(int index) { }
     }
     public static partial class DataRowComparer
@@ -414,8 +448,11 @@ namespace System.Data
         public static T? Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
         public static T? Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
         public static T? Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, T? value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static void SetField<T>(this System.Data.DataRow row, int columnIndex, T? value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static void SetField<T>(this System.Data.DataRow row, string columnName, T? value) { }
     }
     [System.FlagsAttribute]
@@ -441,9 +478,9 @@ namespace System.Data
         public bool IsEdit { get { throw null; } }
         public bool IsNew { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public object this[int ndx] { get { throw null; } set { } }
+        public object this[int ndx] { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public object this[string property] { get { throw null; } set { } }
+        public object this[string property] { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         public System.Data.DataRow Row { get { throw null; } }
         public System.Data.DataRowVersion RowVersion { get { throw null; } }
 #nullable disable
@@ -453,10 +490,15 @@ namespace System.Data
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged { add { } remove { } }
         public void BeginEdit() { }
         public void CancelEdit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataView CreateChildView(System.Data.DataRelation relation) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataView CreateChildView(System.Data.DataRelation relation, bool followParent) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataView CreateChildView(string relationName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataView CreateChildView(string relationName, bool followParent) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Delete() { }
         public void EndEdit() { }
         public override bool Equals(object? other) { throw null; }
@@ -465,16 +507,20 @@ namespace System.Data
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
 #nullable enable
@@ -486,25 +532,29 @@ namespace System.Data
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataSetSchema")]
     public partial class DataSet : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataSet() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context, bool ConstructSchema) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataSet(string dataSetName) { }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        public bool CaseSensitive { get { throw null; } set { } }
+        public bool CaseSensitive { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string DataSetName { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public System.Data.DataViewManager DefaultViewManager { get { throw null; } }
+        public System.Data.DataViewManager DefaultViewManager { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(true)]
-        public bool EnforceConstraints { get { throw null; } set { } }
+        public bool EnforceConstraints { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool HasErrors { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsInitialized { get { throw null; } }
-        public System.Globalization.CultureInfo Locale { get { throw null; } set { } }
+        public System.Globalization.CultureInfo Locale { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Namespace { get { throw null; } set { } }
@@ -528,60 +578,100 @@ namespace System.Data
         public System.Data.DataTableCollection Tables { get { throw null; } }
         public event System.EventHandler? Initialized { add { } remove { } }
         public event System.Data.MergeFailedEventHandler? MergeFailed { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void AcceptChanges() { }
         public void BeginInit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Clear() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual System.Data.DataSet Clone() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataSet Copy() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTableReader CreateDataReader() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTableReader CreateDataReader(params System.Data.DataTable[] dataTables) { throw null; }
         protected System.Data.SchemaSerializationMode DetermineSchemaSerializationMode(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
         protected System.Data.SchemaSerializationMode DetermineSchemaSerializationMode(System.Xml.XmlReader reader) { throw null; }
         public void EndInit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataSet? GetChanges() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataSet? GetChanges(System.Data.DataRowState rowStates) { throw null; }
         public static System.Xml.Schema.XmlSchemaComplexType GetDataSetSchema(System.Xml.Schema.XmlSchemaSet? schemaSet) { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Xml.Schema.XmlSchema? GetSchemaSerializable() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void GetSerializationData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public string GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public string GetXmlSchema() { throw null; }
         public bool HasChanges() { throw null; }
         public bool HasChanges(System.Data.DataRowState rowStates) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.IO.Stream? stream, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.IO.TextReader? reader, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void InferXmlSchema(string fileName, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.Xml.XmlReader? reader, string[]? nsArray) { }
         protected virtual void InitializeDerivedDataSet() { }
         protected bool IsBinarySerialized(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params string[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataRow[] rows) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataRow[] rows, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataSet dataSet) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataSet dataSet, bool preserveChanges) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataSet dataSet, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataTable table) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataTable table, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
         protected virtual void OnPropertyChanging(System.ComponentModel.PropertyChangedEventArgs pcevent) { }
         protected virtual void OnRemoveRelation(System.Data.DataRelation relation) { }
         protected internal virtual void OnRemoveTable(System.Data.DataTable table) { }
         protected internal void RaisePropertyChanging(string name) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.TextReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void ReadXmlSerializable(System.Xml.XmlReader reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual void RejectChanges() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual void Reset() { }
         protected virtual bool ShouldSerializeRelations() { throw null; }
         protected virtual bool ShouldSerializeTables() { throw null; }
@@ -591,21 +681,37 @@ namespace System.Data
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
 #nullable enable
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
     }
     public enum DataSetDateTime
@@ -632,11 +738,15 @@ namespace System.Data
     public partial class DataTable : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
         protected internal bool fInitInProgress;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataTable() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DataTable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataTable(string? tableName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataTable(string? tableName, string? tableNamespace) { }
-        public bool CaseSensitive { get { throw null; } set { } }
+        public bool CaseSensitive { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public System.Data.DataRelationCollection ChildRelations { get { throw null; } }
@@ -648,17 +758,17 @@ namespace System.Data
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public System.Data.DataSet? DataSet { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public System.Data.DataView DefaultView { get { throw null; } }
+        public System.Data.DataView DefaultView { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string DisplayExpression { get { throw null; } set { } }
+        public string DisplayExpression { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool HasErrors { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsInitialized { get { throw null; } }
-        public System.Globalization.CultureInfo Locale { get { throw null; } set { } }
+        public System.Globalization.CultureInfo Locale { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(50)]
         public int MinimumCapacity { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
@@ -693,33 +803,54 @@ namespace System.Data
         public event System.Data.DataTableClearEventHandler? TableCleared { add { } remove { } }
         public event System.Data.DataTableClearEventHandler? TableClearing { add { } remove { } }
         public event System.Data.DataTableNewRowEventHandler? TableNewRow { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void AcceptChanges() { }
         public virtual void BeginInit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void BeginLoadData() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Clear() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual System.Data.DataTable Clone() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public object Compute(string? expression, string? filter) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable Copy() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTableReader CreateDataReader() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual System.Data.DataTable CreateInstance() { throw null; }
         public virtual void EndInit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void EndLoadData() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable? GetChanges() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable? GetChanges(System.Data.DataRowState rowStates) { throw null; }
         public static System.Xml.Schema.XmlSchemaComplexType GetDataTableSchema(System.Xml.Schema.XmlSchemaSet? schemaSet) { throw null; }
         public System.Data.DataRow[] GetErrors() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Type GetRowType() { throw null; }
         protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ImportRow(System.Data.DataRow? row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow LoadDataRow(object?[] values, bool fAcceptChanges) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow LoadDataRow(object?[] values, System.Data.LoadOption loadOption) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataTable table) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataTable table, bool preserveChanges) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Merge(System.Data.DataTable table, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow NewRow() { throw null; }
         protected internal System.Data.DataRow[] NewRowArray(int size) { throw null; }
         protected virtual System.Data.DataRow NewRowFromBuilder(System.Data.DataRowBuilder builder) { throw null; }
@@ -734,20 +865,35 @@ namespace System.Data
         protected virtual void OnTableCleared(System.Data.DataTableClearEventArgs e) { }
         protected virtual void OnTableClearing(System.Data.DataTableClearEventArgs e) { }
         protected virtual void OnTableNewRow(System.Data.DataTableNewRowEventArgs e) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.TextReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void ReadXmlSerializable(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void RejectChanges() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual void Reset() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow[] Select() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow[] Select(string? filterExpression) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow[] Select(string? filterExpression, string? sort) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataRow[] Select(string? filterExpression, string? sort, System.Data.DataViewRowState recordStates) { throw null; }
         System.Collections.IList System.ComponentModel.IListSource.GetList() { throw null; }
         System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
@@ -756,29 +902,53 @@ namespace System.Data
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
 #nullable enable
         public override string ToString() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer, bool writeHierarchy) { }
     }
     public sealed partial class DataTableClearEventArgs : System.EventArgs
@@ -801,10 +971,15 @@ namespace System.Data
         protected override System.Collections.ArrayList List { get { throw null; } }
         public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanged { add { } remove { } }
         public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanging { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable Add() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Add(System.Data.DataTable table) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable Add(string? name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable Add(string? name, string? tableNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void AddRange(System.Data.DataTable?[]? tables) { }
         public bool CanRemove(System.Data.DataTable? table) { throw null; }
         public void Clear() { }
@@ -821,11 +996,16 @@ namespace System.Data
     }
     public static partial class DataTableExtensions
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.DataView AsDataView(this System.Data.DataTable table) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.DataView AsDataView<T>(this System.Data.EnumerableRowCollection<T> source) where T : System.Data.DataRow { throw null; }
         public static System.Data.EnumerableRowCollection<System.Data.DataRow> AsEnumerable(this System.Data.DataTable source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.DataTable CopyToDataTable<T>(this System.Collections.Generic.IEnumerable<T> source) where T : System.Data.DataRow { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static void CopyToDataTable<T>(this System.Collections.Generic.IEnumerable<T> source, System.Data.DataTable table, System.Data.LoadOption options) where T : System.Data.DataRow { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static void CopyToDataTable<T>(this System.Collections.Generic.IEnumerable<T> source, System.Data.DataTable table, System.Data.LoadOption options, System.Data.FillErrorEventHandler? errorHandler) where T : System.Data.DataRow { }
     }
     public sealed partial class DataTableNewRowEventArgs : System.EventArgs
@@ -836,7 +1016,9 @@ namespace System.Data
     public delegate void DataTableNewRowEventHandler(object sender, System.Data.DataTableNewRowEventArgs e);
     public sealed partial class DataTableReader : System.Data.Common.DbDataReader
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataTableReader(System.Data.DataTable dataTable) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataTableReader(System.Data.DataTable[] dataTables) { }
         public override int Depth { get { throw null; } }
         public override int FieldCount { get { throw null; } }
@@ -881,18 +1063,21 @@ namespace System.Data
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataSourceEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class DataView : System.ComponentModel.MarshalByValueComponent, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.IBindingListView, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.ComponentModel.ITypedList
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataView() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataView(System.Data.DataTable? table) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataView(System.Data.DataTable table, string? RowFilter, string? Sort, System.Data.DataViewRowState RowState) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
-        public bool AllowDelete { get { throw null; } set { } }
+        public bool AllowDelete { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(true)]
-        public bool AllowEdit { get { throw null; } set { } }
+        public bool AllowEdit { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(true)]
-        public bool AllowNew { get { throw null; } set { } }
+        public bool AllowNew { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public bool ApplyDefaultSort { get { throw null; } set { } }
+        public bool ApplyDefaultSort { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public int Count { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -903,12 +1088,12 @@ namespace System.Data
         protected bool IsOpen { get { throw null; } }
         public System.Data.DataRowView this[int recordIndex] { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public virtual string? RowFilter { get { throw null; } set { } }
+        public virtual string? RowFilter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataViewRowState.CurrentRows)]
-        public System.Data.DataViewRowState RowStateFilter { get { throw null; } set { } }
+        public System.Data.DataViewRowState RowStateFilter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string Sort { get { throw null; } set { } }
+        public string Sort { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
@@ -931,11 +1116,15 @@ namespace System.Data
 #nullable enable
         public event System.EventHandler? Initialized { add { } remove { } }
         public event System.ComponentModel.ListChangedEventHandler? ListChanged { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public virtual System.Data.DataRowView AddNew() { throw null; }
         public void BeginInit() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void Close() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void ColumnCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
         public void CopyTo(System.Array array, int index) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void Delete(int index) { }
         protected override void Dispose(bool disposing) { }
         public void EndInit() { }
@@ -945,9 +1134,13 @@ namespace System.Data
         public System.Data.DataRowView[] FindRows(object? key) { throw null; }
         public System.Data.DataRowView[] FindRows(object?[] key) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void IndexListChanged(object sender, System.ComponentModel.ListChangedEventArgs e) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void OnListChanged(System.ComponentModel.ListChangedEventArgs e) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void Open() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void Reset() { }
         int System.Collections.IList.Add(object? value) { throw null; }
         void System.Collections.IList.Clear() { }
@@ -968,21 +1161,28 @@ namespace System.Data
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
         string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
 #nullable enable
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable ToTable() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable ToTable(bool distinct, params string[] columnNames) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable ToTable(string? tableName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable ToTable(string? tableName, bool distinct, params string[] columnNames) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void UpdateIndex() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void UpdateIndex(bool force) { }
     }
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataViewManagerDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class DataViewManager : System.ComponentModel.MarshalByValueComponent, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList, System.ComponentModel.ITypedList
     {
         public DataViewManager() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataViewManager(System.Data.DataSet? dataSet) { }
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
-        public System.Data.DataSet? DataSet { get { throw null; } set { } }
+        public System.Data.DataSet? DataSet { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
         public string DataViewSettingCollectionString { get { throw null; } set { } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.DataViewSettingCollection DataViewSettings { get { throw null; } }
@@ -1004,8 +1204,10 @@ namespace System.Data
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
 #nullable enable
         public event System.ComponentModel.ListChangedEventHandler? ListChanged { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataView CreateDataView(System.Data.DataTable table) { throw null; }
         protected virtual void OnListChanged(System.ComponentModel.ListChangedEventArgs e) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void RelationCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
@@ -1026,6 +1228,7 @@ namespace System.Data
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
         string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
 #nullable enable
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual void TableCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewRowStateEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -1584,7 +1787,9 @@ namespace System.Data
     }
     public abstract partial class TypedTableBase<T> : System.Data.DataTable, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where T : System.Data.DataRow
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected TypedTableBase() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected TypedTableBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Data.EnumerableRowCollection<TResult> Cast<TResult>() { throw null; }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
@@ -1684,11 +1889,16 @@ namespace System.Data.Common
         protected virtual System.Data.Common.DataTableMappingCollection CreateTableMappings() { throw null; }
         protected override void Dispose(bool disposing) { }
         public virtual int Fill(System.Data.DataSet dataSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Fill(System.Data.DataSet dataSet, string srcTable, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDataReader dataReader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Fill(System.Data.DataTable[] dataTables, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
         public virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public virtual System.Data.IDataParameter[] GetFillParameters() { throw null; }
@@ -1714,8 +1924,10 @@ namespace System.Data.Common
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string SourceColumn { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
@@ -1751,6 +1963,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Data.Common.DataColumnMapping? GetColumnMappingBySchemaAction(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.DataColumn? GetDataColumn(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int IndexOf(object? value) { throw null; }
@@ -1782,8 +1995,10 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Data.Common.DataColumnMapping? GetColumnMappingBySchemaAction(string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn? GetDataColumn(string sourceColumn, System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable? GetDataTableBySchemaAction(System.Data.DataSet dataSet, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
@@ -1946,19 +2161,26 @@ namespace System.Data.Common
         public bool SetAllValues { get { throw null; } set { } }
         protected abstract void ApplyParameterInfo(System.Data.Common.DbParameter parameter, System.Data.DataRow row, System.Data.StatementType statementType, bool whereClause);
         protected override void Dispose(bool disposing) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.Common.DbCommand GetDeleteCommand() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.Common.DbCommand GetDeleteCommand(bool useColumnsForParameterNames) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.Common.DbCommand GetInsertCommand() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.Common.DbCommand GetInsertCommand(bool useColumnsForParameterNames) { throw null; }
         protected abstract string GetParameterName(int parameterOrdinal);
         protected abstract string GetParameterName(string parameterName);
         protected abstract string GetParameterPlaceholder(int parameterOrdinal);
         protected virtual System.Data.DataTable? GetSchemaTable(System.Data.Common.DbCommand sourceCommand) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.Common.DbCommand GetUpdateCommand() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.Common.DbCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
         protected virtual System.Data.Common.DbCommand InitializeCommand(System.Data.Common.DbCommand? command) { throw null; }
         public virtual string QuoteIdentifier(string unquotedIdentifier) { throw null; }
         public virtual void RefreshSchema() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected void RowUpdatingHandler(System.Data.Common.RowUpdatingEventArgs rowUpdatingEvent) { }
         protected abstract void SetRowUpdatingHandler(System.Data.Common.DbDataAdapter adapter);
         public virtual string UnquoteIdentifier(string quotedIdentifier) { throw null; }
@@ -2056,16 +2278,20 @@ namespace System.Data.Common
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
         public override string ToString() { throw null; }
@@ -2074,7 +2300,9 @@ namespace System.Data.Common
     public abstract partial class DbDataAdapter : System.Data.Common.DataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public const string DefaultSourceTableName = "Table";
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DbDataAdapter() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DbDataAdapter(System.Data.Common.DbDataAdapter adapter) { }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
@@ -2102,17 +2330,28 @@ namespace System.Data.Common
         protected override void Dispose(bool disposing) { }
         protected virtual int ExecuteBatch() { throw null; }
         public override int Fill(System.Data.DataSet dataSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Fill(System.Data.DataSet dataSet, int startRecord, int maxRecords, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Fill(System.Data.DataSet dataSet, int startRecord, int maxRecords, string srcTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Fill(System.Data.DataSet dataSet, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Fill(System.Data.DataTable dataTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Fill(System.Data.DataTable[] dataTables, int startRecord, int maxRecords, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Fill(int startRecord, int maxRecords, params System.Data.DataTable[] dataTables) { throw null; }
         public override System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, System.Data.IDbCommand command, string srcTable, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
         protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception? error) { throw null; }
@@ -2123,10 +2362,14 @@ namespace System.Data.Common
         protected virtual void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
         object System.ICloneable.Clone() { throw null; }
         protected virtual void TerminateBatching() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Update(System.Data.DataRow[] dataRows) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected virtual int Update(System.Data.DataRow[] dataRows, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         public override int Update(System.Data.DataSet dataSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
     public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable, System.IAsyncDisposable
@@ -2234,16 +2477,20 @@ namespace System.Data.Common
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
 #nullable enable
@@ -2418,13 +2665,17 @@ namespace System.Data.Common
     public static partial class DbProviderFactories
     {
         public static System.Data.Common.DbProviderFactory? GetFactory(System.Data.Common.DbConnection connection) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.Common.DbProviderFactory GetFactory(System.Data.DataRow providerRow) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.Common.DbProviderFactory GetFactory(string providerInvariantName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static System.Data.DataTable GetFactoryClasses() { throw null; }
         public static System.Collections.Generic.IEnumerable<string> GetProviderInvariantNames() { throw null; }
         public static void RegisterFactory(string providerInvariantName, System.Data.Common.DbProviderFactory factory) { }
         public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName) { }
         public static void RegisterFactory(string providerInvariantName, System.Type providerFactoryClass) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
         public static bool UnregisterFactory(string providerInvariantName) { throw null; }
     }
@@ -3552,7 +3803,9 @@ namespace System.Xml
     [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
     public partial class XmlDataDocument : System.Xml.XmlDocument
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public XmlDataDocument() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public XmlDataDocument(System.Data.DataSet dataset) { }
         public System.Data.DataSet DataSet { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }

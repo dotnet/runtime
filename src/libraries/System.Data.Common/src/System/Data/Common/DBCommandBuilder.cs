@@ -559,6 +559,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BuildCache(bool closeConnection, DataRow? dataRow, bool useColumnsForParameterNames)
         {
             // Don't bother building the cache if it's done already; wait for
@@ -654,6 +655,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BuildInformation(DataTable schemaTable)
         {
             DbSchemaRow?[]? rows = DbSchemaRow.GetSortedSchemaRows(schemaTable, false);
@@ -791,6 +793,7 @@ namespace System.Data.Common
             _dbSchemaRows = rows;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DbCommand BuildDeleteCommand(DataTableMapping? mappings, DataRow? dataRow)
         {
             DbCommand command = InitializeCommand(DeleteCommand);
@@ -811,6 +814,7 @@ namespace System.Data.Common
             return command;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DbCommand BuildInsertCommand(DataTableMapping? mappings, DataRow? dataRow)
         {
             DbCommand command = InitializeCommand(InsertCommand);
@@ -902,6 +906,7 @@ namespace System.Data.Common
             return command;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DbCommand? BuildUpdateCommand(DataTableMapping? mappings, DataRow? dataRow)
         {
             DbCommand command = InitializeCommand(UpdateCommand);
@@ -989,6 +994,7 @@ namespace System.Data.Common
             return (skipRow) ? null : command;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private int BuildWhereClause(
             DataTableMapping? mappings,
             DataRow? dataRow,
@@ -1309,15 +1315,19 @@ namespace System.Data.Common
             return select;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DbCommand GetInsertCommand()
         {
             return GetInsertCommand(null, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DbCommand GetInsertCommand(bool useColumnsForParameterNames)
         {
             return GetInsertCommand(null, useColumnsForParameterNames);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DbCommand GetInsertCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
@@ -1325,14 +1335,19 @@ namespace System.Data.Common
             return InsertCommand!;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DbCommand GetUpdateCommand()
         {
             return GetUpdateCommand(null, false);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DbCommand GetUpdateCommand(bool useColumnsForParameterNames)
         {
             return GetUpdateCommand(null, useColumnsForParameterNames);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DbCommand GetUpdateCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
@@ -1340,14 +1355,19 @@ namespace System.Data.Common
             return UpdateCommand!;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DbCommand GetDeleteCommand()
         {
             return GetDeleteCommand(null, false);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DbCommand GetDeleteCommand(bool useColumnsForParameterNames)
         {
             return GetDeleteCommand(null, useColumnsForParameterNames);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DbCommand GetDeleteCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
@@ -1355,6 +1375,7 @@ namespace System.Data.Common
             return DeleteCommand!;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object? GetColumnValue(DataRow row, string columnName, DataTableMapping mappings, DataRowVersion version)
         {
             return GetColumnValue(row, GetDataColumn(columnName, mappings, row), version);
@@ -1371,6 +1392,7 @@ namespace System.Data.Common
             return value;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataColumn? GetDataColumn(string columnName, DataTableMapping tablemapping, DataRow row)
         {
             DataColumn? column = null;
@@ -1527,6 +1549,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected void RowUpdatingHandler(RowUpdatingEventArgs rowUpdatingEvent)
         {
             if (null == rowUpdatingEvent)
@@ -1590,6 +1613,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void RowUpdatingHandlerBuilder(RowUpdatingEventArgs rowUpdatingEvent)
         {
             // the Update method will close the connection if command was null and returned command.Connection is same as SelectCommand.Connection

@@ -94,6 +94,7 @@ namespace System.Data
         private static int s_objectTypeCount; // Bid counter
         private readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataView(DataTable? table, bool locked)
         {
             GC.SuppressFinalize(this);
@@ -108,6 +109,7 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView() : this(null)
         {
             SetIndex2("", DataViewRowState.CurrentRows, null, true);
@@ -117,6 +119,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class with the
         ///    specified <see cref='System.Data.DataTable'/>.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView(DataTable? table) : this(table, false)
         {
             SetIndex2("", DataViewRowState.CurrentRows, null, true);
@@ -126,6 +129,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class with the
         ///    specified <see cref='System.Data.DataTable'/>.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataView(DataTable table, string? RowFilter, string? Sort, DataViewRowState RowState)
         {
             GC.SuppressFinalize(this);
@@ -166,6 +170,7 @@ namespace System.Data
             SetIndex(Sort, RowState, newFilter);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataView(DataTable table, System.Predicate<DataRow>? predicate, System.Comparison<DataRow>? comparison, DataViewRowState RowState)
         {
             GC.SuppressFinalize(this);
@@ -203,6 +208,7 @@ namespace System.Data
         public bool AllowDelete
         {
             get { return _allowDelete; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_allowDelete != value)
@@ -221,6 +227,7 @@ namespace System.Data
         public bool ApplyDefaultSort
         {
             get { return _applyDefaultSort; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_ApplyDefaultSort|API> {0}, {1}", ObjectID, value);
@@ -241,6 +248,7 @@ namespace System.Data
         public bool AllowEdit
         {
             get { return _allowEdit; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_allowEdit != value)
@@ -260,6 +268,7 @@ namespace System.Data
         public bool AllowNew
         {
             get { return _allowNew; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_allowNew != value)
@@ -314,6 +323,7 @@ namespace System.Data
                 DataExpression? expression = (_rowFilter as DataExpression);
                 return (expression == null ? "" : expression.Expression); // CONSIDER: return optimized expression here
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -349,6 +359,7 @@ namespace System.Data
                 RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
                 return ((null != filter) ? filter._predicateFilter : null);
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (!ReferenceEquals(RowPredicate, value))
@@ -386,6 +397,7 @@ namespace System.Data
         public DataViewRowState RowStateFilter
         {
             get { return _recordStates; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_RowStateFilter|API> {0}, {1}", ObjectID, value);
@@ -430,6 +442,7 @@ namespace System.Data
                     return _sort;
                 }
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -459,6 +472,7 @@ namespace System.Data
         internal System.Comparison<DataRow>? SortComparison
         {
             get { return _comparison; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_SortComparison|API> {0}", ObjectID);
@@ -481,6 +495,7 @@ namespace System.Data
         public DataTable? Table
         {
             get { return _table; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Table|API> {0}, {1}", ObjectID, (value != null) ? value.ObjectID : 0);
@@ -541,6 +556,7 @@ namespace System.Data
         /// Only one new row of data allowed at a time, so previous new row will be added to row collection.
         /// Unsupported pattern: dataTable.Rows.Add(dataView.AddNew().Row)
         /// </remarks>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public virtual DataRowView AddNew()
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataView.AddNew|API> {0}", ObjectID);
@@ -577,6 +593,8 @@ namespace System.Data
             _fInitInProgress = true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public void EndInit()
         {
             if (_delayedTable != null && _delayedTable.fInitInProgress)
@@ -634,6 +652,7 @@ namespace System.Data
         /// <summary>
         /// Closes the <see cref='System.Data.DataView'/>
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected void Close()
         {
             _shouldOpen = false;
@@ -684,8 +703,10 @@ namespace System.Data
         /// <summary>
         /// Deletes a row at the specified index.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Delete(int index) => Delete(GetRow(index));
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Delete(DataRow row)
         {
             if (null != row)
@@ -712,6 +733,8 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -788,6 +811,7 @@ namespace System.Data
             return rows;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void FinishAddNew(bool success)
         {
             Debug.Assert(null != _addNewRow, "null addNewRow");
@@ -844,6 +868,8 @@ namespace System.Data
 
         bool IList.IsFixedSize => false;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         int IList.Add(object? value)
         {
             if (value == null)
@@ -913,6 +939,8 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IList.RemoveAt(int index) => Delete(index);
 
         internal Index? GetFindIndex(string column, bool keepIndex)
@@ -953,6 +981,8 @@ namespace System.Data
 // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
         bool IBindingList.AllowNew => AllowNew;
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         object IBindingList.AddNew() => AddNew();
         bool IBindingList.AllowEdit => AllowEdit;
         bool IBindingList.AllowRemove => AllowDelete;
@@ -961,8 +991,15 @@ namespace System.Data
         bool IBindingList.SupportsSearching => true;
         bool IBindingList.SupportsSorting => true;
         bool IBindingList.IsSorted => Sort.Length != 0;
-        PropertyDescriptor IBindingList.SortProperty => GetSortProperty();
 
+        PropertyDescriptor IBindingList.SortProperty
+        {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
+            get => GetSortProperty();
+        }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal PropertyDescriptor GetSortProperty()
         {
             if (_table != null && _index != null && _index._indexFields.Length == 1)
@@ -1005,6 +1042,8 @@ namespace System.Data
 
         void IBindingList.AddIndex(PropertyDescriptor property) => GetFindIndex(property.Name, keepIndex: true);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IBindingList.ApplySort(PropertyDescriptor property, ListSortDirection direction)
         {
             Sort = CreateSortString(property, direction);
@@ -1055,6 +1094,8 @@ namespace System.Data
             GetFindIndex(property.Name, /*keepIndex:*/false);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IBindingList.RemoveSort()
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.RemoveSort|API> {0}", ObjectID);
@@ -1065,6 +1106,8 @@ namespace System.Data
 
         #region Additional method and properties for new interface IBindingListView
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IBindingListView.ApplySort(ListSortDescriptionCollection sorts)
         {
             if (sorts == null)
@@ -1123,8 +1166,10 @@ namespace System.Data
             return resultString.ToString();
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         void IBindingListView.RemoveFilter()
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.RemoveFilter|API> {0}", ObjectID);
@@ -1134,12 +1179,20 @@ namespace System.Data
         string IBindingListView.Filter
         {
             get { return RowFilter; }
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             set { RowFilter = value; }
         }
 #nullable enable
 
-        ListSortDescriptionCollection IBindingListView.SortDescriptions => GetSortDescriptions();
+        ListSortDescriptionCollection IBindingListView.SortDescriptions
+        {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
+            get => GetSortDescriptions();
+        }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal ListSortDescriptionCollection GetSortDescriptions()
         {
             ListSortDescription[] sortDescArray = Array.Empty<ListSortDescription>();
@@ -1195,6 +1248,8 @@ namespace System.Data
             return string.Empty;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
             if (_table != null)
@@ -1261,6 +1316,7 @@ namespace System.Data
 
         private DataRowView GetRowView(DataRow dr) => _rowViewCache[dr];
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void IndexListChanged(object sender, ListChangedEventArgs e)
         {
             if (ListChangedType.Reset != e.ListChangedType)
@@ -1279,6 +1335,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void IndexListChangedInternal(ListChangedEventArgs e)
         {
             _rowViewBuffer.Clear();
@@ -1302,6 +1359,7 @@ namespace System.Data
             IndexListChanged(this, e);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MaintainDataView(ListChangedType changedType, DataRow? row, bool trackAddRemove)
         {
             DataRowView? buffer = null;
@@ -1376,6 +1434,7 @@ namespace System.Data
         /// <summary>
         /// Raises the <see cref="System.Data.DataView.ListChanged" /> event.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void OnListChanged(ListChangedEventArgs e)
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.OnListChanged|INFO> {0}, ListChangedType={1}", ObjectID, e.ListChangedType);
@@ -1451,6 +1510,7 @@ namespace System.Data
         /// <summary>
         /// Opens a <see cref='System.Data.DataView'/>.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected void Open()
         {
             _shouldOpen = true;
@@ -1458,6 +1518,7 @@ namespace System.Data
             _dvListener.RegisterMetaDataEvents(_table);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected void Reset()
         {
             if (IsOpen)
@@ -1466,6 +1527,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ResetRowViewCache()
         {
             Dictionary<DataRow, DataRowView> rvc = new Dictionary<DataRow, DataRowView>(CountFromIndex, DataRowReferenceComparer.s_default);
@@ -1495,6 +1557,7 @@ namespace System.Data
             _rowViewCache = rvc;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetDataViewManager(DataViewManager? dataViewManager)
         {
             if (_table == null)
@@ -1532,11 +1595,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal virtual void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             SetIndex2(newSort, newRowStates, newRowFilter, true);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetIndex2(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter, bool fireEvent)
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.SetIndex|INFO> {0}, newSort='{1}', newRowStates={2}", ObjectID, newSort, newRowStates);
@@ -1577,10 +1642,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected void UpdateIndex() => UpdateIndex(false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void UpdateIndex(bool force) => UpdateIndex(force, true);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void UpdateIndex(bool force, bool fireEvent)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataView.UpdateIndex|INFO> {0}, force={1}", ObjectID, force);
@@ -1641,6 +1709,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
@@ -1652,6 +1721,7 @@ namespace System.Data
             );
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
@@ -1663,6 +1733,7 @@ namespace System.Data
             );
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataColumnPropertyDescriptor? NullProp = null;
@@ -1674,18 +1745,23 @@ namespace System.Data
             );
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ColumnCollectionChangedInternal(object sender, CollectionChangeEventArgs e) =>
             ColumnCollectionChanged(sender, e);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable ToTable() =>
             ToTable(null, false, Array.Empty<string>());
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable ToTable(string? tableName) =>
             ToTable(tableName, false, Array.Empty<string>());
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable ToTable(bool distinct, params string[] columnNames) =>
             ToTable(null, distinct, columnNames);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable ToTable(string? tableName, bool distinct, params string[] columnNames)
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.ToTable|API> {0}, TableName='{1}', distinct={2}", ObjectID, tableName, distinct);

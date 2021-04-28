@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -43,8 +44,10 @@ namespace System.Data
         /// <summary>
         /// Adds the specified <see cref='System.Data.DataRow'/> to the <see cref='System.Data.DataRowCollection'/> object.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Add(DataRow row) => _table.AddRow(row, -1);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void InsertAt(DataRow row, int pos)
         {
             if (pos < 0)
@@ -62,6 +65,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void DiffInsertAt(DataRow row, int pos)
         {
             if ((pos < 0) || (pos == _list.Count))
@@ -106,6 +110,7 @@ namespace System.Data
         /// <summary>
         /// Creates a row using specified values and adds it to the <see cref='System.Data.DataRowCollection'/>.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRow AddWithColumnEvents(params object[] values)
         {
             DataRow row = _table.NewRow(-1);
@@ -114,6 +119,7 @@ namespace System.Data
             return row;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataRow Add(params object?[] values)
         {
             int record = _table.NewRecordFromArray(values);
@@ -146,11 +152,13 @@ namespace System.Data
         /// <summary>
         /// Gets the row containing the specified primary key values.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataRow? Find(object?[] keys) => _table.FindByPrimaryKey(keys);
 
         /// <summary>
         /// Clears the collection of all rows.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Clear() => _table.Clear(false);
 
         /// <summary>
@@ -163,6 +171,7 @@ namespace System.Data
         /// Gets a value indicating if the <see cref='System.Data.DataRow'/> with
         /// the specified primary key values exists.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public bool Contains(object?[] keys) => (_table.FindByPrimaryKey(keys) != null);
 
         public override void CopyTo(Array ar, int index) => _list.CopyTo(ar, index);
@@ -174,6 +183,7 @@ namespace System.Data
         /// <summary>
         /// Removes the specified <see cref='System.Data.DataRow'/> from the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Remove(DataRow row)
         {
             if ((null == row) || (row.Table != _table) || (-1 == row.rowID))
@@ -195,6 +205,7 @@ namespace System.Data
         /// <summary>
         /// Removes the row with the specified index from the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void RemoveAt(int index) => Remove(this[index]);
     }
 }

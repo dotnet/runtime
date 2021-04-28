@@ -40,17 +40,20 @@ namespace System.Data.Common
         private const string ProviderGroupColumnName = "DbProviderFactories";
         private const string InstanceFieldName = "Instance";
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static bool TryGetFactory(string providerInvariantName, [NotNullWhen(true)] out DbProviderFactory? factory)
         {
             factory = GetFactory(providerInvariantName, throwOnError: false);
             return factory != null;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DbProviderFactory GetFactory(string providerInvariantName)
         {
             return GetFactory(providerInvariantName, throwOnError: true)!;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DbProviderFactory GetFactory(DataRow providerRow)
         {
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
@@ -78,6 +81,7 @@ namespace System.Data.Common
             return connection.ProviderFactory;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public static DataTable GetFactoryClasses()
         {
             DataColumn nameColumn = new DataColumn(NameColumnName, typeof(string)) { ReadOnly = true };
@@ -133,6 +137,7 @@ namespace System.Data.Common
             return !string.IsNullOrWhiteSpace(providerInvariantName) && _registeredFactories.TryRemove(providerInvariantName, out _);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static DbProviderFactory? GetFactory(string providerInvariantName, bool throwOnError)
         {
             if (throwOnError)
@@ -188,7 +193,7 @@ namespace System.Data.Common
             return (DbProviderFactory)factory;
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static Type GetProviderTypeFromTypeName(string assemblyQualifiedName)
         {
             Type? providerType = Type.GetType(assemblyQualifiedName);

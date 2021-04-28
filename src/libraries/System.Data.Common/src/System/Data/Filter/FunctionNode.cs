@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Data
@@ -39,6 +40,7 @@ namespace System.Data
             new Function("Avg", FunctionId.Avg, typeof(object), false, false, 1, null, null, null),
         };
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal FunctionNode(DataTable? table, string name) : base(table)
         {
             // Because FunctionNode instances are created eagerly but evaluated lazily,
@@ -115,6 +117,8 @@ namespace System.Data
             return Eval(null, DataRowVersion.Default);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             Debug.Assert(_info < s_funcs.Length && _info >= 0, "Invalid function info.");
@@ -270,6 +274,7 @@ namespace System.Data
             return this;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private Type GetDataType(ExpressionNode node)
         {
             Type nodeType = node.GetType();

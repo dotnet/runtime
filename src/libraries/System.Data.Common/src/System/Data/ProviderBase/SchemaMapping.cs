@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.ProviderBase
@@ -55,6 +56,7 @@ namespace System.Data.ProviderBase
 
         private readonly LoadOption _loadOption;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
                                     SchemaType schemaType, string? sourceTableName, bool gettingData,
                                     DataColumn? parentChapterColumn, object? parentChapterValue)
@@ -190,6 +192,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ApplyToDataRow(DataRow dataRow)
         {
             DataColumnCollection columns = dataRow.Table.Columns;
@@ -381,6 +384,7 @@ namespace System.Data.ProviderBase
             return _mappedDataValues!;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadDataRowWithClear()
         {
             // for FillErrorEvent to ensure no values leftover from previous row
@@ -391,6 +395,7 @@ namespace System.Data.ProviderBase
             LoadDataRow();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadDataRow()
         {
             try
@@ -446,6 +451,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int LoadDataRowChapters(DataRow dataRow)
         {
             int datarowadded = 0;
@@ -531,6 +537,7 @@ namespace System.Data.ProviderBase
             items.Add(value);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void RollbackAddedItems(List<object>? items)
         {
             if (null != items)
@@ -564,6 +571,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object[]? SetupSchemaWithoutKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -759,6 +767,7 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object[]? SetupSchemaWithKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -1138,6 +1147,7 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
         {
             DataColumnCollection columns = schemaRow.Table.Columns;

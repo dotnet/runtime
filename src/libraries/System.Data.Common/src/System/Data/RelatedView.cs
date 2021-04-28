@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -12,6 +13,7 @@ namespace System.Data
         private readonly DataRowView? _parentRowView;
         private readonly object[]? _filterValues;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public RelatedView(DataColumn[] columns, object[] values) : base(columns[0].Table, false)
         {
             if (values == null)
@@ -27,6 +29,7 @@ namespace System.Data
             base.ResetRowViewCache();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public RelatedView(DataRowView parentRowView, DataKey parentKey, DataColumn[] childKeyColumns) : base(childKeyColumns[0].Table, false)
         {
             _filterValues = null;
@@ -76,6 +79,7 @@ namespace System.Data
         internal override IFilter GetFilter() => this;
 
         // move to OnModeChanged
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override DataRowView AddNew()
         {
             DataRowView addNewRowView = base.AddNew();
@@ -83,6 +87,7 @@ namespace System.Data
             return addNewRowView;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             SetIndex2(newSort, newRowStates, newRowFilter, false);

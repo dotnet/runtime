@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -39,6 +40,7 @@ namespace System.Data
                 missingSchemaAction;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MergeDataSet(DataSet source)
         {
             Debug.Assert(_dataSet != null);
@@ -119,6 +121,7 @@ namespace System.Data
             _dataSet.EnforceConstraints = fEnforce;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MergeTable(DataTable src)
         {
             bool fEnforce = false;
@@ -192,6 +195,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void MergeTable(DataTable src, DataTable dst)
         {
             int rowsCount = src.Rows.Count;
@@ -231,6 +235,7 @@ namespace System.Data
             MergeExtendedProperties(src.ExtendedProperties, dst.ExtendedProperties);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void MergeRows(DataRow[] rows)
         {
             Debug.Assert(_dataSet != null);
@@ -319,6 +324,7 @@ namespace System.Data
             _dataSet.EnforceConstraints = fEnforce;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataTable? MergeSchema(DataTable table)
         {
             DataTable? targetTable = null;
@@ -450,6 +456,7 @@ namespace System.Data
             return targetTable;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void MergeTableData(DataTable src)
         {
             DataTable? dest = MergeSchema(src);

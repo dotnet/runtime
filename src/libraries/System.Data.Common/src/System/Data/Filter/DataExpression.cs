@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Data.Common;
@@ -20,10 +21,12 @@ namespace System.Data
         private readonly Type? _dataType;  // This set if the expression is part of ExpressionCoulmn
         private DataColumn[] _dependency = Array.Empty<DataColumn>();
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataExpression(DataTable? table, string? expression) : this(table, expression, null)
         {
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataExpression(DataTable? table, string? expression, Type? type)
         {
             ExpressionParser parser = new ExpressionParser(table);

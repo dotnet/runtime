@@ -4,11 +4,13 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
     internal sealed class DataColumnPropertyDescriptor : PropertyDescriptor
     {
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataColumnPropertyDescriptor(DataColumn dataColumn) : base(dataColumn.ColumnName, null)
         {
             Column = dataColumn;
@@ -72,12 +74,16 @@ namespace System.Data
             return dataRowView.GetColumnValue(Column);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override void ResetValue(object component)
         {
             DataRowView dataRowView = (DataRowView)component;
             dataRowView.SetColumnValue(Column, DBNull.Value); // no need to ccheck for the col type and set Sql...Null!
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override void SetValue(object component, object? value)
         {
             DataRowView dataRowView = (DataRowView)component;

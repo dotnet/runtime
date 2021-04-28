@@ -144,6 +144,7 @@ namespace System.Data
         /// <summary>
         /// Adds the specified table to the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void Add(DataTable table)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Add|API> {0}, table={1}", ObjectID, (table != null) ? table.ObjectID : 0);
@@ -166,6 +167,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void AddRange(DataTable?[]? tables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.AddRange|API> {0}", ObjectID);
@@ -197,6 +199,7 @@ namespace System.Data
         /// <summary>
         /// Creates a table with the given name and adds it to the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable Add(string? name)
         {
             DataTable table = new DataTable(name);
@@ -204,6 +207,7 @@ namespace System.Data
             return table;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable Add(string? name, string? tableNamespace)
         {
             DataTable table = new DataTable(name, tableNamespace);
@@ -214,6 +218,7 @@ namespace System.Data
         /// <summary>
         /// Creates a new table with a default name and adds it to the collection.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataTable Add()
         {
             DataTable table = new DataTable();
@@ -683,6 +688,7 @@ namespace System.Data
             return cachedI;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void FinishInitCollection()
         {
             if (_delayedAddRangeTables != null)

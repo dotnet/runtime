@@ -76,6 +76,8 @@ namespace System.Data
         /// Initializes a new instance of a <see cref='System.Data.DataColumn'/>
         /// class.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This is safe because type is string and expression is null.")]
         public DataColumn() : this(null, typeof(string), null, MappingType.Element)
         {
         }
@@ -84,6 +86,8 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This is safe because type is string and expression is null.")]
         public DataColumn(string? columnName) : this(columnName, typeof(string), null, MappingType.Element)
         {
         }
@@ -92,6 +96,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name and data type.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn(string? columnName, Type dataType) : this(columnName, dataType, null, MappingType.Element)
         {
         }
@@ -101,6 +106,7 @@ namespace System.Data
         /// of the <see cref='System.Data.DataColumn'/> class
         /// using the specified name, data type, and expression.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn(string? columnName, Type dataType, string? expr) : this(columnName, dataType, expr, MappingType.Element)
         {
         }
@@ -111,6 +117,7 @@ namespace System.Data
         /// the specified name, data type, expression, and value that determines whether the
         /// column is an attribute.
         /// </summary>
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public DataColumn(string? columnName, Type dataType, string? expr, MappingType type)
         {
             GC.SuppressFinalize(this);
@@ -143,6 +150,7 @@ namespace System.Data
             _columnMapping = type;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UpdateColumnType(Type type, StorageType typeCode)
         {
             TypeLimiter.EnsureTypeIsAllowed(type);
@@ -211,6 +219,8 @@ namespace System.Data
         public bool AutoIncrement
         {
             get { return ((null != _autoInc) && (_autoInc.Auto)); }
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "Setting DataType to int.")]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_AutoIncrement|API> {0}, {1}", ObjectID, value);
@@ -346,6 +356,7 @@ namespace System.Data
         public string ColumnName
         {
             get { return _columnName; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_ColumnName|API> {0}, '{1}'", ObjectID, value);
@@ -449,6 +460,7 @@ namespace System.Data
         // If the column type is string and it's value is empty, then the empty string is returned.
         // If the column type is not string, or the column type is string and the value is not empty string, then a non-empty string is returned
         // This method does not throw any formatting exceptions, since we can always format the field value to a string.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal string? GetColumnValueAsString(DataRow row, DataRowVersion version)
         {
             object objValue = this[row.GetRecordFromVersion(version)];
@@ -483,6 +495,7 @@ namespace System.Data
         public Type DataType
         {
             get { return _dataType; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_dataType != value)
@@ -647,6 +660,7 @@ namespace System.Data
         [AllowNull]
         public object DefaultValue
         {
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 Debug.Assert(_defaultValue != null, "It should not have been set to null.");
@@ -673,6 +687,7 @@ namespace System.Data
 
                 return _defaultValue;
             }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_DefaultValue|API> {0}", ObjectID);
@@ -716,6 +731,7 @@ namespace System.Data
         public string Expression
         {
             get { return (_expression == null ? "" : _expression.Expression); }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_Expression|API> {0}, '{1}'", ObjectID, value);
@@ -1174,6 +1190,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void InitializeRecord(int record)
         {
             Debug.Assert(null != _storage, "no storage");
@@ -1306,6 +1323,7 @@ namespace System.Data
         public virtual MappingType ColumnMapping
         {
             get { return _columnMapping; }
+            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_ColumnMapping|API> {0}, {1}", ObjectID, value);
@@ -1525,6 +1543,7 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataColumn Clone()
         {
             DataColumn clone = (DataColumn)Activator.CreateInstance(GetType())!;
@@ -1679,6 +1698,7 @@ namespace System.Data
             return false;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool IsMaxLengthViolated()
         {
             if (MaxLength < 0)
@@ -1724,6 +1744,7 @@ namespace System.Data
             return error;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal bool IsNotAllowDBNullViolated()
         {
             Index index = SortIndex;
@@ -1753,6 +1774,7 @@ namespace System.Data
             OnPropertyChanging(new PropertyChangedEventArgs(name));
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataStorage InsureStorage()
         {
             if (_storage == null)
@@ -1763,6 +1785,7 @@ namespace System.Data
             return _storage;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetCapacity(int capacity)
         {
             InsureStorage().SetCapacity(capacity);
@@ -1777,30 +1800,34 @@ namespace System.Data
             ColumnName :
             ColumnName + " + " + Expression;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object ConvertXmlToObject(string s)
         {
             Debug.Assert(s != null, "Caller is resposible for missing element/attribute case");
             return InsureStorage().ConvertXmlToObject(s);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
             return InsureStorage().ConvertXmlToObject(xmlReader, xmlAttrib);
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal string ConvertObjectToXml(object value)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is resposible for checking on DBNull");
             return InsureStorage().ConvertObjectToXml(value);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is resposible for checking on DBNull");
             InsureStorage().ConvertObjectToXml(value, xmlWriter, xmlAttrib);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object GetEmptyColumnStore(int recordCount)
         {
             return InsureStorage().GetEmptyStorageInternal(recordCount);
@@ -1812,6 +1839,7 @@ namespace System.Data
             _storage.CopyValueInternal(record, store, nullbits, storeIndex);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetStorage(object store, BitArray nullbits)
         {
             InsureStorage().SetStorageInternal(store, nullbits);

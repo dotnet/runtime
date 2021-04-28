@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Xml.Serialization;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -134,6 +135,7 @@ namespace System.Data.Common
             _values = newValues;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             SqlDateTime newValue = default;
@@ -149,6 +151,7 @@ namespace System.Data.Common
             return ((SqlDateTime)tmp);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             Debug.Assert(!DataStorage.IsObjectNull(value), "we shouldn't have null here");

@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
     internal sealed class DataRelationPropertyDescriptor : PropertyDescriptor
     {
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataRelationPropertyDescriptor(DataRelation dataRelation) : base(dataRelation.RelationName, null)
         {
             Relation = dataRelation;
@@ -34,6 +36,8 @@ namespace System.Data
 
         public override bool CanResetValue(object component) => false;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override object GetValue(object component)
         {
             DataRowView dataRowView = (DataRowView)component;

@@ -9,6 +9,7 @@ using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -27,6 +28,7 @@ namespace System.Data
             _ds = ds;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadSchema(XmlElement schemaRoot, DataSet ds)
         {
             if (schemaRoot == null)
@@ -177,6 +179,7 @@ namespace System.Data
             return true;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable HandleTable(XmlElement node)
         {
             XmlElement typeNode;
@@ -336,6 +339,7 @@ namespace System.Data
             return instanceName;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleColumn(XmlElement node, DataTable table)
         {
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
@@ -535,7 +539,7 @@ namespace System.Data
             }
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleTypeNode(XmlElement typeNode, DataTable table, ArrayList tableChildren)
         {
             DataTable tableChild;
@@ -564,6 +568,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable InstantiateTable(DataSet dataSet, XmlElement node, XmlElement typeNode)
         {
             string typeName = string.Empty;
@@ -656,6 +661,7 @@ namespace System.Data
             return table;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable InstantiateSimpleTable(DataSet dataSet, XmlElement node)
         {
             string typeName;
