@@ -219,15 +219,17 @@ namespace System.Net.WebSockets.Compression
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 
-            if (errorCode != ErrorCode.Ok)
+            if (errorCode == ErrorCode.Ok)
             {
-                string message = errorCode == ErrorCode.MemError
-                    ? SR.ZLibErrorNotEnoughMemory
-                    : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
-                throw new WebSocketException(message);
+                return stream;
             }
 
-            return stream;
+            stream.Dispose();
+
+            string message = errorCode == ErrorCode.MemError
+                ? SR.ZLibErrorNotEnoughMemory
+                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+            throw new WebSocketException(message);
         }
     }
 }
