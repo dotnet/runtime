@@ -3,7 +3,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -207,8 +206,6 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
-        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
-            Justification = "Code has a fallback and thus works in single-file")]
         private void GenerateFile(List<string> typeNames, string assemblyName, bool proxyOnly, bool silent, bool warnings, bool force, string outputDirectory, bool parsableerrors)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);
@@ -296,9 +293,6 @@ namespace Microsoft.XmlSerializer.Generator
                     ImportType(type, mappings, importedTypes, warnings, importer, parsableerrors);
                 }
             }
-            string nameOrLocation = assembly.Location;
-            if (string.IsNullOrEmpty(nameOrLocation))
-                nameOrLocation = assembly.FullName;
 
             if (importedTypes.Count > 0)
             {
@@ -375,17 +369,17 @@ namespace Microsoft.XmlSerializer.Generator
                     if (!silent)
                     {
                         Console.Out.WriteLine(SR.Format(SR.InfoFileName, codePath));
-                        Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, nameOrLocation, codePath));
+                        Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
                     }
                 }
                 else
                 {
-                    Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, nameOrLocation)));
+                    Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, assembly.Location)));
                 }
             }
             else
             {
-                Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, nameOrLocation)));
+                Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, assembly.Location)));
             }
         }
 
