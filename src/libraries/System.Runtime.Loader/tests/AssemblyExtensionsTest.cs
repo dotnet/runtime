@@ -40,17 +40,17 @@ namespace System.Reflection.Metadata
             }
         }
 
-	[Fact]
-	public void GetApplyUpdateCapabilitiesIsCallable()
-	{
-	    var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
-	    var mi = ty.GetMethod ("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
+        [Fact]
+        public void GetApplyUpdateCapabilitiesIsCallable()
+        {
+            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
+            var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
 
-	    Assert.NotNull (mi);
+            Assert.NotNull(mi);
 
-	    var result = mi.Invoke(null, null);
+            var result = mi.Invoke(null, null);
 
-	    Assert.NotNull (result);
-	}
+            Assert.NotNull(result);
+        }
     }
 }
