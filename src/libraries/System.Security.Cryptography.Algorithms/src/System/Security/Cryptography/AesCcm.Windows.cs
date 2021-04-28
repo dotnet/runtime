@@ -9,13 +9,12 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesCcm
     {
-        private static readonly SafeAlgorithmHandle s_aesCcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CCM).Value;
         private SafeKeyHandle _keyHandle;
 
         [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = Interop.BCrypt.BCryptImportKey(s_aesCcm, key);
+            _keyHandle = Interop.BCrypt.BCryptImportKey(AEADBCryptHandles.AesCcm, key);
         }
 
         private void EncryptInternal(
@@ -25,7 +24,7 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AesAEAD.Encrypt(s_aesCcm, _keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
+            AEADCommon.Encrypt(_keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
         }
 
         private void DecryptInternal(
@@ -36,7 +35,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             // BCrypt implementation of CCM clears plaintext for you on failure
-            AesAEAD.Decrypt(s_aesCcm, _keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: false);
+            AEADCommon.Decrypt(_keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: false);
         }
 
         public void Dispose()

@@ -1,20 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
-using Internal.Cryptography;
-using Internal.NativeCrypto;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    public partial class AesGcm
+    public partial class ChaCha20Poly1305
     {
-        private SafeKeyHandle _keyHandle;
+        public static bool IsSupported => false;
 
-        [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = Interop.BCrypt.BCryptImportKey(AEADBCryptHandles.AesGcm, key);
+            Debug.Fail("Instance ctor should fail before we reach this point.");
+            throw new NotImplementedException();
         }
 
         private void EncryptInternal(
@@ -24,7 +22,8 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AEADCommon.Encrypt(_keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
+            Debug.Fail("Instance ctor should fail before we reach this point.");
+            throw new NotImplementedException();
         }
 
         private void DecryptInternal(
@@ -34,12 +33,14 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AEADCommon.Decrypt(_keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: true);
+            Debug.Fail("Instance ctor should fail before we reach this point.");
+            throw new NotImplementedException();
         }
 
         public void Dispose()
         {
-            _keyHandle.Dispose();
+            Debug.Fail("Instance ctor should fail before we reach this point.");
+            throw new NotImplementedException();
         }
     }
 }

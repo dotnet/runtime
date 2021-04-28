@@ -7,27 +7,42 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
-    public sealed partial class AesCcm : IDisposable
+    public sealed partial class ChaCha20Poly1305 : IDisposable
     {
-        public static KeySizes NonceByteSizes { get; } = new KeySizes(7, 13, 1);
-        public static KeySizes TagByteSizes { get; } = new KeySizes(4, 16, 2);
+        // Per https://tools.ietf.org/html/rfc7539, ChaCha20Poly1305 AEAD requires a 256-bit key and 96-bit nonce,
+        // and it produces a 128-bit tag. We don't expose NonceByteSizes / TagByteSizes properties because callers
+        // are expected to know this.
 
-        public AesCcm(ReadOnlySpan<byte> key)
+        private const int KeySizeInBytes = 256 / 8;
+        private const int NonceSizeInBytes = 96 / 8;
+        private const int TagSizeInBytes = 128 / 8;
+
+        public ChaCha20Poly1305(ReadOnlySpan<byte> key)
         {
-            AesAEAD.CheckKeySize(key.Length);
+            ThrowIfNotSupported();
+
+            CheckKeySize(key.Length);
             ImportKey(key);
         }
 
-        public AesCcm(byte[] key)
+        public ChaCha20Poly1305(byte[] key)
         {
+            ThrowIfNotSupported();
+
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            AesAEAD.CheckKeySize(key.Length);
+            CheckKeySize(key.Length);
             ImportKey(key);
         }
 
-        public static bool IsSupported => true;
+        private static void CheckKeySize(int keySizeInBytes)
+        {
+            if (keySizeInBytes != KeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidKeySize);
+            }
+        }
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
@@ -72,11 +87,19 @@ namespace System.Security.Cryptography
             if (plaintext.Length != ciphertext.Length)
                 throw new ArgumentException(SR.Cryptography_PlaintextCiphertextLengthMismatch);
 
-            if (!nonce.Length.IsLegalSize(NonceByteSizes))
+            if (nonce.Length != NonceSizeInBytes)
                 throw new ArgumentException(SR.Cryptography_InvalidNonceLength, nameof(nonce));
 
-            if (!tag.Length.IsLegalSize(TagByteSizes))
+            if (tag.Length != TagSizeInBytes)
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tag));
+        }
+
+        private static void ThrowIfNotSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(ChaCha20Poly1305)));
+            }
         }
     }
 }

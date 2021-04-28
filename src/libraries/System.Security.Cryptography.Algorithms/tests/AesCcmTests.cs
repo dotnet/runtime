@@ -8,21 +8,11 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class AesCcmTests : AesAEADTests
+    [ConditionalClass(typeof(AesCcm), nameof(AesCcm.IsSupported))]
+    public class AesCcmTests : CommonAEADTests
     {
         [Theory]
-        [InlineData(0, 1)]
-        [InlineData(0, 30)]
-        [InlineData(1, 1)]
-        [InlineData(1, 100)]
-        [InlineData(7, 12)]
-        [InlineData(16, 16)]
-        [InlineData(17, 29)]
-        [InlineData(32, 7)]
-        [InlineData(41, 25)]
-        [InlineData(48, 22)]
-        [InlineData(50, 5)]
+        [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
         {
             byte[] additionalData = new byte[additionalDataLength];
@@ -190,12 +180,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [InlineData(0, 1)]
-        [InlineData(1, 0)]
-        [InlineData(3, 4)]
-        [InlineData(4, 3)]
-        [InlineData(20, 120)]
-        [InlineData(120, 20)]
+        [MemberData(nameof(PlaintextAndCiphertextSizeDifferTestInputs))]
         public static void PlaintextAndCiphertextSizeDiffer(int ptLen, int ctLen)
         {
             byte[] key = new byte[16];
@@ -689,5 +674,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 Tag = "5460e9b7856d60a5ad9803c0762f8176".HexToByteArray(),
             },
         };
+    }
+
+    public class AesCcmIsSupportedTests
+    {
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "This test runs only on non-Browser.")]
+        public static void IsSupported_NotOnBrowser_ReturnsTrue()
+        {
+            Assert.True(AesCcm.IsSupported);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public static void IsSupported_OnBrowser_ReturnsFalse()
+        {
+            Assert.False(AesCcm.IsSupported);
+        }
     }
 }

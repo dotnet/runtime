@@ -5,8 +5,35 @@ using System.Collections.Generic;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
-    public abstract class AesAEADTests
+    public abstract class CommonAEADTests
     {
+        public static IEnumerable<object[]> EncryptTamperAADDecryptTestInputs()
+        {
+            // yield return { dataLength, additionalDataLength };
+            yield return new object[] { 0, 1 };
+            yield return new object[] { 0, 30 };
+            yield return new object[] { 1, 1 };
+            yield return new object[] { 1, 100 };
+            yield return new object[] { 7, 12 };
+            yield return new object[] { 16, 16 };
+            yield return new object[] { 17, 29 };
+            yield return new object[] { 32, 7 };
+            yield return new object[] { 41, 25 };
+            yield return new object[] { 48, 22 };
+            yield return new object[] { 50, 5 };
+        }
+
+        public static IEnumerable<object[]> PlaintextAndCiphertextSizeDifferTestInputs()
+        {
+            // yield return { ptLen, ctLen };
+            yield return new object[] { 0, 1 };
+            yield return new object[] { 1, 0 };
+            yield return new object[] { 3, 4 };
+            yield return new object[] { 4, 3 };
+            yield return new object[] { 20, 120 };
+            yield return new object[] { 120, 20 };
+        }
+
         protected static bool MatchesKeySizes(int size, KeySizes keySizes)
         {
             if (size < keySizes.MinSize || size > keySizes.MaxSize)
