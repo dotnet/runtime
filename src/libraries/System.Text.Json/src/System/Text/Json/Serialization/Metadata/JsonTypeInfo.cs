@@ -162,6 +162,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo = null!;
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal JsonTypeInfo(Type type, JsonSerializerOptions options) :
             this(
                 type,
@@ -176,6 +177,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal JsonTypeInfo(Type type, JsonConverter converter, Type runtimeType, JsonSerializerOptions options)
         {
             Type = type;

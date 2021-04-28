@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
@@ -25,6 +26,7 @@ namespace System.Text.Json
         // The cached converters (custom or built-in).
         private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal void RootBuiltInConvertersAndTypeInfoCreator()
         {
             s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
@@ -44,7 +46,10 @@ namespace System.Text.Json
                 new ObjectConverterFactory()
             };
 
-            _typeInfoCreationFunc ??= static (type, options) => new JsonTypeInfo(type, options);
+            _typeInfoCreationFunc ??= CreateJsonTypeInfo;
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
         }
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
