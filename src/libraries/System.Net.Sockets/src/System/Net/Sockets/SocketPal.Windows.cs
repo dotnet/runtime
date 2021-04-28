@@ -301,7 +301,7 @@ namespace System.Net.Sockets
         }
 
         public static SocketError SendTo(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred) =>
-            SendTo(handle, new ReadOnlySpan<byte>(buffer, offset, size), socketFlags, peerAddress, peerAddressSize, out bytesTransferred);
+            SendTo(handle, buffer.AsSpan(offset, size), socketFlags, peerAddress, peerAddressSize, out bytesTransferred);
 
         public static unsafe SocketError SendTo(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
         {
@@ -513,7 +513,7 @@ namespace System.Net.Sockets
         }
 
         public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred) =>
-            ReceiveFrom(handle, new Span<byte>(buffer, offset, size), SocketFlags.None, socketAddress, ref addressLength, out bytesTransferred);
+            ReceiveFrom(handle, buffer.AsSpan(offset, size), SocketFlags.None, socketAddress, ref addressLength, out bytesTransferred);
 
         public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, Span<byte> buffer, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
         {

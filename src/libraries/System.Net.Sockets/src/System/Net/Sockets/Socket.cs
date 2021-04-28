@@ -1381,7 +1381,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>
-        ///     Sends data to the specified endpoint.
+        /// Sends data to the specified endpoint.
         /// </summary>
         /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
         /// <param name="remoteEP">The <see cref="EndPoint"/> that represents the destination for the data.</param>
@@ -1395,7 +1395,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>
-        ///     Sends data to a specific endpoint using the specified <see cref="SocketFlags"/>.
+        /// Sends data to a specific endpoint using the specified <see cref="SocketFlags"/>.
         /// </summary>
         /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
         /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
