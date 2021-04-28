@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Generators
             private const int MaxLoggerMessageDefineArguments = 6;
             private const int DefaultStringBuilderCapacity = 1024;
 
-            private static readonly string _generatedCodeAttribute =
+            private static readonly string s_generatedCodeAttribute =
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
                 $"\"{typeof(Emitter).Assembly.GetName().Name}\", " +
                 $"\"{typeof(Emitter).Assembly.GetName().Version}\")";
@@ -49,10 +49,10 @@ namespace Microsoft.Extensions.Logging.Generators
                 if (result)
                 {
                     // make sure the order of the templates matches the order of the logging method parameter
-                    int count = 0;
-                    foreach (string t in lm.TemplateList)
+                    for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
-                        if (!t.Equals(lm.TemplateParameters[count++].Name, StringComparison.OrdinalIgnoreCase))
+                        string t = lm.TemplateList[i];
+                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -99,7 +99,7 @@ namespace {lc.Namespace}
             private void GenStruct(LoggerMethod lm)
             {
                 _builder.AppendLine($@"
-        [{_generatedCodeAttribute}]
+        [{s_generatedCodeAttribute}]
         private readonly struct __{lm.Name}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {{");
                 GenFields(lm);
@@ -332,7 +332,7 @@ namespace {lc.Namespace}
                 if (UseLoggerMessageDefine(lm))
                 {
                     _builder.Append($@"
-        [{_generatedCodeAttribute}]
+        [{s_generatedCodeAttribute}]
         private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, ");
 
                     GenDefineTypes(lm, brackets: false);
@@ -347,7 +347,7 @@ namespace {lc.Namespace}
                 }
 
                 _builder.Append($@"
-        [{_generatedCodeAttribute}]
+        [{s_generatedCodeAttribute}]
         {lm.Modifiers} void {lm.Name}({extension}");
 
                 GenParameters(lm);
@@ -450,7 +450,7 @@ namespace {lc.Namespace}
                 if (_needEnumerationHelper)
                 {
                                 _builder.Append($@"
-[{_generatedCodeAttribute}]
+[{s_generatedCodeAttribute}]
 internal static class __LoggerMessageGenerator
 {{
     public static string Enumerate(global::System.Collections.IEnumerable? enumerable)
