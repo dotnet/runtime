@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Metadata
     [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
     public partial class JsonTypeInfo
     {
+        internal const string JsonObjectTypeName = "System.Text.Json.Node.JsonObject";
+
         internal delegate object? ConstructorDelegate();
 
         internal delegate T ParameterizedConstructorDelegate<T>(object[] arguments);
@@ -506,14 +508,18 @@ namespace System.Text.Json.Serialization.Metadata
             JsonPropertyInfo? jsonPropertyInfo = GetPropertyWithUniqueAttribute(Type, typeof(JsonExtensionDataAttribute), cache);
             if (jsonPropertyInfo != null)
             {
+                JsonConverter? converter = null;
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
                 if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
+                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) ||
+                    // Avoid a reference to typeof(JsonNode) to support trimming.
+                    (declaredPropertyType.FullName == JsonObjectTypeName && ReferenceEquals(declaredPropertyType.Assembly, GetType().Assembly)))
                 {
-                    JsonConverter converter = Options.GetConverter(declaredPropertyType);
+                    converter = Options.GetConverter(declaredPropertyType);
                     Debug.Assert(converter != null);
                 }
-                else
+
+                if (converter == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
                 }

@@ -80,10 +80,16 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<long>? s_int64Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonElement"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
+        private static JsonConverter<JsonElement>? s_jsonElementConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
         /// </summary>
-        public static JsonConverter<object> ObjectConverter => s_objectConverter ??= new ObjectConverter();
-        private static JsonConverter<object>? s_objectConverter;
+        public static JsonConverter<object?> ObjectConverter => s_objectConverter ??= new ObjectConverter();
+        private static JsonConverter<object?>? s_objectConverter;
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="float"/> values.
