@@ -494,6 +494,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override string ToString()
         {
+            if (!IsSupported)
+                return string.Empty;
+
             return SR.Format(SR.EventSource_ToString, Name, Guid);
         }
 
@@ -667,8 +670,15 @@ namespace System.Diagnostics.Tracing
         /// the ETW provider name.
         /// </summary>
         protected EventSource()
-            : this(EventSourceSettings.EtwManifestEventFormat)
         {
+            if (!IsSupported)
+                return;
+
+#if FEATURE_PERFTRACING
+            m_eventHandleTable = new TraceLoggingEventHandleTable();
+#endif
+            m_config = EventSourceSettings.EtwManifestEventFormat;
+            Initialize(null);
         }
 
         /// <summary>
@@ -702,19 +712,23 @@ namespace System.Diagnostics.Tracing
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         protected EventSource(EventSourceSettings settings, params string[]? traits)
         {
-            if (IsSupported)
-            {
+            if (!IsSupported)
+                return;
+
 #if FEATURE_PERFTRACING
-                m_eventHandleTable = new TraceLoggingEventHandleTable();
+            m_eventHandleTable = new TraceLoggingEventHandleTable();
 #endif
-                m_config = ValidateSettings(settings);
+            m_config = ValidateSettings(settings);
+            Initialize(traits);
+        }
 
-                Type myType = this.GetType();
-                Guid eventSourceGuid = GetGuid(myType);
-                string eventSourceName = GetName(myType);
+        private void Initialize(string[]? traits)
+        {
+            Type myType = this.GetType();
+            Guid eventSourceGuid = GetGuid(myType);
+            string eventSourceName = GetName(myType);
 
-                Initialize(eventSourceGuid, eventSourceName, traits);
-            }
+            Initialize(eventSourceGuid, eventSourceName, traits);
         }
 
 #if FEATURE_PERFTRACING
@@ -1547,6 +1561,8 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private unsafe void Initialize(Guid eventSourceGuid, string eventSourceName, string[]? traits)
         {
+            Debug.Assert(IsSupported);
+
             try
             {
                 m_traits = traits;
