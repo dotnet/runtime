@@ -270,6 +270,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_arm64
+    - iOSSimulator_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
