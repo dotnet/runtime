@@ -2527,6 +2527,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/nullabletypes/isinstvaluetype_do/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Generics/Instantiation/Structs/struct01/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')  and '$(TargetsWindows)' != 'true' " >
