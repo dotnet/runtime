@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -71,35 +72,9 @@ namespace System.IO.Strategies
             {
                 Debug.Assert(path != null);
 
-                uint ntStatus = 0;
-                if (ShouldPreallocate(allocationSize, access, mode))
+                if (TryNtCreateFile(path, mode, access, share, options, allocationSize, out uint ntStatus, out IntPtr fileHandle))
                 {
-                    GetPathForNtCreateFile(path, out ReadOnlySpan<char> prefixedAbsolutePath, out char[]? rentedArray);
-
-                    (ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(prefixedAbsolutePath, mode, access, share, options, allocationSize);
-
-                    if (rentedArray is not null)
-                    {
-                        ArrayPool<char>.Shared.Return(rentedArray);
-                    }
-
-                    if (ntStatus == 0)
-                    {
-                        return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
-                    }
-                    else if (ntStatus == NT_ERROR_STATUS_DISK_FULL)
-                    {
-                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, path, allocationSize));
-                    }
-                    else if (ntStatus == NT_ERROR_STATUS_FILE_TOO_LARGE)
-                    {
-                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, path, allocationSize));
-                    }
-
-                    // NtCreateFile has failed for some other reason than a full disk or too large file.
-                    // Instead of implementing the mapping for every NS Status value (there are plenty of them: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55)
-                    // or using RtlNtStatusToDosError & GetExceptionForWin32Error
-                    // the code falls back to CreateFileW that just throws the right exception.
+                    return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
                 }
 
                 Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
@@ -135,7 +110,7 @@ namespace System.IO.Strategies
                     // that are too big for the current file system. Example: creating a 4GB+1 file on a FAT32 drive.
                     // Since Linux reports EFBIG for such cases, we are using the following workaround to get the right exception.
                     // TrySetFileLength uses SetFileInformationByHandle which fails with a clear error if the file is too big.
-                    if (!TrySetFileLength(safeFileHandle, path, allocationSize, out int errorCode))
+                    if (!TrySetFileLength(safeFileHandle, allocationSize, out int errorCode))
                     {
                         // Since we have failed to extend the file, we mimic the NtCreateFile behaviour
                         // which does not create a file if there is not enough space on the disk.
@@ -155,6 +130,59 @@ namespace System.IO.Strategies
 
                 return safeFileHandle;
             }
+        }
+
+        private static bool TryNtCreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize,
+            out uint ntStatus, out IntPtr fileHandle)
+        {
+            if (!ShouldPreallocate(allocationSize, access, mode))
+            {
+                ntStatus = 0;
+                fileHandle = default;
+                return false;
+            }
+
+            const string mandatoryNtPrefix = @"\??\";
+            if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
+            {
+                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(fullPath, mode, access, share, options, allocationSize);
+            }
+            else
+            {
+                var vsb = new ValueStringBuilder(stackalloc char[1024]);
+                vsb.Append(mandatoryNtPrefix);
+
+                if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
+                {
+                    vsb.Append(fullPath.AsSpan(4));
+                }
+                else
+                {
+                    vsb.Append(fullPath);
+                }
+
+                (ntStatus, fileHandle) = Interop.NtDll.CreateFile(vsb.AsSpan(), mode, access, share, options, allocationSize);
+                vsb.Dispose();
+            }
+
+            if (ntStatus == 0)
+            {
+                return true;
+            }
+            else if (ntStatus == NT_ERROR_STATUS_DISK_FULL)
+            {
+                throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, allocationSize));
+            }
+            else if (ntStatus == NT_ERROR_STATUS_FILE_TOO_LARGE)
+            {
+                throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, allocationSize));
+            }
+
+            // NtCreateFile has failed for some other reason than a full disk or too large file.
+            // Instead of implementing the mapping for every NS Status value (there are plenty of them: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55)
+            // or using RtlNtStatusToDosError & GetExceptionForWin32Error that end up throwing a different exception compared to when NtCreateFile is not involved,
+            // the code falls back to CreateFileW that just throws the right exception.
+            return false;
         }
 
         internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync)
@@ -383,7 +411,7 @@ namespace System.IO.Strategies
 
         internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
-            if (!TrySetFileLength(handle, path, length, out int errorCode))
+            if (!TrySetFileLength(handle, length, out int errorCode))
             {
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
@@ -394,7 +422,7 @@ namespace System.IO.Strategies
             }
         }
 
-        private static unsafe bool TrySetFileLength(SafeFileHandle handle, string? path, long length, out int errorCode)
+        private static unsafe bool TrySetFileLength(SafeFileHandle handle, long length, out int errorCode)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
@@ -477,35 +505,6 @@ namespace System.IO.Strategies
             {
                 errorCode = 0;
                 return numBytesWritten;
-            }
-        }
-
-        private static void GetPathForNtCreateFile(string fullPath, out ReadOnlySpan<char> prefixedAbsolutePath, out char[]? rentedArray)
-        {
-            const string mandatoryNtPrefix = @"\??\";
-
-            if (fullPath.StartsWith(mandatoryNtPrefix, StringComparison.Ordinal))
-            {
-                prefixedAbsolutePath = fullPath;
-                rentedArray = null;
-            }
-            else if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal)) // NtCreateFile does not support "\\?\" prefix, only "\??\"
-            {
-                rentedArray = ArrayPool<char>.Shared.Rent(fullPath.Length);
-
-                fullPath.CopyTo(rentedArray);
-                rentedArray[1] = '?';
-
-                prefixedAbsolutePath = new ReadOnlySpan<char>(rentedArray, 0, fullPath.Length);
-            }
-            else
-            {
-                rentedArray = ArrayPool<char>.Shared.Rent(mandatoryNtPrefix.Length + fullPath.Length);
-
-                mandatoryNtPrefix.CopyTo(rentedArray);
-                fullPath.CopyTo(rentedArray.AsSpan(mandatoryNtPrefix.Length));
-
-                prefixedAbsolutePath = new ReadOnlySpan<char>(rentedArray, 0, mandatoryNtPrefix.Length + fullPath.Length);
             }
         }
 
