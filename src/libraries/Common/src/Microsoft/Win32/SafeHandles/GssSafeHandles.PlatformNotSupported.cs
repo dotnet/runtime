@@ -18,10 +18,9 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         protected override bool ReleaseHandle() => throw new PlatformNotSupportedException();
-        public SafeGssNameHandle()
+        private SafeGssNameHandle()
             : base(IntPtr.Zero, true)
         {
-            throw new PlatformNotSupportedException();
         }
     }
 
@@ -29,10 +28,9 @@ namespace Microsoft.Win32.SafeHandles
     {
         public static SafeGssCredHandle CreateAcceptor() => throw new PlatformNotSupportedException();
         public static SafeGssCredHandle Create(string username, string password, bool isNtlmOnly) => throw new PlatformNotSupportedException();
-        public SafeGssCredHandle()
+        private SafeGssCredHandle()
             : base(IntPtr.Zero, true)
         {
-            throw new PlatformNotSupportedException();
         }
 
         public override bool IsInvalid
@@ -45,10 +43,9 @@ namespace Microsoft.Win32.SafeHandles
 
     internal sealed class SafeGssContextHandle : SafeHandle
     {
-        public SafeGssContextHandle()
+        private SafeGssContextHandle()
             : base(IntPtr.Zero, true)
         {
-            throw new PlatformNotSupportedException();
         }
 
         public override bool IsInvalid
