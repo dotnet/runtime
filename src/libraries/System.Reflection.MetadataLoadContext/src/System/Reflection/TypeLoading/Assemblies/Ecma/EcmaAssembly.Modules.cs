@@ -33,7 +33,7 @@ namespace System.Reflection.TypeLoading.Ecma
             throw new FileNotFoundException(SR.Format(SR.FileNotFoundModule, moduleName));
         }
 
-        [UnconditionalSuppressMessage("Single file", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "The code has a fallback using a ModuleResolveEventHandler")]
         private FileStream? FindModuleNextToAssembly(string moduleName)
         {

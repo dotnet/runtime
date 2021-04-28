@@ -10,9 +10,6 @@
 
   <ItemGroup>
     <Compile Include="Sgen.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 

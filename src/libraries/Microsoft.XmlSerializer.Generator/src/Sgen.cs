@@ -207,7 +207,7 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
-        [UnconditionalSuppressMessage("Single file", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Code has a fallback and thus works in single-file")]
         private void GenerateFile(List<string> typeNames, string assemblyName, bool proxyOnly, bool silent, bool warnings, bool force, string outputDirectory, bool parsableerrors)
         {
@@ -297,7 +297,7 @@ namespace Microsoft.XmlSerializer.Generator
                 }
             }
             string nameOrLocation = assembly.Location;
-            if (nameOrLocation == string.Empty)
+            if (string.IsNullOrEmpty(nameOrLocation))
                 nameOrLocation = assembly.FullName;
 
             if (importedTypes.Count > 0)

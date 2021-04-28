@@ -11,9 +11,10 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContext
     {
-        private static bool _isDefaultContextInitialized;
 
-        private static DependencyContext _defaultContext;
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file",
+            Justification = "The annotation should be on the static constructor but is Compiler Generated, annotating the caller Default method instead")]
+        private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
         public DependencyContext(TargetInfo target,
             CompilationOptions compilationOptions,
@@ -50,18 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
         }
 
         [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
-        public static DependencyContext Default
-        {
-            get
-            {
-                if (_isDefaultContextInitialized == false) {
-                    _defaultContext = LoadDefault();
-                    _isDefaultContextInitialized = true;
-                }
-                return _defaultContext;
-            }
-        }
-
+        public static DependencyContext Default => _defaultContext.Value;
 
         public TargetInfo Target { get; }
 
