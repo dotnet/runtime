@@ -3410,10 +3410,9 @@ namespace System.Diagnostics.Tracing
             eventData[eventAttribute.EventId].HasRelatedActivityID = hasRelatedActivityID;
             eventData[eventAttribute.EventId].EventHandle = IntPtr.Zero;
 
-            // We represent a byte[] as a integer denoting the length  and then a blob of bytes in the data pointer. This causes a spurious
-            // warning because eventDataCount is off by one for the byte[] case since a byte[] has 2 items associated it. So we want to check
-            // that the number of parameters is correct against the byte[] case, but also we the args array would be one too long if
-            // we just used the modifiedParamCount here -- so we need both.
+            // We represent a byte[] with 2 EventData entries: an integer denoting the length and a blob of bytes in the data pointer.
+            // This causes a spurious warning because eventDataCount is off by one for the byte[] case.
+            // When writing to EventListeners, we want to check that the number of parameters is correct against the byte[] case.
             int eventListenerParameterCount = eventParameters.Length;
             foreach (ParameterInfo parameter in eventParameters)
             {
