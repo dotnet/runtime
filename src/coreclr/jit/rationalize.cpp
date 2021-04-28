@@ -400,13 +400,13 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         {
             if (location->OperGet() == GT_LCL_VAR)
             {
-                var_types simdType = location->TypeGet();
-                GenTree*  initVal  = assignment->AsOp()->gtOp2;
-                var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
-                if (baseType != TYP_UNKNOWN)
+                var_types   simdType        = location->TypeGet();
+                GenTree*    initVal         = assignment->AsOp()->gtOp2;
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
+                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
                 {
                     GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
+                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
                     assignment->AsOp()->gtOp2 = simdTree;
                     value                     = simdTree;
                     initVal->gtNext           = simdTree;
@@ -734,17 +734,17 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         {
             noway_assert(comp->supportSIMDTypes());
             GenTreeSIMD* simdNode = node->AsSIMD();
-            unsigned     simdSize = simdNode->gtSIMDSize;
+            unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
 
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered
             // type(s).
-            if (simdNode->gtType == TYP_I_IMPL && simdNode->gtSIMDSize == TARGET_POINTER_SIZE)
+            if (simdNode->gtType == TYP_I_IMPL && simdNode->GetSimdSize() == TARGET_POINTER_SIZE)
             {
                 // This happens when it is consumed by a GT_RET_EXPR.
                 // It can only be a Vector2f or Vector2i.
-                assert(genTypeSize(simdNode->gtSIMDBaseType) == 4);
+                assert(genTypeSize(simdNode->GetSimdBaseType()) == 4);
                 simdNode->gtType = TYP_SIMD8;
             }
             // Certain SIMD trees require rationalizing.
@@ -752,7 +752,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->gtSIMDBaseType);
+                unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
                 GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
                                                                       baseTypeSize, OFFSETOF__CORINFO_Array__data);
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
@@ -801,7 +801,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
             // structs that are passed or returned in a different register type than their enregistered
             // type(s).
-            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
+            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->GetSimdSize() == TARGET_POINTER_SIZE))
             {
 #ifdef TARGET_ARM64
                 // Special case for GetElement/ToScalar because they take Vector64<T> and return T
@@ -812,7 +812,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 {
                     // This happens when it is consumed by a GT_RET_EXPR.
                     // It can only be a Vector2f or Vector2i.
-                    assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                    assert(genTypeSize(hwIntrinsicNode->GetSimdBaseType()) == 4);
                     hwIntrinsicNode->gtType = TYP_SIMD8;
                 }
             }

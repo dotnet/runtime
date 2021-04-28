@@ -43,6 +43,44 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void Vector4CopyToSpanTest()
+        {
+            Vector4 vector = new Vector4(1.0f, 2.0f, 3.0f, 4.0f);
+            Span<float> destination = new float[4];
+
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(new Span<float>(new float[3])));
+            vector.CopyTo(destination);
+
+            Assert.Equal(1.0f, vector.X);
+            Assert.Equal(2.0f, vector.Y);
+            Assert.Equal(3.0f, vector.Z);
+            Assert.Equal(4.0f, vector.W);
+            Assert.Equal(vector.X, destination[0]);
+            Assert.Equal(vector.Y, destination[1]);
+            Assert.Equal(vector.Z, destination[2]);
+            Assert.Equal(vector.W, destination[3]);
+        }
+
+        [Fact]
+        public void Vector4TryCopyToTest()
+        {
+            Vector4 vector = new Vector4(1.0f, 2.0f, 3.0f, 4.0f);
+            Span<float> destination = new float[4];
+
+            Assert.False(vector.TryCopyTo(new Span<float>(new float[3])));
+            Assert.True(vector.TryCopyTo(destination));
+
+            Assert.Equal(1.0f, vector.X);
+            Assert.Equal(2.0f, vector.Y);
+            Assert.Equal(3.0f, vector.Z);
+            Assert.Equal(4.0f, vector.W);
+            Assert.Equal(vector.X, destination[0]);
+            Assert.Equal(vector.Y, destination[1]);
+            Assert.Equal(vector.Z, destination[2]);
+            Assert.Equal(vector.W, destination[3]);
+        }
+
+        [Fact]
         public void Vector4GetHashCodeTest()
         {
             Vector4 v1 = new Vector4(2.5f, 2.0f, 3.0f, 3.3f);
@@ -1097,6 +1135,18 @@ namespace System.Numerics.Tests
             Assert.True(float.Equals(float.MaxValue, target.Y), "Vector4f.constructor (float, float, float, float) did not return the expected value.");
             Assert.True(float.IsPositiveInfinity(target.Z), "Vector4f.constructor (float, float, float, float) did not return the expected value.");
             Assert.True(float.Equals(float.Epsilon, target.W), "Vector4f.constructor (float, float, float, float) did not return the expected value.");
+        }
+
+        // A test for Vector4f (ReadOnlySpan<float>)
+        [Fact]
+        public void Vector4ConstructorTest7()
+        {
+            float value = 1.0f;
+            Vector4 target = new Vector4(new[] { value, value, value, value });
+            Vector4 expected = new Vector4(value);
+
+            Assert.Equal(expected, target);
+            Assert.Throws<IndexOutOfRangeException>(() => new Vector4(new float[3]));
         }
 
         // A test for Add (Vector4f, Vector4f)

@@ -21,7 +21,7 @@ Binary License
 The following rules are used for determining the binary license:
 
 - .NET binary distributions (zips, nuget packages, …) are licensed as MIT (identical to the [.NET source license](https://github.com/dotnet/core/blob/master/LICENSE.TXT)).
-- The license link (if there is one) should point to the repository where the file came from, for example: [dotnet/runtime](https://github.com/dotnet/runtime/blob/master/LICENSE.TXT).
+- The license link (if there is one) should point to the repository where the file came from, for example: [dotnet/runtime](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT).
 - If the contained binaries are built from multiple .NET repositories, the license should point to [dotnet/core](https://github.com/dotnet/core/blob/master/LICENSE.TXT).
 - If the contents are not 100% open source, the distribution should be licensed with the [.NET Library license](https://www.microsoft.com/net/dotnet_library_license.htm).
 - It is OK for licensing to be asymmetric for a single distribution type. For example, it’s possible that the .NET SDK distribution might be fully open source for Linux but include a closed-source component on Windows. In this case, the SDK would be licensed as MIT on Linux and use the .NET Library License on Windows. It is better to have more open licenses than less.

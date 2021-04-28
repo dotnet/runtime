@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Reflection
 {
@@ -43,33 +44,47 @@ namespace System.Reflection
                 return base.ToString()!;
 
             if (ArgumentType.IsEnum)
-                return string.Format(typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);
-            else if (Value == null)
-                return string.Format(typed ? "null" : "({0})null", ArgumentType.Name);
-            else if (ArgumentType == typeof(string))
-                return string.Format("\"{0}\"", Value);
-            else if (ArgumentType == typeof(char))
-                return string.Format("'{0}'", Value);
-            else if (ArgumentType == typeof(Type))
-                return string.Format("typeof({0})", ((Type)Value!).FullName);
-            else if (ArgumentType.IsArray)
+                return typed ? $"{Value}" : $"({ArgumentType.FullName}){Value}";
+
+            if (Value == null)
+                return typed ? "null" : $"({ArgumentType.Name})null";
+
+            if (ArgumentType == typeof(string))
+                return $"\"{Value}\"";
+
+            if (ArgumentType == typeof(char))
+                return $"'{Value}'";
+
+            if (ArgumentType == typeof(Type))
+                return $"typeof({((Type)Value!).FullName})";
+
+            if (ArgumentType.IsArray)
             {
                 IList<CustomAttributeTypedArgument> array = (IList<CustomAttributeTypedArgument>)Value!;
-
                 Type elementType = ArgumentType.GetElementType()!;
-                string result = string.Format("new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
+
+                var result = new ValueStringBuilder(stackalloc char[256]);
+                result.Append("new ");
+                result.Append(elementType.IsEnum ? elementType.FullName : elementType.Name);
+                result.Append('[');
+                result.Append(array.Count.ToString());
+                result.Append(']');
 
                 for (int i = 0; i < array.Count; i++)
                 {
-                    result += string.Format(i == 0 ? "{0}" : ", {0}", array[i].ToString(elementType != typeof(object)));
+                    if (i != 0)
+                    {
+                        result.Append(", ");
+                    }
+                    result.Append(array[i].ToString(elementType != typeof(object)));
                 }
 
-                result += " }";
+                result.Append(" }");
 
-                return result;
+                return result.ToString();
             }
 
-            return string.Format(typed ? "{0}" : "({1}){0}", Value, ArgumentType.Name);
+            return typed ? $"{Value}" : $"({ArgumentType.Name}){Value}";
         }
 
         public override int GetHashCode() => base.GetHashCode();

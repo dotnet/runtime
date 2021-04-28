@@ -106,7 +106,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     DWORD_PTR ObjRefTable[OBJREF_TABSIZE];
 
     curThread = GetThread();
-    _ASSERTE(curThread != NULL);
 
     static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));

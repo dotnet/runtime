@@ -7,7 +7,6 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -24,7 +23,6 @@ namespace System.Net.WebSockets
     ///   a send operation while another is in progress or a receive operation while another is in progress will
     ///   result in an exception.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     internal sealed partial class ManagedWebSocket : WebSocket
     {
         /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>
@@ -429,7 +427,9 @@ namespace System.Net.WebSockets
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
+#pragma warning disable CA1416 // Validate platform compatibility, will not wait because timeout equals 0
             return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0, default) ?
+#pragma warning restore CA1416
                 SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }
@@ -570,7 +570,9 @@ namespace System.Net.WebSockets
 
         private void SendKeepAliveFrameAsync()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, will not wait because timeout equals 0
             bool acquiredLock = _sendFrameAsyncLock.Wait(0);
+#pragma warning restore CA1416
             if (acquiredLock)
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.

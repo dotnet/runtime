@@ -334,6 +334,17 @@ namespace System.Threading
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
+        public static void Sleep(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < Timeout.Infinite)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            SleepInternal(millisecondsTimeout);
+        }
+
+        /// <summary>Returns the operating system identifier for the current thread.</summary>
+        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
+
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
         public string? Name
@@ -343,15 +354,10 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    if (_name != null)
+                    if (_name != value)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                    }
-
-                    _name = value;
-                    ThreadNameChanged(value);
-                    if (value != null)
-                    {
+                        _name = value;
+                        ThreadNameChanged(value);
                         _mayNeedResetForThreadPool = true;
                     }
                 }
@@ -365,10 +371,8 @@ namespace System.Threading
 
             lock (this)
             {
-                // Bypass the exception from setting the property
                 _name = ThreadPool.WorkerThreadName;
                 ThreadNameChanged(ThreadPool.WorkerThreadName);
-                _name = null;
             }
         }
 
@@ -395,7 +399,7 @@ namespace System.Threading
 
             _mayNeedResetForThreadPool = false;
 
-            if (_name != null)
+            if (_name != ThreadPool.WorkerThreadName)
             {
                 SetThreadPoolWorkerThreadName();
             }

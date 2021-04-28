@@ -80,6 +80,8 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="arguments">The <see cref="NewExpression.Arguments"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "A NewExpression has already been created. The original creator will get a warning that it is not trim compatible.")]
         public NewExpression Update(IEnumerable<Expression>? arguments)
         {
             if (ExpressionUtils.SameElements(ref arguments, Arguments))
@@ -150,6 +152,7 @@ namespace System.Linq.Expressions
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <param name="members">An <see cref="IEnumerable{T}"/> of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, IEnumerable<MemberInfo>? members)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
@@ -169,6 +172,7 @@ namespace System.Linq.Expressions
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <param name="members">An Array of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, params MemberInfo[]? members)
         {
             return New(constructor, arguments, (IEnumerable<MemberInfo>?)members);
@@ -201,6 +205,7 @@ namespace System.Linq.Expressions
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }
 
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         private static void ValidateNewArgs(ConstructorInfo constructor, ref ReadOnlyCollection<Expression> arguments, ref ReadOnlyCollection<MemberInfo> members)
         {
             ParameterInfo[] pis;
@@ -293,6 +298,7 @@ namespace System.Linq.Expressions
             }
         }
 
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName, int index)
         {
             if (member is FieldInfo field)

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
@@ -26,6 +28,14 @@ namespace System.Net.Security.Tests
                 new OidCollection
                 {
                     new Oid("1.3.6.1.5.5.7.3.1", null)
+                },
+                false);
+
+        private static readonly X509EnhancedKeyUsageExtension s_tlsClientEku =
+            new X509EnhancedKeyUsageExtension(
+                new OidCollection
+                {
+                    new Oid("1.3.6.1.5.5.7.3.2", null)
                 },
                 false);
 
@@ -71,7 +81,7 @@ namespace System.Net.Security.Tests
 
         }
 
-        internal static void CleanupCertificates(string testName)
+        internal static void CleanupCertificates([CallerMemberName] string? testName = null)
         {
             string caName = $"O={testName}";
             try
@@ -107,7 +117,7 @@ namespace System.Net.Security.Tests
             catch { };
         }
 
-        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false)
+        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true)
         {
             const int keySize = 2048;
             if (PlatformDetection.IsWindows && testName != null)
@@ -123,7 +133,7 @@ namespace System.Net.Security.Tests
             extensions.Add(builder.Build());
             extensions.Add(s_eeConstraints);
             extensions.Add(s_eeKeyUsage);
-            extensions.Add(s_tlsServerEku);
+            extensions.Add(serverCertificate ? s_tlsServerEku : s_tlsClientEku);
 
             CertificateAuthority.BuildPrivatePki(
                 PkiOptions.IssuerRevocationViaCrl,
@@ -157,7 +167,7 @@ namespace System.Net.Security.Tests
                     intermedPub3.Dispose();
                     CertificateAuthority intermediateAuthority3 = new CertificateAuthority(intermedCert3, null, null, null);
 
-                    RSA  eeKey = (RSA)endEntity.PrivateKey;
+                    RSA eeKey = (RSA)endEntity.PrivateKey;
                     endEntity = intermediateAuthority3.CreateEndEntity(
                         $"CN=\"A SSL Test\", O=\"testName\"",
                         eeKey,
@@ -211,6 +221,26 @@ namespace System.Net.Security.Tests
 
             Assert.Equal(s_pong, buffer);
             await t;
+        }
+
+        internal static string GetTestSNIName(string testMethodName, params SslProtocols?[] protocols)
+        {
+            static string ProtocolToString(SslProtocols? protocol)
+            {
+                return (protocol?.ToString() ?? "null").Replace(", ", "-");
+            }
+
+            var args = string.Join(".", protocols.Select(p => ProtocolToString(p)));
+            var name = testMethodName.Length > 63 ? testMethodName.Substring(0, 63) : testMethodName;
+
+            name = $"{name}.{args}";
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android does not support underscores in host names
+                name = name.Replace("_", string.Empty);
+            }
+
+            return name;
         }
     }
 }

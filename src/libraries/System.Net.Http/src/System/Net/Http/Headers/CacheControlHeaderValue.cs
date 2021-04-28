@@ -167,13 +167,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (source._extensions != null)
-            {
-                foreach (var extension in source._extensions)
-                {
-                    Extensions.Add((NameValueHeaderValue)((ICloneable)extension).Clone());
-                }
-            }
+            _extensions = source._extensions.Clone();
         }
 
         public override string ToString()

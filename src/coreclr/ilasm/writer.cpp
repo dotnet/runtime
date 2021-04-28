@@ -34,15 +34,6 @@ HRESULT Assembler::InitMetaData()
     if (FAILED(hr))
         goto exit;
 
-    if(m_wzMetadataVersion)
-    {
-        VARIANT encOption;
-        BSTR    bstr;
-        V_VT(&encOption) = VT_BSTR;
-        V_BSTR(&encOption) = bstr = ::SysAllocString(m_wzMetadataVersion);
-        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &encOption);
-        ::SysFreeString(bstr);
-    }
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
@@ -331,13 +322,12 @@ HRESULT Assembler::CreateExportDirectory()
 
     IMAGE_EXPORT_DIRECTORY  exportDirIDD;
     DWORD                   exportDirDataSize;
-    BYTE                   *exportDirData;
     EATEntry               *pEATE;
     unsigned                i, L, ordBase = 0xFFFFFFFF, Ldllname;
     // get the DLL name from output file name
     char*                   pszDllName;
     Ldllname = (unsigned)wcslen(m_wzOutputFileName)*3+3;
-    char*                   szOutputFileName = new char[Ldllname];
+    NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
     memset(szOutputFileName,0,wcslen(m_wzOutputFileName)*3+3);
     WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
@@ -350,11 +340,11 @@ HRESULT Assembler::CreateExportDirectory()
     // Allocate buffer for tables
     for(i = 0, L=0; i < Nentries; i++) L += 1+(unsigned)strlen(m_EATList.PEEK(i)->szAlias);
     exportDirDataSize = Nentries*5*sizeof(WORD) + L + Ldllname;
-    exportDirData = new BYTE[exportDirDataSize];
+    NewArrayHolder<BYTE> exportDirData(new BYTE[exportDirDataSize]);
     memset(exportDirData,0,exportDirDataSize);
 
     // Export address table
-    DWORD*  pEAT = (DWORD*)exportDirData;
+    DWORD*  pEAT = (DWORD*)(BYTE*)exportDirData;
     // Name pointer table
     DWORD*  pNPT = pEAT + Nentries;
     // Ordinal table
@@ -365,7 +355,7 @@ HRESULT Assembler::CreateExportDirectory()
     char*   pDLLName = pENT + L;
 
     // sort the names/ordinals
-    char**  pAlias = new char*[Nentries];
+    NewArrayHolder<char*> pAlias(new char*[Nentries]);
     for(i = 0; i < Nentries; i++)
     {
         pEATE = m_EATList.PEEK(i);
@@ -483,8 +473,6 @@ HRESULT Assembler::CreateExportDirectory()
     // Copy the debug directory into the section.
     memcpy(de, &exportDirIDD, sizeof(IMAGE_EXPORT_DIRECTORY));
     memcpy(de + sizeof(IMAGE_EXPORT_DIRECTORY), exportDirData, exportDirDataSize);
-    delete [] pAlias;
-    delete [] exportDirData;
     return S_OK;
 }
 
@@ -874,8 +862,6 @@ HRESULT Assembler::DoLocalMemberRefFixups()
         int i;
         for(i = 0; (pMRF = m_LocalMemberRefFixupList.PEEK(i)) != NULL; i++)
         {
-            if(m_fENCMode && (!pMRF->m_fNew)) continue;
-
             switch(TypeFromToken(pMRF->tk))
             {
                 case 0x99000000: pList = &m_LocalMethodRefDList; break;

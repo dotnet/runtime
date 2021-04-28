@@ -29,6 +29,17 @@ namespace System.Dynamic.Utils
             return type;
         }
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Nullable<T> ctor will be preserved by the DynamicDependency.")]
+        public static ConstructorInfo GetNullableConstructor(Type nullableType, Type nonNullableType)
+        {
+            Debug.Assert(nullableType.IsNullableType());
+            Debug.Assert(!nonNullableType.IsNullableType() && nonNullableType.IsValueType);
+
+            return nullableType.GetConstructor(new Type[] { nonNullableType })!;
+        }
+
         public static bool IsNullableType(this Type type) => type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
         public static bool IsNullableOrReferenceType(this Type type) => !type.IsValueType || IsNullableType(type);
@@ -197,7 +208,7 @@ namespace System.Dynamic.Utils
                 // been boxed or not.
                 if (targetType.IsInterface)
                 {
-                    foreach (Type interfaceType in instanceType.GetTypeInfo().ImplementedInterfaces)
+                    foreach (Type interfaceType in instanceType.GetInterfaces())
                     {
                         if (AreReferenceAssignable(targetType, interfaceType))
                         {
@@ -607,6 +618,7 @@ namespace System.Dynamic.Utils
             || IsImplicitBoxingConversion(source, destination)
             || IsImplicitNullableConversion(source, destination);
 
+        [RequiresUnreferencedCode(Expression.ExpressionRequiresUnreferencedCode)]
         public static MethodInfo? GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
             Type nnExprType = GetNonNullableType(convertFrom);
@@ -796,7 +808,7 @@ namespace System.Dynamic.Utils
 
                 if (definition.IsInterface)
                 {
-                    foreach (Type itype in type.GetTypeInfo().ImplementedInterfaces)
+                    foreach (Type itype in type.GetInterfaces())
                     {
                         Type? found = FindGenericType(definition, itype);
                         if (found != null)
@@ -934,5 +946,29 @@ namespace System.Dynamic.Utils
         }
 
 #endif
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Array 'Get' method is dynamically constructed and is not included in IL. It is not subject to trimming.")]
+        public static MethodInfo GetArrayGetMethod(Type arrayType)
+        {
+            Debug.Assert(arrayType.IsArray);
+            return arrayType.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Array 'Set' method is dynamically constructed and is not included in IL. It is not subject to trimming.")]
+        public static MethodInfo GetArraySetMethod(Type arrayType)
+        {
+            Debug.Assert(arrayType.IsArray);
+            return arrayType.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)!;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Array 'Address' method is dynamically constructed and is not included in IL. It is not subject to trimming.")]
+        public static MethodInfo GetArrayAddressMethod(Type arrayType)
+        {
+            Debug.Assert(arrayType.IsArray);
+            return arrayType.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
+        }
     }
 }

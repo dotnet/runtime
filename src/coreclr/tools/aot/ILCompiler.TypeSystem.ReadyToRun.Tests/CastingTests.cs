@@ -79,7 +79,7 @@ namespace TypeSystemTests
             Assert.True(byteType.MakeArrayType().CanCastTo(sbyteType.MakeArrayType()));
             Assert.False(byteType.CanCastTo(sbyteType));
 
-            Assert.True(intPtrType.MakeArrayType().CanCastTo(ulongType.MakeArrayType()));
+            Assert.False(intPtrType.MakeArrayType().CanCastTo(ulongType.MakeArrayType()));
             Assert.False(intPtrType.CanCastTo(ulongType));
 
             // These are same size, but not allowed to cast

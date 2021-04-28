@@ -223,6 +223,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("OU=zzzz + OU=aaaa", dn.Decode(X500DistinguishedNameFlags.None));
         }
 
+        [Fact]
+        public static void NameWithSTIdentifierForState()
+        {
+            X500DistinguishedName dn = new X500DistinguishedName("ST=VA, C=US");
+            Assert.Equal("C=US, S=VA", dn.Decode(X500DistinguishedNameFlags.None));
+        }
+
         public static readonly object[][] WhitespaceBeforeCases =
         {
             // Regular space.

@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System
 {
-    internal class InvariantComparer : IComparer
+    internal sealed class InvariantComparer : IComparer
     {
         private readonly CompareInfo _compareInfo;
         internal static readonly InvariantComparer Default = new InvariantComparer();

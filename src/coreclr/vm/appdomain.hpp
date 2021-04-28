@@ -41,22 +41,15 @@ class BaseDomain;
 class SystemDomain;
 class AppDomain;
 class CompilationDomain;
-class AppDomainEnum;
-class AssemblySink;
-class EEMarshalingData;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class MngStdInterfacesInfo;
-class DomainModule;
 class DomainAssembly;
-struct InteropMethodTableData;
 class LoadLevelLimiter;
 class TypeEquivalenceHashTable;
-class StringArrayList;
 
 #ifdef FEATURE_COMINTEROP
-class ComCallWrapperCache;
-struct SimpleComCallWrapper;
+class RCWCache;
 class RCWRefCache;
 #endif // FEATURE_COMINTEROP
 
@@ -67,13 +60,6 @@ class RCWRefCache;
 
 
 GPTR_DECL(IdDispenser,       g_pModuleIndexDispenser);
-
-// This enum is aligned to System.ExceptionCatcherType.
-enum ExceptionCatcher {
-    ExceptionCatcher_ManagedCode = 0,
-    ExceptionCatcher_AppDomainTransition = 1,
-    ExceptionCatcher_COMInterop = 2,
-};
 
 // We would like *ALLOCATECLASS_FLAG to AV (in order to catch errors), so don't change it
 struct ClassInitFlags {
@@ -478,17 +464,17 @@ public:
 #endif
 
 
-// The large heap handle bucket class is used to contain handles allocated
-// from an array contained in the large heap.
-class LargeHeapHandleBucket
+// The pinned heap handle bucket class is used to contain handles allocated
+// from an array contained in the pinned heap.
+class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
-    ~LargeHeapHandleBucket();
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
-    LargeHeapHandleBucket *GetNext()
+    PinnedHeapHandleBucket *GetNext()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -523,7 +509,7 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
-    LargeHeapHandleBucket *m_pNext;
+    PinnedHeapHandleBucket *m_pNext;
     int m_ArraySize;
     int m_CurrentPos;
     int m_CurrentEmbeddedFreePos;
@@ -533,16 +519,16 @@ private:
 
 
 
-// The large heap handle table is used to allocate handles that are pointers
-// to objects stored in an array in the large object heap.
-class LargeHeapHandleTable
+// The pinned heap handle table is used to allocate handles that are pointers
+// to objects stored in an array in the pinned object heap.
+class PinnedHeapHandleTable
 {
 public:
     // Constructor and desctructor.
-    LargeHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
-    ~LargeHeapHandleTable();
+    PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
+    ~PinnedHeapHandleTable();
 
-    // Allocate handles from the large heap handle table.
+    // Allocate handles from the pinned heap handle table.
     OBJECTREF* AllocateHandles(DWORD nRequested);
 
     // Release object handles allocated using AllocateHandles().
@@ -552,22 +538,22 @@ public:
 
 private:
     // The buckets of object handles.
-    LargeHeapHandleBucket *m_pHead;
+    PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
-    // The size of the LargeHeapHandleBuckets.
+    // The size of the PinnedHeapHandleBucket.
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
-    LargeHeapHandleBucket *m_pFreeSearchHint;
+    PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
 #ifdef _DEBUG
 
     // these functions are present to enforce that there is a locking mechanism in place
-    // for each LargeHeapHandleTable even though the code itself does not do the locking
+    // for each PinnedHeapHandleTable even though the code itself does not do the locking
     // you must tell the table which lock you intend to use and it will verify that it has
     // in fact been taken before performing any operations
 
@@ -590,18 +576,18 @@ private:
 
 };
 
-class LargeHeapHandleBlockHolder;
-void LargeHeapHandleBlockHolder__StaticFree(LargeHeapHandleBlockHolder*);
+class PinnedHeapHandleBlockHolder;
+void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder*);
 
 
-class LargeHeapHandleBlockHolder:public Holder<LargeHeapHandleBlockHolder*,DoNothing,LargeHeapHandleBlockHolder__StaticFree>
+class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoNothing,PinnedHeapHandleBlockHolder__StaticFree>
 
 {
-    LargeHeapHandleTable* m_pTable;
+    PinnedHeapHandleTable* m_pTable;
     DWORD m_Count;
     OBJECTREF* m_Data;
 public:
-    FORCEINLINE LargeHeapHandleBlockHolder(LargeHeapHandleTable* pOwner, DWORD nCount)
+    FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
         WRAPPER_NO_CONTRACT;
         m_Data = pOwner->AllocateHandles(nCount);
@@ -624,7 +610,7 @@ public:
     }
 };
 
-FORCEINLINE  void LargeHeapHandleBlockHolder__StaticFree(LargeHeapHandleBlockHolder* pHolder)
+FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder* pHolder)
 {
     WRAPPER_NO_CONTRACT;
     pHolder->FreeData();
@@ -864,7 +850,7 @@ public:
     void Activate()
     {
         WRAPPER_NO_CONTRACT;
-        m_previousLimit=GetThread()->GetLoadLevelLimiter();
+        m_previousLimit= GetThread()->GetLoadLevelLimiter();
         if(m_previousLimit)
             m_currentLevel=m_previousLimit->GetLoadLevel();
         GetThread()->SetLoadLevelLimiter(this);
@@ -1129,19 +1115,13 @@ protected:
 
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
-    void InitLargeHeapHandleTable();
-
-    //****************************************************************************************
-    //
-    // Hash table that maps a MethodTable to COM Interop compatibility data.
-    PtrHashMap          m_interopDataHash;
+    void InitPinnedHeapHandleTable();
 
     // Critical sections & locks
     PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
     CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
     CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
     CrstExplicitInit m_DomainLocalBlockCrst;
-    CrstExplicitInit m_InteropDataCrst;         // Used for COM Interop compatiblilty
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
 
@@ -1158,11 +1138,11 @@ protected:
 
     IGCHandleStore* m_handleStore;
 
-    // The large heap handle table.
-    LargeHeapHandleTable        *m_pLargeHeapHandleTable;
+    // The pinned heap handle table.
+    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
-    // The large heap handle table critical section.
-    CrstExplicitInit             m_LargeHeapHandleTableCrst;
+    // The pinned heap handle table critical section.
+    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
 
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.
@@ -1190,17 +1170,6 @@ public:
         }
     };
     friend class LockHolder;
-
-    class CacheLockHolder : public CrstHolder
-    {
-    public:
-        CacheLockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class CacheLockHolder;
 
     class DomainLocalBlockLockHolder : public CrstHolder
     {
@@ -1510,13 +1479,11 @@ const DWORD DefaultADID = 1;
 class AppDomain : public BaseDomain
 {
     friend class SystemDomain;
-    friend class AssemblySink;
     friend class AppDomainNative;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class ClassLoader;
     friend class ThreadNative;
-    friend class RCWCache;
     friend class ClrDataAccess;
     friend class CheckAsmOffsets;
 
@@ -1989,9 +1956,7 @@ public:
 #ifdef FEATURE_COMINTEROP
 public:
     OBJECTREF GetMissingObject();    // DispatchInfo will call function to retrieve the Missing.Value object.
-#endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
     RCWCache *GetRCWCache()
     {
         WRAPPER_NO_CONTRACT;
@@ -2013,9 +1978,6 @@ public:
 
     RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMINTEROP
-
-    //****************************************************************************************
-    // Get the proxy for this app domain
 
     TPIndex GetTPIndex()
     {
@@ -2247,8 +2209,6 @@ public:
     void AddMemoryPressure();
     void RemoveMemoryPressure();
 
-    void UnlinkClass(MethodTable *pMT);
-
     Assembly *GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2357,13 +2317,30 @@ public:
     };
 
     AssemblySpecBindingCache  m_AssemblyCache;
-    DomainAssemblyCache       m_UnmanagedCache;
     size_t                    m_MemoryPressure;
 
     ArrayList m_NativeDllSearchDirectories;
     bool m_ForceTrivialWaitOperations;
 
-public:
+private:
+    struct UnmanagedImageCacheEntry
+    {
+        LPCWSTR Name;
+        NATIVE_LIBRARY_HANDLE Handle;
+    };
+
+    class UnmanagedImageCacheTraits : public NoRemoveSHashTraits<DefaultSHashTraits<UnmanagedImageCacheEntry>>
+    {
+    public:
+        using key_t = LPCWSTR;
+        static const key_t GetKey(_In_ const element_t& e) { return e.Name; }
+        static count_t Hash(_In_ key_t key) { return HashString(key); }
+        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return wcscmp(lhs, rhs) == 0; }
+        static bool IsNull(_In_ const element_t& e) { return e.Handle == NULL; }
+        static const element_t Null() { return UnmanagedImageCacheEntry(); }
+    };
+
+    SHash<UnmanagedImageCacheTraits> m_unmanagedCache;
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
@@ -2409,38 +2386,6 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
-
-#ifdef FEATURE_COMINTEROP
-
-private:
-
-#endif //FEATURE_COMINTEROP
-
-public:
-
-    class ComInterfaceReleaseList
-    {
-        SArray<IUnknown *> m_objects;
-    public:
-        ~ComInterfaceReleaseList()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            for (COUNT_T i = 0; i < m_objects.GetCount(); i++)
-            {
-                IUnknown *pItf = *(m_objects.GetElements() + i);
-                if (pItf != nullptr)
-                    pItf->Release();
-            }
-        }
-
-        // Append to the list of object to free. Only use under the AppDomain "LockHolder(pAppDomain)"
-        void Append(IUnknown *pInterfaceToRelease)
-        {
-            WRAPPER_NO_CONTRACT;
-            m_objects.Append(pInterfaceToRelease);
-        }
-    } AppDomainInterfaceReleaseList;
 
 private:
     //-----------------------------------------------------------

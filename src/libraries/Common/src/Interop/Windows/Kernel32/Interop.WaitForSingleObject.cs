@@ -4,9 +4,9 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
         internal static extern int WaitForSingleObject(SafeWaitHandle handle, int timeout);

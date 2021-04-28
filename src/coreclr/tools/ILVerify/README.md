@@ -46,7 +46,7 @@ The test project itself is under [src/tests/ilverify](../../../tests/ilverify)
 
 ### Building and Running Tests
 
-General instructions to build this library can be found [here](https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/testing.md).
+General instructions to build this library can be found [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md).
 
 As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. For the initial build of priority=1 in release mode, run the following:
 
@@ -120,6 +120,6 @@ All ILVerify issues are labeled with [area-ILVerification](https://github.com/se
 
 Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)
- - [RyuJIT source code](https://github.com/dotnet/runtime/tree/master/src/coreclr/jit), specifically: [exception handling specific part](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/typeinfo.cpp)
+ - [RyuJIT source code](https://github.com/dotnet/runtime/tree/main/src/coreclr/jit), specifically: [exception handling specific part](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/typeinfo.cpp)
  - [ECMA-335 standard](https://www.ecma-international.org/publications/standards/Ecma-335.htm)
  - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin

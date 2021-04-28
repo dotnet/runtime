@@ -31,10 +31,23 @@ namespace System.Linq
         }
 
         public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
-            source.TryGetFirst(out bool _);
+            source.TryGetFirst(out _);
+
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
+        {
+            TSource? first = source.TryGetFirst(out bool found);
+            return found ? first! : defaultValue;
+        }
 
         public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
-            source.TryGetFirst(predicate, out bool _);
+            source.TryGetFirst(predicate, out _);
+
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
+        {
+            TSource? first = source.TryGetFirst(predicate, out bool found);
+            return found ? first! : defaultValue;
+        }
+
 
         private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found)
         {

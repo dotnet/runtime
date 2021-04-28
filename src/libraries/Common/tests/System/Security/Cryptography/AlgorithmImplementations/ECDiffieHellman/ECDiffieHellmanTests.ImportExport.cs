@@ -14,6 +14,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         // probe for this capability before depending on it.
         internal static bool ECDsa224Available =>
             ECDiffieHellmanFactory.IsCurveValid(new Oid(ECDSA_P224_OID_VALUE));
+        
+        internal static bool CanDeriveNewPublicKey { get; }
+            = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 
         [Theory, MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)
@@ -151,6 +154,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Android does not validate curve parameters")]
         public static void TestExplicitImportValidationNegative()
         {
             if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
@@ -385,7 +389,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public static void ImportFromPrivateOnlyKey()
         {
             byte[] expectedX = "00d45615ed5d37fde699610a62cd43ba76bedd8f85ed31005fe00d6450fbbd101291abd96d4945a8b57bc73b3fe9f4671105309ec9b6879d0551d930dac8ba45d255".HexToByteArray();

@@ -42,7 +42,7 @@ namespace System.Runtime.Caching
         private bool IsDisposed { get { return (_disposed == 1); } }
         internal bool ConfigLess { get { return _configLess; } }
 
-        private class SentinelEntry
+        private sealed class SentinelEntry
         {
             private readonly string _key;
             private readonly ChangeMonitor _expensiveObjectDependency;

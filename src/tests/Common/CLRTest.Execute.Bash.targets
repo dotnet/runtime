@@ -64,7 +64,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetJitDisasmBashScript;GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -279,7 +279,7 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
    ]]>
       </BashCLRTestPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' != 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -295,6 +295,36 @@ $(BashIlrtTestLaunchCmds)
 if [ ! -z ${RunCrossGen+x} ]%3B then
   TakeLock
 fi
+
+echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+$LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
+
+CLRTestExitCode=$?
+
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  ReleaseLock
+fi
+
+$(BashLinkerTestCleanupCmds)
+      ]]></BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' == 'arm64'">
+    <![CDATA[
+$(BashLinkerTestLaunchCmds)
+
+if [ ! -z "$CLRCustomTestLauncher" ];
+then
+    LAUNCHER="$CLRCustomTestLauncher $PWD/"
+else
+    LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
+fi
+
+$(BashIlrtTestLaunchCmds)
+
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  TakeLock
+fi
+
+export MONO_ENV_OPTIONS=--llvm
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
@@ -332,7 +362,7 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --app="$__TestBinaryBase/$__Category.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --app="$__TestBinaryBase/$__Category.apk" --output-directory=`pwd` --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully
@@ -453,7 +483,6 @@ $(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
-$(JitDisasmBashScript)
 $(IlasmRoundTripBashScript)
 # Allow precommands to override the ExePath
 ExePath=$(InputAssemblyName)

@@ -3,7 +3,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -42,6 +42,10 @@
              Link="ProductionCode\Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
+             Link="Common\System\Net\Configuration.Http.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs"
@@ -190,6 +194,12 @@
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true'"
+             Include="..\..\src\System\Net\Http\HttpClient.CreateDefaultHandler.cs"
+             Link="ProductionCode\System\Net\Http\HttpClient.CreateDefaultHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true'"
+             Include="..\..\src\System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs"
+             Link="ProductionCode\System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpCompletionOption.cs"

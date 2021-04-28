@@ -62,7 +62,7 @@ namespace System.Buffers
         public SequencePosition Start
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new SequencePosition(_startObject, _startInteger);
+            get => new SequencePosition(_startObject, GetIndex(_startInteger));
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace System.Buffers
         public SequencePosition End
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new SequencePosition(_endObject, _endInteger);
+            get => new SequencePosition(_endObject, GetIndex(_endInteger));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -495,7 +495,7 @@ namespace System.Buffers
                 ReadOnlySequence<T> localThis = this;
                 ReadOnlySequence<char> charSequence = Unsafe.As<ReadOnlySequence<T>, ReadOnlySequence<char>>(ref localThis);
 
-                if (SequenceMarshal.TryGetString(charSequence, out string? text, out int start, out int length))
+                if (charSequence.TryGetString(out string? text, out int start, out int length))
                 {
                     return text.Substring(start, length);
                 }
@@ -506,7 +506,7 @@ namespace System.Buffers
                 }
             }
 
-            return string.Format("System.Buffers.ReadOnlySequence<{0}>[{1}]", typeof(T).Name, Length);
+            return $"System.Buffers.ReadOnlySequence<{typeof(T).Name}>[{Length}]";
         }
 
         /// <summary>
@@ -660,6 +660,10 @@ namespace System.Buffers
 
     internal static class ReadOnlySequence
     {
+        /// <summary>
+        /// Flag that allows encoding the <see cref="ReadOnlySequence{T}.SequenceType"/>.
+        /// </summary>
+        /// <seealso cref="ReadOnlySequence{T}.GetSequenceType"/>
         public const int FlagBitMask = 1 << 31;
         public const int IndexBitMask = ~FlagBitMask;
 

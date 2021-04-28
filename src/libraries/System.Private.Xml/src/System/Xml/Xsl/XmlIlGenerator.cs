@@ -49,7 +49,7 @@ namespace System.Xml.Xsl
     /// As visits to each node in the tree start and end, various Analyzers are invoked.  These Analyzers incrementally
     /// collect and store information that is later used to generate faster and smaller code.
     /// </remarks>
-    internal class XmlILGenerator
+    internal sealed class XmlILGenerator
     {
         private QilExpression? _qil;
         private GenerateHelper? _helper;
@@ -70,6 +70,10 @@ namespace System.Xml.Xsl
         // SxS Note: The way the trace file names are created (hardcoded) is NOT SxS safe. However the files are
         // created only for internal tracing purposes. In addition XmlILTrace class is not compiled into retail
         // builds. As a result it is fine to suppress the FxCop SxS warning.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This method will generate the IL methods using RefEmit at runtime, which will then try to call them " +
+            "using methods that are annotated as RequiresUnreferencedCode. In this case, these uses can be suppressed as the " +
+            "trimmer won't be able to trim any IL that gets generated at runtime.")]
         public XmlILCommand? Generate(QilExpression query, TypeBuilder? typeBldr)
         {
             _qil = query;

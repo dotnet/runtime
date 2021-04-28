@@ -10,6 +10,9 @@ namespace System.Threading.Channels
         private void UnsafeQueueSetCompletionAndInvokeContinuation() =>
             ThreadPool.UnsafeQueueUserWorkItem(static s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this);
 
+        private void UnsafeQueueUserWorkItem(Action<object?> action, object? state) =>
+            QueueUserWorkItem(action, state);
+
         private static void QueueUserWorkItem(Action<object?> action, object? state) =>
             Task.Factory.StartNew(action, state,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);

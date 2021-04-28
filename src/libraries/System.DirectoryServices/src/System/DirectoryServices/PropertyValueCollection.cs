@@ -46,7 +46,7 @@ namespace System.DirectoryServices
             }
         }
 
-        public object this[int index]
+        public object? this[int index]
         {
             get => List[index];
             set
@@ -62,7 +62,7 @@ namespace System.DirectoryServices
 
         public string PropertyName { get; }
 
-        public object Value
+        public object? Value
         {
             get
             {
@@ -116,7 +116,7 @@ namespace System.DirectoryServices
                 else
                     _changeList.Add(value);
 
-                object[] allValues = new object[_changeList.Count];
+                object?[] allValues = new object[_changeList.Count];
                 _changeList.CopyTo(allValues, 0);
                 _entry.AdsObject.PutEx((int)AdsPropertyOperation.Update, PropertyName, allValues);
 
@@ -130,12 +130,12 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Appends the value to the set of values for this property.
         /// </devdoc>
-        public int Add(object value) => List.Add(value);
+        public int Add(object? value) => List.Add(value);
 
         /// <devdoc>
         /// Appends the values to the set of values for this property.
         /// </devdoc>
-        public void AddRange(object[] value)
+        public void AddRange(object?[] value)
         {
             if (value == null)
             {
@@ -163,20 +163,20 @@ namespace System.DirectoryServices
             }
         }
 
-        public bool Contains(object value) => List.Contains(value);
+        public bool Contains(object? value) => List.Contains(value);
 
         /// <devdoc>
         /// Copies the elements of this instance into an <see cref='System.Array'/>,
         /// starting at a particular index into the given <paramref name="array"/>.
         /// </devdoc>
-        public void CopyTo(object[] array, int index)
+        public void CopyTo(object?[] array, int index)
         {
             List.CopyTo(array, index);
         }
 
-        public int IndexOf(object value) => List.IndexOf(value);
+        public int IndexOf(object? value) => List.IndexOf(value);
 
-        public void Insert(int index, object value) => List.Insert(index, value);
+        public void Insert(int index, object? value) => List.Insert(index, value);
 
         private void PopulateList()
         {
@@ -184,7 +184,7 @@ namespace System.DirectoryServices
             //call to GetInfo will be called against an uninitialized property
             //cache. Which is exactly what FillCache does.
             //entry.FillCache(propertyName);
-            object var;
+            object? var;
             int unmanagedResult = _entry.AdsObject.GetEx(PropertyName, out var);
             if (unmanagedResult != 0)
             {
@@ -207,7 +207,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Removes the value from the collection.
         /// </devdoc>
-        public void Remove(object value)
+        public void Remove(object? value)
         {
             if (_needNewBehavior)
             {
@@ -247,7 +247,7 @@ namespace System.DirectoryServices
             }
         }
 
-        protected override void OnInsertComplete(int index, object value)
+        protected override void OnInsertComplete(int index, object? value)
         {
             if (_needNewBehavior)
             {
@@ -268,7 +268,7 @@ namespace System.DirectoryServices
                 }
                 else
                 {
-                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Append, PropertyName, new object[] { value });
+                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Append, PropertyName, new object?[] { value });
                 }
             }
             else
@@ -280,7 +280,7 @@ namespace System.DirectoryServices
             _entry.CommitIfNotCaching();
         }
 
-        protected override void OnRemoveComplete(int index, object value)
+        protected override void OnRemoveComplete(int index, object? value)
         {
             if (_needNewBehavior)
             {
@@ -292,7 +292,7 @@ namespace System.DirectoryServices
                     }
 
                     _changeList.Add(value);
-                    object[] allValues = new object[_changeList.Count];
+                    object?[] allValues = new object[_changeList.Count];
                     _changeList.CopyTo(allValues, 0);
                     _entry.AdsObject.PutEx((int)AdsPropertyOperation.Delete, PropertyName, allValues);
 
@@ -300,12 +300,12 @@ namespace System.DirectoryServices
                 }
                 else
                 {
-                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Delete, PropertyName, new object[] { value });
+                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Delete, PropertyName, new object?[] { value });
                 }
             }
             else
             {
-                object[] allValues = new object[InnerList.Count];
+                object?[] allValues = new object[InnerList.Count];
                 InnerList.CopyTo(allValues, 0);
                 _entry.AdsObject.PutEx((int)AdsPropertyOperation.Update, PropertyName, allValues);
             }
@@ -313,7 +313,7 @@ namespace System.DirectoryServices
             _entry.CommitIfNotCaching();
         }
 
-        protected override void OnSetComplete(int index, object oldValue, object newValue)
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue)
         {
             // no need to consider the not allowing accumulative change case as it does not support Set
             if (Count <= 1)
@@ -324,12 +324,12 @@ namespace System.DirectoryServices
             {
                 if (_needNewBehavior)
                 {
-                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Delete, PropertyName, new object[] { oldValue });
-                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Append, PropertyName, new object[] { newValue });
+                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Delete, PropertyName, new object?[] { oldValue });
+                    _entry.AdsObject.PutEx((int)AdsPropertyOperation.Append, PropertyName, new object?[] { newValue });
                 }
                 else
                 {
-                    object[] allValues = new object[InnerList.Count];
+                    object?[] allValues = new object[InnerList.Count];
                     InnerList.CopyTo(allValues, 0);
                     _entry.AdsObject.PutEx((int)AdsPropertyOperation.Update, PropertyName, allValues);
                 }

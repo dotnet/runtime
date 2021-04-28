@@ -101,7 +101,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <RuntimeFrameworkVersion Condition="'$(__SkipFXRestore)' != 'true'">$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <RunAnalyzers>false</RunAnalyzers>
  </PropertyGroup>
 
@@ -188,7 +188,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             static _Global()
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
-                testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
+                testBinaryBase = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
                 coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
 
@@ -388,6 +388,20 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
+      <MonoAotOption Include="mattr=crc" />
+      <MonoAotOption Include="mattr=crypto" />
+      <MonoAotOption Include="mattr=neon" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
+      <!--
+      <MonoAotOption Include="mattr=sse4.2" />
+      <MonoAotOption Include="mattr=popcnt" />
+      <MonoAotOption Include="mattr=lzcnt" />
+      <MonoAotOption Include="mattr=bmi" />
+      <MonoAotOption Include="mattr=bmi2" />
+      -->
+    </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
       <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
@@ -459,21 +473,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(BuildDir)" />
 
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(BuildDir)" SkipUnchangedFiles="true"/>
-
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(BuildDir)" SkipUnchangedFiles="true"/>
-
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(BuildDir)"
+        AppDir="$(BuildDir)"
         OutputDir="$(AppDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />

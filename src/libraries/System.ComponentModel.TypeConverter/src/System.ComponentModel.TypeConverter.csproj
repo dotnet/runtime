@@ -5,6 +5,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="MS\Internal\Xml\Linq\ComponentModel\XComponentModel.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
@@ -67,6 +70,7 @@
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\ReflectionCachesUpdateHandler.cs" />
     <Compile Include="System\ComponentModel\ReflectEventDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
@@ -250,6 +254,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />

@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Globalization
 {
-    internal partial class CultureData
+    internal sealed partial class CultureData
     {
         /// <summary>
         /// Check with the OS to see if this is a valid culture.

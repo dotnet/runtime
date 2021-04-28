@@ -661,8 +661,6 @@ public:
     void SetupDebuggingConfig(void);
     DWORD ComputeDebuggingConfig(void);
 
-    bool GetDebuggingOverrides(DWORD *pdwFlags);
-
     HRESULT GetDebuggingCustomAttributes(DWORD *pdwFlags);
 
     BOOL IsVisibleToDebugger();

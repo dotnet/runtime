@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // SpmiDumpHelper.h - a helper to dump structs that are used in JitEEInterface calls and spmi collections.
@@ -48,6 +46,9 @@ public:
         const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     static std::string DumpCorInfoFlag(CorInfoFlag flags);
+
+    static std::string DumpJitFlags(CORJIT_FLAGS corJitFlags);
+    static std::string DumpJitFlags(unsigned long long rawFlags);
 
 private:
 
@@ -162,8 +163,8 @@ inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
     FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, " ", "cc", "ci", sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap);
     FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, " ", "mc", "mi", sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap);
 
-    cch = sprintf_s(pbuf, sizeOfBuffer, " args-%016llX sig-%s sigHnd-%016llX scp-%016llX tok-%08X}",
-        sigInfo.args, DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers).c_str(), sigInfo.sigHandle, sigInfo.scope, sigInfo.token);
+    cch = sprintf_s(pbuf, sizeOfBuffer, " args-%016llX sig-%s msig-%016llX scp-%016llX tok-%08X}",
+        sigInfo.args, DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers).c_str(), sigInfo.methodSignature, sigInfo.scope, sigInfo.token);
     pbuf += cch;
     sizeOfBuffer -= cch;
 

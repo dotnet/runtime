@@ -827,6 +827,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
             case 0x89:                          // MOV r/m, reg
                 if (ip[1] == 0xEC)              // MOV ESP, EBP
                     goto mov_esp_ebp;
+                if (ip[1] == 0xDC)              // MOV ESP, EBX
+                    goto mov_esp_ebx;
                 // FALL THROUGH
 
             case 0x18:                          // SBB r/m8, r8
@@ -928,6 +930,13 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 if (ip[1] == 0xE5) {            // MOV ESP, EBP
                 mov_esp_ebp:
                     ESP = PTR_TADDR(lazyState->_ebp);
+                    ip += 2;
+                    break;
+                }
+
+                if (ip[1] == 0xE3) {           // MOV ESP, EBX
+                mov_esp_ebx:
+                    ESP = PTR_TADDR(lazyState->_ebx);
                     ip += 2;
                     break;
                 }

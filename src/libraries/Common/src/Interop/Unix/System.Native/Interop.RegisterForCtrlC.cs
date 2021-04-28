@@ -3,9 +3,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Sys
+    internal static partial class Sys
     {
         internal enum CtrlCode
         {

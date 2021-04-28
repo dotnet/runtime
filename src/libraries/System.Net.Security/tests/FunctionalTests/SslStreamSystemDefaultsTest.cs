@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
                 // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
-                string serverHost = getTestSNIName();
+                string serverHost = TestHelper.GetTestSNIName(nameof(ClientAndServer_OneOrBothUseDefault_Ok), clientProtocols, serverProtocols);
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -99,16 +99,6 @@ namespace System.Net.Security.Tests
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
                         _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
                 }
-            }
-
-            string getTestSNIName()
-            {
-                static string ProtocolToString(SslProtocols? protocol)
-                {
-                    return (protocol?.ToString() ?? "null").Replace(", ", "_");
-                }
-
-                return $"{nameof(ClientAndServer_OneOrBothUseDefault_Ok)}_{ProtocolToString(clientProtocols)}_{ProtocolToString(serverProtocols)}";
             }
         }
 

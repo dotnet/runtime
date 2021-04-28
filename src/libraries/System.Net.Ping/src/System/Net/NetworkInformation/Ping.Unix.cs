@@ -20,8 +20,6 @@ namespace System.Net.NetworkInformation
         private const int MaxIpHeaderLengthInBytes = 60;
         private static bool SendIpHeader => OperatingSystem.IsMacOS();
         private static bool NeedsConnect => OperatingSystem.IsLinux();
-        [ThreadStatic]
-        private static Random? t_idGenerator;
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
@@ -51,8 +49,7 @@ namespace System.Net.NetworkInformation
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
-            Random rand = t_idGenerator ??= new Random();
-            ushort id = (ushort)rand.Next(ushort.MaxValue + 1);
+            ushort id = (ushort)Random.Shared.Next(ushort.MaxValue + 1);
             IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
@@ -251,10 +248,11 @@ namespace System.Net.NetworkInformation
                         SocketFlags.None,
                         socketConfig.EndPoint);
 
-                    var cts = new CancellationTokenSource();
-                    Task finished = await Task.WhenAny(receiveTask, Task.Delay(timeout - (int)elapsed, cts.Token)).ConfigureAwait(false);
-                    cts.Cancel();
-                    if (finished != receiveTask)
+                    try
+                    {
+                        await receiveTask.WaitAsync(TimeSpan.FromMilliseconds(timeout - (int)elapsed)).ConfigureAwait(false);
+                    }
+                    catch (TimeoutException)
                     {
                         return CreateTimedOutPingReply();
                     }
@@ -297,6 +295,8 @@ namespace System.Net.NetworkInformation
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
+            // Set LC_ALL=C to make sure to get ping output which is not affected by locale environment variables such as LANG and LC_MESSAGES.
+            psi.EnvironmentVariables["LC_ALL"] = "C";
             return new Process() { StartInfo = psi };
         }
 
@@ -332,34 +332,31 @@ namespace System.Net.NetworkInformation
                 p.Exited += (s, e) => processCompletion.SetResult();
                 p.Start();
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(timeout, cts.Token);
-                Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
-
-                if (finished == timeoutTask)
+                try
+                {
+                    await processCompletion.Task.WaitAsync(TimeSpan.FromMilliseconds(timeout)).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
                 {
                     p.Kill();
                     return CreateTimedOutPingReply();
                 }
-                else
-                {
-                    cts.Cancel();
-                    if (p.ExitCode == 1 || p.ExitCode == 2)
-                    {
-                        // Throw timeout for known failure return codes from ping functions.
-                        return CreateTimedOutPingReply();
-                    }
 
-                    try
-                    {
-                        string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                        return ParsePingUtilityOutput(address, output);
-                    }
-                    catch (Exception)
-                    {
-                        // If the standard output cannot be successfully parsed, throw a generic PingException.
-                        throw new PingException(SR.net_ping);
-                    }
+                if (p.ExitCode == 1 || p.ExitCode == 2)
+                {
+                    // Throw timeout for known failure return codes from ping functions.
+                    return CreateTimedOutPingReply();
+                }
+
+                try
+                {
+                    string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                    return ParsePingUtilityOutput(address, output);
+                }
+                catch (Exception)
+                {
+                    // If the standard output cannot be successfully parsed, throw a generic PingException.
+                    throw new PingException(SR.net_ping);
                 }
             }
         }
@@ -421,7 +418,7 @@ namespace System.Net.NetworkInformation
         // Since this is private should be safe to trust that the calling code
         // will behave. To get a little performance boost raw fields are exposed
         // and no validation is performed.
-        private class SocketConfig
+        private sealed class SocketConfig
         {
             public SocketConfig(EndPoint endPoint, int timeout, PingOptions? options, bool isIPv4, ProtocolType protocolType, ushort id, byte[] sendBuffer)
             {

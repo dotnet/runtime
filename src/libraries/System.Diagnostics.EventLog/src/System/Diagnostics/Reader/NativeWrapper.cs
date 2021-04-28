@@ -17,7 +17,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// specific to function. Also, all methods of this class expose
     /// the Link Demand for Unmanaged Permission to callers.
     /// </summary>
-    internal class NativeWrapper
+    internal static class NativeWrapper
     {
         public class SystemProperties
         {

@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Tests
@@ -134,6 +136,117 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => c.Compare("42", 84));
             Assert.Equal(1, c.Compare("42", null));
             Assert.Throws<ArgumentException>(() => c.Compare(42, "84"));
+        }
+
+        [Fact]
+        public void IsWellKnownOrdinalComparer_TestCases()
+        {
+            CompareInfo ci_enUS = CompareInfo.GetCompareInfo("en-US");
+
+            // First, instantiate and test the comparers directly
+
+            RunTest(null, false, false);
+            RunTest(EqualityComparer<string>.Default, true, false); // EC<string>.Default is Ordinal-equivalent
+            RunTest(EqualityComparer<object>.Default, false, false); // EC<object>.Default isn't a string comparer
+            RunTest(StringComparer.Ordinal, true, false);
+            RunTest(StringComparer.OrdinalIgnoreCase, true, true);
+            RunTest(StringComparer.InvariantCulture, false, false); // not ordinal
+            RunTest(StringComparer.InvariantCultureIgnoreCase, false, false); // not ordinal
+            RunTest(GetNonRandomizedComparer("WrappedAroundDefaultComparer"), true, false); // EC<string>.Default is Ordinal-equivalent
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinal"), true, false);
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinalIgnoreCase"), true, true);
+            RunTest(new CustomStringComparer(), false, false); // not an inbox comparer
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.None), false, false); // linguistic
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.Ordinal), true, false);
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.OrdinalIgnoreCase), true, true);
+
+            // Then, make sure that this API works with common collection types
+
+            RunTest(new Dictionary<string, object>().Comparer, true, false);
+            RunTest(new Dictionary<string, object>(StringComparer.Ordinal).Comparer, true, false);
+            RunTest(new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase).Comparer, true, true);
+            RunTest(new Dictionary<string, object>(StringComparer.InvariantCulture).Comparer, false, false);
+            RunTest(new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase).Comparer, false, false);
+
+            RunTest(new HashSet<string>().Comparer, true, false);
+            RunTest(new HashSet<string>(StringComparer.Ordinal).Comparer, true, false);
+            RunTest(new HashSet<string>(StringComparer.OrdinalIgnoreCase).Comparer, true, true);
+            RunTest(new HashSet<string>(StringComparer.InvariantCulture).Comparer, false, false);
+            RunTest(new HashSet<string>(StringComparer.InvariantCultureIgnoreCase).Comparer, false, false);
+
+            static void RunTest(IEqualityComparer<string> comparer, bool expectedIsOrdinal, bool expectedIgnoreCase)
+            {
+                Assert.Equal(expectedIsOrdinal, StringComparer.IsWellKnownOrdinalComparer(comparer, out bool actualIgnoreCase));
+                Assert.Equal(expectedIgnoreCase, actualIgnoreCase);
+            }
+        }
+
+        [Fact]
+        public void IsWellKnownCultureAwareComparer_TestCases()
+        {
+            CompareInfo ci_enUS = CompareInfo.GetCompareInfo("en-US");
+            CompareInfo ci_inv = CultureInfo.InvariantCulture.CompareInfo;
+
+            // First, instantiate and test the comparers directly
+
+            RunTest(null, null, default);
+            RunTest(EqualityComparer<string>.Default, null, default); // EC<string>.Default is not culture-aware
+            RunTest(EqualityComparer<object>.Default, null, default); // EC<object>.Default isn't a string comparer
+            RunTest(StringComparer.Ordinal, null, default);
+            RunTest(StringComparer.OrdinalIgnoreCase, null, default);
+            RunTest(StringComparer.InvariantCulture, ci_inv, CompareOptions.None);
+            RunTest(StringComparer.InvariantCultureIgnoreCase, ci_inv, CompareOptions.IgnoreCase);
+            RunTest(GetNonRandomizedComparer("WrappedAroundDefaultComparer"), null, default); // EC<string>.Default is Ordinal-equivalent
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinal"), null, default);
+            RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinalIgnoreCase"), null, default);
+            RunTest(new CustomStringComparer(), null, default); // not an inbox comparer
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.None), ci_enUS, CompareOptions.None);
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType), ci_enUS, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType);
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.Ordinal), null, default); // not linguistic
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.OrdinalIgnoreCase), null, default); // not linguistic
+            RunTest(StringComparer.Create(CultureInfo.InvariantCulture, false), ci_inv, CompareOptions.None);
+            RunTest(StringComparer.Create(CultureInfo.InvariantCulture, true), ci_inv, CompareOptions.IgnoreCase);
+            RunTest(StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols), ci_inv, CompareOptions.IgnoreSymbols);
+
+            // Then, make sure that this API works with common collection types
+
+            RunTest(new Dictionary<string, object>().Comparer, null, default);
+            RunTest(new Dictionary<string, object>(StringComparer.Ordinal).Comparer, null, default);
+            RunTest(new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase).Comparer, null, default);
+            RunTest(new Dictionary<string, object>(StringComparer.InvariantCulture).Comparer, ci_inv, CompareOptions.None);
+            RunTest(new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase).Comparer, ci_inv, CompareOptions.IgnoreCase);
+
+            RunTest(new HashSet<string>().Comparer, null, default);
+            RunTest(new HashSet<string>(StringComparer.Ordinal).Comparer, null, default);
+            RunTest(new HashSet<string>(StringComparer.OrdinalIgnoreCase).Comparer, null, default);
+            RunTest(new HashSet<string>(StringComparer.InvariantCulture).Comparer, ci_inv, CompareOptions.None);
+            RunTest(new HashSet<string>(StringComparer.InvariantCultureIgnoreCase).Comparer, ci_inv, CompareOptions.IgnoreCase);
+
+            static void RunTest(IEqualityComparer<string> comparer, CompareInfo expectedCompareInfo, CompareOptions expectedCompareOptions)
+            {
+                bool actualReturnValue = StringComparer.IsWellKnownCultureAwareComparer(comparer, out CompareInfo actualCompareInfo, out CompareOptions actualCompareOptions);
+                Assert.Equal(expectedCompareInfo != null, actualReturnValue);
+                Assert.Equal(expectedCompareInfo, actualCompareInfo);
+                Assert.Equal(expectedCompareOptions, actualCompareOptions);
+            }
+        }
+
+        private static IEqualityComparer<string> GetNonRandomizedComparer(string name)
+        {
+            Type nonRandomizedComparerType = typeof(StringComparer).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer");
+            Assert.NotNull(nonRandomizedComparerType);
+
+            FieldInfo fi = nonRandomizedComparerType.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(fi);
+
+            return (IEqualityComparer<string>)fi.GetValue(null);
+        }
+
+        private class CustomStringComparer : StringComparer
+        {
+            public override int Compare(string x, string y) => throw new NotImplementedException();
+            public override bool Equals(string x, string y) => throw new NotImplementedException();
+            public override int GetHashCode(string obj) => throw new NotImplementedException();
         }
     }
 }

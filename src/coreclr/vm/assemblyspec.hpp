@@ -185,15 +185,10 @@ class AssemblySpec  : public BaseAssemblySpec
         m_dwHashAlg = pSource->m_dwHashAlg;
     }
 
-
     HRESULT CheckFriendAssemblyName();
 
-
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit,
-                      mdAssemblyRef *pToken,
-                      BOOL fUsePublicKeyToken = TRUE,
-                      BOOL fMustBeBindable = FALSE /*(used only by FusionBind's implementation)*/);
-
+                      mdAssemblyRef *pToken);
 
     VOID Bind(
         AppDomain* pAppDomain,
@@ -207,8 +202,7 @@ class AssemblySpec  : public BaseAssemblySpec
     DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
                                        BOOL fThrowOnFileNotFound = TRUE);
 
-    //****************************************************************************************
-    //
+  public: // static
     // Creates and loads an assembly based on the name and context.
     static Assembly *LoadAssembly(LPCSTR pSimpleName,
                                   AssemblyMetaDataInternal* pContext,
@@ -216,9 +210,11 @@ class AssemblySpec  : public BaseAssemblySpec
                                   DWORD cbPublicKeyOrToken,
                                   DWORD dwFlags);
 
-
     // Load an assembly based on an explicit path
     static Assembly *LoadAssembly(LPCWSTR pFilePath);
+
+    // Initialize an AssemblyName managed object based on the specified assemblyName
+    static void InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef);
 
   public:
     void MatchPublicKeys(Assembly *pAssembly);
@@ -535,56 +531,6 @@ class AssemblySpecBindingCache
 #endif // !defined(DACCESS_COMPILE)
 
     static BOOL CompareSpecs(UPTR u1, UPTR u2);
-};
-
-#define INITIAL_DOMAIN_ASSEMBLY_CACHE_SIZE 17
-class DomainAssemblyCache
-{
-    struct AssemblyEntry {
-        AssemblySpec spec;
-        LPVOID       pData[2];     // Can be an Assembly, PEAssembly, or an Unmanaged DLL
-
-        DWORD Hash()
-        {
-            WRAPPER_NO_CONTRACT;
-            return spec.Hash();
-        }
-    };
-
-    PtrHashMap  m_Table;
-    AppDomain*  m_pDomain;
-
-public:
-
-    static BOOL CompareBindingSpec(UPTR spec1, UPTR spec2);
-
-    void InitializeTable(AppDomain* pDomain, CrstBase *pCrst)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(pDomain);
-        m_pDomain = pDomain;
-
-        LockOwner lock = {pCrst, IsOwnerOfCrst};
-        m_Table.Init(INITIAL_DOMAIN_ASSEMBLY_CACHE_SIZE, &CompareBindingSpec, true, &lock);
-    }
-
-    AssemblyEntry* LookupEntry(AssemblySpec* pSpec);
-
-    LPVOID  LookupEntry(AssemblySpec* pSpec, UINT index)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(index < 2);
-        AssemblyEntry* ptr = LookupEntry(pSpec);
-        if(ptr == NULL)
-            return NULL;
-        else
-            return ptr->pData[index];
-    }
-
-    VOID InsertEntry(AssemblySpec* pSpec, LPVOID pData1, LPVOID pData2 = NULL);
-
-private:
-
 };
 
 #endif

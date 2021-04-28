@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -415,6 +415,33 @@ namespace System.Buffers.ArrayPool.Tests
                     Assert.Equal(buffer.Length, e.Payload[1]);
                     Assert.Equal(pool.GetHashCode(), e.Payload[2]);
                 }));
+            });
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ReturnBufferWhenFullFiresDroppedDiagnosticEvent()
+        {
+            RemoteInvokeWithTrimming(() =>
+            {
+                var buffers = new List<byte[]>();
+                for (int i = 0; i < 1000; i++)
+                {
+                    buffers.Add(ArrayPool<byte>.Shared.Rent(1));
+                }
+
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                RunWithListener(
+                    () =>
+                    {
+                        foreach (byte[] buffer in buffers)
+                        {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                        }
+                    },
+                    EventLevel.Informational,
+                    events.Enqueue);
+
+                Assert.Contains(events, e => e.EventId == 6);
             });
         }
 

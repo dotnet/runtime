@@ -18,6 +18,8 @@ namespace R2RDump
 {
     class TextDumper : Dumper
     {
+        private const int GuidByteSize = 16;
+
         public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
             : base(r2r, writer, disassembler, options)
         {
@@ -88,7 +90,14 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName}");
+                        string dividerName = $@"Component Assembly [{assemblyIndex}]: {assemblyName}";
+                        if (_r2r.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection mvidSection))
+                        {
+                            int mvidOffset = _r2r.GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
+                            Guid mvid = new Guid(new ReadOnlySpan<byte>(_r2r.Image, mvidOffset, GuidByteSize));
+                            dividerName += $@" - MVID {mvid:b}";
+                        }
+                        WriteDivider(dividerName);
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
                         foreach (ReadyToRunSection section in NormalizedSections(assemblyHeader))
                         {
@@ -141,9 +150,12 @@ namespace R2RDump
 
             if (_options.Pgo)
             {
-                foreach (PgoInfo info in _r2r.AllPgoInfos)
+                if (_r2r != null)
                 {
-                    pgoEntriesNotDumped.Add(info.Key);
+                    foreach (PgoInfo info in _r2r.AllPgoInfos)
+                    {
+                        pgoEntriesNotDumped.Add(info.Key);
+                    }
                 }
             }
             foreach (ReadyToRunMethod method in NormalizedMethods())
@@ -499,6 +511,18 @@ namespace R2RDump
                     }
                     string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
                     _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
+                    break;
+                case ReadyToRunSectionType.ManifestAssemblyMvids:
+                    int mvidOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int mvidCount = section.Size / GuidByteSize;
+                    for (int mvidIndex = 0; mvidIndex < mvidCount; mvidIndex++)
+                    {
+                        Guid mvid = new Guid(new Span<byte>(_r2r.Image, mvidOffset + GuidByteSize * mvidIndex, GuidByteSize));
+                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, mvid);
+                    }
+                    break;
+                default:
+                    _writer.WriteLine("Unsupported section type {0}", section.Type);
                     break;
             }
         }

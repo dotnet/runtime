@@ -8,7 +8,7 @@ using System.Collections;
 
 namespace System.Xml.Xsl.Xslt
 {
-    internal class OutputScopeManager
+    internal sealed class OutputScopeManager
     {
         public struct ScopeReord
         {

@@ -6,7 +6,7 @@ namespace System.Configuration
     using Collections;
 
     // Contains all the updates to section definitions across all location sections.
-    internal class ConfigDefinitionUpdates
+    internal sealed class ConfigDefinitionUpdates
     {
         internal ConfigDefinitionUpdates()
         {

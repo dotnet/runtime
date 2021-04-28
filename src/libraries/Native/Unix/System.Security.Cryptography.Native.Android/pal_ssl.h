@@ -4,16 +4,14 @@
 #pragma once
 
 #include "pal_jni.h"
+#include <pal_ssl_types.h>
 
-typedef enum
-{
-    PAL_SSL_NONE  = 0,
-    PAL_SSL_SSL2  = 12,
-    PAL_SSL_SSL3  = 48,
-    PAL_SSL_TLS   = 192,
-    PAL_SSL_TLS11 = 768,
-    PAL_SSL_TLS12 = 3072,
-    PAL_SSL_TLS13 = 12288,
-} SslProtocols;
+/*
+Get the supported protocols
+*/
+PALEXPORT PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void);
 
-PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
+/*
+Returns whether or not configuration of application protocols is supported
+*/
+PALEXPORT bool AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration(void);

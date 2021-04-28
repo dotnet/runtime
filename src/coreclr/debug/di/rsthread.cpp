@@ -8551,10 +8551,10 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
     {
-#if !defined(EnC_SUPPORTED)
+#if !defined(FEATURE_ENC_SUPPORTED)
         ThrowHR(E_NOTIMPL);
 
-#else  // EnC_SUPPORTED
+#else  // FEATURE_ENC_SUPPORTED
         // Can only be called on leaf frame.
         if (!m_nativeFrame->IsLeafFrame())
         {
@@ -8571,7 +8571,7 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
         // Tell the left-side to do the remap
         hr = m_nativeFrame->m_pThread->SetRemapIP(nOffset);
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
     }
     PUBLIC_API_END(hr);
 
@@ -8604,7 +8604,7 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
 
     // If the targetClass is a TypeSpec that means its first element is GENERICINST.
     // We only need to build types for the Instantiation if targetClass is a TypeSpec.
-    ULONG classGenerics = 0;
+    uint32_t classGenerics = 0;
     SigParser typeSig;
     if (TypeFromToken(targetClass) == mdtTypeSpec)
     {
@@ -8632,10 +8632,10 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
 
     // Similarly for method generics.  Simply fill "methodGenerics" with the number
     // of generics, and move "genericSig" to the start of the first generic param.
-    ULONG methodGenerics = 0;
+    uint32_t methodGenerics = 0;
     if (!genericSig.IsNull())
     {
-        ULONG callingConv = 0;
+        uint32_t callingConv = 0;
         IfFailRet(genericSig.GetCallingConvInfo(&callingConv));
         if (callingConv == IMAGE_CEE_CS_CALLCONV_GENERICINST)
             IfFailRet(genericSig.GetData(&methodGenerics));
@@ -9790,6 +9790,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
 
             if (FAILED(hr))
             {
+                delete [] pArgData;
                 return hr;
             }
         }

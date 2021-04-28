@@ -3186,9 +3186,7 @@ void MethodTable::DoRunClassInitThrowing()
     // policy, keep this unless it proves intractable to remove all premature classinits in the system.
     EnsureActive();
 
-    Thread *pThread;
-    pThread = GetThread();
-    _ASSERTE(pThread);
+    Thread* pThread = GetThread();
 
     AppDomain *pDomain = GetAppDomain();
 
@@ -3633,7 +3631,7 @@ void CallFinalizerOnThreadObject(Object *obj)
         // finalization.
         if ((g_fEEShutDown & ShutDown_Finalize2) == 0)
         {
-            if (GetThread() != thread)
+            if (GetThreadNULLOk() != thread)
             {
                 refThis->ClearInternal();
             }
@@ -3821,7 +3819,7 @@ void MethodTable::GetSavedExtent(TADDR *pStart, TADDR *pEnd)
 
     TADDR start;
 
-    if (ContainsPointersOrCollectible())
+    if (ContainsPointers())
         start = dac_cast<TADDR>(this) - CGCDesc::GetCGCDescFromMT(this)->GetSize();
     else
         start = dac_cast<TADDR>(this);
@@ -5174,7 +5172,7 @@ void WalkValueTypeTypeDefOrRefs(
             IfFailThrow(sig.SkipExactlyOne());
 
             // Get number of parameters
-            ULONG argCnt;
+            uint32_t argCnt;
             IfFailThrow(sig.GetData(&argCnt));
             while (argCnt-- != 0)
             {   // Process and skip generic parameter

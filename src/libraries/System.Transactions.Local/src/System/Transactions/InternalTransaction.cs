@@ -12,11 +12,11 @@ namespace System.Transactions
     // InternalTransaction
     //
     // This class holds the state and all data common to a transaction instance
-    internal class InternalTransaction : IDisposable
+    internal sealed class InternalTransaction : IDisposable
     {
         // This variable manages the state of the transaction it should be one of the
         // static elements of TransactionState derived from TransactionState.
-        protected TransactionState? _transactionState;
+        private TransactionState? _transactionState;
 
         internal TransactionState? State
         {

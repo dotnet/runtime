@@ -31,7 +31,7 @@ public:
     // This could use further abstraction
     CodeGen(Compiler* theCompiler);
 
-    virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode);
+    virtual void genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode);
 
     void genGenerateMachineCode();
     void genEmitMachineCode();
@@ -88,7 +88,7 @@ private:
 
     void genPrepForCompiler();
 
-    void genPrepForEHCodegen();
+    void genMarkLabelsForCodegen();
 
     inline RegState* regStateForType(var_types t)
     {
@@ -205,11 +205,11 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
-    void**   codePtr;
-    ULONG*   nativeSizeOfCode;
-    unsigned codeSize;
-    void*    coldCodePtr;
-    void*    consPtr;
+    void**    codePtr;
+    uint32_t* nativeSizeOfCode;
+    unsigned  codeSize;
+    void*     coldCodePtr;
+    void*     consPtr;
 
 #ifdef DEBUG
     // Last instr we have displayed for dspInstrs
@@ -1301,12 +1301,7 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
-#ifdef TARGET_ARMARCH
-    void genStackPointerConstantAdjustment(ssize_t spDelta);
-#else  // !TARGET_ARMARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
-#endif // !TARGET_ARMARCH
-
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
 
@@ -1455,8 +1450,6 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-    instruction ins_CopyIntToFloat(var_types srcType, var_types dstTyp);
-    instruction ins_CopyFloatToInt(var_types srcType, var_types dstTyp);
     static instruction ins_FloatStore(var_types type = TYP_DOUBLE);
     static instruction ins_FloatCopy(var_types type = TYP_DOUBLE);
     instruction ins_FloatConv(var_types to, var_types from);

@@ -35,7 +35,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.JsonClassInfo.#ctor(System.Type,System.Text.Json.JsonSerializerOptions)</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.JsonTypeInfo.#ctor(System.Type,System.Text.Json.Serialization.JsonConverter,System.Type,System.Text.Json.JsonSerializerOptions)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -47,13 +47,13 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.ReflectionEmitMemberAccessor.CreateAddMethodDelegate(System.Type)</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionEmitMemberAccessor.CreateAddMethodDelegate(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Text.Json.Serialization.ReflectionEmitMemberAccessor.CreateConstructor(System.Type)</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionEmitMemberAccessor.CreateConstructor(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -66,6 +66,36 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Text.Json.Serialization.IEnumerableConverterFactoryHelpers.GetImmutableEnumerableCreateRangeMethod(System.Type,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2077</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionMemberAccessor.&lt;&gt;c__DisplayClass0_0.&lt;CreateConstructor&gt;b__0</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionMemberAccessor.CreateConstructor(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionMemberAccessor.CreateAddMethodDelegate``1</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionMemberAccessor.CreateParameterizedConstructor``1(System.Reflection.ConstructorInfo)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.Metadata.ReflectionMemberAccessor.CreateParameterizedConstructor``5(System.Reflection.ConstructorInfo)</property>
     </attribute>
   </assembly>
 </linker>

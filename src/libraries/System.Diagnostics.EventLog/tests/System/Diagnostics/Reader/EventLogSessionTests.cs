@@ -93,7 +93,7 @@ namespace System.Diagnostics.Tests
                     using (EventLog eventLog = new EventLog())
                     {
                         eventLog.Source = source;
-                        eventLog.WriteEntry("Writing to event log.");
+                        Helpers.Retry(() => eventLog.WriteEntry("Writing to event log."));
                         Assert.NotEqual(0, Helpers.Retry((() => eventLog.Entries.Count)));
                         session.ClearLog(logName: log);
                         Assert.Equal(0,  Helpers.Retry((() => eventLog.Entries.Count)));

@@ -9,7 +9,6 @@
     <Compile Include="Assert.cs" />
     <Compile Include="EtlFile.cs" />
     <Compile Include="NetPerfFile.cs" />
-    <Compile Include="TraceControl.cs" />
     <Compile Include="TraceConfiguration.cs" />
   </ItemGroup>
 </Project>

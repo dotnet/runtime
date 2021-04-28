@@ -58,6 +58,8 @@ namespace System.Linq.Expressions.Compiler
             return _myModule.DefineType(name, attr, parent);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "MulticastDelegate has a ctor with RequiresUnreferencedCode, but the generated derived type doesn't reference this ctor, so this is trim compatible.")]
         internal static TypeBuilder DefineDelegateType(string name)
         {
             return Assembly.DefineType(

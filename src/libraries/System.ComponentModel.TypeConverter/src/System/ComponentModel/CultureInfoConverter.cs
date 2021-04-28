@@ -224,7 +224,7 @@ namespace System.ComponentModel
         /// IComparer object used for sorting CultureInfos
         /// WARNING:  If you change where null is positioned, then you must fix CultureConverter.GetStandardValues!
         /// </summary>
-        private class CultureComparer : IComparer
+        private sealed class CultureComparer : IComparer
         {
             private readonly CultureInfoConverter _converter;
 

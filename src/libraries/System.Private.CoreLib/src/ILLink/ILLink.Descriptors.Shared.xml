@@ -1,9 +1,5 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <type fullname="Interop/Globalization">
-      <!-- Internal API used by tests only. -->
-      <method name="GetICUVersion" />
-    </type>
     <type fullname="System.Threading.ThreadPoolBoundHandle">
       <!-- Workaround to keep .interfaceimpl even though this type
              is not instantiated on unix:
@@ -19,6 +15,9 @@
       <property name="StateFlagsForDebugger" />
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
+    </type>
+    <type fullname="System.Threading.Timer">
+      <property name="AllTimers" />
     </type>
     <type fullname="System.Threading.ThreadPool">
       <method name="GetQueuedWorkItemsForDebugger" />
@@ -55,6 +54,12 @@
     <type fullname="System.Threading.Tasks.Task">
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />
+    </type>
+  </assembly>
+
+  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
+    <type fullname="System.Diagnostics.Tracing.RuntimeEventSource">
+      <method signature="System.Void Initialize()" />
     </type>
   </assembly>
 </linker>

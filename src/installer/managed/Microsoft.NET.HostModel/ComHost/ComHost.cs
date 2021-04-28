@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.NET.HostModel.ComHost
@@ -19,10 +21,12 @@ namespace Microsoft.NET.HostModel.ComHost
         /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>
         /// <param name="clsidmapFilePath">The path to the *.clsidmap file.</param>
+        /// <param name="typeLibraries">Resource ids for tlbs and paths to the tlb files to be embedded.</param>
         public static void Create(
             string comHostSourceFilePath,
             string comHostDestinationFilePath,
-            string clsidmapFilePath)
+            string clsidmapFilePath,
+            IReadOnlyDictionary<int, string> typeLibraries = null)
         {
             var destinationDirectory = new FileInfo(comHostDestinationFilePath).Directory.FullName;
             if (!Directory.Exists(destinationDirectory))
@@ -44,6 +48,26 @@ namespace Microsoft.NET.HostModel.ComHost
             using (ResourceUpdater updater = new ResourceUpdater(comHostDestinationFilePath))
             {
                 updater.AddResource(clsidMapBytes, (IntPtr)ClsidmapResourceType, (IntPtr)ClsidmapResourceId);
+                if (typeLibraries is not null)
+                {
+                    foreach (var typeLibrary in typeLibraries)
+                    {
+                        if (!ResourceUpdater.IsIntResource((IntPtr)typeLibrary.Key))
+                        {
+                            throw new InvalidTypeLibraryIdException(typeLibrary.Value, typeLibrary.Key);
+                        }
+
+                        try
+                        {
+                            byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
+                            updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
+                        }
+                        catch (FileNotFoundException ex)
+                        {
+                            throw new TypeLibraryDoesNotExistException(typeLibrary.Value, ex);
+                        }
+                    }
+                }
                 updater.Update();
             }
         }

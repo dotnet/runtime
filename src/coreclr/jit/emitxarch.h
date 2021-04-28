@@ -288,7 +288,7 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 /************************************************************************/
 
 public:
-void emitLoopAlign(unsigned short paddingBytes = 15);
+void emitLoopAlign(unsigned short paddingBytes);
 
 void emitLongLoopAlign(unsigned short alignmentBoundary);
 

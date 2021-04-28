@@ -519,22 +519,10 @@ namespace System.Reflection.Emit
             }
         }
 
-
-
-
         // return the byte interpretation of the custom attribute
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
         {
-            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), false);
-        }
-
-        /// <summary>
-        /// Call this function with toDisk=1, after on disk module has been snapped.
-        /// </summary>
-        internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner, int tkAttrib, bool toDisk)
-        {
-            TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk,
-                                                      typeof(System.Diagnostics.DebuggableAttribute) == m_con.DeclaringType);
+            TypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), m_blob);
         }
     }
 }

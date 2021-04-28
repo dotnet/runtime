@@ -150,7 +150,7 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         [=](const CLRConfig::ConfigDWORDInfo &configInfo, bool isBoolean, const WCHAR *appContextConfigName) -> bool
     {
         bool wasNotConfigured = true;
-        *configValueRef = CLRConfig::GetConfigValue(configInfo, true /* acceptExplicitDefaultFromRegutil */, &wasNotConfigured);
+        *configValueRef = CLRConfig::GetConfigValue(configInfo, &wasNotConfigured);
         if (wasNotConfigured)
         {
             return false;
@@ -366,7 +366,6 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
     // we need a thread adjustment, before setting up the frame.
     //
     Thread *pThread = GetThread();
-    _ASSERTE (pThread);
 
     INT32 priority = pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
 
@@ -469,7 +468,7 @@ RegisterWaitForSingleObjectCallback_Worker(LPVOID ptr)
 
 VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN TimerOrWaitFired)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         ClrFlsSetThreadType(ThreadType_Threadpool_Worker);
@@ -529,7 +528,6 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
     _ASSERTE(hWaitHandle);
 
     Thread* pCurThread = GetThread();
-    _ASSERTE( pCurThread);
 
     DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(
                                                                 &gc.state,
@@ -736,17 +734,6 @@ struct BindIoCompletion_Args
     LPOVERLAPPED lpOverlapped;
 };
 
-void SetAsyncResultProperties(
-    OVERLAPPEDDATAREF overlapped,
-    DWORD dwErrorCode,
-    DWORD dwNumBytes
-)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-}
-
 VOID BindIoCompletionCallBack_Worker(LPVOID args)
 {
     STATIC_CONTRACT_THROWS;
@@ -783,9 +770,6 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     {
         // no user delegate to callback
         _ASSERTE((overlapped->m_callback == NULL) || !"This is benign, but should be optimized");
-
-
-        SetAsyncResultProperties(overlapped, ErrorCode, numBytesTransferred);
     }
     GCPROTECT_END();
 }
@@ -795,7 +779,7 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
                                               LPOVERLAPPED lpOverlapped,
                                               BOOL setStack)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // TODO: how do we notify user of OOM here?
@@ -830,21 +814,6 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
 {
     WRAPPER_NO_CONTRACT;
     BindIoCompletionCallbackStubEx(ErrorCode, numBytesTransferred, lpOverlapped, TRUE);
-
-#ifndef TARGET_UNIX
-    extern Volatile<ULONG> g_fCompletionPortDrainNeeded;
-
-    Thread *pThread = GetThread();
-    if (g_fCompletionPortDrainNeeded && pThread)
-    {
-        // We have started draining completion port.
-        // The next job picked up by this thread is going to be after our special marker.
-        if (!pThread->IsCompletionPortDrained())
-        {
-            pThread->MarkCompletionPortDrained();
-        }
-    }
-#endif // !TARGET_UNIX
 }
 
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorBindIoCompletionCallback, HANDLE fileHandle)
@@ -942,7 +911,7 @@ void AppDomainTimerCallback_Worker(LPVOID ptr)
 
 VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // TODO: how do we notify user of OOM here?

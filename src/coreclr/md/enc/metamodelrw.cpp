@@ -834,7 +834,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
 {
     HRESULT      hr = S_OK;
     HRESULT      hrRet = S_FALSE;       // Assume that we won't find any
-    ULONG        ridStart, ridEnd;      // Loop start and endpoints.
+    RID          ridStart, ridEnd;      // Loop start and endpoints.
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_CustomAttribute];
 
     _ASSERTE(phEnum != NULL);
@@ -3380,7 +3380,7 @@ CMiniMdRW::PreSaveEnc()
             for (ixTbl=0; ixTbl<m_TblCount; ++ixTbl)
             {
                 ENCMapRec *pNew;
-                ULONG nNew;
+                RID nNew;
                 for (int i=0; i<m_rENCRecs[ixTbl].Count(); ++i)
                 {
                     IfFailGo(AddENCMapRecord(&pNew, &nNew)); // pre-allocated for all rows.
@@ -6203,8 +6203,8 @@ CMiniMdRW::FindMethodSemanticsHelper(
     mdToken        tkAssociate,     // Event or property token
     HENUMInternal *phEnum)          // fill in the enum
 {
-    ULONG        ridStart, ridEnd;
-    ULONG        index;
+    RID          ridStart, ridEnd;
+    RID          index;
     MethodSemanticsRec *pMethodSemantics;
     HRESULT      hr = NOERROR;
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodSemantics];
@@ -6268,8 +6268,8 @@ CMiniMdRW::FindAssociateHelper(
     DWORD   dwSemantics,    // [IN] given a associate semantics(setter, getter, testdefault, reset)
     RID    *pRid)           // [OUT] return matching row index here
 {
-    ULONG       ridStart, ridEnd;
-    ULONG       index;
+    RID         ridStart, ridEnd;
+    RID         index;
     MethodSemanticsRec *pMethodSemantics;
     HRESULT     hr = NOERROR;
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodSemantics];
@@ -6336,8 +6336,8 @@ CMiniMdRW::FindMethodImplHelper(
     mdTypeDef      td,          // TypeDef token for the Class.
     HENUMInternal *phEnum)      // fill in the enum
 {
-    ULONG       ridStart, ridEnd;
-    ULONG       index;
+    RID         ridStart, ridEnd;
+    RID         index;
     MethodImplRec *pMethodImpl;
     HRESULT     hr = NOERROR;
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodImpl];
@@ -6400,8 +6400,8 @@ CMiniMdRW::FindGenericParamHelper(
     HENUMInternal *phEnum)      // fill in the enum
 {
     HRESULT     hr = NOERROR;
-    ULONG       ridStart, ridEnd;       // Start, end of range of tokens.
-    ULONG       index;                  // A loop counter.
+    RID         ridStart, ridEnd;       // Start, end of range of tokens.
+    RID         index;                  // A loop counter.
     GenericParamRec *pGenericParam;
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_GenericParam];
 
@@ -6467,7 +6467,7 @@ CMiniMdRW::FindGenericParamConstraintHelper(
     HENUMInternal *phEnum)      // fill in the enum
 {
     HRESULT     hr = NOERROR;
-    ULONG       ridStart, ridEnd;       // Start, end of range of tokens.
+    RID         ridStart, ridEnd;       // Start, end of range of tokens.
     ULONG       index;                  // A loop counter.
     GenericParamConstraintRec *pConstraint;
     CLookUpHash *pHashTable = m_pLookUpHashs[TBL_GenericParamConstraint];
@@ -7380,11 +7380,11 @@ CMiniMdRW::CreateMemberDefHash()
     // If the hash table hasn't been built it, see if it should get faulted in.
     if (m_pMemberDefHash == NULL)
     {
-        ULONG        ridMethod = getCountMethods();
-        ULONG        ridField = getCountFields();
-        ULONG        iType;
-        ULONG        ridStart;
-        ULONG        ridEnd;
+        RID          ridMethod = getCountMethods();
+        RID          ridField = getCountFields();
+        RID          iType;
+        RID          ridStart;
+        RID          ridEnd;
         TypeDefRec * pRec;
         MethodRec *  pMethod;
         FieldRec *   pField;
@@ -7882,10 +7882,10 @@ CMiniMdRW::FindParentOfMethodHelper(
     {
         if (m_pMethodMap == NULL)
         {
-            ULONG          indexTd;
-            ULONG          indexMd;
-            ULONG          ridStart;
-            ULONG          ridEnd;
+            RID            indexTd;
+            RID            indexMd;
+            RID            ridStart;
+            RID            ridEnd;
             TypeDefRec *   pTypeDefRec;
             MethodPtrRec * pMethodPtrRec;
 
@@ -7946,9 +7946,9 @@ CMiniMdRW::FindParentOfFieldHelper(
     {
         if (m_pFieldMap == NULL)
         {
-            ULONG       indexTd;
-            ULONG       indexFd;
-            ULONG       ridStart, ridEnd;
+            RID         indexTd;
+            RID         indexFd;
+            RID         ridStart, ridEnd;
             TypeDefRec  *pTypeDefRec;
             FieldPtrRec *pFieldPtrRec;
 
@@ -8009,9 +8009,9 @@ CMiniMdRW::FindParentOfPropertyHelper(
     {
         if (m_pPropertyMap == NULL)
         {
-            ULONG       indexMap;
-            ULONG       indexPr;
-            ULONG       ridStart, ridEnd;
+            RID         indexMap;
+            RID         indexPr;
+            RID         ridStart, ridEnd;
             PropertyMapRec  *pPropertyMapRec;
             PropertyPtrRec  *pPropertyPtrRec;
 
@@ -8078,9 +8078,9 @@ CMiniMdRW::FindParentOfEventHelper(
     {
         if (m_pEventMap == NULL)
         {
-            ULONG       indexMap;
-            ULONG       indexEv;
-            ULONG       ridStart, ridEnd;
+            RID         indexMap;
+            RID         indexEv;
+            RID         ridStart, ridEnd;
             EventMapRec *pEventMapRec;
             EventPtrRec  *pEventPtrRec;
 
@@ -8147,17 +8147,17 @@ CMiniMdRW::FindParentOfParamHelper(
     {
         if (m_pParamMap == NULL)
         {
-            ULONG       indexMd;
-            ULONG       indexPd;
-            ULONG       ridStart, ridEnd;
+            RID         indexMd;
+            RID         indexPd;
+            RID         ridStart, ridEnd;
             MethodRec   *pMethodRec;
             ParamPtrRec *pParamPtrRec;
 
             // build the ParamMap table
             NewHolder<TOKENMAP> pParamMap = new (nothrow) TOKENMAP;
             IfNullGo(pParamMap);
-            ULONG nAllocateSize;
-            if (!ClrSafeInt<ULONG>::addition(m_Schema.m_cRecs[TBL_Param], 1, nAllocateSize))
+            uint32_t nAllocateSize;
+            if (!ClrSafeInt<uint32_t>::addition(m_Schema.m_cRecs[TBL_Param], 1, nAllocateSize))
             {
                 IfFailGo(COR_E_OVERFLOW);
             }

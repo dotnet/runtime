@@ -918,7 +918,7 @@ namespace System.Xml
             return true;
         }
 
-        private class AttributeSorter : IComparer
+        private sealed class AttributeSorter : IComparer
         {
             private readonly XmlCanonicalWriter _writer;
 

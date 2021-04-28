@@ -756,7 +756,6 @@ public:
     BOOL    m_fReportProgress;
     BOOL    m_fIsMscorlib;
     BOOL    m_fTolerateDupMethods;
-    BOOL    m_fENCMode;
     BOOL    m_fOptimize;
     mdToken m_tkSysObject;
     mdToken m_tkSysString;
@@ -804,7 +803,6 @@ public:
     //MethodList  m_MethodList;
 
     BOOL    m_fDLL;
-    BOOL    m_fOBJ;
     BOOL    m_fEntryPointPresent;
     BOOL    m_fHaveFieldsWithRvas;
     BOOL    m_fFoldCode;
@@ -871,7 +869,6 @@ public:
     state_t CheckLocalTypeConsistancy(int instr, unsigned arg);
     state_t AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTION section);
     void SetDLL(BOOL);
-    void SetOBJ(BOOL);
     void ResetForNextMethod();
     void ResetLineNumbers();
     void SetStdMapping(BOOL val = TRUE) { m_fStdMapping = val; };
@@ -1221,11 +1218,6 @@ public:
     void SetCodePage(unsigned val) { g_uCodePage = val; };
     Clockwork* bClock;
     void SetClock(Clockwork* val) { bClock = val; };
-    // ENC paraphernalia
-    HRESULT InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb);
-    BOOL EmitFieldsMethodsENC(Class* pClass);
-    BOOL EmitEventsPropsENC(Class* pClass);
-    HRESULT CreateDeltaFiles(__in __nullterminated WCHAR *pwzOutputFilename);
 
     // Syntactic sugar paraphernalia
 private:

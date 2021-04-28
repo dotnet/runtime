@@ -58,10 +58,10 @@ void EventRedirectionPipeline::Delete()
 void EventRedirectionPipeline::InitConfiguration()
 {
     // We need some config strings. See header for possible values.
-    m_DebuggerCmd.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectApplication);
-    m_AttachParams.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectAttachCmd);
-    m_CreateParams.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectCreateCmd);
-    m_CommonParams.Init_DontUse_(CLRConfig::EXTERNAL_DbgRedirectCommonCmd);
+    m_DebuggerCmd = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DbgRedirectApplication);
+    m_AttachParams = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DbgRedirectAttachCmd);
+    m_CreateParams = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DbgRedirectCreateCmd);
+    m_CommonParams = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DbgRedirectCommonCmd);
 }
 
 
@@ -108,11 +108,11 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
         // Initialize
         m_pBlock->m_versionCookie = EVENT_REDIRECTION_CURRENT_VERSION;
 
-        s.Printf(m_CommonParams.Value(), GetCurrentProcessId(), m_pBlock, szOptions, pidTarget);
+        s.Printf(m_CommonParams, GetCurrentProcessId(), m_pBlock, szOptions, pidTarget);
         lpCommandLine = s.GetUnicode();
 
 
-        lpApplicationName = m_DebuggerCmd.Value(); // eg, something like L"c:\\debuggers_amd64\\windbg.exe";
+        lpApplicationName = m_DebuggerCmd; // eg, something like L"c:\\debuggers_amd64\\windbg.exe";
 
         // Initialize events.
         const BOOL kManualResetEvent = TRUE;
@@ -283,7 +283,7 @@ HRESULT EventRedirectionPipeline::CreateProcessUnderDebugger(
     }
 
     // Attach the real debugger.
-    AttachDebuggerToTarget(m_CreateParams.Value(), lpProcessInformation->dwProcessId);
+    AttachDebuggerToTarget(m_CreateParams, lpProcessInformation->dwProcessId);
 
     m_dwProcessId = lpProcessInformation->dwProcessId;
 
@@ -298,7 +298,7 @@ HRESULT EventRedirectionPipeline::DebugActiveProcess(MachineInfo machineInfo, co
 
     // Use redirected pipeline
     // Spin up debugger to attach to target.
-    return AttachDebuggerToTarget(m_AttachParams.Value(), processDescriptor.m_Pid);
+    return AttachDebuggerToTarget(m_AttachParams, processDescriptor.m_Pid);
 }
 
 // Detach

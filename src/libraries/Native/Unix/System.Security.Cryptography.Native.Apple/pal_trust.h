@@ -8,7 +8,7 @@
 
 #include <Security/Security.h>
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Enumerate the certificates which are root trusted by the user.
 

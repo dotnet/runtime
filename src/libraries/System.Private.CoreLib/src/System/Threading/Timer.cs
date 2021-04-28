@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
@@ -34,9 +35,13 @@ namespace System.Threading
     // Note that all instance methods of this class require that the caller hold a lock on the TimerQueue instance.
     // We partition the timers across multiple TimerQueues, each with its own lock and set of short/long lists,
     // in order to minimize contention when lots of threads are concurrently creating and destroying timers often.
-    internal partial class TimerQueue
+    [DebuggerDisplay("Count = {CountForDebugger}")]
+    [DebuggerTypeProxy(typeof(TimerQueueDebuggerTypeProxy))]
+    internal sealed partial class TimerQueue
     {
         #region Shared TimerQueue instances
+        /// <summary>Mapping from a tick count to a time to use when debugging to translate tick count values.</summary>
+        internal static readonly (long TickCount, DateTime Time) s_tickCountToTimeMap = (TickCount64, DateTime.UtcNow);
 
         public static TimerQueue[] Instances { get; } = CreateTimerQueues();
 
@@ -48,6 +53,52 @@ namespace System.Threading
                 queues[i] = new TimerQueue(i);
             }
             return queues;
+        }
+
+        // This method is not thread-safe and should only be used from the debugger.
+        private int CountForDebugger
+        {
+            get
+            {
+                int count = 0;
+                foreach (TimerQueueTimer _ in GetTimersForDebugger())
+                {
+                    count++;
+                }
+
+                return count;
+            }
+        }
+
+        // This method is not thread-safe and should only be used from the debugger.
+        internal IEnumerable<TimerQueueTimer> GetTimersForDebugger()
+        {
+            // This should ideally take lock(this), but doing so can hang the debugger
+            // if another thread holds the lock.  It could instead use Monitor.TryEnter,
+            // but doing so doesn't work while dump debugging.  So, it doesn't take the
+            // lock at all; it's theoretically possible but very unlikely this could result
+            // in a circular list that causes the debugger to hang, too.
+
+            for (TimerQueueTimer? timer = _shortTimers; timer != null; timer = timer._next)
+            {
+                yield return timer;
+            }
+
+            for (TimerQueueTimer? timer = _longTimers; timer != null; timer = timer._next)
+            {
+                yield return timer;
+            }
+        }
+
+        private sealed class TimerQueueDebuggerTypeProxy
+        {
+            private readonly TimerQueue _queue;
+
+            public TimerQueueDebuggerTypeProxy(TimerQueue queue) =>
+                _queue = queue ?? throw new ArgumentNullException(nameof(queue));
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public TimerQueueTimer[] Items => new List<TimerQueueTimer>(_queue.GetTimersForDebugger()).ToArray();
         }
 
         #endregion
@@ -155,6 +206,7 @@ namespace System.Threading
                         if (remaining <= 0)
                         {
                             // Timer is ready to fire.
+                            timer._everQueued = true;
 
                             if (timer._period != Timeout.UnsignedInfinite)
                             {
@@ -386,6 +438,8 @@ namespace System.Threading
     }
 
     // A timer in our TimerQueue.
+    [DebuggerDisplay("{DisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(TimerDebuggerTypeProxy))]
     internal sealed partial class TimerQueueTimer : IThreadPoolWorkItem
     {
         // The associated timer queue.
@@ -423,8 +477,8 @@ namespace System.Threading
         // instead of with a provided WaitHandle.
         private int _callbacksRunning;
         private bool _canceled;
+        internal bool _everQueued;
         private object? _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
-
 
         internal TimerQueueTimer(TimerCallback timerCallback, object? state, uint dueTime, uint period, bool flowExecutionContext)
         {
@@ -442,6 +496,23 @@ namespace System.Threading
             // the lock is permitted beyond this point!
             if (dueTime != Timeout.UnsignedInfinite)
                 Change(dueTime, period);
+        }
+
+        internal string DisplayString
+        {
+            get
+            {
+                string? typeName = _timerCallback.Method.DeclaringType?.FullName;
+                if (typeName is not null)
+                {
+                    typeName += ".";
+                }
+
+                return
+                    "DueTime = " + (_dueTime == Timeout.UnsignedInfinite ? "(not set)" : TimeSpan.FromMilliseconds(_dueTime)) + ", " +
+                    "Period = " + (_period == Timeout.UnsignedInfinite ? "(not set)" : TimeSpan.FromMilliseconds(_period)) + ", " +
+                    typeName + _timerCallback.Method.Name + "(" + (_state?.ToString() ?? "null") + ")";
+            }
         }
 
         internal bool Change(uint dueTime, uint period)
@@ -646,6 +717,40 @@ namespace System.Threading
             var t = (TimerQueueTimer)state;
             t._timerCallback(t._state);
         };
+
+        internal sealed class TimerDebuggerTypeProxy
+        {
+            private readonly TimerQueueTimer _timer;
+
+            public TimerDebuggerTypeProxy(Timer timer) => _timer = timer._timer._timer;
+            public TimerDebuggerTypeProxy(TimerQueueTimer timer) => _timer = timer;
+
+            public DateTime? EstimatedNextTimeUtc
+            {
+                get
+                {
+                    if (_timer._dueTime != Timeout.UnsignedInfinite)
+                    {
+                        // In TimerQueue's static ctor, we snap a tick count and the current time, as a way of being
+                        // able to translate from tick counts to times.  This is only approximate, for a variety of
+                        // reasons (e.g. drift, clock changes, etc.), but when dump debugging we are unable to use
+                        // TickCount in a meaningful way, so this at least provides a reasonable approximation.
+                        long msOffset = _timer._startTicks - TimerQueue.s_tickCountToTimeMap.TickCount + _timer._dueTime;
+                        return (TimerQueue.s_tickCountToTimeMap.Time + TimeSpan.FromMilliseconds(msOffset));
+                    }
+
+                    return null;
+                }
+            }
+
+            public TimeSpan? DueTime => _timer._dueTime == Timeout.UnsignedInfinite ? null : TimeSpan.FromMilliseconds(_timer._dueTime);
+
+            public TimeSpan? Period => _timer._period == Timeout.UnsignedInfinite ? null : TimeSpan.FromMilliseconds(_timer._period);
+
+            public TimerCallback Callback => _timer._timerCallback;
+
+            public object? State => _timer._state;
+        }
     }
 
     // TimerHolder serves as an intermediary between Timer and TimerQueueTimer, releasing the TimerQueueTimer
@@ -691,12 +796,13 @@ namespace System.Threading
         }
     }
 
-
+    [DebuggerDisplay("{DisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(TimerQueueTimer.TimerDebuggerTypeProxy))]
     public sealed class Timer : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         internal const uint MaxSupportedTimeout = 0xfffffffe;
 
-        private TimerHolder _timer;
+        internal TimerHolder _timer;
 
         public Timer(TimerCallback callback,
                      object? state,
@@ -859,6 +965,26 @@ namespace System.Threading
         public ValueTask DisposeAsync()
         {
             return _timer.CloseAsync();
+        }
+
+        private string DisplayString => _timer._timer.DisplayString;
+
+        /// <summary>Gets a list of all timers for debugging purposes.</summary>
+        private static IEnumerable<TimerQueueTimer> AllTimers // intended to be used by devs from debugger
+        {
+            get
+            {
+                var timers = new List<TimerQueueTimer>();
+
+                foreach (TimerQueue queue in TimerQueue.Instances)
+                {
+                    timers.AddRange(queue.GetTimersForDebugger());
+                }
+
+                timers.Sort((t1, t2) => t1._dueTime.CompareTo(t2._dueTime));
+
+                return timers;
+            }
         }
     }
 }

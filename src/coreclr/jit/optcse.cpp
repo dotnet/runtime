@@ -16,10 +16,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-/*****************************************************************************/
-#if FEATURE_ANYCSE
-/*****************************************************************************/
-
 /* static */
 const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
@@ -219,7 +215,7 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     // If we haven't setup cseMaskTraits, do it now
     if (cseMaskTraits == nullptr)
     {
-        cseMaskTraits = new (getAllocator()) BitVecTraits(optCSECandidateCount, this);
+        cseMaskTraits = new (getAllocator(CMK_CSE)) BitVecTraits(optCSECandidateCount, this);
     }
 
     optCSE_MaskData op1MaskData;
@@ -338,10 +334,6 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     return dsc1->csdIndex < dsc2->csdIndex;
 }
 
-/*****************************************************************************/
-#if FEATURE_VALNUM_CSE
-/*****************************************************************************/
-
 /*****************************************************************************
  *
  *  Initialize the Value Number CSE tracking logic.
@@ -409,8 +401,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     size_t   key;
     unsigned hval;
     CSEdsc*  hashDsc;
-    bool     isIntConstHash       = false;
     bool     enableSharedConstCSE = false;
+    bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
 
 #if defined(TARGET_ARM64)
@@ -483,26 +475,38 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     else if (enableSharedConstCSE && tree->IsIntegralConst())
     {
         assert(vnStore->IsVNConstant(vnLibNorm));
-        key = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
 
-        // We don't shared small offset constants when we require a reloc
+        // We don't share small offset constants when they require a reloc
+        //
         if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
         {
-            // Make constants that have the same upper bits use the same key
-
-            // Shift the key right by CSE_CONST_SHARED_LOW_BITS bits, this sets the upper bits to zero
-            key >>= CSE_CONST_SHARED_LOW_BITS;
+            // Here we make constants that have the same upper bits use the same key
+            //
+            // We create a key that encodes just the upper bits of the constant by
+            // shifting out some of the low bits, (12 or 16 bits)
+            //
+            // This is the only case where the hash key is not a ValueNumber
+            //
+            size_t constVal = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
+            key             = Encode_Shared_Const_CSE_Value(constVal);
+            isSharedConst   = true;
         }
-        assert((key & TARGET_SIGN_BIT) == 0);
-
-        // We use the sign bit of 'key' as the flag
-        // that we are hashing constants (with a shared offset)
-        key |= TARGET_SIGN_BIT;
+        else
+        {
+            // Use the vnLibNorm value as the key
+            key = vnLibNorm;
+        }
     }
     else // Not a GT_COMMA or a GT_CNS_INT
     {
         key = vnLibNorm;
     }
+
+    // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst
+    // Note that when isSharedConst is true then we require that the TARGET_SIGN_BIT is set in the key
+    // and otherwise we require that we never create a ValueNumber with the TARGET_SIGN_BIT set.
+    //
+    assert(isSharedConst == Is_Shared_Const_CSE(key));
 
     // Compute the hash value for the expression
 
@@ -543,6 +547,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 hashDsc->csdTreeLast  = newElem;
                 hashDsc->csdStructHnd = NO_CLASS_HANDLE;
 
+                hashDsc->csdIsSharedConst     = isSharedConst;
                 hashDsc->csdStructHndMismatch = false;
 
                 if (varTypeIsStruct(tree->gtType))
@@ -661,6 +666,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdConstDefValue  = 0;
             hashDsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
             hashDsc->csdIndex          = 0;
+            hashDsc->csdIsSharedConst  = false;
             hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
@@ -961,7 +967,7 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
             if (optCseCheckedBoundMap == nullptr)
             {
                 // Allocate map on first use.
-                optCseCheckedBoundMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseCheckedBoundMap = new (getAllocator(CMK_CSE)) NodeToNodeMap(getAllocator());
             }
 
             optCseCheckedBoundMap->Set(bound, compare);
@@ -991,7 +997,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     const unsigned bitCount = (optCSECandidateCount * 2) + 1;
 
     // Init traits and cseCallKillsMask bitvectors.
-    cseLivenessTraits = new (getAllocator()) BitVecTraits(bitCount, this);
+    cseLivenessTraits = new (getAllocator(CMK_CSE)) BitVecTraits(bitCount, this);
     cseCallKillsMask  = BitVecOps::MakeEmpty(cseLivenessTraits);
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
     {
@@ -1181,19 +1187,19 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("StartMerge BB%02u\n", block->bbNum);
+            printf("StartMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
     }
 
     // Merge: perform the merging of each of the predecessor's liveness values (since this is a forward analysis)
-    void Merge(BasicBlock* block, BasicBlock* predBlock, flowList* preds)
+    void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
     {
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("Merge BB%02u and BB%02u\n", block->bbNum, predBlock->bbNum);
+            printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
@@ -1269,7 +1275,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("EndMerge BB%02u\n", block->bbNum);
+            printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
@@ -1437,7 +1443,7 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (verbose)
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
                         printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
@@ -2127,6 +2133,11 @@ public:
             return m_Size;
         }
 
+        bool IsSharedConst()
+        {
+            return m_CseDsc->csdIsSharedConst;
+        }
+
         bool LiveAcrossCall()
         {
             return m_CseDsc->csdLiveAcrossCall;
@@ -2346,14 +2357,12 @@ public:
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
         BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-        bool      canEnregister = true;
-        unsigned  slotCount     = 1;
-        var_types cseLclVarTyp  = genActualType(candidate->Expr()->TypeGet());
+        bool     canEnregister = true;
+        unsigned slotCount     = 1;
         if (candidate->Expr()->TypeGet() == TYP_STRUCT)
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
-            GenTree*             value     = candidate->Expr();
             CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
             if (structHnd == NO_CLASS_HANDLE)
             {
@@ -2819,7 +2828,7 @@ public:
         //
         bool                   setRefCnt      = true;
         bool                   allSame        = true;
-        bool                   isSharedConst  = Compiler::Is_Shared_Const_CSE(dsc->csdHashKey);
+        bool                   isSharedConst  = successfulCandidate->IsSharedConst();
         ValueNum               bestVN         = ValueNumStore::NoVN;
         bool                   bestIsDef      = false;
         ssize_t                bestConstValue = 0;
@@ -2861,7 +2870,7 @@ public:
 
                     ssize_t diff = curConstValue - bestConstValue;
 
-                    // The ARM64 ldr addressing modes allow for a subtraction of up to 255
+                    // The ARM addressing modes allow for a subtraction of up to 255
                     // so we will allow the diff to be up to -255 before replacing a CSE def
                     // This will minimize the number of extra subtract instructions.
                     //
@@ -3454,8 +3463,6 @@ void Compiler::optOptimizeValnumCSEs()
     optValnumCSE_phase = false;
 }
 
-#endif // FEATURE_VALNUM_CSE
-
 /*****************************************************************************
  *
  *  The following determines whether the given expression is a worthy CSE
@@ -3484,22 +3491,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
     {
         return false;
     }
-
-#ifdef TARGET_X86
-    if (type == TYP_FLOAT)
-    {
-        // TODO-X86-CQ: Revisit this
-        // Don't CSE a TYP_FLOAT on x86 as we currently can only enregister doubles
-        return false;
-    }
-#else
-    if (oper == GT_CNS_DBL)
-    {
-        // TODO-CQ: Revisit this
-        // Don't try to CSE a GT_CNS_DBL as they can represent both float and doubles
-        return false;
-    }
-#endif
 
     unsigned cost;
     if (compCodeOpt() == SMALL_CODE)
@@ -3828,11 +3819,9 @@ void Compiler::optOptimizeCSEs()
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 
-#if FEATURE_VALNUM_CSE
     INDEBUG(optEnsureClearCSEInfo());
     optOptimizeValnumCSEs();
     EndPhase(PHASE_OPTIMIZE_VALNUM_CSES);
-#endif // FEATURE_VALNUM_CSE
 }
 
 /*****************************************************************************
@@ -3887,7 +3876,3 @@ void Compiler::optEnsureClearCSEInfo()
 }
 
 #endif // DEBUG
-
-/*****************************************************************************/
-#endif // FEATURE_ANYCSE
-/*****************************************************************************/

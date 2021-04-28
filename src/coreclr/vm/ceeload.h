@@ -100,9 +100,7 @@ extern VerboseLevel g_CorCompileVerboseLevel;
 #elif defined(HOST_ARM)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
 #elif defined(HOST_ARM64)
-// Use diasymreader until the package has an arm64 version - issue #7360
-//#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #endif
 
 typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
@@ -1769,7 +1767,6 @@ protected:
         return m_moduleRef;
     }
 
-
     BOOL IsResource() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsResource(); }
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetFile()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsDynamic(); }
@@ -1777,19 +1774,15 @@ protected:
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
 
-
     BOOL IsEditAndContinueEnabled()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        // We are seeing cases where this flag is set for a module that is not an EditAndContinueModule.  This should
-        // never happen unless the module is EditAndContinueCapable, in which case we would have created an EditAndContinueModule
-        // not a Module.
-        //_ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
-        return (IsEditAndContinueCapable()) && ((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0);
+        _ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
+        return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-    BOOL IsEditAndContinueCapable();
+    virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
     BOOL IsIStream() { LIMITED_METHOD_CONTRACT; return GetFile()->IsIStream(); }
 
@@ -1801,18 +1794,9 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        // _ASSERTE(IsEditAndContinueCapable());
+        _ASSERTE(IsEditAndContinueCapable());
         LOG((LF_ENC, LL_INFO100, "EnableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
         m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
-    }
-
-    void DisableEditAndContinue()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        // don't _ASSERTE(IsEditAndContinueCapable());
-        LOG((LF_ENC, LL_INFO100, "DisableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
-        m_dwTransientFlags = m_dwTransientFlags.Load() & (~IS_EDIT_AND_CONTINUE);
     }
 
     BOOL IsTenured()
@@ -3224,7 +3208,7 @@ class ReflectionModule : public Module
     HCEESECTION m_sdataSection;
 
  protected:
-    ICeeGen * m_pCeeFileGen;
+    ICeeGenInternal * m_pCeeFileGen;
 private:
     Assembly             *m_pCreatingAssembly;
     ISymUnmanagedWriter  *m_pISymUnmanagedWriter;
@@ -3300,7 +3284,7 @@ public:
         m_pCreatingAssembly = assembly;
     }
 
-    ICeeGen *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 
     RefClassWriter *GetClassWriter()
     {

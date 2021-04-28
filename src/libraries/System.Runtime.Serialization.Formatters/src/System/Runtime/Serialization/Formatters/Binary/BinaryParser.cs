@@ -894,7 +894,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     if (!BitConverter.IsLittleEndian)
                     {
                         // we know that we are reading a primitive type, so just do a simple swap
-                        Debug.Fail("Re-review this code if/when we start running on big endian systems");
                         for (int i = 0; i < bufferUsed; i += typeLength)
                         {
                             for (int j = 0; j < typeLength / 2; j++)

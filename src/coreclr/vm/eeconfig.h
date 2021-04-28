@@ -287,6 +287,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return fEnableRCWCleanupOnSTAShutdown;
     }
+
+    bool IsBuiltInCOMSupported() const { LIMITED_METHOD_CONTRACT;  return m_fBuiltInCOMInteropSupported; }
 #endif // FEATURE_COMINTEROP
 
 #ifdef _DEBUG
@@ -306,16 +308,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return fProbeForStackOverflow;
     }
-
-#ifdef _DEBUG
-    inline bool AppDomainLeaks() const
-    {
-        // Workaround for CoreCLR bug #12075, until this configuration option is removed
-        // (CoreCLR Bug #12094)
-        LIMITED_METHOD_DAC_CONTRACT;
-        return false;
-    }
-#endif
 
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
@@ -417,22 +409,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         return iInjectFatalError;
     }
-
-    inline BOOL SaveThreadInfo() const
-    {
-        return fSaveThreadInfo;
-    }
-
-    inline DWORD SaveThreadInfoMask() const
-    {
-        return dwSaveThreadInfoMask;
-    }
 #endif
 
 
 #ifdef _DEBUG
     // Interop config
-    IUnknown* GetTraceIUnknown()            const {LIMITED_METHOD_CONTRACT;  return m_pTraceIUnknown; }
     int     GetTraceWrapper()               const {LIMITED_METHOD_CONTRACT;  return m_TraceWrapper;      }
 #endif
 
@@ -463,40 +444,11 @@ public:
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
+    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
 
     // Optimizations to improve working set
 
     HRESULT sync();    // check the registry again and update local state
-
-    // Helpers to read configuration
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static HRESULT GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR*out, BOOL fPrependCOMPLUS = TRUE); // Note that you own the returned string!
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static DWORD GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue,
-                                DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                BOOL fPrependCOMPLUS = TRUE);
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static ULONGLONG GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue,
-                                             DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                             BOOL fPrependCOMPLUS = TRUE);
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static DWORD GetConfigFlag_DontUse_(__in_z LPCWSTR name, DWORD bitToSet, bool defValue = FALSE);
 
 #ifdef _DEBUG
     // GC alloc logging
@@ -596,6 +548,7 @@ private: //----------------------------------------------------------------
     LPCUTF8 pszLogCCWRefCountChange;      // OutputDebugString when AddRef/Release is called on a CCW
                                           // for the specified type(s)
     bool fEnableRCWCleanupOnSTAShutdown;  // Register our IInitializeSpy even in classic processes
+    bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -659,9 +612,6 @@ private: //----------------------------------------------------------------
 
     DWORD iInjectFatalError;
 
-    BOOL fSaveThreadInfo;
-    DWORD dwSaveThreadInfoMask;
-
     AssemblyNamesList *pSkipGCCoverageList;
 #endif
 
@@ -691,6 +641,7 @@ private: //----------------------------------------------------------------
 
     bool fStressLog;
     bool fForceEnc;
+    bool fDebugAssembliesModifiable;
     bool fProbeForStackOverflow;
 
     // Stackwalk optimization flag
@@ -701,7 +652,6 @@ private: //----------------------------------------------------------------
 
 #ifdef _DEBUG
     // interop logging
-    IUnknown* m_pTraceIUnknown;
     int       m_TraceWrapper;
 #endif
 
@@ -761,10 +711,6 @@ private: //----------------------------------------------------------------
     bool fGDBJitEmitDebugFrame;
 #endif
 public:
-
-    DWORD GetConfigDWORDInternal_DontUse_ (__in_z LPCWSTR name, DWORD defValue,    //for getting data in the constructor of EEConfig
-                                    DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                    BOOL fPrependCOMPLUS = TRUE);
 
     enum BitForMask {
         CallSite_1 = 0x0001,

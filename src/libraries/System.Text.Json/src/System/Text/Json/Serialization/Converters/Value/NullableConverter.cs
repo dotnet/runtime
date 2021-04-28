@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class NullableConverter<T> : JsonConverter<T?> where T : struct
+    internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.

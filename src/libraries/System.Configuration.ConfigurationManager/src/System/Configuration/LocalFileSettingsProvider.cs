@@ -530,7 +530,7 @@ namespace System.Configuration
             }
         }
 
-        private class XmlEscaper
+        private sealed class XmlEscaper
         {
             private readonly XmlDocument document;
             private readonly XmlElement tempElement;

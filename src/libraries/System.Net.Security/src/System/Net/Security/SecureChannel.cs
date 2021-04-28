@@ -15,7 +15,7 @@ namespace System.Net.Security
 {
     // SecureChannel - a wrapper on SSPI based functionality.
     // Provides an additional abstraction layer over SSPI for SslStream.
-    internal class SecureChannel
+    internal sealed class SecureChannel
     {
         // When reading a frame from the wire first read this many bytes for the header.
         internal const int ReadHeaderSize = 5;
@@ -591,6 +591,10 @@ namespace System.Net.Security
                     _credentialsHandle = cachedCredentialHandle;
                     _selectedClientCertificate = clientCertificate;
                     cachedCred = true;
+                    if (selectedCert != null)
+                    {
+                        _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
+                    }
                 }
                 else
                 {
@@ -1211,7 +1215,7 @@ namespace System.Net.Security
     }
 
     // ProtocolToken - used to process and handle the return codes from the SSPI wrapper
-    internal class ProtocolToken
+    internal sealed class ProtocolToken
     {
         internal SecurityStatusPal Status;
         internal byte[]? Payload;

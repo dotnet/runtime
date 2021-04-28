@@ -134,7 +134,7 @@ namespace System.Threading.Tests
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
                 return mres.IsSet;
-            }, 5000);
+            }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 
             Assert.True(mres.IsSet);
         }
@@ -329,7 +329,7 @@ namespace System.Threading.Tests
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
                     return mres.IsSet;
-                }, 5000);
+                }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 
                 Assert.True(mres.IsSet, "RunThreadLocalTest8_Values: Expected thread local to release the object and for it to be finalized");
             }

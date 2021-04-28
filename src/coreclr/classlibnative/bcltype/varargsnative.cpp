@@ -70,10 +70,10 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     data->SigPtr    = data->ArgCookie->signature.CreateSigPointer();
 
     // Skip the calling convention, get the # of args and skip the return type.
-    ULONG callConv;
+    uint32_t callConv;
     IfFailThrow(data->SigPtr.GetCallingConvInfo(&callConv));
 
-    ULONG sigData;
+    uint32_t sigData;
     IfFailThrow(data->SigPtr.GetData(&sigData));
     data->RemainingArgs = sigData;
 

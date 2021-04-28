@@ -58,7 +58,7 @@ EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken module
 // in a state where Destruct() can be safely called.
 //
 /*virtual*/
-void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker)
+void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACTL
     {
@@ -69,7 +69,7 @@ void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker)
     CONTRACTL_END
 
     LOG((LF_ENC,LL_INFO100,"EACM::Initialize 0x%x\n", this));
-    Module::Initialize(pamTracker);
+    Module::Initialize(pamTracker, szName);
 }
 
 // Called when the module is being destroyed (eg. AD unload time)
@@ -173,9 +173,9 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     // Ensure the metadata is RW.
     EX_TRY
     {
-        // ConvertMetadataToRWForEnC should only ever be called on EnC capable files.
+        // ConvertMDInternalToReadWrite should only ever be called on EnC capable files.
         _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
-        GetFile()->ConvertMetadataToRWForEnC();
+        GetFile()->ConvertMDInternalToReadWrite();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -310,10 +310,13 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     CONTRACTL_END;
 
     // Notify the debugger of the update
-    HRESULT hr = g_pDebugInterface->UpdateFunction(pMethod, m_applyChangesCount);
-    if (FAILED(hr))
+    if (CORDebuggerAttached())
     {
-        return hr;
+        HRESULT hr = g_pDebugInterface->UpdateFunction(pMethod, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
     }
 
     // Notify the JIT that we've got new IL for this method
@@ -327,7 +330,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //
-    pMethod->Reset();
+    pMethod->ResetCodeEntryPointForEnC();
 
     return S_OK;
 }
@@ -375,7 +378,10 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         // Class isn't loaded yet, don't have to modify any existing EE data structures beyond the metadata.
         // Just notify debugger and return.
         LOG((LF_ENC, LL_INFO100, "EnCModule::AM class %p not loaded, our work is done\n", parentTypeDef));
-        hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
+        if (CORDebuggerAttached())
+        {
+            hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
+        }
         return hr;
     }
 
@@ -391,12 +397,15 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         return hr;
     }
 
-    // Tell the debugger about the new method so it get's the version number properly
-    hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
-    if (FAILED(hr))
+    // Tell the debugger about the new method so it gets the version number properly
+    if (CORDebuggerAttached())
     {
-        _ASSERTE(!"Failed to add function");
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+        hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            _ASSERTE(!"Failed to add function");
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+        }
     }
 
     return hr;
@@ -463,10 +472,13 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     }
 
     // Tell the debugger about the new field
-    hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
-    if (FAILED(hr))
+    if (CORDebuggerAttached())
     {
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+        hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+        }
     }
 
 #ifdef _DEBUG
@@ -520,7 +532,6 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     // so that gc can crawl the stack and do the right thing.
     _ASSERTE(pOrigContext);
     Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
     FrameWithCookie<ResumableFrame> resFrame(pOrigContext);
     resFrame.Push(pCurThread);
 
@@ -603,6 +614,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     SIZE_T newILOffset,
     CONTEXT *pOrigContext)
 {
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+    return E_NOTIMPL;
+#else
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ",
         pMD->m_pszDebugMethodName, newILOffset));
 
@@ -683,6 +697,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return hr;
+#endif // #if define(TARGET_ARM64) || defined(TARGET_ARM)
 }
 
 //---------------------------------------------------------------------------------------
@@ -729,7 +744,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_AMD64)
     // Since we made a copy of the incoming CONTEXT in context, clear any new flags we
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
-    // on this copy to RtlRestoreContext, and this copy doesn't have the extra info
+    // on this copy to ClrRestoreNonvolatileContext, and this copy doesn't have the extra info
     // required by the XSAVE or other flags.
     //
     // FUTURE: No reason to ifdef this for amd64-only, except to make this late fix as
@@ -789,8 +804,6 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction: Resume at EIP=0x%x\n", pNewCodeInfo->GetCodeAddress()));
 
     Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
-
     pCurThread->SetFilterContext(pContext);
     SetIP(pContext, pNewCodeInfo->GetCodeAddress());
 
@@ -804,7 +817,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
 #else
-    RtlRestoreContext(pContext, NULL);
+    ClrRestoreNonvolatileContext(pContext);
 #endif
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.
@@ -1082,7 +1095,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // Create a new EnCAddedField instance
     EnCAddedField *pEntry = new EnCAddedField;
@@ -1229,7 +1242,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.
@@ -1303,7 +1316,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
     // if the field doesn't yet have available storage, we'll have to allocate it.
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.
@@ -1692,6 +1705,35 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
 #endif
 
     return dac_cast<PTR_FieldDesc>(pFD);
+}
+
+// Returns the number of fields plus the number of add EnC fields
+int EncApproxFieldDescIterator::Count()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    int count = m_nonEnCIter.Count();
+
+    // If this module doesn't have any EnC data then there aren't any EnC fields
+    if (m_encClassData == NULL)
+    {
+        return count;
+    }
+
+    BOOL doInst = ( GetIteratorType() & (int)ApproxFieldDescIterator::INSTANCE_FIELDS);
+    BOOL doStatic = ( GetIteratorType() & (int)ApproxFieldDescIterator::STATIC_FIELDS);
+
+    int cNumAddedInst    =  doInst ? m_encClassData->GetAddedInstanceFields() : 0;
+    int cNumAddedStatics =  doStatic ? m_encClassData->GetAddedStaticFields() : 0;
+
+    return count + cNumAddedInst + cNumAddedStatics;
 }
 
 // Iterate through EnC added fields.

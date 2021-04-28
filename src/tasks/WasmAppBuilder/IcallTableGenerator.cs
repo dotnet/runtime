@@ -206,7 +206,7 @@ public class IcallTableGenerator : Task
             case "UInt64": sb.Append ("ulong"); break;
             case "IntPtr": sb.Append ("intptr"); break;
             case "UIntPtr": sb.Append ("uintptr"); break;
-            case "Single": sb.Append ("float"); break;
+            case "Single": sb.Append ("single"); break;
             case "Double": sb.Append ("double"); break;
             case "Object": sb.Append ("object"); break;
             case "String": sb.Append ("string"); break;

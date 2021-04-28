@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         private static class GateThread
         {
@@ -43,9 +44,9 @@ namespace System.Threading
                     {
                         Thread.Sleep(GateThreadDelayMs);
 
-                        if (ThreadPool.EnableWorkerTracking && PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (ThreadPool.EnableWorkerTracking && NativeRuntimeEventSource.Log.IsEnabled())
                         {
-                            PortableThreadPoolEventSource.Log.ThreadPoolWorkingThreadCount(
+                            NativeRuntimeEventSource.Log.ThreadPoolWorkingThreadCount(
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 
@@ -170,10 +171,12 @@ namespace System.Threading
                 {
                     // Thread pool threads must start in the default execution context without transferring the context, so
                     // using UnsafeStart() instead of Start()
-                    Thread gateThread = new Thread(GateThreadStart, SmallStackSizeBytes);
-                    gateThread.IsThreadPoolThread = true;
-                    gateThread.IsBackground = true;
-                    gateThread.Name = ".NET ThreadPool Gate";
+                    Thread gateThread = new Thread(GateThreadStart, SmallStackSizeBytes)
+                    {
+                        IsThreadPoolThread = true,
+                        IsBackground = true,
+                        Name = ".NET ThreadPool Gate"
+                    };
                     gateThread.UnsafeStart();
                     created = true;
                 }

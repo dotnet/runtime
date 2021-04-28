@@ -10,6 +10,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
+    pal_keyderivation.c
     pal_keychain.c
     pal_random.c
     pal_rsa.c
@@ -22,6 +23,10 @@ set(NATIVECRYPTO_SOURCES
     pal_x509.c
     pal_x509chain.c
 )
+
+if (CLR_CMAKE_TARGET_MACCATALYST)
+    add_definitions(-DTARGET_MACCATALYST)
+endif()
 
 if (CLR_CMAKE_TARGET_IOS)
     add_definitions(-DTARGET_IOS)
@@ -39,7 +44,7 @@ if (GEN_SHARED_LIB)
     )
 endif()
 
-if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
     set(NATIVECRYPTO_SOURCES ${NATIVECRYPTO_SOURCES} entrypoints.c)
 endif()
 
@@ -60,4 +65,4 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.Apple PROGRAMS .)
 endif()
 
-install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

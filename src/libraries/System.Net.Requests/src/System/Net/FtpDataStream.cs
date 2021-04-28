@@ -12,7 +12,7 @@ namespace System.Net
     ///     The FtpDataStream class implements the FTP data connection.
     /// </para>
     /// </summary>
-    internal class FtpDataStream : Stream, ICloseEx
+    internal sealed class FtpDataStream : Stream, ICloseEx
     {
         private readonly FtpWebRequest _request;
         private readonly NetworkStream _networkStream;

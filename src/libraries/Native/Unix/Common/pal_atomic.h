@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#pragma once
+
 #if defined(TARGET_UNIX)
 #include <stdatomic.h>
 #elif defined(TARGET_WINDOWS)

@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
-    internal class TypeNameBuilder
+    internal sealed class TypeNameBuilder
     {
         private StringBuilder _str = new StringBuilder();
         private int _instNesting;

@@ -626,7 +626,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     return node;
                 }
-                return Expression.Convert(Expression.Field(Expression.Constant(box), "Value"), node.Type);
+                return Expression.Convert(Utils.GetStrongBoxValueField(Expression.Constant(box)), node.Type);
             }
 
             private IStrongBox? GetBox(ParameterExpression variable)

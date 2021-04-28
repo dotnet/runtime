@@ -11,9 +11,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/marshal.h>
 
-MonoObjectHandle
-mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error);
-
 void*
 mono_marshal_alloc_co_task_mem (size_t size);
 

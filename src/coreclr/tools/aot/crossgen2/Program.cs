@@ -23,6 +23,7 @@ namespace ILCompiler
         private CommandLineOptions _commandLineOptions;
         public TargetOS _targetOS;
         public TargetArchitecture _targetArchitecture;
+        private bool _armelAbi = false;
         public OptimizationMode _optimizationMode;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _unrootedInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -136,6 +137,7 @@ namespace ILCompiler
                     "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                    "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -166,7 +168,10 @@ namespace ILCompiler
                 else if (_commandLineOptions.TargetArch.Equals("arm", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM;
                 else if (_commandLineOptions.TargetArch.Equals("armel", StringComparison.OrdinalIgnoreCase))
+                {
                     _targetArchitecture = TargetArchitecture.ARM;
+                    _armelAbi = true;
+                }
                 else if (_commandLineOptions.TargetArch.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
                 else
@@ -315,7 +320,7 @@ namespace ILCompiler
 
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
 
                     bool versionBubbleIncludesCoreLib = false;
                     if (_commandLineOptions.InputBubble)
@@ -411,6 +416,7 @@ namespace ILCompiler
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
                     HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
+                    Guid? inputModuleMvid = null;
 
                     foreach (var inputFile in inputFilePaths)
                     {
@@ -418,6 +424,11 @@ namespace ILCompiler
                         inputModules.Add(module);
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+
+                        if (!_commandLineOptions.Composite && !inputModuleMvid.HasValue)
+                        {
+                            inputModuleMvid = module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid);
+                        }
 
                         if (!_commandLineOptions.CompositeOrInputBubble)
                         {
@@ -594,7 +605,7 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
-                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath)
+                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, inputModuleMvid)
                         .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
@@ -621,6 +632,8 @@ namespace ILCompiler
 
                 if (_commandLineOptions.DgmlLogFileName != null)
                     compilation.WriteDependencyLog(_commandLineOptions.DgmlLogFileName);
+
+                compilation.Dispose();
             }
 
             return 0;
@@ -736,7 +749,7 @@ namespace ILCompiler
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)method.Context.SystemModule);
 
             sb.Append($"--singlemethodtypename \"{formatter.FormatName(method.OwningType, true)}\"");
-            sb.Append($" --singlemethodname {method.Name}");
+            sb.Append($" --singlemethodname \"{method.Name}\"");
             {
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())

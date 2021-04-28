@@ -375,6 +375,15 @@ public:
     void ReturnNode(RefInfoListNode* listNode);
 };
 
+#if TRACK_LSRA_STATS
+enum LsraStat
+{
+#define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
+#include "lsrastats.h"
+#undef LSRA_STAT_DEF
+};
+#endif // TRACK_LSRA_STATS
+
 struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
@@ -389,21 +398,7 @@ struct LsraBlockInfo
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
-
-    // Number of spills of local vars or tree temps in this basic block.
-    unsigned spillCount;
-
-    // Number of GT_COPY nodes inserted in this basic block while allocating regs.
-    // Note that GT_COPY nodes are also inserted as part of basic block boundary
-    // resolution, which are accounted against resolutionMovCount but not
-    // against copyRegCount.
-    unsigned copyRegCount;
-
-    // Number of resolution moves inserted in this basic block.
-    unsigned resolutionMovCount;
-
-    // Number of critical edges from this block that are split.
-    unsigned splitEdgeCount;
+    unsigned stats[LsraStat::COUNT];
 #endif // TRACK_LSRA_STATS
 };
 
@@ -509,9 +504,6 @@ public:
     // concise representation for embedding
     void tinyDump();
 #endif // DEBUG
-
-    // RefPosition   * getNextRefPosition();
-    // LsraLocation    getNextRefLocation();
 
     // DATA
 
@@ -988,7 +980,7 @@ private:
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
-    void buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation loc);
+    void buildRefPositionsForNode(GenTree* tree, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
@@ -1205,6 +1197,7 @@ private:
             regMaskTP newCandidates = candidates & selectionCandidate;
             if (newCandidates != RBM_NONE)
             {
+                score += selectionScore;
                 candidates = newCandidates;
                 return true;
             }
@@ -1363,23 +1356,30 @@ private:
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
-    enum LsraStat{
-        LSRA_STAT_SPILL, LSRA_STAT_COPY_REG, LSRA_STAT_RESOLUTION_MOV, LSRA_STAT_SPLIT_EDGE,
-    };
-
     unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
-
     void dumpLsraStats(FILE* file);
+    LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
+
+public:
+    virtual void dumpLsraStatsCsv(FILE* file);
+    static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
+#define INTRACK_STATS_IF(condition, work)                                                                              \
+    if (condition)                                                                                                     \
+    {                                                                                                                  \
+        work;                                                                                                          \
+    }
+
 #else // !TRACK_LSRA_STATS
 #define INTRACK_STATS(x)
+#define INTRACK_STATS_IF(condition, work)
 #endif // !TRACK_LSRA_STATS
 
+private:
     Compiler* compiler;
 
-private:
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
@@ -1500,23 +1500,10 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #if defined(TARGET_AMD64)
-    static bool varTypeNeedsPartialCalleeSave(var_types type)
-    {
-        return (type == TYP_SIMD32);
-    }
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(TARGET_ARM64)
-    static bool varTypeNeedsPartialCalleeSave(var_types type)
-    {
-        // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
-        // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
-    }
-    static const var_types LargeVectorSaveType = TYP_DOUBLE;
-#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-#error("Unknown target architecture for FEATURE_SIMD")
+    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
     // Set of large vector (TYP_SIMD32 on AVX) variables to consider for callee-save registers.

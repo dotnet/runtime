@@ -98,9 +98,6 @@
 /* Targeting the AIX and PASE platforms */
 #cmakedefine HOST_AIX 1
 
-/* Define if Unix sockets cannot be created in an anonymous namespace */
-#cmakedefine NEED_LINK_UNLINK 1
-
 /* Host Platform is Win32 */
 #cmakedefine HOST_WIN32 1
 
@@ -115,6 +112,9 @@
 
 /* Host Platform is tvOS */
 #cmakedefine HOST_TVOS 1
+
+/* Host Platform is Mac Catalyst */
+#cmakedefine HOST_MACCAT 1
 
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
@@ -131,20 +131,8 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #cmakedefine HAVE_SYS_STAT_H 1
 
-/* Define to 1 if you have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H 1
-
-/* Define to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H 1
-
-/* Define to 1 if you have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H 1
-
 /* Define to 1 if you have the <strings.h> header file. */
 #cmakedefine HAVE_STRINGS_H 1
-
-/* Define to 1 if you have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H 1
@@ -181,14 +169,8 @@
 /* Define to 1 if you have the <sys/un.h> header file. */
 #cmakedefine HAVE_SYS_UN_H 1
 
-/* Define to 1 if you have the <linux/rtc.h> header file. */
-#cmakedefine HAVE_LINUX_RTC_H 1
-
 /* Define to 1 if you have the <sys/syscall.h> header file. */
 #cmakedefine HAVE_SYS_SYSCALL_H 1
-
-/* Define to 1 if you have the <sys/mkdev.h> header file. */
-#cmakedefine HAVE_SYS_MKDEV_H 1
 
 /* Define to 1 if you have the <sys/uio.h> header file. */
 #cmakedefine HAVE_SYS_UIO_H 1
@@ -205,17 +187,11 @@
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #cmakedefine HAVE_SYS_PRCTL_H 1
 
-/* Define to 1 if you have the <copyfile.h> header file. */
-#cmakedefine HAVE_COPYFILE_H 1
-
 /* Define to 1 if you have the <gnu/lib-names.h> header file. */
 #cmakedefine HAVE_GNU_LIB_NAMES_H 1
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #cmakedefine HAVE_SYS_SOCKET_H 1
-
-/* Define to 1 if you have the <sys/ipc.h> header file. */
-#cmakedefine HAVE_SYS_IPC_H 1
 
 /* Define to 1 if you have the <sys/utsname.h> header file. */
 #cmakedefine HAVE_SYS_UTSNAME_H 1
@@ -241,44 +217,20 @@
 /* Define to 1 if you have the <link.h> header file. */
 #cmakedefine HAVE_LINK_H 1
 
-/* Define to 1 if you have the <asm/sigcontext.h> header file. */
-#cmakedefine HAVE_ASM_SIGCONTEXT_H 1
-
-/* Define to 1 if you have the <sys/inotify.h> header file. */
-#cmakedefine HAVE_SYS_INOTIFY_H 1
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #cmakedefine HAVE_ARPA_INET_H 1
-
-/* Define to 1 if you have the <complex.h> header file. */
-#cmakedefine HAVE_COMPLEX_H 1
 
 /* Define to 1 if you have the <unwind.h> header file. */
 #cmakedefine HAVE_UNWIND_H 1
 
-/* Define to 1 if you have the <linux/netlink.h> header file. */
-#cmakedefine HAVE_LINUX_NETLINK_H 1
-
-/* Define to 1 if you have the <linux/rtnetlink.h> header file. */
-#cmakedefine HAVE_LINUX_RTNETLINK_H 1
-
 /* Define to 1 if you have the <sys/user.h> header file. */
 #cmakedefine HAVE_SYS_USER_H 1
-
-/* Define to 1 if you have the <linux/serial.h> header file. */
-#cmakedefine HAVE_LINUX_SERIAL_H 1
-
-/* Use static zlib */
-#cmakedefine HAVE_STATIC_ZLIB 1
 
 /* Use static ICU */
 #cmakedefine STATIC_ICU 1
 
 /* Use OS-provided zlib */
 #cmakedefine HAVE_SYS_ZLIB 1
-
-/* Define to 1 if you have the <elf.h> header file. */
-#cmakedefine HAVE_ELF_H 1
 
 /* Define to 1 if you have the <poll.h> header file. */
 #cmakedefine HAVE_POLL_H 1
@@ -289,26 +241,11 @@
 /* Define to 1 if you have the <sys/wait.h> header file. */
 #cmakedefine HAVE_SYS_WAIT_H 1
 
-/* Define to 1 if you have the <grp.h> header file. */
-#cmakedefine HAVE_GRP_H 1
-
-/* Define to 1 if you have the <syslog.h> header file. */
-#cmakedefine HAVE_SYSLOG_H 1
-
-/* Define to 1 if you have the `vsyslog' function. */
-#cmakedefine HAVE_VSYSLOG 1
-
 /* Define to 1 if you have the <wchar.h> header file. */
 #cmakedefine HAVE_WCHAR_H 1
 
 /* Define to 1 if you have the <linux/magic.h> header file. */
 #cmakedefine HAVE_LINUX_MAGIC_H 1
-
-/* Define to 1 if you have the <machine/endian.h> header file. */
-#cmakedefine HAVE_MACHINE_ENDIAN_H 1
-
-/* Define to 1 if you have the <sys/endian.h> header file. */
-#cmakedefine HAVE_SYS_ENDIAN_H 1
 
 /* Define to 1 if you have the <android/legacy_signal_inlines.h> header file.
    */
@@ -316,12 +253,6 @@
 
 /* Define to 1 if you have the <android/ndk-version.h> header file. */
 #cmakedefine HAVE_ANDROID_NDK_VERSION_H 1
-
-/* Define to 1 if you have the <android/api-level.h> header file. */
-#cmakedefine HAVE_ANDROID_API_LEVEL_H 1
-
-/* Define to 1 if you have the <android/versioning.h> header file. */
-#cmakedefine HAVE_ANDROID_VERSIONING_H 1
 
 /* Whether Android NDK unified headers are used */
 #cmakedefine ANDROID_UNIFIED_HEADERS 1
@@ -338,29 +269,11 @@
 /* The size of `long long', as computed by sizeof. */
 #define SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 
-/* Enables the support for .NET Core Features in the MonoVM */
-#cmakedefine ENABLE_NETCORE 1
-
 /* Xen-specific behaviour */
 #cmakedefine MONO_XEN_OPT 1
 
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
-
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
-   significant byte first (like Motorola and SPARC, unlike Intel). */
-#if defined AC_APPLE_UNIVERSAL_BUILD
-# if defined __BIG_ENDIAN__
-#  define WORDS_BIGENDIAN 1
-# endif
-#else
-# ifndef WORDS_BIGENDIAN
-#  undef WORDS_BIGENDIAN
-# endif
-#endif
-
-/* Define if building universal (internal helper macro) */
-#cmakedefine AC_APPLE_UNIVERSAL_BUILD 1
 
 /* Make jemalloc assert for mono */
 #cmakedefine MONO_JEMALLOC_ASSERT 1
@@ -377,38 +290,17 @@
 /* Do not create structured crash files during unmanaged crashes */
 #cmakedefine DISABLE_STRUCTURED_CRASH 1
 
-/* Enable runtime support for Monodroid (Xamarin.Android) */
-#cmakedefine ENABLE_MONODROID 1
-
-/* Enable runtime support for Monotouch (Xamarin.iOS and Xamarin.Mac) */
-#cmakedefine ENABLE_MONOTOUCH 1
-
 /* String of disabled features */
 #define DISABLED_FEATURES @DISABLED_FEATURES@
 
 /* Disable AOT Compiler */
 #cmakedefine DISABLE_AOT 1
 
-/* Disable default profiler support */
-#cmakedefine DISABLE_PROFILER 1
-
-/* Disable System.Decimal support */
-#cmakedefine DISABLE_DECIMAL 1
-
-/* Disable P/Invoke support */
-#cmakedefine DISABLE_PINVOKE 1
-
 /* Disable runtime debugging support */
 #cmakedefine DISABLE_DEBUG 1
 
 /* Disable reflection emit support */
 #cmakedefine DISABLE_REFLECTION_EMIT 1
-
-/* Disable assembly saving support in reflection emit */
-#cmakedefine DISABLE_REFLECTION_EMIT_SAVE 1
-
-/* Disable support for huge assemblies */
-#cmakedefine DISABLE_LARGE_CODE 1
 
 /* Disable support debug logging */
 #cmakedefine DISABLE_LOGGING 1
@@ -418,18 +310,6 @@
 
 /* Disable advanced SSA JIT optimizations */
 #cmakedefine DISABLE_SSA 1
-
-/* Disable generics support */
-#cmakedefine DISABLE_GENERICS 1
-
-/* Disable Shadow Copy for AppDomains */
-#cmakedefine DISABLE_SHADOW_COPY 1
-
-/* Disable agent attach support */
-#cmakedefine DISABLE_ATTACH 1
-
-/* Disables the verifier */
-#cmakedefine DISABLE_VERIFIER 1
 
 /* Disable the JIT, only full-aot mode or interpreter will be supported by the
    runtime. */
@@ -453,24 +333,8 @@
 /* Disable Performance Counters. */
 #cmakedefine DISABLE_PERFCOUNTERS 1
 
-/* Disable String normalization support. */
-#cmakedefine DISABLE_NORMALIZATION 1
-
-/* Disable desktop assembly loader semantics. */
-#cmakedefine DISABLE_DESKTOP_LOADER 1
-
 /* Disable shared perfcounters. */
 #cmakedefine DISABLE_SHARED_PERFCOUNTERS 1
-
-/* Disable support for multiple appdomains. */
-#cmakedefine DISABLE_APPDOMAINS 1
-
-/* Disable remoting support (This disables type proxies and make com
-   non-functional) */
-#cmakedefine DISABLE_REMOTING 1
-
-/* Disable CAS/CoreCLR security */
-#cmakedefine DISABLE_SECURITY 1
 
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
@@ -480,9 +344,6 @@
 
 /* Disable assertion messages. */
 #cmakedefine DISABLE_ASSERT_MESSAGES 1
-
-/* Disable runtime cleanup. */
-#cmakedefine DISABLE_CLEANUP 1
 
 /* Disable concurrent gc support in SGEN. */
 #cmakedefine DISABLE_SGEN_MAJOR_MARKSWEEP_CONC 1
@@ -499,20 +360,17 @@
 /* Disable sockets */
 #cmakedefine DISABLE_SOCKETS 1
 
-/* Disable GAC */
-#cmakedefine DISABLE_GAC 1
-
 /* Disables use of DllMaps in MonoVM */
 #cmakedefine DISABLE_DLLMAP 1
 
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
-/* Disable config directories */
-#cmakedefine DISABLE_CFGDIR_CONFIG 1
+/* Disable perf counters */
+#cmakedefine DISABLE_PERF_COUNTERS
 
-/* Extension module enabled */
-#cmakedefine ENABLE_EXTENSION_MODULE 1
+/* Disable MONO_LOG_DEST */
+#cmakedefine DISABLE_LOG_DEST
 
 /* GC description */
 #cmakedefine DEFAULT_GC_NAME 1
@@ -523,26 +381,17 @@
 /* Length of zero length arrays */
 #define MONO_ZERO_LEN_ARRAY @MONO_ZERO_LEN_ARRAY@
 
-/* Define to 1 if you have the <signal.h> header file. */
-#cmakedefine HAVE_SIGNAL_H 1
-
 /* Define to 1 if you have the `sigaction' function. */
 #cmakedefine HAVE_SIGACTION 1
 
 /* Define to 1 if you have the `kill' function. */
 #cmakedefine HAVE_KILL 1
 
-/* Define to 1 if you have the `signal' function. */
-#cmakedefine HAVE_SIGNAL 1
-
 /* CLOCK_MONOTONIC */
 #cmakedefine HAVE_CLOCK_MONOTONIC 1
 
 /* CLOCK_MONOTONIC_COARSE */
 #cmakedefine HAVE_CLOCK_MONOTONIC_COARSE 1
-
-/* CLOCK_REALTIME */
-#cmakedefine HAVE_CLOCK_REALTIME 1
 
 /* clockid_t */
 #cmakedefine HAVE_CLOCKID_T 1
@@ -555,15 +404,6 @@
 
 /* read_real_time */
 #cmakedefine HAVE_READ_REAL_TIME 1
-
-/* mach_timebase_info */
-#cmakedefine HAVE_MACH_TIMEBASE_INFO 1
-
-/* Define to 1 if you have the `futimes' function. */
-#cmakedefine HAVE_FUTIMES 1
-
-/* Define to 1 if you have the `futimens' function. */
-#cmakedefine HAVE_FUTIMENS 1
 
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1
@@ -579,18 +419,6 @@
 
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
-
-/* Define to 1 if you have the `getgrgid_r' function. */
-#cmakedefine HAVE_GETGRGID_R 1
-
-/* Define to 1 if you have the `getgrnam_r' function. */
-#cmakedefine HAVE_GETGRNAM_R 1
-
-/* Define to 1 if you have the `getresuid' function. */
-#cmakedefine HAVE_GETRESUID 1
-
-/* Define to 1 if you have the `setresuid' function. */
-#cmakedefine HAVE_SETRESUID 1
 
 /* kqueue */
 #cmakedefine HAVE_KQUEUE 1
@@ -610,15 +438,6 @@
 /* Define to 1 if you have the `getrusage' function. */
 #cmakedefine HAVE_GETRUSAGE 1
 
-/* Define to 1 if you have the `getpriority' function. */
-#cmakedefine HAVE_GETPRIORITY 1
-
-/* Define to 1 if you have the `setpriority' function. */
-#cmakedefine HAVE_SETPRIORITY 1
-
-/* Define to 1 if you have the `dl_iterate_phdr' function. */
-#cmakedefine HAVE_DL_ITERATE_PHDR 1
-
 /* Define to 1 if you have the `dladdr' function. */
 #cmakedefine HAVE_DLADDR 1
 
@@ -631,9 +450,6 @@
 /* Define to 1 if you have the `prctl' function. */
 #cmakedefine HAVE_PRCTL 1
 
-/* Define to 1 if you have the `arc4random' function. */
-#cmakedefine HAVE_ARC4RANDOM 1
-
 /* Define to 1 if you have the `nl_langinfo' function. */
 #cmakedefine HAVE_NL_LANGINFO 1
 
@@ -645,9 +461,6 @@
 
 /* Define to 1 if you have the `sched_getcpu' function. */
 #cmakedefine HAVE_SCHED_GETCPU 1
-
-/* Define to 1 if you have the `getpwnam_r' function. */
-#cmakedefine HAVE_GETPWNAM_R 1
 
 /* Define to 1 if you have the `getpwuid_r' function. */
 #cmakedefine HAVE_GETPWUID_R 1
@@ -670,9 +483,6 @@
 /* Define to 1 if you have the `msync' function. */
 #cmakedefine HAVE_MSYNC 1
 
-/* Define to 1 if you have the `gethostname' function. */
-#cmakedefine HAVE_GETHOSTNAME 1
-
 /* Define to 1 if you have the `getpeername' function. */
 #cmakedefine HAVE_GETPEERNAME 1
 
@@ -694,10 +504,6 @@
 /* Define to 1 if you have the `popen' function. */
 #cmakedefine HAVE_POPEN 1
 
-/* Define to 1 if you have the declaration of `strerror_r', and to 0 if you
-   don't. */
-#cmakedefine HAVE_DECL_STRERROR_R 1
-
 /* Define to 1 if you have the `strerror_r' function. */
 #cmakedefine HAVE_STRERROR_R 1
 
@@ -713,53 +519,8 @@
 /* Have large file support */
 #cmakedefine HAVE_LARGE_FILE_SUPPORT 1
 
-/* Have IPPROTO_IP */
-#cmakedefine HAVE_IPPROTO_IP 1
-
-/* Have IPPROTO_IPV6 */
-#cmakedefine HAVE_IPPROTO_IPV6 1
-
-/* Have IPPROTO_TCP */
-#cmakedefine HAVE_IPPROTO_TCP 1
-
-/* Have SOL_IP */
-#cmakedefine HAVE_SOL_IP 1
-
-/* Have SOL_IPV6 */
-#cmakedefine HAVE_SOL_IPV6 1
-
-/* Have SOL_TCP */
-#cmakedefine HAVE_SOL_TCP 1
-
-/* Have IP_PKTINFO */
-#cmakedefine HAVE_IP_PKTINFO 1
-
-/* Have IPV6_PKTINFO */
-#cmakedefine HAVE_IPV6_PKTINFO 1
-
-/* Have IP_DONTFRAG */
-#cmakedefine HAVE_IP_DONTFRAG 1
-
-/* Have IP_DONTFRAGMENT */
-#cmakedefine HAVE_IP_DONTFRAGMENT 1
-
-/* Have IP_MTU_DISCOVER */
-#cmakedefine HAVE_IP_MTU_DISCOVER 1
-
-/* Have IP_PMTUDISC_DO */
-#cmakedefine HAVE_IP_PMTUDISC_DO 1
-
-/* Have struct ip_mreqn */
-#cmakedefine HAVE_STRUCT_IP_MREQN 1
-
-/* Have struct ip_mreq */
-#cmakedefine HAVE_STRUCT_IP_MREQ 1
-
 /* Have getaddrinfo */
 #cmakedefine HAVE_GETADDRINFO 1
-
-/* Have gethostbyname2_r */
-#cmakedefine HAVE_GETHOSTBYNAME2_R 1
 
 /* Have gethostbyname2 */
 #cmakedefine HAVE_GETHOSTBYNAME2 1
@@ -828,18 +589,12 @@
 /* Define to 1 if you have the `pthread_get_stackaddr_np' function. */
 #cmakedefine HAVE_PTHREAD_GET_STACKADDR_NP 1
 
+/* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
+#cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
+
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
    and to 0 if you don't. */
 #cmakedefine HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL 1
-
-/* Define to 1 if you have the `mincore' function. */
-#cmakedefine HAVE_MINCORE 1
-
-/* Define to 1 if you have the `mlock' function. */
-#cmakedefine HAVE_MLOCK 1
-
-/* Define to 1 if you have the `munlock' function. */
-#cmakedefine HAVE_MUNLOCK 1
 
 /* Have a working sigaltstack */
 #cmakedefine HAVE_WORKING_SIGALTSTACK 1
@@ -847,29 +602,11 @@
 /* Define to 1 if you have the `shm_open' function. */
 #cmakedefine HAVE_SHM_OPEN 1
 
-/* Have tm_gmtoff */
-#cmakedefine HAVE_TM_GMTOFF 1
-
-/* Have timezone variable */
-#cmakedefine HAVE_TIMEZONE 1
-
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
 
-/* Define to 1 if you have the <sys/epoll.h> header file. */
-#cmakedefine HAVE_SYS_EPOLL_H 1
-
-/* Define to 1 if you have the `epoll_ctl' function. */
-#cmakedefine HAVE_EPOLL_CTL 1
-
 /* epoll_create1 */
 #cmakedefine HAVE_EPOLL 1
-
-/* Define to 1 if you have the <sys/event.h> header file. */
-#cmakedefine HAVE_SYS_EVENT_H 1
-
-/* Use kqueue for the threadpool */
-#cmakedefine USE_KQUEUE_FOR_THREADPOOL 1
 
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #cmakedefine HAVE_SYS_IOCTL_H 1
@@ -889,29 +626,11 @@
 /* Have getifaddrs */
 #cmakedefine HAVE_GETIFADDRS 1
 
-/* Have if_nametoindex */
-#cmakedefine HAVE_IF_NAMETOINDEX 1
-
 /* Have access */
 #cmakedefine HAVE_ACCESS 1
 
 /* Define to 1 if you have the <sys/errno.h> header file. */
 #cmakedefine HAVE_SYS_ERRNO_H 1
-
-/* Define to 1 if you have the <checklist.h> header file. */
-#cmakedefine HAVE_CHECKLIST_H 1
-
-/* Define to 1 if you have the <pathconf.h> header file. */
-#cmakedefine HAVE_PATHCONF_H 1
-
-/* Define to 1 if you have the <fstab.h> header file. */
-#cmakedefine HAVE_FSTAB_H 1
-
-/* Define to 1 if you have the <attr/xattr.h> header file. */
-#cmakedefine HAVE_ATTR_XATTR_H 1
-
-/* Define to 1 if you have the <sys/extattr.h> header file. */
-#cmakedefine HAVE_SYS_EXTATTR_H 1
 
 /* Define to 1 if you have the <sys/sendfile.h> header file. */
 #cmakedefine HAVE_SYS_SENDFILE_H 1
@@ -922,80 +641,20 @@
 /* Define to 1 if you have the <sys/statfs.h> header file. */
 #cmakedefine HAVE_SYS_STATFS_H 1
 
-/* Define to 1 if you have the <sys/vfstab.h> header file. */
-#cmakedefine HAVE_SYS_VFSTAB_H 1
-
-/* Define to 1 if you have the <sys/xattr.h> header file. */
-#cmakedefine HAVE_SYS_XATTR_H 1
-
 /* Define to 1 if you have the <sys/mman.h> header file. */
 #cmakedefine HAVE_SYS_MMAN_H 1
 
 /* Define to 1 if you have the <sys/mount.h> header file. */
 #cmakedefine HAVE_SYS_MOUNT_H 1
 
-/* Define to 1 if you have the `confstr' function. */
-#cmakedefine HAVE_CONFSTR 1
-
-/* Define to 1 if you have the `seekdir' function. */
-#cmakedefine HAVE_SEEKDIR 1
-
-/* Define to 1 if you have the `telldir' function. */
-#cmakedefine HAVE_TELLDIR 1
-
-/* Define to 1 if you have the `getdomainname' function. */
-#cmakedefine HAVE_GETDOMAINNAME 1
-
-/* Define to 1 if you have the `setdomainname' function. */
-#cmakedefine HAVE_SETDOMAINNAME 1
-
-/* Define to 1 if you have the `endgrent' function. */
-#cmakedefine HAVE_ENDGRENT 1
-
-/* Define to 1 if you have the `getgrent' function. */
-#cmakedefine HAVE_GETGRENT 1
-
-/* Define to 1 if you have the `fgetgrent' function. */
-#cmakedefine HAVE_FGETGRENT 1
-
-/* Define to 1 if you have the `setgrent' function. */
-#cmakedefine HAVE_SETGRENT 1
-
-/* Define to 1 if you have the `setgroups' function. */
-#cmakedefine HAVE_SETGROUPS 1
-
-/* Define to 1 if you have the `endpwent' function. */
-#cmakedefine HAVE_ENDPWENT 1
-
-/* Define to 1 if you have the `getpwent' function. */
-#cmakedefine HAVE_GETPWENT 1
-
-/* Define to 1 if you have the `fgetpwent' function. */
-#cmakedefine HAVE_FGETPWENT 1
-
-/* Define to 1 if you have the `setpwent' function. */
-#cmakedefine HAVE_SETPWENT 1
-
 /* Define to 1 if you have the `getfsstat' function. */
 #cmakedefine HAVE_GETFSSTAT 1
-
-/* Define to 1 if you have the `lutimes' function. */
-#cmakedefine HAVE_LUTIMES 1
 
 /* Define to 1 if you have the `mremap' function. */
 #cmakedefine HAVE_MREMAP 1
 
-/* Define to 1 if you have the `remap_file_pages' function. */
-#cmakedefine HAVE_REMAP_FILE_PAGES 1
-
 /* Define to 1 if you have the `posix_fadvise' function. */
 #cmakedefine HAVE_POSIX_FADVISE 1
-
-/* Define to 1 if you have the `posix_fallocate' function. */
-#cmakedefine HAVE_POSIX_FALLOCATE 1
-
-/* Define to 1 if you have the `posix_madvise' function. */
-#cmakedefine HAVE_POSIX_MADVISE 1
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
@@ -1003,74 +662,11 @@
 /* Define to 1 if you have the `sendfile' function. */
 #cmakedefine HAVE_SENDFILE 1
 
-/* Define to 1 if you have the `gethostid' function. */
-#cmakedefine HAVE_GETHOSTID 1
-
-/* Define to 1 if you have the `sethostid' function. */
-#cmakedefine HAVE_SETHOSTID 1
-
-/* Define to 1 if you have the `sethostname' function. */
-#cmakedefine HAVE_SETHOSTNAME 1
-
 /* struct statfs */
 #cmakedefine HAVE_STATFS 1
 
-/* Define to 1 if you have the `fstatfs' function. */
-#cmakedefine HAVE_FSTATFS 1
-
 /* Define to 1 if you have the `statvfs' function. */
 #cmakedefine HAVE_STATVFS 1
-
-/* Define to 1 if you have the `fstatvfs' function. */
-#cmakedefine HAVE_FSTATVFS 1
-
-/* Define to 1 if you have the `stime' function. */
-#cmakedefine HAVE_STIME 1
-
-/* Define to 1 if you have the `ttyname_r' function. */
-#cmakedefine HAVE_TTYNAME_R 1
-
-/* Define to 1 if you have the `psignal' function. */
-#cmakedefine HAVE_PSIGNAL 1
-
-/* Define to 1 if you have the `getlogin_r' function. */
-#cmakedefine HAVE_GETLOGIN_R 1
-
-/* Define to 1 if you have the `lockf' function. */
-#cmakedefine HAVE_LOCKF 1
-
-/* Define to 1 if you have the `swab' function. */
-#cmakedefine HAVE_SWAB 1
-
-/* Define to 1 if you have the `setusershell' function. */
-#cmakedefine HAVE_SETUSERSHELL 1
-
-/* Define to 1 if you have the `endusershell' function. */
-#cmakedefine HAVE_ENDUSERSHELL 1
-
-/* Define to 1 if you have the `utimensat' function. */
-#cmakedefine HAVE_UTIMENSAT 1
-
-/* Define to 1 if you have the `fstatat' function. */
-#cmakedefine HAVE_FSTATAT 1
-
-/* Define to 1 if you have the `mknodat' function. */
-#cmakedefine HAVE_MKNODAT 1
-
-/* Define to 1 if you have the `readlinkat' function. */
-#cmakedefine HAVE_READLINKAT 1
-
-/* Define to 1 if you have the `readv' function. */
-#cmakedefine HAVE_READV 1
-
-/* Define to 1 if you have the `writev' function. */
-#cmakedefine HAVE_WRITEV 1
-
-/* Define to 1 if you have the `preadv' function. */
-#cmakedefine HAVE_PREADV 1
-
-/* Define to 1 if you have the `pwritev' function. */
-#cmakedefine HAVE_PWRITEV 1
 
 /* Define to 1 if you have the `setpgid' function. */
 #cmakedefine HAVE_SETPGID 1
@@ -1096,9 +692,6 @@
 /* Define to 1 if you have the `waitpid' function. */
 #cmakedefine HAVE_WAITPID 1
 
-/* accept4 */
-#cmakedefine HAVE_ACCEPT4 1
-
 /* Define to 1 if you have the `localtime_r' function. */
 #cmakedefine HAVE_LOCALTIME_R 1
 
@@ -1108,35 +701,8 @@
 /* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T @SIZEOF_SIZE_T@
 
-/* Define to 1 if the system has the type `blksize_t'. */
-#cmakedefine HAVE_BLKSIZE_T 1
-
-/* Define to 1 if the system has the type `blkcnt_t'. */
-#cmakedefine HAVE_BLKCNT_T 1
-
-/* Define to 1 if the system has the type `suseconds_t'. */
-#cmakedefine HAVE_SUSECONDS_T 1
-
-/* Define to 1 if the system has the type `struct cmsghdr'. */
-#cmakedefine HAVE_STRUCT_CMSGHDR 1
-
-/* Define to 1 if the system has the type `struct flock'. */
-#cmakedefine HAVE_STRUCT_FLOCK 1
-
-/* Define to 1 if the system has the type `struct iovec'. */
-#cmakedefine HAVE_STRUCT_IOVEC 1
-
-/* Define to 1 if the system has the type `struct linger'. */
-#cmakedefine HAVE_STRUCT_LINGER 1
-
-/* Define to 1 if the system has the type `struct pollfd'. */
-#cmakedefine HAVE_STRUCT_POLLFD 1
-
 /* Define to 1 if the system has the type `struct sockaddr'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR 1
-
-/* Define to 1 if the system has the type `struct sockaddr_storage'. */
-#cmakedefine HAVE_STRUCT_SOCKADDR_STORAGE 1
 
 /* Define to 1 if the system has the type `struct sockaddr_in'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_IN 1
@@ -1144,50 +710,17 @@
 /* Define to 1 if the system has the type `struct sockaddr_in6'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_IN6 1
 
-/* Define to 1 if the system has the type `struct sockaddr_un'. */
-#cmakedefine HAVE_STRUCT_SOCKADDR_UN 1
-
 /* Define to 1 if the system has the type `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT 1
-
-/* Define to 1 if the system has the type `struct timespec'. */
-#cmakedefine HAVE_STRUCT_TIMESPEC 1
 
 /* Define to 1 if the system has the type `struct timeval'. */
 #cmakedefine HAVE_STRUCT_TIMEVAL 1
 
-/* Define to 1 if the system has the type `struct timezone'. */
-#cmakedefine HAVE_STRUCT_TIMEZONE 1
-
-/* Define to 1 if the system has the type `struct utimbuf'. */
-#cmakedefine HAVE_STRUCT_UTIMBUF 1
-
-/* Define to 1 if `d_off' is a member of `struct dirent'. */
-#cmakedefine HAVE_STRUCT_DIRENT_D_OFF 1
-
-/* Define to 1 if `d_reclen' is a member of `struct dirent'. */
-#cmakedefine HAVE_STRUCT_DIRENT_D_RECLEN 1
-
-/* Define to 1 if `d_type' is a member of `struct dirent'. */
-#cmakedefine HAVE_STRUCT_DIRENT_D_TYPE 1
-
-/* Define to 1 if `pw_gecos' is a member of `struct passwd'. */
-#cmakedefine HAVE_STRUCT_PASSWD_PW_GECOS 1
-
-/* Define to 1 if `f_flags' is a member of `struct statfs'. */
-#cmakedefine HAVE_STRUCT_STATFS_F_FLAGS 1
-
 /* Define to 1 if `st_atim' is a member of `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT_ST_ATIM 1
 
-/* Define to 1 if `st_mtim' is a member of `struct stat'. */
-#cmakedefine HAVE_STRUCT_STAT_ST_MTIM 1
-
 /* Define to 1 if `st_atimespec' is a member of `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT_ST_ATIMESPEC 1
-
-/* Define to 1 if `st_ctim' is a member of `struct stat'. */
-#cmakedefine HAVE_STRUCT_STAT_ST_CTIM 1
 
 /* Define to 1 if `kp_proc' is a member of `struct kinfo_proc'. */
 #cmakedefine HAVE_STRUCT_KINFO_PROC_KP_PROC 1
@@ -1201,15 +734,6 @@
 /* Define to 1 if you have the <CommonCrypto/CommonDigest.h> header file. */
 #cmakedefine HAVE_COMMONCRYPTO_COMMONDIGEST_H 1
 
-/* Define to 1 if you have the <curses.h> header file. */
-#cmakedefine HAVE_CURSES_H 1
-
-/* Define to 1 if you have the <term.h> header file. */
-#cmakedefine HAVE_TERM_H 1
-
-/* Define to 1 if you have the <termios.h> header file. */
-#cmakedefine HAVE_TERMIOS_H 1
-
 /* Define to 1 if you have the <sys/random.h> header file. */
 #cmakedefine HAVE_SYS_RANDOM_H 1
 
@@ -1219,215 +743,11 @@
 /* Define to 1 if you have the `getentropy' function. */
 #cmakedefine HAVE_GETENTROPY 1
 
-/* linux/in.h */
-#cmakedefine HAVE_LINUX_IN_H 1
-
-/* Define to 1 if you have the <linux/if_packet.h> header file. */
-#cmakedefine HAVE_LINUX_IF_PACKET_H 1
-
-/* struct in_pktinfo */
-#cmakedefine HAVE_IN_PKTINFO 1
-
-/* struct ip_mreqn */
-#cmakedefine HAVE_IP_MREQN 1
-
-/* Define to 1 if the system has the type `struct flock64'. */
-#cmakedefine HAVE_STRUCT_FLOCK64 1
-
-/* struct flock64 */
-#cmakedefine HAVE_FLOCK64 1
-
-/* O_CLOEXEC */
-#cmakedefine HAVE_O_CLOEXEC 1
-
-/* F_DUPFD_CLOEXEC */
-#cmakedefine HAVE_F_DUPFD_CLOEXEC 1
-
 /* Qp2getifaddrs */
 #cmakedefine HAVE_QP2GETIFADDRS 1
 
-/* lseek64 */
-#cmakedefine HAVE_LSEEK64 1
-
-/* mmap64 */
-#cmakedefine HAVE_MMAP64 1
-
-/* ftruncate64 */
-#cmakedefine HAVE_FTRUNCATE64 1
-
-/* posix_fadvise64 */
-#cmakedefine HAVE_POSIX_FADVISE64 1
-
-/* stat64 */
-#cmakedefine HAVE_STAT64 1
-
-/* pipe2 */
-#cmakedefine HAVE_PIPE2 1
-
-/* getmntinfo */
-#cmakedefine HAVE_GETMNTINFO 1
-
-/* strcpy_s */
-#cmakedefine HAVE_STRCPY_S 1
-
 /* Define to 1 if you have the `strlcpy' function. */
 #cmakedefine HAVE_STRLCPY 1
-
-/* posix_fadvise */
-#cmakedefine HAVE_POSIX_ADVISE 1
-
-/* ioctl */
-#cmakedefine HAVE_IOCTL 1
-
-/* arc4random_buf */
-#cmakedefine HAVE_ARC4RANDOM_BUF 1
-
-/* TIOCGWINSZ */
-#cmakedefine HAVE_TIOCGWINSZ 1
-
-/* tcgetattr */
-#cmakedefine HAVE_TCGETATTR 1
-
-/* tcsetattr */
-#cmakedefine HAVE_TCSETATTR 1
-
-/* ECHO */
-#cmakedefine HAVE_ECHO 1
-
-/* ICANON */
-#cmakedefine HAVE_ICANON 1
-
-/* TCSANOW */
-#cmakedefine HAVE_TCSANOW 1
-
-/* lchflags */
-#cmakedefine HAVE_LCHFLAGS 1
-
-/* struct stat.st_flags */
-#cmakedefine HAVE_STAT_FLAGS 1
-
-/* struct stat.st_birthtimespec */
-#cmakedefine HAVE_STAT_BIRTHTIME 1
-
-/* struct stat.st_atimespec */
-#cmakedefine HAVE_STAT_TIMESPEC 1
-
-/* struct stat.st_atim */
-#cmakedefine HAVE_STAT_TIM 1
-
-/* struct stat.st_atimensec */
-#cmakedefine HAVE_STAT_NSEC 1
-
-/* struct dirent.d_namlen */
-#cmakedefine HAVE_DIRENT_NAME_LEN 1
-
-/* struct statfs.f_fstypename */
-#cmakedefine HAVE_STATFS_FSTYPENAME 1
-
-/* struct statvfs.f_fstypename */
-#cmakedefine HAVE_STATVFS_FSTYPENAME 1
-
-/* char* strerror(int errnum, char *buf, size_t buflen) */
-#cmakedefine HAVE_GNU_STRERROR_R 1
-
-/* readdir_r */
-#cmakedefine HAVE_READDIR_R 1
-
-/* kevent with void *data */
-#cmakedefine KEVENT_HAS_VOID_UDATA 1
-
-/* struct fd_set.fds_bits */
-#cmakedefine HAVE_FDS_BITS 1
-
-/* struct fd_set.__fds_bits */
-#cmakedefine HAVE_PRIVATE_FDS_BITS 1
-
-/* sendfile with 4 arguments */
-#cmakedefine HAVE_SENDFILE_4 1
-
-/* sendfile with 6 arguments */
-#cmakedefine HAVE_SENDFILE_6 1
-
-/* fcopyfile */
-#cmakedefine HAVE_FCOPYFILE 1
-
-/* getnameinfo with signed flags */
-#cmakedefine HAVE_GETNAMEINFO_SIGNED_FLAGS 1
-
-/* HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO */
-#cmakedefine HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1
-
-/* bind with unsigned addrlen */
-#cmakedefine BIND_ADDRLEN_UNSIGNED 1
-
-/* struct ipv6_mreq with unsigned ipv6mr_interface */
-#cmakedefine IPV6MR_INTERFACE_UNSIGNED 1
-
-/* inotify_rm_watch with unsigned wd */
-#cmakedefine INOTIFY_RM_WATCH_WD_UNSIGNED 1
-
-/* getpriority with int who */
-#cmakedefine PRIORITY_REQUIRES_INT_WHO 1
-
-/* kevent with int parameters */
-#cmakedefine KEVENT_REQUIRES_INT_PARAMS 1
-
-/* Define to 1 if you have the `mkstemps' function. */
-#cmakedefine HAVE_MKSTEMPS 1
-
-/* tcp/var.h */
-#cmakedefine HAVE_TCP_VAR_H 1
-
-/* Define to 1 if you have the <sys/cdefs.h> header file. */
-#cmakedefine HAVE_SYS_CDEFS_H 1
-
-/* TCPSTATE enum in netinet/tcp.h */
-#cmakedefine HAVE_TCP_H_TCPSTATE_ENUM 1
-
-/* HAVE_TCP_FSM_H */
-#cmakedefine HAVE_TCP_FSM_H 1
-
-/* struct rt_msghdr */
-#cmakedefine HAVE_RT_MSGHDR 1
-
-/* getpeereid */
-#cmakedefine HAVE_GETPEEREID 1
-
-/* uname */
-#cmakedefine HAVE_UNAME 1
-
-/* getdomainname with size_t namelen */
-#cmakedefine HAVE_GETDOMAINNAME_SIZET 1
-
-/* inotify_init */
-#cmakedefine HAVE_INOTIFY_INIT 1
-
-/* inotify_add_watch */
-#cmakedefine HAVE_INOTIFY_ADD_WATCH 1
-
-/* inotify_rm_watch */
-#cmakedefine HAVE_INOTIFY_RM_WATCH 1
-
-/* HAVE_INOTIFY */
-#cmakedefine HAVE_INOTIFY 1
-
-/* GSS/GSS.h */
-#cmakedefine HAVE_GSSFW_HEADERS 1
-
-/* GSS_SPNEGO_MECHANISM */
-#cmakedefine HAVE_GSS_SPNEGO_MECHANISM 1
-
-/* ENABLE_GSS */
-#cmakedefine ENABLE_GSS 1
-
-/* Define to 1 if you have the <crt_externs.h> header file. */
-#cmakedefine HAVE_CRT_EXTERNS_H 1
-
-/* _NSGetEnviron */
-#cmakedefine HAVE_NSGETENVIRON 1
-
-/* IN_EXCL_UNLINK */
-#cmakedefine HAVE_IN_EXCL_UNLINK 1
 
 /* Define to 1 if you have the <winternl.h> header file. */
 #cmakedefine HAVE_WINTERNL_H 1
@@ -1441,17 +761,11 @@
 /* Name of /dev/random */
 #define NAME_DEV_RANDOM @NAME_DEV_RANDOM@
 
-/* Have /dev/random */
-#cmakedefine HAVE_CRYPT_RNG 1
-
 /* Enable the allocation and indexing of arrays greater than Int32.MaxValue */
 #cmakedefine MONO_BIG_ARRAYS 1
 
 /* Enable DTrace probes */
 #cmakedefine ENABLE_DTRACE 1
-
-/* Define to 1 if you have the <sys/sdt.h> header file. */
-#cmakedefine HAVE_SYS_SDT_H 1
 
 /* AOT cross offsets file */
 #cmakedefine MONO_OFFSETS_FILE "@MONO_OFFSETS_FILE@"
@@ -1459,29 +773,8 @@
 /* Enable the LLVM back end */
 #cmakedefine ENABLE_LLVM 1
 
-/* Enable the LLVM back end */
-#cmakedefine ENABLE_LLVM_MSVC_ONLY 1
-
-/* LLVM used is being build during mono build */
-#cmakedefine INTERNAL_LLVM 1
-
-/* LLVM used is being build during mono build */
-#cmakedefine INTERNAL_LLVM_MSVC_ONLY 1
-
-/* Build LLVM with assertions */
-#cmakedefine INTERNAL_LLVM_ASSERTS 1
-
-/* Build LLVM with assertions */
-#cmakedefine INTERNAL_LLVM_ASSERTS_MSVC_ONLY 1
-
-/* The LLVM back end is dynamically loaded */
-#cmakedefine MONO_LLVM_LOADED 1
-
 /* Runtime support code for llvm enabled */
 #cmakedefine ENABLE_LLVM_RUNTIME 1
-
-/* Runtime support code for llvm enabled */
-#cmakedefine ENABLE_LLVM_RUNTIME_MSVC_ONLY 1
 
 /* 64 bit mode with 4 byte longs and pointers */
 #cmakedefine MONO_ARCH_ILP32 1
@@ -1732,9 +1025,6 @@
 /* Define to 1 if you have /usr/include/malloc.h. */
 #cmakedefine HAVE_USR_INCLUDE_MALLOC_H 1
 
-/* BoringTls is supported */
-#cmakedefine HAVE_BTLS 1
-
 /* The architecture this is running on */
 #define MONO_ARCHITECTURE @MONO_ARCHITECTURE@
 
@@ -1774,9 +1064,11 @@
 /* Enable runtime support for metadata updates */
 #cmakedefine ENABLE_METADATA_UPDATE 1
 
+/* Enable static linking of mono runtime components */
+#cmakedefine STATIC_COMPONENTS
+
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
 #endif
 
 #endif
-

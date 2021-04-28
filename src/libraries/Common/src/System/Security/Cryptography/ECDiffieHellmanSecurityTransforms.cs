@@ -256,7 +256,7 @@ namespace System.Security.Cryptography
             public override ECDiffieHellmanPublicKey PublicKey =>
                 new ECDiffieHellmanSecurityTransformsPublicKey(ExportParameters(false));
 
-            private class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
+            private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
             {
                 private EccSecurityTransforms _ecc;
 

@@ -336,8 +336,10 @@ namespace System
             return res;
         }
 
-        private static ulong NumberToFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
+        private static ulong NumberToDoubleFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
         {
+            Debug.Assert(info.DenormalMantissaBits == 52);
+
             Debug.Assert(number.GetDigitsPointer()[0] != '0');
 
             Debug.Assert(number.Scale <= FloatingPointMaxExponent);
@@ -372,7 +374,144 @@ namespace System
 
             byte* src = number.GetDigitsPointer();
 
-            if ((info.DenormalMantissaBits <= 23) && (totalDigits <= 7) && (fastExponent <= 10))
+            if ((totalDigits <= 15) && (fastExponent <= 22))
+            {
+                double result = DigitsToUInt64(src, (int)(totalDigits));
+                double scale = s_Pow10DoubleTable[fastExponent];
+
+                if (fractionalDigitsPresent != 0)
+                {
+                    result /= scale;
+                }
+                else
+                {
+                    result *= scale;
+                }
+
+                return (ulong)(BitConverter.DoubleToInt64Bits(result));
+            }
+
+            return NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
+        }
+
+        private static ushort NumberToHalfFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
+        {
+            Debug.Assert(info.DenormalMantissaBits == 10);
+
+            Debug.Assert(number.GetDigitsPointer()[0] != '0');
+
+            Debug.Assert(number.Scale <= FloatingPointMaxExponent);
+            Debug.Assert(number.Scale >= FloatingPointMinExponent);
+
+            Debug.Assert(number.DigitsCount != 0);
+
+            // The input is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
+            // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
+            // We decompose the mantissa into two parts: an integer part and a fractional
+            // part.  If the exponent is positive, then the integer part consists of the
+            // first 'exponent' digits, or all present digits if there are fewer digits.
+            // If the exponent is zero or negative, then the integer part is empty.  In
+            // either case, the remaining digits form the fractional part of the mantissa.
+
+            uint totalDigits = (uint)(number.DigitsCount);
+            uint positiveExponent = (uint)(Math.Max(0, number.Scale));
+
+            uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
+            uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
+
+            uint fastExponent = (uint)(Math.Abs(number.Scale - integerDigitsPresent - fractionalDigitsPresent));
+
+            // When the number of significant digits is less than or equal to 15 and the
+            // scale is less than or equal to 22, we can take some shortcuts and just rely
+            // on floating-point arithmetic to compute the correct result. This is
+            // because each floating-point precision values allows us to exactly represent
+            // different whole integers and certain powers of 10, depending on the underlying
+            // formats exact range. Additionally, IEEE operations dictate that the result is
+            // computed to the infinitely precise result and then rounded, which means that
+            // we can rely on it to produce the correct result when both inputs are exact.
+
+            byte* src = number.GetDigitsPointer();
+
+            if ((totalDigits <= 7) && (fastExponent <= 10))
+            {
+                // It is only valid to do this optimization for half and single-precision floating-point
+                // values since we can lose some of the mantissa bits and would return the
+                // wrong value when upcasting to double.
+
+                float result = DigitsToUInt32(src, (int)(totalDigits));
+                float scale = s_Pow10SingleTable[fastExponent];
+
+                if (fractionalDigitsPresent != 0)
+                {
+                    result /= scale;
+                }
+                else
+                {
+                    result *= scale;
+                }
+
+                return (ushort)(BitConverter.HalfToInt16Bits((Half)result));
+            }
+
+            if ((totalDigits <= 15) && (fastExponent <= 22))
+            {
+                double result = DigitsToUInt64(src, (int)(totalDigits));
+                double scale = s_Pow10DoubleTable[fastExponent];
+
+                if (fractionalDigitsPresent != 0)
+                {
+                    result /= scale;
+                }
+                else
+                {
+                    result *= scale;
+                }
+
+                return (ushort)(BitConverter.HalfToInt16Bits((Half)(result)));
+            }
+
+            return (ushort)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
+        }
+
+        private static uint NumberToSingleFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
+        {
+            Debug.Assert(info.DenormalMantissaBits == 23);
+
+            Debug.Assert(number.GetDigitsPointer()[0] != '0');
+
+            Debug.Assert(number.Scale <= FloatingPointMaxExponent);
+            Debug.Assert(number.Scale >= FloatingPointMinExponent);
+
+            Debug.Assert(number.DigitsCount != 0);
+
+            // The input is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
+            // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
+            // We decompose the mantissa into two parts: an integer part and a fractional
+            // part.  If the exponent is positive, then the integer part consists of the
+            // first 'exponent' digits, or all present digits if there are fewer digits.
+            // If the exponent is zero or negative, then the integer part is empty.  In
+            // either case, the remaining digits form the fractional part of the mantissa.
+
+            uint totalDigits = (uint)(number.DigitsCount);
+            uint positiveExponent = (uint)(Math.Max(0, number.Scale));
+
+            uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
+            uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
+
+            uint fastExponent = (uint)(Math.Abs(number.Scale - integerDigitsPresent - fractionalDigitsPresent));
+
+            // When the number of significant digits is less than or equal to 15 and the
+            // scale is less than or equal to 22, we can take some shortcuts and just rely
+            // on floating-point arithmetic to compute the correct result. This is
+            // because each floating-point precision values allows us to exactly represent
+            // different whole integers and certain powers of 10, depending on the underlying
+            // formats exact range. Additionally, IEEE operations dictate that the result is
+            // computed to the infinitely precise result and then rounded, which means that
+            // we can rely on it to produce the correct result when both inputs are exact.
+
+            byte* src = number.GetDigitsPointer();
+
+            if ((totalDigits <= 7) && (fastExponent <= 10))
             {
                 // It is only valid to do this optimization for single-precision floating-point
                 // values since we can lose some of the mantissa bits and would return the
@@ -390,10 +529,6 @@ namespace System
                     result *= scale;
                 }
 
-                if (info.DenormalMantissaBits == 10)
-                {
-                    return (ushort)(BitConverter.HalfToInt16Bits((Half)result));
-                }
                 return (uint)(BitConverter.SingleToInt32Bits(result));
             }
 
@@ -411,22 +546,10 @@ namespace System
                     result *= scale;
                 }
 
-                if (info.DenormalMantissaBits == 52)
-                {
-                    return (ulong)(BitConverter.DoubleToInt64Bits(result));
-                }
-                else if (info.DenormalMantissaBits == 23)
-                {
-                    return (uint)(BitConverter.SingleToInt32Bits((float)(result)));
-                }
-                else
-                {
-                    Debug.Assert(info.DenormalMantissaBits == 10);
-                    return (uint)(BitConverter.HalfToInt16Bits((Half)(result)));
-                }
+                return (uint)(BitConverter.SingleToInt32Bits((float)(result)));
             }
 
-            return NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
+            return (uint)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
         }
 
         private static ulong NumberToFloatingPointBitsSlow(ref NumberBuffer number, in FloatingPointInfo info, uint positiveExponent, uint integerDigitsPresent, uint fractionalDigitsPresent)

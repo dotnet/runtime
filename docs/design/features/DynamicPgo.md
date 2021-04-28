@@ -18,7 +18,7 @@ You may already be familiar with the legacy .NET approach to profile feedback, c
 
 ## General Idea
 
-Profile based optimization relies heavily on the principle that past behavior is a good predictor of future behavior. Thus observations about past program behavior can steer optimization decisions in profitable directions, so that future program execution is more efficient. 
+Profile based optimization relies heavily on the principle that past behavior is a good predictor of future behavior. Thus observations about past program behavior can steer optimization decisions in profitable directions, so that future program execution is more efficient.
 
 These observations may come from the recent past, perhaps even from the current execution of a program, or from the distant past. Observations can be from the same version of the program or from different versions.
 
@@ -144,7 +144,7 @@ The implementation for TieredPGO was intentionally kept simple (in part to allow
 
 If we want to externalize data for offline analysis or to feed into a subsequent run of the program, we also need to produce some keying data so that the per-method data can be matched up properly later on.
 
-This is surprisingly challenging in .NET as there's not a strong external notion of method identity from one run to the next. We currently rely on token, hash, and il size as keys. Note things like the multi-core JIT must solve similar problems. We will leverage David Wrighton's [dotnet-pgo](https://github.com/dotnet/runtime/blob/master/src/coreclr/tools/dotnet-pgo/dotnet-pgo-experiment.md) work here.
+This is surprisingly challenging in .NET as there's not a strong external notion of method identity from one run to the next. We currently rely on token, hash, and il size as keys. Note things like the multi-core JIT must solve similar problems. We will leverage David Wrighton's [dotnet-pgo](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/dotnet-pgo/dotnet-pgo-experiment.md) work here.
 
 We may also wish to externalize flow graphs to allow offline analysis or to allow some kind of fuzzy matching of old profile data in a new version of the program (this is done by MSVC for example).
 
@@ -174,7 +174,7 @@ The classic paper on profile synthesis is [Ball-Larus](#BL93), which presents a 
 
 Profile synthesis is interesting even if instrumented or sampled profile data is available.
 
-First, even in a jitted environment, the JIT may be asked to generate code for methods that have not yet executed, or that have for various reasons bypassed the stage of the system that runs instrumented versions. Profile synthesis can step in and provide provisional profile data. 
+First, even in a jitted environment, the JIT may be asked to generate code for methods that have not yet executed, or that have for various reasons bypassed the stage of the system that runs instrumented versions. Profile synthesis can step in and provide provisional profile data.
 
 Second, even if profile feedback is available, it may not be as representative as one might like. In particular parts of methods may not have been executed, or may have distorted profiles. Given the linearity of profile data, we can blend together the actual observations with a synthetic profile to produce a hybrid profile, so that our optimizations do not over-react to the actual profile (think of this as a kind of insurance policy: we want to make sure that if program behavior changes and we suddenly veer into un-profiled or thinly profiled areas, we don't fall off some kind of performance cliff). More on this below.
 
@@ -601,7 +601,7 @@ We likely need to get through at least item 7 to meet our aspirational goals.
 4. Enable hot/cold splitting (runtime dependence) for jitted code
 5. Implement profile-based block layout (based on "TSP" algorithm above)
 
-We likely need to get through at least item 3 to meet our aspirational goals. 
+We likely need to get through at least item 3 to meet our aspirational goals.
 
 -----
 #### Group 3: Profile Handling by Runtime and JIT
@@ -671,7 +671,7 @@ NET's legacy approach to PGO is called IBC (Instrumented Block Counts). It is av
 
 A special instrumentation mode in crossgen/ngen instructs the JIT to add code to collect per-block counts and (for ngen) also instructs the runtime to track which ngen data structures are accessed at runtime, on a per-assembly basis. This information is externalized from the runtime and can be inspected and manipulated by IBCMerge. It is eventually packaged up and added back to the corresponding assembly, where it can be accessed by a subsequent "optimizing" run of crossgen/ngen. This run makes the per-block data available to the JIT and (for ngen) uses the internal runtime counters to rearrange the runtime data structures so they can be accessed more efficiently. Prejitting can also use the data to determine which methods should be prejitted (so called partial ngen).
 
-The JIT (when prejitting) uses the IBC data much as we propose to use PGO data to optimize the generated code. It also splits methods into hot and cold portions. The runtime leverages IBC data to 
+The JIT (when prejitting) uses the IBC data much as we propose to use PGO data to optimize the generated code. It also splits methods into hot and cold portions. The runtime leverages IBC data to
 
 The main aspiration of IBC is to improve startup, by ensuring that the important parts of prejitted code and data are compact and can be fetched efficiently from disk.
 

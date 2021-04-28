@@ -5,7 +5,7 @@ using System.ComponentModel;
 
 namespace System.Data.Common
 {
-    internal class DbConnectionStringBuilderDescriptor : PropertyDescriptor
+    internal sealed class DbConnectionStringBuilderDescriptor : PropertyDescriptor
     {
         internal DbConnectionStringBuilderDescriptor(string propertyName, Type componentType, Type propertyType, bool isReadOnly, Attribute[] attributes) : base(propertyName, attributes)
         {

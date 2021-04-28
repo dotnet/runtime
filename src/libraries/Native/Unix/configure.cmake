@@ -6,7 +6,7 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
-include(CMakePushCheckState)
+include(CheckLibraryExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
@@ -25,6 +25,8 @@ elseif (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_MACCATALYST)
+    set(PAL_UNIX_NAME \"MACCATALYST\")
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
 elseif (CLR_CMAKE_TARGET_TVOS)
@@ -58,7 +60,7 @@ endif()
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
-set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value -Wno-error=unused-variable")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -191,6 +193,16 @@ check_symbol_exists(
     strlcpy
     string.h
     HAVE_STRLCPY)
+
+check_symbol_exists(
+    strcat_s
+    string.h
+    HAVE_STRCAT_S)
+
+check_symbol_exists(
+    strlcat
+    string.h
+    HAVE_STRLCAT)
 
 check_symbol_exists(
     posix_fadvise
@@ -503,6 +515,13 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
     unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    # TODO: test to see if these all actually hold true on Mac Catalyst
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
@@ -577,6 +596,8 @@ check_symbol_exists(
     clock_gettime_nsec_np
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
+
+check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
@@ -782,7 +803,7 @@ check_symbol_exists(
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()
@@ -905,19 +926,6 @@ check_symbol_exists(
     sys/inotify.h
     HAVE_INOTIFY_RM_WATCH)
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
-
-if (CLR_CMAKE_TARGET_LINUX)
-    cmake_push_check_state(RESET)
-    set (CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
-    set (CMAKE_REQUIRED_LIBRARIES "-lanl")
-
-    check_symbol_exists(
-        getaddrinfo_a
-        netdb.h
-        HAVE_GETADDRINFO_A)
-
-    cmake_pop_check_state()
-endif ()
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)

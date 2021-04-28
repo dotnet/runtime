@@ -343,6 +343,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        [RequiresUnreferencedCode("calls Merge")]
         private void Merge(XmlSchema schema)
         {
             if (MergedSchemas[schema] != null)
@@ -382,6 +383,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("Calls MergeFailedMessage")]
         private void Merge(IList originals, XmlSchema schema)
         {
             foreach (XmlSchema s in originals)
@@ -593,6 +595,7 @@ namespace System.Xml.Serialization
             return item;
         }
 
+        [RequiresUnreferencedCode("Creates XmlSerializer")]
         private static string Dump(XmlSchemaObject o)
         {
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -606,6 +609,8 @@ namespace System.Xml.Serialization
             s.Serialize(xmlWriter, o, ns);
             return sw.ToString();
         }
+
+        [RequiresUnreferencedCode("calls Dump")]
         private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string? ns)
         {
             string err = SR.Format(SR.XmlSerializableMergeItem, ns, GetSchemaItem(src, ns, null));
@@ -640,6 +645,7 @@ namespace System.Xml.Serialization
             get { return _isCompiled; }
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Compile(ValidationEventHandler? handler, bool fullCompile)
         {
             if (_isCompiled)
@@ -779,6 +785,7 @@ namespace System.Xml.Serialization
             return schema;
         }
 
+        [RequiresUnreferencedCode("calls GenerateSchemaGraph")]
         internal void SetCache(SchemaObjectCache cache, bool shareTypes)
         {
             _shareTypes = shareTypes;

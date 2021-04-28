@@ -11,28 +11,12 @@ using System.Text;
 
 namespace R2RTest
 {
-    public enum SerpCompositeScenario
-    {
-        /// <summary>
-        /// Compiles all Serp, Asp.Net, and Framework assemblies in their own version bubble
-        /// </summary>
-        NoComposite,
-        /// <summary>
-        /// Compiles Serp Core, Asp.Net, and Framework into their own composite images. Compiles Serp packages assemblies individually.
-        /// </summary>
-        SerpAspNetSharedFramework,
-        /// <summary>
-        /// Composite image containing Serp Core, Asp.Net, Shared Framework, plus composite image containing package assemblies
-        /// </summary>
-        SerpAspNetSharedFrameworkCompositeAndPackagesComposite,
-    }
-
     class CompileSerpCommand
     {
         private static readonly string BackupFolder  = "backup";
         private static readonly string CompileFolder  = "compile";
-        private static readonly string FrameworkCompositeFilename = "framework-r2r.dll";
-        private static readonly string PackagesCompositeFilename = "packages-r2r.dll";
+        private static readonly string SerpCompositeFilename = "Microsoft.Search.Frontend.CoreUX.R2R.dll";
+        private static readonly string AnswersGlueAssemblyFilename = "Microsoft.Search.Frontend.AnswersGlue.dll";
 
         private List<string> _packageCompileAssemblies;
         private List<string> _packageReferenceAssemblies;
@@ -52,7 +36,6 @@ namespace R2RTest
             options.NoJit = true;
             options.NoEtw = true;
             options.Release = true;
-            options.LargeBubble = true;
 
             _options = options;
 
@@ -79,10 +62,11 @@ namespace R2RTest
                 throw new ArgumentException($"Error: InputDirectory must point at a SERP build. Could not find {Path.Combine(SerpDir, "runserp.cmd")}");
             }
 
-            string allowListFilePath = Path.Combine(SerpDir, "App_Data", "AllowedDllList.txt");
-            if (!File.Exists(allowListFilePath))
+            // Check that the "Microsoft.Search.Frontend.AnswersGlue.dll" assembly was generated in this drop
+            string answersGlueAssembly = Path.Combine(BinDir, AnswersGlueAssemblyFilename);
+            if (!File.Exists(answersGlueAssembly))
             {
-                throw new ArgumentException($"File {allowListFilePath} was not found");
+                throw new FileNotFoundException($"Could not find {answersGlueAssembly}. Run {SerpDir}\\GenAnswersEntryPoints.bat first!");
             }
 
             // Add all assemblies from the various SERP packages (filtered by ShouldInclude)
@@ -109,7 +93,7 @@ namespace R2RTest
             _coreReferenceAssemblies = new List<string>();
             {
                 // Add an allow-list of assemblies from bin. This unified list includes binaries from /bin and /App_data so filter just the /bin assemblies
-                foreach (string item in new HashSet<string>(File.ReadAllLines(allowListFilePath)))
+                foreach (string item in GetCrossgenAllowedBinDlls())
                 {
                     string binAssembly = Path.Combine(BinDir, item);
                     if (File.Exists(binAssembly) &&
@@ -178,130 +162,75 @@ namespace R2RTest
 
                 _aspReferenceAssemblies = new List<string>(_aspCompileAssemblies);
             }
-
         }
+
         public int CompileSerpAssemblies()
         {
-            Console.WriteLine($"Compiling serp in {_options.CompositeScenario} scenario");
+            Console.WriteLine("Compiling serp in " + (_options.Composite ? "composite" : "single assembly") + " mode");
 
             string serpRoot = Directory.GetParent(SerpDir).Parent.Parent.Parent.FullName;
             string compileOutRoot = Path.Combine(serpRoot, CompileFolder);
             if (Directory.Exists(compileOutRoot))
                 Directory.Delete(compileOutRoot, true);
             
-            // Composite FX, Composite ASP.NET, Composite Serp core, Individual package assemblies
             List<ProcessInfo> fileCompilations = new List<ProcessInfo>();
 
-            bool combinedComposite = false;
-            bool compositeFramework = false;
-            bool compositeAspNet = false;
-            bool compositeSerpCore = false;
-            if (_options.CompositeScenario == SerpCompositeScenario.SerpAspNetSharedFramework)
+            // Single composite image for all of Serp
+            if (_options.Composite)
             {
-                compositeFramework = true;
-                compositeAspNet = true;
-                compositeSerpCore = true;
-            }
-            if (_options.CompositeScenario == SerpCompositeScenario.SerpAspNetSharedFrameworkCompositeAndPackagesComposite)
-            {
-                combinedComposite = true;
-            }
+                List<string> combinedCompileAssemblies = new List<string>();
+                HashSet<string> simpleNameList = new HashSet<string>();
+                combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _coreCompileAssemblies));
+                combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _aspCompileAssemblies));
+                combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _frameworkCompileAssemblies));
+                combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _packageCompileAssemblies));
 
-            // Single composite image for Serp, Asp, Fx
-            {
-                if (combinedComposite)
-                {
-                    List<string> combinedCompileAssemblies = new List<string>();
-                    HashSet<string> simpleNameList = new HashSet<string>();
-                    combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _coreCompileAssemblies));
-                    combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _aspCompileAssemblies));
-                    combinedCompileAssemblies.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _frameworkCompileAssemblies));
-
-                    List<string> combinedCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, combinedCompileAssemblies);
-                    string frameworkCompositeDll = Path.Combine(_options.CoreRootDirectory.FullName, FrameworkCompositeFilename);
-                    if (File.Exists(frameworkCompositeDll))
-                        File.Delete(frameworkCompositeDll);
-                    
-                    string frameworkCompositeDllCompile = GetCompileFile(serpRoot, frameworkCompositeDll);
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, CompositeRoot = GetBackupFile(serpRoot, SerpDir) };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, combinedCompileAssembliesBackup);
-                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, frameworkCompositeDllCompile, combinedCompileAssembliesBackup));
-                    fileCompilations.Add(compilationProcess);
-                }
+                List<string> combinedCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, combinedCompileAssemblies);
+                string compositeDllPath = Path.Combine(BinDir, SerpCompositeFilename);
+                if (File.Exists(compositeDllPath))
+                    File.Delete(compositeDllPath);
+                
+                string compositeDllCompile = GetCompileFile(serpRoot, compositeDllPath);
+                Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, CompositeRoot = GetBackupFile(serpRoot, SerpDir), PartialComposite = true };
+                var runner = new Crossgen2Runner(_options, crossgen2Options, combinedCompileAssembliesBackup);
+                var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, compositeDllCompile, combinedCompileAssembliesBackup));
+                fileCompilations.Add(compilationProcess);
             }
-
-            if (!combinedComposite)
+            else
             {
-                // Composite FX
+                // Framework assemblies
                 {
                     List<string> frameworkCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _frameworkCompileAssemblies);
-                    string frameworkCompositeDll = Path.Combine(_options.CoreRootDirectory.FullName, FrameworkCompositeFilename);
-                    if (File.Exists(frameworkCompositeDll))
-                        File.Delete(frameworkCompositeDll);
-
-                    // Always restore the framework from the backup if present first since we run CG2 on it
-                    var backupFrameworkDir = Path.GetDirectoryName(GetBackupFile(serpRoot, frameworkCompositeDll));
-                    var backedUpFiles = Directory.GetFiles(backupFrameworkDir, "*.dll", SearchOption.AllDirectories);
-                    foreach (var file in backedUpFiles)
+                
+                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
+                    var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
+                    foreach (string assembly in frameworkCompileAssembliesBackup)
                     {
-                        string destinationFile = GetOriginalFile(serpRoot, file);
-                        File.Copy(file, destinationFile, true);
-                    }
-
-                    if (compositeFramework)
-                    {
-                        string frameworkCompositeDllCompile = GetCompileFile(serpRoot, frameworkCompositeDll);
-                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true };
-                        var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, frameworkCompositeDllCompile, frameworkCompileAssembliesBackup));
+                        string dllCompile = GetCompileFile(serpRoot, assembly);
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
                         fileCompilations.Add(compilationProcess);
-                    }
-                    else
-                    {
-                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
-                        var runner = new Crossgen2Runner(_options, crossgen2Options, new List<string>());
-                        foreach (string assembly in frameworkCompileAssembliesBackup)
-                        {
-                            string dllCompile = GetCompileFile(serpRoot, assembly);
-                            var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
-                            fileCompilations.Add(compilationProcess);
-                        }
                     }
                 }
 
-                // Composite Asp.Net
+                // Asp.Net
                 {
                     List<string> aspCombinedReferences = new List<string>();
                     aspCombinedReferences.AddRange(_aspReferenceAssemblies);
                     aspCombinedReferences.AddRange(_frameworkCompileAssemblies);
                     List<string> aspCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, aspCombinedReferences);
                     List<string> aspCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _aspCompileAssemblies);
-                    string aspCompositeDll = Path.Combine(_options.AspNetPath.FullName, "asp-r2r.dll");
-                    if (File.Exists(aspCompositeDll))
-                        File.Delete(aspCompositeDll);
-
-                    if (compositeAspNet)
+                    
+                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
+                    var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
+                    foreach (string assembly in aspCompileAssembliesBackup)
                     {
-                        string aspCompositeDllCompile = GetCompileFile(serpRoot, aspCompositeDll);
-                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, PartialComposite = true };
-                        var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, aspCompositeDllCompile, aspCompileAssembliesBackup));
+                        string dllCompile = GetCompileFile(serpRoot, assembly);
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
                         fileCompilations.Add(compilationProcess);
-                    }
-                    else
-                    {
-                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
-                        var runner = new Crossgen2Runner(_options, crossgen2Options, aspCombinedReferencesBackup);
-                        foreach (string assembly in aspCompileAssembliesBackup)
-                        {
-                            string dllCompile = GetCompileFile(serpRoot, assembly);
-                            var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
-                            fileCompilations.Add(compilationProcess);
-                        }
                     }
                 }
 
-                // Composite Serp core
+                // Serp core
                 {
                     List<string> coreCombinedReferences = new List<string>();
                     coreCombinedReferences.AddRange(_coreReferenceAssemblies);
@@ -309,59 +238,28 @@ namespace R2RTest
                     coreCombinedReferences.AddRange(_frameworkReferenceAssemblies);
                     List<string> coreCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, coreCombinedReferences);
                     List<string> coreCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _coreCompileAssemblies);
-                    string serpCompositeDll = Path.Combine(BinDir, "serp-r2r.dll");
-                    if (File.Exists(serpCompositeDll))
-                        File.Delete(serpCompositeDll);
 
-                    if (compositeSerpCore)
+                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
+                    var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
+                    foreach (string assembly in coreCompileAssembliesBackup)
                     {
-                        string coreCompositeDllCompile = GetCompileFile(serpRoot, serpCompositeDll);
-                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, PartialComposite = true };
-                        var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, coreCompositeDllCompile, coreCompileAssembliesBackup));
+                        string dllCompile = GetCompileFile(serpRoot, assembly);
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
                         fileCompilations.Add(compilationProcess);
                     }
-                    else
-                    {
-                        Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
-                        var runner = new Crossgen2Runner(_options, crossgen2Options, coreCombinedReferencesBackup);
-                        foreach (string assembly in coreCompileAssembliesBackup)
-                        {
-                            string dllCompile = GetCompileFile(serpRoot, assembly);
-                            var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, dllCompile, new string[] { assembly }));
-                            fileCompilations.Add(compilationProcess);
-                        }
-                    }
                 }
-            }
 
-            string packagesCompositeDirectory = null;
-            // Individual Serp package assemblies
-            {
-                List<string> packageCombinedReferences = new List<string>();
-                HashSet<string> simpleNameList = new HashSet<string>();
-                packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _packageReferenceAssemblies));
-                packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _coreReferenceAssemblies));
-                packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _aspReferenceAssemblies));
-                packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _frameworkReferenceAssemblies));
-                List<string> packageCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, packageCombinedReferences);
-                List<string> packageCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _packageCompileAssemblies);
+                // Individual Serp package assemblies
+                {
+                    List<string> packageCombinedReferences = new List<string>();
+                    HashSet<string> simpleNameList = new HashSet<string>();
+                    packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _packageReferenceAssemblies));
+                    packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _coreReferenceAssemblies));
+                    packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _aspReferenceAssemblies));
+                    packageCombinedReferences.AddRange(FilterAssembliesNoSimpleNameDuplicates(simpleNameList, _frameworkReferenceAssemblies));
+                    List<string> packageCombinedReferencesBackup = BackupAndUseOriginalAssemblies(serpRoot, packageCombinedReferences);
+                    List<string> packageCompileAssembliesBackup = BackupAndUseOriginalAssemblies(serpRoot, _packageCompileAssemblies);
 
-                string packagesCompositeDll = Path.Combine(_options.CoreRootDirectory.FullName, PackagesCompositeFilename);
-                packagesCompositeDirectory = SerpDir;
-                if (File.Exists(packagesCompositeDll))
-                    File.Delete(packagesCompositeDll);
-                
-                if (combinedComposite)
-                {
-                    string packagesCompositeDllCompile = GetCompileFile(serpRoot, packagesCompositeDll);
-                    Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = true, CompositeRoot = GetBackupFile(serpRoot, SerpDir), PartialComposite = true };
-                    var runner = new Crossgen2Runner(_options, crossgen2Options, packageCombinedReferencesBackup);
-                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, packagesCompositeDllCompile, packageCompileAssembliesBackup));
-                    fileCompilations.Add(compilationProcess);
-                }
-                else
-                {
                     Crossgen2RunnerOptions crossgen2Options = new Crossgen2RunnerOptions() { Composite = false };
                     var runner = new Crossgen2Runner(_options, crossgen2Options, packageCombinedReferencesBackup);
                     foreach (string assembly in packageCompileAssembliesBackup)
@@ -388,21 +286,17 @@ namespace R2RTest
             if (!success)
                 return 1;
 
-            
-            if (combinedComposite)
+            if (_options.Composite)
             {
                 // For combined composite, move the component assemblies we added the R2R header from the composite out folder
                 // to the correct compile tree destination folder so they get copied into the right place
-                string compositeOutputRootDir = GetCompileFile(serpRoot, _options.CoreRootDirectory.FullName);
-                string frameworkCompositeDll = Path.Combine(compositeOutputRootDir, FrameworkCompositeFilename);
+                string compositeOutputRootDir = GetCompileFile(serpRoot, BinDir);
+                string frameworkCompositeDll = Path.Combine(compositeOutputRootDir, SerpCompositeFilename);
                 Debug.Assert(File.Exists(frameworkCompositeDll));
                 var compiledCompositeFiles = Directory.GetFiles(compositeOutputRootDir, "*.dll", SearchOption.AllDirectories);
                 foreach (var componentAssembly in compiledCompositeFiles)
                 {
-                    if (Path.GetFileName(componentAssembly).Equals(FrameworkCompositeFilename))
-                        continue;
-
-                    if (Path.GetFileName(componentAssembly).Equals(PackagesCompositeFilename))
+                    if (Path.GetFileName(componentAssembly).Equals(SerpCompositeFilename))
                         continue;
 
                     string assemblyRelativePath = Path.GetRelativePath(compositeOutputRootDir, componentAssembly);
@@ -443,6 +337,40 @@ namespace R2RTest
             return false;
         }
 
+        private IEnumerable<string> GetCrossgenAllowedBinDlls()
+        {
+            // This list is hard-coded somewhere in Serp's deployment scripting.
+            return new string[]
+            {
+                "AjaxMin.dll",
+                "AntiXssLibrary.dll",
+                "DomainNameProcessorLibrary.dll",
+                "dotless.Core.dll",
+                "Frontend.PixelBasedTrimmer.dll",
+                "Microsoft.Search.Frontend.AnswersFramework.ServiceInterfaces.dll",
+                "Microsoft.Search.Frontend.AnswersGlue.dll",
+                "Microsoft.Search.Frontend.ApiSchemas.Current.dll",
+                "Microsoft.Search.Frontend.ApiSchemas.Interfaces.dll",
+                "Microsoft.Search.Frontend.CoreUX.dll",
+                "Microsoft.Search.Frontend.CoreUX.Data.dll",
+                "Microsoft.Search.Frontend.CoreUX.Instrumentation.dll",
+                "Microsoft.Search.Frontend.DataSchemas.dll",
+                "Microsoft.Search.Frontend.Data.Bond.dll",
+                "Microsoft.Search.Frontend.Data.BondRepository.dll",
+                "Microsoft.Search.Frontend.Data.LinksModels.dll",
+                "Microsoft.Search.Frontend.Data.Kif.dll",
+                "Microsoft.Search.Frontend.Data.PropertyPath.dll",
+                "Microsoft.Search.Frontend.DeviceCapabilities.dll",
+                "Microsoft.Search.Frontend.dll",
+                "Microsoft.Search.Frontend.Federation.Federators.dll",
+                "Microsoft.Search.Frontend.Hosting.Serp.Core.dll",
+                "Microsoft.Search.Frontend.Hosting.Serp.Runtime.dll",
+                "Microsoft.Search.Frontend.SchemaInterfaces.dll",
+                "Microsoft.Search.Frontend.Serialization.Models.dll",
+                "Microsoft.Search.Frontend.SharedComponents.dll",
+                "SparkleAssembly.dll"
+            };
+        }
         private static IEnumerable<string> ResolveReferences(IEnumerable<string> folders)
         {
             foreach (string referenceFolder in folders)

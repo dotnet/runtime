@@ -425,6 +425,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_LOCKADD:
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
@@ -439,6 +441,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     buildInternalIntRegisterDefForNode(tree);
                 }
+            }
+            else if (tree->OperIs(GT_XAND))
+            {
+                // for ldclral we need an internal register.
+                buildInternalIntRegisterDefForNode(tree);
             }
 
             assert(!tree->gtGetOp1()->isContained());
@@ -864,9 +871,9 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicInitN:
         {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
-            if (varTypeIsFloating(simdTree->gtSIMDBaseType))
+            var_types baseType = simdTree->GetSimdBaseType();
+            srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
+            if (varTypeIsFloating(simdTree->GetSimdBaseType()))
             {
                 // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
                 buildInternalFloatRegisterDefForNode(simdTree);
@@ -971,13 +978,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         if (intrin.category == HW_Category_SIMDByIndexedElement)
         {
-            const unsigned int indexedElementSimdSize = genTypeSize(intrinsicTree->GetAuxiliaryType());
+            var_types indexedElementOpType;
+
+            if (intrin.numOperands == 3)
+            {
+                indexedElementOpType = intrin.op2->TypeGet();
+            }
+            else
+            {
+                assert(intrin.numOperands == 4);
+                indexedElementOpType = intrin.op3->TypeGet();
+            }
+
+            assert(varTypeIsSIMD(indexedElementOpType));
+
+            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, &immLowerBound,
                                              &immUpperBound);
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->gtSIMDSize, intrin.baseType, &immLowerBound,
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, &immLowerBound,
                                              &immUpperBound);
         }
 

@@ -6,7 +6,7 @@ set(utils_win32_sources
     os-event-win32.c
     w32subset.h)
 
-if(TARGET_WIN32 AND TARGET_AMD64)
+if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
@@ -33,9 +33,10 @@ set(utils_common_sources
     mono-logger.c
     mono-logger-internals.h
     mono-codeman.c
+    write-protect.c
+    write-protect.h
     mono-counters.c
     mono-compiler.h
-    mono-complex.h
     mono-dl.c
     mono-dl-windows.c
     mono-dl-darwin.c
@@ -201,7 +202,8 @@ set(utils_common_sources
     ward.h
     options.h
     options-def.h
-    options.c)
+    options.c
+	ftnptr.h)
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)

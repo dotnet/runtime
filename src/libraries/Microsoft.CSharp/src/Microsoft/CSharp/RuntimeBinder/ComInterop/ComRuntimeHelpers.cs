@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -14,6 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal static class ComRuntimeHelpers
     {
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message)
         {
             if (ComHresults.IsSuccess(hresult))
@@ -103,24 +105,28 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         /// <summary>
-        /// Look for typeinfo using IDispatch.GetTypeInfo
+        /// Look for type info using IDispatch.GetTypeInfo
         /// </summary>
         /// <param name="dispatch">IDispatch object</param>
         /// <remarks>
-        /// Some COM objects just dont expose typeinfo. In these cases, this method will return null.
-        /// Some COM objects do intend to expose typeinfo, but may not be able to do so if the type-library is not properly
-        /// registered. This will be considered as acceptable or as an error condition depending on throwIfMissingExpectedTypeInfo
+        /// Some COM objects just don't expose type info. In these cases, this method will return null.
+        /// Some COM objects do intend to expose type info, but may not be able to do so if the type library
+        /// is not properly registered. This will be considered an error.
         /// </remarks>
         /// <returns>Type info</returns>
         internal static ComTypes.ITypeInfo GetITypeInfoFromIDispatch(IDispatch dispatch)
         {
             int hresult = dispatch.TryGetTypeInfoCount(out uint typeCount);
-            Marshal.ThrowExceptionForHR(hresult);
-            Debug.Assert(typeCount <= 1);
             if (typeCount == 0)
             {
+                // COM objects should return a type count of 0 to indicate that type info is not exposed.
+                // Some COM objects may return a non-success HRESULT when type info is not supported, so
+                // we only check the count and not the HRESULT in this case.
                 return null;
             }
+
+            Marshal.ThrowExceptionForHR(hresult);
+            Debug.Assert(typeCount == 1);
 
             IntPtr typeInfoPtr;
             hresult = dispatch.TryGetTypeInfo(0, 0, out typeInfoPtr);
@@ -201,6 +207,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
         {
             return new BoundDispEvent(rcw, sourceIid, dispid);

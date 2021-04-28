@@ -66,9 +66,9 @@ jobs:
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'Linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.312.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm32v7-20200908125213-5bece88
+        - (Alpine.313.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.312.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm32v7-20200908125213-5bece88
+        - (Alpine.313.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
@@ -94,6 +94,13 @@ jobs:
         - (Centos.8.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - (Fedora.30.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-20200512010621-4f8cef7
         - RedHat.7.Amd64
+
+    # OSX arm64
+    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+        - OSX.1100.ARM64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.1100.ARM64
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:

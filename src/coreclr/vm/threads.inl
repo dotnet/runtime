@@ -32,9 +32,16 @@ __declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif
 
-EXTERN_C inline Thread* STDCALL GetThread()
+inline Thread* GetThreadNULLOk()
 {
     return gCurrentThreadInfo.m_pThread;
+}
+
+inline Thread* GetThread()
+{
+    Thread* pThread = gCurrentThreadInfo.m_pThread;
+    _ASSERTE(pThread);
+    return pThread;
 }
 
 EXTERN_C inline AppDomain* STDCALL GetAppDomain()
@@ -173,7 +180,6 @@ inline Thread::CurrentPrepareCodeConfigHolder::CurrentPrepareCodeConfigHolder(Th
 #endif
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(thread != nullptr);
     _ASSERTE(thread == GetThread());
     _ASSERTE(config != nullptr);
 

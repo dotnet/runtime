@@ -5,13 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -131,6 +127,9 @@ namespace DebuggerTests
                 }
                 else if (!String.IsNullOrEmpty(url))
                 {
+                    var dbgUrl = args["url"]?.Value<string>();
+                    var arrStr = dbgUrl.Split("/");
+                    dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                     dicFileToUrl[new Uri(url).AbsolutePath] = url;
                 }
                 await Task.FromResult(0);
@@ -227,6 +226,20 @@ namespace DebuggerTests
                 Assert.Equal("number", val["type"]?.Value<string>());
                 Assert.Equal(value, val["value"].Value<T>());
                 Assert.Equal(value.ToString(), val["description"].Value<T>().ToString());
+                return;
+            }
+            Assert.True(false, $"Could not find variable '{name}'");
+        }
+
+        internal void CheckNumberAsString(JToken locals, string name, string value)
+        {
+            foreach (var l in locals)
+            {
+                if (name != l["name"]?.Value<string>())
+                    continue;
+                var val = l["value"];
+                Assert.Equal("number", val["type"]?.Value<string>());
+                Assert.Equal(value, val["value"].ToString());
                 return;
             }
             Assert.True(false, $"Could not find variable '{name}'");
@@ -390,6 +403,21 @@ namespace DebuggerTests
             return res;
         }
 
+        internal async Task<Result> SetValueOnObject(JToken obj, string property, string newvalue, string fn = "function(a, b) { this[a] = b; }", bool expect_ok = true)
+        {
+            var req = JObject.FromObject(new
+            {
+                functionDeclaration = fn,
+                objectId = obj["value"]?["objectId"]?.Value<string>(),
+                arguments = new[] { new { value = property } , new { value = newvalue } },
+                silent = true
+            });
+            var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
+            Assert.True(expect_ok == res.IsOk, $"SetValueOnObject failed for {req} with {res}");
+
+            return res;
+        }
+
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {
@@ -430,7 +458,6 @@ namespace DebuggerTests
                 AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
             }
 
-            Console.WriteLine(top_frame);
             if (script_loc != null && line >= 0)
                 CheckLocation(script_loc, line, column, scripts, top_frame["location"]);
 
@@ -791,6 +818,16 @@ namespace DebuggerTests
             return (null, res);
         }
 
+        internal async Task<(JToken, Result)> SetVariableValueOnCallFrame(JObject parms, bool expect_ok = true)
+        {
+            var res = await cli.SendCommand("Debugger.setVariableValue", parms, token);
+            AssertEqual(expect_ok, res.IsOk, $"Debugger.setVariableValue ('{parms}') returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
+
+            return (null, res);
+        }
+
         internal async Task<Result> RemoveBreakpoint(string id, bool expect_ok = true)
         {
             var remove_bp = JObject.FromObject(new
@@ -804,11 +841,11 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false)
+        internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
             var bp1_req = !use_regex ?
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], }) :
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, });
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition}) :
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition});
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
@@ -822,7 +859,7 @@ namespace DebuggerTests
             return exc_res;
         }
 
-        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0)
+        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
         {
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });
 
@@ -837,7 +874,8 @@ namespace DebuggerTests
             {
                 lineNumber = m_line + lineOffset,
                 columnNumber = col,
-                url = m_url
+                url = m_url,
+                condition
             });
 
             res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
@@ -928,6 +966,29 @@ namespace DebuggerTests
             __custom_type = "datetime",
             binary = dt.ToBinary()
         });
+
+        internal async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+
+            string pdb_base64 = null;
+            if (pdb_file != null)
+            {
+                bytes = File.ReadAllBytes(pdb_file);
+                pdb_base64 = Convert.ToBase64String(bytes);
+            }
+
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+            Assert.True(load_assemblies_res.IsOk);
+        }
+
     }
 
     class DotnetObjectId

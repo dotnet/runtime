@@ -60,6 +60,14 @@ alloc_ireg_ref (MonoCompile *cfg)
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_ref (cfg, vreg);
 
+#ifdef TARGET_WASM
+	/*
+	 * For GC stack scanning to work, have to spill all reference variables to the stack.
+	 */
+	MonoInst *ins = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_get_object_class ()), OP_LOCAL, vreg);
+	ins->flags |= MONO_INST_VOLATILE;
+#endif
+
 	return vreg;
 }
 
@@ -327,16 +335,6 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		}																\
 	} while (0)
 
-#define NEW_DOMAINCONST(cfg,dest) do { \
-		if ((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) {				 \
-			/* avoid depending on undefined C behavior in sequence points */ \
-			MonoInst* __domain_var = mono_get_domainvar (cfg); \
-			NEW_TEMPLOAD (cfg, dest, __domain_var->inst_c0); \
-		} else { \
-			NEW_PCONST (cfg, dest, (cfg)->domain); \
-		} \
-	} while (0)
-
 #define NEW_JIT_ICALL_ADDRCONST(cfg, dest, jit_icall_id) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (jit_icall_id))
 
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
@@ -487,8 +485,6 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 #define EMIT_NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_TLS_OFFSETCONST(cfg,dest,key) do { NEW_TLS_OFFSETCONST ((cfg), (dest), (key)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
-
-#define EMIT_NEW_DOMAINCONST(cfg,dest) do { NEW_DOMAINCONST ((cfg), (dest)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_DECLSECCONST(cfg,dest,image,entry) do { NEW_DECLSECCONST ((cfg), (dest), (image), (entry)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 

@@ -144,6 +144,34 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf<T>() => SizeOf(typeof(T));
 
+        public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            fixed (Guid* pIID = &iid)
+            fixed (IntPtr* p = &ppv)
+            {
+                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+            }
+        }
+
+        public static unsafe int AddRef(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+        }
+
+        public static unsafe int Release(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+        }
+
         /// <summary>
         /// IMPORTANT NOTICE: This method does not do any verification on the array.
         /// It must be used with EXTREME CAUTION since passing in invalid index or
@@ -577,6 +605,19 @@ namespace System.Runtime.InteropServices
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
+// CoreCLR has a different implementation for Windows only
+#if !CORECLR || !TARGET_WINDOWS
+        public static IntPtr GetHINSTANCE(Module m)
+        {
+            if (m is null)
+            {
+                throw new ArgumentNullException(nameof(m));
+            }
+
+            return (IntPtr)(-1);
+        }
+#endif
+
         /// <summary>
         /// Converts the HRESULT to a CLR exception.
         /// </summary>
@@ -591,6 +632,238 @@ namespace System.Runtime.InteropServices
 
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
+
+#if !CORECLR
+        private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        {
+            switch (errorCode)
+            {
+                case HResults.COR_E_AMBIGUOUSMATCH:
+                    return new System.Reflection.AmbiguousMatchException();
+                case HResults.COR_E_APPLICATION:
+                    return new System.ApplicationException();
+                case HResults.COR_E_ARGUMENT:
+                    return new System.ArgumentException();
+                case HResults.COR_E_ARGUMENTOUTOFRANGE:
+                    return new System.ArgumentOutOfRangeException();
+                case HResults.COR_E_ARITHMETIC:
+                    return new System.ArithmeticException();
+                case HResults.COR_E_ARRAYTYPEMISMATCH:
+                    return new System.ArrayTypeMismatchException();
+                case HResults.COR_E_BADEXEFORMAT:
+                    return new System.BadImageFormatException();
+                case HResults.COR_E_BADIMAGEFORMAT:
+                    return new System.BadImageFormatException();
+                //case HResults.COR_E_CODECONTRACTFAILED:
+                //return new System.Diagnostics.Contracts.ContractException ();
+                //case HResults.COR_E_COMEMULATE:
+                case HResults.COR_E_CUSTOMATTRIBUTEFORMAT:
+                    return new System.Reflection.CustomAttributeFormatException();
+                case HResults.COR_E_DATAMISALIGNED:
+                    return new System.DataMisalignedException();
+                case HResults.COR_E_DIRECTORYNOTFOUND:
+                    return new System.IO.DirectoryNotFoundException();
+                case HResults.COR_E_DIVIDEBYZERO:
+                    return new System.DivideByZeroException();
+                case HResults.COR_E_DLLNOTFOUND:
+                    return new System.DllNotFoundException();
+                case HResults.COR_E_DUPLICATEWAITOBJECT:
+                    return new System.DuplicateWaitObjectException();
+                case HResults.COR_E_ENDOFSTREAM:
+                    return new System.IO.EndOfStreamException();
+                case HResults.COR_E_ENTRYPOINTNOTFOUND:
+                    return new System.EntryPointNotFoundException();
+                case HResults.COR_E_EXCEPTION:
+                    return new System.Exception();
+                case HResults.COR_E_EXECUTIONENGINE:
+#pragma warning disable CS0618 // ExecutionEngineException is obsolete
+                    return new System.ExecutionEngineException();
+#pragma warning restore CS0618
+                case HResults.COR_E_FIELDACCESS:
+                    return new System.FieldAccessException();
+                case HResults.COR_E_FILELOAD:
+                    return new System.IO.FileLoadException();
+                case HResults.COR_E_FILENOTFOUND:
+                    return new System.IO.FileNotFoundException();
+                case HResults.COR_E_FORMAT:
+                    return new System.FormatException();
+                case HResults.COR_E_INDEXOUTOFRANGE:
+                    return new System.IndexOutOfRangeException();
+                case HResults.COR_E_INSUFFICIENTEXECUTIONSTACK:
+                    return new System.InsufficientExecutionStackException();
+                case HResults.COR_E_INVALIDCAST:
+                    return new System.InvalidCastException();
+                case HResults.COR_E_INVALIDFILTERCRITERIA:
+                    return new System.Reflection.InvalidFilterCriteriaException();
+                case HResults.COR_E_INVALIDOLEVARIANTTYPE:
+                    return new System.Runtime.InteropServices.InvalidOleVariantTypeException();
+                case HResults.COR_E_INVALIDOPERATION:
+                    return new System.InvalidOperationException();
+                case HResults.COR_E_INVALIDPROGRAM:
+                    return new System.InvalidProgramException();
+                case HResults.COR_E_IO:
+                    return new System.IO.IOException();
+                case HResults.COR_E_MARSHALDIRECTIVE:
+                    return new System.Runtime.InteropServices.MarshalDirectiveException();
+                case HResults.COR_E_MEMBERACCESS:
+                    return new System.MemberAccessException();
+                case HResults.COR_E_METHODACCESS:
+                    return new System.MethodAccessException();
+                case HResults.COR_E_MISSINGFIELD:
+                    return new System.MissingFieldException();
+                case HResults.COR_E_MISSINGMANIFESTRESOURCE:
+                    return new System.Resources.MissingManifestResourceException();
+                case HResults.COR_E_MISSINGMEMBER:
+                    return new System.MissingMemberException();
+                case HResults.COR_E_MISSINGMETHOD:
+                    return new System.MissingMethodException();
+                case HResults.COR_E_MULTICASTNOTSUPPORTED:
+                    return new System.MulticastNotSupportedException();
+                case HResults.COR_E_NOTFINITENUMBER:
+                    return new System.NotFiniteNumberException();
+                case HResults.COR_E_NOTSUPPORTED:
+                    return new System.NotSupportedException();
+                case HResults.E_POINTER:
+                    return new System.NullReferenceException();
+                case HResults.COR_E_OBJECTDISPOSED:
+                    return new System.ObjectDisposedException("");
+                case HResults.COR_E_OPERATIONCANCELED:
+                    return new System.OperationCanceledException();
+                case HResults.COR_E_OUTOFMEMORY:
+                    return new System.OutOfMemoryException();
+                case HResults.COR_E_OVERFLOW:
+                    return new System.OverflowException();
+                case HResults.COR_E_PATHTOOLONG:
+                    return new System.IO.PathTooLongException();
+                case HResults.COR_E_PLATFORMNOTSUPPORTED:
+                    return new System.PlatformNotSupportedException();
+                case HResults.COR_E_RANK:
+                    return new System.RankException();
+                case HResults.COR_E_REFLECTIONTYPELOAD:
+                    return new System.MissingMethodException();
+                case HResults.COR_E_RUNTIMEWRAPPED:
+                    return new System.MissingMethodException();
+                case HResults.COR_E_SECURITY:
+                    return new System.Security.SecurityException();
+                case HResults.COR_E_SERIALIZATION:
+                    return new System.Runtime.Serialization.SerializationException();
+                case HResults.COR_E_STACKOVERFLOW:
+                    return new System.StackOverflowException();
+                case HResults.COR_E_SYNCHRONIZATIONLOCK:
+                    return new System.Threading.SynchronizationLockException();
+                case HResults.COR_E_SYSTEM:
+                    return new System.SystemException();
+                case HResults.COR_E_TARGET:
+                    return new System.Reflection.TargetException();
+                case HResults.COR_E_TARGETINVOCATION:
+                    return new System.MissingMethodException();
+                case HResults.COR_E_TARGETPARAMCOUNT:
+                    return new System.Reflection.TargetParameterCountException();
+                case HResults.COR_E_THREADABORTED:
+                    return new System.Threading.ThreadAbortException();
+                case HResults.COR_E_THREADINTERRUPTED:
+                    return new System.Threading.ThreadInterruptedException();
+                case HResults.COR_E_THREADSTART:
+                    return new System.Threading.ThreadStartException();
+                case HResults.COR_E_THREADSTATE:
+                    return new System.Threading.ThreadStateException();
+                case HResults.COR_E_TYPEACCESS:
+                    return new System.TypeAccessException();
+                case HResults.COR_E_TYPEINITIALIZATION:
+                    return new System.TypeInitializationException("");
+                case HResults.COR_E_TYPELOAD:
+                    return new System.TypeLoadException();
+                case HResults.COR_E_TYPEUNLOADED:
+                    return new System.TypeUnloadedException();
+                case HResults.COR_E_UNAUTHORIZEDACCESS:
+                    return new System.UnauthorizedAccessException();
+                //case HResults.COR_E_UNSUPPORTEDFORMAT:
+                case HResults.COR_E_VERIFICATION:
+                    return new System.Security.VerificationException();
+                //case HResults.E_INVALIDARG:
+                case HResults.E_NOTIMPL:
+                    return new System.NotImplementedException();
+                //case HResults.E_POINTER:
+                case HResults.RO_E_CLOSED:
+                    return new System.ObjectDisposedException("");
+                case HResults.COR_E_ABANDONEDMUTEX:
+                case HResults.COR_E_AMBIGUOUSIMPLEMENTATION:
+                case HResults.COR_E_CANNOTUNLOADAPPDOMAIN:
+                case HResults.COR_E_CONTEXTMARSHAL:
+                //case HResults.COR_E_HOSTPROTECTION:
+                case HResults.COR_E_INSUFFICIENTMEMORY:
+                case HResults.COR_E_INVALIDCOMOBJECT:
+                case HResults.COR_E_KEYNOTFOUND:
+                case HResults.COR_E_MISSINGSATELLITEASSEMBLY:
+                case HResults.COR_E_SAFEARRAYRANKMISMATCH:
+                case HResults.COR_E_SAFEARRAYTYPEMISMATCH:
+                //case HResults.COR_E_SAFEHANDLEMISSINGATTRIBUTE:
+                //case HResults.COR_E_SEMAPHOREFULL:
+                //case HResults.COR_E_THREADSTOP:
+                case HResults.COR_E_TIMEOUT:
+                case HResults.COR_E_WAITHANDLECANNOTBEOPENED:
+                case HResults.DISP_E_OVERFLOW:
+                case HResults.E_BOUNDS:
+                case HResults.E_CHANGED_STATE:
+                case HResults.E_FAIL:
+                case HResults.E_HANDLE:
+                case HResults.ERROR_MRM_MAP_NOT_FOUND:
+                case HResults.TYPE_E_TYPEMISMATCH:
+                case HResults.CO_E_NOTINITIALIZED:
+                case HResults.RPC_E_CHANGED_MODE:
+                    return new COMException("", errorCode);
+
+                case HResults.STG_E_PATHNOTFOUND:
+                case HResults.CTL_E_PATHNOTFOUND:
+                    {
+                        return new System.IO.DirectoryNotFoundException
+                        {
+                            HResult = errorCode
+                        };
+                    }
+                case HResults.FUSION_E_INVALID_PRIVATE_ASM_LOCATION:
+                case HResults.FUSION_E_SIGNATURE_CHECK_FAILED:
+                case HResults.FUSION_E_LOADFROM_BLOCKED:
+                case HResults.FUSION_E_CACHEFILE_FAILED:
+                case HResults.FUSION_E_ASM_MODULE_MISSING:
+                case HResults.FUSION_E_INVALID_NAME:
+                case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
+                case HResults.FUSION_E_HOST_GAC_ASM_MISMATCH:
+                case HResults.COR_E_MODULE_HASH_CHECK_FAILED:
+                case HResults.FUSION_E_REF_DEF_MISMATCH:
+                case HResults.SECURITY_E_INCOMPATIBLE_SHARE:
+                case HResults.SECURITY_E_INCOMPATIBLE_EVIDENCE:
+                case HResults.SECURITY_E_UNVERIFIABLE:
+                case HResults.COR_E_FIXUPSINEXE:
+                case HResults.ERROR_TOO_MANY_OPEN_FILES:
+                case HResults.ERROR_SHARING_VIOLATION:
+                case HResults.ERROR_LOCK_VIOLATION:
+                case HResults.ERROR_OPEN_FAILED:
+                case HResults.ERROR_DISK_CORRUPT:
+                case HResults.ERROR_UNRECOGNIZED_VOLUME:
+                case HResults.ERROR_DLL_INIT_FAILED:
+                case HResults.FUSION_E_CODE_DOWNLOAD_DISABLED:
+                case HResults.CORSEC_E_MISSING_STRONGNAME:
+                case HResults.MSEE_E_ASSEMBLYLOADINPROGRESS:
+                case HResults.ERROR_FILE_INVALID:
+                    {
+                        return new System.IO.FileLoadException
+                        {
+                            HResult = errorCode
+                        };
+                    }
+                case HResults.CTL_E_FILENOTFOUND:
+                    {
+                        return new System.IO.FileNotFoundException
+                        {
+                            HResult = errorCode
+                        };
+                    }
+                default:
+                    return new COMException("", errorCode);
+            }
+        }
+#endif
 
         /// <summary>
         /// Throws a CLR exception based on the HRESULT.
@@ -700,7 +973,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -747,7 +1020,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -867,11 +1140,10 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            // COMPAT: This block of code isn't entirely correct.
-            // Users passing in typeof(MulticastDelegate) as 't' skip this check
-            // since Delegate is a base type of MulticastDelegate.
-            Type? c = t.BaseType;
-            if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
+            // For backward compatibility, we allow lookup of existing delegate to
+            // function pointer mappings using abstract MulticastDelegate type. We will check
+            // for the non-abstract delegate type later if no existing mapping is found.
+            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
             }
@@ -974,7 +1246,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr bstr = AllocBSTR(s.Length);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
+            s.CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
 
             return bstr;
         }
@@ -1006,6 +1278,11 @@ namespace System.Runtime.InteropServices
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
             safeHandle.SetHandle(handle);
+        }
+
+        public static int GetLastWin32Error()
+        {
+            return GetLastPInvokeError();
         }
     }
 }

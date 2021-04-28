@@ -34,6 +34,7 @@ namespace System
         private const string LastEntryValue = "LastEntry";
 
         private const int MaxKeyLength = 255;
+        private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
         private sealed partial class CachedData
         {
@@ -103,6 +104,12 @@ namespace System
                     }
                 }
             }
+        }
+
+        private static string? GetAlternativeId(string id, out bool idIsIana)
+        {
+            idIsIana = true;
+            return TryConvertIanaIdToWindowsId(id, out string? windowsId) ? windowsId : null;
         }
 
         private TimeZoneInfo(in TIME_ZONE_INFORMATION zone, bool dstDisabled)
@@ -974,6 +981,50 @@ namespace System
                     return TimeZoneInfoResult.InvalidTimeZoneException;
                 }
             }
+        }
+
+        // Helper function to get the standard display name for the UTC static time zone instance
+        private static string GetUtcStandardDisplayName()
+        {
+            // Don't bother looking up the name for invariant or English cultures
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0 || uiCulture.TwoLetterISOLanguageName == "en")
+                return InvariantUtcStandardDisplayName;
+
+            // Try to get a localized version of "Coordinated Universal Time" from the globalization data
+            string? standardDisplayName = null;
+            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + UtcId, writable: false))
+            {
+                if (key != null)
+                {
+                    // read the MUI_ registry key
+                    string? standardNameMuiResource = key.GetValue(MuiStandardValue, string.Empty) as string;
+
+                    // try to load the string from the native resource DLL(s)
+                    if (!string.IsNullOrEmpty(standardNameMuiResource))
+                    {
+                        standardDisplayName = TryGetLocalizedNameByMuiNativeResource(standardNameMuiResource);
+                    }
+
+                    // fallback to using the standard registry key
+                    if (string.IsNullOrEmpty(standardDisplayName))
+                    {
+                        standardDisplayName = key.GetValue(StandardValue, string.Empty) as string;
+                    }
+                }
+            }
+
+            // Final safety check.  Don't allow null or abbreviations
+            if (standardDisplayName == null || standardDisplayName == "GMT" || standardDisplayName == "UTC")
+                standardDisplayName = InvariantUtcStandardDisplayName;
+
+            return standardDisplayName;
+        }
+
+        // Helper function to get the full display name for the UTC static time zone instance
+        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        {
+            return $"(UTC) {standardDisplayName}";
         }
     }
 }

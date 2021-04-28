@@ -11,9 +11,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <!-- Link all assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) -u link</ILLinkArgs>
       <!-- update debug symbols -->
       <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
@@ -63,7 +60,7 @@
       <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
 
       <RootAssemblies Include="@(_LibrariesToLink)">
-        <RootMode>visible</RootMode>
+        <RootMode>library</RootMode>
       </RootAssemblies>
     </ItemGroup>
 
@@ -77,16 +74,12 @@
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
       <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
+      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
       <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
-
-      <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds
-           due to the linker not being run on the assembly (eng\illink.targets). Manually include it. -->
-      <_SuppressionsXmls Condition="'$(BuildAllConfigurations)' == 'true'"
-                         Include="$(LibrariesProjectRoot)System.ComponentModel.Annotations\$(ProjectILLinkSuppressionsFile).xml" />
     </ItemGroup>
 
     <PropertyGroup>
-      <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes @(_SuppressionsXmls->'%(FullPath)', ' --link-attributes ')</ILLinkArgs>
+      <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes &quot;@(_SuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</ILLinkArgs>
     </PropertyGroup>
 
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.

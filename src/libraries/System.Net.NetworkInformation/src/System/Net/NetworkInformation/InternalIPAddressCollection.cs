@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
-    internal class InternalIPAddressCollection : IPAddressCollection
+    internal sealed class InternalIPAddressCollection : IPAddressCollection
     {
         private readonly List<IPAddress> _addresses;
 
-        protected internal InternalIPAddressCollection()
+        internal InternalIPAddressCollection()
         {
             _addresses = new List<IPAddress>();
         }

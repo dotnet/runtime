@@ -654,6 +654,10 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
                       unsigned        flags,
                       CodeManState   *pState,
                       StackwalkCacheUnwindInfo  *pUnwindInfo);
+
+size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
+                       unsigned    curOffset,
+                       hdrInfo   * infoPtr);
 #endif
 
 /*****************************************************************************

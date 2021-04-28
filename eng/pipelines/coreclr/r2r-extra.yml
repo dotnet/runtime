@@ -5,7 +5,7 @@ schedules:
   displayName: Sat and Sun at 6:00 PM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
-    platformGroup: gcstress # r2r-extra testGroup runs gcstress15 scenario
+    platformGroup: gcstress # r2r-extra testGroup runs gcstress0xf scenario
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

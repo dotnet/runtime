@@ -450,9 +450,6 @@ MonoInst*
 mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig, gboolean tailcall,
 							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
-#ifndef DISABLE_REMOTING
-	gboolean might_be_remote = FALSE;
-#endif
 	gboolean virtual_ = this_ins != NULL;
 	int context_used;
 	MonoCallInst *call;
@@ -478,22 +475,6 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 	context_used = mini_method_check_context_used (cfg, method);
 
-#ifndef DISABLE_REMOTING
-	might_be_remote = this_ins && sig->hasthis &&
-		(mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) &&
-		!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && (!MONO_CHECK_THIS (this_ins) || context_used);
-
-	if (might_be_remote && context_used) {
-		MonoInst *addr;
-
-		g_assert (cfg->gshared);
-
-		addr = mini_emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK);
-
-		return mini_emit_calli (cfg, sig, args, addr, NULL, NULL);
-	}
-#endif
-
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
 
@@ -510,15 +491,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || mono_class_is_interface (method->klass);
 
 	call = mini_emit_call_args (cfg, sig, args, FALSE, virtual_, tailcall, rgctx_arg ? TRUE : FALSE, need_unbox_trampoline, method);
-
-#ifndef DISABLE_REMOTING
-	if (might_be_remote) {
-		ERROR_DECL (error);
-		call->method = mono_marshal_get_remoting_invoke_with_check (method, error);
-		mono_error_assert_ok (error);
-	} else
-#endif
-		call->method = method;
+	call->method = method;
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this_ins;
 
@@ -560,25 +533,11 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		}
 
 		if ((!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-			 (MONO_METHOD_IS_FINAL (method) &&
-			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
-			!(mono_class_is_marshalbyref (method->klass) && context_used)) {
+			 (MONO_METHOD_IS_FINAL (method)))) {
 			/* 
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.
 			 */
-#ifndef DISABLE_REMOTING
-			if (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) {
-				ERROR_DECL (error);
-				/* 
-				 * The check above ensures method is not gshared, this is needed since
-				 * gshared methods can't have wrappers.
-				 */
-				method = call->method = mono_marshal_get_remoting_invoke_with_check (method, error);
-				mono_error_assert_ok (error);
-			}
-#endif
-
 			virtual_ = FALSE;
 		} else if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && MONO_METHOD_IS_FINAL (method)) {
 			/*
@@ -711,9 +670,16 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	int offset;
 	gboolean special_array_interface = m_class_is_array_special_interface (cmethod->klass);
 
-	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE))
+	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE)) {
 		/* Need wrappers for this signature to be able to enter interpreter */
 		cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, fsig);
+
+		if (m_class_is_delegate (cmethod->klass) && !strcmp (cmethod->name, "Invoke")) {
+			/* To support dynamically generated code, add a signature for the actual method called by the delegate as well. */
+			MonoMethodSignature *nothis_sig = mono_metadata_signature_dup_add_this (m_class_get_image (cmethod->klass), fsig, mono_get_object_class ());
+			cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, nothis_sig);
+		}
+	}
 
 	/*
 	 * In llvm-only mode, vtables contain function descriptors instead of

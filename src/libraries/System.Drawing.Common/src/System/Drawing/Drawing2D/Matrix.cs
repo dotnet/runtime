@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
@@ -23,9 +25,31 @@ namespace System.Drawing.Drawing2D
             NativeMatrix = nativeMatrix;
         }
 
+        /// <summary>
+        /// Construct a <see cref="Matrix"/> utilizing the given <paramref name="matrix"/>.
+        /// </summary>
+        /// <param name="matrix">Matrix data to construct from.</param>
+        public Matrix(Matrix3x2 matrix) : this(CreateNativeHandle(matrix))
+        {
+        }
+
         private Matrix(IntPtr nativeMatrix)
         {
             NativeMatrix = nativeMatrix;
+        }
+
+        internal static IntPtr CreateNativeHandle(Matrix3x2 matrix)
+        {
+            Gdip.CheckStatus(Gdip.GdipCreateMatrix2(
+                matrix.M11,
+                matrix.M12,
+                matrix.M21,
+                matrix.M22,
+                matrix.M31,
+                matrix.M32,
+                out IntPtr nativeMatrix));
+
+            return nativeMatrix;
         }
 
         public unsafe Matrix(RectangleF rect, PointF[] plgpts)
@@ -86,25 +110,59 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                IntPtr buf = Marshal.AllocHGlobal(6 * 8); // 6 elements x 8 bytes (float)
-
-                try
-                {
-                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), buf));
-
-                    float[] m = new float[6];
-                    Marshal.Copy(buf, m, 0, 6);
-                    return m;
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(buf);
-                }
+                float[] elements = new float[6];
+                GetElements(elements);
+                return elements;
             }
         }
 
-        public float OffsetX => Elements[4];
-        public float OffsetY => Elements[5];
+        /// <summary>
+        ///  Gets/sets the elements for the matrix.
+        /// </summary>
+        public unsafe Matrix3x2 MatrixElements
+        {
+            get
+            {
+                Matrix3x2 matrix = default;
+                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), (float*)&matrix));
+                return matrix;
+            }
+            set
+            {
+                Gdip.CheckStatus(Gdip.GdipSetMatrixElements(
+                    new HandleRef(this, NativeMatrix),
+                    value.M11,
+                    value.M12,
+                    value.M21,
+                    value.M22,
+                    value.M31,
+                    value.M32));
+            }
+        }
+
+        internal unsafe void GetElements(Span<float> elements)
+        {
+            Debug.Assert(elements.Length >= 6);
+
+            fixed (float* m = elements)
+            {
+                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), m));
+            }
+        }
+
+        public unsafe float OffsetX => Offset.X;
+
+        public unsafe float OffsetY => Offset.Y;
+
+        internal unsafe PointF Offset
+        {
+            get
+            {
+                Span<float> elements = stackalloc float[6];
+                GetElements(elements);
+                return new PointF(elements[4], elements[5]);
+            }
+        }
 
         public void Reset()
         {
@@ -263,6 +321,7 @@ namespace System.Drawing.Drawing2D
                 return isIdentity != 0;
             }
         }
+
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Matrix matrix2))

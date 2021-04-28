@@ -167,14 +167,6 @@ DECL_OFFSET(MonoJitTlsData, stack_restore_ctx)
 DECL_OFFSET(MonoGSharedVtMethodRuntimeInfo, locals_size)
 DECL_OFFSET(MonoGSharedVtMethodRuntimeInfo, entries) //XXX more to fix here
 
-#if !defined(ENABLE_NETCORE)
-DECL_OFFSET(MonoContinuation, stack_used_size)
-DECL_OFFSET(MonoContinuation, saved_stack)
-DECL_OFFSET(MonoContinuation, return_sp)
-DECL_OFFSET(MonoContinuation, lmf)
-DECL_OFFSET(MonoContinuation, return_ip)
-#endif
-
 DECL_OFFSET(MonoDelegateTrampInfo, method)
 DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
 DECL_OFFSET(MonoDelegateTrampInfo, method_ptr)

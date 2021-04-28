@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -31,7 +32,11 @@ namespace System.ComponentModel
         /// data type. If the method is not interested in providing a substitute
         /// instance, it should call base.
         /// </summary>
-        public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+        public override object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type[] argTypes,
+            object[] args)
         {
             return Provider.CreateInstance(provider, objectType, argTypes, args);
         }
@@ -58,6 +63,7 @@ namespace System.ComponentModel
         /// If not overridden, the default implementation of this method will call
         /// GetTypeDescriptor.GetComponentName.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public override string GetFullComponentName(object component) => Provider.GetFullComponentName(component);
 
         /// <summary>
@@ -74,6 +80,7 @@ namespace System.ComponentModel
         /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public override ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             return Provider.GetExtendedTypeDescriptor(instance);
@@ -89,7 +96,10 @@ namespace System.ComponentModel
         /// If no custom type descriptor can be located for an object, GetReflection
         /// is called to perform normal reflection against the object.
         /// </summary>
-        public override Type GetReflectionType(Type objectType, object instance)
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public override Type GetReflectionType(
+            [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType,
+            object instance)
         {
             return Provider.GetReflectionType(objectType, instance);
         }
@@ -104,7 +114,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return null.
         /// </summary>
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object instance)
         {
             return Provider.GetTypeDescriptor(objectType, instance);
         }

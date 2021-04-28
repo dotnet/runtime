@@ -16,7 +16,7 @@
 // Note that this file is parsed by some tools, namely superpmi.py, so make sure the first line is exactly
 // of the form:
 //
-//   constexpr GUID JITEEVersionIdentifier = { /* a7bb194e-4e7c-4850-af12-ea9f30ea5a13 */
+//   constexpr GUID JITEEVersionIdentifier = { /* 1776ab48-edfa-49be-a11f-ec216b28174c */
 //
 // (without the leading slashes or spaces).
 //
@@ -32,11 +32,22 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-constexpr GUID JITEEVersionIdentifier = { /* a904114d-6fe1-4884-82ab-47849d22d882 */
-    0xa904114d,
-    0x6fe1,
-    0x4884,
-    {0x82, 0xab, 0x47, 0x84, 0x9d, 0x22, 0xd8, 0x82}
+#ifndef GUID_DEFINED
+typedef struct _GUID {
+    uint32_t   Data1;    // NOTE: diff from Win32, for LP64
+    uint16_t   Data2;
+    uint16_t   Data3;
+    uint8_t    Data4[ 8 ];
+} GUID;
+typedef const GUID *LPCGUID;
+#define GUID_DEFINED
+#endif // !GUID_DEFINED
+
+constexpr GUID JITEEVersionIdentifier = { /* 12234eca-dfc2-48bc-a320-6155cf25ce17 */
+    0x12234eca,
+    0xdfc2,
+    0x48bc,
+    {0xa3, 0x20, 0x61, 0x55, 0xcf, 0x25, 0xce, 0x17}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -273,7 +273,7 @@ namespace System.Collections.Specialized
             count--;
         }
 
-        private class NodeEnumerator : IDictionaryEnumerator
+        private sealed class NodeEnumerator : IDictionaryEnumerator
         {
             private readonly ListDictionary _list;
             private DictionaryNode? _current;
@@ -362,7 +362,7 @@ namespace System.Collections.Specialized
             }
         }
 
-        private class NodeKeyValueCollection : ICollection
+        private sealed class NodeKeyValueCollection : ICollection
         {
             private readonly ListDictionary _list;
             private readonly bool _isKeys;
@@ -422,7 +422,7 @@ namespace System.Collections.Specialized
             }
 
 
-            private class NodeKeyValueEnumerator : IEnumerator
+            private sealed class NodeKeyValueEnumerator : IEnumerator
             {
                 private readonly ListDictionary _list;
                 private DictionaryNode? _current;

@@ -20,54 +20,6 @@ WARNING:   When setting properties based on their current state (for example:
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Target Name="GetJitDisasmBashScript"
-          Returns="$(JitDisasmBashScript)">
-    <PropertyGroup>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
-      <JitDisasmBashScript>
-<![CDATA[
-# JitDisasm Script
-if [ ! -z $RunningJitDisasm ]
-then
-    echo $CORE_ROOT/corerun "$CORE_ROOT/jit-dasm.dll" --crossgen $CORE_ROOT/crossgen --platform $CORE_ROOT --output $(JitDisasmOut) $(InputAssemblyName)
-    "$CORE_ROOT/corerun" "$CORE_ROOT/jit-dasm.dll" --crossgen $CORE_ROOT/crossgen --platform $CORE_ROOT --output $(JitDisasmOut) $(InputAssemblyName)
-    _jdExitCode=$?
-    if [ $_jdExitCode -ne 0 ]
-    then
-        echo EXECUTION OF JIT-DASM - FAILED $_jdExitCode
-        exit 1
-    fi
-fi
-]]>
-      </JitDisasmBashScript>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="GetJitDisasmBatchScript"
-          Returns="$(JitDisasmBatchScript)">
-    <PropertyGroup>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
-      <JitDisasmBatchScript>
-<![CDATA[
-REM JitDisasm Script
-if defined RunningJitDisasm (
-  echo %CORE_ROOT%\corerun %CORE_ROOT%\jit-dasm.dll --crossgen %CORE_ROOT%/crossgen.exe --platform %CORE_ROOT%%3B%25cd%25 --output $(JitDisasmOut) $(InputAssemblyName)
-  %CORE_ROOT%\corerun %CORE_ROOT%\jit-dasm.dll --crossgen %CORE_ROOT%/crossgen.exe --platform %CORE_ROOT%%3B%25cd%25 --output $(JitDisasmOut) $(InputAssemblyName)
-  IF NOT "!ERRORLEVEL!"=="0" (
-    ECHO EXECUTION OF JIT-DASM - FAILED !ERRORLEVEL!
-    Exit /b 1
-  )
-  Exit /b 0
-)
-    ]]>
-      </JitDisasmBatchScript>
-    </PropertyGroup>
-  </Target>
-
   <!--
   ***********************************************************************************************
   ildasm / ilasm round trip testing

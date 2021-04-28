@@ -56,9 +56,9 @@ typedef struct {
 } MonoVerifyInfoExtended;
 
 
-MONO_API GSList* mono_method_verify       (MonoMethod *method, int level);
-MONO_API void    mono_free_verify_list    (GSList *list);
-MONO_API char*   mono_verify_corlib       (void);
+MONO_API MONO_RT_EXTERNAL_ONLY GSList* mono_method_verify       (MonoMethod *method, int level);
+MONO_API MONO_RT_EXTERNAL_ONLY void    mono_free_verify_list    (GSList *list);
+MONO_API MONO_RT_EXTERNAL_ONLY char*   mono_verify_corlib       (void);
 
 MONO_END_DECLS
 

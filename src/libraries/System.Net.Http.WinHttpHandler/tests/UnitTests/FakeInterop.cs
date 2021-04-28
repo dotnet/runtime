@@ -422,6 +422,12 @@ internal static partial class Interop
             ref uint buffer,
             ref uint bufferSize)
         {
+            if (option == WINHTTP_OPTION_STREAM_ERROR_CODE)
+            {
+                TestControl.LastWin32Error = (int)ERROR_INVALID_PARAMETER;
+                return false;
+            }
+
             return true;
         }
 

@@ -89,6 +89,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Terminates the associated process immediately.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
@@ -179,11 +181,11 @@ namespace System.Diagnostics
             finally
             {
                 // If we have a hard timeout, we cannot wait for the streams
-                if (_output != null && milliseconds == Timeout.Infinite)
-                    _output.WaitUntilEOF();
-
-                if (_error != null && milliseconds == Timeout.Infinite)
-                    _error.WaitUntilEOF();
+                if (milliseconds == Timeout.Infinite)
+                {
+                    _output?.EOF.GetAwaiter().GetResult();
+                    _error?.EOF.GetAwaiter().GetResult();
+                }
 
                 handle?.Dispose();
             }
@@ -863,30 +865,23 @@ namespace System.Diagnostics
 
         private static string GetEnvironmentVariablesBlock(IDictionary<string, string> sd)
         {
-            // get the keys
-            string[] keys = new string[sd.Count];
+            // https://docs.microsoft.com/en-us/windows/win32/procthread/changing-environment-variables
+            // "All strings in the environment block must be sorted alphabetically by name. The sort is
+            //  case-insensitive, Unicode order, without regard to locale. Because the equal sign is a
+            //  separator, it must not be used in the name of an environment variable."
+
+            var keys = new string[sd.Count];
             sd.Keys.CopyTo(keys, 0);
-
-            // sort both by the keys
-            // Windows 2000 requires the environment block to be sorted by the key
-            // It will first converting the case the strings and do ordinal comparison.
-
-            // We do not use Array.Sort(keys, values, IComparer) since it is only supported
-            // in System.Runtime contract from 4.20.0.0 and Test.Net depends on System.Runtime 4.0.10.0
-            // we workaround this by sorting only the keys and then lookup the values form the keys.
             Array.Sort(keys, StringComparer.OrdinalIgnoreCase);
 
-            // create a list of null terminated "key=val" strings
-            StringBuilder stringBuff = new StringBuilder();
-            for (int i = 0; i < sd.Count; ++i)
+            // Join the null-terminated "key=val\0" strings
+            var result = new StringBuilder(8 * keys.Length);
+            foreach (string key in keys)
             {
-                stringBuff.Append(keys[i]);
-                stringBuff.Append('=');
-                stringBuff.Append(sd[keys[i]]);
-                stringBuff.Append('\0');
+                result.Append(key).Append('=').Append(sd[key]).Append('\0');
             }
-            // an extra null at the end that indicates end of list will come from the string.
-            return stringBuff.ToString();
+
+            return result.ToString();
         }
     }
 }

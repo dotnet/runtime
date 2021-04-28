@@ -16,7 +16,6 @@
 #include <glib.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/ppc/ppc-codegen.h>
@@ -82,8 +81,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	guint8 *code, *start;
 	int this_pos = 3;
 	guint32 short_branch;
-	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	int size = MONO_PPC_32_64_CASE (20, 32) + PPC_FTNPTR_SIZE;
 
 	addr = mono_get_addr_from_ftnptr (addr);
@@ -109,7 +107,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return start;
 }
@@ -125,7 +123,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	guint8 *code, *start, *p;
 	guint8 imm_buf [128];
 	guint32 short_branch;
-	MonoDomain *domain = mono_domain_get ();
 	int imm_size;
 	int size = MONO_PPC_32_64_CASE (24, (PPC_LOAD_SEQUENCE_LENGTH * 2) + 8) + PPC_FTNPTR_SIZE;
 
@@ -155,7 +152,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 	g_assert ((code - start) <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return start;
 }
@@ -641,7 +638,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		ppc_mtctr (code, ppc_r12);
 		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 	} else {
-		MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_get_root_domain ());
+		MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
 			MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, NULL);
 

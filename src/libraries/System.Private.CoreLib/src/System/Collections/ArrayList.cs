@@ -314,7 +314,7 @@ namespace System.Collections
                 int newCapacity = _items.Length == 0 ? _defaultCapacity : _items.Length * 2;
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > Array.MaxArrayLength) newCapacity = Array.MaxArrayLength;
+                if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
                 if (newCapacity < min) newCapacity = min;
                 Capacity = newCapacity;
             }
@@ -743,7 +743,7 @@ namespace System.Collections
 
         // This class wraps an IList, exposing it as a ArrayList
         // Note this requires reimplementing half of ArrayList...
-        private class IListWrapper : ArrayList
+        private sealed class IListWrapper : ArrayList
         {
             private readonly IList _list;
 
@@ -1183,7 +1183,7 @@ namespace System.Collections
             }
         }
 
-        private class SyncArrayList : ArrayList
+        private sealed class SyncArrayList : ArrayList
         {
             private readonly ArrayList _list;
             private readonly object _root;
@@ -1510,7 +1510,7 @@ namespace System.Collections
         }
 
 
-        private class SyncIList : IList
+        private sealed class SyncIList : IList
         {
             private readonly IList _list;
             private readonly object _root;
@@ -1521,19 +1521,19 @@ namespace System.Collections
                 _root = list.SyncRoot;
             }
 
-            public virtual int Count
+            public int Count
             {
                 get { lock (_root) { return _list.Count; } }
             }
 
-            public virtual bool IsReadOnly => _list.IsReadOnly;
+            public bool IsReadOnly => _list.IsReadOnly;
 
-            public virtual bool IsFixedSize => _list.IsFixedSize;
+            public bool IsFixedSize => _list.IsFixedSize;
 
 
-            public virtual bool IsSynchronized => true;
+            public bool IsSynchronized => true;
 
-            public virtual object? this[int index]
+            public object? this[int index]
             {
                 get
                 {
@@ -1551,9 +1551,9 @@ namespace System.Collections
                 }
             }
 
-            public virtual object SyncRoot => _root;
+            public object SyncRoot => _root;
 
-            public virtual int Add(object? value)
+            public int Add(object? value)
             {
                 lock (_root)
                 {
@@ -1562,7 +1562,7 @@ namespace System.Collections
             }
 
 
-            public virtual void Clear()
+            public void Clear()
             {
                 lock (_root)
                 {
@@ -1570,7 +1570,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual bool Contains(object? item)
+            public bool Contains(object? item)
             {
                 lock (_root)
                 {
@@ -1578,7 +1578,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void CopyTo(Array array, int index)
+            public void CopyTo(Array array, int index)
             {
                 lock (_root)
                 {
@@ -1586,7 +1586,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual IEnumerator GetEnumerator()
+            public IEnumerator GetEnumerator()
             {
                 lock (_root)
                 {
@@ -1594,7 +1594,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual int IndexOf(object? value)
+            public int IndexOf(object? value)
             {
                 lock (_root)
                 {
@@ -1602,7 +1602,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void Insert(int index, object? value)
+            public void Insert(int index, object? value)
             {
                 lock (_root)
                 {
@@ -1610,7 +1610,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void Remove(object? value)
+            public void Remove(object? value)
             {
                 lock (_root)
                 {
@@ -1618,7 +1618,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void RemoveAt(int index)
+            public void RemoveAt(int index)
             {
                 lock (_root)
                 {
@@ -1627,7 +1627,7 @@ namespace System.Collections
             }
         }
 
-        private class FixedSizeList : IList
+        private sealed class FixedSizeList : IList
         {
             private readonly IList _list;
 
@@ -1636,69 +1636,69 @@ namespace System.Collections
                 _list = l;
             }
 
-            public virtual int Count => _list.Count;
+            public int Count => _list.Count;
 
-            public virtual bool IsReadOnly => _list.IsReadOnly;
+            public bool IsReadOnly => _list.IsReadOnly;
 
-            public virtual bool IsFixedSize => true;
+            public bool IsFixedSize => true;
 
-            public virtual bool IsSynchronized => _list.IsSynchronized;
+            public bool IsSynchronized => _list.IsSynchronized;
 
-            public virtual object? this[int index]
+            public object? this[int index]
             {
                 get => _list[index];
                 set => _list[index] = value;
             }
 
-            public virtual object SyncRoot => _list.SyncRoot;
+            public object SyncRoot => _list.SyncRoot;
 
-            public virtual int Add(object? obj)
+            public int Add(object? obj)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public virtual void Clear()
+            public void Clear()
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public virtual bool Contains(object? obj)
+            public bool Contains(object? obj)
             {
                 return _list.Contains(obj);
             }
 
-            public virtual void CopyTo(Array array, int index)
+            public void CopyTo(Array array, int index)
             {
                 _list.CopyTo(array, index);
             }
 
-            public virtual IEnumerator GetEnumerator()
+            public IEnumerator GetEnumerator()
             {
                 return _list.GetEnumerator();
             }
 
-            public virtual int IndexOf(object? value)
+            public int IndexOf(object? value)
             {
                 return _list.IndexOf(value);
             }
 
-            public virtual void Insert(int index, object? obj)
+            public void Insert(int index, object? obj)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public virtual void Remove(object? value)
+            public void Remove(object? value)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public virtual void RemoveAt(int index)
+            public void RemoveAt(int index)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
         }
 
-        private class FixedSizeArrayList : ArrayList
+        private sealed class FixedSizeArrayList : ArrayList
         {
             private ArrayList _list;
 
@@ -1885,7 +1885,7 @@ namespace System.Collections
             }
         }
 
-        private class ReadOnlyList : IList
+        private sealed class ReadOnlyList : IList
         {
             private readonly IList _list;
 
@@ -1894,69 +1894,69 @@ namespace System.Collections
                 _list = l;
             }
 
-            public virtual int Count => _list.Count;
+            public int Count => _list.Count;
 
-            public virtual bool IsReadOnly => true;
+            public bool IsReadOnly => true;
 
-            public virtual bool IsFixedSize => true;
+            public bool IsFixedSize => true;
 
-            public virtual bool IsSynchronized => _list.IsSynchronized;
+            public bool IsSynchronized => _list.IsSynchronized;
 
-            public virtual object? this[int index]
+            public object? this[int index]
             {
                 get => _list[index];
                 set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual object SyncRoot => _list.SyncRoot;
+            public object SyncRoot => _list.SyncRoot;
 
-            public virtual int Add(object? obj)
+            public int Add(object? obj)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual void Clear()
+            public void Clear()
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual bool Contains(object? obj)
+            public bool Contains(object? obj)
             {
                 return _list.Contains(obj);
             }
 
-            public virtual void CopyTo(Array array, int index)
+            public void CopyTo(Array array, int index)
             {
                 _list.CopyTo(array, index);
             }
 
-            public virtual IEnumerator GetEnumerator()
+            public IEnumerator GetEnumerator()
             {
                 return _list.GetEnumerator();
             }
 
-            public virtual int IndexOf(object? value)
+            public int IndexOf(object? value)
             {
                 return _list.IndexOf(value);
             }
 
-            public virtual void Insert(int index, object? obj)
+            public void Insert(int index, object? obj)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual void Remove(object? value)
+            public void Remove(object? value)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual void RemoveAt(int index)
+            public void RemoveAt(int index)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
         }
 
-        private class ReadOnlyArrayList : ArrayList
+        private sealed class ReadOnlyArrayList : ArrayList
         {
             private ArrayList _list;
 
@@ -2200,7 +2200,7 @@ namespace System.Collections
 
         // Implementation of a generic list subrange. An instance of this class
         // is returned by the default implementation of List.GetRange.
-        private class Range : ArrayList
+        private sealed class Range : ArrayList
         {
             private ArrayList _baseList;
             private readonly int _baseIndex;
@@ -2686,7 +2686,7 @@ namespace System.Collections
             }
         }
 
-        internal class ArrayListDebugView
+        internal sealed class ArrayListDebugView
         {
             private readonly ArrayList _arrayList;
 

@@ -1171,9 +1171,10 @@ namespace System.Threading.Channels.Tests
                 Assert.True(vt.IsCompletedSuccessfully);
 
                 Assert.Equal(continueOnCapturedContext != false, schedulerWasFlowed);
-                if (completeBeforeOnCompleted) // OnCompleted will simply queue using a mechanism that happens to flow
+                if (completeBeforeOnCompleted)
                 {
-                    Assert.True(executionContextWasFlowed);
+                    // OnCompleted may or may not flow ExecutionContext here; it's not needed,
+                    // and we avoid it when it's easy, but it's also not wrong to do so.
                 }
                 else
                 {

@@ -10,10 +10,7 @@
 
     <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
-    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
-    <!-- major.minor.release version of the platforms package we're currently building
-         Pre-release will be appended during build -->
-    <PlatformPackageVersion>$(ProductVersion)</PlatformPackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == '' and '$(MSBuildProjectExtension)' == '.pkgproj'">6.0.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
@@ -48,5 +45,12 @@
 
     <!-- Make sure that NETStandard.Library package never gets added as a dependency for .NET 4.6.1 -->
     <SuppressMetaPackage Include="NETStandard.Library" TargetFramework="net461" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- add 3.1 to validation, using 3.0 RIDs -->
+    <DefaultValidateFramework Include="netcoreapp3.1">
+      <RuntimeIDs>@(NETCoreApp30RIDs)</RuntimeIDs>
+    </DefaultValidateFramework>
   </ItemGroup>
 </Project>

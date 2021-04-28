@@ -18,7 +18,6 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
-#include <mono/metadata/remoting.h>
 #include <mono/utils/mono-error.h>
 #include <mono/metadata/icalls.h>
 
@@ -186,10 +185,6 @@ typedef struct {
 } ArrayAccessorWrapperInfo;
 
 typedef struct {
-	MonoClass *klass;
-} ProxyWrapperInfo;
-
-typedef struct {
 	const char *gc_name;
 	int alloc_type;
 } AllocatorWrapperInfo;
@@ -197,10 +192,6 @@ typedef struct {
 typedef struct {
 	MonoMethod *method;
 } UnboxWrapperInfo;
-
-typedef struct {
-	MonoMethod *method;
-} RemotingWrapperInfo;
 
 typedef struct {
 	MonoMethodSignature *sig;
@@ -269,14 +260,10 @@ typedef struct {
 		ICallWrapperInfo icall;
 		/* ARRAY_ACCESSOR */
 		ArrayAccessorWrapperInfo array_accessor;
-		/* PROXY_ISINST etc. */
-		ProxyWrapperInfo proxy;
 		/* ALLOC */
 		AllocatorWrapperInfo alloc;
 		/* UNBOX */
 		UnboxWrapperInfo unbox;
-		/* MONO_WRAPPER_REMOTING_INVOKE/MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK/MONO_WRAPPER_XDOMAIN_INVOKE */
-		RemotingWrapperInfo remoting;
 		/* GSHAREDVT_IN_SIG/GSHAREDVT_OUT_SIG */
 		GsharedvtWrapperInfo gsharedvt;
 		/* DELEGATE_INVOKE */
@@ -375,9 +362,6 @@ mono_marshal_init (void);
 
 void
 mono_marshal_init_tls (void);
-
-void
-mono_marshal_cleanup (void);
 
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align);
@@ -564,9 +548,6 @@ mono_marshal_free_array (gpointer *ptr, int size);
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj);
 
-void
-mono_cominterop_release_all_rcws (void); 
-
 MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
@@ -630,12 +611,12 @@ gpointer
 mono_marshal_lookup_pinvoke (MonoMethod *method);
 
 ICALL_EXPORT
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void);
 
 ICALL_EXPORT
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err);
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err);
 
 ICALL_EXPORT
 mono_bstr

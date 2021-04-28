@@ -36,13 +36,7 @@ namespace System.Net.Http.Headers
         protected NameValueWithParametersHeaderValue(NameValueWithParametersHeaderValue source)
             : base(source)
         {
-            if (source._parameters != null)
-            {
-                foreach (var parameter in source._parameters)
-                {
-                    this.Parameters.Add((NameValueHeaderValue)((ICloneable)parameter).Clone());
-                }
-            }
+            _parameters = source._parameters.Clone();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

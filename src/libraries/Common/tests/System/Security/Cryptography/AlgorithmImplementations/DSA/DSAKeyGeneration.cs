@@ -5,10 +5,11 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class DSAKeyGeneration
     {
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+        public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
 
         [Fact]
         public static void VerifyDefaultKeySize_Fips186_2()
@@ -28,7 +29,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ConditionalFact(nameof(SupportsKeyGeneration), nameof(HasSecondMinSize))]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
@@ -117,6 +118,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
 
             return secondMin;
+        }
+
+        private static bool GetHasSecondMinSize()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                return GetSecondMin(dsa.LegalKeySizes) != int.MaxValue;
+            }
         }
     }
 }

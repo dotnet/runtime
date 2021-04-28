@@ -1169,9 +1169,10 @@ namespace System.Globalization
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                return GlobalizationMode.UseNls ?
-                    NlsGetPredefinedCultureInfo(name) :
-                    IcuGetPredefinedCultureInfo(name);
+                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))
+                {
+                    throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
+                }
             }
 
             return GetCultureInfo(name);

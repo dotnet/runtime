@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -21,11 +22,11 @@ namespace System.Text.Json
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
-            Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
+            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
             useExtensionProperty = false;
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
                 out byte[] utf8PropertyName);
@@ -39,7 +40,7 @@ namespace System.Text.Json
             // Determine if we should use the extension property.
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtProperty = state.Current.JsonTypeInfo.DataExtensionProperty;
                 if (dataExtProperty != null && dataExtProperty.HasGetter && dataExtProperty.HasSetter)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
@@ -79,7 +80,7 @@ namespace System.Text.Json
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandler != null)
+            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
                 if (propertyName.Length > 0 && propertyName[0] == '$')
                 {
@@ -108,15 +109,15 @@ namespace System.Text.Json
                 Debug.Assert(genericArgs.Length == 2);
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
                 Debug.Assert(
-                    genericArgs[1].UnderlyingSystemType == JsonClassInfo.ObjectType ||
+                    genericArgs[1].UnderlyingSystemType == JsonTypeInfo.ObjectType ||
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement));
 #endif
-                if (jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)
+                if (jsonPropertyInfo.RuntimeTypeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
                 }
 
-                extensionData = jsonPropertyInfo.RuntimeClassInfo.CreateObject();
+                extensionData = jsonPropertyInfo.RuntimeTypeInfo.CreateObject();
                 jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
             }
 

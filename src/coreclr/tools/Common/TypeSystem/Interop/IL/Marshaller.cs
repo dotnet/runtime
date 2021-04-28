@@ -1847,7 +1847,11 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullPointer);
 
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+#if READYTORUN
                 InteropTypes.GetMarshal(Context).GetKnownMethod("GetFunctionPointerForDelegate",
+#else
+                InteropTypes.GetPInvokeMarshal(Context).GetKnownMethod("GetFunctionPointerForDelegate",
+#endif
                 new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.IntPtr),
                     new TypeDesc[] { Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType }
                 ))));
@@ -1872,6 +1876,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.dup);
             codeStream.Emit(ILOpcode.brfalse, lNullPointer);
 
+#if READYTORUN
             TypeDesc systemType = Context.SystemModule.GetKnownType("System", "Type");
 
             codeStream.Emit(ILOpcode.ldtoken, _ilCodeStreams.Emitter.NewToken(ManagedType));
@@ -1882,6 +1887,15 @@ namespace Internal.TypeSystem.Interop
                 new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType,
                     new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr), systemType }
                 ))));
+#else
+            codeStream.Emit(ILOpcode.ldtoken, _ilCodeStreams.Emitter.NewToken(ManagedType));
+            
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                InteropTypes.GetPInvokeMarshal(Context).GetKnownMethod("GetDelegateForFunctionPointer",
+                new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType,
+                    new TypeDesc[] { Context.GetWellKnownType(WellKnownType.IntPtr), Context.GetWellKnownType(WellKnownType.RuntimeTypeHandle) }
+                ))));
+#endif
 
             codeStream.Emit(ILOpcode.br, lDone);
 

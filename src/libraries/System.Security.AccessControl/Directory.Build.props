@@ -2,7 +2,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <PackageDescription>Provides base classes that enable managing access and audit control lists on securable objects.
 
 Commonly Used Types:

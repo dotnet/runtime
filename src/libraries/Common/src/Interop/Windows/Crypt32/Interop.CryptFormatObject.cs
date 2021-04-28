@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Crypt32
+    internal static partial class Crypt32
     {
         internal const int CRYPT_FORMAT_STR_NONE       = 0;
         internal const int CRYPT_FORMAT_STR_MULTI_LINE = 0x00000001;

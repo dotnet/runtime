@@ -7,6 +7,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.0-windows;netcoreapp3.0-Unix;netcoreapp3.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -30,6 +31,7 @@
     <Compile Include="System\Drawing\ImageConverter.cs" />
     <Compile Include="System\Drawing\ImageFormatConverter.cs" />
     <Compile Include="System\Drawing\ImageType.cs" />
+    <Compile Include="System\Drawing\NumericsExtensions.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
@@ -115,7 +117,6 @@
     <Compile Include="System\Drawing\ClientUtils.cs" />
     <Compile Include="System\Drawing\Gdiplus.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
-    <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
     <Compile Include="System\Drawing\Brush.cs" />
     <Compile Include="System\Drawing\Font.cs" />
@@ -165,6 +166,8 @@
              Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
       <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
     </EmbeddedResource>
@@ -222,13 +225,19 @@
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Windows.cs" />
     <Compile Include="misc\DbgUtil.cs" />
     <Compile Include="misc\DpiHelper.cs" />
-    <Compile Include="misc\ExternDll.cs" />
     <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
     <Compile Include="misc\GDI\DeviceContext.cs" />
     <Compile Include="misc\GDI\DeviceContexts.cs" />
     <Compile Include="misc\GDI\DeviceContextType.cs" />
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
+    <Compile Include="Interop\Windows\Interop.Comdlg32.cs" />
+    <Compile Include="Interop\Windows\Interop.Gdi32.cs" />
+    <Compile Include="Interop\Windows\Interop.Kernel32.cs" />
+    <Compile Include="Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="Interop\Windows\Interop.Shell32.cs" />
+    <Compile Include="Interop\Windows\Interop.User32.cs" />
+    <Compile Include="Interop\Windows\Interop.Winspool.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -334,7 +343,6 @@
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
-    <Compile Include="System\Drawing\NativeStructs.Unix.cs" />
     <Compile Include="System\Drawing\ImageAnimator.Unix.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />
@@ -347,9 +355,7 @@
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Unix.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
     <Compile Include="System\Drawing\LibraryResolver.cs" />
-    <Compile Include="misc\ExternDll.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="Interop\Unix\Interop.Libraries.cs" />
     <EmbeddedResource Include="Resources\System\Drawing\Error.ico">
       <LogicalName>placeholder.ico</LogicalName>
     </EmbeddedResource>
@@ -369,6 +375,7 @@
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

@@ -36,7 +36,7 @@ namespace System.Linq.Parallel
     /// Finally, if the producer notices that its buffer has exceeded an even greater threshold, it will
     /// go to sleep and wait until the consumer takes the entire buffer.
     /// </summary>
-    internal class OrderPreservingPipeliningMergeHelper<TOutput, TKey> : IMergeHelper<TOutput>
+    internal sealed class OrderPreservingPipeliningMergeHelper<TOutput, TKey> : IMergeHelper<TOutput>
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.
         private readonly PartitionedStream<TOutput, TKey> _partitions; // Source partitions.
@@ -134,7 +134,7 @@ namespace System.Linq.Parallel
             if (keyComparer == Util.GetDefaultComparer<int>())
             {
                 Debug.Assert(typeof(TKey) == typeof(int));
-                _producerComparer = (IComparer<Producer<TKey>>)new ProducerComparerInt();
+                _producerComparer = (IComparer<Producer<TKey>>)(object)ProducerComparerInt.Instance;
             }
             else
             {
@@ -183,7 +183,7 @@ namespace System.Linq.Parallel
         ///     x.MaxKey EQUALS y.MaxKey        =>  x EQUALS y        => return 0
         ///     x.MaxKey LESS_THAN y.MaxKey     =>  x GREATER_THAN y  => return +
         /// </summary>
-        private class ProducerComparer : IComparer<Producer<TKey>>
+        private sealed class ProducerComparer : IComparer<Producer<TKey>>
         {
             private readonly IComparer<TKey> _keyComparer;
 
@@ -201,7 +201,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Enumerator over the results of an order-preserving pipelining merge.
         /// </summary>
-        private class OrderedPipeliningMergeEnumerator : MergeEnumerator<TOutput>
+        private sealed class OrderedPipeliningMergeEnumerator : MergeEnumerator<TOutput>
 
         {
             /// <summary>
@@ -513,8 +513,12 @@ namespace System.Linq.Parallel
     ///     x.MaxKey EQUALS y.MaxKey        =>  x EQUALS y        => return 0
     ///     x.MaxKey LESS_THAN y.MaxKey     =>  x GREATER_THAN y  => return +
     /// </summary>
-    internal class ProducerComparerInt : IComparer<Producer<int>>
+    internal sealed class ProducerComparerInt : IComparer<Producer<int>>
     {
+        public static readonly ProducerComparerInt Instance = new ProducerComparerInt();
+
+        private ProducerComparerInt() { }
+
         public int Compare(Producer<int> x, Producer<int> y)
         {
             Debug.Assert(x.MaxKey >= 0 && y.MaxKey >= 0); // Guarantees no overflow on next line

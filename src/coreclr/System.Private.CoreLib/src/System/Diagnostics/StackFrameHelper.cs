@@ -11,7 +11,7 @@ namespace System.Diagnostics
     // Modifying the order or fields of this object may require other changes
     // to the unmanaged definition of the StackFrameHelper class, in
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
-    internal class StackFrameHelper
+    internal sealed class StackFrameHelper
     {
         private Thread? targetThread;
         private int[]? rgiOffset;
@@ -83,13 +83,6 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
-        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
-        // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
-        // so the code below is actually recognized by linker, but fails to resolve the type since the System.Diagnostics.StackTrace
-        // is not always part of the closure linker works on.
-        // DynamicDependencyAttribute on the other hand can pull in additional assemblies.
-        [DynamicDependency("GetSourceLineInfo", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
-        [DynamicDependency("#ctor()", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
         internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
@@ -159,7 +152,7 @@ namespace System.Diagnostics
             }
         }
 
-        public virtual MethodBase? GetMethodBase(int i)
+        public MethodBase? GetMethodBase(int i)
         {
             // There may be a better way to do this.
             // we got RuntimeMethodHandles here and we need to go to MethodBase
@@ -176,17 +169,17 @@ namespace System.Diagnostics
             return RuntimeType.GetMethodBase(mhReal);
         }
 
-        public virtual int GetOffset(int i) { return rgiOffset![i]; }
-        public virtual int GetILOffset(int i) { return rgiILOffset![i]; }
-        public virtual string? GetFilename(int i) { return rgFilename?[i]; }
-        public virtual int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
-        public virtual int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
+        public int GetOffset(int i) { return rgiOffset![i]; }
+        public int GetILOffset(int i) { return rgiILOffset![i]; }
+        public string? GetFilename(int i) { return rgFilename?[i]; }
+        public int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
+        public int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
 
-        public virtual bool IsLastFrameFromForeignExceptionStackTrace(int i)
+        public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {
             return (rgiLastFrameFromForeignExceptionStackTrace == null) ? false : rgiLastFrameFromForeignExceptionStackTrace[i];
         }
 
-        public virtual int GetNumberOfFrames() { return iFrameCount; }
+        public int GetNumberOfFrames() { return iFrameCount; }
     }
 }

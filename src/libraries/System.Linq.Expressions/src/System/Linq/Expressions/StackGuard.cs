@@ -67,17 +67,15 @@ namespace System.Linq.Expressions
                 // Using default scheduler rather than picking up the current scheduler.
                 Task<R> task = Task.Factory.StartNew(action!, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-                TaskAwaiter<R> awaiter = task.GetAwaiter();
-
                 // Avoid AsyncWaitHandle lazy allocation of ManualResetEvent in the rare case we finish quickly.
-                if (!awaiter.IsCompleted)
+                if (!task.IsCompleted)
                 {
                     // Task.Wait has the potential of inlining the task's execution on the current thread; avoid this.
                     ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
                 }
 
-                // Using awaiter here to unwrap AggregateException.
-                return awaiter.GetResult();
+                // Using awaiter here to propagate original exception
+                return task.GetAwaiter().GetResult();
             }
             finally
             {

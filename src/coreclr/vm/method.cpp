@@ -2229,6 +2229,31 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
     return pTarget;
 }
 
+MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+    if (pRS == NULL)
+        return NULL;
+
+    MethodDesc* pMD;
+    if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+        return pMD;
+
+    if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
+        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+
+    // We should never get here
+    _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
+    return NULL;
+}
+
 //*******************************************************************************
 // convert an entry point into a method desc
 MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
@@ -2242,26 +2267,13 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
     }
     CONTRACT_END
 
-    MethodDesc * pMD;
-
-    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
-    if (pRS != NULL)
-    {
-        if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
-            RETURN(pMD);
-
-        if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
-            RETURN(MethodDesc::GetMethodDescFromStubAddr(entryPoint));
-
-        // We should never get here
-        _ASSERTE(!"Entry2MethodDesc failed for RangeSection");
-        RETURN (NULL);
-    }
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(entryPoint);
+    if (pMD != NULL)
+        RETURN(pMD);
 
     pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
     if (pMD != NULL)
         RETURN(pMD);
-
 
     // Is it an FCALL?
     pMD = ECall::MapTargetBackToMethod(entryPoint);
@@ -2965,10 +2977,10 @@ FixupSignatureContainingInternalTypesParseType(
             bool needsRestore = FixupSignatureContainingInternalTypesParseType(image, pOriginalSig, psig, checkOnly);
 
             // Get generic arg count
-            ULONG nArgs;
+            uint32_t nArgs;
             IfFailThrow(psig.GetData(&nArgs));
 
-            for (ULONG i = 0; i < nArgs; i++)
+            for (uint32_t i = 0; i < nArgs; i++)
             {
                 if (FixupSignatureContainingInternalTypesParseType(image, pOriginalSig, psig, checkOnly))
                 {
@@ -3016,7 +3028,7 @@ FixupSignatureContainingInternalTypes(
     }
     CONTRACTL_END;
 
-    ULONG nArgs;
+    uint32_t nArgs;
     bool needsRestore = false;
 
     SigPointer psig(pSig, cSig);
@@ -3041,7 +3053,7 @@ FixupSignatureContainingInternalTypes(
 
     nArgs++;  // be sure to handle the return type
 
-    for (ULONG i = 0; i < nArgs; i++)
+    for (uint32_t i = 0; i < nArgs; i++)
     {
         if (FixupSignatureContainingInternalTypesParseType(image, pSig, psig, checkOnly))
         {
@@ -3093,10 +3105,10 @@ RestoreSignatureContainingInternalTypesParseType(
             RestoreSignatureContainingInternalTypesParseType(psig);
 
             // Get generic arg count
-            ULONG nArgs;
+            uint32_t nArgs;
             IfFailThrow(psig.GetData(&nArgs));
 
-            for (ULONG i = 0; i < nArgs; i++)
+            for (uint32_t i = 0; i < nArgs; i++)
             {
                 RestoreSignatureContainingInternalTypesParseType(psig);
             }
@@ -3138,7 +3150,7 @@ RestoreSignatureContainingInternalTypes(
     Volatile<BYTE> * pVolatileSig = (Volatile<BYTE> *)pSig;
     if (*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE)
     {
-        ULONG nArgs;
+        uint32_t nArgs;
         SigPointer psig(pSig, cSig);
 
         // Skip calling convention
@@ -5024,6 +5036,25 @@ void MethodDesc::ResetCodeEntryPoint()
     }
 }
 
+void MethodDesc::ResetCodeEntryPointForEnC()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsVersionable());
+    _ASSERTE(!IsVersionableWithPrecode());
+    _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
+
+    if (HasPrecode())
+    {
+        GetPrecode()->ResetTargetInterlocked();
+    }
+
+    if (HasNativeCodeSlot())
+    {
+        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
+        pRelPtr->SetValueMaybeNull(NULL);
+    }
+}
+
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************
@@ -5743,12 +5774,12 @@ void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParamete
     }
     CONTRACTL_END;
 
-    ULONG numArgs = 0;
+    uint32_t numArgs = 0;
     Module *pModule = this->GetModule();
     SigPointer ptr = this->GetSigPointer();
 
     // skip over calling convention.
-    ULONG         callConv = 0;
+    uint32_t         callConv = 0;
     IfFailThrowBF(ptr.GetCallingConvInfo(&callConv), BFA_BAD_SIGNATURE, pModule);
 
     // If calling convention is generic, skip GenParamCount

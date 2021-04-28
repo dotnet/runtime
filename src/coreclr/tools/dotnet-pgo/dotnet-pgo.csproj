@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AssemblyName>dotnet-pgo</AssemblyName>
     <OutputType>Exe</OutputType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>8.0</LangVersion>
@@ -10,17 +11,54 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dotnet-pgo</ToolCommandName>
+    <PackAsToolShimRuntimeIdentifiers>win-x64;win-x86;win-arm;osx-x64</PackAsToolShimRuntimeIdentifiers>
+    <PackagedShimOutputRootDirectory>$(OutputPath)</PackagedShimOutputRootDirectory>
+    <IsShipping>false</IsShipping> <!-- This tool is not yet ready to ship, but may do so in the future -->
+    <Description>.NET Performance Guided Optimization Tool</Description>
+    <PackageTags>Optimization</PackageTags>
+    <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
+    <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="MIbcProfileParser.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="IBCProfileData.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="ILReader.cs" />
+    <Compile Include="..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs" Link="TypeSystemMetadataEmitter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\Common\CommandLine\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>Internal.CommandLine.Strings</ClassName>
+    </EmbeddedResource>
+    <Compile Include="..\Common\CommandLine\Argument.cs" Link="CommandLine\Argument.cs" />
+    <Compile Include="..\Common\CommandLine\Argument_1.cs" Link="CommandLine\Argument_1.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentCommand.cs" Link="CommandLine\ArgumentCommand.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentCommand_1.cs" Link="CommandLine\ArgumentCommand_1.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentLexer.cs" Link="CommandLine\ArgumentLexer.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentList_1.cs" Link="CommandLine\ArgumentList_1.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentParser.cs" Link="CommandLine\ArgumentParser.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentSyntax.cs" Link="CommandLine\ArgumentSyntax.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentSyntax_Definers.cs" Link="CommandLine\ArgumentSyntax_Definers.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentSyntaxException.cs" Link="CommandLine\ArgumentSyntaxException.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentToken.cs" Link="CommandLine\ArgumentToken.cs" />
+    <Compile Include="..\Common\CommandLine\CommandLineException.cs" Link="CommandLine\CommandLineException.cs" />
+    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs" Link="CommandLine\CommandLineHelpers.cs" />
+    <Compile Include="..\Common\CommandLine\Enumerable.cs" Link="CommandLine\Enumerable.cs" />
+    <Compile Include="..\Common\CommandLine\HelpTextGenerator.cs" Link="CommandLine\HelpTextGenerator.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../aot/ILCompiler.TypeSystem.ReadyToRun/ILCompiler.TypeSystem.ReadyToRun.csproj" />
     <ProjectReference Include="../aot/ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.65" />
-    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 </Project>

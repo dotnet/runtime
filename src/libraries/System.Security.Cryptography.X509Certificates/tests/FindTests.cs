@@ -961,8 +961,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         private static void TestFindByKeyUsage(bool shouldMatch, object matchCriteria)
         {
             using (var noKeyUsages = new X509Certificate2(TestData.MsCertificate))
-            using (var noKeyUsages2 = new X509Certificate2(Path.Combine("TestData", "test.cer")))
-            using (var keyUsages = new X509Certificate2(Path.Combine("TestData", "microsoft.cer")))
+            using (var noKeyUsages2 = new X509Certificate2(TestFiles.TestCertFile))
+            using (var keyUsages = new X509Certificate2(TestFiles.MicrosoftRootCertFile))
             {
                 var coll = new X509Certificate2Collection { noKeyUsages, noKeyUsages2, keyUsages, };
                 X509Certificate2Collection results = coll.Find(X509FindType.FindByKeyUsage, matchCriteria, false);

@@ -53,7 +53,7 @@ namespace System.Threading
             /// - The filled count is <see cref="_waitedCount"/>
             /// - Indexes in all arrays that use <see cref="_waitedCount"/> correspond
             /// </summary>
-            private WaitableObject[] _waitedObjects;
+            private WaitableObject?[] _waitedObjects;
 
             /// <summary>
             /// - Nodes used for registering a thread's wait on each <see cref="WaitableObject"/>, in the
@@ -84,7 +84,7 @@ namespace System.Threading
             /// the thread exits. The linked list has only a head and no tail, which means acquired mutexes are prepended and
             /// mutexes are abandoned in reverse order.
             /// </summary>
-            private WaitableObject _lockedMutexesHead;
+            private WaitableObject? _lockedMutexesHead;
 
             public ThreadWaitInfo(Thread thread)
             {
@@ -120,7 +120,7 @@ namespace System.Threading
             /// Callers must ensure to clear the array after use. Once <see cref="RegisterWait(int, bool, bool)"/> is called (followed
             /// by a call to <see cref="Wait(int, bool, bool)"/>, the array will be cleared automatically.
             /// </summary>
-            public WaitableObject[] GetWaitedObjectArray(int requiredCapacity)
+            public WaitableObject?[] GetWaitedObjectArray(int requiredCapacity)
             {
                 Debug.Assert(_thread == Thread.CurrentThread);
                 Debug.Assert(_waitedCount == 0);
@@ -174,7 +174,7 @@ namespace System.Threading
 
                 Debug.Assert(_waitedCount == 0);
 
-                WaitableObject[] waitedObjects = _waitedObjects;
+                WaitableObject?[] waitedObjects = _waitedObjects;
 #if DEBUG
                 for (int i = 0; i < waitedCount; ++i)
                 {
@@ -212,14 +212,14 @@ namespace System.Threading
                 {
                     for (int i = 0; i < waitedCount; ++i)
                     {
-                        waitedListNodes[i].RegisterPrioritizedWait(waitedObjects[i]);
+                        waitedListNodes[i].RegisterPrioritizedWait(waitedObjects[i]!);
                     }
                 }
                 else
                 {
                     for (int i = 0; i < waitedCount; ++i)
                     {
-                        waitedListNodes[i].RegisterWait(waitedObjects[i]);
+                        waitedListNodes[i].RegisterWait(waitedObjects[i]!);
                     }
                 }
             }
@@ -231,7 +231,7 @@ namespace System.Threading
 
                 for (int i = 0; i < _waitedCount; ++i)
                 {
-                    _waitedListNodes[i].UnregisterWait(_waitedObjects[i]);
+                    _waitedListNodes[i].UnregisterWait(_waitedObjects[i]!);
                     _waitedObjects[i] = null;
                 }
                 _waitedCount = 0;
@@ -538,7 +538,7 @@ namespace System.Threading
                 }
             }
 
-            public WaitableObject LockedMutexesHead
+            public WaitableObject? LockedMutexesHead
             {
                 get
                 {
@@ -561,7 +561,7 @@ namespace System.Threading
                 {
                     while (true)
                     {
-                        WaitableObject waitableObject = LockedMutexesHead;
+                        WaitableObject? waitableObject = LockedMutexesHead;
                         if (waitableObject == null)
                         {
                             break;
@@ -593,7 +593,7 @@ namespace System.Threading
                 /// <summary>
                 /// Link in the <see cref="WaitableObject.WaitersHead"/> linked list
                 /// </summary>
-                private WaitedListNode _previous, _next;
+                private WaitedListNode? _previous, _next;
 
                 public WaitedListNode(ThreadWaitInfo waitInfo, int waitedObjectIndex)
                 {
@@ -623,7 +623,7 @@ namespace System.Threading
                     }
                 }
 
-                public WaitedListNode Previous
+                public WaitedListNode? Previous
                 {
                     get
                     {
@@ -632,7 +632,7 @@ namespace System.Threading
                     }
                 }
 
-                public WaitedListNode Next
+                public WaitedListNode? Next
                 {
                     get
                     {
@@ -651,7 +651,7 @@ namespace System.Threading
                     Debug.Assert(_previous == null);
                     Debug.Assert(_next == null);
 
-                    WaitedListNode tail = waitableObject.WaitersTail;
+                    WaitedListNode? tail = waitableObject.WaitersTail;
                     if (tail != null)
                     {
                         _previous = tail;
@@ -674,7 +674,7 @@ namespace System.Threading
                     Debug.Assert(_previous == null);
                     Debug.Assert(_next == null);
 
-                    WaitedListNode head = waitableObject.WaitersHead;
+                    WaitedListNode? head = waitableObject.WaitersHead;
                     if (head != null)
                     {
                         _next = head;
@@ -692,8 +692,8 @@ namespace System.Threading
                     s_lock.VerifyIsLocked();
                     Debug.Assert(waitableObject != null);
 
-                    WaitedListNode previous = _previous;
-                    WaitedListNode next = _next;
+                    WaitedListNode? previous = _previous;
+                    WaitedListNode? next = _next;
 
                     if (previous != null)
                     {

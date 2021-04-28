@@ -49,7 +49,7 @@ The above registration is typically done with the [`RegAsm.exe`](https://docs.mi
 
 In .NET Core, our intent will be to avoid a system wide shim library. This decision may add additional cost for deployment scenarios, but will reduce servicing and engineering costs by making deployment more explicit and less magic.
 
-The current .NET Core hosting solutions are described in detail at [Documentation/design-docs/host-components.md](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md). Along with the existing hosts an additional customizable COM activation host library (`comhost.dll`) will be added. This library (henceforth identified as 'shim') will export the required functions for COM class activation and registration and act in a way similar to .NET Framework's `mscoree.dll`.
+The current .NET Core hosting solutions are described in detail at [Documentation/design-docs/host-components.md](https://github.com/dotnet/runtime/tree/main/docs/design/features/host-components.md). Along with the existing hosts an additional customizable COM activation host library (`comhost.dll`) will be added. This library (henceforth identified as 'shim') will export the required functions for COM class activation and registration and act in a way similar to .NET Framework's `mscoree.dll`.
 
 >[`HRESULT DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv);`](https://docs.microsoft.com/windows/desktop/api/combaseapi/nf-combaseapi-dllgetclassobject)
 

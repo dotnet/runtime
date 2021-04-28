@@ -9,11 +9,11 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         internal TrustRelationshipInformationCollection() { }
 
-        internal TrustRelationshipInformationCollection(DirectoryContext context, string source, ArrayList trusts)
+        internal TrustRelationshipInformationCollection(DirectoryContext context, string? source, ArrayList trusts)
         {
             for (int i = 0; i < trusts.Count; i++)
             {
-                TrustObject obj = (TrustObject)trusts[i];
+                TrustObject obj = (TrustObject)trusts[i]!;
                 // we don't need self and forest trust
                 if ((obj.TrustType == TrustType.Forest) || ((int)obj.TrustType == 7))
                 {
@@ -27,7 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public TrustRelationshipInformation this[int index]
         {
-            get => (TrustRelationshipInformation)InnerList[index];
+            get => (TrustRelationshipInformation)InnerList[index]!;
         }
 
         public bool Contains(TrustRelationshipInformation information)

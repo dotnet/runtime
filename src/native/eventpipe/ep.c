@@ -1,29 +1,8 @@
 #include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
+#if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
-// Option to include all internal source files into ep.c.
-#ifdef EP_INCLUDE_SOURCE_FILES
-#define EP_FORCE_INCLUDE_SOURCE_FILES
-#include "ep-block.c"
-#include "ep-buffer.c"
-#include "ep-buffer-manager.c"
-#include "ep-config.c"
-#include "ep-event.c"
-#include "ep-event-instance.c"
-#include "ep-event-payload.c"
-#include "ep-event-source.c"
-#include "ep-file.c"
-#include "ep-json-file.c"
-#include "ep-metadata-generator.c"
-#include "ep-provider.c"
-#include "ep-sample-profiler.c"
-#include "ep-session.c"
-#include "ep-session-provider.c"
-#include "ep-stack-contents.c"
-#include "ep-stream.c"
-#include "ep-thread.c"
-#else
 #define EP_IMPL_EP_GETTER_SETTER
 #include "ep.h"
 #include "ep-config.h"
@@ -35,12 +14,13 @@
 #include "ep-provider-internals.h"
 #include "ep-session.h"
 #include "ep-sample-profiler.h"
-#endif
 
 static bool _ep_can_start_threads = false;
 
 static ep_rt_session_id_array_t _ep_deferred_enable_session_ids = { 0 };
 static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
+
+static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
 
 /*
  * Forward declares of all static functions.
@@ -751,20 +731,17 @@ get_next_config_value_as_utf8_string (const ep_char8_t **data)
 {
 	EP_ASSERT (data != NULL);
 
-	uint8_t *buffer = NULL;
+	ep_char8_t *buffer = NULL;
 
 	const ep_char8_t *start = NULL;
 	const ep_char8_t *end = NULL;
 	*data = get_next_config_value (*data, &start, &end);
 
 	ptrdiff_t byte_len = end - start;
-	if (byte_len != 0) {
-		buffer = ep_rt_byte_array_alloc (byte_len + 1);
-		memcpy (buffer, start, byte_len);
-		buffer [byte_len] = '\0';
-	}
+	if (byte_len != 0)
+		buffer = ep_rt_utf8_string_dup_range(start, end);
 
-	return (ep_char8_t *)buffer;
+	return buffer;
 }
 
 static
@@ -814,6 +791,22 @@ enable_default_session_via_env_variables (void)
 	if (ep_rt_config_value_get_enable ()) {
 		ep_config = ep_rt_config_value_get_config ();
 		ep_config_output_path = ep_rt_config_value_get_output_path ();
+
+		ep_char8_t pidStr[24];
+		ep_rt_utf8_string_snprintf(pidStr, EP_ARRAY_SIZE (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
+
+		while (true)
+		{
+			if (ep_rt_utf8_string_replace(&ep_config_output_path, "{pid}", pidStr))
+			{
+				// In case there is a second use of {pid} in the output path
+				continue;
+			}
+
+			// No more instances of {pid} in the OutputPath
+			break;
+		}
+
 		ep_circular_mb = ep_rt_config_value_get_circular_mb ();
 		output_path = NULL;
 
@@ -851,8 +844,7 @@ static
 bool
 ipc_stream_factory_any_suspended_ports (void)
 {
-	extern bool ds_ipc_stream_factory_any_suspended_ports (void);
-	return ds_ipc_stream_factory_any_suspended_ports ();
+	return _ep_ipc_stream_factory_suspended_ports_callback ? _ep_ipc_stream_factory_suspended_ports_callback () : false;
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -1290,6 +1282,8 @@ ep_finish_init (void)
 {
 	ep_requires_lock_not_held ();
 
+	ep_rt_init_finish ();
+
 	// Enable streaming for any deferred sessions
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;
@@ -1532,7 +1526,16 @@ ep_system_time_set (
 	system_time->milliseconds = milliseconds;
 }
 
+void
+ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback)
+{
+	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
+}
+
+#endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
+#ifndef EP_INCLUDE_SOURCE_FILES
 extern const char quiet_linker_empty_file_warning_eventpipe;
 const char quiet_linker_empty_file_warning_eventpipe = 0;
+#endif

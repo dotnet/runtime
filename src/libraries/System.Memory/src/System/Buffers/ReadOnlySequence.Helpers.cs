@@ -248,7 +248,7 @@ namespace System.Buffers
                 int currentLength = startSegment.Memory.Length - startIndex;
 
                 // Position in start segment, defer to single segment seek
-                if (currentLength > offset)
+                if (currentLength > offset || offset == 0)
                     goto IsSingleSegment;
 
                 if (currentLength < 0)

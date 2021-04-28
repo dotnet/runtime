@@ -357,6 +357,9 @@
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
   </data>
+  <data name="TypeRequiresAsyncSerialization" xml:space="preserve">
+    <value>The type '{0}' can only be serialized using async serialization methods.</value>
+  </data>
   <data name="InvalidCharacterAtStartOfComment" xml:space="preserve">
     <value>'{0}' is invalid after '/' at the beginning of the comment. Expected either '/' or '*'.</value>
   </data>
@@ -531,7 +534,7 @@
     <value>The JSON value is not in a supported Boolean format.</value>
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
-    <value>The type '{0}' is not a supported Dictionary key type.</value>
+    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'.</value>
   </data>
   <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
     <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
@@ -553,5 +556,56 @@
   </data>
   <data name="DeserializeUnableToAssignNull" xml:space="preserve">
     <value>Unable to assign 'null' to the property or field of type '{0}'.</value>
+  </data>
+  <data name="SerializerConverterFactoryReturnsJsonConverterFactory" xml:space="preserve">
+    <value>The converter '{0}' cannot return an instance of JsonConverterFactory.</value>
+  </data>
+  <data name="NodeDynamicObjectResultNotAssignable" xml:space="preserve">
+    <value>The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.</value>
+  </data>
+  <data name="NodeElementWrongType" xml:space="preserve">
+    <value>The element must be of type '{0}'</value>
+  </data>
+  <data name="NodeElementCannotBeObjectOrArray" xml:space="preserve">
+    <value>The element cannot be an object or array.</value>
+  </data>
+  <data name="NodeAlreadyHasParent" xml:space="preserve">
+    <value>The node already has a parent.</value>
+  </data>
+  <data name="NodeCycleDetected" xml:space="preserve">
+    <value>A node cycle was detected.</value>
+  </data>
+  <data name="NodeUnableToConvert" xml:space="preserve">
+    <value>A value of type '{0}' cannot be converted to a '{1}'.</value>
+  </data>
+  <data name="NodeUnableToConvertElement" xml:space="preserve">
+    <value>An element of type '{0}' cannot be converted to a '{1}'.</value>
+  </data>
+  <data name="NodeValueNotAllowed" xml:space="preserve">
+    <value>A JsonNode cannot be used as a value.</value>
+  </data>
+  <data name="NodeWrongType" xml:space="preserve">
+    <value>The node must be of type '{0}'.</value>
+  </data>
+  <data name="ValueCannotBeNull" xml:space="preserve">
+    <value>Value cannot be null. (Parameter '{0}')</value>
+  </data>
+  <data name="SerializerContextOptionsImmutable" xml:space="preserve">
+    <value>A 'JsonSerializerOptions' instance associated with a 'JsonSerializerContext' instance cannot be mutated once the context has been instantiated.</value>
+  </data>
+  <data name="OptionsAlreadyBoundToContext" xml:space="preserve">
+    <value>"The specified 'JsonSerializerOptions' instance is already bound with a 'JsonSerializerContext' instance."</value>
+  </data>
+  <data name="InitializeTypeInfoAsObjectInvalid" xml:space="preserve">
+    <value>The value must represent an object type.</value>
+  </data>
+  <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
+    <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
+  </data>
+  <data name="BuiltInConvertersNotRooted" xml:space="preserve">
+    <value>Built-in type converters have not been initialized. There is no converter available for type '{0}'. To root all built-in converters, use a 'JsonSerializerOptions'-based method of the 'JsonSerializer'.</value>
+  </data>
+  <data name="NoMetadataForType" xml:space="preserve">
+    <value>Metadata for type '{0}' was not provided to the serializer. The serializer method used does not support reflection-based creation of serialization-related type metadata. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
   </data>
 </root>

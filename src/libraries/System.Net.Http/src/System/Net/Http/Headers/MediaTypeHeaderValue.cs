@@ -76,14 +76,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(source != null);
 
             _mediaType = source._mediaType;
-
-            if (source._parameters != null)
-            {
-                foreach (var parameter in source._parameters)
-                {
-                    this.Parameters.Add((NameValueHeaderValue)((ICloneable)parameter).Clone());
-                }
-            }
+            _parameters = source._parameters.Clone();
         }
 
         public MediaTypeHeaderValue(string mediaType)

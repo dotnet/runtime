@@ -305,12 +305,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             _ASSERTE(cbCGCDescData == CGCDesc::ComputeSizeRepeating(nSeries));
         }
     }
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    else if (this->IsCollectible())
-    {
-        cbCGCDescData = (DWORD)CGCDesc::ComputeSize(1);
-    }
-#endif
 
     DWORD dwMultipurposeSlotsMask = 0;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
@@ -713,19 +707,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         // size of the object, so what you end up with is the size of the data portion of the array)
         pSeries->SetSeriesSize(-(SSIZE_T)(pMT->GetBaseSize()));
     }
-
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (!pMT->ContainsPointers() && this->IsCollectible())
-    {
-        CGCDescSeries  *pSeries;
-
-        // For collectible types, insert empty gc series
-        CGCDesc::GetCGCDescFromMT(pMT)->InitValueClassSeries(pMT, 1);
-        pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
-        pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT));
-        pSeries->val_serie[0].set_val_serie_item (0, static_cast<HALF_SIZE_T>(pMT->GetComponentSize()));
-    }
-#endif
 
     // If we get here we are assuming that there was no truncation. If this is not the case then
     // an array whose base type is not a value class was created and was larger then 0xffff (a word)

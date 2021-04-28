@@ -369,8 +369,8 @@ DEFINE_METASIG(IM(RetInt, _, i))
 DEFINE_METASIG_T(IM(RetAssemblyName, _, C(ASSEMBLY_NAME)))
 DEFINE_METASIG_T(IM(RetAssemblyBase, _, C(ASSEMBLYBASE)))
 DEFINE_METASIG_T(IM(RetModule, _, C(MODULE)))
-DEFINE_METASIG_T(IM(Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_SNKP_RetV,
-                 s a(b) a(b) C(VERSION) C(CULTURE_INFO) g(ASSEMBLY_HASH_ALGORITHM) g(ASSEMBLY_VERSION_COMPATIBILITY) s g(ASSEMBLY_NAME_FLAGS) C(STRONG_NAME_KEY_PAIR), v))
+DEFINE_METASIG_T(IM(Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV,
+                 s a(b) a(b) C(VERSION) C(CULTURE_INFO) g(ASSEMBLY_HASH_ALGORITHM) g(ASSEMBLY_VERSION_COMPATIBILITY) s g(ASSEMBLY_NAME_FLAGS), v))
 DEFINE_METASIG_T(IM(PEK_IFM_RetV,
                  g(PORTABLE_EXECUTABLE_KINDS) g(IMAGE_FILE_MACHINE), v))
 DEFINE_METASIG(IM(RetObj, _, j))
@@ -591,6 +591,10 @@ DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
 DEFINE_METASIG_T(SM(Array_Int_Array_Int_Int_RetVoid, C(ARRAY) i C(ARRAY) i i, v))
 DEFINE_METASIG_T(SM(Array_Int_Obj_RetVoid, C(ARRAY) i j, v))
 DEFINE_METASIG_T(SM(Array_Int_PtrVoid_RetRefObj, C(ARRAY) i P(v), r(j)))
+
+DEFINE_METASIG(SM(Obj_IntPtr_Bool_RetVoid, j I F, v))
+DEFINE_METASIG(SM(IntPtr_Obj_RetVoid, I j, v))
+DEFINE_METASIG_T(SM(IntPtr_Type_RetVoid, I C(TYPE), v))
 
 // Undefine macros in case we include the file again in the compilation unit
 

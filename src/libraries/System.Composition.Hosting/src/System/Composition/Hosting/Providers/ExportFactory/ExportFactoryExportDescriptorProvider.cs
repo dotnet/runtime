@@ -9,7 +9,7 @@ using System.Composition.Hosting.Util;
 
 namespace System.Composition.Hosting.Providers.ExportFactory
 {
-    internal class ExportFactoryExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class ExportFactoryExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly MethodInfo s_getExportFactoryDefinitionsMethod = typeof(ExportFactoryExportDescriptorProvider).GetTypeInfo().GetDeclaredMethod("GetExportFactoryDescriptors");
 

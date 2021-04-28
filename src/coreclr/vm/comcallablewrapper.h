@@ -308,7 +308,6 @@ public:
     // Properties
     ComMethodTable* GetClassComMT();
     ComMethodTable* GetComMTForItf(MethodTable *pItfMT);
-    ComMethodTable* GetComMTForIndex(ULONG ulItfIndex);
     ComMethodTable* GetBasicComMT();
     ULONG           GetNumInterfaces();
     SLOT*           GetVTableSlot(ULONG index);

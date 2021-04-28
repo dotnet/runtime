@@ -959,14 +959,6 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 
 #define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
-#if ENABLE_NETCORE
-#define g_assert_netcore()     /* nothing */
-#define g_assert_not_netcore() g_assert (!"This function should only be called on mono-notnetcore.")
-#else
-#define g_assert_netcore()     g_assert (!"This function should only be called on mono-netcore.")
-#define g_assert_not_netcore() /* nothing */
-#endif
-
 /* f is format -- like printf and scanf
  * Where you might have said:
  * 	if (!(expr))

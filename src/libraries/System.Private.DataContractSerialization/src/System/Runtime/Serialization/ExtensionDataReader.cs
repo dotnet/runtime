@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization
 {
     // NOTE: XmlReader methods that are not needed have been left un-implemented
 
-    internal class ExtensionDataReader : XmlReader
+    internal sealed class ExtensionDataReader : XmlReader
     {
         private enum ExtensionDataNodeType
         {
@@ -508,7 +508,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class AttributeData
+    internal sealed class AttributeData
     {
         public string? prefix;
         public string? ns;
@@ -516,7 +516,7 @@ namespace System.Runtime.Serialization
         public string? value;
     }
 
-    internal class ElementData
+    internal sealed class ElementData
     {
         public string? localName;
         public string? ns;

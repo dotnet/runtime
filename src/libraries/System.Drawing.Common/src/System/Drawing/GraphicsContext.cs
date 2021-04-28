@@ -1,69 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace System.Drawing
 {
     /// <summary>
     /// Contains information about the context of a Graphics object.
     /// </summary>
-    internal class GraphicsContext : IDisposable
+    internal sealed class GraphicsContext : IDisposable
     {
-        /// <summary>
-        /// The state that identifies the context.
-        /// </summary>
-        private int _contextState;
-
-        /// <summary>
-        /// The context's translate transform.
-        /// </summary>
-        private PointF _transformOffset;
-
-        /// <summary>
-        /// The context's clip region.
-        /// </summary>
-        private Region? _clipRegion;
-
-        /// <summary>
-        /// The next context up the stack.
-        /// </summary>
-        private GraphicsContext? _nextContext;
-
-        /// <summary>
-        /// The previous context down the stack.
-        /// </summary>
-        private GraphicsContext? _prevContext;
-
-        /// <summary>
-        /// Flags that determines whether the context was created for a Graphics.Save() operation.
-        /// This kind of contexts are cumulative across subsequent Save() calls so the top context
-        /// info is cumulative.  This is not the same for contexts created for a Graphics.BeginContainer()
-        /// operation, in this case the new context information is reset.  See Graphics.BeginContainer()
-        /// and Graphics.Save() for more information.
-        /// </summary>
-        private bool _isCumulative;
-
         public GraphicsContext(Graphics g)
         {
-            Matrix transform = g.Transform;
-            if (!transform.IsIdentity)
-            {
-                float[] elements = transform.Elements;
-                _transformOffset.X = elements[4];
-                _transformOffset.Y = elements[5];
-            }
-            transform.Dispose();
-
-            Region clip = g.Clip;
-            if (clip.IsInfinite(g))
-            {
-                clip.Dispose();
-            }
-            else
-            {
-                _clipRegion = clip;
-            }
+            TransformOffset = g.TransformElements.Translation;
+            Clip = g.GetRegionIfNotInfinite();
         }
 
         /// <summary>
@@ -80,100 +30,46 @@ namespace System.Drawing
         /// </summary>
         public void Dispose(bool disposing)
         {
-            if (_nextContext != null)
-            {
-                // Dispose all contexts up the stack since they are relative to this one and its state will be invalid.
-                _nextContext.Dispose();
-                _nextContext = null;
-            }
+            // Dispose all contexts up the stack since they are relative to this one and its state will be invalid.
+            Next?.Dispose();
+            Next = null;
 
-            if (_clipRegion != null)
-            {
-                _clipRegion.Dispose();
-                _clipRegion = null;
-            }
+            Clip?.Dispose();
+            Clip = null;
         }
 
         /// <summary>
         /// The state id representing the GraphicsContext.
         /// </summary>
-        public int State
-        {
-            get
-            {
-                return _contextState;
-            }
-            set
-            {
-                _contextState = value;
-            }
-        }
+        public int State { get; set; }
 
         /// <summary>
         /// The translate transform in the GraphicsContext.
         /// </summary>
-        public PointF TransformOffset
-        {
-            get
-            {
-                return _transformOffset;
-            }
-        }
+        public Vector2 TransformOffset { get; private set; }
 
         /// <summary>
-        ///     The clipping region the GraphicsContext.
+        /// The clipping region the GraphicsContext.
         /// </summary>
-        public Region? Clip
-        {
-            get
-            {
-                return _clipRegion;
-            }
-        }
+        public Region? Clip { get; private set; }
 
         /// <summary>
         /// The next GraphicsContext object in the stack.
         /// </summary>
-        public GraphicsContext? Next
-        {
-            get
-            {
-                return _nextContext;
-            }
-            set
-            {
-                _nextContext = value;
-            }
-        }
+        public GraphicsContext? Next { get; set; }
 
         /// <summary>
         /// The previous GraphicsContext object in the stack.
         /// </summary>
-        public GraphicsContext? Previous
-        {
-            get
-            {
-                return _prevContext;
-            }
-            set
-            {
-                _prevContext = value;
-            }
-        }
+        public GraphicsContext? Previous { get; set; }
 
         /// <summary>
-        /// Determines whether this context is cumulative or not.  See filed for more info.
+        /// Flag that determines whether the context was created for a Graphics.Save() operation.
+        /// This kind of contexts are cumulative across subsequent Save() calls so the top context
+        /// info is cumulative.  This is not the same for contexts created for a Graphics.BeginContainer()
+        /// operation, in this case the new context information is reset.  See Graphics.BeginContainer()
+        /// and Graphics.Save() for more information.
         /// </summary>
-        public bool IsCumulative
-        {
-            get
-            {
-                return _isCumulative;
-            }
-            set
-            {
-                _isCumulative = value;
-            }
-        }
+        public bool IsCumulative { get; set; }
     }
 }

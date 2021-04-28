@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -694,9 +693,9 @@ namespace System.IO
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0, "should have dealt with empty paths");
 
             byte firstNeedsSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
-                || PathInternal.IsDirectorySeparator(second[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(second[0]) ? (byte)0 : (byte)1;
             byte secondNeedsSeparator = PathInternal.IsDirectorySeparator(second[second.Length - 1])
-                || PathInternal.IsDirectorySeparator(third[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(third[0]) ? (byte)0 : (byte)1;
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third))
             {
@@ -755,11 +754,11 @@ namespace System.IO
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
             byte firstNeedsSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
-                || PathInternal.IsDirectorySeparator(second[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(second[0]) ? (byte)0 : (byte)1;
             byte secondNeedsSeparator = PathInternal.IsDirectorySeparator(second[second.Length - 1])
-                || PathInternal.IsDirectorySeparator(third[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(third[0]) ? (byte)0 : (byte)1;
             byte thirdNeedsSeparator = PathInternal.IsDirectorySeparator(third[third.Length - 1])
-                || PathInternal.IsDirectorySeparator(fourth[0]) ? 0 : 1;
+                || PathInternal.IsDirectorySeparator(fourth[0]) ? (byte)0 : (byte)1;
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third), u = &MemoryMarshal.GetReference(fourth))
             {

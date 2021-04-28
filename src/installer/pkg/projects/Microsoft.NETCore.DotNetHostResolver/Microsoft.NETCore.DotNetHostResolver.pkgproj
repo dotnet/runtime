@@ -3,6 +3,7 @@
   <PropertyGroup>
     <VersionProp>HostResolverVersion</VersionProp>
     <InstallerName>dotnet-hostfxr</InstallerName>
+    <InstallerName Condition="'$(PgoInstrument)' != ''">$(InstallerName)-pgo</InstallerName>
     <PackageDescription>Provides an implementation of framework resolution strategy used by Microsoft.NETCore.DotNetHost</PackageDescription>
   </PropertyGroup>
 

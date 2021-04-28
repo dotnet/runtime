@@ -89,12 +89,14 @@ namespace System.ComponentModel
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
     public sealed partial class DesignerAttribute : System.Attribute
     {
-        public DesignerAttribute(string designerTypeName) { }
-        public DesignerAttribute(string designerTypeName, string designerBaseTypeName) { }
-        public DesignerAttribute(string designerTypeName, System.Type designerBaseType) { }
-        public DesignerAttribute(System.Type designerType) { }
-        public DesignerAttribute(System.Type designerType, System.Type designerBaseType) { }
+        public DesignerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName) { }
+        public DesignerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerBaseTypeName) { }
+        public DesignerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type designerBaseType) { }
+        public DesignerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type designerType) { }
+        public DesignerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type designerType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type designerBaseType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string DesignerBaseTypeName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string DesignerTypeName { get { throw null; } }
         public override object TypeId { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
@@ -162,10 +164,12 @@ namespace System.ComponentModel
     public sealed partial class EditorAttribute : System.Attribute
     {
         public EditorAttribute() { }
-        public EditorAttribute(string typeName, string? baseTypeName) { }
-        public EditorAttribute(string typeName, System.Type baseType) { }
-        public EditorAttribute(System.Type type, System.Type baseType) { }
+        public EditorAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string? baseTypeName) { }
+        public EditorAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type baseType) { }
+        public EditorAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type baseType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string? EditorBaseTypeName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string EditorTypeName { get { throw null; } }
         public override object TypeId { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
@@ -192,6 +196,7 @@ namespace System.ComponentModel
     {
         System.ComponentModel.ComponentCollection Components { get; }
         void Add(System.ComponentModel.IComponent? component);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")]
         void Add(System.ComponentModel.IComponent? component, string? name);
         void Remove(System.ComponentModel.IComponent? component);
     }
@@ -233,7 +238,7 @@ namespace System.ComponentModel
         System.ComponentModel.IComponent Component { get; }
         System.ComponentModel.IContainer? Container { get; }
         bool DesignMode { get; }
-        string? Name { get; set; }
+        string? Name { get; [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")] set; }
     }
     public partial interface ISupportInitialize
     {

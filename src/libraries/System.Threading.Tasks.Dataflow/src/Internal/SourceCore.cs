@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (target == null) throw new ArgumentNullException(nameof(target));
 
-            TOutput consumedMessageValue = default(TOutput);
+            TOutput? consumedMessageValue = default(TOutput);
 
             lock (OutgoingLock)
             {
@@ -336,7 +336,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         {
                             // Receive all of the data, clearing it out in the process.
                             var tmpList = new List<TOutput>();
-                            TOutput item;
+                            TOutput? item;
                             while (_messages.TryDequeue(out item)) tmpList.Add(item);
                             countReceived = tmpList.Count;
                             items = tmpList;
@@ -543,7 +543,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Peek at the next message if there is one, so we can offer it.
             DataflowMessageHeader header = default(DataflowMessageHeader);
-            TOutput message = default(TOutput);
+            TOutput? message = default(TOutput);
             bool offerJustToLinkToTarget = false;
 
             // If offering isn't enabled and if we're not doing this as
@@ -571,7 +571,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // If we've already offered the message to everyone else,
                     // we can just offer it to the newly linked target
                     Debug.Assert(linkToTarget != null, "Must have a valid target to offer to.");
-                    OfferMessageToTarget(header, message, linkToTarget, out messageWasAccepted);
+                    OfferMessageToTarget(header, message!, linkToTarget, out messageWasAccepted);
                 }
                 else
                 {
@@ -590,7 +590,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     while (cur != null)
                     {
                         TargetRegistry<TOutput>.LinkedTargetInfo? next = cur.Next;
-                        if (OfferMessageToTarget(header, message, cur.Target, out messageWasAccepted)) break;
+                        if (OfferMessageToTarget(header, message!, cur.Target, out messageWasAccepted)) break;
                         cur = next;
                     }
 
@@ -615,7 +615,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // even though they weren't supposed to.  To recover from that,
                     // we'll only dequeue if the correct message is still at the head of the queue.
                     // However, we'll assert so that we can at least catch this in our own debug builds.
-                    TOutput dropped;
+                    TOutput? dropped;
                     if (_nextMessageId.Value != header.Id ||
                         !_messages.TryDequeue(out dropped)) // remove the next message
                     {
@@ -643,7 +643,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Notify the owner block that our count has decreased
                 if (_itemsRemovedAction != null)
                 {
-                    int count = _itemCountingFunc != null ? _itemCountingFunc(_owningSource, message, null) : 1;
+                    int count = _itemCountingFunc != null ? _itemCountingFunc(_owningSource, message!, null) : 1;
                     _itemsRemovedAction(_owningSource, count);
                 }
             }
@@ -983,8 +983,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displaySource = _owningSource as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displaySource != null ? displaySource.Content : _owningSource);
+                return $"Block=\"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
             }
         }
 

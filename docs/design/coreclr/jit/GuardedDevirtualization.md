@@ -242,7 +242,7 @@ This is something we'll look into further.
 ### Interface Calls: The Two Class Case
 
 Interface calls on the CLR are implemented via [Virtual Stub Dispatch](
-https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/virtual-stub-dispatch.md
+https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/virtual-stub-dispatch.md
 )  (aka VSD). Calls are made through an indirection cell that initially points
 at a lookup stub. On the first call, the interface target is identified from the
 object's method table and the lookup stub is replaced with a dispatch stub that

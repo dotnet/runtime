@@ -13,7 +13,7 @@ namespace System.Xml.Xsl.Qil
     /// <remarks>
     /// Don't construct QIL nodes directly; instead, use the <see cref="QilFactory">QilFactory</see>.
     /// </remarks>
-    internal class QilUnary : QilNode
+    internal sealed class QilUnary : QilNode
     {
         private QilNode _child;
 

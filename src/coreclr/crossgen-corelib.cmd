@@ -7,9 +7,6 @@ set "__MsgPrefix=CROSSGEN-CORELIB: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
 
-set __ThisScriptFull="%~f0"
-set __ThisScriptDir=%~dp0
-
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
@@ -133,39 +130,15 @@ if not exist "%__BinDir%"              md "%__BinDir%"
 if not exist "%__IntermediatesDir%"    md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"             md "%__LogsDir%"
 
-
-call "%__ThisScriptDir%"\setup_vs_tools.cmd
+REM Need VC native tools environment for the host arch to find Microsoft.DiaSymReader.Native in the Visual Studio install.
+call %__RepoRootDir%\eng\native\init-vs-env.cmd %__BuildArch%
 if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
 
-if defined VS160COMNTOOLS (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2017
-)
-
-REM Need VC native tools environment for the host arch to find Microsoft.DiaSymReader.Native in the Visual Studio install.
-set __VCBuildArch=x86_amd64
-if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
-if /i "%__BuildArch%" == "arm" (
-    set __VCBuildArch=x86_arm
-)
-if /i "%__BuildArch%" == "arm64" (
-    set __VCBuildArch=x86_arm64
-)
-
-echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
 @if defined _echo @echo on
 
-if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-    goto ExitWithError
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
 )
-if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
 
 echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__TargetOS%.%__BuildArch%.%__BuildType%. Logging to "%__CrossGenCoreLibLog%".
 if exist "%__CrossGenCoreLibLog%" del "%__CrossGenCoreLibLog%"
@@ -257,11 +230,3 @@ exit /b 1
 
 :ExitWithCode
 exit /b !__exitCode!
-
-:NoDIA
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
-Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
-may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
-exit /b 1

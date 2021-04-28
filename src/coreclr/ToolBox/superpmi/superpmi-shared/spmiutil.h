@@ -1,7 +1,6 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //----------------------------------------------------------
 // SPMIUtil.h - General utility functions
 //----------------------------------------------------------
@@ -45,5 +44,33 @@ inline DWORDLONG CastPointer(T* p)
 {
     return (DWORDLONG)(uintptr_t)p;
 }
+
+enum SPMI_TARGET_ARCHITECTURE
+{
+    SPMI_TARGET_ARCHITECTURE_X86,
+    SPMI_TARGET_ARCHITECTURE_AMD64,
+    SPMI_TARGET_ARCHITECTURE_ARM64,
+    SPMI_TARGET_ARCHITECTURE_ARM
+};
+
+SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
+void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
+
+inline bool IsSpmiTarget64Bit()
+{
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64);
+}
+
+inline size_t SpmiTargetPointerSize()
+{
+    return IsSpmiTarget64Bit() ? sizeof(INT64) : sizeof(INT32);
+}
+
+void PutArm64Rel28(UINT32* pCode, INT32 imm28);
+void PutArm64Rel21(UINT32* pCode, INT32 imm21);
+void PutArm64Rel12(UINT32* pCode, INT32 imm12);
+
+void PutThumb2Mov32(UINT16* p, UINT32 imm32);
+void PutThumb2BlRel24(UINT16* p, INT32 imm24);
 
 #endif // !_SPMIUtil

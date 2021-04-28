@@ -14,15 +14,15 @@ namespace System.DirectoryServices
     {
         public DirectoryServicesCOMException() { }
 
-        public DirectoryServicesCOMException(string message) : base(message) { }
+        public DirectoryServicesCOMException(string? message) : base(message) { }
 
-        public DirectoryServicesCOMException(string message, Exception inner) : base(message, inner) { }
+        public DirectoryServicesCOMException(string? message, Exception? inner) : base(message, inner) { }
 
         protected DirectoryServicesCOMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
-        internal DirectoryServicesCOMException(string extendedMessage, int extendedError, COMException e) : base(e.Message, e.ErrorCode)
+        internal DirectoryServicesCOMException(string? extendedMessage, int extendedError, COMException e) : base(e.Message, e.ErrorCode)
         {
             ExtendedError = extendedError;
             ExtendedErrorMessage = extendedMessage;
@@ -30,7 +30,7 @@ namespace System.DirectoryServices
 
         public int ExtendedError { get; }
 
-        public string ExtendedErrorMessage { get; }
+        public string? ExtendedErrorMessage { get; }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
@@ -38,7 +38,7 @@ namespace System.DirectoryServices
         }
     }
 
-    internal class COMExceptionHelper
+    internal static class COMExceptionHelper
     {
         internal static Exception CreateFormattedComException(int hr)
         {

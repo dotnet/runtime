@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.Dsa, new DSACmsSignature(null, default));
         }
 
-        private class DSACmsSignature : CmsSignature
+        private sealed class DSACmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
             private readonly string? _signatureAlgorithm;

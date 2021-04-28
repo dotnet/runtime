@@ -1112,7 +1112,7 @@ namespace System.Speech.Recognition
 
         #region Private Types
         [DebuggerDisplay("{DisplayDebugInfo()}")]
-        private class RuleNode
+        private sealed class RuleNode
         {
             internal RuleNode(Grammar grammar, string rule, float confidence, uint first, uint count)
             {

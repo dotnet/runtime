@@ -44,7 +44,7 @@ Validation may fail for several reasons:
   * It's a known issue listed in our [big tracking issue](https://github.com/dotnet/runtime/issues/702) or tagged `blocking-clean-ci` [(query here)](https://github.com/dotnet/runtime/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-ci+)
   * Its otherwise beyond any reasonable doubt that your code changes could not have caused this.
   * If the tests pass on rerun, that may suggest it's not related.
-* In this situation, you want to re-run but not necessarily rebase on master.
+* In this situation, you want to re-run but not necessarily rebase on main.
   * To rerun just the failed leg(s):
     * Click on any leg. Navigate through the Azure DevOps UI, find the "..." button and choose "Retry failed legs"
     * Or, on the GitHub Checks tab choose "re-run failed checks". This will not rebase your change.
@@ -55,9 +55,9 @@ Validation may fail for several reasons:
 * If you have established that it is an unrelated failure, please ensure we have an active issue for it. See the [unrelated failure](#what-to-do-if-you-determine-the-failure-is-unrelated) section below.
 * Whoever merges the PR should be satisfied that the failure is unrelated, is not introduced by the change, and that we are appropriately tracking it.
 
-### Option 3: The state of the master branch HEAD is bad.
+### Option 3: The state of the main branch HEAD is bad.
 
-* This is the very rare case where there was a build break in master, and you got unlucky. Hopefully the break has been fixed, and you want CI to rebase your change and rerun validation.
+* This is the very rare case where there was a build break in main, and you got unlucky. Hopefully the break has been fixed, and you want CI to rebase your change and rerun validation.
 * To rebase and rerun all validation:
   * Add a comment `/azp run runtime`
   * Or, click on "re-run all checks" in the GitHub Checks tab
@@ -84,7 +84,7 @@ If you have determined the failure is definitely not caused by changes in your P
 * In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link tracking the disable.
   * Update the tracking issue with the label `disabled-test`.
   * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/a259ec2e967d502f82163beba6b84da5319c5e08/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L899)
-  * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/master/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file. 
+  * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 

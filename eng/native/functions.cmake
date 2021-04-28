@@ -206,12 +206,33 @@ function(compile_asm)
   set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
 endfunction()
 
+# add_component(componentName [targetName] [EXCLUDE_FROM_ALL])
+function(add_component componentName)
+  if (${ARGC} GREATER 2 OR ${ARGC} EQUAL 2)
+    set(componentTargetName "${ARGV1}")
+  else()
+    set(componentTargetName "${componentName}")
+  endif()
+  if (${ARGC} EQUAL 3 AND "${ARG2}" STREQUAL "EXCLUDE_FROM_ALL")
+    set(exclude_from_all_flag "EXCLUDE_FROM_ALL")
+  endif()
+  get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
+  list (FIND definedComponents "${componentName}" componentIndex)
+  if (${componentIndex} EQUAL -1)
+    list (APPEND definedComponents "${componentName}")
+    add_custom_target("${componentTargetName}"
+      COMMAND "${CMAKE_COMMAND}" "-DCMAKE_INSTALL_COMPONENT=${componentName}" "-DBUILD_TYPE=$<CONFIG>" -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+      ${exclude_from_all_flag})
+    set_property(GLOBAL PROPERTY CLR_CMAKE_COMPONENTS ${definedComponents})
+  endif()
+endfunction()
+
 function(generate_exports_file)
   set(INPUT_LIST ${ARGN})
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
     set(SCRIPT_NAME generateversionscript.sh)
@@ -248,12 +269,29 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
+function (get_symbol_file_name targetName outputSymbolFilename)
+  if (CLR_CMAKE_HOST_UNIX)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+      set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+    else ()
+      set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
+    endif ()
+
+    set(${outputSymbolFilename} ${strip_destination_file} PARENT_SCOPE)
+  else(CLR_CMAKE_HOST_UNIX)
+    # We can't use the $<TARGET_PDB_FILE> generator expression here since
+    # the generator expression isn't supported on resource DLLs.
+    set(${outputSymbolFilename} $<TARGET_FILE_DIR:${targetName}>/$<TARGET_FILE_PREFIX:${targetName}>$<TARGET_FILE_BASE_NAME:${targetName}>.pdb PARENT_SCOPE)
+  endif(CLR_CMAKE_HOST_UNIX)
+endfunction()
+
 function(strip_symbols targetName outputFilename)
+  get_symbol_file_name(${targetName} strip_destination_file)
+  set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-      set(strip_destination_file ${strip_source_file}.dwarf)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 
       # Ensure that dsymutil and strip are present
       find_program(DSYMUTIL dsymutil)
@@ -281,8 +319,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-      set(strip_destination_file ${strip_source_file}.dbg)
+    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 
       add_custom_command(
         TARGET ${targetName}
@@ -293,30 +330,17 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-
-    set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-  else(CLR_CMAKE_HOST_UNIX)
-    get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-    if(is_multi_config)
-      # We can't use the $<TARGET_PDB_FILE> generator expression here since
-      # the generator expression isn't supported on resource DLLs.
-      set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb PARENT_SCOPE)
-    else()
-      # We can't use the $<TARGET_PDB_FILE> generator expression here since
-      # the generator expression isn't supported on resource DLLs.
-      set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pdb PARENT_SCOPE)
-    endif()
+    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
 function(install_with_stripped_symbols targetName kind destination)
     if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
       strip_symbols(${targetName} symbol_file)
-      install_symbols(${symbol_file} ${destination})
+      install_symbol_file(${symbol_file} ${destination} ${ARGN})
     endif()
 
-    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
       # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
       set(kind PROGRAMS)
     endif()
@@ -328,59 +352,75 @@ function(install_with_stripped_symbols targetName kind destination)
     else()
       message(FATAL_ERROR "The `kind` argument has to be either TARGETS or PROGRAMS, ${kind} was provided instead")
     endif()
-    install(${kind} ${install_source} DESTINATION ${destination})
+    install(${kind} ${install_source} DESTINATION ${destination} ${ARGN})
 endfunction()
 
-function(install_symbols symbol_file destination_path)
+function(install_symbol_file symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
-    install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB)
+      install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
   else()
-    install(FILES ${symbol_file} DESTINATION ${destination_path})
+      install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
   endif()
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATIONS destination])
+# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName])
 function(install_clr)
-  set(multiValueArgs TARGETS ADDITIONAL_DESTINATIONS)
-  cmake_parse_arguments(INSTALL_CLR "" "" "${multiValueArgs}" ${ARGV})
+  set(multiValueArgs TARGETS DESTINATIONS)
+  set(singleValueArgs COMPONENT)
+  set(options "")
+  cmake_parse_arguments(INSTALL_CLR "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
   endif()
 
-  set(destinations ".")
+  if ("${INSTALL_CLR_DESTINATIONS}" STREQUAL "")
+    message(FATAL_ERROR "At least one destination must be passed to install_clr.")
+  endif()
 
-  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATIONS}" STREQUAL "")
-    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATIONS})
+  set(destinations "")
+
+  if (NOT "${INSTALL_CLR_DESTINATIONS}" STREQUAL "")
+    list(APPEND destinations ${INSTALL_CLR_DESTINATIONS})
+  endif()
+
+  if ("${INSTALL_CLR_COMPONENT}" STREQUAL "")
+    set(INSTALL_CLR_COMPONENT ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})
-    list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
-    if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
-        if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-          strip_symbols(${targetName} symbol_file)
-        endif()
-
-        foreach(destination ${destinations})
-          # We don't need to install the export libraries for our DLLs
-          # since they won't be directly linked against.
-          install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})
-          if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-            install_symbols(${symbol_file} ${destination})
-          endif()
-
-          if(CLR_CMAKE_PGO_INSTRUMENT)
-            if(WIN32)
-              get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-              if(is_multi_config)
-                  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
-              else()
-                  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
-              endif()
-            endif()
-          endif()
-        endforeach()
+    if (NOT "${INSTALL_CLR_COMPONENT}" STREQUAL "${targetName}")
+      get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
+      list(FIND definedComponents "${INSTALL_CLR_COMPONENT}" componentIdx)
+      if (${componentIdx} EQUAL -1)
+        message(FATAL_ERROR "The ${INSTALL_CLR_COMPONENT} component is not defined. Add a call to `add_component(${INSTALL_CLR_COMPONENT})` to define the component in the build.")
+      endif()
+      add_dependencies(${INSTALL_CLR_COMPONENT} ${targetName})
     endif()
+    get_target_property(targetType ${targetName} TYPE)
+    if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC_LIBRARY")
+      get_symbol_file_name(${targetName} symbolFile)
+    endif()
+
+    foreach(destination ${destinations})
+      # We don't need to install the export libraries for our DLLs
+      # since they won't be directly linked against.
+      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      if (NOT "${symbolFile}" STREQUAL "")
+        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      endif()
+
+      if(CLR_CMAKE_PGO_INSTRUMENT)
+        if(WIN32)
+          get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+          if(is_multi_config)
+              install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL COMPONENT ${INSTALL_CLR_COMPONENT})
+          else()
+              install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL COMPONENT ${INSTALL_CLR_COMPONENT})
+          endif()
+        endif()
+      endif()
+    endforeach()
   endforeach()
 endfunction()
 
@@ -392,19 +432,24 @@ endfunction()
 # - creating executable pages from anonymous memory,
 # - making read-only-after-relocations (RELRO) data pages writable again.
 function(disable_pax_mprotect targetName)
-  # Try to locate the paxctl tool. Failure to find it is not fatal,
-  # but the generated executables won't work on a system where PAX is set
-  # to prevent applications to create executable memory mappings.
-  find_program(PAXCTL paxctl)
+  # Disabling PAX hardening only makes sense in systems that use Elf image formats. Particularly, looking
+  # for paxctl in macOS is problematic as it collides with popular software for that OS that performs completely
+  # unrelated functionality. Only look for it when we'll generate Elf images.
+  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    # Try to locate the paxctl tool. Failure to find it is not fatal,
+    # but the generated executables won't work on a system where PAX is set
+    # to prevent applications to create executable memory mappings.
+    find_program(PAXCTL paxctl)
 
-  if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
-    add_custom_command(
-      TARGET ${targetName}
-      POST_BUILD
-      VERBATIM
-      COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
-    )
-  endif()
+    if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
+        add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+        )
+    endif()
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
 if (CMAKE_VERSION VERSION_LESS "3.12")
@@ -422,69 +467,28 @@ if (CMAKE_VERSION VERSION_LESS "3.16")
   endfunction()
 endif()
 
-function(_add_executable)
+function(add_executable_clr)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
       disable_pax_mprotect(${ARGV})
     else()
       add_executable(${ARGV})
     endif(NOT WIN32)
-    list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)
-    if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)
-     set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)
+    if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+      strip_symbols(${ARGV0} symbolFile)
     endif()
 endfunction()
 
-function(_add_library)
+function(add_library_clr)
     if(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
       add_library(${ARGV} ${VERSION_FILE_PATH})
     else()
       add_library(${ARGV})
     endif(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
-    list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)
-    if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)
-     set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)
+    if("${ARGV1}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+      strip_symbols(${ARGV0} symbolFile)
     endif()
 endfunction()
-
-function(_install)
-    if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-      install(${ARGV})
-    endif()
-endfunction()
-
-function(add_library_clr)
-    _add_library(${ARGV})
-endfunction()
-
-function(add_executable_clr)
-    _add_executable(${ARGV})
-endfunction()
-
-function(generate_module_index Target ModuleIndexFile)
-    if(CLR_CMAKE_HOST_WIN32)
-        set(scriptExt ".cmd")
-    else()
-        set(scriptExt ".sh")
-    endif()
-
-    add_custom_command(
-        OUTPUT ${ModuleIndexFile}
-        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
-        DEPENDS ${Target}
-        COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
-    )
-
-    set_source_files_properties(
-        ${ModuleIndexFile}
-        PROPERTIES GENERATED TRUE
-    )
-
-    add_custom_target(
-        ${Target}_module_index_header
-        DEPENDS ${ModuleIndexFile}
-    )
-endfunction(generate_module_index)
 
 # add_linker_flag(Flag [Config1 Config2 ...])
 function(add_linker_flag Flag)

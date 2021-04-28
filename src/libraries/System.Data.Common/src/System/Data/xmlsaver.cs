@@ -155,7 +155,7 @@ namespace System.Data
                 return;
             }
 
-            if ((!pd.ShouldSerializeValue(instance) || !pd.Attributes.Contains(DesignerSerializationVisibilityAttribute.Visible)) && (bIsSqlType == false))
+            if ((!pd.ShouldSerializeValue(instance) || !ContainsDesignerSerializationVisibleAttribute(pd)) && (bIsSqlType == false))
             {
                 return;
             }
@@ -219,6 +219,10 @@ namespace System.Data
             root.SetAttribute(pd.Name, Keywords.MSDNS, textValue);
             return;
         }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(DesignerSerializationVisibilityAttribute))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
+        private bool ContainsDesignerSerializationVisibleAttribute(PropertyDescriptor pd) => pd.Attributes.Contains(DesignerSerializationVisibilityAttribute.Visible);
 
         internal static string XmlDataTypeName(Type type)
         {

@@ -35,7 +35,7 @@ namespace System.DirectoryServices.ActiveDirectory
         TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL = 0x00000040
     }
 
-    internal class TrustHelper
+    internal static class TrustHelper
     {
         private const int STATUS_OBJECT_NAME_NOT_FOUND = 2;
         internal const int ERROR_NOT_FOUND = 1168;
@@ -55,16 +55,14 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int ERROR_INVALID_LEVEL = 124;
         private static readonly char[] s_punctuations = "!@#$%^&*()_-+=[{]};:>|./?".ToCharArray();
 
-        private TrustHelper() { }
-
-        internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool isForest)
+        internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool isForest)
         {
-            PolicySafeHandle handle = null;
+            PolicySafeHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
-            LSA_UNICODE_STRING trustedDomainName = null;
+            LSA_UNICODE_STRING? trustedDomainName = null;
             bool impersonated = false;
             IntPtr target = (IntPtr)0;
-            string serverName = null;
+            string? serverName = null;
 
             // get policy server name
             serverName = Utils.GetPolicyServerName(context, isForest, false, sourceName);
@@ -154,15 +152,15 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void SetTrustedDomainInfoStatus(DirectoryContext context, string sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool status, bool isForest)
+        internal static void SetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool status, bool isForest)
         {
-            PolicySafeHandle handle = null;
+            PolicySafeHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
             IntPtr newInfo = (IntPtr)0;
-            LSA_UNICODE_STRING trustedDomainName = null;
+            LSA_UNICODE_STRING? trustedDomainName = null;
             bool impersonated = false;
             IntPtr target = (IntPtr)0;
-            string serverName = null;
+            string? serverName = null;
 
             serverName = Utils.GetPolicyServerName(context, isForest, false, sourceName);
 
@@ -284,14 +282,14 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void DeleteTrust(DirectoryContext sourceContext, string sourceName, string targetName, bool isForest)
+        internal static void DeleteTrust(DirectoryContext sourceContext, string? sourceName, string? targetName, bool isForest)
         {
-            PolicySafeHandle policyHandle = null;
-            LSA_UNICODE_STRING trustedDomainName = null;
+            PolicySafeHandle? policyHandle = null;
+            LSA_UNICODE_STRING? trustedDomainName = null;
             int win32Error = 0;
             bool impersonated = false;
             IntPtr target = (IntPtr)0;
-            string serverName = null;
+            string? serverName = null;
             IntPtr buffer = (IntPtr)0;
 
             serverName = Utils.GetPolicyServerName(sourceContext, isForest, false, sourceName);
@@ -363,10 +361,10 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void VerifyTrust(DirectoryContext context, string sourceName, string targetName, bool isForest, TrustDirection direction, bool forceSecureChannelReset, string preferredTargetServer)
+        internal static void VerifyTrust(DirectoryContext context, string? sourceName, string? targetName, bool isForest, TrustDirection direction, bool forceSecureChannelReset, string? preferredTargetServer)
         {
-            PolicySafeHandle policyHandle = null;
-            LSA_UNICODE_STRING trustedDomainName = null;
+            PolicySafeHandle? policyHandle = null;
+            LSA_UNICODE_STRING? trustedDomainName = null;
             int win32Error = 0;
             IntPtr data = (IntPtr)0;
             IntPtr ptr = (IntPtr)0;
@@ -374,7 +372,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr buffer2 = (IntPtr)0;
             bool impersonated = true;
             IntPtr target = (IntPtr)0;
-            string policyServerName = null;
+            string? policyServerName = null;
 
             policyServerName = Utils.GetPolicyServerName(context, isForest, false, sourceName);
 
@@ -478,19 +476,19 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void CreateTrust(DirectoryContext sourceContext, string sourceName, DirectoryContext targetContext, string targetName, bool isForest, TrustDirection direction, string password)
+        internal static void CreateTrust(DirectoryContext sourceContext, string? sourceName, DirectoryContext targetContext, string? targetName, bool isForest, TrustDirection direction, string password)
         {
-            LSA_AUTH_INFORMATION AuthData = null;
-            TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = null;
-            TRUSTED_DOMAIN_INFORMATION_EX tdi = null;
+            LSA_AUTH_INFORMATION? AuthData = null;
+            TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInfoEx = null;
+            TRUSTED_DOMAIN_INFORMATION_EX? tdi = null;
             IntPtr fileTime = (IntPtr)0;
             IntPtr unmanagedPassword = (IntPtr)0;
             IntPtr info = (IntPtr)0;
             IntPtr domainHandle = (IntPtr)0;
-            PolicySafeHandle policyHandle = null;
+            PolicySafeHandle? policyHandle = null;
             IntPtr unmanagedAuthData = (IntPtr)0;
             bool impersonated = false;
-            string serverName = null;
+            string? serverName = null;
 
             // get the domain info first
             info = GetTrustedDomainInfo(targetContext, targetName, isForest);
@@ -597,21 +595,21 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static string UpdateTrust(DirectoryContext context, string sourceName, string targetName, string password, bool isForest)
+        internal static string UpdateTrust(DirectoryContext context, string? sourceName, string? targetName, string password, bool isForest)
         {
-            PolicySafeHandle handle = null;
+            PolicySafeHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
-            LSA_UNICODE_STRING trustedDomainName = null;
+            LSA_UNICODE_STRING? trustedDomainName = null;
             IntPtr newBuffer = (IntPtr)0;
             bool impersonated = false;
-            LSA_AUTH_INFORMATION AuthData = null;
+            LSA_AUTH_INFORMATION? AuthData = null;
             IntPtr fileTime = (IntPtr)0;
             IntPtr unmanagedPassword = (IntPtr)0;
             IntPtr unmanagedAuthData = (IntPtr)0;
-            TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = null;
+            TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInfoEx = null;
             TrustDirection direction;
             IntPtr target = (IntPtr)0;
-            string serverName = null;
+            string? serverName = null;
 
             serverName = Utils.GetPolicyServerName(context, isForest, false, sourceName);
 
@@ -651,10 +649,10 @@ namespace System.DirectoryServices.ActiveDirectory
                     Marshal.PtrToStructure(buffer, domainInfo);
 
                     // validate the trust attribute first
-                    ValidateTrustAttribute(domainInfo.Information, isForest, sourceName, targetName);
+                    ValidateTrustAttribute(domainInfo.Information!, isForest, sourceName, targetName);
 
                     // get trust direction
-                    direction = (TrustDirection)domainInfo.Information.TrustDirection;
+                    direction = (TrustDirection)domainInfo.Information!.TrustDirection;
 
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
@@ -731,20 +729,20 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void UpdateTrustDirection(DirectoryContext context, string sourceName, string targetName, string password, bool isForest, TrustDirection newTrustDirection)
+        internal static void UpdateTrustDirection(DirectoryContext context, string? sourceName, string? targetName, string password, bool isForest, TrustDirection newTrustDirection)
         {
-            PolicySafeHandle handle = null;
+            PolicySafeHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
-            LSA_UNICODE_STRING trustedDomainName = null;
+            LSA_UNICODE_STRING? trustedDomainName = null;
             IntPtr newBuffer = (IntPtr)0;
             bool impersonated = false;
-            LSA_AUTH_INFORMATION AuthData = null;
+            LSA_AUTH_INFORMATION? AuthData = null;
             IntPtr fileTime = (IntPtr)0;
             IntPtr unmanagedPassword = (IntPtr)0;
             IntPtr unmanagedAuthData = (IntPtr)0;
-            TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = null;
+            TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInfoEx = null;
             IntPtr target = (IntPtr)0;
-            string serverName = null;
+            string? serverName = null;
 
             serverName = Utils.GetPolicyServerName(context, isForest, false, sourceName);
 
@@ -784,7 +782,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     Marshal.PtrToStructure(buffer, domainInfo);
 
                     // validate the trust attribute first
-                    ValidateTrustAttribute(domainInfo.Information, isForest, sourceName, targetName);
+                    ValidateTrustAttribute(domainInfo.Information!, isForest, sourceName, targetName);
 
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
@@ -836,7 +834,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // reconstruct the unmanaged structure to set it back
                     domainInfo.AuthInformation = AuthInfoEx;
                     // reset the trust direction
-                    domainInfo.Information.TrustDirection = (int)newTrustDirection;
+                    domainInfo.Information!.TrustDirection = (int)newTrustDirection;
 
                     newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
@@ -876,7 +874,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        private static void ValidateTrust(PolicySafeHandle handle, LSA_UNICODE_STRING trustedDomainName, string sourceName, string targetName, bool isForest, int direction, string serverName)
+        private static void ValidateTrust(PolicySafeHandle handle, LSA_UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
         {
             IntPtr buffer = (IntPtr)0;
 
@@ -926,7 +924,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private static void ValidateTrustAttribute(TRUSTED_DOMAIN_INFORMATION_EX domainInfo, bool isForest, string sourceName, string targetName)
+        private static void ValidateTrustAttribute(TRUSTED_DOMAIN_INFORMATION_EX domainInfo, bool isForest, string? sourceName, string? targetName)
         {
             if (isForest)
             {
@@ -982,12 +980,12 @@ namespace System.DirectoryServices.ActiveDirectory
             return password;
         }
 
-        private static IntPtr GetTrustedDomainInfo(DirectoryContext targetContext, string targetName, bool isForest)
+        private static IntPtr GetTrustedDomainInfo(DirectoryContext targetContext, string? targetName, bool isForest)
         {
-            PolicySafeHandle policyHandle = null;
+            PolicySafeHandle? policyHandle = null;
             IntPtr buffer = (IntPtr)0;
             bool impersonated = false;
-            string serverName = null;
+            string? serverName = null;
 
             try
             {

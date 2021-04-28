@@ -46,10 +46,10 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     # tests collection takes longer so increase timeout to 8 hours
-    ${{ if eq(parameters.collectionName, 'tests') }}:
+    ${{ if or(eq(parameters.collectionName, 'tests'), eq(parameters.collectionName, 'tests_libraries')) }}:
       timeoutInMinutes: 480
-    ${{ if ne(parameters.collectionName, 'tests') }}:
-      timeoutInminutes: ${{ parameters.timeoutInMinutes }}
+    ${{ if and(ne(parameters.collectionName, 'tests'), ne(parameters.collectionName, 'tests_libraries')) }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
 
@@ -75,6 +75,10 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+      - name: MergedMchFileLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
@@ -84,12 +88,22 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+      - name: MergedMchFileLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
+    - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
+      - name: InputDirectory
+        value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
     workspace:
       clean: all
     pool:
@@ -103,8 +117,20 @@ jobs:
     steps:
     - ${{ parameters.steps }}
   
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -max_size 50 # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 50 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
+
+    # Create required directories for merged mch collection and superpmi logs
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir -p $(MergedMchFileLocation)
+          mkdir -p $(SpmiLogsLocation)
+        displayName: Create directory for merged collection
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir $(MergedMchFileLocation)
+          mkdir $(SpmiLogsLocation)
+        displayName: Create directories
 
       # Run superpmi collection in helix
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
@@ -124,33 +150,50 @@ jobs:
         InputArtifacts: '$(InputArtifacts)'
         CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'
+        continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
 
-    - task: PublishPipelineArtifact@1
-      displayName: Publish SuperPMI collection
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-        artifactName: 'SuperPMI_Result_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
-      continueOnError: true
-      condition: always()
-
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MchFilesLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+    # Always run merged step even if collection of some partition fails so we can store collection
+    # of the partitions that succeeded. If all the partitions fail, merge-mch would fail and we won't
+    # run future steps like uploading superpmi collection.
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
       displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
-      continueOnError: true
       condition: always()
 
-    # For now, we won't upload merged collection as an artifact.
+    # If merge step above fails, then skip "Upload as artifact" and "Upload to Azure storage"
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(MergedMchFileLocation)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
       displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
-      continueOnError: true
+
+    # Always upload the available logs for diagnostics
+    - task: CopyFiles@2
+      displayName: Copying superpmi.log of all partitions
+      inputs:
+        sourceFolder: '$(MchFilesLocation)'
+        contents: '**/$(CollectionName).$(CollectionType)*.log'
+        targetFolder: '$(SpmiLogsLocation)'
       condition: always()
 
     - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
+      displayName: Publish Superpmi logs
+      inputs:
+        targetPath: $(SpmiLogsLocation)
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
-      continueOnError: true
+        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
       condition: always()

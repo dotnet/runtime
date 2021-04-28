@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class ExpandoToDispatchExMarshaler : ICustomMarshaler
+    internal sealed class ExpandoToDispatchExMarshaler : ICustomMarshaler
     {
         private static readonly ExpandoToDispatchExMarshaler s_ExpandoToDispatchExMarshaler = new ExpandoToDispatchExMarshaler();
 

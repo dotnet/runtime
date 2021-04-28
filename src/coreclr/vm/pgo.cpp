@@ -50,69 +50,6 @@ const char* const         PgoManager::s_FourByte = "%u\n";
 const char* const         PgoManager::s_EightByte = "%u %u\n";
 const char* const         PgoManager::s_TypeHandle = "TypeHandle: %s\n";
 
-// Data item in class profile histogram
-//
-struct HistogramEntry
-{
-    // Class that was observed at runtime
-    INT_PTR m_mt; // This may be an "unknown type handle"
-    // Number of observations in the table
-    unsigned             m_count;
-};
-
-// Summarizes a ClassProfile table by forming a Histogram
-//
-struct Histogram
-{
-    Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount);
-
-    // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in m_histogram
-    unsigned m_totalCount;
-    // Rough guess at count of unknown types
-    unsigned m_unknownTypes;
-    // Histogram entries, in no particular order.
-    // The first m_count of these will be valid.
-    StackSArray<HistogramEntry> m_histogram;
-};
-
-Histogram::Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount)
-{
-    m_unknownTypes = 0;
-    m_totalCount = 0;
-    uint32_t unknownTypeHandleMask = 0;
-
-    for (unsigned k = 0; k < entryCount; k++)
-    {
-        if (histogramEntries[k] == 0)
-        {
-            continue;
-        }
-        
-        m_totalCount++;
-
-        INT_PTR currentEntry = histogramEntries[k];
-        
-        bool found = false;
-        unsigned h = 0;
-        for(; h < m_histogram.GetCount(); h++)
-        {
-            if (m_histogram[h].m_mt == currentEntry)
-            {
-                m_histogram[h].m_count++;
-                found = true;
-                break;
-            }
-        }
-        
-        if (!found)
-        {
-            HistogramEntry newEntry;
-            newEntry.m_mt = currentEntry;
-            newEntry.m_count = 1;
-            m_histogram.Append(newEntry);
-        }
-    }
-}
 
 PtrSHash<PgoManager::Header, PgoManager::CodeAndMethodHash> PgoManager::s_textFormatPgoData;
 CrstStatic PgoManager::s_pgoMgrLock;
@@ -653,14 +590,8 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::
         return E_NOTIMPL;
     }
 
-    // Determine alignment of instrumentation data
-    UINT maxAlign = 0;
-    for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
-    {
-        maxAlign = max(InstrumentationKindToAlignment(pSchema[iSchema].InstrumentationKind), maxAlign);
-    }
-
-    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, maxAlign);
+    // Align all instrumentation at size_t alignment, as the copy routine will copy in size_t units
+    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, sizeof(size_t));
     return S_OK;
 }
 
@@ -817,7 +748,6 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
 
                 if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, &schemaArray))
                 {
-                    
                     EX_TRY
                     {
                         // TypeHandles can't reliably be loaded at ReadPGO time
@@ -835,7 +765,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                 {
                                     INT_PTR* typeHandleValueAddress = (INT_PTR*)(found->GetData() + schema->Offset + iEntry * InstrumentationKindToSize(schema->InstrumentationKind));
                                     INT_PTR initialTypeHandleValue = VolatileLoad(typeHandleValueAddress);
-                                    if (((initialTypeHandleValue & 1) == 1) && !IsUnknownTypeHandle(initialTypeHandleValue))
+                                    if (((initialTypeHandleValue & 1) == 1) && !ICorJitInfo::IsUnknownTypeHandle(initialTypeHandleValue))
                                     {
                                         INT_PTR newPtr = 0;
                                         TypeHandle th;
@@ -1054,17 +984,17 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, &schemaArray))
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
     {
-        size_t schemaDataSize = schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
+        size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
         size_t instrumentationDataSize = 0;
         if (schemaArray.GetCount() > 0)
         {
             auto lastSchema = schemaArray[schemaArray.GetCount() - 1];
-            instrumentationDataSize = lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind) - found->header.countsOffset;
+            instrumentationDataSize = AlignUp(lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind), sizeof(size_t));
         }
         *pAllocatedData = new BYTE[schemaDataSize + instrumentationDataSize];
-        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)pAllocatedData;
+        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)*pAllocatedData;
         *pCountSchemaItems = schemaArray.GetCount();
         memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
         schemaArray.CloseRawBuffer();
@@ -1072,7 +1002,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
         size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
         *pInstrumentationData = (BYTE*)pInstrumentationDataDst;
-        volatile size_t*pSrc = (volatile size_t*)found->header.GetData();
+        volatile size_t*pSrc = (volatile size_t*)(found->header.GetData() + found->header.countsOffset);
         // Use a volatile memcpy to copy the instrumentation data into a temporary buffer
         // This allows the instrumentation data to be made stable for reading during the execution of the jit
         // and since the copy moves through a volatile pointer, there will be no tearing of individual data elements
@@ -1087,125 +1017,6 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         _ASSERTE(!"Unable to parse schema data");
         return E_NOTIMPL;
     }
-}
-
-// See if there is a class profile for this method at the indicated il Offset.
-// If so, return the most frequently seen class, along with the likelihood that
-// it was the class seen, and the total number of classes seen.
-//
-// Return NULL if there is no profile data to be found.
-//
-CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
-{
-    *pLikelihood = 0;
-    *pNumberOfClasses = 0;
-
-    NewArrayHolder<BYTE> allocatedData;
-    ICorJitInfo::PgoInstrumentationSchema* schema;
-    BYTE* pInstrumentationData;
-    UINT32 cSchema;
-    HRESULT hr = getPgoInstrumentationResults(pMD, &allocatedData, &schema, &cSchema, &pInstrumentationData);
-
-    // Failed to find any sort of profile data for this method
-    //
-    if (FAILED(hr))
-    {
-        return NULL;
-    }
-
-    // TODO This logic should be moved to the JIT
-    for (COUNT_T i = 0; i < cSchema; i++)
-    {
-        if (schema[i].ILOffset != (int32_t)ilOffset)
-            continue;
-
-        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
-            (schema[i].Count == 1) &&
-            ((i + 1) < cSchema) &&
-            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
-        {
-            // Form a histogram
-            //
-            Histogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
-
-            // Use histogram count as number of classes estimate
-            //
-            *pNumberOfClasses = h.m_histogram.GetCount() + h.m_unknownTypes;
-
-            // Report back what we've learned
-            // (perhaps, use count to augment likelihood?)
-            // 
-            switch (*pNumberOfClasses)
-            {
-                case 0:
-                {
-                    return NULL;
-                }
-                break;
-
-                case 1:
-                {
-                    if (IsUnknownTypeHandle(h.m_histogram[0].m_mt))
-                    {
-                        return NULL;
-                    }
-                    *pLikelihood = 100;
-                    return (CORINFO_CLASS_HANDLE)h.m_histogram[0].m_mt;
-                }
-                break;
-
-                case 2:
-                {
-                    if ((h.m_histogram[0].m_count >= h.m_histogram[1].m_count) && !IsUnknownTypeHandle(h.m_histogram[0].m_mt))
-                    {
-                        *pLikelihood = (100 * h.m_histogram[0].m_count) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.m_histogram[0].m_mt;
-                    }
-                    else if (!IsUnknownTypeHandle(h.m_histogram[1].m_mt))
-                    {
-                        *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.m_histogram[1].m_mt;
-                    }
-                    else
-                    {
-                        return NULL;
-                    }
-                }
-                break;
-
-                default:
-                {
-                    // Find maximum entry and return it
-                    //
-                    unsigned maxKnownIndex = 0;
-                    unsigned maxKnownCount = 0;
-
-                    for (unsigned m = 0; m < h.m_histogram.GetCount(); m++)
-                    {
-                        if ((h.m_histogram[m].m_count > maxKnownCount) && !IsUnknownTypeHandle(h.m_histogram[m].m_mt))
-                        {
-                            maxKnownIndex = m;
-                            maxKnownCount = h.m_histogram[m].m_count;
-                        }
-                    }
-
-                    if (maxKnownCount > 0)
-                    {
-                        *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;;
-                        return (CORINFO_CLASS_HANDLE)h.m_histogram[maxKnownIndex].m_mt;
-                    }
-
-                    return NULL;
-                }
-                break;
-            }
-
-        }
-    }
-
-    // Failed to find histogram data for this method
-    //
-    return NULL;
 }
 
 #else
@@ -1234,13 +1045,6 @@ void PgoManager::VerifyAddress(void* address)
 
 // Stub version for !FEATURE_PGO builds
 //
-CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
-{
-    *pLikelihood = 0;
-    *pNumberOfClasses = 0;
-    return NULL;
-}
-
 void PgoManager::CreatePgoManager(PgoManager** ppMgr, bool loaderAllocator)
 {
     *ppMgr = NULL;

@@ -26,156 +26,6 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task CreateGoodBreakpoint()
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            Assert.EndsWith("debugger-test.cs", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc["scriptId"]);
-            Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
-            Assert.Equal(10, loc["lineNumber"]);
-            Assert.Equal(8, loc["columnNumber"]);
-        }
-
-        [Fact]
-        public async Task CreateJSBreakpoint()
-        {
-            // Test that js breakpoints get set correctly
-            // 13 24
-            // 13 31
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
-
-            Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
-
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
-
-            Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(31, loc2["columnNumber"]);
-        }
-
-        [Fact]
-        public async Task CreateJS0Breakpoint()
-        {
-            // 13 24
-            // 13 31
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
-
-            Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
-
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
-
-            Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-            Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(31, loc2["columnNumber"]);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(50)]
-        public async Task CheckMultipleBreakpointsOnSameLine(int col)
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, col);
-            Assert.EndsWith("debugger-array-test.cs", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 50, scripts, loc);
-
-            var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55);
-            Assert.EndsWith("debugger-array-test.cs", bp2_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-            CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55, scripts, loc2);
-        }
-
-        [Fact]
-        public async Task CreateBadBreakpoint()
-        {
-            var bp1_req = JObject.FromObject(new
-            {
-                lineNumber = 8,
-                columnNumber = 2,
-                url = "dotnet://debugger-test.dll/this-file-doesnt-exist.cs",
-            });
-
-            var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
-
-            Assert.True(bp1_res.IsOk);
-            Assert.Empty(bp1_res.Value["locations"].Values<object>());
-            //Assert.Equal ((int)MonoErrorCodes.BpNotFound, bp1_res.Error ["code"]?.Value<int> ());
-        }
-
-        [Fact]
-        public async Task CreateGoodBreakpointAndHit()
-        {
-            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            var eval_req = JObject.FromObject(new
-            {
-                expression = "window.setTimeout(function() { invoke_add(); }, 1);",
-            });
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd",
-                wait_for_event_fn: (pause_location) =>
-                {
-                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
-                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-
-                    var top_frame = pause_location["callFrames"][0];
-                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
-                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
-
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
-
-                    //now check the scope
-                    var scope = top_frame["scopeChain"][0];
-                    Assert.Equal("local", scope["type"]);
-                    Assert.Equal("IntAdd", scope["name"]);
-
-                    Assert.Equal("object", scope["object"]["type"]);
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
-                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
-                    return Task.CompletedTask;
-                }
-            );
-        }
-
-        [Fact]
         public async Task ExceptionThrownInJS()
         {
             var eval_req = JObject.FromObject(new
@@ -718,7 +568,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 22);
+                }, "dto_props", num_fields: 20);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
@@ -976,36 +826,26 @@ namespace DebuggerTests
             Assert.DoesNotContain(source_location, scripts.Values);
         }
 
-        async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        [Fact]
+        public async Task GetSourceUsingSourceLink()
         {
-            // Simulate loading an assembly into the framework
-            byte[] bytes = File.ReadAllBytes(asm_file);
-            string asm_base64 = Convert.ToBase64String(bytes);
+            var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test-with-source-link] DebuggerTests.ClassToBreak:TestBreakpoint'); }, 1);",
+                "dotnet://debugger-test-with-source-link.dll/test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "TestBreakpoint");
 
-            string pdb_base64 = null;
-            if (pdb_file != null)
+            var sourceToGet = JObject.FromObject(new
             {
-                bytes = File.ReadAllBytes(pdb_file);
-                pdb_base64 = Convert.ToBase64String(bytes);
-            }
-
-            var load_assemblies = JObject.FromObject(new
-            {
-                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
             });
 
-            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
-            Assert.True(load_assemblies_res.IsOk);
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.True(source.IsOk);
         }
 
-        [Fact]
-        public async Task BreakOnDebuggerBreak()
-        {
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
-                "BreakOnDebuggerBreakCommand");
-        }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

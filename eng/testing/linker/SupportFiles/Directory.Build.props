@@ -1,12 +1,20 @@
 <Project>
   <PropertyGroup>
+    <SkipConfigureTrimming>true</SkipConfigureTrimming>
+    <UseDefaultBlazorWASMFeatureSwitches>false</UseDefaultBlazorWASMFeatureSwitches>
+    <UseDefaultAndroidFeatureSwitches>false</UseDefaultAndroidFeatureSwitches>
+    <UseDefaultiOSFeatureSwitches>false</UseDefaultiOSFeatureSwitches>
     <PublishTrimmed>true</PublishTrimmed>
+    <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
     <TrimMode>link</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PlatformManifestFile />
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <ItemGroup>

@@ -116,7 +116,7 @@ jobs:
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
-        image: ubuntu-18.04-cross-arm-alpine-20200818211451-14441ae
+        image: ubuntu-16.04-cross-arm-alpine-20210409142327-044d5b9
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -180,6 +180,31 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: linux-x64
+      platform: Linux_x64
+      container:
+        image: centos-7-source-build-20210408124356-5d87b80
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+        buildingOnSourceBuildImage: true
+
 # WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
@@ -188,13 +213,33 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
+      hostedOs: Linux
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20201218203401-96da775
+        image: ubuntu-18.04-webassembly-20210309143118-005aab4
         registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+- ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      hostedOs: windows
+      osGroup: Browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: Browser_wasm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -323,18 +368,39 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# tvOS x64
+# Mac Catalyst x64
 
-- ${{ if containsValue(parameters.platforms, 'tvOS_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'MacCatalyst_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS
+      osGroup: MacCatalyst
       archType: x64
-      targetRid: tvos-x64
-      platform: tvOS_x64
+      targetRid: maccatalyst-x64
+      platform: MacCatalyst_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Mac Catalyst arm64
+
+- ${{ if containsValue(parameters.platforms, 'MacCatalyst_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: MacCatalyst
+      archType: arm64
+      targetRid: maccatalyst-arm64
+      platform: MacCatalyst_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -365,18 +431,18 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS x64
+# tvOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvOSSimulator_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
+      osGroup: tvOSSimulator
       archType: x64
-      targetRid: ios-x64
-      platform: iOS_x64
+      targetRid: tvossimulator-x64
+      platform: tvOSSimulator_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -386,18 +452,18 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS x86
+# tvOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'iOS_x86') }}:
+- ${{ if containsValue(parameters.platforms, 'tvOSSimulator_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      archType: x86
-      targetRid: ios-x86
-      platform: iOS_x86
+      osGroup: tvOSSimulator
+      archType: arm64
+      targetRid: tvossimulator-arm64
+      platform: tvOSSimulator_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -405,7 +471,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS arm
@@ -441,6 +506,70 @@ jobs:
       archType: arm64
       targetRid: ios-arm64
       platform: iOS_arm64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS Simulator x64
+
+- ${{ if containsValue(parameters.platforms, 'iOSSimulator_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: iOSSimulator
+      archType: x64
+      targetRid: iossimulator-x64
+      platform: iOSSimulator_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS Simulator x86
+
+- ${{ if containsValue(parameters.platforms, 'iOSSimulator_x86') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: iOSSimulator
+      archType: x86
+      targetRid: iossimulator-x86
+      platform: iOSsimulator_x86
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS Simulator arm64
+
+- ${{ if containsValue(parameters.platforms, 'iOSSimulator_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: iOSSimulator
+      archType: arm64
+      targetRid: iossimulator-arm64
+      platform: iOSSimulator_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}

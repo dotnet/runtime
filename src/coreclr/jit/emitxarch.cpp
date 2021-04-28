@@ -506,6 +506,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         switch (ins)
         {
+            case INS_movd: // TODO-Cleanup: replace with movq, https://github.com/dotnet/runtime/issues/47943.
             case INS_andn:
             case INS_bextr:
             case INS_blsi:
@@ -518,8 +519,6 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_cvtss2si:
             case INS_cvtsi2sd:
             case INS_cvtsi2ss:
-            case INS_mov_xmm2i:
-            case INS_mov_i2xmm:
             case INS_movnti:
             case INS_mulx:
             case INS_pdep:
@@ -1239,7 +1238,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_cvtsd2si:
         case INS_cvtss2si:
         case INS_extractps:
-        case INS_mov_xmm2i:
+        case INS_movd:
         case INS_movmskpd:
         case INS_movmskps:
         case INS_mulx:
@@ -2710,7 +2709,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
     while (insAlignCount)
     {
-        emitLoopAlign();
+        emitLoopAlign(MAX_ENCODED_SIZE);
         insAlignCount--;
     }
     emitLoopAlign(lastInsAlignSize);
@@ -3095,7 +3094,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3153,7 +3152,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3689,10 +3688,19 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
                 break;
         }
 
-        id = emitNewInstrAmdCns(attr, offset, iconVal);
-        emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
-        id->idIns(ins);
-        sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        if (addr->isContained() && addr->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_I(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs(), iconVal);
+            return;
+        }
+        else
+        {
+            id = emitNewInstrAmdCns(attr, offset, iconVal);
+            emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
+            id->idIns(ins);
+            sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        }
     }
     else
     {
@@ -3744,6 +3752,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
+    }
+
+    if (addr->isContained() && addr->OperIsLocalAddr())
+    {
+        GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+        emitIns_S(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs());
+        return;
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);
@@ -5148,7 +5163,7 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
 {
     assert(ins == INS_mov);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescLbl* id = emitNewInstrLbl();
 
@@ -5207,7 +5222,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     assert(ins == INS_lea);
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -6773,7 +6788,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
     if (dst != nullptr)
     {
-        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(dst->bbFlags & BBF_HAS_LABEL);
         assert(instrCount == 0);
     }
     else
@@ -8837,15 +8852,7 @@ void emitter::emitDispIns(
         case IF_RRD_RRD:
         case IF_RWR_RRD:
         case IF_RRW_RRD:
-            if (ins == INS_mov_i2xmm)
-            {
-                printf("%s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
-            }
-            else if (ins == INS_mov_xmm2i)
-            {
-                printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
-            }
-            else if (ins == INS_pmovmskb)
+            if (ins == INS_pmovmskb)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
             }
@@ -9232,6 +9239,12 @@ void emitter::emitDispIns(
             break;
 
         case IF_NONE:
+#if FEATURE_LOOP_ALIGN
+            if (ins == INS_align)
+            {
+                printf("[%d bytes]", id->idCodeSize());
+            }
+#endif
             break;
 
         default:
@@ -9437,6 +9450,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     {
         assert(paddingToAdd == paddingNeeded);
     }
+
+    emitComp->loopsAligned++;
 #endif
 
     return emitOutputNOP(dst, paddingToAdd);
@@ -11447,11 +11462,19 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     regNumber   reg2 = id->idReg2();
     emitAttr    size = id->idOpSize();
 
-    // Get the 'base' opcode
-    code = insCodeRM(ins);
-    code = AddVexPrefixIfNeeded(ins, code, size);
     if (IsSSEOrAVXInstruction(ins))
     {
+        assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
+
+        if ((ins != INS_movd) || isFloatReg(reg1))
+        {
+            code = insCodeRM(ins);
+        }
+        else
+        {
+            code = insCodeMR(ins);
+        }
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);
 
         if (TakesRexWPrefix(ins, size))
@@ -11461,6 +11484,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else if ((ins == INS_movsx) || (ins == INS_movzx) || (insIsCMOV(ins)))
     {
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
+        code = insCodeRM(ins);
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code) | (int)(size == EA_2BYTE);
 #ifdef TARGET_AMD64
 
@@ -11472,6 +11498,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else if (ins == INS_movsxd)
     {
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
+        code = insCodeRM(ins);
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);
 
 #endif // TARGET_AMD64
@@ -11480,6 +11509,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
              (ins == INS_tzcnt))
     {
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
+        code = insCodeRM(ins);
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);
         if ((ins == INS_crc32) && (size > EA_1BYTE))
         {
@@ -11499,7 +11531,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // FEATURE_HW_INTRINSICS
     else
     {
-        code = insEncodeMRreg(ins, insCodeMR(ins));
+        assert(!TakesVexPrefix(ins));
+        code = insCodeMR(ins);
+        code = insEncodeMRreg(ins, code);
 
         if (ins != INS_test)
         {
@@ -11531,6 +11565,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 {
                     code = AddRexWPrefix(ins, code);
                 }
+                else
+                {
+                    id->idOpSize(EA_4BYTE);
+                }
 
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
@@ -11543,17 +11581,27 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 
-    regNumber reg345 = REG_NA;
+    regNumber regFor012Bits = reg2;
+    regNumber regFor345Bits = REG_NA;
     if (IsBMIInstruction(ins))
     {
-        reg345 = getBmiRegNumber(ins);
+        regFor345Bits = getBmiRegNumber(ins);
     }
-    if (reg345 == REG_NA)
+    if (regFor345Bits == REG_NA)
     {
-        reg345 = id->idReg1();
+        regFor345Bits = reg1;
     }
-    unsigned regCode = insEncodeReg345(ins, reg345, size, &code);
-    regCode |= insEncodeReg012(ins, reg2, size, &code);
+    if (ins == INS_movd)
+    {
+        assert(isFloatReg(reg1) != isFloatReg(reg2));
+        if (isFloatReg(reg2))
+        {
+            std::swap(regFor012Bits, regFor345Bits);
+        }
+    }
+
+    unsigned regCode = insEncodeReg345(ins, regFor345Bits, size, &code);
+    regCode |= insEncodeReg012(ins, regFor012Bits, size, &code);
 
     if (TakesVexPrefix(ins))
     {
@@ -11648,7 +11696,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     }
                 }
 
-                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                emitGCregLiveUpd(id->idGCref(), reg1, dst);
                 break;
 
             case IF_RRW_RRD:
@@ -11668,13 +11716,13 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
                     */
                     case INS_xor:
-                        assert(id->idReg1() == id->idReg2());
-                        emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                        assert(reg1 == reg2);
+                        emitGCregLiveUpd(id->idGCref(), reg1, dst);
                         break;
 
                     case INS_or:
                     case INS_and:
-                        emitGCregDeadUpd(id->idReg1(), dst);
+                        emitGCregDeadUpd(reg1, dst);
                         break;
 
                     case INS_add:
@@ -11691,7 +11739,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                                ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
 #endif
                         // Mark r1 as holding a byref
-                        emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
+                        emitGCregLiveUpd(GCT_BYREF, reg1, dst);
                         break;
 
                     default:
@@ -11773,15 +11821,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 case IF_RWR_RRD:
                 case IF_RRW_RRD:
                 case IF_RWR_RRD_RRD:
-                    // INS_movxmm2i writes to reg2.
-                    if (ins == INS_mov_xmm2i)
-                    {
-                        emitGCregDeadUpd(id->idReg2(), dst);
-                    }
-                    else
-                    {
-                        emitGCregDeadUpd(id->idReg1(), dst);
-                    }
+                    emitGCregDeadUpd(reg1, dst);
                     break;
 
                 default:
@@ -12510,13 +12550,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
         if (id->idCodeSize() != JMP_SIZE_SMALL)
         {
-            emitOffsAdj += id->idCodeSize() - JMP_SIZE_SMALL;
-
-#ifdef DEBUG
-            if (emitComp->verbose)
+#if DEBUG_EMIT || defined(DEBUG)
+            int offsShrinkage = id->idCodeSize() - JMP_SIZE_SMALL;
+            if (INDEBUG(emitComp->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
+                                              INTERESTING_JUMP_NUM == 0))
             {
-                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id),
-                       (id->idCodeSize() - JMP_SIZE_SMALL));
+                printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
 #endif
         }
@@ -12677,11 +12716,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
 
-    BYTE*         dst               = *dp;
-    size_t        sz                = sizeof(instrDesc);
-    instruction   ins               = id->idIns();
-    unsigned char callInstrSize     = 0;
-    int           emitOffsAdjBefore = emitOffsAdj;
+    BYTE*         dst           = *dp;
+    size_t        sz            = sizeof(instrDesc);
+    instruction   ins           = id->idIns();
+    unsigned char callInstrSize = 0;
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
@@ -13860,18 +13898,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
             dst = emitOutputNOP(dst, diff);
-
-            // since we compensated the over-estimation, revert the offsAdj that
-            // might have happened in the jump
-            if (emitOffsAdjBefore != emitOffsAdj)
-            {
-#ifdef DEBUG
-                insFormat format = id->idInsFmt();
-                assert((format == IF_LABEL) || (format == IF_RWR_LABEL) || (format == IF_SWR_LABEL));
-                assert(diff == (emitOffsAdj - emitOffsAdjBefore));
-#endif
-                emitOffsAdj -= diff;
-            }
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }
@@ -14277,7 +14303,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
             result.insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (id->idInsFmt() == IF_RWR_LABEL)
+            if (insFmt == IF_RWR_LABEL)
             {
                 // RIP relative addressing
                 //
@@ -14285,7 +14311,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 //
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
-            else if (id->idInsFmt() != IF_RWR_SRD)
+            else if (insFmt != IF_RWR_SRD)
             {
                 if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
                 {
@@ -14333,11 +14359,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_14:
         case INS_imul_15:
 #endif // TARGET_AMD64
-        case INS_mulEAX:
-        case INS_imulEAX:
         case INS_imul:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_3C;
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_mulEAX:
+        case INS_imulEAX:
+            // uops.info: mul/imul rdx:rax,reg latency is 3 only if the low half of the result is needed, but in that
+            // case codegen uses imul reg,reg instruction form (except for unsigned overflow checks, which are rare)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_div:
@@ -14351,12 +14383,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insThroughput = PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
         case INS_idiv:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
             // The integer divide instructions have long latenies
             if ((id->idOpSize() == EA_8BYTE))
             {
@@ -14367,7 +14398,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insThroughput = PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
@@ -14394,19 +14425,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case IF_ARW_CNS:
                     // ins   [mem], cns
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency += PERFSCORE_LATENCY_1C;
                     break;
 
-                case IF_RRW: // probably should use INS_shl_N
+                case IF_RRW:
                     // ins   reg, cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case IF_MRW: // probably should use INS_shr_N
+                case IF_MRW:
                 case IF_SRW:
                 case IF_ARW:
                     // ins   [mem], cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    result.insLatency += PERFSCORE_LATENCY_2C;
                     break;
 
                 default:
@@ -14419,7 +14452,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_shl_1:
         case INS_shr_1:
         case INS_sar_1:
-            result.insLatency = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW:
@@ -14444,7 +14477,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_ror_1:
         case INS_rol_1:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             break;
 
         case INS_shl_N:
@@ -14452,19 +14485,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_sar_N:
         case INS_ror_N:
         case INS_rol_N:
-            result.insLatency = PERFSCORE_LATENCY_2C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW_SHF:
-                    // ins   reg, cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    // ins   reg, cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     break;
 
                 case IF_MRW_SHF:
                 case IF_SRW_SHF:
                 case IF_ARW_SHF:
-                    // ins   [mem], cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    // ins   [mem], cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
                 default:
@@ -14477,13 +14510,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_rcr:
         case INS_rcl:
             result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
 
         case INS_rcr_1:
         case INS_rcl_1:
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_2C;
             break;
 
         case INS_shld:
@@ -14681,18 +14715,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_25C;
             break;
 
-        case INS_mov_xmm2i:
-            // movd  reg, xmm
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            break;
-
-        case INS_mov_i2xmm:
-            // movd  xmm, reg
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
-
         case INS_movd:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -14884,16 +14906,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_sqrtsd:
         case INS_sqrtpd:
-        case INS_rcpps:
-        case INS_rcpss:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency += PERFSCORE_LATENCY_13C;
             break;
 
+        case INS_rcpps:
+        case INS_rcpss:
         case INS_rsqrtss:
         case INS_rsqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_12C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_roundpd:

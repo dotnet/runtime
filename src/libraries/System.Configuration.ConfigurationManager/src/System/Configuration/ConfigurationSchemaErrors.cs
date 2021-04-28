@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Configuration
 {
-    internal class ConfigurationSchemaErrors
+    internal sealed class ConfigurationSchemaErrors
     {
         // All errors related to a config file are logged to this list.
         // This includes all global errors, all non-specific errors,

@@ -176,9 +176,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 using (X509Chain chain = new X509Chain())
                 {
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                     chain.ChainPolicy.ExtraStore.Add(rootCert);
                     chain.ChainPolicy.VerificationTime = start.ToLocalTime().DateTime;
+                    chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(rootCert);
 
                     if (useIntermed)
                     {
@@ -418,11 +418,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 using (X509Chain chain = new X509Chain())
                 {
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                     chain.ChainPolicy.ExtraStore.Add(intermed1CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(intermed2CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
                     chain.ChainPolicy.VerificationTime = now.ToLocalTime().DateTime;
+
+                    chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(rootCertWithKey);
 
                     RunChain(chain, leafCert, true, "Initial chain build");
 
@@ -505,7 +506,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     using (X509Chain chain = new X509Chain())
                     {
                         chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                        chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                        chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(rootCertWithKey);
                         chain.ChainPolicy.ExtraStore.Add(intermedCertWithKey);
                         chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
                         chain.ChainPolicy.VerificationTime = notBefore.ToLocalTime().DateTime;
@@ -525,6 +526,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         private static bool DetectPssSupport()
         {
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android supports PSS at the algorithms layer, but does not support it
+                // being used in cert chains.
+                return false;
+            }
+
             using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             using (RSA rsa = cert.GetRSAPrivateKey())
             {

@@ -441,18 +441,20 @@ namespace System.Linq
             return value;
         }
 
-        public static TSource? Max<TSource>(this IEnumerable<TSource> source)
+        public static TSource? Max<TSource>(this IEnumerable<TSource> source) => Max(source, comparer: null);
+        public static TSource? Max<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            Comparer<TSource> comparer = Comparer<TSource>.Default;
+            comparer ??= Comparer<TSource>.Default;
+
             TSource? value = default;
-            if (value == null)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                if (value == null)
                 {
                     do
                     {
@@ -467,17 +469,14 @@ namespace System.Linq
 
                     while (e.MoveNext())
                     {
-                        TSource x = e.Current;
-                        if (x != null && comparer.Compare(x, value) > 0)
+                        TSource next = e.Current;
+                        if (next != null && comparer.Compare(next, value) > 0)
                         {
-                            value = x;
+                            value = next;
                         }
                     }
                 }
-            }
-            else
-            {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                else
                 {
                     if (!e.MoveNext())
                     {
@@ -485,12 +484,111 @@ namespace System.Linq
                     }
 
                     value = e.Current;
+                    if (comparer == Comparer<TSource>.Default)
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource next = e.Current;
+                            if (Comparer<TSource>.Default.Compare(next, value) > 0)
+                            {
+                                value = next;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource next = e.Current;
+                            if (comparer.Compare(next, value) > 0)
+                            {
+                                value = next;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return value;
+        }
+
+        public static TSource? MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) => MaxBy(source, keySelector, null);
+        public static TSource? MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (keySelector == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            comparer ??= Comparer<TKey>.Default;
+
+            TKey? key = default;
+            TSource? value = default;
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+            {
+                if (key == null)
+                {
+                    do
+                    {
+                        if (!e.MoveNext())
+                        {
+                            return value;
+                        }
+
+                        value = e.Current;
+                        key = keySelector(value);
+                    }
+                    while (key == null);
+
                     while (e.MoveNext())
                     {
-                        TSource x = e.Current;
-                        if (comparer.Compare(x, value) > 0)
+                        TSource nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (nextKey != null && comparer.Compare(nextKey, key) > 0)
                         {
-                            value = x;
+                            key = nextKey;
+                            value = nextValue;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!e.MoveNext())
+                    {
+                        ThrowHelper.ThrowNoElementsException();
+                    }
+
+                    value = e.Current;
+                    key = keySelector(value);
+                    if (comparer == Comparer<TSource>.Default)
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource nextValue = e.Current;
+                            TKey nextKey = keySelector(nextValue);
+                            if (Comparer<TKey>.Default.Compare(nextKey, key) > 0)
+                            {
+                                key = nextKey;
+                                value = nextValue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        while (e.MoveNext())
+                        {
+                            TSource nextValue = e.Current;
+                            TKey nextKey = keySelector(nextValue);
+                            if (comparer.Compare(nextKey, key) > 0)
+                            {
+                                key = nextKey;
+                                value = nextValue;
+                            }
                         }
                     }
                 }
@@ -994,11 +1092,10 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            Comparer<TResult> comparer = Comparer<TResult>.Default;
             TResult? value = default;
-            if (value == null)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                if (value == null)
                 {
                     do
                     {
@@ -1011,6 +1108,7 @@ namespace System.Linq
                     }
                     while (value == null);
 
+                    Comparer<TResult> comparer = Comparer<TResult>.Default;
                     while (e.MoveNext())
                     {
                         TResult x = selector(e.Current);
@@ -1020,10 +1118,7 @@ namespace System.Linq
                         }
                     }
                 }
-            }
-            else
-            {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                else
                 {
                     if (!e.MoveNext())
                     {
@@ -1034,7 +1129,7 @@ namespace System.Linq
                     while (e.MoveNext())
                     {
                         TResult x = selector(e.Current);
-                        if (comparer.Compare(x, value) > 0)
+                        if (Comparer<TResult>.Default.Compare(x, value) > 0)
                         {
                             value = x;
                         }

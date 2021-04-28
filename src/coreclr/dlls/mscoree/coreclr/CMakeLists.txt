@@ -1,3 +1,10 @@
+
+# we need to define this library before adding .def fiels to sources.
+add_library_clr(coreclr_static
+    STATIC
+    ${CLR_SOURCES}
+)
+
 if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
@@ -61,11 +68,6 @@ add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
 add_library_clr(coreclr
     SHARED
-    ${CLR_SOURCES}
-)
-
-add_library_clr(coreclr_static
-    STATIC
     ${CLR_SOURCES}
 )
 
@@ -171,12 +173,6 @@ target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable)
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
-# Create the runtime module index header file containing the coreclr build id
-# for xplat and the timestamp/size on Windows.
-if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    generate_module_index(coreclr ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h)
-endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-
 if(CLR_CMAKE_TARGET_WIN32)
     # Add dac table & debug resource to coreclr
     get_include_directories(INC_DIR)
@@ -203,27 +199,57 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     add_custom_command(
         DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/debug/daccess/daccess.cpp
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_coreclr.timestamp
         COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/debug/daccess/daccess.cpp
+
+        # make and inject dactable for coreclr
         COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:coreclr> /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
         COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin /dll:$<TARGET_FILE:coreclr>
+
+        # make CLRDEBUGINFO resource and inject into coreclr
         COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
         COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO
+
+        # inject MINIDUMP_AUXILIARY_PROVIDER into coreclr
         COMMAND InjectResource /bin:${CMAKE_CURRENT_SOURCE_DIR}/dump_helper_resource.bin /dll:$<TARGET_FILE:coreclr> /name:MINIDUMP_AUXILIARY_PROVIDER
-        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
+
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_coreclr.timestamp
         COMMENT Add dactable, debug resources, and dump helper resources to coreclr
     )
 
     if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-        add_custom_target(inject_debug_resources ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp)
+        add_custom_target(inject_debug_resources_coreclr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_coreclr.timestamp)
+        add_dependencies(runtime inject_debug_resources_coreclr)
     endif()
+
+    add_custom_command(
+        DEPENDS singlefilehost mscordaccore mscordbi ${CLR_DIR}/debug/daccess/daccess.cpp
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_singlefilehost.timestamp
+        COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/debug/daccess/daccess.cpp
+
+        # make and inject dactable for singlefilehost
+        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:singlefilehost> /dll:$<TARGET_FILE:singlefilehost> /bin:${CMAKE_CURRENT_BINARY_DIR}/sfh.bin
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/sfh.bin /dll:$<TARGET_FILE:singlefilehost>
+
+        # make CLRDEBUGINFO resource and inject into singlefilehost
+        COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:singlefilehost> /name:CLRDEBUGINFO
+
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_singlefilehost.timestamp
+        COMMENT Add dactable, debug resources, and dump helper resources to singlefilehost
+    )
+
+    if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
+        add_custom_target(inject_debug_resources_singlefilehost ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_singlefilehost.timestamp)
+        add_dependencies(runtime inject_debug_resources_singlefilehost)
+    endif()
+else()
+    add_custom_target(inject_debug_resources_coreclr DEPENDS coreclr)
+    add_custom_target(inject_debug_resources_singlefilehost DEPENDS singlefilehost)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework)
-
-# publish coreclr_static lib
-_install(TARGETS coreclr_static DESTINATION lib)
+install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

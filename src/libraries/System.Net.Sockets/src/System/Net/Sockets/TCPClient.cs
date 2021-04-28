@@ -74,6 +74,8 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
+            _family = AddressFamily.Unknown;
+
             try
             {
                 Connect(hostname, port);
@@ -171,6 +173,11 @@ namespace System.Net.Sockets
                             if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
                             {
                                 var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                                if (address.IsIPv4MappedToIPv6)
+                                {
+                                    socket.DualMode = true;
+                                }
+
                                 // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
                                 Interlocked.Exchange(ref _clientSocket!, socket);
                                 if (Disposed)

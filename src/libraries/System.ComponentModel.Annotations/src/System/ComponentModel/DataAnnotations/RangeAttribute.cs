@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
@@ -45,7 +46,11 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="type">The type of the range parameters. Must implement IComparable.</param>
         /// <param name="minimum">The minimum allowable value.</param>
         /// <param name="maximum">The maximum allowable value.</param>
-        public RangeAttribute(Type type, string minimum, string maximum)
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        public RangeAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            string minimum,
+            string maximum)
             : base(() => SR.RangeAttribute_ValidationError)
         {
             OperandType = type;
@@ -67,6 +72,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, or some custom
         ///     type)
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type OperandType { get; }
 
         /// <summary>
@@ -199,7 +205,7 @@ namespace System.ComponentModel.DataAnnotations
                                                             comparableType.FullName));
                     }
 
-                    TypeConverter converter = TypeDescriptor.GetConverter(type);
+                    TypeConverter converter = GetOperandTypeConverter();
                     IComparable min = (IComparable)(ParseLimitsInInvariantCulture
                         ? converter.ConvertFromInvariantString((string)minimum)
                         : converter.ConvertFromString((string)minimum));
@@ -223,5 +229,10 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor that allows this code to be called is marked with RequiresUnreferencedCode.")]
+        private TypeConverter GetOperandTypeConverter() =>
+            TypeDescriptor.GetConverter(OperandType);
     }
 }

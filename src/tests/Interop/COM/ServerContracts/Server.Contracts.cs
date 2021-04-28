@@ -332,12 +332,19 @@ namespace Server.Contract
     {
     }
 
-    [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIInspectable)]
     [Guid("e9e1ccf9-8e93-4850-ac1c-a71692cb68c5")]
     internal interface IInspectableTesting2
     {
         int Add(int i, int j);
+    }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("57f396a1-58a0-425f-8807-9f938a534984")]
+    internal interface ITrackMyLifetimeTesting
+    {
+        IntPtr GetAllocationCountCallback();
     }
 }
 

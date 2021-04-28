@@ -12,6 +12,10 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private const int kSuccess = 1;
+        private const int kErrorSeeError = -2;
+        private const int kPlatformNotSupported = -5;
+
         private static int AppleCryptoNative_SecKeyImportEphemeral(
             ReadOnlySpan<byte> pbKeyBlob,
             int isPrivateKey,
@@ -32,96 +36,6 @@ internal static partial class Interop
             out SafeSecKeyRefHandle ppKeyOut,
             out int pOSStatus);
 
-        private static int AppleCryptoNative_GenerateSignature(
-            SafeSecKeyRefHandle privateKey,
-            ReadOnlySpan<byte> pbDataHash,
-            out SafeCFDataHandle pSignatureOut,
-            out SafeCFErrorHandle pErrorOut) =>
-            AppleCryptoNative_GenerateSignature(
-                privateKey,
-                ref MemoryMarshal.GetReference(pbDataHash),
-                pbDataHash.Length,
-                out pSignatureOut,
-                out pErrorOut);
-
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_GenerateSignature(
-            SafeSecKeyRefHandle privateKey,
-            ref byte pbDataHash,
-            int cbDataHash,
-            out SafeCFDataHandle pSignatureOut,
-            out SafeCFErrorHandle pErrorOut);
-
-        private static int AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-            SafeSecKeyRefHandle privateKey,
-            ReadOnlySpan<byte> pbDataHash,
-            PAL_HashAlgorithm hashAlgorithm,
-            out SafeCFDataHandle pSignatureOut,
-            out SafeCFErrorHandle pErrorOut) =>
-            AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-                privateKey,
-                ref MemoryMarshal.GetReference(pbDataHash),
-                pbDataHash.Length,
-                hashAlgorithm,
-                out pSignatureOut,
-                out pErrorOut);
-
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-            SafeSecKeyRefHandle privateKey,
-            ref byte pbDataHash,
-            int cbDataHash,
-            PAL_HashAlgorithm hashAlgorithm,
-            out SafeCFDataHandle pSignatureOut,
-            out SafeCFErrorHandle pErrorOut);
-
-        private static int AppleCryptoNative_VerifySignature(
-            SafeSecKeyRefHandle publicKey,
-            ReadOnlySpan<byte> pbDataHash,
-            ReadOnlySpan<byte> pbSignature,
-            out SafeCFErrorHandle pErrorOut) =>
-            AppleCryptoNative_VerifySignature(
-                publicKey,
-                ref MemoryMarshal.GetReference(pbDataHash),
-                pbDataHash.Length,
-                ref MemoryMarshal.GetReference(pbSignature),
-                pbSignature.Length,
-                out pErrorOut);
-
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_VerifySignature(
-            SafeSecKeyRefHandle publicKey,
-            ref byte pbDataHash,
-            int cbDataHash,
-            ref byte pbSignature,
-            int cbSignature,
-            out SafeCFErrorHandle pErrorOut);
-
-        private static int AppleCryptoNative_VerifySignatureWithHashAlgorithm(
-            SafeSecKeyRefHandle publicKey,
-            ReadOnlySpan<byte> pbDataHash,
-            ReadOnlySpan<byte> pbSignature,
-            PAL_HashAlgorithm hashAlgorithm,
-            out SafeCFErrorHandle pErrorOut) =>
-            AppleCryptoNative_VerifySignatureWithHashAlgorithm(
-                publicKey,
-                ref MemoryMarshal.GetReference(pbDataHash),
-                pbDataHash.Length,
-                ref MemoryMarshal.GetReference(pbSignature),
-                pbSignature.Length,
-                hashAlgorithm,
-                out pErrorOut);
-
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_VerifySignatureWithHashAlgorithm(
-            SafeSecKeyRefHandle publicKey,
-            ref byte pbDataHash,
-            int cbDataHash,
-            ref byte pbSignature,
-            int cbSignature,
-            PAL_HashAlgorithm hashAlgorithm,
-            out SafeCFErrorHandle pErrorOut);
-
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
 
@@ -129,9 +43,6 @@ internal static partial class Interop
 
         private static byte[] ExecuteTransform(ReadOnlySpan<byte> source, SecKeyTransform transform)
         {
-            const int Success = 1;
-            const int kErrorSeeError = -2;
-
             SafeCFDataHandle data;
             SafeCFErrorHandle error;
 
@@ -140,7 +51,7 @@ internal static partial class Interop
             using (error)
             using (data)
             {
-                if (ret == Success)
+                if (ret == kSuccess)
                 {
                     return CoreFoundation.CFGetData(data);
                 }
@@ -169,11 +80,9 @@ internal static partial class Interop
             using (errorHandle)
             using (outputHandle)
             {
-                const int Success = 1;
-                const int kErrorSeeError = -2;
                 switch (ret)
                 {
-                    case Success:
+                    case kSuccess:
                         return CoreFoundation.TryCFWriteData(outputHandle, destination, out bytesWritten);
                     case kErrorSeeError:
                         throw CreateExceptionForCFError(errorHandle);
@@ -219,135 +128,6 @@ internal static partial class Interop
 
             Debug.Fail($"SecKeyImportEphemeral returned {ret}");
             throw new CryptographicException();
-        }
-
-        internal static byte[] GenerateSignature(SafeSecKeyRefHandle privateKey, ReadOnlySpan<byte> dataHash)
-        {
-            Debug.Assert(privateKey != null, "privateKey != null");
-
-            return ExecuteTransform(
-                dataHash,
-                (ReadOnlySpan<byte> source, out SafeCFDataHandle signature, out SafeCFErrorHandle error) =>
-                    AppleCryptoNative_GenerateSignature(
-                        privateKey,
-                        source,
-                        out signature,
-                        out error));
-        }
-
-        internal static byte[] GenerateSignature(
-            SafeSecKeyRefHandle privateKey,
-            ReadOnlySpan<byte> dataHash,
-            PAL_HashAlgorithm hashAlgorithm)
-        {
-            Debug.Assert(privateKey != null, "privateKey != null");
-            Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown, "hashAlgorithm != PAL_HashAlgorithm.Unknown");
-
-            return ExecuteTransform(
-                dataHash,
-                (ReadOnlySpan<byte> source, out SafeCFDataHandle signature, out SafeCFErrorHandle error) =>
-                    AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-                        privateKey,
-                        source,
-                        hashAlgorithm,
-                        out signature,
-                        out error));
-        }
-
-        internal static bool TryGenerateSignature(
-            SafeSecKeyRefHandle privateKey,
-            ReadOnlySpan<byte> source,
-            Span<byte> destination,
-            PAL_HashAlgorithm hashAlgorithm,
-            out int bytesWritten)
-        {
-            Debug.Assert(privateKey != null, "privateKey != null");
-            Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown, "hashAlgorithm != PAL_HashAlgorithm.Unknown");
-
-            return TryExecuteTransform(
-                source,
-                destination,
-                out bytesWritten,
-                delegate (ReadOnlySpan<byte> innerSource, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle)
-                {
-                    return AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-                        privateKey, innerSource, hashAlgorithm, out outputHandle, out errorHandle);
-                });
-        }
-
-        internal static bool VerifySignature(
-            SafeSecKeyRefHandle publicKey,
-            ReadOnlySpan<byte> dataHash,
-            ReadOnlySpan<byte> signature)
-        {
-            Debug.Assert(publicKey != null, "publicKey != null");
-
-            SafeCFErrorHandle error;
-
-            int ret = AppleCryptoNative_VerifySignature(
-                publicKey,
-                dataHash,
-                signature,
-                out error);
-
-            const int True = 1;
-            const int False = 0;
-            const int kErrorSeeError = -2;
-
-            using (error)
-            {
-                switch (ret)
-                {
-                    case True:
-                        return true;
-                    case False:
-                        return false;
-                    case kErrorSeeError:
-                        throw CreateExceptionForCFError(error);
-                    default:
-                        Debug.Fail($"VerifySignature returned {ret}");
-                        throw new CryptographicException();
-                }
-            }
-        }
-
-        internal static bool VerifySignature(
-            SafeSecKeyRefHandle publicKey,
-            ReadOnlySpan<byte> dataHash,
-            ReadOnlySpan<byte> signature,
-            PAL_HashAlgorithm hashAlgorithm)
-        {
-            Debug.Assert(publicKey != null, "publicKey != null");
-            Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown);
-
-            SafeCFErrorHandle error;
-
-            int ret = AppleCryptoNative_VerifySignatureWithHashAlgorithm(
-                publicKey,
-                dataHash,
-                signature,
-                hashAlgorithm,
-                out error);
-
-            const int True = 1;
-            const int False = 0;
-            const int kErrorSeeError = -2;
-
-            using (error)
-            {
-                switch (ret)
-                {
-                    case True:
-                        return true;
-                    case False:
-                        return false;
-                    case kErrorSeeError:
-                        throw CreateExceptionForCFError(error);
-                    default:
-                        Debug.Fail($"VerifySignature returned {ret}");
-                        throw new CryptographicException();
-                }
-            }
         }
     }
 }

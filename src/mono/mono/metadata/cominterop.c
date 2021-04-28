@@ -95,8 +95,14 @@ Code shared between the DISABLE_COM and !DISABLE_COM
 // The name of func must be linkable for AOT, for example g_free does not work (monoeg_g_free instead),
 // nor does the C++ overload fmod (mono_fmod instead). These functions therefore
 // must be extern "C".
-#define register_icall(func, sig, save) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (save), #func))
+#ifndef DISABLE_JIT
+#define register_icall(func, sig, no_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+#else
+/* No need for the name/C symbol */
+#define register_icall(func, sig, no_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+#endif
 
 mono_bstr
 mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
@@ -352,7 +358,6 @@ cominterop_object_is_rcw_handle (MonoObjectHandle obj, MonoRealProxyHandle *real
 
 	return  !MONO_HANDLE_IS_NULL (obj)
 		&& (klass = mono_handle_class (obj))
-		&& mono_class_is_transparent_proxy (klass)
 		&& !MONO_HANDLE_IS_NULL (*real_proxy = MONO_HANDLE_NEW_GET (MonoRealProxy, MONO_HANDLE_CAST (MonoTransparentProxy, obj), rp))
 		&& (klass = mono_handle_class (*real_proxy))
 		&& klass == mono_class_get_interop_proxy_class ();
@@ -703,12 +708,6 @@ mono_cominterop_init (void)
 #ifndef DISABLE_COM
 
 void
-mono_cominterop_cleanup (void)
-{
-	mono_os_mutex_destroy (&cominterop_mutex);
-}
-
-void
 mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod *method)
 {
 #ifndef DISABLE_JIT
@@ -790,17 +789,7 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 
 		MONO_STATIC_POINTER_INIT_END (MonoMethod, com_interop_proxy_get_proxy)
 
-#ifndef DISABLE_REMOTING
-		MONO_STATIC_POINTER_INIT (MonoMethod, get_transparent_proxy)
-
-			ERROR_DECL (error);
-			get_transparent_proxy = mono_class_get_method_from_name_checked (mono_defaults.real_proxy_class, "GetTransparentProxy", 0, 0, error);
-			mono_error_assert_ok (error);
-
-		MONO_STATIC_POINTER_INIT_END (MonoMethod, get_transparent_proxy)
-#else
 		static MonoMethod* const get_transparent_proxy = NULL; // FIXME?
-#endif
 
 		mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_interop_proxy_class ()));
 
@@ -1800,7 +1789,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
 	 */
-	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return mono_object_new_alloc_by_vtable (vtable, error);
 }
@@ -1838,48 +1827,6 @@ void
 ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError *error)
 {
 	mono_System_ComObject_ReleaseInterfaces (obj);
-}
-
-static gboolean    
-cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoGCHandle gchandle = NULL;
-
-	gchandle = (MonoGCHandle)value;
-	if (gchandle) {
-		MonoComInteropProxy* proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
-
-		if (proxy) {
-			if (proxy->com_object->itf_hash) {
-				g_hash_table_foreach_remove (proxy->com_object->itf_hash, cominterop_rcw_interface_finalizer, NULL);
-				g_hash_table_destroy (proxy->com_object->itf_hash);
-			}
-			mono_IUnknown_Release (proxy->com_object->iunknown);
-			proxy->com_object->iunknown = NULL;
-			proxy->com_object->itf_hash = NULL;
-		}
-		
-		mono_gchandle_free_internal (gchandle);
-	}
-
-	return TRUE;
-}
-
-void
-mono_cominterop_release_all_rcws (void)
-{
-#ifndef DISABLE_COM
-	if (!rcw_hash)
-		return;
-
-	mono_cominterop_lock ();
-
-	g_hash_table_foreach_remove (rcw_hash, cominterop_rcw_finalizer, NULL);
-	g_hash_table_destroy (rcw_hash);
-	rcw_hash = NULL;
-
-	mono_cominterop_unlock ();
-#endif
 }
 
 gpointer
@@ -3160,17 +3107,10 @@ default_ptr_to_bstr (const gunichar2* ptr, int slen)
 	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
 	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
 	// netcore moving forward.
-#ifdef ENABLE_NETCORE
 	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
 	if (s == NULL)
 		return NULL;
-#else
-	/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-	guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
-	if (ret == NULL)
-		return NULL;
-	mono_bstr const s = (mono_bstr)(ret + 1);
-#endif
+
 	mono_bstr_set_length (s, slen);
 	if (ptr)
 		memcpy (s, ptr, slen * sizeof (gunichar2));
@@ -3230,21 +3170,21 @@ mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 		return NULL_HANDLE_STRING;
 #ifdef HOST_WIN32
 #if HAVE_API_SUPPORT_WIN32_BSTR
-	return mono_string_new_utf16_handle (mono_domain_get (), bstr, SysStringLen ((BSTR)bstr), error);
+	return mono_string_new_utf16_handle (bstr, SysStringLen ((BSTR)bstr), error);
 #else
-	return mono_string_new_utf16_handle (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+	return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
 #endif /* HAVE_API_SUPPORT_WIN32_BSTR */
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT)
 #endif
-		return mono_string_new_utf16_handle (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+		return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
 #ifndef DISABLE_COM
 	else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		glong written = 0;
 		// FIXME mono_string_new_utf32_handle to combine g_ucs4_to_utf16 and mono_string_new_utf16_handle.
 		gunichar2* utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), utf16, written, error);
+		MonoStringHandle res = mono_string_new_utf16_handle (utf16, written, error);
 		g_free (utf16);
 		return res;
 	} else {
@@ -3286,11 +3226,7 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-#ifdef ENABLE_NETCORE
 		g_free (((char *)bstr) - SIZEOF_VOID_P);
-#else // In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform
-		g_free (((char *)bstr) - 4);
-#endif
 #ifndef DISABLE_COM
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		sys_free_string_ms ((mono_bstr_const)bstr);
@@ -4141,16 +4077,6 @@ void mono_marshal_safearray_free_indices (gpointer indices)
 
 #else /* DISABLE_COM */
 
-void
-mono_cominterop_cleanup (void)
-{
-}
-
-void
-mono_cominterop_release_all_rcws (void)
-{
-}
-
 gboolean
 mono_marshal_free_ccw (MonoObject* object)
 {
@@ -4205,18 +4131,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 #endif /* HOST_WIN32 */
 #endif /* DISABLE_COM */
 
-#ifndef ENABLE_NETCORE
-MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error)
-{
-	if (ptr == NULL) {
-		mono_error_set_argument_null (error, "ptr", NULL);
-		return NULL_HANDLE_STRING;
-	}
-	return mono_string_from_bstr_checked (ptr, error);
-}
-#endif
-
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)
 {
@@ -4253,7 +4167,7 @@ mono_cominterop_get_com_interface_internal (gboolean icall, MonoObjectHandle obj
 	if (cominterop_object_is_rcw_handle (object, &real_proxy)) {
 		MonoClass *klass = NULL;
 		klass = mono_handle_class (object);
-		if (!mono_class_is_transparent_proxy (klass)) {
+		if (TRUE) {
 			g_assertf (!icall, "Class is not transparent");
 			mono_error_set_invalid_operation (error, "Class is not transparent");
 			return NULL;

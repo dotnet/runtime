@@ -252,166 +252,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(connectionAccepted);
         }
 
-        [Theory]
-        [InlineData("1.2.3.4")]
-        [InlineData("1.2.3.4:8080")]
-        [InlineData("[::1234]")]
-        [InlineData("[::1234]:8080")]
-        public async Task ProxiedIPAddressRequest_NotDefaultPort_CorrectlyFormatted(string host)
-        {
-            string uri = "http://" + host;
-            bool connectionAccepted = false;
-
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
-            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
-                {
-                    handler.Proxy = new WebProxy(proxyUri);
-                    try { await client.GetAsync(uri); } catch { }
-                }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                connectionAccepted = true;
-                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"GET {uri}/ HTTP/1.1", headers);
-            }));
-
-            Assert.True(connectionAccepted);
-        }
-
-        public static IEnumerable<object[]> DestinationHost_MemberData()
-        {
-            yield return new object[] { "nosuchhost.invalid" };
-            yield return new object[] { "1.2.3.4" };
-            yield return new object[] { "[::1234]" };
-        }
-
-        [Theory]
-        [MemberData(nameof(DestinationHost_MemberData))]
-        public async Task ProxiedRequest_DefaultPort_PortStrippedOffInUri(string host)
-        {
-            string addressUri = $"http://{host}:80/";
-            string expectedAddressUri = $"http://{host}/";
-            bool connectionAccepted = false;
-
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
-            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
-                {
-                    handler.Proxy = new WebProxy(proxyUri);
-                    try { await client.GetAsync(addressUri); } catch { }
-                }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                connectionAccepted = true;
-                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"GET {expectedAddressUri} HTTP/1.1", headers);
-            }));
-
-            Assert.True(connectionAccepted);
-        }
-
-        [Theory]
-        [MemberData(nameof(DestinationHost_MemberData))]
-        public async Task ProxyTunnelRequest_PortSpecified_NotStrippedOffInUri(string host)
-        {
-            // Https proxy request will use CONNECT tunnel, even the default 443 port is specified, it will not be stripped off.
-            string requestTarget = $"{host}:443";
-            string addressUri = $"https://{host}/";
-            bool connectionAccepted = false;
-
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
-            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
-                {
-                    handler.Proxy = new WebProxy(proxyUri);
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                    try { await client.GetAsync(addressUri); } catch { }
-                }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                connectionAccepted = true;
-                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"CONNECT {requestTarget} HTTP/1.1", headers);
-            }));
-
-            Assert.True(connectionAccepted);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
-        {
-            if (IsWinHttpHandler)
-            {
-                return; // Skip test since the fix is only in SocketsHttpHandler.
-            }
-
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
-            string host = "nosuchhost.invalid";
-            string addressUri = $"https://{host}/";
-            bool connectionAccepted = false;
-
-            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
-                {
-                    handler.Proxy = new WebProxy(proxyUri);
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                    if (addUserAgentHeader)
-                    {
-                        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
-                    }
-                    try
-                    {
-                        await client.GetAsync(addressUri);
-                    }
-                    catch
-                    {
-                    }
-                }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                connectionAccepted = true;
-                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"CONNECT {host}:443 HTTP/1.1", headers);
-                if (addUserAgentHeader)
-                {
-                    Assert.Contains("User-Agent: Mozilla/5.0", headers);
-                }
-                else
-                {
-                    Assert.DoesNotContain("User-Agent:", headers);
-                }
-            }));
-
-            Assert.True(connectionAccepted);
-        }
-
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
             from useSsl in BoolValues
@@ -466,7 +306,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Credentials = new NetworkCredential("unused", "unused");
+                handler.Credentials = new NetworkCredential("unused", "PLACEHOLDER");
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
@@ -790,7 +630,7 @@ namespace System.Net.Http.Functional.Tests
                 $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
                 $"Accept-Ranges:{fold} bytes{newline}" +
                 $"Age: {fold}12{newline}" +
-                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy authorization.")]
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy authorization.")]
                 $"Authorization: Bearer 63123a47139a49829bcd8d03005ca9d7{newline}" +
                 $"Allow: {fold}GET, HEAD{newline}" +
                 $"Alt-Svc:{fold} http/1.1=\"http2.example.com:8001\"; ma=7200{newline}" +
@@ -1673,7 +1513,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestDataAsync(readBody: true);
                     }
                     catch { } // Eat errors from client disconnect.
-                    await clientFinished.Task.TimeoutAfter(TimeSpan.FromMinutes(2));
+                    await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
                 });
             });
         }

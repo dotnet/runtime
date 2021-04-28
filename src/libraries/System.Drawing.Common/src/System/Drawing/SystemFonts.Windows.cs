@@ -134,7 +134,7 @@ namespace System.Drawing
                 Font? defaultFont = null;
 
                 // For Arabic systems, always return Tahoma 8.
-                if ((ushort)UnsafeNativeMethods.GetSystemDefaultLCID() == 0x0001)
+                if ((ushort)Interop.Kernel32.GetSystemDefaultLCID() == 0x0001)
                 {
                     try
                     {
@@ -196,7 +196,7 @@ namespace System.Drawing
             {
                 Font? dialogFont = null;
 
-                if ((ushort)UnsafeNativeMethods.GetSystemDefaultLCID() == 0x0011)
+                if ((ushort)Interop.Kernel32.GetSystemDefaultLCID() == 0x0011)
                 {
                     // Always return DefaultFont for Japanese cultures.
                     dialogFont = DefaultFont;

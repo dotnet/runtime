@@ -96,20 +96,7 @@ namespace System.Net
                 {
                     // In most cases, there is only one media type value as per RFC. But for completeness, we
                     // return all values in cases of overly malformed strings.
-                    var builder = new StringBuilder();
-                    int ndx = 0;
-                    foreach (string value in values)
-                    {
-                        if (ndx > 0)
-                        {
-                            builder.Append(',');
-                        }
-
-                        builder.Append(value);
-                        ndx++;
-                    }
-
-                    return builder.ToString();
+                    return string.Join(',', values);
                 }
                 else
                 {

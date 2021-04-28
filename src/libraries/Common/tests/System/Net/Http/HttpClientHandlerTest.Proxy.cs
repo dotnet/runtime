@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
@@ -135,58 +136,107 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
+        const string BasicAuth = "Basic";
+        const string content = "This is a test";
+
+        private static ICredentials ConstructCredentials(NetworkCredential cred, Uri uriPrefix, string authType, bool wrapCredsInCache)
+        {
+            if (wrapCredsInCache)
+            {
+                var cache = new CredentialCache();
+                cache.Add(uriPrefix, authType, cred);
+                return cache;
+            }
+
+            return cred;
+        }
+
+        private void ValidateProxyBasicAuthentication(LoopbackProxyServer proxyServer, NetworkCredential cred)
+        {
+            if (cred != null)
+            {
+                string expectedAuth =
+                    string.IsNullOrEmpty(cred.Domain) ?
+                        $"{cred.UserName}:{cred.Password}" :
+                        $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
+                _output.WriteLine($"expectedAuth={expectedAuth}");
+                string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
+
+                // Check last request to proxy server. Handlers that don't use
+                // pre-auth for proxy will make 2 requests.
+                int requestCount = proxyServer.Requests.Count;
+                _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
+                Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
+                Assert.Equal(expectedAuthHash, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken);
+            }
+        }
+
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
+        public async Task AuthenticatedProxiedRequest_GetAsyncWithCreds_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
         {
             var options = new LoopbackProxyServer.Options
-                { AuthenticationSchemes = creds != null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None
-                };
-            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
-                const string BasicAuth = "Basic";
-                if (wrapCredsInCache)
+                AuthenticationSchemes = cred != null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
+                ConnectionCloseAfter407 = connectionCloseAfter407
+            };
+
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
+
+                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                 {
-                    Assert.IsAssignableFrom<NetworkCredential>(creds);
-                    var cache = new CredentialCache();
-                    cache.Add(proxyServer.Uri, BasicAuth, (NetworkCredential)creds);
-                    creds = cache;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    TestHelper.VerifyResponseBody(
+                        await response.Content.ReadAsStringAsync(),
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        null);
+
+                    ValidateProxyBasicAuthentication(proxyServer, cred);
                 }
+            }
+        }
 
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
+        [OuterLoop("Uses external server")]
+        [Theory]
+        [MemberData(nameof(CredentialsForProxy))]
+        public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithCreds_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            var options = new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = cred != null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
+                ConnectionCloseAfter407 = connectionCloseAfter407
+            };
+
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
+
+                using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.SecureRemoteEchoServer, new StringContent(content)))
                 {
-                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = creds };
+                    string responseContent = await response.Content.ReadAsStringAsync();
 
-                    using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        TestHelper.VerifyResponseBody(
-                            await response.Content.ReadAsStringAsync(),
-                            response.Content.Headers.ContentMD5,
-                            false,
-                            null);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    TestHelper.VerifyResponseBody(
+                        responseContent,
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        content);
 
-                        if (options.AuthenticationSchemes != AuthenticationSchemes.None)
-                        {
-                            NetworkCredential nc = creds?.GetCredential(proxyServer.Uri, BasicAuth);
-                            Assert.NotNull(nc);
-                            string expectedAuth =
-                                string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
-                                    $"{nc.Domain}\\{nc.UserName}:{nc.Password}";
-                            _output.WriteLine($"expectedAuth={expectedAuth}");
-                            string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
-
-                            // Check last request to proxy server. Handlers that don't use
-                            // pre-auth for proxy will make 2 requests.
-                            int requestCount = proxyServer.Requests.Count;
-                            _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
-                            Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
-                            Assert.Equal(expectedAuthHash, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken);
-                        }
-                    }
+                    ValidateProxyBasicAuthentication(proxyServer, cred);
                 }
             }
         }
@@ -211,9 +261,13 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
-        public async Task Proxy_HaveNoCredsAndUseAuthenticatedCustomProxy_ProxyAuthenticationRequiredStatusCode()
+        public async Task AuthenticatedProxiedRequest_GetAsyncWithNoCreds_ProxyAuthenticationRequiredStatusCode()
         {
-            var options = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Basic };
+            var options = new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Basic
+            };
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -222,6 +276,32 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                 {
                     Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithNoCreds_Throws()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            var options = new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Basic,
+            };
+
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.Proxy = new WebProxy(proxyServer.Uri);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.PostAsync("https://nosuchhost.invalid", new StringContent(content)));
+                    Assert.Contains("407", e.Message);
                 }
             }
         }
@@ -240,21 +320,129 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
         [Fact]
-        public async Task Proxy_SendSecureRequestThruProxy_ConnectTunnelUsed()
+        public async Task ProxyTunnelRequest_GetAsync_Success()
         {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            const string Content = "Hello world";
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.Proxy = new WebProxy(proxyServer.Uri);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 using (HttpClient client = CreateHttpClient(handler))
-                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
                 {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    _output.WriteLine($"Proxy request line: {proxyServer.Requests[0].RequestLine}");
-                    Assert.Contains("CONNECT", proxyServer.Requests[0].RequestLine);
+                    var options = new LoopbackServer.Options { UseSsl = true };
+                    await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                    {
+                        Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri));
+                        
+                        Task<HttpResponseMessage> clientTask = client.GetAsync(uri);
+                        await server.AcceptConnectionSendResponseAndCloseAsync(content: Content);
+                        using (var response = await clientTask)
+                        {
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            Assert.Equal(Content, await response.Content.ReadAsStringAsync());
+                        }
+                    }, options);
                 }
+
+                Assert.Contains("CONNECT", proxyServer.Requests[0].RequestLine);
+            }
+        }
+
+        [Fact]
+        public async Task ProxyTunnelRequest_MaxConnectionsSetButDoesNotApplyToProxyConnect_Success()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            const string Content = "Hello world";
+
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.Proxy = new WebProxy(proxyServer.Uri);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                handler.MaxConnectionsPerServer = 1;
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    var options = new LoopbackServer.Options { UseSsl = true };
+                    await LoopbackServer.CreateServerAsync(async (server1, uri1) =>
+                    {
+                        await LoopbackServer.CreateServerAsync(async (server2, uri2) =>
+                        {
+                            Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri1));
+                            Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri2));
+
+                            Task<HttpResponseMessage> clientTask1 = client.GetAsync(uri1);
+                            Task<HttpResponseMessage> clientTask2 = client.GetAsync(uri2);
+                            await server1.AcceptConnectionAsync(async connection1 =>
+                            {
+                                await server2.AcceptConnectionAsync(async connection2 =>
+                                {
+                                    await connection1.HandleRequestAsync(content: Content);
+                                    await connection2.HandleRequestAsync(content: Content);
+                                });
+                            });
+
+                            using (var response1 = await clientTask1)
+                            {
+                                Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                                Assert.Equal(Content, await response1.Content.ReadAsStringAsync());
+                            }
+
+                            using (var response2 = await clientTask2)
+                            {
+                                Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                                Assert.Equal(Content, await response2.Content.ReadAsStringAsync());
+                            }
+                        }, options);
+                    }, options);
+                }
+
+                Assert.Contains("CONNECT", proxyServer.Requests[0].RequestLine);
+                Assert.Contains("CONNECT", proxyServer.Requests[1].RequestLine);
+            }
+        }
+
+        [Fact]
+        public async Task ProxyTunnelRequest_OriginServerSendsProxyAuthChallenge_NoProxyAuthPerformed()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(new NetworkCredential("username", "password"), proxyServer.Uri, BasicAuth, true) };
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    var options = new LoopbackServer.Options { UseSsl = true };
+                    await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                    {
+                        Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri));
+
+                        Task<HttpResponseMessage> clientTask = client.GetAsync(uri);
+                        await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.ProxyAuthenticationRequired, additionalHeaders: "Proxy-Authenticate: Basic");
+                        using (var response = await clientTask)
+                        {
+                            Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
+                        }
+                    }, options);
+                }
+
+                Assert.Contains("CONNECT", proxyServer.Requests[0].RequestLine);
             }
         }
 
@@ -279,7 +467,7 @@ namespace System.Net.Http.Functional.Tests
 
                     //  Send Digest challenge.
                     Task<List<string>> serverTask = proxyServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.ProxyAuthenticationRequired, authHeader);
-                    if (clientTask == await Task.WhenAny(clientTask, serverTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds))
+                    if (clientTask == await Task.WhenAny(clientTask, serverTask).WaitAsync(TestHelper.PassingTestTimeout))
                     {
                         // Client task shouldn't have completed successfully; propagate failure.
                         Assert.NotEqual(TaskStatus.RanToCompletion, clientTask.Status);
@@ -293,7 +481,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, clientTask.Result.StatusCode);
                 }
             }, options);
-
         }
 
         [Fact]
@@ -375,6 +562,146 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData("1.2.3.4")]
+        [InlineData("1.2.3.4:8080")]
+        [InlineData("[::1234]")]
+        [InlineData("[::1234]:8080")]
+        public async Task ProxiedIPAddressRequest_NotDefaultPort_CorrectlyFormatted(string host)
+        {
+            string uri = "http://" + host;
+            bool connectionAccepted = false;
+
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    handler.Proxy = new WebProxy(proxyUri);
+                    try { await client.GetAsync(uri); } catch { }
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                connectionAccepted = true;
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"GET {uri}/ HTTP/1.1", headers);
+            }));
+
+            Assert.True(connectionAccepted);
+        }
+
+        public static IEnumerable<object[]> DestinationHost_MemberData()
+        {
+            yield return new object[] { "nosuchhost.invalid" };
+            yield return new object[] { "1.2.3.4" };
+            yield return new object[] { "[::1234]" };
+        }
+
+        [Theory]
+        [MemberData(nameof(DestinationHost_MemberData))]
+        public async Task ProxiedRequest_DefaultPort_PortStrippedOffInUri(string host)
+        {
+            string addressUri = $"http://{host}:80/";
+            string expectedAddressUri = $"http://{host}/";
+            bool connectionAccepted = false;
+
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    handler.Proxy = new WebProxy(proxyUri);
+                    try { await client.GetAsync(addressUri); } catch { }
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                connectionAccepted = true;
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"GET {expectedAddressUri} HTTP/1.1", headers);
+            }));
+
+            Assert.True(connectionAccepted);
+        }
+
+        [Theory]
+        [MemberData(nameof(DestinationHost_MemberData))]
+        public async Task ProxyTunnelRequest_PortSpecified_NotStrippedOffInUri(string host)
+        {
+            // Https proxy request will use CONNECT tunnel, even the default 443 port is specified, it will not be stripped off.
+            string requestTarget = $"{host}:443";
+            string addressUri = $"https://{host}/";
+            bool connectionAccepted = false;
+
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    handler.Proxy = new WebProxy(proxyUri);
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    try { await client.GetAsync(addressUri); } catch { }
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                connectionAccepted = true;
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"CONNECT {requestTarget} HTTP/1.1", headers);
+            }));
+
+            Assert.True(connectionAccepted);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
+        {
+            if (IsWinHttpHandler)
+            {
+                return; // Skip test since the fix is only in SocketsHttpHandler.
+            }
+
+            string host = "nosuchhost.invalid";
+            string addressUri = $"https://{host}/";
+            bool connectionAccepted = false;
+
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    handler.Proxy = new WebProxy(proxyUri);
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    if (addUserAgentHeader)
+                    {
+                        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
+                    }
+                    try
+                    {
+                        await client.GetAsync(addressUri);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                connectionAccepted = true;
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"CONNECT {host}:443 HTTP/1.1", headers);
+                if (addUserAgentHeader)
+                {
+                    Assert.Contains("User-Agent: Mozilla/5.0", headers);
+                }
+                else
+                {
+                    Assert.DoesNotContain("User-Agent:", headers);
+                }
+            }));
+
+            Assert.True(connectionAccepted);
+        }
+
         public static IEnumerable<object[]> BypassedProxies()
         {
             yield return new object[] { null };
@@ -383,11 +710,14 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> CredentialsForProxy()
         {
-            yield return new object[] { null, false };
+            yield return new object[] { null, false, false };
             foreach (bool wrapCredsInCache in BoolValues)
             {
-                yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
-                yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
+                foreach (bool connectionCloseAfter407 in BoolValues)
+                {
+                    yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache, connectionCloseAfter407 };
+                    yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache, connectionCloseAfter407 };
+                }
             }
         }
 

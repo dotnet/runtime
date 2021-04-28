@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // CommandLine.h - tiny very specific command line parser
@@ -33,6 +31,7 @@ public:
             , skipCleanup(false)
             , workerCount(-1)
             , indexCount(-1)
+            , failureLimit(-1)
             , indexes(nullptr)
             , hash(nullptr)
             , methodStatsTypes(nullptr)
@@ -62,6 +61,7 @@ public:
         bool  skipCleanup; // In /parallel mode, do we skip cleanup of temporary files? Used for debugging /parallel.
         int   workerCount; // Number of workers to use for /parallel mode. -1 (or 1) means don't use parallel mode.
         int   indexCount;  // If indexCount is -1 and hash points to nullptr it means compile all.
+        int   failureLimit; // Number of failures after which bail out the replay/asmdiffs.
         int*  indexes;
         char* hash;
         char* methodStatsTypes;

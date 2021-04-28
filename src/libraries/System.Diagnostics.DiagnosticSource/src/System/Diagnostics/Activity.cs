@@ -75,6 +75,7 @@ namespace System.Diagnostics
         private string? _spanId;
 
         private byte _w3CIdFlags;
+        private byte _parentTraceFlags;
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
@@ -84,6 +85,7 @@ namespace System.Diagnostics
         private string? _displayName;
         private ActivityStatusCode _statusCode;
         private string? _statusDescription;
+        private Activity? _previousActiveActivity;
 
         /// <summary>
         /// Gets status code of the current activity object.
@@ -212,6 +214,9 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -219,7 +224,9 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-00";
+                        Span<char> flagsChars = stackalloc char[2];
+                        HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
+                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -550,6 +557,7 @@ namespace System.Diagnostics
                 _traceId = traceId.ToHexString();     // The child will share the parent's traceId.
                 _parentSpanId = spanId.ToHexString();
                 ActivityTraceFlags = activityTraceFlags;
+                _parentTraceFlags = (byte) activityTraceFlags;
             }
             return this;
         }
@@ -621,15 +629,15 @@ namespace System.Diagnostics
             }
             else
             {
+                _previousActiveActivity = Current;
                 if (_parentId == null && _parentSpanId is null)
                 {
-                    Activity? parent = Current;
-                    if (parent != null)
+                    if (_previousActiveActivity != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
                         // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                         // 2. All started activities have a finite parent change (by inductive reasoning).
-                        Parent = parent;
+                        Parent = _previousActiveActivity;
                     }
                 }
 
@@ -686,8 +694,7 @@ namespace System.Diagnostics
                 }
 
                 Source.NotifyActivityStop(this);
-
-                SetCurrent(Parent);
+                SetCurrent(_previousActiveActivity);
             }
         }
 
@@ -831,6 +838,18 @@ namespace System.Diagnostics
                 return new ActivitySpanId(_parentSpanId);
             }
         }
+
+        /// <summary>
+        /// When starting an Activity which does not have a parent context, the Trace Id will automatically be generated using random numbers.
+        /// TraceIdGenerator can be used to override the runtime's default Trace Id generation algorithm.
+        /// </summary>
+        /// <remarks>
+        /// - TraceIdGenerator needs to be set only if the default Trace Id generation is not enough for the app scenario.
+        /// - When setting TraceIdGenerator, ensure it is performant enough to avoid any slowness in the Activity starting operation.
+        /// - If TraceIdGenerator is set multiple times, the last set will be the one used for the Trace Id generation.
+        /// - Setting TraceIdGenerator to null will re-enable the default Trace Id generation algorithm.
+        /// </remarks>
+        public static Func<ActivityTraceId>? TraceIdGenerator { get; set; }
 
         /* static state (configuration) */
         /// <summary>
@@ -995,55 +1014,15 @@ namespace System.Diagnostics
             return ret;
         }
 
-        internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
-                                                IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityTagsCollection? samplerTags, ActivitySamplingResult request)
+        internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
+                                        IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
-
-            if (parentId != null)
-            {
-                activity._parentId = parentId;
-            }
-            else if (parentContext != default)
-            {
-                activity._traceId = parentContext.TraceId.ToString();
-
-                if (parentContext.SpanId != default)
-                {
-                    activity._parentSpanId = parentContext.SpanId.ToString();
-                }
-
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
-            }
-            else
-            {
-                Activity? parent = Current;
-                if (parent != null)
-                {
-                    // The parent change should not form a loop. We are actually guaranteed this because
-                    // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
-                    // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = parent;
-                }
-            }
-
-            activity.IdFormat =
-                ForceDefaultIdFormat ? DefaultIdFormat :
-                activity.Parent != null ? activity.Parent.IdFormat :
-                activity._parentSpanId != null ? ActivityIdFormat.W3C :
-                activity._parentId == null ? DefaultIdFormat :
-                IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
-                ActivityIdFormat.Hierarchical;
-
-            if (activity.IdFormat == ActivityIdFormat.W3C)
-                activity.GenerateW3CId();
-            else
-                activity._id = activity.GenerateHierarchicalId();
+            activity.IdFormat = idFormat;
 
             if (links != null)
             {
@@ -1079,8 +1058,6 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.StartTimeUtc = startTime == default ? GetUtcNow() : startTime.UtcDateTime;
-
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 
             if (request == ActivitySamplingResult.AllDataAndRecorded)
@@ -1088,7 +1065,33 @@ namespace System.Diagnostics
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
-            SetCurrent(activity);
+            if (parentId != null)
+            {
+                activity._parentId = parentId;
+            }
+            else if (parentContext != default)
+            {
+                activity._traceId = parentContext.TraceId.ToString();
+
+                if (parentContext.SpanId != default)
+                {
+                    activity._parentSpanId = parentContext.SpanId.ToString();
+                }
+
+                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._parentTraceFlags = (byte) parentContext.TraceFlags;
+                activity._traceState = parentContext.TraceState;
+            }
+
+            if (startTime != default)
+            {
+                activity.StartTimeUtc = startTime.UtcDateTime;
+            }
+
+            if (startIt)
+            {
+                activity.Start();
+            }
 
             return activity;
         }
@@ -1106,7 +1109,9 @@ namespace System.Diagnostics
             {
                 if (!TrySetTraceIdFromParent())
                 {
-                    _traceId = ActivityTraceId.CreateRandom().ToHexString();
+                    Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
+                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    _traceId = id.ToHexString();
                 }
             }
 
@@ -1318,7 +1323,7 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private partial class LinkedListNode<T>
+        private sealed partial class LinkedListNode<T>
         {
             public LinkedListNode(T value) => Value = value;
             public T Value;
@@ -1326,7 +1331,7 @@ namespace System.Diagnostics
         }
 
         // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private class LinkedList<T> : IEnumerable<T>
+        private sealed class LinkedList<T> : IEnumerable<T>
         {
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
@@ -1374,7 +1379,7 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
+        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
             private LinkedListNode<KeyValuePair<string, string?>>? _first;
 
@@ -1456,10 +1461,12 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;
+
+            private StringBuilder? _stringBuilder;
 
             public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
 
@@ -1621,6 +1628,37 @@ namespace System.Diagnostics
 
                     current = current.Next;
                 };
+            }
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return string.Empty;
+                    }
+
+                    _stringBuilder ??= new StringBuilder();
+                    _stringBuilder.Append(_first.Value.Key);
+                    _stringBuilder.Append(':');
+                    _stringBuilder.Append(_first.Value.Value);
+
+                    LinkedListNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    while (current != null)
+                    {
+                        _stringBuilder.Append(", ");
+                        _stringBuilder.Append(current.Value.Key);
+                        _stringBuilder.Append(':');
+                        _stringBuilder.Append(current.Value.Value);
+
+                        current = current.Next;
+                    }
+
+                    string result = _stringBuilder.ToString();
+                    _stringBuilder.Clear();
+                    return result;
+                }
             }
         }
 
