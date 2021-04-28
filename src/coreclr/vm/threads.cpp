@@ -682,7 +682,7 @@ void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-Thread* SetupThread()
+static Thread* SetupThreadWorker(bool isMainThread)
 {
     CONTRACTL {
         THROWS;
@@ -720,7 +720,7 @@ Thread* SetupThread()
     // that call into managed code.  In that case, a call to SetupThread here must
     // find the correct Thread object and install it into TLS.
 
-    if (ThreadStore::s_pThreadStore->m_PendingThreadCount != 0)
+    if (ThreadStore::s_pThreadStore->GetPendingThreadCount() != 0)
     {
         DWORD  ourOSThreadId = ::GetCurrentThreadId();
         {
@@ -774,10 +774,7 @@ Thread* SetupThread()
     Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
 
     SetupTLSForThread();
-
-    if (!pThread->InitThread() ||
-        !pThread->PrepareApartmentAndContext())
-        ThrowOutOfMemory();
+    pThread->InitThread();
 
     // reset any unstarted bits on the thread object
     FastInterlockAnd((ULONG *) &pThread->m_State, ~Thread::TS_Unstarted);
@@ -852,11 +849,38 @@ Thread* SetupThread()
         FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
     }
 
+    // Initialize the thread for the platform as the final step. This cannot be
+    // done when it is the main thread since thread initialization occurs prior
+    // to loading managed code. Since it is desirable to use managed code for
+    // some platform initialization we need to defer this initialization and instead
+    // require the main thread to call this API at appropriate time.
+    if (!isMainThread)
+        pThread->InitPlatformContext();
+
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);
 #endif // FEATURE_EVENT_TRACE
 
     return pThread;
+}
+
+Thread* SetupThread()
+{
+    WRAPPER_NO_CONTRACT;
+    return SetupThreadWorker(/* isMainThread */ false);
+}
+
+Thread* SetupMainThread()
+{
+    WRAPPER_NO_CONTRACT;
+
+#ifdef DEBUG
+    static bool isCalled = false;
+    _ASSERTE(!isCalled);
+    isCalled = true;
+#endif // DEBUG
+
+    return SetupThreadWorker(/* isMainThread */ true);
 }
 
 //-------------------------------------------------------------------------
@@ -868,7 +892,7 @@ Thread* SetupThread()
 //
 // When there is, complete the setup with code:Thread::HasStarted()
 //-------------------------------------------------------------------------
-Thread* SetupUnstartedThread(BOOL bRequiresTSL)
+Thread* SetupUnstartedThread(BOOL bRequiresThreadStoreLock)
 {
     CONTRACTL {
         THROWS;
@@ -878,10 +902,13 @@ Thread* SetupUnstartedThread(BOOL bRequiresTSL)
 
     Thread* pThread = new Thread();
 
+    if (!bRequiresThreadStoreLock)
+        pThread->SetSkipThreadStoreLock();
+
     FastInterlockOr((ULONG *) &pThread->m_State,
                     (Thread::TS_Unstarted | Thread::TS_WeOwn));
 
-    ThreadStore::AddThread(pThread, bRequiresTSL);
+    ThreadStore::AddThread(pThread);
 
     return pThread;
 }
@@ -1469,7 +1496,6 @@ Thread::Thread()
 #endif  // TRACK_SYNC
 
     m_PreventAsync = 0;
-    m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -1562,7 +1588,10 @@ Thread::Thread()
     m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
-    InitContext();
+    {
+        GCX_COOP_NO_THREAD_BROKEN();
+        m_pDomain = SystemDomain::System()->DefaultDomain();
+    }
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -1612,7 +1641,7 @@ Thread::Thread()
 //--------------------------------------------------------------------
 // Failable initialization occurs here.
 //--------------------------------------------------------------------
-BOOL Thread::InitThread()
+void Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
@@ -1739,9 +1768,6 @@ BOOL Thread::InitThread()
     {
         ThrowOutOfMemory();
     }
-
-    _ASSERTE(ret); // every failure case for ret should throw.
-    return ret;
 }
 
 // Allocate all the handles.  When we are kicking of a new thread, we can call
@@ -1775,12 +1801,11 @@ BOOL Thread::AllocHandles()
     return fOK;
 }
 
-
 //--------------------------------------------------------------------
 // This is the alternate path to SetupThread/InitThread.  If we created
 // an unstarted thread, we have SetupUnstartedThread/HasStarted.
 //--------------------------------------------------------------------
-BOOL Thread::HasStarted(BOOL bRequiresTSL)
+BOOL Thread::HasStarted()
 {
     CONTRACTL {
         NOTHROW;
@@ -1807,7 +1832,6 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
     _ASSERTE(GetThreadNULLOk() == 0);
     _ASSERTE(HasValidThreadHandle());
 
-    BOOL    fKeepTLS = FALSE;
     BOOL    fCanCleanupCOMState = FALSE;
     BOOL    res = TRUE;
 
@@ -1822,25 +1846,25 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
     // which will be thrown in Thread.Start as an internal exception
     EX_TRY
     {
-        //
-        // Initialization must happen in the following order - hosts like SQL Server depend on this.
-        //
-
         SetupTLSForThread();
-
-        fCanCleanupCOMState = TRUE;
-        res = PrepareApartmentAndContext();
-        if (!res)
-        {
-            ThrowOutOfMemory();
-        }
 
         InitThread();
 
         SetThread(this);
         SetAppDomain(m_pDomain);
 
-        ThreadStore::TransferStartedThread(this, bRequiresTSL);
+        ThreadStore::TransferStartedThread(this);
+
+        // Initialize the thread for the platform as the final step.
+        // The Finalizer thread is a special case because it is started
+        // prior to managed assemblies being loaded. Since initializing
+        // the platform context may use managed code, we skip this and
+        // rely on the Finalizer thread to handle it being a special case.
+        if (!IsFinalizerThread())
+        {
+            fCanCleanupCOMState = TRUE;
+            InitPlatformContext();
+        }
 
 #ifdef FEATURE_EVENT_TRACE
         ETW::ThreadLog::FireThreadCreated(this);
@@ -1871,29 +1895,25 @@ FAILURE:
         if (GetThreadNULLOk() != NULL && IsAbortRequested())
             UnmarkThreadForAbort();
 
-        if (!fKeepTLS)
-        {
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            //
-            // Undo our call to PrepareApartmentAndContext above, so we don't leak a CoInitialize
-            // If we're keeping TLS, then the host's call to ExitTask will clean this up instead.
-            //
-            if (fCanCleanupCOMState)
-            {
-                // The thread pointer in TLS may not be set yet, if we had a failure before we set it.
-                // So we'll set it up here (we'll unset it a few lines down).
-                SetThread(this);
-                CleanupCOMState();
-            }
-#endif
-            FastInterlockDecrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
-            // One of the components of OtherThreadsComplete() has changed, so check whether
-            // we should now exit the EE.
-            ThreadStore::CheckForEEShutdown();
-            DecExternalCount(/*holdingLock*/ !bRequiresTSL);
-            SetThread(NULL);
-            SetAppDomain(NULL);
+        //
+        // Undo the platform context initialization, so we don't leak a CoInitialize.
+        //
+        if (fCanCleanupCOMState)
+        {
+            // The thread pointer in TLS may not be set yet, if we had a failure before we set it.
+            // So we'll set it up here (we'll unset it a few lines down).
+            SetThread(this);
+            CleanupCOMState();
         }
+#endif
+        FastInterlockDecrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
+        // One of the components of OtherThreadsComplete() has changed, so check whether
+        // we should now exit the EE.
+        ThreadStore::CheckForEEShutdown();
+        DecExternalCount(/*holdingLock*/ !RequireThreadStoreLock());
+        SetThread(NULL);
+        SetAppDomain(NULL);
     }
     else
     {
@@ -4564,7 +4584,7 @@ void Thread::SafeUpdateLastThrownObject(void)
 
 // Background threads must be counted, because the EE should shut down when the
 // last non-background thread terminates.  But we only count running ones.
-void Thread::SetBackground(BOOL isBack, BOOL bRequiresTSL)
+void Thread::SetBackground(BOOL isBack)
 {
     CONTRACTL {
         NOTHROW;
@@ -4578,7 +4598,7 @@ void Thread::SetBackground(BOOL isBack, BOOL bRequiresTSL)
 
     LOG((LF_SYNC, INFO3, "SetBackground obtain lock\n"));
     ThreadStoreLockHolder TSLockHolder(FALSE);
-    if (bRequiresTSL)
+    if (RequireThreadStoreLock())
     {
         TSLockHolder.Acquire();
     }
@@ -4626,7 +4646,7 @@ void Thread::SetBackground(BOOL isBack, BOOL bRequiresTSL)
         }
     }
 
-    if (bRequiresTSL)
+    if (RequireThreadStoreLock())
     {
         TSLockHolder.Release();
     }
@@ -4691,9 +4711,7 @@ public:
 };
 #endif // FEATURE_COMINTEROP
 
-// When the thread starts running, make sure it is running in the correct apartment
-// and context.
-BOOL Thread::PrepareApartmentAndContext()
+void Thread::InitPlatformContext()
 {
     CONTRACTL {
         THROWS;
@@ -4749,9 +4767,17 @@ BOOL Thread::PrepareApartmentAndContext()
     }
 #endif // FEATURE_COMINTEROP
 
-    return TRUE;
-}
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
+    {
+        GCX_COOP_THREAD_EXISTS(this);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ALLOCATETHREADLOCALAUTORELEASEPOOL);
+        DECLARE_ARGHOLDER_ARRAY(args, 0);
+        CALL_MANAGED_METHOD_NORET(args);
+    }
+
+#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+}
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -4831,7 +4857,6 @@ Thread::ApartmentState Thread::GetApartmentRare(Thread::ApartmentState as)
     return as;
 }
 
-
 // Retrieve the explicit apartment state of the current thread. There are three possible
 // states: thread hosts an STA, thread is part of the MTA or thread state is
 // undecided. The last state may indicate that the apartment has not been set at
@@ -4859,7 +4884,6 @@ Thread::ApartmentState Thread::GetExplicitApartment()
 
     return as;
 }
-
 
 Thread::ApartmentState Thread::GetFinalApartment()
 {
@@ -5230,7 +5254,7 @@ void ThreadStore::UnlockThreadStore()
 }
 
 // AddThread adds 'newThread' to m_ThreadList
-void ThreadStore::AddThread(Thread *newThread, BOOL bRequiresTSL)
+void ThreadStore::AddThread(Thread *newThread)
 {
     CONTRACTL {
         NOTHROW;
@@ -5241,7 +5265,7 @@ void ThreadStore::AddThread(Thread *newThread, BOOL bRequiresTSL)
     LOG((LF_SYNC, INFO3, "AddThread obtain lock\n"));
 
     ThreadStoreLockHolder TSLockHolder(FALSE);
-    if (bRequiresTSL)
+    if (newThread->RequireThreadStoreLock())
     {
         TSLockHolder.Acquire();
     }
@@ -5260,7 +5284,7 @@ void ThreadStore::AddThread(Thread *newThread, BOOL bRequiresTSL)
     _ASSERTE(!newThread->IsBackground());
     _ASSERTE(!newThread->IsDead());
 
-    if (bRequiresTSL)
+    if (newThread->RequireThreadStoreLock())
     {
         TSLockHolder.Release();
     }
@@ -5368,7 +5392,7 @@ BOOL ThreadStore::RemoveThread(Thread *target)
 // When a thread is created as unstarted.  Later it may get started, in which case
 // someone calls Thread::HasStarted() on that physical thread.  This completes
 // the Setup and calls here.
-void ThreadStore::TransferStartedThread(Thread *thread, BOOL bRequiresTSL)
+void ThreadStore::TransferStartedThread(Thread *thread)
 {
     CONTRACTL {
         THROWS;
@@ -5380,7 +5404,7 @@ void ThreadStore::TransferStartedThread(Thread *thread, BOOL bRequiresTSL)
 
     LOG((LF_SYNC, INFO3, "TransferUnstartedThread obtain lock\n"));
     ThreadStoreLockHolder TSLockHolder(FALSE);
-    if (bRequiresTSL)
+    if (thread->RequireThreadStoreLock())
     {
         TSLockHolder.Acquire();
     }
@@ -5414,7 +5438,7 @@ void ThreadStore::TransferStartedThread(Thread *thread, BOOL bRequiresTSL)
     FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_LegalToJoin);
 
     // release ThreadStore Crst to avoid Crst Violation when calling HandleThreadAbort later
-    if (bRequiresTSL)
+    if (thread->RequireThreadStoreLock())
     {
         TSLockHolder.Release();
     }
@@ -7150,20 +7174,6 @@ T_CONTEXT *Thread::GetFilterContext(void)
 
 #ifndef DACCESS_COMPILE
 
-void Thread::InitContext()
-{
-    CONTRACTL {
-        THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    // this should only be called when initializing a thread
-    _ASSERTE(m_pDomain == NULL);
-    GCX_COOP_NO_THREAD_BROKEN();
-    m_pDomain = SystemDomain::System()->DefaultDomain();
-}
-
 void Thread::ClearContext()
 {
     CONTRACTL {
@@ -7187,7 +7197,7 @@ BOOL Thread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_ThreadTasks
+    return RequireSyncBlockCleanup()
         || ThreadpoolMgr::HaveTimerInfosToFlush()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)

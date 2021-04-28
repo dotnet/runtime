@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <Foundation/Foundation.h>
 #include <xplatform.h>
+#include <thread>
 
 volatile int NumReleaseCalls = 0;
 
@@ -30,4 +31,11 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE autoreleaseObject(AutoReleaseTest* 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE getNumReleaseCalls()
 {
     return NumReleaseCalls;
+}
+
+using ManagedCallback = void(*)(AutoReleaseTest*);
+extern "C" DLL_EXPORT void passAndCallOnNativeThread(AutoReleaseTest* art, ManagedCallback callback)
+{
+    std::thread th{ callback, art };
+    th.join();
 }

@@ -42,3 +42,9 @@ void SystemNative_DrainAutoreleasePool(void* pool)
 {
     [((NSAutoreleasePool*)pool) drain];
 }
+
+void SystemNative_AllocateThreadlocalAutoreleasePool(void)
+{
+    EnsureNSThreadIsMultiThreaded();
+    (void)SystemNative_CreateAutoreleasePool();
+}

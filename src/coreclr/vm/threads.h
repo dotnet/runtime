@@ -579,9 +579,10 @@ enum ThreadpoolThreadType
 //
 //---------------------------------------------------------------------------
 Thread* SetupThread();
+Thread* SetupMainThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
-// WARNING : only GC calls this with bRequiresTSL set to FALSE.
-Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
+// WARNING : only GC calls this with bRequiresThreadStoreLock set to FALSE.
+Thread* SetupUnstartedThread(BOOL bRequiresThreadStoreLock = TRUE);
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
@@ -1124,7 +1125,7 @@ public:
 
         // unused                 = 0x00400000,
 
-        // unused                 = 0x00800000,    
+        // unused                 = 0x00800000,
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
 
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
@@ -1157,6 +1158,7 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         TT_CallCoInitialize       = 0x00000002, // CoInitialize needs to be called.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        TT_SkipThreadStoreLock    = 0x00000004,    // Skip thread store lock. GC is only consumer.
     };
 
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
@@ -1312,6 +1314,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         FastInterlockAnd((ULONG *)&m_ThreadTasks, ~TT_CleanupSyncBlock);
+    }
+
+    DWORD RequireThreadStoreLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !(m_ThreadTasks & TT_SkipThreadStoreLock);
+    }
+
+    void SetSkipThreadStoreLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG *)&m_ThreadTasks, TT_SkipThreadStoreLock);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -1764,16 +1778,18 @@ public:
     //--------------------------------------------------------------
     // Failable initialization occurs here.
     //--------------------------------------------------------------
-    BOOL InitThread();
+    void InitThread();
     BOOL AllocHandles();
+
+    // When the thread starts running, prepare the thread's platform context.
+    void InitPlatformContext();
 
     //--------------------------------------------------------------
     // If the thread was setup through SetupUnstartedThread, rather
     // than SetupThread, complete the setup here when the thread is
     // actually running.
-    // WARNING : only GC calls this with bRequiresTSL set to FALSE.
     //--------------------------------------------------------------
-    BOOL HasStarted(BOOL bRequiresTSL=TRUE);
+    BOOL HasStarted();
 
     // We don't want ::CreateThread() calls scattered throughout the source.
     // Create all new threads here.  The thread is created as suspended, so
@@ -2225,14 +2241,9 @@ public:
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
 
-public:
-
+private:
     // ClearContext are to be called only during shutdown
     void ClearContext();
-
-private:
-    // don't ever call these except when creating thread!!!!!
-    void InitContext();
 
 public:
     PTR_AppDomain GetDomain(INDEBUG(BOOL fMidContextTransitionOK = FALSE))
@@ -2845,12 +2856,7 @@ public:
     // Indicate whether this thread should run in the background.  Background threads
     // don't interfere with the EE shutting down.  Whereas a running non-background
     // thread prevents us from shutting down (except through System.Exit(), of course)
-    // WARNING : only GC calls this with bRequiresTSL set to FALSE.
-    void           SetBackground(BOOL isBack, BOOL bRequiresTSL=TRUE);
-
-    // When the thread starts running, make sure it is running in the correct apartment
-    // and context.
-    BOOL           PrepareApartmentAndContext();
+    void           SetBackground(BOOL isBack);
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // Retrieve the apartment state of the current thread. There are three possible
@@ -4669,7 +4675,6 @@ class ThreadStore
 {
     friend class Thread;
     friend class ThreadSuspend;
-    friend Thread* SetupThread();
     friend class AppDomain;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -4685,8 +4690,7 @@ public:
     static void UnlockThreadStore();
 
     // Add a Thread to the ThreadStore
-    // WARNING : only GC calls this with bRequiresTSL set to FALSE.
-    static void AddThread(Thread *newThread, BOOL bRequiresTSL=TRUE);
+    static void AddThread(Thread *newThread);
 
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
@@ -4694,8 +4698,7 @@ public:
     static BOOL CanAcquireLock();
 
     // Transfer a thread from the unstarted to the started list.
-    // WARNING : only GC calls this with bRequiresTSL set to FALSE.
-    static void TransferStartedThread(Thread *target, BOOL bRequiresTSL=TRUE);
+    static void TransferStartedThread(Thread *target);
 
     // Before using the thread list, be sure to take the critical section.  Otherwise
     // it can change underneath you, perhaps leading to an exception after Remove.
@@ -4790,6 +4793,13 @@ private:
     LONG        m_UnstartedThreadCount;
     LONG        m_BackgroundThreadCount;
     LONG        m_PendingThreadCount;
+public:
+    LONG        GetPendingThreadCount ()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_PendingThreadCount;
+    }
+private:
 
     LONG        m_DeadThreadCount;
     LONG        m_DeadThreadCountForGCTrigger;

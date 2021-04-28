@@ -6,24 +6,27 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using TestLibrary;
 
-internal static class ObjectiveC
+internal static unsafe class ObjectiveC
 {
     [DllImport(nameof(ObjectiveC))]
-    internal static extern IntPtr initObject();
+    public static extern IntPtr initObject();
     [DllImport(nameof(ObjectiveC))]
-    internal static extern void autoreleaseObject(IntPtr art);
+    public static extern void autoreleaseObject(IntPtr art);
     [DllImport(nameof(ObjectiveC))]
-    internal static extern int getNumReleaseCalls();
+    public static extern int getNumReleaseCalls();
+    [DllImport(nameof(ObjectiveC))]
+    public static extern void passAndCallOnNativeThread(IntPtr art, delegate* unmanaged<IntPtr, void> callback);
 }
 
 public class AutoReleaseTest
 {
     public static int Main()
     {
-        AppContext.SetSwitch("System.Threading.ThreadPool.EnableDispatchAutoreleasePool", true);
         try
         {
-            TestAutoRelease();
+            ValidateThreadPoolAutoRelease();
+            ValidateNewManagedThreadAutoRelease();
+            ValidateNewNativeThreadAutoRelease();
         }
         catch (Exception e)
         {
@@ -34,8 +37,9 @@ public class AutoReleaseTest
         return 100;
     }
 
-    private static void TestAutoRelease()
+    private static void ValidateThreadPoolAutoRelease()
     {
+        Console.WriteLine($"Running {nameof(ValidateThreadPoolAutoRelease)}...");
         using (AutoResetEvent evt = new AutoResetEvent(false))
         {
             int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
@@ -50,5 +54,56 @@ public class AutoReleaseTest
             Thread.Sleep(60);
             Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
         }
+    }
+
+    private static void ValidateNewManagedThreadAutoRelease()
+    {
+        Console.WriteLine($"Running {nameof(ValidateNewManagedThreadAutoRelease)}...");
+        using (AutoResetEvent evt = new AutoResetEvent(false))
+        {
+            int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
+
+            RunScenario(evt);
+
+            // Trigger the GC and wait to clean up the allocated managed Thread instance.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
+        }
+
+        static void RunScenario(AutoResetEvent evt)
+        {
+            IntPtr obj = ObjectiveC.initObject();
+            var thread = new Thread(_ =>
+            {
+                ObjectiveC.autoreleaseObject(obj);
+                evt.Set();
+            });
+            thread.Start();
+
+            evt.WaitOne();
+            thread.Join();
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    private static void NativeCallback(IntPtr art)
+    {
+        ObjectiveC.autoreleaseObject(art);
+    }
+
+    private static unsafe void ValidateNewNativeThreadAutoRelease()
+    {
+        Console.WriteLine($"Running {nameof(ValidateNewNativeThreadAutoRelease)}...");
+        int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
+        IntPtr obj = ObjectiveC.initObject();
+
+        // The P/Invoke will wait until the associated native thread is terminated
+        // prior to returning. This means the Objective-C runtime should have already
+        // drained any associated NSAutoreleasePool.
+        ObjectiveC.passAndCallOnNativeThread(obj, &NativeCallback);
+
+        Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
     }
 }

@@ -633,6 +633,7 @@ void EEStartupHelper()
     static ConfigDWORD breakOnEELoad;
     EX_TRY
     {
+        Thread* mainThread = NULL;
         g_fEEInit = true;
 
 #ifndef CROSSGEN_COMPILE
@@ -917,13 +918,13 @@ void EEStartupHelper()
         }
 
         // throws on error
-        SetupThread();
+        mainThread = SetupMainThread();
 
 #ifdef DEBUGGING_SUPPORTED
         // Notify debugger once the first thread is created to finish initialization.
         if (g_pDebugInterface != NULL)
         {
-            g_pDebugInterface->StartupPhase2(GetThread());
+            g_pDebugInterface->StartupPhase2(mainThread);
         }
 #endif
 
@@ -1030,7 +1031,10 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#endif // CROSSGEN_COMPILE
+        // Initialize the platform specific context.
+        mainThread->InitPlatformContext();
+
+#endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -1056,7 +1060,6 @@ void EEStartupHelper()
 
         // Perform CoreLib consistency check if requested
         g_CoreLib.CheckExtended();
-
 #endif // _DEBUG
 
 #endif // !CROSSGEN_COMPILE
