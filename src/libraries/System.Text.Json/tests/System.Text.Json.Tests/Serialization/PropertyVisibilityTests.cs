@@ -637,7 +637,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""Renamed"":true}", serialized);
 
             serialized = JsonSerializer.Serialize(new FurtherDerivedClass_WithRenamedOverride());
-            Assert.Equal(@"{""MyProp"":true}", serialized);
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            // Don't ignore virtual properties with same name and type when they are in a new slot.
+            serialized = JsonSerializer.Serialize(new FurtherDerivedClass_WithRenamedNewSlotVirtual());
+            Assert.Equal(@"{""MyProp"":false,""Renamed"":true}", serialized);
         }
 
         public class ClassWithInternalField
@@ -981,6 +985,11 @@ namespace System.Text.Json.Serialization.Tests
         private class FurtherDerivedClass_WithRenamedOverride : DerivedClass_WithRenamedOverride
         {
             public override bool MyProp { get; set; }
+        }
+
+        private class FurtherDerivedClass_WithRenamedNewSlotVirtual : DerivedClass_WithRenamedOverride
+        {
+            public new virtual bool MyProp { get; set; }
         }
 
         [Fact]
