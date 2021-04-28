@@ -14,11 +14,11 @@ The pipeline uses the Roslyn [Syntax APIs](https://docs.microsoft.com/dotnet/api
 
 The generator processes the method's `GeneratedDllImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`][MarshalAsAttribute], [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
 
-A [`TypePositionInfo`](../DllImportGenerator/TypePositionInfo.cs) is created for each type that needs to be marshalled. For each parameter and return type, this captures the managed type, managed and native positions (return or index in parameter list), and marshalling information.
+A [`TypePositionInfo`][src-TypePositionInfo] is created for each type that needs to be marshalled. For each parameter and return type, this captures the managed type, managed and native positions (return or index in parameter list), and marshalling information.
 
-The marshalling information is represented by various subclasses of [`MarshallingInfo`](../DllImportGenerator/MarshallingAttributeInfo.cs) and represents all user-defined marshalling information for the specific parameter or return type. These classes are intended to simply capture any specified marshalling information, not interpret what that information means in terms of marshalling behaviour; that is handled when determining the [marshalling generator](#marshalling-generators) for each `TypePositionInfo`.
+The marshalling information is represented by various subclasses of [`MarshallingInfo`][src-MarshallingAttributeInfo] and represents all user-defined marshalling information for the specific parameter or return type. These classes are intended to simply capture any specified marshalling information, not interpret what that information means in terms of marshalling behaviour; that is handled when determining the [marshalling generator](#marshalling-generators) for each `TypePositionInfo`.
 
-The processing step also includes handling any implicit parameter/return types that are required for the P/Invoke, but not part of the managed method signature; for example, a method with [`PreserveSig=false`][PreserveSig] requires an HRESULT return type and potentially an out parameter matching the managed method's return type. 
+The processing step also includes handling any implicit parameter/return types that are required for the P/Invoke, but not part of the managed method signature; for example, a method with [`PreserveSig=false`][PreserveSig] requires an HRESULT return type and potentially an out parameter matching the managed method's return type.
 
 ### `PreserveSig=false`
 
@@ -52,9 +52,9 @@ static partial int MethodWithReturn__PInvoke__(byte* retVal);
 
 ## Marshalling generators
 
-Each parameter and return for the method is handled by an [`IMarshallingGenerator`](../DllImportGenerator/Marshalling/MarshallingGenerator.cs) instance. The processed information for each parameter and return type is used to determine the appropriate marshalling generator for handling that type. Support for different types can be added in the form of new implementations of `IMarshallingGenerator`.
+Each parameter and return for the method is handled by an [`IMarshallingGenerator`][src-MarshallingGenerator] instance. The processed information for each parameter and return type is used to determine the appropriate marshalling generator for handling that type. Support for different types can be added in the form of new implementations of `IMarshallingGenerator`.
 
-The marshalling generators are responsible for generating the code for each [stage](#stages) of the stub. They are intended to be stateless, such that they are given all the data ([`TypePositionInfo`](../DllImportGenerator/TypePositionInfo.cs)) for which they need to generate marshalling code and the context ([`StubCodeContext`](../DllImportGenerator/StubCodeContext.cs)) under which that code should be generated.
+The marshalling generators are responsible for generating the code for each [stage](#stages) of the stub. They are intended to be stateless, such that they are given all the data ([`TypePositionInfo`][src_TypePositionInfo]) for which they need to generate marshalling code and the context ([`StubCodeContext`][src-StubCodeContext]) under which that code should be generated.
 
 ## Stub code generation
 
@@ -211,6 +211,11 @@ static partial byte Method__PInvoke__(ushort* s);
 ```
 
 <!-- Links -->
+[src-MarshallingAttributeInfo]: ../DllImportGenerator/DllImportGenerator/MarshallingAttributeInfo.cs
+[src-MarshallingGenerator]: ../DllImportGenerator/DllImportGenerator/Marshalling/MarshallingGenerator.cs
+[src-StubCodeContext]: ../DllImportGenerator/DllImportGenerator/StubCodeContext.cs
+[src-TypePositionInfo]: ../DllImportGenerator/DllImportGenerator/TypePositionInfo.cs
+
 [DllImportAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
 [MarshalAsAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
 [InAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.inattribute
