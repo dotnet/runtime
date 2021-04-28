@@ -186,6 +186,7 @@ namespace Microsoft.Diagnostics.Tracing
 #else
 namespace System.Diagnostics.Tracing
 {
+    [Conditional("NEEDED_FOR_SOURCE_GENERATOR_ONLY")]
     [AttributeUsage(AttributeTargets.Class)]
     internal sealed class EventSourceAutoGenerateAttribute : Attribute
     {

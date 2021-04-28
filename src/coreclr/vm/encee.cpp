@@ -614,6 +614,9 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     SIZE_T newILOffset,
     CONTEXT *pOrigContext)
 {
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+    return E_NOTIMPL;
+#else
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ",
         pMD->m_pszDebugMethodName, newILOffset));
 
@@ -694,6 +697,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return hr;
+#endif // #if define(TARGET_ARM64) || defined(TARGET_ARM)
 }
 
 //---------------------------------------------------------------------------------------
@@ -740,7 +744,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_AMD64)
     // Since we made a copy of the incoming CONTEXT in context, clear any new flags we
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
-    // on this copy to RtlRestoreContext, and this copy doesn't have the extra info
+    // on this copy to ClrRestoreNonvolatileContext, and this copy doesn't have the extra info
     // required by the XSAVE or other flags.
     //
     // FUTURE: No reason to ifdef this for amd64-only, except to make this late fix as
@@ -813,7 +817,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
 #else
-    RtlRestoreContext(pContext, NULL);
+    ClrRestoreNonvolatileContext(pContext);
 #endif
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.

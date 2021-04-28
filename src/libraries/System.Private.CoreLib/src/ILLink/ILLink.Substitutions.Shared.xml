@@ -18,6 +18,7 @@
     </type>
     <type fullname="System.Threading.Tasks.Task" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
       <field name="s_asyncDebuggingEnabled" value="false" initialize="false" />
+      <method signature="System.Boolean get_IsWaitNotificationEnabled()" body="stub" value="false" />
     </type>
     <type fullname="System.Resources.ResourceReader" feature="System.Resources.ResourceManager.AllowCustomResourceTypes" featurevalue="false">
       <method signature="System.Boolean get_AllowCustomResourceTypes()" body="stub" value="false" />

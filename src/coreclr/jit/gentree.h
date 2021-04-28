@@ -4229,12 +4229,13 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_DEVIRTUALIZED           0x00040000 // GT_CALL -- this call was devirtualized
 #define GTF_CALL_M_UNBOXED                 0x00080000 // GT_CALL -- this call was optimized to use the unboxed entry point
 #define GTF_CALL_M_GUARDED_DEVIRT          0x00100000 // GT_CALL -- this call is a candidate for guarded devirtualization
-#define GTF_CALL_M_GUARDED                 0x00200000 // GT_CALL -- this call was transformed by guarded devirtualization
-#define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
-#define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
-#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
-#define GTF_CALL_M_STRESS_TAILCALL         0x02000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
-#define GTF_CALL_M_EXPANDED_EARLY          0x04000000 // GT_CALL -- the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
+#define GTF_CALL_M_GUARDED_DEVIRT_CHAIN    0x00200000 // GT_CALL -- this call is a candidate for chained guarded devirtualization
+#define GTF_CALL_M_GUARDED                 0x00400000 // GT_CALL -- this call was transformed by guarded devirtualization
+#define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00800000 // GT_CALL -- this is a call to an allocator with side effects
+#define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x01000000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x02000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
+#define GTF_CALL_M_STRESS_TAILCALL         0x04000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
+#define GTF_CALL_M_EXPANDED_EARLY          0x08000000 // GT_CALL -- the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
 
     // clang-format on
 
@@ -4847,7 +4848,7 @@ struct GenTreeIntrinsic : public GenTreeOp
 struct GenTreeJitIntrinsic : public GenTreeOp
 {
 private:
-    ClassLayout* m_layout;
+    ClassLayout* gtLayout;
 
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
     regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
@@ -4867,13 +4868,13 @@ public:
 
     ClassLayout* GetLayout() const
     {
-        return m_layout;
+        return gtLayout;
     }
 
     void SetLayout(ClassLayout* layout)
     {
         assert(layout != nullptr);
-        m_layout = layout;
+        gtLayout = layout;
     }
 
     regNumber GetOtherReg() const
@@ -4927,6 +4928,9 @@ public:
     GenTreeJitIntrinsic(
         genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeOp(oper, type, op1, op2)
+        , gtLayout(nullptr)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
+        , gtOtherReg(REG_NA)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)

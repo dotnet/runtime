@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-
 namespace System.Text.Json.Node
 {
     public abstract partial class JsonNode
@@ -14,12 +12,15 @@ namespace System.Text.Json.Node
         /// <returns>JSON representation of current instance.</returns>
         public string ToJsonString(JsonSerializerOptions? options = null)
         {
-            var output = new ArrayBufferWriter<byte>();
-            using (var writer = new Utf8JsonWriter(output, options == null ? default(JsonWriterOptions) : options.GetWriterOptions()))
+            using (var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault))
             {
-                WriteTo(writer, options);
+                using (var writer = new Utf8JsonWriter(output, options == null ? default(JsonWriterOptions) : options.GetWriterOptions()))
+                {
+                    WriteTo(writer, options);
+                }
+
+                return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
             }
-            return JsonHelpers.Utf8GetString(output.WrittenSpan);
         }
 
         /// <summary>
@@ -43,15 +44,15 @@ namespace System.Text.Json.Node
                 }
             }
 
-            var options = new JsonWriterOptions { Indented = true };
-            var output = new ArrayBufferWriter<byte>();
-
-            using (var writer = new Utf8JsonWriter(output, options))
+            using (var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault))
             {
-                WriteTo(writer);
-            }
+                using (var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = true }))
+                {
+                    WriteTo(writer);
+                }
 
-            return JsonHelpers.Utf8GetString(output.WrittenSpan);
+                return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+            }
         }
 
         /// <summary>
