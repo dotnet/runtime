@@ -26,6 +26,8 @@ parameters:
 
 jobs:
 
+# WebAssembly on Windows
+
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml
     parameters:

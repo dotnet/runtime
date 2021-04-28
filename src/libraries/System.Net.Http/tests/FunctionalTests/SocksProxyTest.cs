@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Http.Functional.Tests.Socks
+namespace System.Net.Http.Functional.Tests
 {
     public abstract class SocksProxyTest : HttpClientHandlerTestBase
     {
@@ -42,7 +42,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     using HttpClient client = CreateHttpClient(handler);
 
-                    handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}");
+                    handler.Proxy = new WebProxy($"{scheme}://127.0.0.1:{proxy.Port}");
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                     if (useAuth)
@@ -97,7 +97,7 @@ namespace System.Net.Http.Functional.Tests.Socks
             using HttpClientHandler handler = CreateHttpClientHandler();
             using HttpClient client = CreateHttpClient(handler);
 
-            handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}")
+            handler.Proxy = new WebProxy($"{scheme}://127.0.0.1:{proxy.Port}")
             {
                 Credentials = credentials
             };

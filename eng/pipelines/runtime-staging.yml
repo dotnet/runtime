@@ -321,6 +321,9 @@ jobs:
       testResultsFormat: xunit
       timeoutInMinutes: 90
 
+#
+# Build Browser_wasm, on windows
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml

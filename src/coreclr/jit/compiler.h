@@ -984,7 +984,7 @@ public:
     var_types lvaArgType();
 
     // Returns true if this variable contains GC pointers (including being a GC pointer itself).
-    bool HasGCPtr()
+    bool HasGCPtr() const
     {
         return varTypeIsGC(lvType) || ((lvType == TYP_STRUCT) && m_layout->HasGCPtr());
     }
@@ -5416,7 +5416,8 @@ public:
 
     void fgRemoveEmptyBlocks();
 
-    void fgRemoveStmt(BasicBlock* block, Statement* stmt);
+    void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
+    void fgUnlinkStmt(BasicBlock* block, Statement* stmt);
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
