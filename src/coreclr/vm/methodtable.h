@@ -2283,7 +2283,7 @@ public:
 
 
     // Resolve virtual static interface method pInterfaceMD on this type.
-    MethodDesc *ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD, BOOL allowInstParam);
+    MethodDesc *ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD, BOOL allowInstParam, BOOL allowNullResult);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
