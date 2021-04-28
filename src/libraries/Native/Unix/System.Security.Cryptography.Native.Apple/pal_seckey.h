@@ -69,7 +69,6 @@ For ECC the value should not be used.
 */
 PALEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 /*
 Create an iOS-style key from raw data.
 
@@ -98,4 +97,3 @@ PALEXPORT int32_t AppleCryptoNative_SecKeyCopyExternalRepresentation(SecKeyRef p
 Return a corresponding public key from a private key.
 */
 PALEXPORT SecKeyRef AppleCryptoNative_SecKeyCopyPublicKey(SecKeyRef privateKey);
-#endif

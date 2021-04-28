@@ -140,14 +140,12 @@ uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey)
     return SecKeyGetBlockSize(publicKey);
 }
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 static CFStringRef GetKeyAlgorithmIdentifier(PAL_KeyAlgorithm keyAlgorithm)
 {
     if (keyAlgorithm == PAL_KeyAlgorithm_EC)
         return kSecAttrKeyTypeECSECPrimeRandom;
     if (keyAlgorithm == PAL_KeyAlgorithm_RSA)
         return kSecAttrKeyTypeRSA;
-
     return NULL;
 }
 
@@ -158,13 +156,10 @@ int32_t AppleCryptoNative_SecKeyCreateWithData(uint8_t* pKey,
                                                SecKeyRef* pKeyOut,
                                                CFErrorRef* pErrorOut)
 {
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-    if (pKeyOut != NULL)
-        *pKeyOut = NULL;
-
-    if (pKeyOut == NULL || pErrorOut == NULL || cbKey <= 0 || pKey == NULL)
-        return kErrorBadInput;
+    assert(pKey != NULL);
+    assert(cbKey > 0);
+    assert(pKeyOut != NULL);
+    assert(pErrorOut != NULL);
 
     CFMutableDictionaryRef dataAttributes = CFDictionaryCreateMutable(
         kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -177,11 +172,7 @@ int32_t AppleCryptoNative_SecKeyCreateWithData(uint8_t* pKey,
     CFStringRef keyClass = isPublic == 0 ? kSecAttrKeyClassPrivate : kSecAttrKeyClassPublic;
     CFStringRef keyType = GetKeyAlgorithmIdentifier(keyAlgorithm);
 
-    if (keyType == NULL)
-    {
-        CFRelease(dataAttributes);
-        return kErrorBadInput;
-    }
+    assert(keyType != NULL);
 
     CFDictionarySetValue(dataAttributes, kSecAttrKeyType, keyType);
     CFDictionarySetValue(dataAttributes, kSecAttrKeyClass, keyClass);
@@ -199,15 +190,9 @@ int32_t AppleCryptoNative_SecKeyCopyExternalRepresentation(SecKeyRef pKey,
                                                            CFDataRef* ppDataOut,
                                                            CFErrorRef* pErrorOut)
 {
-    if (ppDataOut != NULL)
-        *ppDataOut = NULL;
-    if (pErrorOut != NULL)
-        *pErrorOut = NULL;
-
-    if (pKey == NULL || ppDataOut == NULL || pErrorOut == NULL)
-    {
-        return kErrorBadInput;
-    }
+    assert(pKey != NULL);
+    assert(ppDataOut != NULL);
+    assert(pErrorOut != NULL);
 
     *ppDataOut = SecKeyCopyExternalRepresentation(pKey, pErrorOut);
     return *ppDataOut == NULL ? kErrorSeeError : 1;
@@ -215,6 +200,7 @@ int32_t AppleCryptoNative_SecKeyCopyExternalRepresentation(SecKeyRef pKey,
 
 SecKeyRef AppleCryptoNative_SecKeyCopyPublicKey(SecKeyRef privateKey)
 {
+    assert(privateKey != NULL);
+
     return SecKeyCopyPublicKey(privateKey);
 }
-#endif
