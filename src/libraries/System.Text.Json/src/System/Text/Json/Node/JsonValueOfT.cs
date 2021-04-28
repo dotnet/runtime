@@ -52,7 +52,7 @@ namespace System.Text.Json.Node
             throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvert, _value!.GetType(), typeof(T)));
         }
 
-        public override bool TryGetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] T>([NotNullWhen(true)] out T value)
+        public override bool TryGetValue<T>([NotNullWhen(true)] out T value)
         {
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)

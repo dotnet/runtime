@@ -10,7 +10,7 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        internal const string SerializationUnreferencedCodeMessage = "Json Serialization and Deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo/JsonSerializerContext, or make sure all of the required types are preserved.";
+        internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static JsonTypeInfo GetTypeInfo(Type runtimeType, JsonSerializerOptions? options)

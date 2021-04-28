@@ -13,7 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 [assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-    Target = "M:System.Net.Http.Json.JsonContent.<SerializeToStreamAsyncCore>d__15.MoveNext()",
+    Target = "M:System.Net.Http.Json.JsonContent.<SerializeToStreamAsyncCore>d__13.MoveNext()",
     Scope = "member",
     Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as UnconditionalSuppressMessage.")]
 
@@ -22,18 +22,16 @@ namespace System.Net.Http.Json
     public sealed partial class JsonContent : HttpContent
     {
         internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        internal const DynamicallyAccessedMemberTypes SerializationMemberTypes = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties;
-        internal const DynamicallyAccessedMemberTypes DeserializationMemberTypes = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties;
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
-        [DynamicallyAccessedMembers(SerializationMemberTypes)]
+        [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)]
         public Type ObjectType { get; }
         public object? Value { get; }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         private JsonContent(
             object? inputValue,
-            [DynamicallyAccessedMembers(SerializationMemberTypes)] Type inputType,
+            [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType,
             MediaTypeHeaderValue? mediaType,
             JsonSerializerOptions? options)
         {
@@ -54,11 +52,11 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static JsonContent Create<[DynamicallyAccessedMembers(SerializationMemberTypes)] T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        public static JsonContent Create<[DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static JsonContent Create(object? inputValue, [DynamicallyAccessedMembers(SerializationMemberTypes)] Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        public static JsonContent Create(object? inputValue, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)

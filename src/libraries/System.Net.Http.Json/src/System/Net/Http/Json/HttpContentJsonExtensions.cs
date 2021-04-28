@@ -31,10 +31,10 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpContentJsonExtensions
     {
-        internal const string SerializationUnreferencedCodeMessage = "Json Serialization and Deserialization might require types that cannot be statically analyzed. Use the overloads that take a JsonTypeInfo, or make sure all of the required types are preserved.";
+        internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static Task<object?> ReadFromJsonAsync(this HttpContent content, [DynamicallyAccessedMembers(JsonContent.DeserializationMemberTypes)] Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, [DynamicallyAccessedMembers(JsonHelpers.DeserializationMemberTypes)] Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (content == null)
             {
@@ -47,7 +47,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static Task<T?> ReadFromJsonAsync<[DynamicallyAccessedMembers(JsonContent.DeserializationMemberTypes)] T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<T?> ReadFromJsonAsync<[DynamicallyAccessedMembers(JsonHelpers.DeserializationMemberTypes)] T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (content == null)
             {
@@ -60,7 +60,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, [DynamicallyAccessedMembers(JsonContent.DeserializationMemberTypes)] Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, [DynamicallyAccessedMembers(JsonHelpers.DeserializationMemberTypes)] Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
             {
@@ -69,7 +69,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static async Task<T?> ReadFromJsonAsyncCore<[DynamicallyAccessedMembers(JsonContent.DeserializationMemberTypes)] T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        private static async Task<T?> ReadFromJsonAsyncCore<[DynamicallyAccessedMembers(JsonHelpers.DeserializationMemberTypes)] T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
             {
