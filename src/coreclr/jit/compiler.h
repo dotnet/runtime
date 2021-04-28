@@ -5416,7 +5416,8 @@ public:
 
     void fgRemoveEmptyBlocks();
 
-    void fgRemoveStmt(BasicBlock* block, Statement* stmt);
+    void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
+    void fgUnlinkStmt(BasicBlock* block, Statement* stmt);
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
