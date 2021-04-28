@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Encodings.Web;
@@ -337,9 +336,6 @@ namespace System.Text.Json.Serialization.Tests
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue, bool throws)
         {
             var options = new JsonSerializerOptions();
-
-            // Initialize the built-in converters.
-            JsonSerializer.Serialize("", options);
 
             JsonConverter<T> converter = (JsonConverter<T>)options.GetConverter(typeof(T));
             Assert.Equal(converterName, converter.GetType().Name);
