@@ -3096,10 +3096,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         AssemblySpec spec;
         spec.InitializeSpec(result->GetFile());
-        if (result->CanUseWithBindingCache())
-            GetAppDomain()->AddAssemblyToCache(&spec, result);
+        GetAppDomain()->AddAssemblyToCache(&spec, result);
     }
-    else if (result->CanUseWithBindingCache())
+    else
     {
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
@@ -3728,7 +3727,6 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembl
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
         PRECONDITION(CheckPointer(pAssembly));
-        PRECONDITION(pAssembly->CanUseWithBindingCache());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -3913,7 +3911,7 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     {
         result = TryResolveAssemblyUsingEvent(*ppFailedSpec);
 
-        if (result != NULL && result->CanUseWithBindingCache())
+        if (result != NULL)
         {
             fFailure = FALSE;
 
@@ -3989,13 +3987,10 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     _ASSERTE(pBinder != NULL);
                     pSpec->SetBindingContext(pBinder);
 
-                    if (result->CanUseWithBindingCache())
-                    {
-                        // Failure to add simply means someone else beat us to it. In that case
-                        // the FindCachedFile call below (after catch block) will update result
-                        // to the cached value.
-                        AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
-                    }
+                    // Failure to add simply means someone else beat us to it. In that case
+                    // the FindCachedFile call below (after catch block) will update result
+                    // to the cached value.
+                    AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
                 }
                 else
                 {
@@ -4112,13 +4107,10 @@ PEAssembly * AppDomain::BindAssemblySpec(
     // thread to store our result.  Note that we may throw from here, if there is a cached exception.
     // This will release the refcount of the current result holder (if any), and will replace
     // it with a non-addref'ed result
-    if (result== NULL || result->CanUseWithBindingCache())
-    {
-        result = FindCachedFile(pSpec);
+    result = FindCachedFile(pSpec);
 
-        if (result != NULL)
-            result->AddRef();
-    }
+    if (result != NULL)
+        result->AddRef();
 
     bindOperation.SetResult(result.GetValue(), isCached);
     return result.Extract();

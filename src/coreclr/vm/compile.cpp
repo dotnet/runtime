@@ -313,8 +313,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
 
-            if (pDomainAssembly->CanUseWithBindingCache())
-                pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
+            pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
 
             pAssembly = pDomain->LoadAssembly(&spec, pAssemblyHolder, FILE_LOADED);
 
