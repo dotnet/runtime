@@ -890,6 +890,9 @@
 /* The JIT/AOT targets iOS */
 #cmakedefine TARGET_IOS 1
 
+/* The JIT/AOT targets tvOS */
+#cmakedefine TARGET_TVOS 1
+
 /* The JIT/AOT targets OSX */
 #cmakedefine TARGET_OSX 1
 
