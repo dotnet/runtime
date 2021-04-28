@@ -47,11 +47,21 @@ namespace System.Drawing
                         // Convert the frame delay from byte[] to int
                         //
                         byte[] values = frameDelayItem.Value!;
-                        Debug.Assert(values.Length == 4 * FrameCount, "PropertyItem has invalid value byte array");
+
+                        // On Windows, the frame delay bytes are repeated such that the array
+                        // length is 4 times the framecount. On Linux, the frame delay bytes
+                        // are not repeated if the same delay applies to all frames.
+                        Debug.Assert(FrameCount % (values.Length / 4) == 0, "PropertyItem has invalid value byte array. The FrameCount should be evenly divisible by a quarter of the byte array's length.");
+
                         _frameDelay = new int[FrameCount];
-                        for (int i = 0; i < FrameCount; ++i)
+                        for (int f = 0, i = 0; f < FrameCount; ++f, i += 4)
                         {
-                            _frameDelay[i] = values[i * 4] + 256 * values[i * 4 + 1] + 256 * 256 * values[i * 4 + 2] + 256 * 256 * 256 * values[i * 4 + 3];
+                            if (i == values.Length)
+                            {
+                                i = 0;
+                            }
+
+                            _frameDelay[f] = values[i * 4] + 256 * values[i * 4 + 1] + 256 * 256 * values[i * 4 + 2] + 256 * 256 * 256 * values[i * 4 + 3];
                         }
                     }
                 }
