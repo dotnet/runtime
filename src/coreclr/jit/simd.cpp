@@ -547,7 +547,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
         {
             simdBaseJitType = CORINFO_TYPE_NATIVEINT;
             size            = Vector128SizeBytes;
-            JITDUMP("  Known type Vector256<nint>\n");
+            JITDUMP("  Known type Vector128<nint>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128NUIntHandle)
         {
@@ -707,7 +707,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector256<nint>\n");
                             break;
                         case CORINFO_TYPE_NATIVEUINT:
-                            m_simdHandleCache->Vector256ULongHandle = typeHnd;
+                            m_simdHandleCache->Vector256NUIntHandle = typeHnd;
                             simdBaseJitType                         = CORINFO_TYPE_NATIVEUINT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector256<nuint>\n");
                             break;
@@ -779,7 +779,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector128<nint>\n");
                             break;
                         case CORINFO_TYPE_NATIVEUINT:
-                            m_simdHandleCache->Vector128ULongHandle = typeHnd;
+                            m_simdHandleCache->Vector128NUIntHandle = typeHnd;
                             simdBaseJitType                         = CORINFO_TYPE_NATIVEUINT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector128<nuint>\n");
                             break;
@@ -850,7 +850,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<nint>\n");
                             break;
                         case CORINFO_TYPE_NATIVEUINT:
-                            m_simdHandleCache->Vector64ULongHandle = typeHnd;
+                            m_simdHandleCache->Vector64NUIntHandle = typeHnd;
                             simdBaseJitType                         = CORINFO_TYPE_NATIVEUINT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<nuint>\n");
                             break;
