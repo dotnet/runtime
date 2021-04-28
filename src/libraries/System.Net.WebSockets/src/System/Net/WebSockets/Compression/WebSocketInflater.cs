@@ -15,7 +15,7 @@ namespace System.Net.WebSockets.Compression
         internal const int FlushMarkerLength = 4;
         internal static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
 
-        private readonly ZLibStreamPool _streamPool;
+        private readonly int _windowBits;
         private ZLibStreamHandle? _stream;
         private readonly bool _persisted;
 
@@ -48,7 +48,7 @@ namespace System.Net.WebSockets.Compression
 
         internal WebSocketInflater(int windowBits, bool persisted)
         {
-            _streamPool = ZLibStreamPool.GetOrCreate(windowBits);
+            _windowBits = -windowBits; // Negative for raw deflate
             _persisted = persisted;
         }
 
@@ -60,7 +60,7 @@ namespace System.Net.WebSockets.Compression
         {
             if (_stream is not null)
             {
-                _streamPool.ReturnInflater(_stream);
+                _stream.Dispose();
                 _stream = null;
             }
             ReleaseBuffer();
@@ -128,7 +128,7 @@ namespace System.Net.WebSockets.Compression
         /// </summary>
         public unsafe bool Inflate(Span<byte> output, out int written)
         {
-            _stream ??= _streamPool.GetInflater();
+            _stream ??= CreateInflater();
 
             if (_available > 0 && output.Length > 0)
             {
@@ -192,7 +192,7 @@ namespace System.Net.WebSockets.Compression
             {
                 if (!_persisted)
                 {
-                    _streamPool.ReturnInflater(_stream);
+                    _stream.Dispose();
                     _stream = null;
                 }
                 return true;
@@ -252,6 +252,33 @@ namespace System.Net.WebSockets.Compression
                 ErrorCode.StreamError => SR.ZLibErrorInconsistentStream,
                 _ => string.Format(SR.ZLibErrorUnexpected, (int)errorCode)
             };
+            throw new WebSocketException(message);
+        }
+
+        private ZLibStreamHandle CreateInflater()
+        {
+            ZLibStreamHandle stream;
+            ErrorCode errorCode;
+
+            try
+            {
+                errorCode = CreateZLibStreamForInflate(out stream, _windowBits);
+            }
+            catch (Exception exception)
+            {
+                throw new WebSocketException(SR.ZLibErrorDLLLoadError, exception);
+            }
+
+            if (errorCode == ErrorCode.Ok)
+            {
+                return stream;
+            }
+
+            stream.Dispose();
+
+            string message = errorCode == ErrorCode.MemError
+                ? SR.ZLibErrorNotEnoughMemory
+                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
         }
     }

@@ -7,7 +7,6 @@
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\Compression\WebSocketDeflater.cs" />
     <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />
-    <Compile Include="System\Net\WebSockets\Compression\ZLibStreamPool.cs" />
     <Compile Include="System\Net\WebSockets\ValueWebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocket.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketCloseStatus.cs" />

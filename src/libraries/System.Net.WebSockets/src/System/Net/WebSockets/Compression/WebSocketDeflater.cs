@@ -12,7 +12,7 @@ namespace System.Net.WebSockets.Compression
     /// </summary>
     internal sealed class WebSocketDeflater : IDisposable
     {
-        private readonly ZLibStreamPool _streamPool;
+        private readonly int _windowBits;
         private ZLibStreamHandle? _stream;
         private readonly bool _persisted;
 
@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Compression
 
         internal WebSocketDeflater(int windowBits, bool persisted)
         {
-            _streamPool = ZLibStreamPool.GetOrCreate(windowBits);
+            _windowBits = -windowBits; // Negative for raw deflate
             _persisted = persisted;
         }
 
@@ -28,7 +28,7 @@ namespace System.Net.WebSockets.Compression
         {
             if (_stream is not null)
             {
-                _streamPool.ReturnDeflater(_stream);
+                _stream.Dispose();
                 _stream = null;
             }
         }
@@ -84,7 +84,7 @@ namespace System.Net.WebSockets.Compression
         private void DeflatePrivate(ReadOnlySpan<byte> payload, Span<byte> output, bool endOfMessage,
             out int consumed, out int written, out bool needsMoreOutput)
         {
-            _stream ??= _streamPool.GetDeflater();
+            _stream ??= CreateDeflater();
 
             if (payload.Length == 0)
             {
@@ -119,7 +119,7 @@ namespace System.Net.WebSockets.Compression
 
             if (endOfMessage && !_persisted)
             {
-                _streamPool.ReturnDeflater(_stream);
+                _stream.Dispose();
                 _stream = null;
             }
         }
@@ -200,6 +200,34 @@ namespace System.Net.WebSockets.Compression
                 ? SR.ZLibErrorInconsistentStream
                 : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
+        }
+
+        private ZLibStreamHandle CreateDeflater()
+        {
+            ZLibStreamHandle stream;
+            ErrorCode errorCode;
+            try
+            {
+                errorCode = CreateZLibStreamForDeflate(out stream,
+                    level: CompressionLevel.DefaultCompression,
+                    windowBits: _windowBits,
+                    memLevel: Deflate_DefaultMemLevel,
+                    strategy: CompressionStrategy.DefaultStrategy);
+            }
+            catch (Exception cause)
+            {
+                throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
+            }
+
+            if (errorCode != ErrorCode.Ok)
+            {
+                string message = errorCode == ErrorCode.MemError
+                    ? SR.ZLibErrorNotEnoughMemory
+                    : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                throw new WebSocketException(message);
+            }
+
+            return stream;
         }
     }
 }
