@@ -76,7 +76,11 @@ namespace System.Net.WebSockets.Compression
 
             static ZLibStreamPool EnsureInitialized(int windowBits, ref ZLibStreamPool? target)
             {
-                Interlocked.CompareExchange(ref target, new ZLibStreamPool(windowBits, DefaultTimeoutMilliseconds), null);
+                ZLibStreamPool newPool = new(windowBits, DefaultTimeoutMilliseconds);
+                if (Interlocked.CompareExchange(ref target, newPool, null) is not null)
+                {
+                    newPool._cleaningTimer.Dispose();
+                }
 
                 Debug.Assert(target != null);
                 return target;

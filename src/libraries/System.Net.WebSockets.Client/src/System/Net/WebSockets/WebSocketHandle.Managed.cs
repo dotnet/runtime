@@ -257,19 +257,19 @@ namespace System.Net.WebSockets
 
                 if (value.Length > 0)
                 {
-                    if (value.Equals(ClientWebSocketDeflateConstants.ClientNoContextTakeover, StringComparison.Ordinal))
+                    if (value.SequenceEqual(ClientWebSocketDeflateConstants.ClientNoContextTakeover))
                     {
                         options.ClientContextTakeover = false;
                     }
-                    else if (value.Equals(ClientWebSocketDeflateConstants.ServerNoContextTakeover, StringComparison.Ordinal))
+                    else if (value.SequenceEqual(ClientWebSocketDeflateConstants.ServerNoContextTakeover))
                     {
                         options.ServerContextTakeover = false;
                     }
-                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ClientMaxWindowBits, StringComparison.Ordinal))
+                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ClientMaxWindowBits))
                     {
                         options.ClientMaxWindowBits = ParseWindowBits(value);
                     }
-                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ServerMaxWindowBits, StringComparison.Ordinal))
+                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ServerMaxWindowBits))
                     {
                         options.ServerMaxWindowBits = ParseWindowBits(value);
                     }
@@ -292,8 +292,9 @@ namespace System.Net.WebSockets
                 }
 
                 if (end < 0)
+                {
                     break;
-
+                }
                 extension = extension[(end + 1)..];
             }
 

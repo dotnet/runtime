@@ -85,7 +85,7 @@ namespace System.Net.WebSockets.Compression
                 // Rent a buffer as close to the size of the user buffer as possible,
                 // but not try to rent anything above 1MB because the array pool will allocate.
                 // If the payload is smaller than the user buffer, rent only as much as we need.
-                _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(userBufferLength, (int)Math.Min(payloadLength, 1_000_000)));
+                _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(userBufferLength, (int)Math.Min(payloadLength, 1024 * 1024)));
             }
         }
 
