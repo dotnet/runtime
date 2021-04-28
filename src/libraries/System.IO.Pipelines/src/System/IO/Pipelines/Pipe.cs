@@ -683,6 +683,9 @@ namespace System.IO.Pipelines
 
                     // We don't have enough data so we need to reset the reader awaitable
                     _readerAwaitable.SetUncompleted();
+
+                    // We also need to flip the reading state off
+                    _operationState.EndRead();
                 }
 
                 // If the writer is currently paused and we are about the wait for more data then this would deadlock.
