@@ -57,6 +57,10 @@ namespace System.IO.Pipelines
         public System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult> ReadAtLeastAsync(int minimumSize, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected virtual System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult> ReadAtLeastAsyncCore(int minimumSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         public abstract bool TryRead(out System.IO.Pipelines.ReadResult result);
+        protected internal static Func<Stream, ReadOnlyMemory<byte>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<FlushResult>> WriteAsyncFunc() { throw null; }
+        protected internal System.Threading.Tasks.Task<bool> WriteAsyncInternal<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<FlushResult>> writeAsync, ReadResult result, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+
+
     }
     public abstract partial class PipeScheduler
     {

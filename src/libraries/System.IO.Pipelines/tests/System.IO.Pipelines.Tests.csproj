@@ -32,6 +32,7 @@
     <Compile Include="ReadResultTests.cs" />
     <Compile Include="SchedulerFacts.cs" />
     <Compile Include="SequencePipeReaderTests.cs" />
+    <Compile Include="StreamPipeReaderCopyToAsyncTests.cs" />
     <Compile Include="StreamPipeReaderTests.cs" />
     <Compile Include="Infrastructure\TestMemoryPool.cs" />
     <Compile Include="StreamPipeWriterTests.cs" />

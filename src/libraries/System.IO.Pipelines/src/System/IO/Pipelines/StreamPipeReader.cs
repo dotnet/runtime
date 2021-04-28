@@ -259,6 +259,38 @@ namespace System.IO.Pipelines
             }
         }
 
+        /// <inheritdoc />
+        public override async Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
+        {
+            ThrowIfCompleted();
+            if (TryReadInternal(InternalTokenSource, out ReadResult readResult))
+            {
+                await WriteAsyncInternal(
+                    destination,
+                    (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
+                    readResult,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            await InnerStream.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public override async Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
+        {
+            ThrowIfCompleted();
+            if (TryReadInternal(InternalTokenSource, out ReadResult readResult))
+            {
+                await WriteAsyncInternal(destination, WriteAsyncFunc(), readResult, cancellationToken).ConfigureAwait(false);
+            }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+            await InnerStream.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+#else
+            await InnerStream.CopyToAsync(destination, 81920, cancellationToken).ConfigureAwait(false);
+#endif
+        }
+
         private void ClearCancellationToken()
         {
             lock (_lock)
