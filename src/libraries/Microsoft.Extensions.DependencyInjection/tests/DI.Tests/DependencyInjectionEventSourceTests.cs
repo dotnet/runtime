@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -210,6 +211,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(4, expressionTreeGeneratedEvent.EventId);
         }
 
+        [Fact]
+        public async Task EmitsServiceRealizationFailedEvent()
+        {
+            var exception = new Exception("Test error.");
+            DependencyInjectionEventSource.Log.ServiceRealizationFailed(exception);
+
+            var eventName = nameof(DependencyInjectionEventSource.Log.ServiceRealizationFailed);
+            var serviceRealizationFailedEvent = await _listener.WaitForEventAsync(eventName);
+
+            Assert.Equal("System.Exception: Test error.", GetProperty<string>(serviceRealizationFailedEvent, "exceptionMessage"));
+            Assert.Equal(6, serviceRealizationFailedEvent.EventId);
+        }
+
         private T GetProperty<T>(EventWrittenEventArgs data, string propName)
             => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
 
@@ -226,6 +240,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 {
                     _events.Enqueue(eventData);
                 }
+            }
+
+            internal async Task<EventWrittenEventArgs?> WaitForEventAsync(string name)
+            {
+                DateTime startTime = DateTime.UtcNow;
+                while (!_events.Any(e => e.EventName == name))
+                {
+                    if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                        break;
+
+                    await Task.Delay(100);
+                }
+
+                return _events.FirstOrDefault(e => e.EventName == name);
             }
 
             public override void Dispose()
