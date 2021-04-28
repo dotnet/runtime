@@ -134,33 +134,64 @@ namespace System.Security.Cryptography
             Span<byte> t = Span<byte>.Empty;
             Span<byte> remainingOutput = output;
 
-            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, prk))
+            ReadOnlySpan<byte> infoBuffer = stackalloc byte[0];
+            Span<byte> tempInfoBuffer = stackalloc byte[0];
+            byte[]? rentedTempInfoBuffer = null;
+            const int MaxStackInfoBuffer = 64;
+
+            if (output.Overlaps(info))
             {
-                for (int i = 1; ; i++)
+                tempInfoBuffer = info.Length > MaxStackInfoBuffer ?
+                    (rentedTempInfoBuffer = CryptoPool.Rent(info.Length)).AsSpan(0, info.Length) :
+                    (stackalloc byte[MaxStackInfoBuffer]).Slice(0, info.Length);
+
+                info.CopyTo(tempInfoBuffer);
+                infoBuffer = tempInfoBuffer;
+            }
+            else
+            {
+                infoBuffer = info;
+            }
+
+            try
+            {
+                using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, prk))
                 {
-                    hmac.AppendData(t);
-                    hmac.AppendData(info);
-                    counter = (byte)i;
-                    hmac.AppendData(counterSpan);
+                    for (int i = 1; ; i++)
+                    {
+                        hmac.AppendData(t);
+                        hmac.AppendData(infoBuffer);
+                        counter = (byte)i;
+                        hmac.AppendData(counterSpan);
 
-                    if (remainingOutput.Length >= hashLength)
-                    {
-                        t = remainingOutput.Slice(0, hashLength);
-                        remainingOutput = remainingOutput.Slice(hashLength);
-                        GetHashAndReset(hmac, t);
-                    }
-                    else
-                    {
-                        if (remainingOutput.Length > 0)
+                        if (remainingOutput.Length >= hashLength)
                         {
-                            Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
-                            Span<byte> lastChunk = stackalloc byte[hashLength];
-                            GetHashAndReset(hmac, lastChunk);
-                            lastChunk.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
+                            t = remainingOutput.Slice(0, hashLength);
+                            remainingOutput = remainingOutput.Slice(hashLength);
+                            GetHashAndReset(hmac, t);
                         }
+                        else
+                        {
+                            if (remainingOutput.Length > 0)
+                            {
+                                Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
+                                Span<byte> lastChunk = stackalloc byte[hashLength];
+                                GetHashAndReset(hmac, lastChunk);
+                                lastChunk.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
+                            }
 
-                        break;
+                            break;
+                        }
                     }
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(tempInfoBuffer);
+
+                if (rentedTempInfoBuffer is not null)
+                {
+                    CryptoPool.Return(rentedTempInfoBuffer, clearSize: 0); // Cleared by tempInfoBuffer above.
                 }
             }
         }

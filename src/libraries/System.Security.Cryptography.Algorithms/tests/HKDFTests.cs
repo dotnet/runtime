@@ -549,6 +549,78 @@ namespace System.Security.Cryptography.Algorithms.Tests
                     "output",
                     () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, okm, Array.Empty<byte>(), Array.Empty<byte>()));
             }
+
+            [Fact]
+            public void Rfc5869ExtractOverlapsPrkOverKeyMaterial()
+            {
+                ReadOnlySpan<byte> ikm = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b".HexToByteArray();
+                ReadOnlySpan<byte> salt = "000102030405060708090a0b0c".HexToByteArray();
+                byte[] expectedPrk = "077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5".HexToByteArray();
+
+                Span<byte> overlap = new byte[expectedPrk.Length];
+                ikm.CopyTo(overlap);
+                ikm = overlap.Slice(0, ikm.Length);
+
+                HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt, overlap);
+                Assert.Equal(expectedPrk, overlap.ToArray());
+            }
+
+            [Fact]
+            public void Rfc5869ExtractOverlapsPrkOverSalt()
+            {
+                ReadOnlySpan<byte> ikm = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b".HexToByteArray();
+                ReadOnlySpan<byte> salt = "000102030405060708090a0b0c".HexToByteArray();
+                byte[] expectedPrk = "077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5".HexToByteArray();
+
+                Span<byte> overlap = new byte[expectedPrk.Length];
+                salt.CopyTo(overlap);
+                salt = overlap.Slice(0, salt.Length);
+
+                HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt, overlap);
+                Assert.Equal(expectedPrk, overlap.ToArray());
+            }
+
+            [Fact]
+            public void Rfc5869ExpandOverlapsOutputOverInfo()
+            {
+                ReadOnlySpan<byte> info = (
+                    "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
+                    "d0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef" +
+                    "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff").HexToByteArray();
+                ReadOnlySpan<byte> prk =
+                    "06a6b88c5853361a06104c9ceb35b45cef760014904671014a193f40c15fc244".HexToByteArray();
+                byte[] expectedOkm = (
+                    "b11e398dc80327a1c8e7f78c596a49344f012eda2d4efad8a050cc4c19afa97c" +
+                    "59045a99cac7827271cb41c65e590e09da3275600c2f09b8367793a9aca3db71" +
+                    "cc30c58179ec3e87c14c01d5c1f3434f1d87").HexToByteArray();
+
+                Span<byte> overlap = new byte[expectedOkm.Length];
+                info.CopyTo(overlap);
+                info = overlap.Slice(0, info.Length);
+
+                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: overlap, info: info);
+                Assert.Equal(expectedOkm, overlap.ToArray());
+            }
+
+            [Fact]
+            public void Rfc5869ExpandOverlapsOutputOverInfoShortOkm()
+            {
+                ReadOnlySpan<byte> info = (
+                    "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
+                    "d0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeef" +
+                    "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff").HexToByteArray();
+                ReadOnlySpan<byte> prk =
+                    "06a6b88c5853361a06104c9ceb35b45cef760014904671014a193f40c15fc244".HexToByteArray();
+                byte[] expectedOkm =
+                    "b11e398dc80327a1c8e7f78c596a49344f012eda2d4efad8a050cc4c19afa97c".HexToByteArray();
+
+                Span<byte> overlap = new byte[info.Length];
+                info.CopyTo(overlap);
+                info = overlap;
+
+                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: overlap, info: info);
+                Assert.Equal(expectedOkm, overlap.Slice(0, expectedOkm.Length).ToArray());
+            }
         }
     }
 }
