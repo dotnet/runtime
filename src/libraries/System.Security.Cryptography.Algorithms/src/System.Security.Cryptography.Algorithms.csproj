@@ -477,6 +477,8 @@
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
+    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs"
+             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"
@@ -549,17 +551,11 @@
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.macOS.cs"
-             Link="Common\System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
     <Compile Include="Internal\Cryptography\Pbkdf2Implementation.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' != 'true'">
-    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs"
-             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.iOS.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.iOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.iOS.cs"
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.iOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.iOS.cs"
