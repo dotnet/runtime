@@ -71,7 +71,7 @@ namespace System
 
         internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
         internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
-        
+
         internal const string AppDomainCreateUnloadMessage = "Creating and unloading AppDomains is not supported.";
         internal const string AppDomainCreateUnloadDiagId = "SYSLIB0021";
     }

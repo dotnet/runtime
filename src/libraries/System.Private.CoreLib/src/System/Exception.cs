@@ -182,7 +182,7 @@ namespace System
         }
 
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        protected event EventHandler<SafeSerialiationEventArgs>? SerializeObjectState
+        protected event EventHandler<SafeSerializationEventArgs>? SerializeObjectState
         {
             add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
             remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }

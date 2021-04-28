@@ -92,7 +92,7 @@ namespace System
             return assemblyName;
         }
 
-        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadMessageDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static AppDomain CreateDomain(string friendlyName)
         {
             if (friendlyName == null) throw new ArgumentNullException(nameof(friendlyName));
@@ -164,7 +164,7 @@ namespace System
         public override string ToString() =>
             SR.AppDomain_Name + FriendlyName + Environment.NewLineConst + SR.AppDomain_NoContextPolicies;
 
-        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadMessageDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void Unload(AppDomain domain)
         {
             if (domain == null)
