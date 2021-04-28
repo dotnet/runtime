@@ -9,7 +9,7 @@ public class Test
     public static async Task<int> Main(string[] args)
     {
         await Task.Delay(1);
-        Console.WriteLine("Hello World!");
+        Console.WriteLine("Hello World - new new!");
         for (int i = 0; i < args.Length; i++) {
             Console.WriteLine($"args[{i}] = {args[i]}");
         }

@@ -8,9 +8,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Security.Cryptography;
 
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
@@ -131,6 +134,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? LLVMDebug { get; set; } = "nodebug";
 
+    [NotNull]
+    [Required]
+    public string? CacheFilePath { get; set; }
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -224,11 +231,22 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (AdditionalAssemblySearchPaths != null)
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
+        CompilerCache? cache;
+        if (File.Exists(CacheFilePath))
+        {
+            cache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(CacheFilePath!), typeof(CompilerCache), new JsonSerializerOptions());
+            cache ??= new();
+        }
+        else
+        {
+            cache = new();
+        }
+
         if (DisableParallelAot)
         {
             foreach (var assemblyItem in Assemblies)
             {
-                if (!PrecompileLibrary(assemblyItem, monoPaths))
+                if (!PrecompileLibrary(assemblyItem, monoPaths, cache))
                     return !Log.HasLoggedErrors;
             }
         }
@@ -236,8 +254,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Parallel.ForEach(Assemblies,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                assemblyItem => PrecompileLibrary(assemblyItem, monoPaths));
+                assemblyItem => PrecompileLibrary(assemblyItem, monoPaths, cache));
         }
+
+        //FIME: write only if changed
+        var json = JsonSerializer.Serialize (cache, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(CacheFilePath!, json);
 
         CompiledAssemblies = compiledAssemblies.ToArray();
         FileWrites = _fileWrites.ToArray();
@@ -245,7 +267,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)
+    private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths, CompilerCache cache)
     {
         string assembly = assemblyItem.ItemSpec;
         string assemblyDir = Path.GetDirectoryName(assembly)!;
@@ -407,17 +429,29 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
-        try
+        string newHash = ComputeHash(assembly);
+        cache.AssemblyHashes.TryGetValue(assemblyItem.ItemSpec, out string? oldHash);
+
+        if (oldHash != newHash)
         {
-            // run the AOT compiler
-            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, assemblyDir, silent: false,
-                    outputMessageImportance: MessageImportance.Low, debugMessageImportance: MessageImportance.Low);
+            try
+            {
+                // run the AOT compiler
+                Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, assemblyDir, silent: false,
+                        outputMessageImportance: MessageImportance.Low, debugMessageImportance: MessageImportance.Low);
+
+                cache.AssemblyHashes[assemblyItem.ItemSpec] = newHash;
+            }
+            catch (Exception ex)
+            {
+                Log.LogMessage(MessageImportance.Low, ex.ToString());
+                Log.LogError($"Precompiling failed for {assembly}: {ex.Message}");
+                return false;
+            }
         }
-        catch (Exception ex)
+        else
         {
-            Log.LogMessage(MessageImportance.Low, ex.ToString());
-            Log.LogError($"Precompiling failed for {assembly}: {ex.Message}");
-            return false;
+            Log.LogMessage(MessageImportance.Low, $"Assembly {assembly} has unchanged hash. Skipping precompiling.");
         }
 
         compiledAssemblies.Add(aotAssembly);
@@ -498,6 +532,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogMessage(MessageImportance.Low, $"Generated {AotModulesTablePath}");
         }
     }
+    private static string ComputeHash(string filepath)
+    {
+        using FileStream stream = File.OpenRead(filepath);
+        using HashAlgorithm hashAlgorithm = SHA512.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(stream);
+        return Convert.ToBase64String(hash);
+    }
 }
 
 public enum MonoAotMode
@@ -518,4 +560,10 @@ public enum MonoAotModulesTableLanguage
 {
     C,
     ObjC
+}
+
+internal class CompilerCache
+{
+    [JsonPropertyName("assembly_hashes")]
+    public ConcurrentDictionary<string, string> AssemblyHashes { get; set; } = new();
 }
