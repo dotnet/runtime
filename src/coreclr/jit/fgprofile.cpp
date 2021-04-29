@@ -2750,6 +2750,22 @@ void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::wei
     flEdgeWeightMax = theMaxWeight;
 }
 
+//------------------------------------------------------------------------
+// scaleEdgeWeights: Scale both min and max weights by some factor 
+//
+// Arguments:
+//    scale - scale to apply
+//    bDst  - the destination block for the edge
+//
+void flowList::scaleEdgeWeights(BasicBlock::weight_t scale, BasicBlock* bDst)
+{
+    JITDUMP("Scalling edge weights for " FMT_BB " -> " FMT_BB " by " FMT_WT "\n", getBlock()->bbNum, bDst->bbNum,
+            scale);
+
+    flEdgeWeightMin *= scale;
+    flEdgeWeightMax *= scale;
+}
+
 //-------------------------------------------------------------
 // fgComputeBlockAndEdgeWeights: determine weights for blocks
 //   and optionally for edges

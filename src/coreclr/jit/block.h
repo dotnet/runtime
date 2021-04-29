@@ -1311,6 +1311,8 @@ public:
                                  bool*                wbUsedSlop);
     void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight, BasicBlock* bDst);
 
+    void scaleEdgeWeights(BasicBlock::weight_t scale, BasicBlock* bDst);
+
     flowList(BasicBlock* block, flowList* rest)
         : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
     {

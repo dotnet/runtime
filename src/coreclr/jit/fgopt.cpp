@@ -3208,6 +3208,16 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // backend always calls `fgUpdateFlowGraph` with `doTailDuplication` set to false.
     assert(!block->IsLIR());
 
+    // See https://github.com/dotnet/runtime/pull/50490#pullrequestreview-625700642
+    //
+    // A - block
+    // X - target
+    // C - target->bbJumpDest
+    // D - target->bbNext
+
+    const BasicBlock::weight_t scaleA    = block->bbWeight / target->bbWeight;
+    const BasicBlock::weight_t scaleNotA = 1 - scaleA;
+
     Statement* stmt = target->FirstNonPhiDef();
     assert(stmt == target->lastStmt());
 
@@ -3229,6 +3239,28 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     next->bbJumpDest = target->bbNext;
     fgAddRefPred(next, block);
     fgAddRefPred(next->bbJumpDest, next);
+
+    // weight(X) = weight(X) * ScaleNotA
+    target->scaleBBWeight(scaleNotA);
+
+    // weight(X->C) = weight(X->C) * ScaleNotA
+    flowList* xcEdge = fgGetPredForBlock(target->bbJumpDest, target);
+    xcEdge->scaleEdgeWeights(scaleNotA, target->bbJumpDest);
+
+    // weight(X->D) = weight(X->D) * ScaleNotA
+    flowList* xdEdge = fgGetPredForBlock(target->bbNext, target);
+    xdEdge->scaleEdgeWeights(scaleNotA, target->bbNext);
+
+    // weight(A->C) = weight(X->C) * ScaleA
+    flowList* acEdge = fgGetPredForBlock(target->bbJumpDest, block);
+    acEdge->setEdgeWeights(xcEdge->edgeWeightMin() * scaleA, xcEdge->edgeWeightMin() * scaleA, target->bbJumpDest);
+
+    // weight(A->T) = weight(X->D) * ScaleA
+    flowList* atEdge = fgGetPredForBlock(next, block);
+    atEdge->setEdgeWeights(xdEdge->edgeWeightMin() * scaleA, xdEdge->edgeWeightMin() * scaleA, target->bbNext);
+
+    // weight(T) = weight(X->D) * ScaleA
+    next->setBBProfileWeight(xdEdge->edgeWeightMax() * scaleA);
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
