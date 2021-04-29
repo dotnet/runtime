@@ -146,7 +146,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
                     HasNameTable = true,
                     Value = "http://www.w3.org/XML/1998/namespace"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -173,8 +172,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'text')]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -187,8 +184,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'glo')]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -277,7 +272,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
                     Value =
                         "\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -291,8 +285,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,' ')]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -305,8 +297,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,' text')]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -319,8 +309,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "books.xml";
             var testExpression = @"//book[starts-with(@stype,'text ')]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -347,8 +335,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "t114730.xml";
             var testExpression = @"/child::MyComputer/descendant::UIntData/descendant::Value//@value";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -361,8 +347,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "books.xml";
             var testExpression = @"/*['6' > *]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 
@@ -375,8 +359,6 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
             var xml = "bookstore.xml";
             var testExpression = @"book[substring-before(local-name(),'store')]";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 

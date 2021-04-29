@@ -323,7 +323,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if (!JsonHelpers.IsValidNumberHandlingValue(value))
+                if (!JsonSerializer.IsValidNumberHandlingValue(value))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }

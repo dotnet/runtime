@@ -91,10 +91,16 @@ namespace Internal.Runtime.InteropServices
         public string AssemblyName;
         public string TypeName;
 
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             return new ComActivationContext()
             {
                 ClassId = cxtInt.ClassId,
@@ -122,9 +128,15 @@ namespace Internal.Runtime.InteropServices
         /// Entry point for unmanaged COM activation API from managed code
         /// </summary>
         /// <param name="cxt">Reference to a <see cref="ComActivationContext"/> instance</param>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static object GetClassFactoryForType(ComActivationContext cxt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             if (cxt.InterfaceId != typeof(IClassFactory).GUID
                 && cxt.InterfaceId != typeof(IClassFactory2).GUID)
             {
@@ -154,9 +166,15 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="cxt">Reference to a <see cref="ComActivationContext"/> instance</param>
         /// <param name="register">true if called for register or false to indicate unregister</param>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static void ClassRegistrationScenarioForType(ComActivationContext cxt, bool register)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             // Retrieve the attribute type to use to determine if a function is the requested user defined
             // registration function.
             string attributeName = register ? "ComRegisterFunctionAttribute" : "ComUnregisterFunctionAttribute";
@@ -246,11 +264,17 @@ namespace Internal.Runtime.InteropServices
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
         public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
 
             if (IsLoggingEnabled())
@@ -287,11 +311,17 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
         public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
 
             if (IsLoggingEnabled())
@@ -331,11 +361,17 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         /// <summary>
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         [UnmanagedCallersOnly]
         public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+            if (!Marshal.IsComSupported)
+            {
+                throw new NotSupportedException(SR.NotSupported_COM);
+            }
+
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
 
             if (IsLoggingEnabled())

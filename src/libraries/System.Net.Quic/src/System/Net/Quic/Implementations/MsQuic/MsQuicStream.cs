@@ -298,7 +298,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }, _state);
 
-            // TODO there could potentially be a perf gain by storing the buffer from the inital read
+            // TODO there could potentially be a perf gain by storing the buffer from the initial read
             // This reduces the amount of async calls, however it makes it so MsQuic holds onto the buffers
             // longer than it needs to. We will need to benchmark this.
             int length = (int)await _state.ReceiveResettableCompletionSource.GetValueTask().ConfigureAwait(false);

@@ -222,7 +222,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
-        public void Accept_WithAlreadyBoundTargetSocket_Fails()
+        public async Task Accept_WithAlreadyBoundTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
                 return;
@@ -236,7 +236,7 @@ namespace System.Net.Sockets.Tests
 
                 server.BindToAnonymousPort(IPAddress.Loopback);
 
-                Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptAsync(listener, server));
             }
         }
 
@@ -262,7 +262,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Same(server, accepted);
                 Assert.True(accepted.Connected);
 
-                Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptAsync(listener, server));
             }
         }
 
@@ -353,8 +353,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task AcceptReceive_Windows_Success()
+        public async Task AcceptReceive_Success()
         {
             if (!SupportsAcceptReceive)
             {
@@ -376,24 +375,6 @@ namespace System.Net.Sockets.Tests
             (_, byte[] recvBuffer) = await acceptTask;
             Assert.Equal(new byte[] { 42 }, recvBuffer);
         }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AcceptReceive_Unix_ThrowsPlatformNotSupportedException()
-        {
-            if (!SupportsAcceptReceive)
-            {
-                // Currently only supported by APM and EAP
-                return;
-            }
-
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
-            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
-            listener.Listen(100);
-
-            Assert.ThrowsAsync<PlatformNotSupportedException>(() => AcceptAsync(listener, 1) );
-        }
     }
 
     public sealed class AcceptSync : Accept<SocketHelperArraySync>
@@ -409,22 +390,6 @@ namespace System.Net.Sockets.Tests
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void EndAccept_AcceptReceiveUnix_ThrowsPlatformNotSupportedException()
-        {
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            // Creating a fake IAsyncResult:
-            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
-            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
-            listener.Listen(100);
-            IAsyncResult iar = listener.BeginAccept(callback: null, state: null);
-
-            Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, iar));
-            Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, out _, iar));
-        }
     }
 
     public sealed class AcceptTask : Accept<SocketHelperTask>

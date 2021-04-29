@@ -12,7 +12,8 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(Type type)
+        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Debug.Assert(type != null);
             ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
@@ -64,7 +65,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
+            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -110,7 +111,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
+            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -145,10 +146,11 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>() =>
+        public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>() =>
             CreateDelegate<Action<TCollection, object?>>(CreateAddMethodDelegate(typeof(TCollection)));
 
-        private static DynamicMethod CreateAddMethodDelegate(Type collectionType)
+        private static DynamicMethod CreateAddMethodDelegate(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type collectionType)
         {
             // We verified this won't be null when we created the converter that calls this method.
             MethodInfo realMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
