@@ -281,9 +281,9 @@
 
   <Target Name="LibIntellisenseDocs" Condition="'$(IncludeBuildOutput)' == 'true'">
    <ItemGroup>
-      <TfmSpecificPackageFile Include="$(XmlDocFileRoot)1033\$(TargetName).xml" Condition="Exists('$(XmlDocFileRoot)1033\$(TargetName).xml')">
-        <PackagePath>lib/$(TargetFramework)</PackagePath>
-      </TfmSpecificPackageFile>
+      <TfmSpecificPackageFile Include="$(XmlDocFileRoot)1033\$(TargetName).xml"
+                              Condition="Exists('$(XmlDocFileRoot)1033\$(TargetName).xml')"
+                              PackagePath="lib/$(TargetFramework)" />
     </ItemGroup>
   </Target>
 
