@@ -12,11 +12,15 @@ namespace System.Threading
     {
         private static bool CheckEnableAutoreleasePool()
         {
+#if !CORECLR
+            return false;
+#else
             bool isEnabled = CLRConfig.GetBoolValue("System.Threading.Thread.EnableAutoreleasePool", out bool isSet);
             if (!isSet)
                 return false;
 
             return isEnabled;
+#endif
         }
 
         public static bool EnableAutoreleasePool { get; } = CheckEnableAutoreleasePool();
