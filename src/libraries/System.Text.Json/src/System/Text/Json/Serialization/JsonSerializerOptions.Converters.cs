@@ -27,7 +27,7 @@ namespace System.Text.Json
         private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal void RootBuiltInConverters()
+        private void RootBuiltInConverters()
         {
             s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
             s_defaultFactoryConverters ??= new JsonConverter[]
