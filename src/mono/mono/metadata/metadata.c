@@ -3869,6 +3869,9 @@ mono_metadata_get_shared_type (MonoType *type)
 	switch (type->type){
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
+		if (m_class_get_mem_manager (type->data.klass)->collectible)
+			/* These can be unloaded, so references to them shouldn't be shared */
+			return NULL;
 		if (type == m_class_get_byval_arg (type->data.klass))
 			return type;
 		if (type == m_class_get_this_arg (type->data.klass))
