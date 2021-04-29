@@ -20,6 +20,7 @@
     <Compile Include="MonoAOTCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\NotNullAttribute.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
+    <Compile Include="..\Common\ExtensionsForNetFramework.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MonoAOTCompiler.props">

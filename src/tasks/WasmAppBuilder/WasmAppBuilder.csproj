@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Common\NotNullAttribute.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
+    <Compile Include="..\Common\ExtensionsForNetFramework.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
 
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
