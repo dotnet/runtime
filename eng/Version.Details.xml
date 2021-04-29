@@ -198,7 +198,7 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>511fc23bc9dc22f6d7c0d2433e936c5db6a1a797</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x86.MIBC.Runtime" Version="1.0.0-prerelease.21228.9">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21228.9">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>511fc23bc9dc22f6d7c0d2433e936c5db6a1a797</Sha>
     </Dependency>

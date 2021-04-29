@@ -124,7 +124,7 @@
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationlinuxx86MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationlinuxx86MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationlinuxx64MIBCRuntimeVersion>
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.21228.9</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
