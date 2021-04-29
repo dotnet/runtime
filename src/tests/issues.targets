@@ -2536,7 +2536,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Generics/Instantiation/Structs/struct01/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-        <ExcludeListInclude Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/">
             <Issue> needs triage </Issue>
         </ExcludeList>
     </ItemGroup>
