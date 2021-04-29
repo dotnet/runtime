@@ -79,9 +79,6 @@ static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilde
 static gboolean reflection_setup_internal_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_init_generic_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_setup_class_hierarchy (GHashTable *unparented, MonoError *error);
-
-
-static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 #endif
 
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
@@ -1202,6 +1199,18 @@ leave:
 
 #ifndef DISABLE_REFLECTION_EMIT
 
+static gpointer
+register_assembly (MonoReflectionAssembly *res, MonoAssembly *assembly)
+{
+	return CACHE_OBJECT (MonoReflectionAssembly *, assembly, &res->object, NULL);
+}
+
+static MonoReflectionModuleBuilderHandle
+register_module (MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
+{
+	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+}
+
 /*
  * mono_reflection_dynimage_basic_init:
  * @assembly: an assembly builder object
@@ -1214,7 +1223,6 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	
 	if (assemblyb->dynamic_assembly)
@@ -1259,7 +1267,6 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	 * they only fire AssemblyResolve events, they don't cause probing for
 	 * referenced assemblies to happen. */
 	assembly->assembly.context.kind = MONO_ASMCTX_INDIVIDUAL;
-	assembly->domain = domain;
 
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
 	return_if_nok (error);
@@ -1268,41 +1275,19 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
 
-	mono_domain_assemblies_lock (domain);
-	domain->domain_assemblies = g_slist_append (domain->domain_assemblies, assembly);
-	// TODO: potentially relax the locking here?
-	mono_alc_assemblies_lock (alc);
-	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, assembly);
-	mono_alc_assemblies_unlock (alc);
-	mono_domain_assemblies_unlock (domain);
+	mono_alc_add_assembly (alc, (MonoAssembly*)assembly);
 
-	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
+	register_assembly (&assemblyb->assembly, &assembly->assembly);
 	
 	MONO_PROFILER_RAISE (assembly_loaded, (&assembly->assembly));
 	
 	mono_assembly_invoke_load_hook_internal (alc, (MonoAssembly*)assembly);
 }
 
-#endif /* !DISABLE_REFLECTION_EMIT */
-
-#ifndef DISABLE_REFLECTION_EMIT
-static gpointer
-register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
-{
-	return CACHE_OBJECT (MonoReflectionAssembly *, assembly, &res->object, NULL);
-}
-
-static MonoReflectionModuleBuilderHandle
-register_module (MonoDomain *domain, MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
-{
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
-}
-
 static gboolean
 image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *error)
 {
 	error_init (error);
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (moduleb);
 	MonoDynamicImage *image = MONO_HANDLE_GETVAL (moduleb, dynamic_image);
 	MonoReflectionAssemblyBuilderHandle ab = MONO_HANDLE_NEW (MonoReflectionAssemblyBuilder, NULL);
 	MONO_HANDLE_GET (ab, moduleb, assemblyb);
@@ -1327,7 +1312,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 
 		MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoReflectionModule, moduleb), image, MonoImage*, &image->image);
 		MONO_HANDLE_SETVAL (moduleb, dynamic_image, MonoDynamicImage*, image);
-		register_module (domain, moduleb, image);
+		register_module (moduleb, image);
 
 		/* register the module with the assembly */
 		MonoImage *ass = dynamic_assembly->assembly.image;

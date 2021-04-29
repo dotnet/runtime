@@ -47,6 +47,8 @@ public class LoaderClass
         Console.SetOut(System.IO.TextWriter.Null);
     }
 
+#pragma warning disable SYSLIB0012 // Assembly.CodeBase is obsolete
+
     /// <summary>
     /// Executes a LoadFrom in the app domain LoaderClass has been loaded into.  Attempts to load a given assembly, looking in the
     /// given paths & the current directory.
@@ -122,6 +124,7 @@ public class LoaderClass
             }
         }
     }
+#pragma warning restore SYSLIB0012
 
     /// <summary>
     /// Attempts to load an assembly w/ a simple name, looking in the given paths if a normal load fails

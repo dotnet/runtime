@@ -86,43 +86,29 @@ namespace System.Reflection.Internal
             return handle;
         }
 
-        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, long start, int size)
+        internal static unsafe int ReadFile(Stream stream, byte* buffer, int size)
         {
             if (readFileNotAvailable)
             {
-                return false;
+                return 0;
             }
 
             SafeHandle handle = GetSafeFileHandle(stream);
             if (handle == null)
             {
-                return false;
+                return 0;
             }
-
-            int result;
-            int bytesRead;
 
             try
             {
-                result = Interop.Kernel32.ReadFile(handle, buffer, size, out bytesRead, IntPtr.Zero);
+                int result = Interop.Kernel32.ReadFile(handle, buffer, size, out int bytesRead, IntPtr.Zero);
+                return result == 0 ? 0 : bytesRead;
             }
             catch
             {
                 readFileNotAvailable = true;
-                return false;
+                return 0;
             }
-
-            if (result == 0 || bytesRead != size)
-            {
-                // We used to throw here, but this is where we land if the FileStream was
-                // opened with useAsync: true, which is currently the default on .NET Core.
-                // https://github.com/dotnet/corefx/pull/987 filed to look in to how best to
-                // handle this, but in the meantime, we'll fall back to the slower code path
-                // just as in the case where the native API is unavailable in the current platform.
-                return false;
-            }
-
-            return true;
         }
     }
 }

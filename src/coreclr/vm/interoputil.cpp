@@ -28,7 +28,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "cominterfacemarshaler.h"
-#include <roerrorapi.h>
 #endif
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

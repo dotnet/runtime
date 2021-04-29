@@ -4170,7 +4170,7 @@ public:
         Thread * const m_pThread;
     public:
         AVInRuntimeImplOkayHolder() :
-            m_pThread(GetThread())
+            m_pThread(GetThreadNULLOk())
         {
             LIMITED_METHOD_CONTRACT;
             AVInRuntimeImplOkayAcquire(m_pThread);

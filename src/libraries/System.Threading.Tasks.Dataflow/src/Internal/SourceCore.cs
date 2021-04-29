@@ -983,8 +983,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displaySource = _owningSource as IDebuggerDisplay;
-                return string.Format("Block=\"{0}\"",
-                    displaySource != null ? displaySource.Content : _owningSource);
+                return $"Block=\"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
             }
         }
 

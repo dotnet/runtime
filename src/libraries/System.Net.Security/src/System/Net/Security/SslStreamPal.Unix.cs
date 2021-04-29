@@ -41,15 +41,15 @@ namespace System.Net.Security
             return new SafeFreeSslCredentials(certificateContext?.Certificate, protocols, policy);
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             return EncryptDecryptHelper(securityContext, input.Span, Span<byte>.Empty, encrypt: true, newBuffer: ref output, resultSize: out resultSize);
         }
 
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, ReadOnlySpan<byte> input, Span<byte> output, ref int outputOffset, ref int outputCount)
+        public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, ref int outputOffset, ref int outputCount)
         {
             byte[] buffer = Array.Empty<byte>();
-            SecurityStatusPal retVal = EncryptDecryptHelper(securityContext!, input, output, encrypt: false, out int resultSize, ref buffer);
+            SecurityStatusPal retVal = EncryptDecryptHelper(securityContext, input, output, encrypt: false, out int resultSize, ref buffer);
             if (retVal.ErrorCode == SecurityStatusPalErrorCode.OK ||
                 retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
             {
@@ -59,7 +59,7 @@ namespace System.Net.Security
             return retVal;
         }
 
-        public static ChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
+        public static ChannelBinding? QueryContextChannelBinding(SafeDeleteSslContext securityContext, ChannelBindingKind attribute)
         {
             ChannelBinding? bindingHandle;
 
@@ -75,7 +75,7 @@ namespace System.Net.Security
             else
             {
                 bindingHandle = Interop.OpenSsl.QueryChannelBinding(
-                    ((SafeDeleteSslContext)securityContext).SslContext,
+                    securityContext.SslContext,
                     attribute);
             }
 
@@ -87,9 +87,9 @@ namespace System.Net.Security
             streamSizes = StreamSizes.Default;
         }
 
-        public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        public static void QueryContextConnectionInfo(SafeDeleteSslContext securityContext, out SslConnectionInfo connectionInfo)
         {
-            connectionInfo = new SslConnectionInfo(((SafeDeleteSslContext)securityContext).SslContext);
+            connectionInfo = new SslConnectionInfo(securityContext.SslContext);
         }
 
         public static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> applicationProtocols)
@@ -112,13 +112,13 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
-                bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
+                bool done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputBuffer, out output, out outputSize);
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.
                 // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
                 // whereas ALPN is supported from version 1.0.2.
-                SafeSslHandle sslContext = ((SafeDeleteSslContext)context).SslContext;
+                SafeSslHandle sslContext = context.SslContext;
                 if (done && sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
                 {
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
@@ -143,21 +143,25 @@ namespace System.Net.Security
             }
         }
 
-        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
+        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteSslContext? context)
         {
             if (context == null)
                 return null;
 
-            return Interop.Ssl.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);
+            return Interop.Ssl.SslGetAlpnSelected(context.SslContext);
         }
 
+<<<<<<< HEAD
         private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, bool encrypt, out int resultSize, ref byte[] newBuffer)
+=======
+        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int offset, int size, bool encrypt, ref byte[] output, out int resultSize)
+>>>>>>> 1a18528d13228f0eef727ff49767726b2c8c50dd
         {
             resultSize = 0;
             try
             {
                 Interop.Ssl.SslErrorCode errorCode = Interop.Ssl.SslErrorCode.SSL_ERROR_NONE;
-                SafeSslHandle scHandle = ((SafeDeleteSslContext)securityContext).SslContext;
+                SafeSslHandle scHandle = securityContext.SslContext;
 
                 if (encrypt)
                 {
@@ -195,10 +199,8 @@ namespace System.Net.Security
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
-        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext securityContext)
+        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteSslContext sslContext)
         {
-            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
-
             // Unset the quiet shutdown option initially configured.
             Interop.Ssl.SslSetQuietShutdown(sslContext.SslContext, 0);
 

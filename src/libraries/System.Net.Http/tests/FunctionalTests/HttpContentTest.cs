@@ -298,7 +298,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(before, after);
         }
 
-        [SkipOnMono("Browser doesn't support Synchronous reads", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support Synchronous reads")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

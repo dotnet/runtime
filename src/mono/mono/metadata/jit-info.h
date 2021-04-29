@@ -260,7 +260,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end);
 MonoGenericJitInfo*
 mono_jit_info_get_generic_jit_info (MonoJitInfo *ji);
 
-MonoGenericSharingContext*
+MONO_COMPONENT_API MonoGenericSharingContext*
 mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 
 void
@@ -282,8 +282,18 @@ mono_jit_info_get_unwind_info (MonoJitInfo *ji);
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.
  */
-typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoDomain *domain, MonoImage *image, gpointer addr);
+typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoImage *image, gpointer addr);
 void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
+
+MonoJitInfo* mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean allow_trampolines);
+
+typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
+
+MONO_COMPONENT_API void
+mono_jit_info_table_foreach_internal (MonoJitInfoFunc func, gpointer user_data);
+
+void
+mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
 
 G_END_DECLS
 

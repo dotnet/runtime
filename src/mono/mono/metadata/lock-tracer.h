@@ -15,6 +15,7 @@ typedef enum {
 	InvalidLock = 0,
 	LoaderLock,
 	ImageDataLock,
+	MemoryManagerLock,
 	DomainAssembliesLock,
 	DomainJitCodeHashLock,
 	IcallLock,

@@ -56,7 +56,7 @@
 // of options and their descriptions, see code:CLRConfig.LookupOptions
 //
 // Example: CONFIG_DWORD_INFO_EX(INTERNAL_EnableInternetHREFexes, W("EnableInternetHREFexes"), 0, "",
-// (CLRConfig::LookupOptions) (CLRConfig::LookupOptions::DontPrependCOMPlus_))
+// (CLRConfig::LookupOptions) (CLRConfig::LookupOptions::DontPrependPrefix))
 //
 // #Strings:
 // --------------------------------------------------------------------------
@@ -402,10 +402,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse, W("In
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")
 
 ///
-/// Loader
-///
-
-///
 /// Loader heap
 ///
 CONFIG_DWORD_INFO(INTERNAL_LoaderHeapCallTracing, W("LoaderHeapCallTracing"), 0, "Loader heap troubleshooting")
@@ -442,7 +438,7 @@ CONFIG_DWORD_INFO(INTERNAL_MD_MiniMDBreak, W("MD_MiniMDBreak"), 0, "ASSERT when 
 CONFIG_DWORD_INFO(INTERNAL_MD_PreSaveBreak, W("MD_PreSaveBreak"), 0, "ASSERT when calling CMiniMdRw::PreSave")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaBreak, W("MD_RegMetaBreak"), 0, "ASSERT when creating RegMeta class")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaDump, W("MD_RegMetaDump"), 0, "Dump MD in 4 functions (?)")
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, W("DOTNET_MODIFIABLE_ASSEMBLIES"), "Enables hot reload on debug built assemblies with the 'debug' keyword", CLRConfig::LookupOptions::DontPrependCOMPlus_ | CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue);
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, W("MODIFIABLE_ASSEMBLIES"), "Enables hot reload on debug built assemblies with the 'debug' keyword", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue);
 
 // Metadata - mscordbi only - this flag is only intended to mitigate potential issues in bug fix 458597.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MD_PreserveDebuggerMetadataMemory, W("MD_PreserveDebuggerMetadataMemory"), 0, "Save all versions of metadata memory in the debugger when debuggee metadata is updated")
@@ -495,18 +491,18 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeIn
 ///
 /// Profiling API / ETW
 ///
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_COR_ENABLE_PROFILING, W("COR_ENABLE_PROFILING"), 0, "Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER, W("COR_PROFILER"), "Specifies GUID of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH, W("COR_PROFILER_PATH"), "Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH_32, W("COR_PROFILER_PATH_32"), "Specifies the path to the DLL of profiler to load into currently running 32 bits process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH_64, W("COR_PROFILER_PATH_64"), "Specifies the path to the DLL of profiler to load into currently running 64 bits process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_PROFILING, W("CORECLR_ENABLE_PROFILING"), 0, "CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER, W("CORECLR_PROFILER"), "CoreCLR only: Specifies GUID of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH, W("CORECLR_PROFILER_PATH"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_32, W("CORECLR_PROFILER_PATH_32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_64, W("CORECLR_PROFILER_PATH_64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM32, W("CORECLR_PROFILER_PATH_ARM32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM32 process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM64, W("CORECLR_PROFILER_PATH_ARM64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM64 process", CLRConfig::LookupOptions::DontPrependCOMPlus_)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_COR_ENABLE_PROFILING, W("COR_ENABLE_PROFILING"), 0, "Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER, W("COR_PROFILER"), "Specifies GUID of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH, W("COR_PROFILER_PATH"), "Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH_32, W("COR_PROFILER_PATH_32"), "Specifies the path to the DLL of profiler to load into currently running 32 bits process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH_64, W("COR_PROFILER_PATH_64"), "Specifies the path to the DLL of profiler to load into currently running 64 bits process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_PROFILING, W("CORECLR_ENABLE_PROFILING"), 0, "CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER, W("CORECLR_PROFILER"), "CoreCLR only: Specifies GUID of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH, W("CORECLR_PROFILER_PATH"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_32, W("CORECLR_PROFILER_PATH_32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_64, W("CORECLR_PROFILER_PATH_64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM32, W("CORECLR_PROFILER_PATH_ARM32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM32 process", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM64, W("CORECLR_PROFILER_PATH_ARM64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM64 process", CLRConfig::LookupOptions::DontPrependPrefix)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ProfAPI_ProfilerCompatibilitySetting, W("ProfAPI_ProfilerCompatibilitySetting"), "Specifies the profiler loading policy (the default is not to load a V2 profiler in V4)", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ProfAPI_DetachMinSleepMs, W("ProfAPI_DetachMinSleepMs"), 0, "The minimum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ProfAPI_DetachMaxSleepMs, W("ProfAPI_DetachMaxSleepMs"), 0, "The maximum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded.")
@@ -722,8 +718,8 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An 
 //
 // Diagnostics Ports
 //
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend, W("DOTNET_DefaultDiagnosticPortSuspend"), 0, "This sets the deafult diagnostic port to suspend causing the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command on the default diagnostic port.", CLRConfig::LookupOptions::DontPrependCOMPlus_);
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticPorts, W("DOTNET_DiagnosticPorts"), "A semicolon delimited list of additional Diagnostic Ports, where a Diagnostic Port is a NamedPipe path without '\\\\.\\pipe\\' on Windows or the full path of Unix Domain Socket on Linux/Unix followed by optional tags, e.g., '<path>,connect,nosuspend;<path>'", CLRConfig::LookupOptions::DontPrependCOMPlus_);
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend, W("DefaultDiagnosticPortSuspend"), 0, "This sets the deafult diagnostic port to suspend causing the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command on the default diagnostic port.");
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DOTNET_DiagnosticPorts, W("DiagnosticPorts"), "A semicolon delimited list of additional Diagnostic Ports, where a Diagnostic Port is a NamedPipe path without '\\\\.\\pipe\\' on Windows or the full path of Unix Domain Socket on Linux/Unix followed by optional tags, e.g., '<path>,connect,nosuspend;<path>'");
 
 //
 // LTTng

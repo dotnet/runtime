@@ -122,7 +122,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         static MsQuicApi()
         {
             // TODO: Consider updating all of these delegates to instead use function pointers.
-            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, out IntPtr msQuicHandle))
+            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
             {
                 try
                 {

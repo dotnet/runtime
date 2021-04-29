@@ -2277,6 +2277,12 @@ protected:
     void background_ephemeral_sweep();
     PER_HEAP
     void background_sweep ();
+    // Check if we should grow the mark stack proactively to avoid mark stack
+    // overflow and grow if necessary.
+    PER_HEAP
+    void check_bgc_mark_stack_length();
+    PER_HEAP
+    void grow_bgc_mark_stack (size_t new_size);
     PER_HEAP
     uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
     PER_HEAP
@@ -5278,11 +5284,15 @@ public:
 // and free_large_regions. These decommitted regions will be returned to region_allocator which
 // mark the space as free blocks.
 // 
-// Make configs available to change these.
-#define REGION_SIZE ((size_t)4 * 1024 * 1024)
 #define LARGE_REGION_FACTOR (8)
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
+
+enum allocate_direction
+{
+    allocate_forward = 1,
+    allocate_backward = -1,
+};
 
 // The big space we reserve for regions is divided into units of region_alignment.
 // 
@@ -5317,12 +5327,11 @@ public:
 class region_allocator
 {
 private:
-    // We need to start from an aligned address. This is the actual address of the reserved range.
-    uint8_t* actual_start;
 
     uint8_t* global_region_start;
     uint8_t* global_region_end;
-    uint8_t* global_region_used;
+    uint8_t* global_region_left_used;
+    uint8_t* global_region_right_used;
 
     uint32_t total_free_units;
 
@@ -5333,21 +5342,20 @@ private:
 
     void enter_spin_lock();
     void leave_spin_lock();
+    uint32_t* region_map_left_start;
+    uint32_t* region_map_left_end;
 
-    uint32_t* region_map_start;
-    uint32_t* region_map_end;
+    uint32_t* region_map_right_start;
+    uint32_t* region_map_right_end;
 
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
 
-    uint8_t* allocate (uint32_t num_units);
-    uint8_t* allocate_end (uint32_t num_units);
+    uint8_t* allocate (uint32_t num_units, allocate_direction direction);
+    uint8_t* allocate_end (uint32_t num_units, allocate_direction direction);
 
     void make_busy_block (uint32_t* index_start, uint32_t num_units);
     void make_free_block (uint32_t* index_start, uint32_t num_units);
-
-    void adjust_map (uint32_t* current_free_index_start,
-        uint32_t num_contiguous_free_units, uint32_t num_busy_units);
 
     void print_map (const char* msg);
 
@@ -5378,13 +5386,13 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end);
+    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction);
     bool allocate_basic_region (uint8_t** start, uint8_t** end);
-    bool allocate_large_region (uint8_t** start, uint8_t** end);
+    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction);
     void delete_region (uint8_t* start);
     uint32_t get_va_memory_load()
     {
-        return (uint32_t)((global_region_used - global_region_start) * 100.0 
+        return (uint32_t)(((global_region_left_used - global_region_start) + ((global_region_end - global_region_right_used)))* 100.0
                           / (global_region_end - global_region_start));
     }
     // Returns the amount of free space + end of unused region space

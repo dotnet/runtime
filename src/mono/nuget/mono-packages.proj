@@ -19,5 +19,6 @@
 
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
+    <ProjectReference Include="Microsoft.NET.Runtime.RuntimeConfigParser.Task\Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj" />
   </ItemGroup>
 </Project>

@@ -12,11 +12,24 @@ using Microsoft.Build.Utilities;
 
 public class AppleAppBuilderTask : Task
 {
+    private string targetOS = TargetNames.iOS;
+
     /// <summary>
     /// The Apple OS we are targeting (iOS or tvOS)
     /// </summary>
     [Required]
-    public string TargetOS { get; set; } = TargetNames.iOS;
+    public string TargetOS
+    {
+        get
+        {
+            return targetOS;
+        }
+
+        set
+        {
+            targetOS = value.ToLower();
+        }
+    }
 
     /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
@@ -114,6 +127,11 @@ public class AppleAppBuilderTask : Task
     public bool ForceAOT { get; set; }
 
     /// <summary>
+    /// List of components to static link, if available
+    /// </summary>
+    public string? StaticLinkedComponentNames { get; set; } = ""!;
+
+    /// <summary>
     /// Forces the runtime to use the invariant mode
     /// </summary>
     public bool InvariantGlobalization { get; set; }
@@ -186,7 +204,7 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
 
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, StaticLinkedComponentNames, NativeMainSource);
 
             if (BuildAppBundle)
             {

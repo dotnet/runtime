@@ -37,7 +37,9 @@ namespace System.Net.Security
         private object _handshakeLock => _sslAuthenticationOptions!;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
-        private const int FrameOverhead = 32;
+        // FrameOverhead = 5 byte header + HMAC trailer + padding (if block cipher)
+        // HMAC: 32 bytes for SHA-256 or 20 bytes for SHA-1 or 16 bytes for the MD5
+        private const int FrameOverhead = 64;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;

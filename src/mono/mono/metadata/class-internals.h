@@ -16,6 +16,7 @@
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-compiler.h"
 
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
@@ -405,7 +406,7 @@ struct _MonoMethodInflated {
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
-	MonoImageSet *owner; /* The image set that the inflated method belongs to. */
+	MonoMemoryManager *owner; /* The mem manager that the inflated method belongs to. */
 };
 
 /*
@@ -419,12 +420,8 @@ struct _MonoGenericClass {
 	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
-	/* 
-	 * The image set which owns this generic class. Memory owned by the generic class
-	 * including cached_class should be allocated from the mempool of the image set,
-	 * so it is easy to free.
-	 */
-	MonoImageSet *owner;
+	/* The mem manager which owns this generic class. */
+	MonoMemoryManager *owner;
 };
 
 /* Additional details about a MonoGenericParam */
@@ -901,11 +898,14 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 MonoMethod *
 mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_class (MonoClass *klass);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_type (MonoType *type);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_method (MonoMethodInflated *method);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_class (MonoClass *klass);
+
+MonoMemoryManager*
+mono_metadata_get_mem_manager_for_method (MonoMethodInflated *method);
 
 MONO_API MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
@@ -1127,6 +1127,7 @@ mono_identifier_escape_type_name_chars (const char* identifier);
 char*
 mono_type_get_full_name (MonoClass *klass);
 
+MONO_COMPONENT_API
 char *
 mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format);
 
@@ -1287,7 +1288,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error);
 MonoClass *
 mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
 MonoClass *
@@ -1429,7 +1430,7 @@ mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);
 GSList*
 mono_class_get_dim_conflicts (MonoClass *klass);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
 gboolean
@@ -1537,6 +1538,13 @@ m_field_get_offset (MonoClassField *field)
  */
 
 static inline MonoMemoryManager*
+mono_mem_manager_get_ambient (void)
+{
+	// FIXME: All callers should get a MemoryManager from their callers or context
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
+}
+
+static inline MonoMemoryManager*
 m_image_get_mem_manager (MonoImage *image)
 {
 	return (MonoMemoryManager*)mono_image_get_alc (image)->memory_manager;
@@ -1582,7 +1590,7 @@ static inline MonoMemoryManager*
 m_method_get_mem_manager (MonoMethod *method)
 {
 	// FIXME:
-	return mono_domain_memory_manager (mono_get_root_domain ());
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline void *

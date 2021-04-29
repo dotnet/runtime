@@ -233,7 +233,14 @@ namespace System.Net.Security.Tests
             var args = string.Join(".", protocols.Select(p => ProtocolToString(p)));
             var name = testMethodName.Length > 63 ? testMethodName.Substring(0, 63) : testMethodName;
 
-            return $"{name}.{args}";
+            name = $"{name}.{args}";
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android does not support underscores in host names
+                name = name.Replace("_", string.Empty);
+            }
+
+            return name;
         }
     }
 }

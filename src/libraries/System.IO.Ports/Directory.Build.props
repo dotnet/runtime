@@ -3,7 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <UnsupportedOSPlatforms>browser;android;ios;tvos</UnsupportedOSPlatforms>
     <PackageDescription>Provides classes for controlling serial ports.
 
 Commonly Used Types:

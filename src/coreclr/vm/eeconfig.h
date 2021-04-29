@@ -287,6 +287,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return fEnableRCWCleanupOnSTAShutdown;
     }
+
+    bool IsBuiltInCOMSupported() const { LIMITED_METHOD_CONTRACT;  return m_fBuiltInCOMInteropSupported; }
 #endif // FEATURE_COMINTEROP
 
 #ifdef _DEBUG
@@ -306,16 +308,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return fProbeForStackOverflow;
     }
-
-#ifdef _DEBUG
-    inline bool AppDomainLeaks() const
-    {
-        // Workaround for CoreCLR bug #12075, until this configuration option is removed
-        // (CoreCLR Bug #12094)
-        LIMITED_METHOD_DAC_CONTRACT;
-        return false;
-    }
-#endif
 
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
@@ -556,6 +548,7 @@ private: //----------------------------------------------------------------
     LPCUTF8 pszLogCCWRefCountChange;      // OutputDebugString when AddRef/Release is called on a CCW
                                           // for the specified type(s)
     bool fEnableRCWCleanupOnSTAShutdown;  // Register our IInitializeSpy even in classic processes
+    bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT

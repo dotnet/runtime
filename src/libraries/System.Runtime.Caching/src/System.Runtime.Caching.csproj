@@ -1,9 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;netstandard2.0-windows</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;netcoreapp3.1-windows;netstandard2.0;netstandard2.0-windows</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' or '$(TargetFramework)' == 'netcoreapp3.1-windows'" >
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Data.Common" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.IO.FileSystem.Watcher" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.Timer" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\Caching\_shims.cs" />
     <Compile Include="System\Runtime\Caching\CacheEntryChangeMonitor.cs" />

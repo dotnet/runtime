@@ -5114,7 +5114,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     GenTree* arg     = fgMakeTmpArgNode(argEntry);
 
     // Change the expression to "(tmp=val),tmp"
-    arg = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
+    arg                                  = gtNewOperNode(GT_COMMA, arg->TypeGet(), copyBlk, arg);
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -5165,84 +5165,6 @@ void Compiler::fgAddSkippedRegsInPromotedStructArg(LclVarDsc* varDsc,
 }
 
 #endif // TARGET_ARM
-
-//****************************************************************************
-//  fgFixupStructReturn:
-//    The companion to impFixupCallStructReturn.  Now that the importer is done
-//    change the gtType to the precomputed native return type
-//    requires that callNode currently has a struct type
-//
-void Compiler::fgFixupStructReturn(GenTree* callNode)
-{
-    if (!compDoOldStructRetyping())
-    {
-        return;
-    }
-    assert(varTypeIsStruct(callNode));
-
-    GenTreeCall* call              = callNode->AsCall();
-    bool         callHasRetBuffArg = call->HasRetBufArg();
-    bool         isHelperCall      = call->IsHelperCall();
-
-    // Decide on the proper return type for this call that currently returns a struct
-    //
-    CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
-    Compiler::structPassingKind howToReturnStruct;
-    var_types                   returnType;
-
-    // There are a couple of Helper Calls that say they return a TYP_STRUCT but they
-    // expect this method to re-type this to a TYP_REF (what is in call->gtReturnType)
-    //
-    //    CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
-    //    CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
-    //    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL
-    //
-    if (isHelperCall)
-    {
-        assert(!callHasRetBuffArg);
-        assert(retClsHnd == NO_CLASS_HANDLE);
-
-        // Now that we are past the importer, re-type this node
-        howToReturnStruct = SPK_PrimitiveType;
-        returnType        = (var_types)call->gtReturnType;
-    }
-    else
-    {
-        returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
-    }
-
-    if (howToReturnStruct == SPK_ByReference)
-    {
-        assert(returnType == TYP_UNKNOWN);
-        assert(callHasRetBuffArg);
-    }
-    else
-    {
-        assert(returnType != TYP_UNKNOWN);
-
-        if (!varTypeIsStruct(returnType))
-        {
-            // Widen the primitive type if necessary
-            returnType = genActualType(returnType);
-        }
-        call->gtType = returnType;
-    }
-
-#if FEATURE_MULTIREG_RET
-    // Either we don't have a struct now or if struct, then it is a struct returned in regs or in return buffer.
-    assert((call->gtType != TYP_STRUCT) || call->HasMultiRegRetVal() || callHasRetBuffArg);
-#else // !FEATURE_MULTIREG_RET
-    // No more struct returns
-    assert(call->TypeGet() != TYP_STRUCT);
-#endif
-
-#if !defined(UNIX_AMD64_ABI)
-    // If it was a struct return, it has been transformed into a call
-    // with a return buffer (that returns TYP_VOID) or into a return
-    // of a primitive/enregisterable type
-    assert(!callHasRetBuffArg || (call->TypeGet() == TYP_VOID));
-#endif
-}
 
 /*****************************************************************************
  *
@@ -5517,7 +5439,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         // so we need to set the correct type on the GT_IND.
         // (We don't care about the base type here, so we only check, but don't retain, the return value).
         unsigned simdElemSize = 0;
-        if (getBaseTypeAndSizeOfSIMDType(elemStructType, &simdElemSize) != TYP_UNKNOWN)
+        if (getBaseJitTypeAndSizeOfSIMDType(elemStructType, &simdElemSize) != CORINFO_TYPE_UNDEF)
         {
             assert(simdElemSize == elemSize);
             elemTyp = getSIMDTypeForSize(elemSize);
@@ -6893,7 +6815,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #ifdef DEBUG
     if (callee->IsTailPrefixedCall())
     {
-        var_types retType = (compDoOldStructRetyping() ? info.compRetNativeType : info.compRetType);
+        var_types retType = info.compRetType;
         assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass, info.compCallConv,
                                             (var_types)callee->gtReturnType, callee->gtRetClsHnd,
                                             callee->GetUnmanagedCallConv()));
@@ -7733,7 +7655,45 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             //
             if (nextBlock->bbJumpKind != BBJ_RETURN)
             {
-                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
+
+                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
+                // to temp locals over and over.
+                //
+                // Also allow casts on the RHSs of the assignments, and blocks with GT_NOPs.
+                //
+                if (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                {
+                    // Make sure the block has a single statement
+                    assert(nextBlock->firstStmt() == nextBlock->lastStmt());
+                    // And the root node is "ASG(LCL_VAR, LCL_VAR)"
+                    GenTree* asgNode = nextBlock->firstStmt()->GetRootNode();
+                    assert(asgNode->OperIs(GT_ASG));
+
+                    unsigned lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+
+                    while (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                    {
+                        assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
+                        asgNode = nextNextBlock->firstStmt()->GetRootNode();
+                        if (!asgNode->OperIs(GT_NOP))
+                        {
+                            assert(asgNode->OperIs(GT_ASG));
+
+                            GenTree* rhs = asgNode->gtGetOp2();
+                            while (rhs->OperIs(GT_CAST))
+                            {
+                                assert(!rhs->gtOverflow());
+                                rhs = rhs->gtGetOp1();
+                            }
+
+                            assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
+                            lcl = rhs->AsLclVarCommon()->GetLclNum();
+                        }
+                        nextNextBlock = nextNextBlock->GetUniqueSucc();
+                    }
+                }
+
                 assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
 
                 if (nextNextBlock->hasProfileWeight())
@@ -9015,7 +8975,6 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Finish hooking things up.
     block->bbJumpKind = BBJ_ALWAYS;
-    block->bbJumpDest->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
 }
@@ -9115,10 +9074,6 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
 
 GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 {
-    if (varTypeIsStruct(call))
-    {
-        fgFixupStructReturn(call);
-    }
     if (call->CanTailCall())
     {
         GenTree* newNode = fgMorphPotentialTailCall(call);
@@ -10161,7 +10116,8 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = new (this, GT_SIMD) GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->lvBaseType, size);
+                src = new (this, GT_SIMD)
+                    GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseJitType(), size);
             }
             else
 #endif
@@ -10590,8 +10546,7 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
             {
                 // TODO: Consider using lvaGrabTemp and gtNewTempAssign instead, since we're
                 // not going to use "temp"
-                GenTree* temp = fgInsertCommaFormTemp(pTree, clsHnd);
-                assert(!compDoOldStructRetyping());
+                GenTree* temp   = fgInsertCommaFormTemp(pTree, clsHnd);
                 unsigned lclNum = temp->gtEffectiveVal()->AsLclVar()->GetLclNum();
                 lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_VMNeedsStackAddr));
                 addr = fgMorphGetStructAddr(pTree, clsHnd, isRValue);
@@ -10938,7 +10893,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
     }
 #endif // FEATURE_MULTIREG_RET
 
-    if (src->IsCall() && !compDoOldStructRetyping())
+    if (src->IsCall())
     {
         if (dest->OperIs(GT_OBJ))
         {
@@ -11994,8 +11949,8 @@ GenTree* Compiler::fgMorphForRegisterFP(GenTree* tree)
 // Arguments:
 //       tree - GentreePtr. This node will be checked to see this is a field which belongs to a simd
 //               struct used for simd intrinsic or not.
-//       pBaseTypeOut - var_types pointer, if the tree node is the tree we want, we set *pBaseTypeOut
-//                      to simd lclvar's base type.
+//       simdBaseJitTypeOut - CorInfoType pointer, if the tree node is the tree we want, we set *simdBaseJitTypeOut
+//                            to simd lclvar's base JIT type.
 //       indexOut - unsigned pointer, if the tree is used for simd intrinsic, we will set *indexOut
 //                  equals to the index number of this field.
 //       simdSizeOut - unsigned pointer, if the tree is used for simd intrinsic, set the *simdSizeOut
@@ -12008,11 +11963,11 @@ GenTree* Compiler::fgMorphForRegisterFP(GenTree* tree)
 //       instrinic related field, return nullptr.
 //
 
-GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
-                                          var_types* pBaseTypeOut,
-                                          unsigned*  indexOut,
-                                          unsigned*  simdSizeOut,
-                                          bool       ignoreUsedInSIMDIntrinsic /*false*/)
+GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
+                                          CorInfoType* simdBaseJitTypeOut,
+                                          unsigned*    indexOut,
+                                          unsigned*    simdSizeOut,
+                                          bool         ignoreUsedInSIMDIntrinsic /*false*/)
 {
     GenTree* ret = nullptr;
     if (tree->OperGet() == GT_FIELD)
@@ -12040,33 +11995,33 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
                 LclVarDsc* varDsc = &lvaTable[lclNum];
                 if (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic)
                 {
-                    *simdSizeOut  = varDsc->lvExactSize;
-                    *pBaseTypeOut = getBaseTypeOfSIMDLocal(obj);
-                    ret           = obj;
+                    *simdSizeOut        = varDsc->lvExactSize;
+                    *simdBaseJitTypeOut = getBaseJitTypeOfSIMDLocal(obj);
+                    ret                 = obj;
                 }
             }
             else if (obj->OperGet() == GT_SIMD)
             {
                 ret                   = obj;
                 GenTreeSIMD* simdNode = obj->AsSIMD();
-                *simdSizeOut          = simdNode->gtSIMDSize;
-                *pBaseTypeOut         = simdNode->gtSIMDBaseType;
+                *simdSizeOut          = simdNode->GetSimdSize();
+                *simdBaseJitTypeOut   = simdNode->GetSimdBaseJitType();
             }
 #ifdef FEATURE_HW_INTRINSICS
             else if (obj->OperIsHWIntrinsic())
             {
                 ret                          = obj;
                 GenTreeHWIntrinsic* simdNode = obj->AsHWIntrinsic();
-                *simdSizeOut                 = simdNode->gtSIMDSize;
-                *pBaseTypeOut                = simdNode->gtSIMDBaseType;
+                *simdSizeOut                 = simdNode->GetSimdSize();
+                *simdBaseJitTypeOut          = simdNode->GetSimdBaseJitType();
             }
 #endif // FEATURE_HW_INTRINSICS
         }
     }
     if (ret != nullptr)
     {
-        unsigned BaseTypeSize = genTypeSize(*pBaseTypeOut);
-        *indexOut             = tree->AsField()->gtFldOffset / BaseTypeSize;
+        unsigned baseTypeSize = genTypeSize(JITtype2varType(*simdBaseJitTypeOut));
+        *indexOut             = tree->AsField()->gtFldOffset / baseTypeSize;
     }
     return ret;
 }
@@ -12085,15 +12040,16 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
 
 GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 {
-    unsigned  index          = 0;
-    var_types baseType       = TYP_UNKNOWN;
-    unsigned  simdSize       = 0;
-    GenTree*  simdStructNode = getSIMDStructFromField(tree, &baseType, &index, &simdSize);
+    unsigned    index           = 0;
+    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+    unsigned    simdSize        = 0;
+    GenTree*    simdStructNode  = getSIMDStructFromField(tree, &simdBaseJitType, &index, &simdSize);
     if (simdStructNode != nullptr)
     {
-        assert(simdSize >= ((index + 1) * genTypeSize(baseType)));
+        var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
         GenTree* op2 = gtNewIconNode(index);
-        tree         = gtNewSIMDNode(baseType, simdStructNode, op2, SIMDIntrinsicGetItem, baseType, simdSize);
+        tree = gtNewSIMDNode(simdBaseType, simdStructNode, op2, SIMDIntrinsicGetItem, simdBaseJitType, simdSize);
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -12119,14 +12075,16 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    unsigned  index         = 0;
-    var_types baseType      = TYP_UNKNOWN;
-    unsigned  simdSize      = 0;
-    GenTree*  simdOp1Struct = getSIMDStructFromField(op1, &baseType, &index, &simdSize);
+    unsigned    index           = 0;
+    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+    unsigned    simdSize        = 0;
+    GenTree*    simdOp1Struct   = getSIMDStructFromField(op1, &simdBaseJitType, &index, &simdSize);
     if (simdOp1Struct != nullptr)
     {
+        var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
         // Generate the simd set intrinsic
-        assert(simdSize >= ((index + 1) * genTypeSize(baseType)));
+        assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
 
         SIMDIntrinsicID simdIntrinsicID = SIMDIntrinsicInvalid;
         switch (index)
@@ -12150,7 +12108,7 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
         GenTree* target = gtClone(simdOp1Struct);
         assert(target != nullptr);
         var_types simdType = target->gtType;
-        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, baseType, simdSize);
+        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, simdBaseJitType, simdSize);
 
         tree->AsOp()->gtOp1 = target;
         tree->AsOp()->gtOp2 = simdTree;
@@ -12512,6 +12470,20 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #endif // !TARGET_64BIT
             break;
 
+        case GT_ARR_LENGTH:
+            if (op1->OperIs(GT_CNS_STR))
+            {
+                // Optimize `ldstr + String::get_Length()` to CNS_INT
+                // e.g. "Hello".Length => 5
+                GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                if (iconNode != nullptr)
+                {
+                    INDEBUG(iconNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    return iconNode;
+                }
+            }
+            break;
+
         case GT_DIV:
             // Replace "val / dcon" with "val * (1.0 / dcon)" if dcon is a power of two.
             // Powers of two within range are always exactly represented,
@@ -12843,7 +12815,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-            if (!compDoOldStructRetyping() && !tree->TypeIs(TYP_VOID))
+            if (!tree->TypeIs(TYP_VOID))
             {
                 if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
                 {
@@ -13614,14 +13586,12 @@ DONE_MORPHING_CHILDREN:
                         goto SKIP;
                     }
 
-#if FEATURE_ANYCSE
                     /* If the LCL_VAR is a CSE temp then bail, it could have multiple defs/uses */
                     // Fix 383856 X86/ARM ILGEN
                     if (lclNumIsCSE(lclNum))
                     {
                         goto SKIP;
                     }
-#endif
 
                     /* We also must be assigning the result of a RELOP */
                     if (asg->AsOp()->gtOp1->gtOper != GT_LCL_VAR)
@@ -15253,7 +15223,6 @@ DONE_MORPHING_CHILDREN:
 //
 GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 {
-    assert(!compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     assert(ret->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ));
     GenTreeIndir* ind  = ret->gtGetOp1()->AsIndir();
@@ -17754,7 +17723,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true);
     BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
 
-    remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+    remainderBlock->bbFlags |= propagateFlags;
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -17940,7 +17909,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         elseBlock->bbFlags |= BBF_IMPORTED;
     }
 
-    remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+    remainderBlock->bbFlags |= propagateFlags;
 
     condBlock->inheritWeight(block);
 
@@ -17969,8 +17938,6 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
             thenBlock->bbFlags &= ~BBF_INTERNAL;
             thenBlock->bbFlags |= BBF_IMPORTED;
         }
-
-        elseBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 
         fgAddRefPred(thenBlock, condBlock);
         fgAddRefPred(remainderBlock, thenBlock);
@@ -19150,22 +19117,23 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     GenTree* tree = stmt->GetRootNode();
     assert(tree->OperGet() == GT_ASG);
 
-    GenTree*  originalLHS    = tree->AsOp()->gtOp1;
-    GenTree*  prevLHS        = tree->AsOp()->gtOp1;
-    GenTree*  prevRHS        = tree->AsOp()->gtOp2;
-    unsigned  index          = 0;
-    var_types baseType       = TYP_UNKNOWN;
-    unsigned  simdSize       = 0;
-    GenTree*  simdStructNode = getSIMDStructFromField(prevRHS, &baseType, &index, &simdSize, true);
+    GenTree*    originalLHS     = tree->AsOp()->gtOp1;
+    GenTree*    prevLHS         = tree->AsOp()->gtOp1;
+    GenTree*    prevRHS         = tree->AsOp()->gtOp2;
+    unsigned    index           = 0;
+    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+    unsigned    simdSize        = 0;
+    GenTree*    simdStructNode  = getSIMDStructFromField(prevRHS, &simdBaseJitType, &index, &simdSize, true);
 
-    if (simdStructNode == nullptr || index != 0 || baseType != TYP_FLOAT)
+    if (simdStructNode == nullptr || index != 0 || simdBaseJitType != CORINFO_TYPE_FLOAT)
     {
         // if the RHS is not from a SIMD vector field X, then there is no need to check further.
         return false;
     }
 
+    var_types  simdBaseType         = JitType2PreciseVarType(simdBaseJitType);
     var_types  simdType             = getSIMDTypeForSize(simdSize);
-    int        assignmentsCount     = simdSize / genTypeSize(baseType) - 1;
+    int        assignmentsCount     = simdSize / genTypeSize(simdBaseType) - 1;
     int        remainingAssignments = assignmentsCount;
     Statement* curStmt              = stmt->GetNextStmt();
     Statement* lastStmt             = stmt;

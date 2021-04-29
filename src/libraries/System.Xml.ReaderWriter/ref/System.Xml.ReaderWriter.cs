@@ -1479,11 +1479,17 @@ namespace System.Xml.Schema
         public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.Xml.XmlReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.Stream stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.Stream stream, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.TextWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.TextWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.Xml.XmlWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
     }
     public partial class XmlSchemaAll : System.Xml.Schema.XmlSchemaGroupBase
