@@ -329,9 +329,14 @@ namespace System.Text.Json.Serialization.Metadata
             string memberName = memberInfo.Name;
             PropertyInfo? property = memberInfo as PropertyInfo;
 
-            // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-            if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo, out JsonPropertyInfo? other))
+            // Virtual properties that are overrides are implicitly ignored regardless of a JsonPropertyNameAttribute.
+            if ((property == null ||
+                overrideProperties == null ||
+                !overrideProperties.TryGetValue(memberName, out PropertyInfo? overrideProperty) ||
+                !IsOverrideOf(overrideProperty, property)) &&
+                !JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo, out JsonPropertyInfo? other))
             {
+                // The JsonPropertyNameAttribute or naming policy resulted in a collision.
                 if (other.IsIgnored)
                 {
                     // Overwrite previously cached property since it has [JsonIgnore].
@@ -351,15 +356,6 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                 }
                 // Ignore the current property.
-            }
-            else if (overrideProperties != null &&
-                overrideProperties.TryGetValue(memberName, out PropertyInfo? overrideProperty) &&
-                property != null &&
-                IsOverrideOf(property, overrideProperty))
-            {
-                // This property is overridden in a derived class. Implicitly ignore it
-                // by removing from the cache, regardless of an applied JsonPropertyName attribute.
-                cache.Remove(jsonPropertyInfo.NameAsString);
             }
 
             if (jsonPropertyInfo.IsIgnored)
