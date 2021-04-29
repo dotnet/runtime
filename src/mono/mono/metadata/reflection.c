@@ -430,7 +430,7 @@ MonoReflectionType*
 mono_type_get_object_checked (MonoType *type, MonoError *error)
 {
 	MonoType *norm_type;
-	MonoReflectionType *res;
+	MonoReflectionType *res, *cached;
 	MonoClass *klass;
 	MonoDomain *domain = mono_get_root_domain ();
 
@@ -476,7 +476,9 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 
 	mono_loader_lock (); /*FIXME mono_class_init_internal and mono_class_vtable acquire it*/
 	mono_mem_manager_lock (memory_manager);
-	if ((res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type)))
+	res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	mono_mem_manager_unlock (memory_manager);
+	if (res)
 		goto leave;
 
 	/*Types must be normalized so a generic instance of the GTD get's the same inner type.
@@ -491,7 +493,14 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		res = mono_type_get_object_checked (norm_type, error);
 		goto_if_nok (error, leave);
 
-		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		mono_mem_manager_lock (memory_manager);
+		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+		if (cached) {
+			res = cached;
+		} else {
+			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		}
+		mono_mem_manager_unlock (memory_manager);
 		goto leave;
 	}
 
@@ -526,13 +535,19 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	goto_if_nok (error, leave);
 
 	res->type = type;
-	mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 
-	if (type->type == MONO_TYPE_VOID && !type->byref)
-		domain->typeof_void = (MonoObject*)res;
+	mono_mem_manager_lock (memory_manager);
+	cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (cached) {
+		res = cached;
+	} else {
+		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		if (type->type == MONO_TYPE_VOID && !type->byref)
+			domain->typeof_void = (MonoObject*)res;
+	}
+	mono_mem_manager_unlock (memory_manager);
 
 leave:
-	mono_mem_manager_unlock (memory_manager);
 	mono_loader_unlock ();
 	return res;
 }
