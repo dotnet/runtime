@@ -59,20 +59,24 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
+            if (callSite.Value is object value)
+            {
+                // Value already calculated, return it directly
+                return value;
+            }
+
             var lockType = RuntimeResolverLock.Root;
-            bool lockTaken = false;
             ServiceProviderEngineScope serviceProviderEngine = context.Scope.Engine.Root;
 
-            // using more granular locking (per singleton) for the root
-            Monitor.Enter(callSite, ref lockTaken);
-            try
+            lock (callSite)
             {
-                if (callSite.Value is object value)
+                // Lock the callsite and check if another thread already cached the value
+                if (callSite.Value is object resolved)
                 {
-                    return value;
+                    return resolved;
                 }
 
-                object resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+                resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
                 {
                     Scope = serviceProviderEngine,
                     AcquiredLocks = context.AcquiredLocks | lockType
@@ -80,13 +84,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 serviceProviderEngine.CaptureDisposable(resolved);
                 callSite.Value = resolved;
                 return resolved;
-            }
-            finally
-            {
-                if (lockTaken)
-                {
-                    Monitor.Exit(callSite);
-                }
             }
         }
 
