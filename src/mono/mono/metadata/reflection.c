@@ -634,6 +634,7 @@ mono_method_get_object_handle (MonoMethod *method, MonoClass *refclass, MonoErro
 	if (!refclass)
 		refclass = method->klass;
 
+	// FIXME: For methods/params etc., use the mem manager for refclass or a merged one ?
 	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethod, m_method_get_mem_manager (method), method, refclass, method_object_construct, NULL);
 }
 /*
@@ -739,7 +740,6 @@ mono_field_get_object_handle (MonoClass *klass, MonoClassField *field, MonoError
 	error_init (error);
 	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (field->parent), field, klass, field_object_construct, NULL);
 }
-
 
 /*
  * mono_field_get_object_checked:
