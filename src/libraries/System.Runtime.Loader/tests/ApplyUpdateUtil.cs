@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 using Microsoft.DotNet.RemoteExecutor;
 
@@ -12,8 +14,8 @@ namespace System.Reflection.Metadata
         internal const string DotNetModifiableAssembliesValue = "debug";
 
 
-	[CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-	public class NoParallelTests { }
+        [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+        public class NoParallelTests { }
 
 
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
@@ -29,36 +31,38 @@ namespace System.Reflection.Metadata
         public static bool IsModifiableAssembliesSet =>
             String.Equals(DotNetModifiableAssembliesValue, Environment.GetEnvironmentVariable(DotNetModifiableAssembliesSwitch), StringComparison.InvariantCultureIgnoreCase);
 
-        public static bool IsRemoteExecutorSupported => RemoteExecutor.IsSupported;
+        // static cctor for RemoteExecutor throws on wasm.
+        public static bool IsRemoteExecutorSupported => !RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) && RemoteExecutor.IsSupported;
 
         // copied from https://github.com/dotnet/arcade/blob/6cc4c1e9e23d5e65e88a8a57216b3d91e9b3d8db/src/Microsoft.DotNet.XUnitExtensions/src/DiscovererHelpers.cs#L16-L17
         private static readonly Lazy<bool> s_isMonoRuntime = new Lazy<bool>(() => Type.GetType("Mono.RuntimeStructs") != null);
         public static bool IsMonoRuntime => s_isMonoRuntime.Value;
 
-	private static readonly Lazy<bool> s_isSupportedMonoConfiguration = new Lazy<bool>(CheckSupportedMonoConfiguration);
+        private static readonly Lazy<bool> s_isSupportedMonoConfiguration = new Lazy<bool>(CheckSupportedMonoConfiguration);
 
-	public static bool IsSupportedMonoConfiguration => s_isSupportedMonoConfiguration.Value;
+        public static bool IsSupportedMonoConfiguration => s_isSupportedMonoConfiguration.Value;
 
         // Not every build of Mono supports ApplyUpdate
         internal static bool CheckSupportedMonoConfiguration()
         {
-	    // check that interpreter is enabled, and the build has hot reload capabilities enabled.
-	    return System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported && !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled && HasApplyUpdateCapabilities();
+        // check that interpreter is enabled, and the build has hot reload capabilities enabled.
+            var isInterp = RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
+            return isInterp && HasApplyUpdateCapabilities();
         }
 
-	internal static bool HasApplyUpdateCapabilities()
-	{
-	    var ty = typeof(AssemblyExtensions);
+        internal static bool HasApplyUpdateCapabilities()
+        {
+            var ty = typeof(AssemblyExtensions);
             var mi = ty.GetMethod("GetApplyUpdateCapabilities", BindingFlags.NonPublic | BindingFlags.Static, Array.Empty<Type>());
 
-	    if (mi == null)
-		return false;
+            if (mi == null)
+                return false;
 
-	    var caps = mi.Invoke(null, null);
+            var caps = mi.Invoke(null, null);
 
-	    // any non-empty string, assumed to be at least "baseline"
-	    return caps is string {Length: > 0};
-	}
+            // any non-empty string, assumed to be at least "baseline"
+            return caps is string {Length: > 0};
+        }
 
         // Only Debug assemblies are editable
         internal static bool IsSupportedTestConfiguration()
