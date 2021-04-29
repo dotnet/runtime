@@ -50,7 +50,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     array.cpp
     assembly.cpp
     assemblyloadcontext.cpp
-    baseassemblyspec.cpp
     binder.cpp
     bundle.cpp
     castcache.cpp
@@ -62,10 +61,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     clsload.cpp
     codeman.cpp
     codeversion.cpp
-    comdelegate.cpp
     contractimpl.cpp
-    coreassemblyspec.cpp
-    corebindresult.cpp
     corhost.cpp
     crst.cpp
     debugdebugger.cpp
@@ -154,8 +150,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     array.h
     assembly.hpp
     assemblyloadcontext.h
-    baseassemblyspec.h
-    baseassemblyspec.inl
     binder.h
     castcache.h
     callcounting.h
@@ -169,14 +163,12 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     codeman.h
     codeman.inl
     codeversion.h
-    comdelegate.h
     contractimpl.h
     crst.h
     debugdebugger.h
     debuginfostore.h
     decodemd.h
     disassembler.h
-    dllimport.h
     domainfile.h
     domainfile.inl
     dynamicmethod.h
@@ -308,6 +300,7 @@ set(VM_SOURCES_WKS
     assemblyname.cpp
     assemblynative.cpp
     assemblyspec.cpp
+    baseassemblyspec.cpp
     cachelinealloc.cpp
     callhelpers.cpp
     callsiteinspect.cpp
@@ -315,6 +308,7 @@ set(VM_SOURCES_WKS
     clrex.cpp
     clrvarargs.cpp
     comdatetime.cpp
+    comdelegate.cpp
     comdependenthandle.cpp
     comdynamic.cpp
     commodule.cpp
@@ -323,6 +317,8 @@ set(VM_SOURCES_WKS
     comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
+    coreassemblyspec.cpp
+    corebindresult.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
@@ -408,6 +404,8 @@ set(VM_HEADERS_WKS
     assemblynative.hpp
     assemblyspec.hpp
     assemblyspecbase.h
+    baseassemblyspec.h
+    baseassemblyspec.inl
     cachelinealloc.h
     callhelpers.h
     callsiteinspect.h
@@ -416,6 +414,7 @@ set(VM_HEADERS_WKS
     clrex.h
     clrvarargs.h
     comdatetime.h
+    comdelegate.h
     comdependenthandle.h
     comdynamic.h
     commodule.h
@@ -428,6 +427,7 @@ set(VM_HEADERS_WKS
     custommarshalerinfo.h
     autotrace.h
     diagnosticserveradapter.h
+    dllimport.h
     dllimportcallback.h
     eeconfig.h
     eecontract.h

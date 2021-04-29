@@ -22,6 +22,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static void Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
             Utf8JsonWriter writer,
             TValue value,
@@ -47,6 +48,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static void Serialize(
             Utf8JsonWriter writer,
             object? value,
@@ -125,6 +127,7 @@ namespace System.Text.Json
             WriteUsingMetadata(writer, value, GetTypeInfo(context, runtimeType));
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type runtimeType, JsonSerializerOptions? options)
         {
             if (writer == null)

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -28,15 +27,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     // Don't capture the ExecutionContext when forking to build the compiled version of the
                     // resolve function
-                    ThreadPool.UnsafeQueueUserWorkItem(state =>
+                    _ = ThreadPool.UnsafeQueueUserWorkItem(_ =>
                     {
                         try
                         {
                             base.RealizeService(callSite);
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Swallow the exception, we should log this via the event source in a non-patched release
+                            DependencyInjectionEventSource.Log.ServiceRealizationFailed(ex);
                         }
                     },
                     null);

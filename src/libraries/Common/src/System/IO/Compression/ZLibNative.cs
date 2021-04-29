@@ -23,6 +23,7 @@ namespace System.IO.Compression
             NoFlush = 0,
             SyncFlush = 2,
             Finish = 4,
+            Block = 5
         }
 
         public enum ErrorCode : int
@@ -281,6 +282,13 @@ namespace System.IO.Compression
             }
 
 
+            public ErrorCode DeflateReset()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForDeflate);
+                return Interop.zlib.DeflateReset(ref _zStream);
+            }
+
             public ErrorCode DeflateEnd()
             {
                 EnsureNotDisposed();
@@ -312,6 +320,13 @@ namespace System.IO.Compression
                 return Interop.zlib.Inflate(ref _zStream, flush);
             }
 
+
+            public ErrorCode InflateReset()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForInflate);
+                return Interop.zlib.InflateReset(ref _zStream);
+            }
 
             public ErrorCode InflateEnd()
             {

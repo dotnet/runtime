@@ -268,6 +268,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void GetType_DefaultsToItself()
         {
             Assembly a = typeof(AssemblyTests).Assembly;
