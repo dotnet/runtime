@@ -1436,8 +1436,27 @@ mono_set_string_interned_internal (MonoObject* obj)
 {
 	LockWord tmp;
 	tmp.sync = obj->synchronisation;
-	if (!lock_word_is_inflated (tmp))
+
+	// The intern flag is stored in the MonoThreadsSync instance, so if the string is not
+	//  already inflated we need to inflate it in order to have an instance
+	if (!lock_word_is_inflated (tmp)) {
+		// The inflate operation does not preserve any existing owner or nesting value or hash,
+		//  so we need to record any existing values and propagate them through after we
+		//  inflate the object.
+		guint32 old_owner = lock_word_get_owner (tmp);
+		gint32 old_nest = lock_word_get_nest (tmp), old_hash;
+		gboolean has_hash = lock_word_has_hash (tmp);
+		if (has_hash)
+			old_hash = lock_word_get_hash (tmp);
+
 		mono_monitor_inflate (obj);
+
+		obj->synchronisation->status = mon_status_set_owner (obj->synchronisation->status, old_owner);
+		obj->synchronisation->nest = old_nest;
+		if (has_hash)
+			obj->synchronisation->hash_code = old_hash;
+	}
+
 	obj->synchronisation->is_interned = 1;
 }
 
@@ -1446,6 +1465,9 @@ mono_is_string_interned_internal (MonoObject* obj)
 {
 	LockWord tmp;
 	tmp.sync = obj->synchronisation;
+
+	// Because the intern flag is stored in MonoThreadsSync, if the string is not
+	//  inflated then it can't possibly have been interned
 	if (!lock_word_is_inflated (tmp))
 		return 0;
 
