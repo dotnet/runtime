@@ -97,6 +97,9 @@ jobs:
         value: 'Checked'
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'debug') }}:
         value: 'Debug'
+        
+    - name: priorityArg
+      value: ''
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''
