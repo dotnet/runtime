@@ -3,8 +3,6 @@
 
 #include "pal_keyderivation.h"
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
-
 static int32_t PrfAlgorithmFromHashAlgorithm(PAL_HashAlgorithm hashAlgorithm, CCPseudoRandomAlgorithm* algorithm)
 {
     if (algorithm == NULL)
@@ -80,4 +78,3 @@ int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
     *errorCode = result;
     return result == kCCSuccess ? 1 : 0;
 }
-#endif
