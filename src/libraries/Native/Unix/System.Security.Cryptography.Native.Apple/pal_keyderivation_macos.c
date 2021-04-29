@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_keyderivation.h"
+#include "pal_keyderivation_macos.h"
 
 static int32_t PrfAlgorithmFromHashAlgorithm(PAL_HashAlgorithm hashAlgorithm, CCPseudoRandomAlgorithm* algorithm)
 {
