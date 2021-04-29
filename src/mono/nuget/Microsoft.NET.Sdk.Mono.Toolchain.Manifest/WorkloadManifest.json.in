@@ -1,7 +1,7 @@
 {
   "version": 1,
   "workloads": {
-    "microsoft-net-runtime-bowser-native": {
+    "microsoft-net-runtime-browser-native": {
       "description": "Browser Runtime native performance tools",
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
@@ -37,7 +37,8 @@
         "Microsoft.NETCore.App.Runtime.Mono.iossimulator",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86"
       ],
       "platforms": [ "osx-arm64", "osx-x64" ]
     },
@@ -189,8 +190,14 @@
       "version": "${PackageVersion}",
       "alias-to": {
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-arm64",
-        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x64",
-        "osx-x86": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x86"
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x86"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm": {
