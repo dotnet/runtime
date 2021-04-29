@@ -846,12 +846,12 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                             break;
                         case CORINFO_TYPE_NATIVEINT:
                             m_simdHandleCache->Vector64NIntHandle = typeHnd;
-                            simdBaseJitType                        = CORINFO_TYPE_NATIVEINT;
+                            simdBaseJitType                       = CORINFO_TYPE_NATIVEINT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<nint>\n");
                             break;
                         case CORINFO_TYPE_NATIVEUINT:
                             m_simdHandleCache->Vector64NUIntHandle = typeHnd;
-                            simdBaseJitType                         = CORINFO_TYPE_NATIVEUINT;
+                            simdBaseJitType                        = CORINFO_TYPE_NATIVEUINT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<nuint>\n");
                             break;
 
