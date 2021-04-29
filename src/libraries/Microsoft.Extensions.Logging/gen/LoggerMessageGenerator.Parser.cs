@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             TemplateHelper.Parse(msg, lm.TemplateList);
                                         }
-                                        catch (Exception ex)
+                                        catch (ArgumentException ex)
                                         {
                                             Diag(DiagnosticDescriptors.MalformedFormatStrings, ma.GetLocation(), ex.Message);
                                             keepMethod = false;
