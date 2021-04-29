@@ -92,10 +92,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                 continue;
                             }
 
+                            sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
+
                             foreach (AttributeListSyntax mal in method.AttributeLists)
                             {
-                                sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
-
                                 foreach (AttributeSyntax ma in mal.Attributes)
                                 {
                                     IMethodSymbol attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
