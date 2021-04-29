@@ -2206,11 +2206,7 @@ namespace Internal.JitInterface
                             MethodDesc md = HandleToObject(pResolvedToken.hMethod);
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
-                            bool unboxingStub = false;
-                            if (md.IsUnboxingThunk())
-                            {
-                                unboxingStub = true;
-                            }
+                            bool unboxingStub = md.IsUnboxingThunk();
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
