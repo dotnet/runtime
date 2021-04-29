@@ -94,7 +94,7 @@ internal static partial class Interop
         /// Internal wrapper to create a new EventStream to listen to events from the core OS (such as File System events).
         /// </summary>
         /// <param name="allocator">Should be IntPtr.Zero</param>
-        /// <param name="cb">A callback instance that will be called for every event batch.</param>
+        /// <param name="callback">A callback instance that will be called for every event batch.</param>
         /// <param name="context">Should be IntPtr.Zero</param>
         /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
         /// <param name="sinceWhen">
@@ -107,37 +107,14 @@ internal static partial class Interop
         /// <returns>On success, returns a pointer to an FSEventStream object; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
         [DllImport(Interop.Libraries.CoreServicesLibrary, CharSet = CharSet.Ansi)]
-        private static extern SafeEventStreamHandle FSEventStreamCreate(
+        internal static extern SafeEventStreamHandle FSEventStreamCreate(
             IntPtr                      allocator,
-            FSEventStreamCallback       cb,
+            FSEventStreamCallback       callback,
             IntPtr                      context,
             SafeCreateHandle            pathsToWatch,
             FSEventStreamEventId        sinceWhen,
             CFTimeInterval              latency,
             FSEventStreamCreateFlags    flags);
-
-        /// <summary>
-        /// Creates a new EventStream to listen to events from the core OS (such as File System events).
-        /// </summary>
-        /// <param name="cb">A callback instance that will be called for every event batch.</param>
-        /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
-        /// <param name="sinceWhen">
-        /// The start point to receive events from. This can be to retrieve historical events or only new events.
-        /// To get historical events, pass in the corresponding ID of the event you want to start from.
-        /// To get only new events, pass in kFSEventStreamEventIdSinceNow.
-        /// </param>
-        /// <param name="latency">Coalescing period to wait before sending events.</param>
-        /// <param name="flags">Flags to say what kind of events should be sent through this stream.</param>
-        /// <returns>On success, returns a valid SafeCreateHandle to an FSEventStream object; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeEventStreamHandle FSEventStreamCreate(
-            FSEventStreamCallback       cb,
-            SafeCreateHandle            pathsToWatch,
-            FSEventStreamEventId        sinceWhen,
-            CFTimeInterval              latency,
-            FSEventStreamCreateFlags    flags)
-        {
-            return FSEventStreamCreate(IntPtr.Zero, cb, IntPtr.Zero, pathsToWatch, sinceWhen, latency, flags);
-        }
 
         /// <summary>
         /// Attaches an EventStream to a RunLoop so events can be received. This should usually be the current thread's RunLoop.

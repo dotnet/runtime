@@ -19,6 +19,15 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ActivatorUtilitiesConstructorAttribute() { }
     }
+    public readonly partial struct AsyncServiceScope : Microsoft.Extensions.DependencyInjection.IServiceScope, System.IAsyncDisposable, System.IDisposable
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public AsyncServiceScope(Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope) { throw null; }
+        public System.IServiceProvider ServiceProvider { get { throw null; } }
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+    }
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
     }
@@ -106,6 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection
     }
     public static partial class ServiceProviderServiceExtensions
     {
+        public static Microsoft.Extensions.DependencyInjection.AsyncServiceScope CreateAsyncScope(this System.IServiceProvider provider) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope(this System.IServiceProvider provider) { throw null; }
         public static object GetRequiredService(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }

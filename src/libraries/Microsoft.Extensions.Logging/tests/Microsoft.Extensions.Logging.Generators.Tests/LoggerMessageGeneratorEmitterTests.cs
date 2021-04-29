@@ -35,18 +35,18 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task TestBaseline_TestWithOneParam_Success()
+        public async Task TestBaseline_TestWithTwoParams_Success()
         {
             string testSourceCode = @"
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
-    internal static partial class TestWithOneParam
+    internal static partial class TestWithTwoParams
     {
-        [LoggerMessage(EventId = 0, Level = LogLevel.Error, Message = ""M0 {A1}"")]
-        public static partial void M0(ILogger logger, int a1);
+        [LoggerMessage(EventId = 0, Level = LogLevel.Error, Message = ""M0 {a1} {a2}"")]
+        public static partial void M0(ILogger logger, int a1, System.Collections.Generic.IEnumerable<int> a2);
     }
 }";
-            await VerifyAgainstBaselineUsingFile("TestWithOneParam.generated.txt", testSourceCode);
+            await VerifyAgainstBaselineUsingFile("TestWithTwoParams.generated.txt", testSourceCode);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
     internal static partial class TestWithMoreThan6Params
     {
         [LoggerMessage(EventId = 8, Level = LogLevel.Error, Message = ""M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
-        public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
+        public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, System.Collections.Generic.IEnumerable<int> p7);
     }
 }";
             await VerifyAgainstBaselineUsingFile("TestWithMoreThan6Params.generated.txt", testSourceCode);

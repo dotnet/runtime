@@ -337,13 +337,16 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
 
+            // Initialize the built-in converters.
+            JsonSerializer.Serialize("", options);
+
             JsonConverter<T> converter = (JsonConverter<T>)options.GetConverter(typeof(T));
             Assert.Equal(converterName, converter.GetType().Name);
 
             ReadOnlySpan<byte> data = Encoding.UTF8.GetBytes(stringValue);
             Utf8JsonReader reader = new Utf8JsonReader(data);
             reader.Read();
-            T readValue = converter.Read(ref reader, typeof(T), null);
+            T readValue = converter.Read(ref reader, typeof(T), options);
 
             if (readValue is JsonElement element)
             {

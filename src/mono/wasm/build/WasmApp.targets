@@ -153,7 +153,9 @@
       UseLLVM="true"
       DisableParallelAot="true"
       DedupAssembly="$(_WasmDedupAssembly)"
-      LLVMPath="$(EmscriptenUpstreamBinPath)">
+      LLVMDebug="dwarfdebug"
+      LLVMPath="$(EmscriptenUpstreamBinPath)" >
+
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
@@ -364,6 +366,7 @@
       <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
       <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
+      <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
       <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
     </PropertyGroup>

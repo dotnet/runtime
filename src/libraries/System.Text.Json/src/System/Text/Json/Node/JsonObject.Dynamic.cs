@@ -8,9 +8,9 @@ namespace System.Text.Json.Node
 {
     public partial class JsonObject
     {
-        internal bool TryGetMemberCallback(GetMemberBinder binder, out object? result)
+        private bool TryGetMemberCallback(GetMemberBinder binder, out object? result)
         {
-            if (Dictionary.TryGetValue(binder.Name, out JsonNode? node))
+            if (TryGetPropertyValue(binder.Name, out JsonNode? node))
             {
                 result = node;
                 return true;
@@ -21,7 +21,7 @@ namespace System.Text.Json.Node
             return true;
         }
 
-        internal bool TrySetMemberCallback(SetMemberBinder binder, object? value)
+        private bool TrySetMemberCallback(SetMemberBinder binder, object? value)
         {
             JsonNode? node = null;
             if (value != null)
@@ -33,7 +33,7 @@ namespace System.Text.Json.Node
                 }
             }
 
-            Dictionary[binder.Name] = node;
+            this[binder.Name] = node;
             return true;
         }
 

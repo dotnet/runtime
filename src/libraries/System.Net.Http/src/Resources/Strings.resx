@@ -579,9 +579,6 @@
   <data name="net_http_upgrade_not_enabled_sync" xml:space="preserve">
     <value>HTTP request version upgrade is not enabled for synchronous '{0}'. Do not use '{1}' version policy for synchronous HTTP methods.</value>
   </data>
-  <data name="net_http_requested_version_not_enabled" xml:space="preserve">
-    <value>Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled.</value>
-  </data>
   <data name="net_http_requested_version_cannot_establish" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.</value>
   </data>
