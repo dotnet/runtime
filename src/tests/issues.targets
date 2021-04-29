@@ -2541,7 +2541,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and $(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/**">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
