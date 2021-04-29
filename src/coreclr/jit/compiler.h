@@ -6246,11 +6246,11 @@ public:
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
     PhaseStatus optFindLoops();      // Finds loops and records them in the loop table
 
-    void optCloneLoops();
+    PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
     void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
-    void optUnrollLoops(); // Unrolls loops (needs to have cost info)
-    void optRemoveRedundantZeroInits();
+    PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
+    void        optRemoveRedundantZeroInits();
 
 protected:
     // This enumeration describes what is killed by a call.
@@ -6580,6 +6580,10 @@ protected:
 
     void optInvertWhileLoop(BasicBlock* block);
 
+private:
+    static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
+    static bool optIterSmallUnderflow(int iterAtExit, var_types decrType);
+
     bool optComputeLoopRep(int        constInit,
                            int        constLimit,
                            int        iterInc,
@@ -6590,7 +6594,6 @@ protected:
                            bool       dupCond,
                            unsigned*  iterCount);
 
-private:
     static fgWalkPreFn optIsVarAssgCB;
 
 protected:
