@@ -131,7 +131,7 @@ namespace System.Runtime.Versioning
     }
 
     /// <summary>
-    /// Annotates the custom guard field, property or method witha  unsupported platform name and optional version.
+    /// Annotates the custom guard field, property or method with an unsupported platform name and optional version.
     /// Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
     /// </summary>
     /// <remarks>
