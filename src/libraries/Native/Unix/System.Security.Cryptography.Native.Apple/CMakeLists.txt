@@ -11,7 +11,6 @@ set(NATIVECRYPTO_SOURCES
     pal_hmac.c
     pal_keyagree.c
     pal_keyderivation.c
-    pal_keychain.c
     pal_random.c
     pal_rsa.c
     pal_sec.c
@@ -19,7 +18,6 @@ set(NATIVECRYPTO_SOURCES
     pal_signverify.c
     pal_ssl.c
     pal_symmetric.c
-    pal_trust.c
     pal_x509.c
     pal_x509chain.c
 )
@@ -41,6 +39,16 @@ if (GEN_SHARED_LIB)
         SHARED
         ${NATIVECRYPTO_SOURCES}
         ${VERSION_FILE_PATH}
+    )
+endif()
+
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(NATIVECRYPTO_SOURCES
+        ${NATIVECRYPTO_SOURCES}
+        pal_keychain_macos.c
+        pal_seckey_macos.c
+        pal_trust_macos.c
+        pal_x509_macos.c
     )
 endif()
 
