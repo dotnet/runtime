@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Text;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -193,6 +194,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                             || msg.StartsWith("ERR:", StringComparison.OrdinalIgnoreCase))
                                         {
                                             Diag(DiagnosticDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
+                                        }
+
+                                        try
+                                        {
+                                            TemplateHelper.Parse(msg, lm.TemplateList);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Diag(DiagnosticDescriptors.MalformedFormatStrings, ma.GetLocation(), ex.Message);
+                                            keepMethod = false;
                                         }
 
                                         bool foundLogger = false;

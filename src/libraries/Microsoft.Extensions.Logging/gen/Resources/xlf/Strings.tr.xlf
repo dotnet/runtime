@@ -63,8 +63,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <source>Can't have malformed format strings (like dangling curly brackets, etc). {0}</source>
+        <target state="new">Can't have malformed format strings (like dangling curly brackets, etc). {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Can't have malformed format strings (like dangling curly brackets, etc).</source>
+        <target state="new">Can't have malformed format strings (like dangling curly brackets, etc).</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">

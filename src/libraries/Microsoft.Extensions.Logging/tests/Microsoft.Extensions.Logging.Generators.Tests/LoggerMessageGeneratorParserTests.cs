@@ -214,23 +214,23 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.InconsistentTemplateCasing.Id, diagnostics[0].Id);
         }
+#endif
 
-        // TODO: can't have malformed format strings (like dangling {, etc)
-        [Fact]
-        public async Task MalformedFormatString()
+        [Theory]
+        [MemberData(nameof(BadlyFormattedLogMethodTestData))]
+        public async Task TemplatesWithMalformedFormatString(string badlyFormattedLogMethod, string expectedMessageSegment)
         {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator($@"
                 partial class C
-                {
-                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {p1} {P1}"")]
-                    static partial void M1(ILogger logger, int p1, int P1);
-                }
+                {{
+                    {badlyFormattedLogMethod}
+                }}
             ");
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.MalformedFormatStrings.Id, diagnostics[0].Id);
+            Assert.Contains(expectedMessageSegment, diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
-#endif
 
         [Fact]
         public async Task InvalidParameterName()
@@ -488,18 +488,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""M2 {arg1} {arg2}"")]
                     static partial void M2(ILogger logger, string arg1, string arg2);
 
-                    [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = ""M3 {arg1"")]
-                    static partial void M3(ILogger logger);
-
-                    [LoggerMessage(EventId = 4, Level = LogLevel.Debug, Message = ""M4 arg1}"")]
-                    static partial void M4(ILogger logger);
-
-                    [LoggerMessage(EventId = 5, Level = LogLevel.Debug, Message = ""M5 {"")]
-                    static partial void M5(ILogger logger);
-
-                    [LoggerMessage(EventId = 6, Level = LogLevel.Debug, Message = ""}M6 "")]
-                    static partial void M6(ILogger logger);
-
                     [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = ""M7 {{arg1}}"")]
                     static partial void M7(ILogger logger);
                 }
@@ -589,6 +577,32 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return d;
+        }
+
+        public static IEnumerable<object[]> BadlyFormattedLogMethodTestData
+        {
+            get
+            {
+                yield return new object[] { @"
+                    [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = ""M3 {arg1"")]
+                    static partial void M3(ILogger logger);",
+                    "Invalid template name in format string at position" };
+
+                yield return new object[] { @"
+                    [LoggerMessage(EventId = 4, Level = LogLevel.Debug, Message = ""M4 arg1}"")]
+                    static partial void M4(ILogger logger);",
+                    "Dangling } in format string at position" };
+
+                yield return new object[] { @"
+                    [LoggerMessage(EventId = 5, Level = LogLevel.Debug, Message = ""M5 {"")]
+                    static partial void M5(ILogger logger);",
+                    "Missing template name in format string at position" };
+
+                yield return new object[] { @"
+                    [LoggerMessage(EventId = 6, Level = LogLevel.Debug, Message = ""}M6 "")]
+                    static partial void M6(ILogger logger);",
+                    "Dangling } in format string at position" };
+            }
         }
     }
 }
