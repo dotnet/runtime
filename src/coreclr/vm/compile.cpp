@@ -313,8 +313,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
 
-            if (spec.CanUseWithBindingCache() && pDomainAssembly->CanUseWithBindingCache())
-                pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
+            pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
 
             pAssembly = pDomain->LoadAssembly(&spec, pAssemblyHolder, FILE_LOADED);
 
@@ -6480,8 +6479,6 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
         spec.ConvertPublicKeyToToken();
         pRefSpec = &spec;
     }
-
-    _ASSERTE(pRefSpec->HasUniqueIdentity());
 
     //
     // See if we've already added the contents of the ref

@@ -63,6 +63,6 @@ namespace System.Text.Json.Node
         /// <typeparam name="T">The type of value to obtain.</typeparam>
         /// <param name="value">When this method returns, contains the parsed value.</param>
         /// <returns><see langword="true"/> if the value can be successfully obtained; otherwise, <see langword="false"/>.</returns>
-        public abstract bool TryGetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)]T>([NotNullWhen(true)] out T? value);
+        public abstract bool TryGetValue<T>([NotNullWhen(true)] out T? value);
     }
 }

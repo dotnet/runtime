@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Reflection;
 using System.Text.Json.Serialization.Tests;
 using Xunit;
 
@@ -144,17 +145,44 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
-        public static void ReadSimpleObject()
+        public static void InternalValueFields()
         {
+            // Use reflection to inspect the internal state of the 3 fields that hold values.
+            // There is not another way to verify, and using a debug watch causes nodes to be created.
+            FieldInfo elementField = typeof(JsonObject).GetField("_jsonElement", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(elementField);
+
+            FieldInfo listField = typeof(JsonObject).GetField("_list", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(listField);
+
+            FieldInfo dictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(dictionaryField);
+
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
+                // Only JsonElement is present.
                 JsonNode node = JsonNode.Parse(stream);
+                Assert.NotNull(elementField.GetValue(node));
+                Assert.Null(listField.GetValue(node));
+                Assert.Null(dictionaryField.GetValue(node));
+                Test();
 
-                string actual = node.ToJsonString();
-                // Replace the escaped "+" sign used with DateTimeOffset.
-                actual = actual.Replace("\\u002B", "+");
+                // Cause the single JsonElement to expand into individual JsonElement nodes.
+                Assert.Equal(1, node.AsObject()["MyInt16"].GetValue<int>());
+                Assert.Null(elementField.GetValue(node));
+                Assert.NotNull(listField.GetValue(node));
+                Assert.NotNull(dictionaryField.GetValue(node)); // The dictionary threshold was reached.
+                Test();
 
-                Assert.Equal(SimpleTestClass.s_json.StripWhitespace(), actual);
+                void Test()
+                {
+                    string actual = node.ToJsonString();
+
+                    // Replace the escaped "+" sign used with DateTimeOffset.
+                    actual = actual.Replace("\\u002B", "+");
+
+                    Assert.Equal(SimpleTestClass.s_json.StripWhitespace(), actual);
+                }
             }
         }
 

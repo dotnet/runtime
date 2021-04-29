@@ -95,7 +95,7 @@
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="HostnameMatchTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or ('$(UseAppleCrypto)' == 'true' and '$(TargetsOSX)' == 'true')">
     <Compile Include="X509StoreMutableTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' != 'true'">
@@ -116,7 +116,7 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
-    <Compile Include="X509StoreMutableTests.OSX.cs" />
+    <Compile Include="X509StoreMutableTests.OSX.cs" Condition="'$(TargetsOSX)' == 'true'" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"
@@ -137,6 +137,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"

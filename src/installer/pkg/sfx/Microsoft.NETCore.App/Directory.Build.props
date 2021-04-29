@@ -175,7 +175,7 @@
     <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="llc" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
-    <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" FallbackFileVersion="6.0.0" />
+    <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
     <!-- Mono components specific files -->
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dll" IsNative="true" />
