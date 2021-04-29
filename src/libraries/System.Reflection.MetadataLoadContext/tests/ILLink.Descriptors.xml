@@ -1,7 +1,8 @@
 <linker>
   <!--
-    error MSB3030: Could not copy the file "/__w/1/s/artifacts/bin/System.Reflection.MetadataLoadContext.Tests/net6.0-Release/browser-wasm/publish/mscorlib.dll" because it was not found.
-        [/__w/1/s/src/libraries/System.Reflection.MetadataLoadContext/tests/System.Reflection.MetadataLoadContext.Tests.csproj]
+    System.Reflection.Tests.MetadataLoadContextTests.RelocatableAssembly load `mscorlib.dll` by name
+        `string mscorLibPath = Path.Combine(coreDirectory, "mscorlib.dll");`
+    Linker completely completely trims it out. So, preserve it explicitly.
   -->
   <assembly fullname="mscorlib" />
 </linker>
