@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             bool lockTaken = false;
             object sync = serviceProviderEngine.Sync;
-            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
@@ -114,7 +114,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             try
             {
                 // Note: This method has already taken lock by the caller for resolution and access synchronization.
-                // For root: uses a concurrent dictionary and takes a per singleton lock for resolution.
                 // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
                 if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
                 {
