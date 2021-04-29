@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices
         private readonly int _dummyPrimitive;
         public ArrayWithOffset(object? array, int offset) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool  Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
+        public bool Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
         public object? GetArray() { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetOffset() { throw null; }
