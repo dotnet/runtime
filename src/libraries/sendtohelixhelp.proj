@@ -307,7 +307,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
       <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
-      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%/xharness-output</XHarnessOutput>
+      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
       <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
     </PropertyGroup>
 
