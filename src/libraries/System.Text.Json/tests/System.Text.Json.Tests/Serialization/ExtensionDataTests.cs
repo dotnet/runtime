@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Node;
+using System.Text.Json.Serialization;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -339,6 +341,19 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        public class JsonObjectOverflowConverter : JsonConverter<JsonObject>
+        {
+            public override JsonObject Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, JsonObject value, JsonSerializerOptions options)
+            {
+                writer.WriteString("MyCustomOverflowWrite", "OverflowValueWrite");
+            }
+        }
+
         public class CustomObjectDictionaryOverflowConverter : JsonConverter<CustomOverflowDictionary<object>>
         {
             public override CustomOverflowDictionary<object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -466,6 +481,19 @@ namespace System.Text.Json.Serialization.Tests
                 .Invoke(null, null);
         }
 
+        [Fact]
+        public static void ExtensionProperty_IgnoresCustomSerializerWithOptions_JsonObject()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonObjectOverflowConverter());
+
+            // A custom converter for JsonObject is not allowed on an extension property.
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize<ClassWithExtensionData<JsonObject>>(@"{""TestKey"":""TestValue""}", options));
+
+            Assert.Contains("JsonObject", ex.ToString());
+        }
+
         private static void ExtensionProperty_IgnoresCustomSerializerWithOptionsInternal<TDictionary, TOverflowItem, TConverter>()
             where TConverter : JsonConverter, new()
             where TDictionary : IDictionary<string, TOverflowItem>
@@ -490,6 +518,15 @@ namespace System.Text.Json.Serialization.Tests
                 .GetMethod(nameof(ExtensionProperty_IgnoresCustomSerializerWithExplicitConverterInternal), BindingFlags.Static | BindingFlags.NonPublic)
                 .MakeGenericMethod(attributedType, dictionaryType, elementType)
                 .Invoke(null, null);
+        }
+
+        [Fact]
+        public static void ExtensionProperty_IgnoresCustomSerializerWithExplicitConverter_JsonObject()
+        {
+            ClassWithExtensionData<JsonObject> obj
+                = JsonSerializer.Deserialize<ClassWithExtensionData<JsonObject>>(@"{""TestKey"":""TestValue""}");
+
+            Assert.Equal("TestValue", obj.Overflow["TestKey"].GetValue<string>());
         }
 
         private static void ExtensionProperty_IgnoresCustomSerializerWithExplicitConverterInternal<TRoot, TDictionary, TOverflowItem>()
@@ -530,8 +567,17 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow { get; set; }
         }
 
-        [Fact]
-        public static void ExtensionPropertyDuplicateNames()
+        public static IEnumerable<object[]> JsonSerializerOptions()
+        {
+            yield return new object[] { null };
+            yield return new object[] { new JsonSerializerOptions() };
+            yield return new object[] { new JsonSerializerOptions { UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement } };
+            yield return new object[] { new JsonSerializerOptions { UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode } };
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonSerializerOptions))]
+        public static void ExtensionPropertyDuplicateNames(JsonSerializerOptions options)
         {
             var obj = new ClassWithExtensionPropertyAsObjectAndNameProperty();
             obj.Name = "Name1";
@@ -539,24 +585,25 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyOverflow = new Dictionary<string, object>();
             obj.MyOverflow["Name"] = "Name2";
 
-            string json = JsonSerializer.Serialize(obj);
+            string json = JsonSerializer.Serialize(obj, options);
             Assert.Equal(@"{""Name"":""Name1"",""Name"":""Name2""}", json);
 
-            // The overflow value comes last in the JSOn so it overwrites the original value.
-            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObjectAndNameProperty>(json);
+            // The overflow value comes last in the JSON so it overwrites the original value.
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObjectAndNameProperty>(json, options);
             Assert.Equal("Name2", obj.Name);
 
             // Since there was no overflow, this should be null.
             Assert.Null(obj.MyOverflow);
         }
 
-        [Fact]
-        public static void NullAsNullObjectOrJsonValueKindNull()
+        [Theory]
+        [MemberData(nameof(JsonSerializerOptions))]
+        public static void Null_SystemObject(JsonSerializerOptions options)
         {
             const string json = @"{""MissingProperty"":null}";
 
             {
-                ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+                ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json, options);
 
                 // A null value maps to <object>, so the value is null.
                 object elem = obj.MyOverflow["MissingProperty"];
@@ -564,13 +611,36 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+                ClassWithExtensionPropertyAsJsonObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(json, options);
 
-                // Since JsonElement is a struct, it treats null as JsonValueKind.Null.
-                object elem = obj.MyOverflow["MissingProperty"];
-                Assert.IsType<JsonElement>(elem);
-                Assert.Equal(JsonValueKind.Null, ((JsonElement)elem).ValueKind);
+                JsonObject jObject = obj.MyOverflow;
+                JsonNode jNode = jObject["MissingProperty"];
+                // Since JsonNode is a reference type the value is null.
+                Assert.Null(jNode);
             }
+        }
+
+        [Fact]
+        public static void Null_JsonElement()
+        {
+            const string json = @"{""MissingProperty"":null}";
+
+            ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+            object elem = obj.MyOverflow["MissingProperty"];
+            // Since JsonElement is a struct, it treats null as JsonValueKind.Null.
+            Assert.IsType<JsonElement>(elem);
+            Assert.Equal(JsonValueKind.Null, ((JsonElement)elem).ValueKind);
+        }
+
+        [Fact]
+        public static void Null_JsonObject()
+        {
+            const string json = @"{""MissingProperty"":null}";
+
+            ClassWithExtensionPropertyAsJsonObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(json);
+            object elem = obj.MyOverflow["MissingProperty"];
+            // Since JsonNode is a reference type the value is null.
+            Assert.Null(elem);
         }
 
         [Fact]
@@ -594,11 +664,12 @@ namespace System.Text.Json.Serialization.Tests
             public string Prop { get; set; }
         }
 
-        [Fact]
-        public static void ExtensionPropertyObjectValue_RoundTrip()
+        [Theory]
+        [MemberData(nameof(JsonSerializerOptions))]
+        public static void ExtensionPropertyObjectValue_RoundTrip(JsonSerializerOptions options)
         {
             // Baseline
-            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
+            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}", options);
             obj.MyOverflow.Add("test", new object());
             obj.MyOverflow.Add("test1", 1);
             obj.MyOverflow.Add("test2", "text");
@@ -607,33 +678,87 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyOverflow.Add("test5", new Dictionary<string, object>() { { "Key", "Value" }, { "Key1", "Value1" }, });
 
             string json = JsonSerializer.Serialize(obj);
-            ClassWithExtensionPropertyAlreadyInstantiated roundTripObj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(json);
+            ClassWithExtensionPropertyAlreadyInstantiated roundTripObj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(json, options);
 
             Assert.Equal(6, roundTripObj.MyOverflow.Count);
 
-            Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test"]);
-            Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test1"]);
-            Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test2"]);
-            Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test3"]);
+            if (options?.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode)
+            {
+                Assert.IsAssignableFrom<JsonNode>(roundTripObj.MyOverflow["test"]);
+                Assert.IsAssignableFrom<JsonNode>(roundTripObj.MyOverflow["test1"]);
+                Assert.IsAssignableFrom<JsonNode>(roundTripObj.MyOverflow["test2"]);
+                Assert.IsAssignableFrom<JsonNode>(roundTripObj.MyOverflow["test3"]);
 
-            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test"]).ValueKind);
+                Assert.IsType<JsonObject>(roundTripObj.MyOverflow["test"]);
 
-            Assert.Equal(JsonValueKind.Number, ((JsonElement)roundTripObj.MyOverflow["test1"]).ValueKind);
-            Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt32());
-            Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt64());
+                Assert.IsAssignableFrom<JsonValue>(roundTripObj.MyOverflow["test1"]);
+                Assert.Equal(1, ((JsonValue)roundTripObj.MyOverflow["test1"]).GetValue<int>());
+                Assert.Equal(1, ((JsonValue)roundTripObj.MyOverflow["test1"]).GetValue<long>());
 
-            Assert.Equal(JsonValueKind.String, ((JsonElement)roundTripObj.MyOverflow["test2"]).ValueKind);
-            Assert.Equal("text", ((JsonElement)roundTripObj.MyOverflow["test2"]).GetString());
+                Assert.IsAssignableFrom<JsonValue>(roundTripObj.MyOverflow["test2"]);
+                Assert.Equal("text", ((JsonValue)roundTripObj.MyOverflow["test2"]).GetValue<string>());
 
-            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test3"]).ValueKind);
-            Assert.Equal("ObjectProp", ((JsonElement)roundTripObj.MyOverflow["test3"]).GetProperty("Prop").GetString());
+                Assert.IsType<JsonObject>(roundTripObj.MyOverflow["test3"]);
+                Assert.Equal("ObjectProp", ((JsonObject)roundTripObj.MyOverflow["test3"])["Prop"].GetValue<string>());
 
-            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test4"]).ValueKind);
-            Assert.Equal("StructProp", ((JsonElement)roundTripObj.MyOverflow["test4"]).GetProperty("Prop").GetString());
+                Assert.IsType<JsonObject>(roundTripObj.MyOverflow["test4"]);
+                Assert.Equal("StructProp", ((JsonObject)roundTripObj.MyOverflow["test4"])["Prop"].GetValue<string>());
 
-            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test5"]).ValueKind);
-            Assert.Equal("Value", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key").GetString());
-            Assert.Equal("Value1", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key1").GetString());
+                Assert.IsType<JsonObject>(roundTripObj.MyOverflow["test5"]);
+                Assert.Equal("Value", ((JsonObject)roundTripObj.MyOverflow["test5"])["Key"].GetValue<string>());
+                Assert.Equal("Value1", ((JsonObject)roundTripObj.MyOverflow["test5"])["Key1"].GetValue<string>());
+            }
+            else
+            {
+                Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test"]);
+                Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test1"]);
+                Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test2"]);
+                Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test3"]);
+
+                Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test"]).ValueKind);
+
+                Assert.Equal(JsonValueKind.Number, ((JsonElement)roundTripObj.MyOverflow["test1"]).ValueKind);
+                Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt32());
+                Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt64());
+
+                Assert.Equal(JsonValueKind.String, ((JsonElement)roundTripObj.MyOverflow["test2"]).ValueKind);
+                Assert.Equal("text", ((JsonElement)roundTripObj.MyOverflow["test2"]).GetString());
+
+                Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test3"]).ValueKind);
+                Assert.Equal("ObjectProp", ((JsonElement)roundTripObj.MyOverflow["test3"]).GetProperty("Prop").GetString());
+
+                Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test4"]).ValueKind);
+                Assert.Equal("StructProp", ((JsonElement)roundTripObj.MyOverflow["test4"]).GetProperty("Prop").GetString());
+
+                Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test5"]).ValueKind);
+                Assert.Equal("Value", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key").GetString());
+                Assert.Equal("Value1", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key1").GetString());
+            }
+        }
+
+        [Fact]
+        public static void DeserializeIntoJsonObjectProperty()
+        {
+            string json = @"{""MyDict"":{""Property1"":1}}";
+            ClassWithExtensionPropertyAsJsonObject obj =
+                JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(json);
+
+            Assert.Equal(1, obj.MyOverflow.Count);
+            Assert.Equal(1, obj.MyOverflow["MyDict"]["Property1"].GetValue<int>());
+        }
+
+        [Fact]
+        public static void DeserializeIntoSystemObjectProperty()
+        {
+            string json = @"{""MyDict"":{""Property1"":1}}";
+
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize<ClassWithExtensionPropertyAsSystemObject>(json));
+
+            // Cannot deserialize into System.Object overflow even if UnknownTypeHandling is set to use JsonNode.
+            var options = new JsonSerializerOptions { UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode };
+            Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize<ClassWithExtensionPropertyAsSystemObject>(json));
         }
 
         private class ClassWithReference
@@ -902,14 +1027,23 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<DummyObj, string> MyOverflow { get; set; }
         }
 
+        private class ClassWithInvalidExtensionPropertyStringJsonNode
+        {
+            [JsonExtensionData]
+            public Dictionary<string, JsonNode> MyOverflow { get; set; }
+        }
+
         [Fact]
         public static void ExtensionProperty_InvalidDictionary()
         {
-            ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
+            var obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
-            ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
+            var obj2 = new ClassWithInvalidExtensionPropertyObjectString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
+
+            var obj3 = new ClassWithInvalidExtensionPropertyStringJsonNode();
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj3));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated
@@ -933,6 +1067,18 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonExtensionData]
             public Dictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyAsJsonObject
+        {
+            [JsonExtensionData]
+            public JsonObject MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyAsSystemObject
+        {
+            [JsonExtensionData]
+            public object MyOverflow { get; set; }
         }
 
         private class ClassWithMultipleDictionaries
@@ -1057,7 +1203,7 @@ namespace System.Text.Json.Serialization.Tests
             const string Json = "{\"hello\": \"world\"}";
 
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonObjectConverter());
+            options.Converters.Add(new ObjectConverter());
 
             ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(Json, options);
             object overflowProp = obj.MyOverflow["hello"];
@@ -1068,7 +1214,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("{\"hello\":\"world!!!\"}", newJson);
         }
 
-        private class JsonObjectConverter : JsonConverter<object>
+        private class ObjectConverter : JsonConverter<object>
         {
             public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
@@ -1093,7 +1239,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(Json, options);
             JsonElement overflowProp = obj.MyOverflow["hello"];
-            Assert.Equal(JsonValueKind.Undefined, overflowProp.ValueKind);
+            Assert.Equal(JsonValueKind.String, overflowProp.ValueKind);
 
             string newJson = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"hello\":{\"Hi\":\"There\"}}", newJson);
@@ -1109,6 +1255,39 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             public override void Write(Utf8JsonWriter writer, JsonElement value, JsonSerializerOptions options)
+            {
+                // Write a string we can test against easily.
+                writer.WriteStartObject();
+                writer.WriteString("Hi", "There");
+                writer.WriteEndObject();
+            }
+        }
+
+        [Fact]
+        public static void CustomJsonObjectConverterInExtensionProperty()
+        {
+            const string Json = "{\"hello\": \"world\"}";
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonObjectConverter());
+
+            // A custom converter for JsonObject is not allowed on an extension property.
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+                JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(Json, options));
+
+            Assert.Contains("JsonObject", ex.ToString());
+        }
+
+        private class JsonObjectConverter : JsonConverter<JsonObject>
+        {
+            public override JsonObject Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // Just return an empty JsonElement.
+                reader.Skip();
+                return new JsonObject();
+            }
+
+            public override void Write(Utf8JsonWriter writer, JsonObject value, JsonSerializerOptions options)
             {
                 // Write a string we can test against easily.
                 writer.WriteStartObject();

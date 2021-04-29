@@ -83,12 +83,11 @@ namespace ComWrappersTests
             // Trigger the GC multiple times and then
             // wait for all finalizers since that is where
             // most of the cleanup occurs.
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            for (int i = 0; i < 5; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
         }
 
         static void ValidateComInterfaceCreation()
@@ -443,6 +442,58 @@ namespace ComWrappersTests
             ForceGC();
         }
 
+        static void ValidateQueryInterfaceAfterManagedObjectCollected()
+        {
+            Console.WriteLine($"Running {nameof(ValidateQueryInterfaceAfterManagedObjectCollected)}...");
+
+            var cw = new TestComWrappers();
+
+            {
+                // Activate the Reference Tracker system in the .NET runtime by consuming an IReferenceTracker instance.
+                IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+                var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+                Marshal.Release(trackerObjRaw);
+            }
+
+            int refCount;
+            IntPtr refTrackerTarget;
+
+            {
+                // Create a native wrapper over a managed object.
+                IntPtr testWrapper = CreateWrapper(cw);
+
+                refTrackerTarget = MockReferenceTrackerRuntime.TrackerTarget_AddRefFromReferenceTrackerAndReturn(testWrapper);
+
+                // Ownership has been transferred to the IReferenceTrackerTarget instance.
+                // The COM reference count should be 0 and indicates to the GC the managed object
+                // can be collected.
+                refCount = Marshal.Release(testWrapper);
+                Assert.AreEqual(0, refCount);
+            }
+
+            ForceGC();
+
+            // Calling QueryInterface on an IReferenceTrackerTarget instance is permitted when
+            // the wrapper lifetime has been extended. However, the QueryInterface may fail
+            // if the associated managed object was collected. The failure here is an important
+            // part of the contract for a Reference Tracker runtime.
+            var iid = typeof(ITest).GUID;
+            IntPtr iTestComObject;
+            int hr = Marshal.QueryInterface(refTrackerTarget, ref iid, out iTestComObject);
+
+            const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
+            Assert.AreEqual(COR_E_ACCESSING_CCW, hr);
+
+            // Release the IReferenceTrackerTarget instance.
+            refCount = MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
+            Assert.AreEqual(0, refCount);
+
+            static IntPtr CreateWrapper(TestComWrappers cw)
+            {
+                return cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
+            }
+        }
+
         unsafe class Derived : ITrackerObjectWrapper
         {
             public Derived(ComWrappers cw, bool aggregateRefTracker)
@@ -519,6 +570,7 @@ namespace ComWrappersTests
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();
                 ValidateRuntimeTrackerScenario();
+                ValidateQueryInterfaceAfterManagedObjectCollected();
                 ValidateAggregationWithComObject();
                 ValidateAggregationWithReferenceTrackerObject();
             }

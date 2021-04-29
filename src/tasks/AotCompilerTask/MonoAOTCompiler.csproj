@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
+
+    <!-- Ignore nullable warnings on net4* -->
+    <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
@@ -16,6 +19,7 @@
   <ItemGroup>
     <Compile Include="MonoAOTCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\Common\NotNullAttribute.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MonoAOTCompiler.props">
@@ -26,7 +30,10 @@
   <!-- GetFilesToPackage assists to place `MonoAOTCompiler.dll` in a NuGet package in Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(AssemblyName).dll" TargetPath="tasks" />
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
     </ItemGroup>
   </Target>
 </Project>

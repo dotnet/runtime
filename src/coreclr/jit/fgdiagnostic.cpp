@@ -707,11 +707,24 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, ">");
     }
 
+    // In some cases, we want to change the display based on whether an edge is lexically backwards, forwards,
+    // or lexical successor. Also, for the region tree, using the lexical order is useful for determining where
+    // to insert in the tree, to determine nesting. We'd like to use the bbNum to do this. However, we don't
+    // want to renumber the blocks. So, create a mapping of bbNum to ordinal, and compare block order by
+    // comparing the mapped ordinals instead.
+
+    unsigned  blockOrdinal = 0;
+    unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[fgBBNumMax + 1];
+    memset(blkMap, 0, sizeof(unsigned) * (fgBBNumMax + 1));
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        blkMap[block->bbNum] = blockOrdinal++;
+    }
+
     static const char* kindImage[] = {"EHFINALLYRET", "EHFILTERRET", "EHCATCHRET",  "THROW", "RETURN", "NONE",
                                       "ALWAYS",       "LEAVE",       "CALLFINALLY", "COND",  "SWITCH"};
 
     BasicBlock* block;
-    unsigned    blockOrdinal;
     for (block = fgFirstBB, blockOrdinal = 1; block != nullptr; block = block->bbNext, blockOrdinal++)
     {
         if (createDotFile)
@@ -840,13 +853,13 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     const char* sep = "";
 
-                    if (bSource->bbNum > bTarget->bbNum)
+                    if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                     {
                         // Lexical backedge
                         fprintf(fgxFile, " [color=green");
                         sep = ", ";
                     }
-                    else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                    else if ((blkMap[bSource->bbNum] + 1) == blkMap[bTarget->bbNum])
                     {
                         // Lexical successor
                         fprintf(fgxFile, " [color=blue, weight=20");
@@ -953,12 +966,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             {
                 BasicBlock* const bTarget = bSource->GetSucc(i);
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
-                if (bSource->bbNum > bTarget->bbNum)
+                if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                 {
                     // Lexical backedge
                     fprintf(fgxFile, " [color=green]\n");
                 }
-                else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                else if ((blkMap[bSource->bbNum] + 1) == blkMap[bTarget->bbNum])
                 {
                     // Lexical successor
                     fprintf(fgxFile, " [color=blue]\n");
@@ -1027,24 +1040,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 };
 
             public:
-                RegionGraph(Compiler* comp) : m_comp(comp), m_rgnRoot(nullptr)
+                RegionGraph(Compiler* comp, unsigned* blkMap) : m_comp(comp), m_rgnRoot(nullptr), m_blkMap(blkMap)
                 {
                     // Create a root region that encompasses the whole function.
-                    // We don't want to renumber the blocks, but it's useful to have a sequential number
-                    // representing the lexical block order so we know where to insert a block range
-                    // in the region tree. To do this, create a mapping of bbNum to ordinal, and compare
-                    // block order by comparing the mapped ordinals.
-
                     m_rgnRoot =
                         new (m_comp, CMK_DebugOnly) Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
-
-                    unsigned bbOrdinal = 0;
-                    m_blkMap           = new (m_comp, CMK_DebugOnly) unsigned[comp->fgBBNumMax + 1];
-                    memset(m_blkMap, 0, sizeof(unsigned) * (comp->fgBBNumMax + 1));
-                    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
-                    {
-                        m_blkMap[block->bbNum] = bbOrdinal++;
-                    }
                 }
 
                 //------------------------------------------------------------------------
@@ -1353,7 +1353,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
             // Define the region graph object. We'll add regions to this, then output the graph.
 
-            RegionGraph rgnGraph(this);
+            RegionGraph rgnGraph(this, blkMap);
 
             // Add the EH regions to the region graph. An EH region consists of a region for the
             // `try`, a region for the handler, and, for filter/filter-handlers, a region for the
@@ -2071,7 +2071,7 @@ private:
     bool CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehTryDsc);
     bool CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc);
     bool CheckJump(BasicBlock* blockPred, BasicBlock* block);
-    bool CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block);
+    bool CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block);
 
 private:
     Compiler* comp;
@@ -2130,7 +2130,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         assert(CheckJump(blockPred, block));
     }
 
-    // Make sure preds are in increasting BBnum order
+    // Make sure preds are in increasing BBnum order
     //
     assert(block->checkPredListOrder());
 
@@ -2232,7 +2232,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             return true;
 
         case BBJ_EHFINALLYRET:
-            assert(CheckEHFinalyRet(blockPred, block));
+            assert(CheckEHFinallyRet(blockPred, block));
             return true;
 
         case BBJ_THROW:
@@ -2265,9 +2265,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     return false;
 }
 
-bool BBPredsChecker::CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block)
+bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 {
-
     // If the current block is a successor to a BBJ_EHFINALLYRET (return from finally),
     // then the lexically previous block should be a call to the same finally.
     // Verify all of that.

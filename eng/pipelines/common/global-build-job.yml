@@ -14,6 +14,7 @@ parameters:
   dependsOn: []
   pool: ''
   platform: ''
+  pgoType: ''
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
@@ -21,6 +22,7 @@ parameters:
   isOfficialBuild: false
   buildingOnSourceBuildImage: false
   runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''
@@ -153,10 +155,12 @@ jobs:
           archType: ${{ parameters.archType }}
           buildConfig: ${{ parameters.buildConfig }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          runtimeVariant: ${{ parameters.runtimeVariant }}
           helixQueues: ${{ parameters.helixQueues }}
           targetRid: ${{ parameters.targetRid }}
           nameSuffix: ${{ parameters.nameSuffix }}
           platform: ${{ parameters.platform }}
+          pgoType: ${{ parameters.pgoType }}
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 

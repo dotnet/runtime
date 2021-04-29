@@ -66,6 +66,7 @@
     <Rule Id="CA1401" Action="Warning" />       <!-- P/Invokes should not be visible -->
     <Rule Id="CA1416" Action="Warning" />       <!-- Validate platform compatibility -->
     <Rule Id="CA1417" Action="Warning" />       <!-- Do not use 'OutAttribute' on string parameters for P/Invokes -->
+    <Rule Id="CA1418" Action="Warning" />       <!-- Use valid platform string -->
     <Rule Id="CA1501" Action="None" />          <!-- Avoid excessive inheritance -->
     <Rule Id="CA1502" Action="None" />          <!-- Avoid excessive complexity -->
     <Rule Id="CA1505" Action="None" />          <!-- Avoid unmaintainable code -->
@@ -489,6 +490,8 @@
     <Rule Id="IDE0090" Action="Hidden" />       <!-- UseNew -->
     <Rule Id="IDE0100" Action="Hidden" />       <!-- RemoveRedundantEquality -->
     <Rule Id="IDE0110" Action="Hidden" />       <!-- RemoveUnnecessaryDiscard -->
+    <Rule Id="IDE0120" Action="Hidden" />       <!-- SimplifyLINQExpression -->
+    <Rule Id="IDE0130" Action="Hidden" />       <!-- NamespaceDoesNotMatchFolderStructure -->
     <Rule Id="IDE1001" Action="Hidden" />       <!-- AnalyzerChanged -->
     <Rule Id="IDE1002" Action="Hidden" />       <!-- AnalyzerDependencyConflict -->
     <Rule Id="IDE1003" Action="Hidden" />       <!-- MissingAnalyzerReference -->
@@ -497,5 +500,10 @@
     <Rule Id="IDE1006" Action="Hidden" />       <!-- NamingRule -->
     <Rule Id="IDE1007" Action="Hidden" />       <!-- UnboundIdentifier -->
     <Rule Id="IDE1008" Action="Hidden" />       <!-- UnboundConstructor -->
+    <Rule Id="IDE2000" Action="Hidden" />       <!-- MultipleBlankLines -->
+    <Rule Id="IDE2001" Action="Hidden" />       <!-- EmbeddedStatementsMustBeOnTheirOwnLine -->
+    <Rule Id="IDE2002" Action="Hidden" />       <!-- ConsecutiveBracesMustNotHaveBlankLinesBetweenThem -->
+    <Rule Id="IDE2003" Action="Hidden" />       <!-- ConsecutiveStatementPlacement -->
+    <Rule Id="IDE2004" Action="Hidden" />       <!-- BlankLineNotAllowedAfterConstructorInitializerColon -->
   </Rules>
 </RuleSet>

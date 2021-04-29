@@ -4,10 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
-  <!-- We conditionally apply net5.0+ obsoletions -->
-  <PropertyGroup Condition="!($(TargetFramework.StartsWith('netcoreapp')) or $(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')))">
-    <DefineConstants>$(DefineConstants);NET50_OBSOLETIONS</DefineConstants>
-  </PropertyGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />

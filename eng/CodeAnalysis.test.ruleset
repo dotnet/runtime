@@ -489,6 +489,8 @@
     <Rule Id="IDE0090" Action="Hidden" />       <!-- UseNew -->
     <Rule Id="IDE0100" Action="Hidden" />       <!-- RemoveRedundantEquality -->
     <Rule Id="IDE0110" Action="Hidden" />       <!-- RemoveUnnecessaryDiscard -->
+    <Rule Id="IDE0120" Action="Hidden" />      <!-- SimplifyLINQExpression -->
+    <Rule Id="IDE0130" Action="Hidden" />       <!-- NamespaceDoesNotMatchFolderStructure -->
     <Rule Id="IDE1001" Action="Hidden" />       <!-- AnalyzerChanged -->
     <Rule Id="IDE1002" Action="Hidden" />       <!-- AnalyzerDependencyConflict -->
     <Rule Id="IDE1003" Action="Hidden" />       <!-- MissingAnalyzerReference -->
@@ -497,6 +499,11 @@
     <Rule Id="IDE1006" Action="Hidden" />       <!-- NamingRule -->
     <Rule Id="IDE1007" Action="Hidden" />       <!-- UnboundIdentifier -->
     <Rule Id="IDE1008" Action="Hidden" />       <!-- UnboundConstructor -->
+    <Rule Id="IDE2000" Action="Hidden" />       <!-- MultipleBlankLines -->
+    <Rule Id="IDE2001" Action="Hidden" />       <!-- EmbeddedStatementsMustBeOnTheirOwnLine -->
+    <Rule Id="IDE2002" Action="Hidden" />       <!-- ConsecutiveBracesMustNotHaveBlankLinesBetweenThem -->
+    <Rule Id="IDE2003" Action="Hidden" />       <!-- ConsecutiveStatementPlacement -->
+    <Rule Id="IDE2004" Action="Hidden" />       <!-- BlankLineNotAllowedAfterConstructorInitializerColon -->
   </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
     <Rule Id="xUnit1000" Action="Warning" />    <!-- Test classes must be public -->

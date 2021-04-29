@@ -101,13 +101,17 @@ namespace System.Security.Cryptography
     {
         public CryptoConfig() { }
         public static bool AllowOnlyFipsAlgorithms { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void AddAlgorithm(System.Type algorithm, params string[] names) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void AddOID(string oid, params string[] names) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static byte[] EncodeOID(string str) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static string? MapNameToOID(string name) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

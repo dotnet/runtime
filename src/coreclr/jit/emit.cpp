@@ -64,6 +64,32 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
     return emit->emitCurIGsize;
 }
 
+//------------------------------------------------------------------------
+// IsPreviousInsNum: Returns true if the emitter is on the next instruction
+//  of the same group as this emitLocation.
+//
+// Arguments:
+//  emit - an emitter* instance
+//
+bool emitLocation::IsPreviousInsNum(emitter* emit) const
+{
+    assert(Valid());
+
+    // Within the same IG?
+    if (ig == emit->emitCurIG)
+    {
+        return (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
+    }
+
+    // Spanning an IG boundary?
+    if (ig->igNext == emit->emitCurIG)
+    {
+        return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emit->emitCurIGinsCnt == 1);
+    }
+
+    return false;
+}
+
 #ifdef DEBUG
 void emitLocation::Print(LONG compMethodID) const
 {

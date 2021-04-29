@@ -72,14 +72,14 @@ private:
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
     void MethodInitHelperFile(HANDLE hFile);
 
-    bool Initialize(int loadedCount, unsigned char* buff, DWORD size);
-    bool Initialize(int loadedCount, HANDLE hFile);
+    bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
+    bool Initialize(int mcIndex, HANDLE hFile);
 
     int dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
-    static bool Initialize(int loadedCount, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int loadedCount, HANDLE hFile, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
