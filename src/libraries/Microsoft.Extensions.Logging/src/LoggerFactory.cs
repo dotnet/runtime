@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging
         private volatile bool _disposed;
         private IDisposable _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
-        private LoggerFactoryScopeProvider _scopeProvider;
+        private IExternalScopeProvider _scopeProvider;
         private LoggerFactoryOptions _factoryOptions;
 
         /// <summary>
@@ -27,6 +27,15 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         public LoggerFactory() : this(Array.Empty<ILoggerProvider>())
         {
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="scopeProvider">The scope provider to use.</param>
+        internal LoggerFactory(IExternalScopeProvider scopeProvider) : this()
+        {
+            _scopeProvider = scopeProvider;
         }
 
         /// <summary>

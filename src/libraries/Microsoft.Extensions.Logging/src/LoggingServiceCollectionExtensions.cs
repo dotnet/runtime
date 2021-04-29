@@ -38,7 +38,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddOptions();
 
-            services.TryAdd(ServiceDescriptor.Singleton<ILoggerFactory, LoggerFactory>());
+            // Request scope provider to be used. If not provided LoggerLibrary will use a default implementation.
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+            IExternalScopeProvider scopeProvider = serviceProvider.GetService<IExternalScopeProvider>();
+
+            services.TryAdd(ServiceDescriptor.Singleton(typeof(ILoggerFactory), new LoggerFactory(scopeProvider)));
             services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
 
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<LoggerFilterOptions>>(
