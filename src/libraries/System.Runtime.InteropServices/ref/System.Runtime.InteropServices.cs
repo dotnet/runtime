@@ -98,16 +98,16 @@ namespace System.Runtime.InteropServices
     {
         public AllowReversePInvokeCallsAttribute() { }
     }
-    public partial struct ArrayWithOffset
+    public readonly partial struct ArrayWithOffset
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ArrayWithOffset(object? array, int offset) { throw null; }
-        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public readonly bool  Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
-        public readonly object? GetArray() { throw null; }
-        public readonly override int GetHashCode() { throw null; }
-        public readonly int GetOffset() { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool  Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
+        public object? GetArray() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public int GetOffset() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.ArrayWithOffset a, System.Runtime.InteropServices.ArrayWithOffset b) { throw null; }
         public static bool operator !=(System.Runtime.InteropServices.ArrayWithOffset a, System.Runtime.InteropServices.ArrayWithOffset b) { throw null; }
     }

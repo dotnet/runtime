@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-    public struct ArrayWithOffset
+    public readonly struct ArrayWithOffset
     {
         private readonly object? m_array;
         private readonly int m_offset;
@@ -44,18 +44,18 @@ namespace System.Runtime.InteropServices
             m_count = totalSize - offset;
         }
 
-        public readonly object? GetArray() => m_array;
+        public object? GetArray() => m_array;
 
-        public readonly int GetOffset() => m_offset;
+        public int GetOffset() => m_offset;
 
-        public override readonly int GetHashCode() => m_count + m_offset;
+        public override int GetHashCode() => m_count + m_offset;
 
-        public override readonly bool Equals([NotNullWhen(true)] object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
         }
 
-        public readonly bool Equals(ArrayWithOffset obj)
+        public bool Equals(ArrayWithOffset obj)
         {
             return obj.m_array == m_array && obj.m_offset == m_offset && obj.m_count == m_count;
         }
