@@ -10969,7 +10969,9 @@ namespace System.Text
     {
         FormC = 1,
         FormD = 2,
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         FormKC = 5,
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         FormKD = 6,
     }
     public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.ISpanFormattable
