@@ -1436,8 +1436,10 @@ mono_set_string_interned_internal (MonoObject* obj)
 {
 	LockWord tmp;
 	tmp.sync = obj->synchronisation;
-	if (!lock_word_is_inflated (tmp))
+	if (!lock_word_is_inflated (tmp)) {
 		mono_monitor_inflate (obj);
+		tmp.sync = obj->synchronisation;
+	}
 	lock_word_get_inflated_lock (tmp)->is_interned = 1;
 }
 
