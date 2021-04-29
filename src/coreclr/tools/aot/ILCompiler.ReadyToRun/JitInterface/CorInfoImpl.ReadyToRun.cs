@@ -2207,7 +2207,7 @@ namespace Internal.JitInterface
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
                             bool unboxingStub = false;
-                            if ((td.IsValueType) && !md.Signature.IsStatic)
+                            if (md.IsUnboxingThunk())
                             {
                                 unboxingStub = true;
                             }
