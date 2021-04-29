@@ -209,7 +209,7 @@ namespace System.Reflection
         {
             get
             {
-                if (this.Name == null || this.Name == string.Empty)
+                if (string.IsNullOrEmpty(this.Name))
                     return string.Empty;
 
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
