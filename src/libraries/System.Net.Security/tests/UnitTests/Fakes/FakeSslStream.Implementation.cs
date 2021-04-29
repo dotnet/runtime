@@ -59,7 +59,7 @@ namespace System.Net.Security
             return Task.Run(() => {});
         }
 
-        private Task Renegotiate(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+        private Task RenegotiateAsync(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         private void ReturnReadBufferIfEmpty()
         {

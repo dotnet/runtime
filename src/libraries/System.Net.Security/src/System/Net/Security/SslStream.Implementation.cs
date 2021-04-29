@@ -306,7 +306,7 @@ namespace System.Net.Security
         }
 
         // This will initiate renegotiation or PHA for Tls1.3
-        private async Task Renegotiate(CancellationToken cancellationToken)
+        private async Task RenegotiateAsync(CancellationToken cancellationToken)
         {
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
