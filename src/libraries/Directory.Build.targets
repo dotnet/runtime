@@ -230,9 +230,9 @@
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotnetBuildFromSource)' == 'true' and '$(TargetFramework)' != ''">
-    <IncludeBuildOutput Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) and '$(TargetFramework)' != 'netstandard2.0'">false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) and '$(TargetFramework)' != 'netstandard2.0'">true</SuppressDependenciesWhenPacking>
+  <PropertyGroup Condition="'$(DotnetBuildFromSource)' == 'true' and '$(IsPackable)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetFrameworkIdentifier)' != '.NETStandard' and '$(TargetFrameworkVersion)' != 'v2.0'">
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
   <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
