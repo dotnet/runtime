@@ -230,6 +230,10 @@
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DotnetBuildFromSource)' == 'true' and '$(TargetFramework)' != ''">
+    <IncludeBuildOutput Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) and '$(TargetFramework)' != 'netstandard2.0'">false</IncludeBuildOutput>
+  </PropertyGroup>
+
   <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
        System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
 
@@ -274,7 +278,7 @@
     </When>
   </Choose>
 
-  <Target Name="LibIntellisenseDocs">
+  <Target Name="LibIntellisenseDocs" Condition="'$(IncludeBuildOutput)' == 'true'">
    <ItemGroup>
       <TfmSpecificPackageFile Include="$(XmlDocFileRoot)/1033/$(TargetName).xml" Condition="Exists('$(XmlDocFileRoot)/1033/$(TargetName).xml')">
         <PackagePath>lib/$(TargetFramework)</PackagePath>
