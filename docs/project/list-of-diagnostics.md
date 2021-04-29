@@ -108,14 +108,3 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-
-## Package Support Errors
-
-The id values reserved for .NET Library packages which error on unsupported platforms are `SYSLIB9000` through `SYSLIB9999`.
-
-### Package Error codes (`SYSLIB9000` - `SYSLIB9999`)
-
-| Error ID     | Description |
-| :---------------- | :---------- |
-|  __`SYSLIB9000`__ | System.Speech doesn't support netcoreapp2.0. Consider updating your TargetFramework to netcoreapp2.1 or later. |
-|  __`SYSLIB9001`__ | System.Drawing.Common doesn't support netcoreapp2.x. Consider updating your TargetFramework to netcoreapp3.0 or later. |
