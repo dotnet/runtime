@@ -4,7 +4,6 @@
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
     <PackageDescription>Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
 
