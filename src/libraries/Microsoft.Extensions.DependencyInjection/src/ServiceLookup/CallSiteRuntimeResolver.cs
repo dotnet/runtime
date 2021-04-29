@@ -102,6 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             object sync = serviceProviderEngine.Sync;
             Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
+
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
             // always know that we are going to wait the other thread to finish before
