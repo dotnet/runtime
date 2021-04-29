@@ -12,10 +12,11 @@ namespace System.Threading
     {
         private static bool CheckEnableAutoreleasePool()
         {
+            const string feature = "System.Threading.Thread.EnableAutoreleasePool";
 #if !CORECLR
-            return false;
+            return AppContextConfigHelper.GetBooleanConfig(feature, false);
 #else
-            bool isEnabled = CLRConfig.GetBoolValue("System.Threading.Thread.EnableAutoreleasePool", out bool isSet);
+            bool isEnabled = CLRConfig.GetBoolValue(feature, out bool isSet);
             if (!isSet)
                 return false;
 
@@ -30,10 +31,8 @@ namespace System.Threading
     {
         internal static void AllocateThreadlocalAutoreleasePool()
         {
-            if (!ThreadOSX.EnableAutoreleasePool)
-                throw new PlatformNotSupportedException();
-
-            Interop.Sys.AllocateThreadlocalAutoreleasePool();
+            if (ThreadOSX.EnableAutoreleasePool)
+                Interop.Sys.CreateAutoreleasePool();
         }
     }
 }

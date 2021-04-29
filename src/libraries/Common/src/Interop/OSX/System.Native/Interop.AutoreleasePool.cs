@@ -15,8 +15,5 @@ internal static partial class Interop
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DrainAutoreleasePool")]
         internal static extern void DrainAutoreleasePool(IntPtr ptr);
-
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_AllocateThreadlocalAutoreleasePool")]
-        internal static extern void AllocateThreadlocalAutoreleasePool();
     }
 }

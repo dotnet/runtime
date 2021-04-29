@@ -24,8 +24,3 @@ void SystemNative_DrainAutoreleasePool(void* pool)
     (void)pool;
     assert_err(false, "Autorelease pools not supported on this platform.", EINVAL);
 }
-
-void SystemNative_AllocateThreadlocalAutoreleasePool(void)
-{
-    assert_err(false, "Autorelease pools not supported on this platform.", EINVAL);
-}

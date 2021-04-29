@@ -238,7 +238,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Create)
     DllImportEntry(SystemNative_CreateAutoreleasePool)
     DllImportEntry(SystemNative_DrainAutoreleasePool)
-    DllImportEntry(SystemNative_AllocateThreadlocalAutoreleasePool)
     DllImportEntry(SystemNative_iOSSupportVersion)
     DllImportEntry(SystemNative_GetErrNo)
     DllImportEntry(SystemNative_SetErrNo)
