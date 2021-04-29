@@ -232,6 +232,7 @@
 
   <PropertyGroup Condition="'$(DotnetBuildFromSource)' == 'true' and '$(TargetFramework)' != ''">
     <IncludeBuildOutput Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) and '$(TargetFramework)' != 'netstandard2.0'">false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) and '$(TargetFramework)' != 'netstandard2.0'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
   <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
