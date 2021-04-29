@@ -99,6 +99,7 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
+    <IsPackable Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">true</IsPackable>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->

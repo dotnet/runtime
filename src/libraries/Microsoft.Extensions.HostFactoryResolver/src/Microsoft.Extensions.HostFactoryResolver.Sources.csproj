@@ -4,5 +4,10 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <!-- Avoid trying to binplace non existent documentation file.-->
     <EnableBinPlacing>false</EnableBinPlacing>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="*.cs" PackagePath="contentFiles/cs/netstandard1.0/%(FileName)%(Extension)" />
+  </ItemGroup>
 </Project>
