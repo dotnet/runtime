@@ -27,26 +27,6 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
         internal bool PreferInlineCompletions
         {
             get => _handle.PreferInlineCompletions;

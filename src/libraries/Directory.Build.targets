@@ -16,8 +16,8 @@
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')))">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable;CA1052</NoWarn>
     <!-- Ignore Obsolete errors within the generated shims that type-forward types.
-         SYSLIB0003 is for CAS. SYSLIB0004 is the obsoletion of CER. -->
-    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015</NoWarn>
+         SYSLIB0003: Code Access Security (CAS). SYSLIB0004: Constrained Execution Region (CER). SYSLIB0017: Strong name signing. -->
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
     <!-- Set the documentation output file globally. -->
@@ -238,13 +238,13 @@
     <IncludePlatformAttributes Condition="'$(IncludePlatformAttributes)' == '' and ('$(SupportedOSPlatforms)' != '' or '$(UnsupportedOSPlatforms)' != '')">true</IncludePlatformAttributes>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and ('$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))">
+  <ItemGroup Condition="'$(IncludePlatformAttributes)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\PlatformAttributes.cs" Link="System\Runtime\Versioning\PlatformAttributes.cs" />
   </ItemGroup>
 
   <!-- Adds ObsoleteAttribute to projects that need to apply downlevel Obsoletions with DiagnosticId and UrlFormat -->
   <Choose>
-    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and ($(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFrameworkIdentifier)' == '.NETFramework')">
+    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
       <ItemGroup>
         <Compile Include="$(CoreLibSharedDir)System\ObsoleteAttribute.cs" Link="System\ObsoleteAttribute.cs" />
       </ItemGroup>

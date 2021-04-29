@@ -3721,4 +3721,7 @@
   <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
     <value>Method body replacement not supported in this runtime.</value>
   </data>
+  <data name="NotSupported_COM" xml:space="preserve">
+    <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
+  </data>
 </root>

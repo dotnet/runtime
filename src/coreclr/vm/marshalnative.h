@@ -20,6 +20,7 @@ class MarshalNative
 {
 public:
     static VOID QCALLTYPE Prelink(MethodDesc * pMD);
+    static BOOL QCALLTYPE IsComSupported();
 
     //====================================================================
     // These methods convert between an HR and and a managed exception.
@@ -95,7 +96,7 @@ public:
     //====================================================================
     // Create an object and aggregate it, then return the inner unknown.
     //====================================================================
-    static FCDECL2(IUnknown*, CreateAggregatedObject, IUnknown* pOuter, Object* refObjUNSAFE);
+    static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
 
     //====================================================================
     // check if the object is classic COM component
@@ -123,9 +124,9 @@ public:
     //====================================================================
     // These methods convert OLE variants to and from objects.
     //====================================================================
-    static FCDECL2(void, GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
-    static FCDECL1(Object*, GetObjectForNativeVariant, LPVOID pSrcNativeVariant);
-    static FCDECL2(Object*, GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars);
+    static FCDECL2(void, GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
+    static FCDECL1(Object*, GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant);
+    static FCDECL2(Object*, GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars);
 
     //====================================================================
     // These methods are used to map COM slots to method info's.

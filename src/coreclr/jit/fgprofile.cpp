@@ -1733,6 +1733,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+            case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
 
@@ -2930,21 +2931,18 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
-    // Do we have an internal block as our first Block?
-    if (firstILBlock->bbFlags & BBF_INTERNAL)
+    // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+    //
+    while (firstILBlock->bbFlags & BBF_INTERNAL)
     {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
-        {
-            firstILBlock = firstILBlock->bbNext;
-        }
-        // The 'firstILBlock' is now expected to have a profile-derived weight
-        assert(firstILBlock->hasProfileWeight());
+        firstILBlock = firstILBlock->bbNext;
     }
 
-    // If the first block only has one ref then we use it's weight for fgCalledCount.
-    // Otherwise we have backedge's into the first block, so instead we use the sum
+    // The 'firstILBlock' is now expected to have a profile-derived weight
+    assert(firstILBlock->hasProfileWeight());
+
+    // If the first block only has one ref then we use its weight for fgCalledCount.
+    // Otherwise we have backedges into the first block, so instead we use the sum
     // of the return block weights for fgCalledCount.
     //
     // If the profile data has a 0 for the returnWeight
@@ -2953,7 +2951,6 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
     //
     if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
     {
-        assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
         fgCalledCount = firstILBlock->bbWeight;
     }
     else

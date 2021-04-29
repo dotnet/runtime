@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -9,6 +10,9 @@ namespace System.Net.Http.Json
 {
     internal static class JsonHelpers
     {
+        internal const DynamicallyAccessedMemberTypes SerializationMemberTypes = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties;
+        internal const DynamicallyAccessedMemberTypes DeserializationMemberTypes = DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties;
+
         internal static MediaTypeHeaderValue GetDefaultMediaType() => new("application/json") { CharSet = "utf-8" };
 
         internal static Encoding? GetEncoding(string? charset)

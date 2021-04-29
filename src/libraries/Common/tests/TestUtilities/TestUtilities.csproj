@@ -10,6 +10,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"
+                      LogicalName="ILLink.Substitutions.xml"
+                      Condition="'$(EnableAggressiveTrimming)' == 'true'" />
+
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\AssertExtensions.cs" />
     <Compile Include="System\IO\StreamExtensions.cs" />

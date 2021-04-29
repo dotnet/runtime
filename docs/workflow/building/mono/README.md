@@ -66,11 +66,11 @@ See the instructions for [Testing iOS](../../testing/libraries/testing-apple.md)
 To generate nuget packages:
 
 ```bash
-./build.sh mono -pack (with optional release configuration)
+./build.sh packs -runtimeFlavor mono (with optional release configuration)
 ```
 or on Windows,
 ```cmd
-build.cmd mono -pack (with optional release configuration)
+build.cmd packs -runtimeFlavor mono (with optional release configuration)
 ```
 
 The following packages will be created under `artifacts\packages\<configuration>\Shipping`:

@@ -74,7 +74,10 @@
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
+    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != ''">true</WasmUseEMSDK_PATH>
   </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
 
   <!-- Having this separate target allows users to cleanly add After/BeforeTargets for this -->
   <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
@@ -148,7 +151,9 @@
       UseLLVM="true"
       DisableParallelAot="true"
       DedupAssembly="$(_WasmDedupAssembly)"
-      LLVMPath="$(EmSdkUpstreamBinPath)">
+      LLVMDebug="dwarfdebug"
+      LLVMPath="$(EmscriptenUpstreamBinPath)" >
+
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
@@ -228,37 +233,10 @@
   </Target>
 
   <Target Name="_SetupEmscripten">
-    <!-- If $(Emscripten*ToolsPath) etc propeties are already set (by the workload pack),
-         then prefer that, and ignore $(EMSDK_PATH) -->
-
-    <!-- If $(Emscripten*ToolsPath) etc propeties are *not* set (by the workload pack),
-         then try to construct the same properties based on $(EMSDK_PATH) -->
-    <PropertyGroup Condition="'$(EmscriptenSdkToolsPath)' == '' and '$(EMSDK_PATH)' != ''">
-      <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
-      <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
-
-      <_NodeToolsBasePath>$(EmscriptenSdkToolsPath)node</_NodeToolsBasePath>
-
-      <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-      <_NodeToolsVersionedPath Condition="Exists($(_NodeToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
-      <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
-
-      <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
-    </PropertyGroup>
-
     <PropertyGroup>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
-      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmSdkUpstreamBinPath)' == '' or !Exists('$(EmSdkUpstreamBinPath)'))">%24(EmSdkUpstreamBinPath)=$(EmSdkUpstreamBinPath) </_EMSDKMissingPaths>
-    </PropertyGroup>
-
-    <!-- Emscripten uses system python on Linux, so we don't need $(EmscriptenPythonToolsPath) -->
-    <PropertyGroup Condition="'$(_UsingEMSDK_PATH)' == 'true' and !$([MSBuild]::IsOSPlatform('linux'))">
-      <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
-      <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
-      <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
-
-      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenUpstreamBinPath)' == '' or !Exists('$(EmscriptenUpstreamBinPath)'))">%24(EmscriptenUpstreamBinPath)=$(EmscriptenUpstreamBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -274,8 +252,7 @@
     <PropertyGroup>
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
-      <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
-      <EmSdkUpstreamBinPath      Condition="'$(EmSdkUpstreamBinPath)' != ''"     >$([MSBuild]::NormalizeDirectory($(EmSdkUpstreamBinPath)))</EmSdkUpstreamBinPath>
+      <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
     </PropertyGroup>
 
     <!-- Environment variables required for running emsdk commands like `emcc` -->
@@ -285,49 +262,24 @@
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
     </ItemGroup>
 
-    <!-- Paths to be added to environment variable `PATH` -->
-    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' != 'true'">
-      <_EmscriptenAddPATH Condition="'$(EmscriptenPythonToolsPath)' != ''" Include="$(EmscriptenPythonToolsPath)bin" />
-      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)emscripten" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'">
-      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)" />
-      <_EmscriptenAddPATH Include="$(EmscriptenNodeToolsPath)bin" />
-      <_EmscriptenAddPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
-    </ItemGroup>
-
-    <!-- paths with trailing slash, like:
-         c:\foo\bar\
-
-          .. will become PATH=c:\foo\bar\;c:\xyz
-
-        .. which would escape the semicolon path separator. So, change
-      that to c:\foo\bar\. so the setting will become:
-
-          PATH=c:\foo\bar\.;c:\xyz
-    -->
     <ItemGroup>
-      <_EmscriptenAddPATHFixed Include="%(_EmscriptenAddPATH.Identity)."
-                               Condition="$([MSBuild]::ValueOrDefault('%(_EmscriptenAddPATH.Identity)', '').EndsWith('\'))" />
-      <_EmscriptenAddPATHFixed Include="@(_EmscriptenAddPATH)"
-                               Condition="!$([MSBuild]::ValueOrDefault('%(_EmscriptenAddPATH.Identity)', '').EndsWith('\'))" />
-      <_EmscriptenAddPATH Remove="@(_EmscriptenAddPATH)" />
-      <_EmscriptenAddPATH Include="@(_EmscriptenAddPATHFixed)" />
+      <_EmscriptenPrependPATHTrimmed Include="$([MSBuild]::ValueOrDefault('%(EmscriptenPrependPATH.Identity)\', '').TrimEnd('\/'))" />
+      <EmscriptenPrependPATH Remove="@(EmscriptenPrependPATH)" />
+      <EmscriptenPrependPATH Include="@(_EmscriptenPrependPATHTrimmed)" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_EmscriptenAddPATHProperty Condition="'$(OS)' == 'Windows_NT'">@(_EmscriptenAddPATH -> '%(Identity)', '%3B')</_EmscriptenAddPATHProperty>
-      <_EmscriptenAddPATHProperty Condition="'$(OS)' != 'Windows_NT'">@(_EmscriptenAddPATH -> '%(Identity)', ':')</_EmscriptenAddPATHProperty>
-    </PropertyGroup>
-
-    <ItemGroup>
       <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
            So, we need to escape it here, so the paths don't get split up when converting
            to string[] for passing to Exec task -->
-      <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty)%3B$([MSBuild]::Escape($(PATH)))" Condition="'$(OS)' == 'Windows_NT'" />
+      <_PathSeparator Condition="'$(OS)' == 'Windows_NT'">%3B</_PathSeparator>
+      <_PathSeparator Condition="'$(OS)' != 'Windows_NT'">:</_PathSeparator>
 
-      <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty):$(PATH)" Condition="'$(OS)' != 'Windows_NT'" />
+      <_EmscriptenPrependPATHProperty>@(EmscriptenPrependPATH -> '%(Identity)', '$(_PathSeparator)')</_EmscriptenPrependPATHProperty>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <EmscriptenEnvVars Include="PATH=$(_EmscriptenPrependPATHProperty)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
     </ItemGroup>
   </Target>
 
@@ -413,6 +365,7 @@
       <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
       <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
+      <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
       <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
     </PropertyGroup>
@@ -468,12 +421,11 @@
      <EmccCFlags Condition="'$(WasmNativeDebugSymbols)' == 'true'">$(EmccCFlags) -g</EmccCFlags>
 
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
-     <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EmSdkUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
    </PropertyGroup>
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.Identity)" -c -o "%(_WasmObjectsToBuild.OutputPath)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
-
+    
     <ItemGroup>
       <_EmccLinkerArguments Include="$(EmccLDFlags)" />
       <_EmccLinkerArguments Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
@@ -486,11 +438,11 @@
       <_EmccLinkerResponseFile>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkerResponseFile>
     </PropertyGroup>
 
-    <WriteLinesToFile Lines="@(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" />
+    <WriteLinesToFile Lines="@(_EmccLinkerArguments)" File="$(_EmccLinkerResponseFile)" Overwrite="true" />
     <Message Text="Running emcc with @(_EmccLinkerArguments->'%(Identity)', ' ')" Importance="Low" />
     <Exec Command="emcc &quot;@$(_EmccLinkerResponseFile)&quot;" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
-    <Exec Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
@@ -537,6 +489,9 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
     <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>

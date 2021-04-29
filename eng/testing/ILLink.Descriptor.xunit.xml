@@ -8,6 +8,7 @@
       <method signature="System.Void .ctor(System.Object,System.Object,System.Object)" />
     </type>
     <type fullname="Xunit.Sdk.FactDiscoverer" />
+    <type fullname="Xunit.Sdk.CollectionPerAssemblyTestCollectionFactory" />
   </assembly>
   <assembly fullname="Microsoft.DotNet.XUnitExtensions" />
   <assembly fullname="xunit.core">

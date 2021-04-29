@@ -613,6 +613,15 @@ ep_rt_init (void)
 static
 inline
 void
+ep_rt_init_finish (void)
+{
+	extern void ep_rt_mono_init_finish (void);
+	ep_rt_mono_init_finish ();
+}
+
+static
+inline
+void
 ep_rt_shutdown (void)
 {
 	mono_lazy_cleanup (managed_command_line_get_init (), managed_command_line_lazy_clean);

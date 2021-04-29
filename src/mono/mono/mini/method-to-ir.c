@@ -3327,9 +3327,11 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 
 		if (context_used) {
 			if (cfg->llvm_only) {
+				MonoMethodSignature *sig = mono_method_signature_internal (method);
 				MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
 														MONO_RGCTX_INFO_METHOD_FTNDESC);
-				return mini_emit_llvmonly_calli (cfg, mono_method_signature_internal (method), &val, addr);
+				cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
+				return mini_emit_llvmonly_calli (cfg, sig, &val, addr);
 			} else {
 				/* FIXME: What if the class is shared?  We might not
 				   have to get the method address from the RGCTX. */
@@ -8292,6 +8294,8 @@ calli_end:
 		case MONO_CEE_LDIND_R8:
 		case MONO_CEE_LDIND_REF:
 			--sp;
+
+			MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
 
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (ldind_to_type (il_op)), sp [0], 0, ins_flag);
 			*sp++ = ins;
