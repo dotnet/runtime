@@ -1438,7 +1438,7 @@ mono_set_string_interned_internal (MonoObject* obj)
 	tmp.sync = obj->synchronisation;
 	if (!lock_word_is_inflated (tmp))
 		mono_monitor_inflate (obj);
-	obj->synchronisation->is_interned = 1;
+	lock_word_get_inflated_lock (tmp)->is_interned = 1;
 }
 
 gboolean
@@ -1449,7 +1449,7 @@ mono_is_string_interned_internal (MonoObject* obj)
 	if (!lock_word_is_inflated (tmp))
 		return 0;
 
-	return obj->synchronisation->is_interned;
+	return lock_word_get_inflated_lock (tmp)->is_interned;
 }
 #endif
 
