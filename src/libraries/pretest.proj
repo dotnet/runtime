@@ -142,10 +142,14 @@
           AfterTargets="GenerateRuntimeListFile"
           DependsOnTargets="SetCommonILLinkArgs"
           Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
-    <Message Importance="High" Text="Trimming $(PackageRID) OOB assemblies with ILLinker..." />
-    <MSBuild Targets="Restore;Publish"
+    <MSBuild Targets="Restore"
              Projects="$(MSBuildThisFileDirectory)trimming\trimming.csproj"
              Properties="$(TraversalGlobalProperties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+
+    <Message Importance="High" Text="Trimming $(PackageRID) OOB assemblies with ILLinker..." />
+    <MSBuild Targets="Publish"
+             Projects="$(MSBuildThisFileDirectory)trimming\trimming.csproj"
+             Properties="$(TraversalGlobalProperties)" />
   </Target> 
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" />
