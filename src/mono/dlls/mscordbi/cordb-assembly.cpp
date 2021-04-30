@@ -100,7 +100,7 @@ HRESULT CordbAssembly::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[
                 }
 
                 char* symbols_full_path = (char*)malloc(size_path + strlen(c_mobile_symbols_path));
-                sprintf(symbols_full_path, "%s%s", c_mobile_symbols_path , m_pAssemblyName + pos_separator + 1);
+                sprintf_s(symbols_full_path, "%s%s", c_mobile_symbols_path , m_pAssemblyName + pos_separator + 1);
 
                 free(m_pAssemblyName);
                 m_pAssemblyName = symbols_full_path;
