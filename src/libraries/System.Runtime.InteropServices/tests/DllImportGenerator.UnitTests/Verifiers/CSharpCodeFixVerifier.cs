@@ -113,7 +113,7 @@ namespace DllImportGenerator.UnitTests.Verifiers
             }
 
             protected override ParseOptions CreateParseOptions()
-                => ((CSharpParseOptions)base.CreateParseOptions()).WithPreprocessorSymbols("NET");
+                => ((CSharpParseOptions)base.CreateParseOptions()).WithPreprocessorSymbols("DLLIMPORTGENERATOR_ENABLED");
         }
     }
 }

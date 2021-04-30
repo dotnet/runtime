@@ -28,7 +28,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method|}}(out int ret);
 #else
@@ -74,7 +74,7 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
     // P/Invoke
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(/*name*/""DoesNotExist"")] // comment
     public static partial int {{|CS8795:Method1|}}(out int ret);
 #else
@@ -83,7 +83,7 @@ partial class Test
 #endif
 
     /** P/Invoke **/
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(""DoesNotExist"") /*name*/]
     // < ... >
     public static partial int {{|CS8795:Method2|}}(out int ret);
@@ -135,7 +135,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [System.ComponentModel.Description(""Test""), GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method1|}}(out int ret);
 #else
@@ -143,7 +143,7 @@ partial class Test
     public static extern int Method1(out int ret);
 #endif
 
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [System.ComponentModel.Description(""Test"")]
     [GeneratedDllImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.I4)]
@@ -194,7 +194,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial int {{|CS8795:Method1|}}(out int ret);
 #else
@@ -202,7 +202,7 @@ partial class Test
     public static extern int Method1(out int ret);
 #endif
 
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"", CharSet = CharSet.Unicode)]
     public static partial int {{|CS8795:Method2|}}(out int ret);
 #else
@@ -246,7 +246,7 @@ partial class Test
 using System.Runtime.InteropServices;
 partial class Test
 {{
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
     public static partial int {{|CS8795:Method1|}}(out int ret);
 #else
@@ -254,7 +254,7 @@ partial class Test
     public static extern int Method1(out int ret);
 #endif
 
-#if NET
+#if DLLIMPORTGENERATOR_ENABLED
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method2|}}(out int ret);
 #else

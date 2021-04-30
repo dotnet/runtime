@@ -16,4 +16,7 @@
       -->
       <CompilerVisibleProperty Include="DllImportGenerator_GenerateForwarders" />
   </ItemGroup>
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
+  </PropertyGroup>
 </Project>

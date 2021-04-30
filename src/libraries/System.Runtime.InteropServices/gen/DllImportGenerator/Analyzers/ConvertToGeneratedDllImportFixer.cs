@@ -127,11 +127,11 @@ namespace Microsoft.Interop.Analyzers
             }
             else
             {
-                // #if NET
+                // #if DLLIMPORTGENERATOR_ENABLED
                 generatedDeclaration = generatedDeclaration.WithLeadingTrivia(
                     generatedDeclaration.GetLeadingTrivia()
                         .AddRange(new[] {
-                            SyntaxFactory.Trivia(SyntaxFactory.IfDirectiveTrivia(SyntaxFactory.IdentifierName("NET"), isActive: true, branchTaken: true, conditionValue: true)),
+                            SyntaxFactory.Trivia(SyntaxFactory.IfDirectiveTrivia(SyntaxFactory.IdentifierName("DLLIMPORTGENERATOR_ENABLED"), isActive: true, branchTaken: true, conditionValue: true)),
                             SyntaxFactory.ElasticMarker
                         }));
 

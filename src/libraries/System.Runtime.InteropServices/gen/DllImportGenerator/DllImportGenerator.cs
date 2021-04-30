@@ -203,7 +203,7 @@ namespace Microsoft.Interop
                 // .NET Standard
                 "netstandard" => false,
                 // .NET Core (when version < 5.0) or .NET
-                "System.Runtime" => version >= MinimumSupportedFrameworkVersion,
+                "System.Runtime" or "System.Private.CoreLib" => version >= MinimumSupportedFrameworkVersion,
                 _ => false,
             };
         }
