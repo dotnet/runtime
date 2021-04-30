@@ -7,25 +7,23 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
-    public static partial class Bridge
+    public static partial class ObjectiveCMarshal
     {
         /// <summary>
-        /// Sets a pending exception for this thread to be thrown
-        /// the next time the runtime is entered from an overridden
-        /// msgSend P/Invoke.
+        /// Sets a pending exception to be thrown the next time the runtime is entered from an overridden msgSend P/Invoke.
         /// </summary>
         /// <param name="exception">The exception.</param>
         /// <remarks>
         /// If <c>null</c> is supplied any pending exception is discarded.
         /// </remarks>
-        public static void SetMessageSendPendingExceptionForThread(Exception? exception)
+        public static void SetMessageSendPendingException(Exception? exception)
         {
             System.StubHelpers.StubHelpers.SetPendingExceptionObject(exception);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
         private static extern bool TrySetGlobalMessageSendCallback(
-            MsgSendFunction msgSendFunction,
+            MessageSendFunction msgSendFunction,
             IntPtr func);
 
         [DllImport(RuntimeHelpers.QCall)]
@@ -37,11 +35,12 @@ namespace System.Runtime.InteropServices.ObjectiveC
         [DllImport(RuntimeHelpers.QCall)]
         private static extern IntPtr CreateReferenceTrackingHandleInternal(
             ObjectHandleOnStack obj,
-            out IntPtr scratchMemory);
+            out int memInSizeT,
+            out IntPtr mem);
 
         internal static bool AvailableUnhandledExceptionPropagation()
         {
-            return UnhandledExceptionPropagation != null;
+            return s_unhandledExceptionPropagationHandler != null;
         }
 
         internal static unsafe void* InvokeUnhandledExceptionPropagation(
@@ -50,17 +49,14 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out IntPtr context)
         {
             context = IntPtr.Zero;
-            if (UnhandledExceptionPropagation == null)
+            if (s_unhandledExceptionPropagationHandler == null)
                 return null;
 
             Debug.Assert(methodInfoStub is RuntimeMethodInfoStub);
             var runtimeHandle = new RuntimeMethodHandle((RuntimeMethodInfoStub)methodInfoStub);
-            foreach (UnhandledExceptionPropagationHandler handler in UnhandledExceptionPropagation.GetInvocationList())
-            {
-                var callback = handler(exception, runtimeHandle, out context);
-                if (callback != null)
-                    return callback;
-            }
+            var callback = s_unhandledExceptionPropagationHandler(exception, runtimeHandle, out context);
+            if (callback != null)
+                return callback;
 
             return null;
         }

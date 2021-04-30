@@ -1805,41 +1805,36 @@ namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     [System.AttributeUsage(AttributeTargets.Class)]
-    public class TrackedNativeReferenceAttribute : System.Attribute
+    public class ObjectiveCTrackedTypeAttribute : System.Attribute
     {
-        public TrackedNativeReferenceAttribute() { }
+        public ObjectiveCTrackedTypeAttribute() { }
     }
 
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     [System.CLSCompliantAttribute(false)]
-    public static class Bridge
+    public static class ObjectiveCMarshal
     {
-        public static unsafe void InitializeReferenceTracking(
-            delegate* unmanaged<void> beginEndCallback,
-            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization) { }
-        public static GCHandle CreateReferenceTrackingHandle(
-            object obj,
-            out System.IntPtr scratchMemory) => throw null;
-        public enum MsgSendFunction
-        {
-            ObjCMsgSend,
-            ObjCMsgSendFpret,
-            ObjCMsgSendStret,
-            ObjCMsgSendSuper,
-            ObjCMsgSendSuperStret,
-        }
-        public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, System.IntPtr func) => throw null;
-        public static void SetMessageSendPendingExceptionForThread(System.Exception? exception) => throw null;
         public unsafe delegate delegate* unmanaged<System.IntPtr, void> UnhandledExceptionPropagationHandler(
             System.Exception exception,
             System.RuntimeMethodHandle lastMethod,
             out System.IntPtr context);
-        public static event UnhandledExceptionPropagationHandler? UnhandledExceptionPropagation
+        public static unsafe void Initialize(
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+        public static GCHandle CreateReferenceTrackingHandle(
+            object obj,
+            out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public enum MessageSendFunction
         {
-            add => throw null;
-            remove => throw null;
+            MsgSend,
+            MsgSendFpret,
+            MsgSendStret,
+            MsgSendSuper,
+            MsgSendSuperStret,
         }
+        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
     }
 }
 namespace System.Security

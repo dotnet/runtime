@@ -23,7 +23,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
-        <FeatureObjCBridge>true</FeatureObjCBridge>
+        <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -61,6 +61,6 @@
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
-        <DefineConstants Condition="'$(FeatureObjCBridge)' == 'true'">$(DefineConstants);FEATURE_OBJCBRIDGE</DefineConstants>
+        <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCBRIDGE</DefineConstants>
     </PropertyGroup>
 </Project>
