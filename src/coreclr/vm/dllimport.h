@@ -71,7 +71,9 @@ public:
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
         _In_opt_ Module* pModule = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
-    static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo);
+
+    static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
+    static void InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
     static MethodDesc* CreateCLRToNativeILStub(
                     StubSigDesc*             pSigDesc,
@@ -325,7 +327,7 @@ public:
                (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
     }
     Module* GetModule() { LIMITED_METHOD_CONTRACT; return m_pModule; }
-    BOOL IsStatic() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
+    BOOL IsStatic() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
     void SetIsStatic (BOOL isStatic)
     {
         LIMITED_METHOD_CONTRACT;
@@ -334,7 +336,7 @@ public:
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_STATIC;
     }
-    BOOL GetThrowOnUnmappableChar() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
+    BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
     void SetThrowOnUnmappableChar (BOOL throwOnUnmappableChar)
     {
         LIMITED_METHOD_CONTRACT;
@@ -343,7 +345,7 @@ public:
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR;
     }
-    BOOL GetBestFitMapping() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
+    BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
     void SetBestFitMapping (BOOL bestFit)
     {
         LIMITED_METHOD_CONTRACT;
@@ -352,7 +354,7 @@ public:
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_BEST_FIT;
     }
-    BOOL IsDelegateInterop() { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
+    BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
     void SetIsDelegateInterop (BOOL delegateInterop)
     {
         LIMITED_METHOD_CONTRACT;
@@ -361,7 +363,7 @@ public:
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
     }
-    CorInfoCallConvExtension GetCallConv() { LIMITED_METHOD_CONTRACT; return m_callConv; }
+    CorInfoCallConvExtension GetCallConv() const { LIMITED_METHOD_CONTRACT; return m_callConv; }
     Signature GetSignature() { LIMITED_METHOD_CONTRACT; return m_sig; }
 
 private:
@@ -388,8 +390,8 @@ private:
     WORD m_wFlags;
 
   public:
-    CorNativeLinkType GetCharSet() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
-    CorNativeLinkFlags GetLinkFlags() { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
+    CorNativeLinkType GetCharSet() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
+    CorNativeLinkFlags GetLinkFlags() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
     void SetCharSet(CorNativeLinkType linktype)
     {
         LIMITED_METHOD_CONTRACT;

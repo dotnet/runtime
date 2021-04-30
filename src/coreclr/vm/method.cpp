@@ -2581,8 +2581,7 @@ void MethodDesc::Save(DataImage *image)
     {
         EX_TRY
         {
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc*)this);
         }
         EX_CATCH
         {
