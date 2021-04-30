@@ -6632,7 +6632,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
 	}
-	case MDBGPROT_CMD_VM_SET_CLIENT_PLATFORM: {
+	case MDBGPROT_CMD_VM_SET_CLIENT_POS_CONTEXT_SP: {
 		pos_rsp = decode_int (p, &p, end);
 		break;
 	}
@@ -9678,7 +9678,7 @@ static const char* vm_cmds_str [] = {
 	"STOP_BUFFERING",
 	"READ_MEMORY",
 	"WRITE_MEMORY",
-	"SET_CLIENT_PLATFORM"
+	"SET_CLIENT_POS_CONTEXT_SP"
 };
 
 static const char* thread_cmds_str[] = {

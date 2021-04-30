@@ -485,7 +485,7 @@ void Connection::LoopSendReceive()
 
     m_dbgprot_buffer_init(&localbuf, 128);
     m_dbgprot_buffer_add_int(&localbuf, POS_RSP);
-    cmdId = SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SET_CLIENT_PLATFORM, &localbuf);
+    cmdId = SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SET_CLIENT_POS_CONTEXT_SP, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
 
     int iResult = 0;
