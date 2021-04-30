@@ -7,9 +7,13 @@
     <!-- Ignore nullable warnings on net4* -->
     <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="..\Common\NotNullAttribute.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
 
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Compile Include="..\Common\IsExternalInit.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
