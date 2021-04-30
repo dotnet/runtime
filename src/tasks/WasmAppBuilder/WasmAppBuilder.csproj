@@ -8,7 +8,7 @@
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\Common\IsExternalInit.cs" />
     <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
   </ItemGroup>
