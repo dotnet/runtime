@@ -49,7 +49,7 @@ namespace System.Diagnostics.Tracing
         // as you can't make a constructor partial.
         private RuntimeEventSource(int _) { }
 
-        public static readonly RuntimeEventSource Log = IsSupported ? new() : new(0);
+        public static RuntimeEventSource? Log; // = IsSupported ? new() : new(0);
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
