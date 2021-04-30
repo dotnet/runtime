@@ -10,10 +10,6 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-        // [TODO] Remove when https://github.com/dotnet/runtime/issues/51991 is fixed.
-        internal static void AllocateThreadlocalAutoreleasePool()
-            => throw new PlatformNotSupportedException();
-
 #if !CORECLR
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();
 
