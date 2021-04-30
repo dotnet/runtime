@@ -1,4 +1,3 @@
-//using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests

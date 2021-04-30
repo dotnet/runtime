@@ -23,6 +23,7 @@ namespace Internal.Runtime.InteropServices
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IClassFactory
     {
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
@@ -49,6 +50,7 @@ namespace Internal.Runtime.InteropServices
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IClassFactory2 : IClassFactory
     {
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         new void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
@@ -96,7 +98,7 @@ namespace Internal.Runtime.InteropServices
         public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -132,7 +134,7 @@ namespace Internal.Runtime.InteropServices
         public static object GetClassFactoryForType(ComActivationContext cxt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -170,7 +172,7 @@ namespace Internal.Runtime.InteropServices
         public static void ClassRegistrationScenarioForType(ComActivationContext cxt, bool register)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -270,7 +272,7 @@ namespace Internal.Runtime.InteropServices
         public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -317,7 +319,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -367,7 +369,7 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            if (!Marshal.IsComSupported)
+            if (!Marshal.IsBuiltInComSupported)
             {
                 throw new NotSupportedException(SR.NotSupported_COM);
             }
@@ -432,6 +434,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 #endif
         }
 
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         private static Type FindClassType(Guid clsid, string assemblyPath, string assemblyName, string typeName)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -583,6 +586,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 #endif
             }
 
+            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
@@ -632,6 +636,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 #endif
             }
 
+            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
