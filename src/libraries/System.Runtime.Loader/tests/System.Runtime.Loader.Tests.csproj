@@ -40,4 +40,13 @@
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
+  <Target Name="AddTestAssembliesForPublishing" BeforeTargets="PrepareForILLink">
+    <!-- These assemblies are being embedded in the test assembly. But because they are not referenced by the
+         project, they don't get linked, and end up with invalid tokens for references to types in other
+         assemblies. So, explicitly add them for linking -->
+    <ItemGroup>
+      <ManagedAssemblyToLink Include="@(EmbeddedResource)" Condition="'%(EmbeddedResource.Extension)' == '.dll'" />
+    </ItemGroup>
+  </Target>
 </Project>
