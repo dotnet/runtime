@@ -8297,6 +8297,8 @@ private:
         CORINFO_CLASS_HANDLE Vector64LongHandle;
         CORINFO_CLASS_HANDLE Vector64UIntHandle;
         CORINFO_CLASS_HANDLE Vector64ULongHandle;
+        CORINFO_CLASS_HANDLE Vector64NIntHandle;
+        CORINFO_CLASS_HANDLE Vector64NUIntHandle;
 #endif // defined(TARGET_ARM64)
         CORINFO_CLASS_HANDLE Vector128FloatHandle;
         CORINFO_CLASS_HANDLE Vector128DoubleHandle;
@@ -8308,6 +8310,8 @@ private:
         CORINFO_CLASS_HANDLE Vector128LongHandle;
         CORINFO_CLASS_HANDLE Vector128UIntHandle;
         CORINFO_CLASS_HANDLE Vector128ULongHandle;
+        CORINFO_CLASS_HANDLE Vector128NIntHandle;
+        CORINFO_CLASS_HANDLE Vector128NUIntHandle;
 #if defined(TARGET_XARCH)
         CORINFO_CLASS_HANDLE Vector256FloatHandle;
         CORINFO_CLASS_HANDLE Vector256DoubleHandle;
@@ -8319,6 +8323,8 @@ private:
         CORINFO_CLASS_HANDLE Vector256LongHandle;
         CORINFO_CLASS_HANDLE Vector256UIntHandle;
         CORINFO_CLASS_HANDLE Vector256ULongHandle;
+        CORINFO_CLASS_HANDLE Vector256NIntHandle;
+        CORINFO_CLASS_HANDLE Vector256NUIntHandle;
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
