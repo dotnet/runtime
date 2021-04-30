@@ -421,6 +421,12 @@ namespace System.Net.WebSockets.Tests
         [MemberData(nameof(SupportedWindowBits))]
         public async Task PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(int windowBits)
         {
+            if (PlatformDetection.IsArmOrArm64Process && (windowBits == 14 || windowBits == 15))
+            {
+                // https://github.com/dotnet/runtime/issues/52031
+                return;
+            }
+
             MemoryStream stream = new();
             using WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
