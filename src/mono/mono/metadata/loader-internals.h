@@ -120,6 +120,8 @@ struct _MonoAssemblyLoadContext {
 	MonoCoopMutex pinvoke_lock;
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
+	// The managed name, owned by this structure
+	char *name;
 };
 
 struct _MonoMemoryManager {

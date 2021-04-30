@@ -8,9 +8,10 @@
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
-    <PackageFile Include=".\build\System.Speech.targets">
-      <TargetPath>build\netcoreapp2.0\</TargetPath>
-    </PackageFile>
+    <PackageFile Include="buildTransitive\System.Speech.targets"
+                 TargetPath="buildTransitive\netcoreapp2.0" />
+    <File Include="$(PlaceholderFile)"
+          TargetPath="buildTransitive\netcoreapp2.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

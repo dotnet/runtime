@@ -108,13 +108,15 @@ jobs:
           artifactName: ${{ format('libraries_test_assets_{0}_x64_Release', parameters.osGroup) }}
           displayName: 'generic libraries test artifacts'
 
-    - task: ExtractFiles@1
-      displayName: 'Unzip Tests.zip'
-      inputs:
-        archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)/**/*.zip'
-        destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
-        cleanDestinationFolder: true
-        overwriteExistingFiles: true
+    # Unzip individual test projects
+    - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
+      - task: ExtractFiles@1
+        displayName: 'Unzip Tests.zip'
+        inputs:
+          archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)/**/*.zip'
+          destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+          cleanDestinationFolder: true
+          overwriteExistingFiles: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization
                 {
                     if (state.Current.NumberHandling != null)
                     {
-                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }
                     else
                     {
@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization
 
                     if (state.Current.NumberHandling != null)
                     {
-                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }
                     else
                     {
@@ -443,14 +443,18 @@ namespace System.Text.Json.Serialization
                 return TryWrite(writer, value, options, ref state);
             }
 
-            Debug.Assert(this is JsonDictionaryConverter<T>);
+            if (!(this is JsonDictionaryConverter<T> dictionaryConverter))
+            {
+                // If not JsonDictionaryConverter<T> then we are JsonObject.
+                // Avoid a type reference to JsonObject and its converter to support trimming.
+                Debug.Assert(TypeToConvert == typeof(Node.JsonObject));
+                return TryWrite(writer, value, options, ref state);
+            }
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
-
-            JsonDictionaryConverter<T> dictionaryConverter = (JsonDictionaryConverter<T>)this;
 
             bool isContinuation = state.IsContinuation;
             bool success;
@@ -554,7 +558,7 @@ namespace System.Text.Json.Serialization
         internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
             => WriteWithQuotes(writer, (T)value, options, ref state);
 
-        internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => throw new InvalidOperationException();
 
         internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
