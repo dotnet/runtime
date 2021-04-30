@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal struct ServiceCacheKey: IEquatable<ServiceCacheKey>
+    internal readonly struct ServiceCacheKey : IEquatable<ServiceCacheKey>
     {
         public static ServiceCacheKey Empty { get; } = new ServiceCacheKey(null, 0);
 
