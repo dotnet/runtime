@@ -1411,6 +1411,14 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, g
 			target = ins_offset + *(gint16*)(data + 1);
 			g_string_append_printf (str, " %u, IR_%04x", *(guint16*)data, target);
 		}
+	case MintOpPair2:
+		g_string_append_printf (str, " %u <- %u, %u <- %u", data [0], data [1], data [2], data [3]);
+		break;
+	case MintOpPair3:
+		g_string_append_printf (str, " %u <- %u, %u <- %u, %u <- %u", data [0], data [1], data [2], data [3], data [4], data [5]);
+		break;
+	case MintOpPair4:
+		g_string_append_printf (str, " %u <- %u, %u <- %u, %u <- %u, %u <- %u", data [0], data [1], data [2], data [3], data [4], data [5], data [6], data [7]);
 		break;
 	default:
 		g_string_append_printf (str, "unknown arg type\n");
@@ -7650,6 +7658,12 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		for (int i = size - 1; i < (jit_call2_size - 1); i++)
 			*ip++ = MINT_NIY;
 #endif
+	} else if (opcode >= MINT_MOV_8_2 && opcode <= MINT_MOV_8_4) {
+		// This instruction is not marked as operating on any vars, all instruction slots are
+		// actually vas. Resolve their offset
+		int num_vars = mono_interp_oplen [opcode] - 1;
+		for (int i = 0; i < num_vars; i++)
+			*ip++ = td->locals [ins->data [i]].offset;
 	} else {
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = td->locals [ins->dreg].offset;
@@ -9146,7 +9160,11 @@ interp_alloc_offsets (TransformData *td)
 			if (ins->flags & INTERP_INST_FLAG_CALL) {
 				int *call_args = ins->info.call_args;
 				if (call_args) {
+					int pair_sregs [MINT_MOV_PAIRS_MAX];
+					int pair_dregs [MINT_MOV_PAIRS_MAX];
+					int num_pairs = 0;
 					int var = *call_args;
+
 					while (var != -1) {
 						if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL ||
 								td->locals [var].flags & INTERP_LOCAL_FLAG_NO_CALL_ARGS) {
@@ -9155,17 +9173,27 @@ interp_alloc_offsets (TransformData *td)
 							int new_var = create_interp_local (td, td->locals [var].type);
 							td->locals [new_var].call = ins;
 							td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
-							int opcode = get_mov_for_type (mint_type (td->locals [var].type), FALSE);
-							InterpInst *new_inst = interp_insert_ins_bb (td, bb, ins->prev, opcode);
-							interp_ins_set_dreg (new_inst, new_var);
-							interp_ins_set_sreg (new_inst, var);
-							if (opcode == MINT_MOV_VT)
-								new_inst->data [0] = td->locals [var].size;
-							// The arg of the call is no longer global
-							*call_args = new_var;
-							// Also update liveness for this instruction
-							foreach_local_var (td, new_inst, ins_index, set_var_live_range);
-							ins_index++;
+
+							int mt = mint_type (td->locals [var].type);
+							if (mt != MINT_TYPE_VT && num_pairs < MINT_MOV_PAIRS_MAX) {
+								pair_sregs [num_pairs] = var;
+								pair_dregs [num_pairs] = new_var;
+								num_pairs++;
+								// The arg of the call is no longer global
+								*call_args = new_var;
+							} else {
+								int opcode = get_mov_for_type (mt, FALSE);
+								InterpInst *new_inst = interp_insert_ins_bb (td, bb, ins->prev, opcode);
+								interp_ins_set_dreg (new_inst, new_var);
+								interp_ins_set_sreg (new_inst, var);
+								if (opcode == MINT_MOV_VT)
+									new_inst->data [0] = td->locals [var].size;
+								// The arg of the call is no longer global
+								*call_args = new_var;
+								// Also update liveness for this instruction
+								foreach_local_var (td, new_inst, ins_index, set_var_live_range);
+								ins_index++;
+							}
 						} else {
 							// Flag this var as it has special storage on the call args stack
 							td->locals [var].call = ins;
@@ -9173,6 +9201,30 @@ interp_alloc_offsets (TransformData *td)
 						}
 						call_args++;
 						var = *call_args;
+					}
+					if (num_pairs > 0) {
+						int i;
+						for (i = 0; i < num_pairs; i++) {
+							set_var_live_range (td, pair_sregs [i], ins_index);
+							set_var_live_range (td, pair_dregs [i], ins_index);
+						}
+						if (num_pairs == 1) {
+							int mt = mint_type (td->locals [pair_sregs [0]].type);
+							int opcode = get_mov_for_type (mt, FALSE);
+							InterpInst *new_inst = interp_insert_ins_bb (td, bb, ins->prev, opcode);
+							interp_ins_set_dreg (new_inst, pair_dregs [0]);
+							interp_ins_set_sreg (new_inst, pair_sregs [0]);
+						} else {
+							// Squash together multiple moves to the param area into a single opcode
+							int opcode = MINT_MOV_8_2 + num_pairs - 2;
+							InterpInst *new_inst = interp_insert_ins_bb (td, bb, ins->prev, opcode);
+							int k = 0;
+							for (i = 0; i < num_pairs; i++) {
+								new_inst->data [k++] = pair_dregs [i];
+								new_inst->data [k++] = pair_sregs [i];
+							}
+						}
+						ins_index++;
 					}
 				}
 			}
