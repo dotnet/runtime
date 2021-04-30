@@ -8,6 +8,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// <summary>
     /// Attribute used to indicate a class represents a tracked Objective-C type.
     /// </summary>
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     public sealed class ObjectiveCTrackedTypeAttribute : Attribute
     {

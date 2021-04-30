@@ -1804,8 +1804,8 @@ namespace System.Runtime.InteropServices.ComTypes
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
-    [System.AttributeUsage(AttributeTargets.Class)]
-    public class ObjectiveCTrackedTypeAttribute : System.Attribute
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ObjectiveCTrackedTypeAttribute : System.Attribute
     {
         public ObjectiveCTrackedTypeAttribute() { }
     }
@@ -1835,6 +1835,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             MsgSendSuperStret,
         }
         public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
+        public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
 namespace System.Security
