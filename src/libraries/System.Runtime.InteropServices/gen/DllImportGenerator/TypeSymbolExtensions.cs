@@ -69,6 +69,11 @@ namespace Microsoft.Interop
                 return IsSpecialTypeBlittable(type.SpecialType);
             }
 
+            if (type.TypeKind == TypeKind.FunctionPointer)
+            {
+                return true;
+            }
+
             if (!type.IsValueType || type.IsReferenceType)
             {
                 return false;

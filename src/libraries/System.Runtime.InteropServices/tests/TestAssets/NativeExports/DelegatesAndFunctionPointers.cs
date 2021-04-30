@@ -10,12 +10,11 @@ namespace NativeExports
         {
             // We are at the mercy of the GC to verify our delegate has been retain
             // across the native function call. This is a best effort validation.
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            for (int i = 0; i < 5; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
 
             // If the corresponding Delegate was collected, the runtime will rudely abort.
             fptr();

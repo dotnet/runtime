@@ -28,6 +28,7 @@ namespace DllImportGenerator.UnitTests
             new object[] { typeof(int*) },
             new object[] { typeof(bool*) },
             new object[] { typeof(char*) },
+            new object[] { typeof(delegate* <void>) },
             new object[] { typeof(IntPtr) },
             new object[] { typeof(ConsoleKey) }, // enum
         };

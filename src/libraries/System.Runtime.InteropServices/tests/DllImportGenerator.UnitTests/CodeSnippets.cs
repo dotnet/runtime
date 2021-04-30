@@ -365,6 +365,21 @@ partial class Test
         out {typeName} pOut);
 }}";
 
+        /// <summary>
+        /// Declaration with parameters and unsafe.
+        /// </summary>
+        public static string BasicParametersAndModifiersUnsafe(string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static unsafe partial {typeName} Method(
+        {typeName} p,
+        in {typeName} pIn,
+        ref {typeName} pRef,
+        out {typeName} pOut);
+}}";
+
         public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).ToString());
 
         /// <summary>
@@ -391,6 +406,23 @@ partial class Test
     [GeneratedDllImport(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.{unmanagedType})]
     public static partial {typeName} Method(
+        [MarshalAs(UnmanagedType.{unmanagedType})] {typeName} p,
+        [MarshalAs(UnmanagedType.{unmanagedType})] in {typeName} pIn,
+        [MarshalAs(UnmanagedType.{unmanagedType})] ref {typeName} pRef,
+        [MarshalAs(UnmanagedType.{unmanagedType})] out {typeName} pOut);
+}}
+";
+
+        /// <summary>
+        /// Declaration with parameters with MarshalAs.
+        /// </summary>
+        public static string MarshalAsParametersAndModifiersUnsafe(string typeName, UnmanagedType unmanagedType) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.{unmanagedType})]
+    public static unsafe partial {typeName} Method(
         [MarshalAs(UnmanagedType.{unmanagedType})] {typeName} p,
         [MarshalAs(UnmanagedType.{unmanagedType})] in {typeName} pIn,
         [MarshalAs(UnmanagedType.{unmanagedType})] ref {typeName} pRef,
@@ -425,17 +457,7 @@ partial class Test
         /// <summary>
         /// Declaration with pointer parameters.
         /// </summary>
-        public static string PointerParameters<T>() => @$"
-using System.Runtime.InteropServices;
-partial class Test
-{{
-    [GeneratedDllImport(""DoesNotExist"")]
-    public static unsafe partial {typeof(T)}* Method(
-        {typeof(T)}* p,
-        in {typeof(T)}* pIn,
-        ref {typeof(T)}* pRef,
-        out {typeof(T)}* pOut);
-}}";
+        public static string PointerParameters<T>() => BasicParametersAndModifiersUnsafe($"{typeof(T)}*");
 
         /// <summary>
         /// Declaration with PreserveSig = false.

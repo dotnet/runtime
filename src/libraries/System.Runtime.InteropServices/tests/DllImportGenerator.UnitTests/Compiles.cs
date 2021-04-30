@@ -83,6 +83,8 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.I1) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<char>(UnmanagedType.I2) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<char>(UnmanagedType.U2) };
+            yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<IntPtr>(UnmanagedType.SysInt) };
+            yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<UIntPtr>(UnmanagedType.SysUInt) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPWStr) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPTStr) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPUTF8Str) };
@@ -113,10 +115,19 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.PointerParameters<bool>() };
             yield return new[] { CodeSnippets.PointerParameters<IntPtr>() };
             yield return new[] { CodeSnippets.PointerParameters<UIntPtr>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersUnsafe("void*") };
 
             // Delegates
             yield return new[] { CodeSnippets.DelegateParametersAndModifiers };
             yield return new[] { CodeSnippets.DelegateMarshalAsParametersAndModifiers };
+
+            // Function pointers
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersUnsafe("delegate* <void>") };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersUnsafe("delegate* unmanaged<void>") };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersUnsafe("delegate* unmanaged<int, int>") };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersUnsafe("delegate* unmanaged[Stdcall]<int, int>") };
+            yield return new[] { CodeSnippets.MarshalAsParametersAndModifiersUnsafe("delegate* <int>", UnmanagedType.FunctionPtr) };
+            yield return new[] { CodeSnippets.MarshalAsParametersAndModifiersUnsafe("delegate* unmanaged<int>", UnmanagedType.FunctionPtr) };
 
             // Structs
             yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers };
@@ -208,12 +219,12 @@ namespace DllImportGenerator.UnitTests
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);
         }
-        
+
         public static IEnumerable<object[]> CodeSnippetsToCompileWithForwarder()
         {
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
             yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
-            
+
             // Parameter / return types (supported in DllImportGenerator)
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte>() };
             // Parameter / return types (not supported in DllImportGenerator)
@@ -243,7 +254,7 @@ namespace DllImportGenerator.UnitTests
         {
             // SetLastError
             yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
-            
+
             // SafeHandle
             yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
         }
