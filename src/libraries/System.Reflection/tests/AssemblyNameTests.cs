@@ -634,10 +634,19 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Foo")]
         [InlineData("Hi There")]
-        [InlineData("")]
         public void ToStringTest(string name)
         {
             var assemblyName = new AssemblyName(name);
+            Assert.StartsWith(name, assemblyName.ToString());
+            Assert.Equal(assemblyName.FullName, assemblyName.ToString());
+        }
+
+        [Theory]
+        [InlineData("")]
+        public void ToStringEmptyNameTest(string name)
+        {
+            var assemblyName = new AssemblyName("test");
+            assemblyName.Name = name;
             Assert.StartsWith(name, assemblyName.ToString());
             Assert.Equal(assemblyName.FullName, assemblyName.ToString());
         }
