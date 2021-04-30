@@ -5,7 +5,7 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Composition.Hosting.ContainerConfiguration.&lt;&gt;c.{WithAssemblies}b__16_0(System.Reflection.Assembly)</property>
+      <property name="Target">M:System.Composition.Hosting.ContainerConfiguration.&lt;&gt;c.&lt;WithAssemblies&gt;b__16_0(System.Reflection.Assembly)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

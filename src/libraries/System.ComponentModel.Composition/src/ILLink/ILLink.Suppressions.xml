@@ -47,7 +47,7 @@
       <argument>ILLink</argument>
       <argument>IL2055</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.Composition.ReflectionModel.GenericSpecializationPartCreationInfo.&lt;&gt;c__DisplayClass13_0.{#ctor}b__0</property>
+      <property name="Target">M:System.ComponentModel.Composition.ReflectionModel.GenericSpecializationPartCreationInfo.&lt;&gt;c__DisplayClass13_0.&lt;#ctor&gt;b__0</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -83,7 +83,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:Microsoft.Internal.ReflectionServices.&lt;&gt;c.{GetAllProperties}b__7_0(System.Type)</property>
+      <property name="Target">M:Microsoft.Internal.ReflectionServices.&lt;&gt;c.&lt;GetAllProperties&gt;b__7_0(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

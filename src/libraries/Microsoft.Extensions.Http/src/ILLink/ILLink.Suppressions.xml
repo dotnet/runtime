@@ -5,13 +5,13 @@
       <argument>ILLink</argument>
       <argument>IL2091</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.&lt;&gt;c__DisplayClass10_0`1.{AddTypedClientCore}b__0(System.IServiceProvider)</property>
+      <property name="Target">M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.&lt;&gt;c__DisplayClass10_0`1.&lt;AddTypedClientCore&gt;b__0(System.IServiceProvider)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2091</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.&lt;&gt;c__DisplayClass12_0`2.{AddTypedClientCore}b__0(System.IServiceProvider)</property>
+      <property name="Target">M:Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions.&lt;&gt;c__DisplayClass12_0`2.&lt;AddTypedClientCore&gt;b__0(System.IServiceProvider)</property>
     </attribute>
   </assembly>
 </linker>
