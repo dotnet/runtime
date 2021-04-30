@@ -203,14 +203,18 @@ namespace System.IO.Pipelines.Tests
             Assert.False(flushAsync.IsCompleted);
         }
 
-        [Fact]
-        public async Task ReadAtLeastAsyncUnblocksWriterIfMinimumlowerThanResumeThreshold()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAtLeastAsyncUnblocksWriterIfMinimumlowerThanResumeThreshold(bool baseImplementation)
         {
+            var reader = baseImplementation ? new BasePipeReader(_pipe.Reader) : _pipe.Reader;
+
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
             ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
             Assert.False(flushAsync.IsCompleted);
 
-            ValueTask<ReadResult> readAsync = _pipe.Reader.ReadAtLeastAsync(PauseWriterThreshold * 3);
+            ValueTask<ReadResult> readAsync = reader.ReadAtLeastAsync(PauseWriterThreshold * 3);
 
             Assert.False(readAsync.IsCompleted);
 
@@ -226,7 +230,7 @@ namespace System.IO.Pipelines.Tests
 
             var result = await readAsync;
             Assert.Equal(PauseWriterThreshold * 3, result.Buffer.Length);
-            _pipe.Reader.AdvanceTo(result.Buffer.End);
+            reader.AdvanceTo(result.Buffer.End);
         }
 
         [Fact]

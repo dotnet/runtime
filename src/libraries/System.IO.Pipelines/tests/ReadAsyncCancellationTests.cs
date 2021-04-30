@@ -439,23 +439,27 @@ namespace System.IO.Pipelines.Tests
             Pipe.Reader.AdvanceTo(buffer.End, buffer.End);
         }
 
-        [Fact]
-        public async Task WriteAndCancellingPendingReadBeforeReadAtLeastAsync()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WriteAndCancellingPendingReadBeforeReadAtLeastAsync(bool baseImplementation)
         {
+            var reader = baseImplementation ? new BasePipeReader(Pipe.Reader) : Pipe.Reader;
+
             byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
             PipeWriter output = Pipe.Writer;
             output.Write(bytes);
             await output.FlushAsync();
 
-            Pipe.Reader.CancelPendingRead();
+            reader.CancelPendingRead();
 
-            ReadResult result = await Pipe.Reader.ReadAtLeastAsync(1000);
+            ReadResult result = await reader.ReadAtLeastAsync(1000);
             ReadOnlySequence<byte> buffer = result.Buffer;
 
             Assert.False(result.IsCompleted);
             Assert.True(result.IsCanceled);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(buffer.ToArray()));
-            Pipe.Reader.AdvanceTo(buffer.End);
+            reader.AdvanceTo(buffer.End);
         }
 
         [Fact]
