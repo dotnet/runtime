@@ -6,6 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
+    /// <summary>
+    /// API to enable Objective-C marshalling.
+    /// </summary>
     [SupportedOSPlatform("macos")]
     [CLSCompliant(false)]
     public static partial class ObjectiveCMarshal
