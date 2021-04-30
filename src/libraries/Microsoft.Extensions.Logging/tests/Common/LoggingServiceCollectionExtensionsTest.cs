@@ -4,6 +4,7 @@
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using Moq;
 
 namespace Microsoft.Extensions.Logging.Test
 {
@@ -13,6 +14,22 @@ namespace Microsoft.Extensions.Logging.Test
         public void AddLogging_WrapsServiceCollection()
         {
             var services = new ServiceCollection();
+
+            var callbackCalled = false;
+            var loggerBuilder = services.AddLogging(builder =>
+            {
+                callbackCalled = true;
+                Assert.Same(services, builder.Services);
+            });
+            Assert.True(callbackCalled);
+        }
+
+        [Fact]
+        public void AddLogging_InjectScopeProvider()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton(typeof(IExternalScopeProvider), Mock.Of<IExternalScopeProvider>());
 
             var callbackCalled = false;
             var loggerBuilder = services.AddLogging(builder =>
