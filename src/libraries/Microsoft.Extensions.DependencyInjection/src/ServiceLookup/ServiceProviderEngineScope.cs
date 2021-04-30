@@ -52,26 +52,35 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return service;
             }
 
+            bool disposed = false;
             lock (Sync)
             {
                 if (_disposed)
                 {
-                    if (service is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
-                    else
-                    {
-                        // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
-                        Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
-                    }
+                    disposed = true;
+                }
+                else
+                {
+                    _disposables ??= new List<object>();
 
-                    ThrowHelper.ThrowObjectDisposedException();
+                    _disposables.Add(service);
+                }
+            }
+
+            // Don't run customer code under the lock
+            if (disposed)
+            {
+                if (service is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+                else
+                {
+                    // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
+                    Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
                 }
 
-                _disposables ??= new List<object>();
-
-                _disposables.Add(service);
+                ThrowHelper.ThrowObjectDisposedException();
             }
 
             return service;
