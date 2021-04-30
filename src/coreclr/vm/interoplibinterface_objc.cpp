@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
 
 // Runtime headers
 #include "common.h"
@@ -18,12 +18,12 @@
 namespace
 {
     BOOL g_ReferenceTrackerInitialized;
-    ObjCBridgeNative::BeginEndCallback g_BeginEndCallback;
-    ObjCBridgeNative::IsReferencedCallback g_IsReferencedCallback;
-    ObjCBridgeNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
+    ObjCMarshalNative::BeginEndCallback g_BeginEndCallback;
+    ObjCMarshalNative::IsReferencedCallback g_IsReferencedCallback;
+    ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
 }
 
-BOOL QCALLTYPE ObjCBridgeNative::TryInitializeReferenceTracker(
+BOOL QCALLTYPE ObjCMarshalNative::TryInitializeReferenceTracker(
     _In_ BeginEndCallback beginEndCallback,
     _In_ IsReferencedCallback isReferencedCallback,
     _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization)
@@ -57,21 +57,24 @@ BOOL QCALLTYPE ObjCBridgeNative::TryInitializeReferenceTracker(
     return success;
 }
 
-void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
-    _In_ QCall::ObjectHandleOnStack obj,
-    _Outptr_ void** scratchMemory)
+void* QCALLTYPE ObjCMarshalNative::CreateReferenceTrackingHandle(
+        _In_ QCall::ObjectHandleOnStack obj,
+        _Out_ int* memInSizeT,
+        _Outptr_ void** mem)
 {
     QCALL_CONTRACT;
-    _ASSERTE(scratchMemory != NULL);
+    _ASSERTE(memInSizeT != NULL);
+    _ASSERTE(mem != NULL);
 
     OBJECTHANDLE instHandle;
-    void* scratchMemoryLocal;
+    size_t memInSizeTLocal;
+    void* taggedMemoryLocal;
 
     BEGIN_QCALL;
 
     // The reference tracking system must be initialized.
     if (!g_ReferenceTrackerInitialized)
-        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ReferenceTrackerNotInitialized"));
+        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCMarshalNotInitialized"));
 
     // Switch to Cooperative mode since object references
     // are being manipulated.
@@ -89,13 +92,13 @@ void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
 
         // The object's type must be marked appropriately and with a finalizer.
         if (!gc.objRef->GetMethodTable()->IsTrackedReferenceWithFinalizer())
-            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_TrackedNativeReferenceNoFinalizer"));
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCTypeNoFinalizer"));
 
         // Initialize the syncblock for this instance.
         SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
         InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-        scratchMemoryLocal = interopInfo->AllocReferenceTrackingScratchMemory();
-        _ASSERTE(scratchMemoryLocal != NULL);
+        taggedMemoryLocal = interopInfo->AllocTaggedMemory(&memInSizeTLocal);
+        _ASSERTE(taggedMemoryLocal != NULL);
 
         instHandle = GetAppDomain()->CreateTypedHandle(gc.objRef, HNDTYPE_REFCOUNTED);
 
@@ -104,17 +107,18 @@ void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
 
     END_QCALL;
 
-    *scratchMemory = scratchMemoryLocal;
+    *memInSizeT = (int)memInSizeTLocal;
+    *mem = taggedMemoryLocal;
     return (void*)instHandle;
 }
 
 namespace
 {
     BOOL s_msgSendOverridden = FALSE;
-    void* s_msgSendOverrides[ObjCBridgeNative::MsgSendFunction::Last + 1] = {};
+    void* s_msgSendOverrides[ObjCMarshalNative::MessageSendFunction::Last + 1] = {};
 
     const char* ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
-    const char* MsgSendEntryPoints[ObjCBridgeNative::MsgSendFunction::Last + 1] =
+    const char* MsgSendEntryPoints[ObjCMarshalNative::MessageSendFunction::Last + 1] =
     {
         OBJC_MSGSEND,
         OBJC_MSGSEND "_fpret",
@@ -147,8 +151,8 @@ namespace
     }
 }
 
-BOOL QCALLTYPE ObjCBridgeNative::TrySetGlobalMessageSendCallback(
-    _In_ MsgSendFunction msgSendFunction,
+BOOL QCALLTYPE ObjCMarshalNative::TrySetGlobalMessageSendCallback(
+    _In_ MessageSendFunction msgSendFunction,
     _In_ void* fptr)
 {
     QCALL_CONTRACT;
@@ -171,13 +175,13 @@ BOOL QCALLTYPE ObjCBridgeNative::TrySetGlobalMessageSendCallback(
 
 namespace
 {
-    bool TryGetReferenceTrackingScratchMemory(_In_ OBJECTREF object, _Out_ void** scratch)
+    bool TryGetTaggedMemory(_In_ OBJECTREF object, _Out_ void** tagged)
     {
         CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
-            PRECONDITION(CheckPointer(scratch));
+            PRECONDITION(CheckPointer(tagged));
         }
         CONTRACTL_END;
 
@@ -189,18 +193,18 @@ namespace
         if (interopInfo == NULL)
             return false;
 
-        // If no scratch memory is allocated, then the instance is not
+        // If no tagged memory is allocated, then the instance is not
         // being tracked.
-        void* scratchLocal = interopInfo->GetReferenceTrackingScratchMemory();
-        if (scratchLocal == NULL)
+        void* taggedLocal = interopInfo->GetTaggedMemory();
+        if (taggedLocal == NULL)
             return false;
 
-        *scratch = scratchLocal;
+        *tagged = taggedLocal;
         return true;
     }
 }
 
-bool ObjCBridgeNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced)
+bool ObjCMarshalNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced)
 {
     CONTRACTL
     {
@@ -212,18 +216,18 @@ bool ObjCBridgeNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isR
 
     *isReferenced = false;
 
-    void* scratchMemory;
-    if (!TryGetReferenceTrackingScratchMemory(object, &scratchMemory))
+    void* taggedMemory;
+    if (!TryGetTaggedMemory(object, &taggedMemory))
         return false;
 
     _ASSERTE(g_IsReferencedCallback != NULL);
-    int result = g_IsReferencedCallback(scratchMemory);
+    int result = g_IsReferencedCallback(taggedMemory);
 
     *isReferenced = (result != 0);
     return true;
 }
 
-bool ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(
+bool ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(
     _In_z_ const char* libraryName,
     _In_z_ const char* entrypointName)
 {
@@ -250,7 +254,7 @@ namespace
         }
         CONTRACTL_END;
 
-        MethodDescCallSite dispatch(METHOD__OBJCBRIDGE__AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION);
+        MethodDescCallSite dispatch(METHOD__OBJCMARSHAL__AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION);
         return dispatch.Call_RetBool(NULL);
     }
 
@@ -272,7 +276,7 @@ namespace
         void* callback = NULL;
         *callbackContext = NULL;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__OBJCBRIDGE__INVOKEUNHANDLEDEXCEPTIONPROPAGATION);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__OBJCMARSHAL__INVOKEUNHANDLEDEXCEPTIONPROPAGATION);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*exceptionPROTECTED);
         args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*methodRefPROTECTED);
@@ -283,7 +287,7 @@ namespace
     }
 }
 
-void* ObjCBridgeNative::GetPropagatingExceptionCallback(
+void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
     _In_ OBJECTHANDLE throwable,
     _Outptr_ void** context)
@@ -344,7 +348,7 @@ void* ObjCBridgeNative::GetPropagatingExceptionCallback(
     RETURN callback;
 }
 
-void ObjCBridgeNative::BeforeRefCountedHandleCallbacks()
+void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()
 {
     CONTRACTL
     {
@@ -357,7 +361,7 @@ void ObjCBridgeNative::BeforeRefCountedHandleCallbacks()
         g_BeginEndCallback();
 }
 
-void ObjCBridgeNative::AfterRefCountedHandleCallbacks()
+void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
 {
     CONTRACTL
     {
@@ -370,7 +374,7 @@ void ObjCBridgeNative::AfterRefCountedHandleCallbacks()
         g_BeginEndCallback();
 }
 
-void ObjCBridgeNative::OnEnteredFinalizerQueue(_In_ OBJECTREF object)
+void ObjCMarshalNative::OnEnteredFinalizerQueue(_In_ OBJECTREF object)
 {
     CONTRACTL
     {
@@ -379,12 +383,12 @@ void ObjCBridgeNative::OnEnteredFinalizerQueue(_In_ OBJECTREF object)
     }
     CONTRACTL_END;
 
-    void* scratchMemory;
-    if (!TryGetReferenceTrackingScratchMemory(object, &scratchMemory))
+    void* taggedMemory;
+    if (!TryGetTaggedMemory(object, &taggedMemory))
         return;
 
     _ASSERTE(g_TrackedObjectEnteredFinalizationCallback != NULL);
-    g_TrackedObjectEnteredFinalizationCallback(scratchMemory);
+    g_TrackedObjectEnteredFinalizationCallback(taggedMemory);
 }
 
-#endif // FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCMARSHAL

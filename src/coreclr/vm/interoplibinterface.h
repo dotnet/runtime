@@ -108,24 +108,24 @@ public: // Functions operating on a registered global instance for tracker suppo
 
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
 
-class ObjCBridgeNative
+class ObjCMarshalNative
 {
 public:
     using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
     using IsReferencedCallback = int(STDMETHODCALLTYPE *)(_In_ void*);
     using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(_In_ void*);
 
-    // See MsgSendFunction in Bridge.cs
-    enum MsgSendFunction
+    // See MessageSendFunction in ObjectiveCMarshal class
+    enum MessageSendFunction
     {
-        MsgSendFunction_ObjCMsgSend = 0,
-        MsgSendFunction_ObjCMsgSendFpret = 1,
-        MsgSendFunction_ObjCMsgSendStret = 2,
-        MsgSendFunction_ObjCMsgSendSuper = 3,
-        MsgSendFunction_ObjCMsgSendSuperStret = 4,
-        Last = MsgSendFunction_ObjCMsgSendSuperStret,
+        MessageSendFunction_MsgSend = 0,
+        MessageSendFunction_MsgSendFpret = 1,
+        MessageSendFunction_MsgSendStret = 2,
+        MessageSendFunction_MsgSendSuper = 3,
+        MessageSendFunction_MsgSendSuperStret = 4,
+        Last = MessageSendFunction_MsgSendSuperStret,
     };
 
 public: // static
@@ -136,10 +136,11 @@ public: // static
 
     static void* QCALLTYPE CreateReferenceTrackingHandle(
         _In_ QCall::ObjectHandleOnStack obj,
-        _Outptr_ void** scratchMemory);
+        _Out_ int* memInSizeT,
+        _Outptr_ void** mem);
 
     static BOOL QCALLTYPE TrySetGlobalMessageSendCallback(
-        _In_ MsgSendFunction msgSendFunction,
+        _In_ MessageSendFunction msgSendFunction,
         _In_ void* fptr);
 
 public: // Instance inspection
@@ -162,7 +163,7 @@ public: // GC interaction
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
-#endif // FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCMARSHAL
 
 class Interop
 {

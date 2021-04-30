@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             if (s_unhandledExceptionPropagationHandler != null
                 || !TryInitializeReferenceTracker(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization))
             {
-                throw new InvalidOperationException(SR.InvalidOperation_ReinitializeReferenceTracker);
+                throw new InvalidOperationException(SR.InvalidOperation_ReinitializeObjectiveCMarshal);
             }
             s_unhandledExceptionPropagationHandler = unhandledExceptionPropagationHandler;
         }

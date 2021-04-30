@@ -930,13 +930,13 @@ FCFuncStart(gComWrappersFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef FEATURE_OBJCBRIDGE
-FCFuncStart(gObjCBridgeFuncs)
-    QCFuncElement("TrySetGlobalMessageSendCallback", ObjCBridgeNative::TrySetGlobalMessageSendCallback)
-    QCFuncElement("TryInitializeReferenceTracker", ObjCBridgeNative::TryInitializeReferenceTracker)
-    QCFuncElement("CreateReferenceTrackingHandleInternal", ObjCBridgeNative::CreateReferenceTrackingHandle)
+#ifdef FEATURE_OBJCMARSHAL
+FCFuncStart(gObjCMarshalFuncs)
+    QCFuncElement("TrySetGlobalMessageSendCallback", ObjCMarshalNative::TrySetGlobalMessageSendCallback)
+    QCFuncElement("TryInitializeReferenceTracker", ObjCMarshalNative::TryInitializeReferenceTracker)
+    QCFuncElement("CreateReferenceTrackingHandleInternal", ObjCMarshalNative::CreateReferenceTrackingHandle)
 FCFuncEnd()
-#endif // FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCMARSHAL
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
@@ -1126,9 +1126,6 @@ FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExte
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
-#ifdef FEATURE_OBJCBRIDGE
-FCClassElement("Bridge", "System.Runtime.InteropServices.ObjectiveC", gObjCBridgeFuncs)
-#endif // FEATURE_OBJCBRIDGE
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
@@ -1191,6 +1188,9 @@ FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
+#ifdef FEATURE_OBJCMARSHAL
+FCClassElement("ObjectiveCMarshal", "System.Runtime.InteropServices.ObjectiveC", gObjCMarshalFuncs)
+#endif // FEATURE_OBJCMARSHAL
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 

@@ -29,7 +29,7 @@ namespace
     }
 
     // See contract in managed portion of test.
-    struct ScratchContract
+    struct Contract
     {
         size_t RefCountDown;
         size_t RefCountUp;
@@ -49,7 +49,7 @@ namespace
 
 
         assert(mem != nullptr);
-        auto cxt = (ScratchContract*)mem;
+        auto cxt = (Contract*)mem;
 
         cxt->RefCountDown--;
         cxt->RefCountUp++;
@@ -72,7 +72,7 @@ namespace
 #endif // REF_TRACKER_DEBUG_CALLBACKS
 
         assert(mem != nullptr);
-        auto cxt = (ScratchContract*)mem;
+        auto cxt = (Contract*)mem;
 
         cxt->RefCountDown = (size_t)-1;
     }

@@ -73,7 +73,7 @@ namespace ObjectiveCMarshalAPI
         // during the "is referenced" callback. When the object enters the finalizer queue
         // the RefCountDown will then be set to nuint.MaxValue. In the object's finalizer
         // the RefCountUp can be checked to ensure the count down value was respected.
-        struct ScratchContract
+        struct Contract
         {
             public nuint RefCountDown;
             public nuint RefCountUp;
@@ -86,7 +86,7 @@ namespace ObjectiveCMarshalAPI
             public static int FinalizeCount = 0;
 
             private nuint _expectedCount = 0;
-            private ScratchContract* _contract;
+            private Contract* _contract;
 
             public Base()
             {
@@ -104,13 +104,13 @@ namespace ObjectiveCMarshalAPI
                 FinalizeCount++;
             }
 
-            public IntPtr Scratch { get => (IntPtr)_contract; }
+            public IntPtr Contract { get => (IntPtr)_contract; }
 
-            public void SetScratch(IntPtr scratch, uint count)
+            public void SetContractMemory(IntPtr mem, uint count)
             {
-                _contract = (ScratchContract*)scratch;
+                _contract = (Contract*)mem;
 
-                // Scratch should be 0 initialized when supplied.
+                // Contract should be 0 initialized when supplied.
                 Assert.AreEqual((nuint)0, _contract->RefCountDown);
                 Assert.AreEqual((nuint)0, _contract->RefCountUp);
 
@@ -149,7 +149,7 @@ namespace ObjectiveCMarshalAPI
 
             // Make the "is referenced" callback run a few times.
             fixed (void* p = s)
-                obj.SetScratch((IntPtr)p, count: 3);
+                obj.SetContractMemory((IntPtr)p, count: 3);
             return h;
         }
 
@@ -158,9 +158,9 @@ namespace ObjectiveCMarshalAPI
             var obj = (T)handle.Target;
             GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> s);
 
-            // Validate the scratch is the same but the GCHandles are distinct.
+            // Validate the memory is the same but the GCHandles are distinct.
             fixed (void* p = s)
-                Assert.AreEqual(obj.Scratch, new IntPtr(p));
+                Assert.AreEqual(obj.Contract, new IntPtr(p));
 
             Assert.AreNotEqual(handle, h);
             h.Free();

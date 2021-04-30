@@ -316,9 +316,9 @@ void GCToEEInterface::RefCountedHandleCallbacksBefore()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_OBJCBRIDGE
-    ObjCBridgeNative::BeforeRefCountedHandleCallbacks();
-#endif // FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
+    ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+#endif // FEATURE_OBJCMARSHAL
 }
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
@@ -342,12 +342,12 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
         return isRooted;
 #endif
-#ifdef FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
     bool isReferenced = false;
-    if (ObjCBridgeNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
+    if (ObjCMarshalNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
         return isReferenced;
 #endif
-#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCBRIDGE)
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCMARSHAL)
 #error COM and Objective-C are not supported at the same time.
 #endif
 
@@ -363,9 +363,9 @@ void GCToEEInterface::RefCountedHandleCallbacksAfter()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_OBJCBRIDGE
-    ObjCBridgeNative::AfterRefCountedHandleCallbacks();
-#endif // FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
+    ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+#endif // FEATURE_OBJCMARSHAL
 
 }
 
@@ -1122,13 +1122,13 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
         FinalizeWeakReference(obj);
         return true;
     }
-#ifdef FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
     else if (pMT->IsTrackedReferenceWithFinalizer())
     {
-        ObjCBridgeNative::OnEnteredFinalizerQueue((OBJECTREF)obj);
+        ObjCMarshalNative::OnEnteredFinalizerQueue((OBJECTREF)obj);
         return false;
     }
-#endif // FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCMARSHAL
 
     return false;
 }

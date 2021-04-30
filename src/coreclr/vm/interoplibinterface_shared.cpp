@@ -18,15 +18,15 @@ bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
     PTR_CUTF8 libraryName = md->GetLibNameRaw();
     PTR_CUTF8 entrypointName = md->GetEntrypointName();
     if (libraryName == NULL || entrypointName == NULL)
         return false;
 
-    if (ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
+    if (ObjCMarshalNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
         return true;
-#endif // FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCMARSHAL
 
     return false;
 }
@@ -49,10 +49,10 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     ManagedToNativeExceptionCallback callback = NULL;
     *context = NULL;
 
-#ifdef FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCMARSHAL
     EX_TRY
     {
-        callback = (ManagedToNativeExceptionCallback)ObjCBridgeNative::GetPropagatingExceptionCallback(
+        callback = (ManagedToNativeExceptionCallback)ObjCMarshalNative::GetPropagatingExceptionCallback(
             codeInfo,
             throwable,
             context);
@@ -64,7 +64,7 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
             W("Unhandled managed exception handler threw an exception."));
     }
     EX_END_CATCH_UNREACHABLE;
-#endif // FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCMARSHAL
 
     RETURN callback;
 }
