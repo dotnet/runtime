@@ -12,7 +12,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaGenerateKey")]
+        [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_RsaGenerateKey(
             int keySizeInBits,
             out SafeSecKeyRefHandle pPublicKey,
@@ -124,27 +124,27 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey)
         {
-            SafeSecKeyRefHandle keychainPublic;
-            SafeSecKeyRefHandle keychainPrivate;
+            SafeSecKeyRefHandle publicKey;
+            SafeSecKeyRefHandle privateKey;
             SafeCFErrorHandle error;
 
             int result = AppleCryptoNative_RsaGenerateKey(
                 keySizeInBits,
-                out keychainPublic,
-                out keychainPrivate,
+                out publicKey,
+                out privateKey,
                 out error);
 
             using (error)
             {
                 if (result == kSuccess)
                 {
-                    pPublicKey = keychainPublic;
-                    pPrivateKey = keychainPrivate;
+                    pPublicKey = publicKey;
+                    pPrivateKey = privateKey;
                     return;
                 }
 
-                using (keychainPrivate)
-                using (keychainPublic)
+                using (privateKey)
+                using (publicKey)
                 {
                     if (result == kErrorSeeError)
                     {

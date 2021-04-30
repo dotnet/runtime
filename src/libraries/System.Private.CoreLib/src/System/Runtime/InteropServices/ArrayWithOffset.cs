@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-    public struct ArrayWithOffset
+    public readonly struct ArrayWithOffset
     {
         private readonly object? m_array;
         private readonly int m_offset;

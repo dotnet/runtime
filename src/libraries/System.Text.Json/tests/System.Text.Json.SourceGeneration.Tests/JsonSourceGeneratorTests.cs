@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.SourceGeneration.Tests;
 using System.Text.Json.SourceGeneration.Tests.JsonSourceGeneration;
 using Xunit;
@@ -465,6 +467,85 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             public DayOfWeek Day { get; set; }
             public DayOfWeek? NullableDay { get; set; }
+        }
+
+        [Fact]
+        public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
+        {
+            object[] objArr = new object[] { new MyStruct() };
+
+            // Metadata not generated for MyStruct without JsonSerializableAttribute.
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(
+                () => JsonSerializer.Serialize(objArr, JsonContext.Default.ObjectArray));
+            string exAsStr = ex.ToString();
+            Assert.Contains(typeof(MyStruct).ToString(), exAsStr);
+            Assert.Contains("JsonSerializerOptions", exAsStr);
+
+            // This test uses reflection to:
+            // - Access JsonSerializerOptions.s_defaultSimpleConverters
+            // - Access JsonSerializerOptions.s_defaultFactoryConverters
+            // - Access JsonSerializerOptions._typeInfoCreationFunc
+            //
+            // If any of them changes, this test will need to be kept in sync.
+
+            // Confirm built-in converters not set.
+            AssertFieldNull("s_defaultSimpleConverters", optionsInstance: null);
+            AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
+
+            // Confirm type info dynamic creator not set.
+            AssertFieldNull("_typeInfoCreationFunc", JsonContext.Default.Options);
+
+            static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
+            {
+                BindingFlags bindingFlags = BindingFlags.NonPublic | (optionsInstance == null ? BindingFlags.Static : BindingFlags.Instance);
+                FieldInfo fieldInfo = typeof(JsonSerializerOptions).GetField(fieldName, bindingFlags);
+                Assert.NotNull(fieldInfo);
+                Assert.Null(fieldInfo.GetValue(optionsInstance));
+            }
+        }
+
+        private const string ExceptionMessageFromCustomContext = "Exception thrown from custom context.";
+
+        [Fact]
+        public static void GetTypeInfoCalledDuringPolymorphicSerialization()
+        {
+            CustomContext context = new(new JsonSerializerOptions());
+
+            // Empty array is fine since we don't need metadata for children.
+            Assert.Equal("[]", JsonSerializer.Serialize(Array.Empty<object>(), context.ObjectArray));
+            Assert.Equal("[]", JsonSerializer.Serialize(Array.Empty<object>(), typeof(object[]), context));
+
+            // GetTypeInfo method called to get metadata for element run-time type.
+            object[] objArr = new object[] { new MyStruct() };
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(objArr, context.ObjectArray));
+            Assert.Contains(ExceptionMessageFromCustomContext, ex.ToString());
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(objArr, typeof(object[]), context));
+            Assert.Contains(ExceptionMessageFromCustomContext, ex.ToString());
+        }
+
+        internal struct MyStruct { }
+
+        internal class CustomContext : JsonSerializerContext
+        {
+            public CustomContext(JsonSerializerOptions options) : base(options) { }
+
+            private JsonTypeInfo<object> _object;
+            public JsonTypeInfo<object> Object => _object ??= JsonMetadataServices.CreateValueInfo<object>(Options, JsonMetadataServices.ObjectConverter);
+
+            private JsonTypeInfo<object[]> _objectArray;
+            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, Object, default);
+
+            public override JsonTypeInfo GetTypeInfo(Type type)
+            {
+                if (type == typeof(object[]))
+                {
+                    return ObjectArray;
+                }
+
+                throw new InvalidOperationException(ExceptionMessageFromCustomContext);
+            }
         }
     }
 }

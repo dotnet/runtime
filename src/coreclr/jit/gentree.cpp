@@ -11460,10 +11460,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_RET_EXPR:
-            printf("(inl return from call ");
-            printTreeID(tree->AsRetExpr()->gtInlineCandidate);
+        {
+            GenTree* const associatedTree = tree->AsRetExpr()->gtInlineCandidate;
+            printf("(inl return %s ", tree->IsCall() ? " from call" : "expr");
+            printTreeID(associatedTree);
             printf(")");
-            break;
+        }
+        break;
 
         case GT_PHYSREG:
             printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg, varTypeUsesFloatReg(tree)));
@@ -17598,6 +17601,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
                     case CORINFO_TYPE_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector128ULongHandle);
                         break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128NIntHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128NUIntHandle);
+                        break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
                     default:
@@ -17638,6 +17647,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
                         break;
                     case CORINFO_TYPE_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector256ULongHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256NIntHandle);
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256NUIntHandle);
                         break;
                     default:
                         break;

@@ -15,7 +15,6 @@
 #ifndef _ASSEMBLYSPEC_H
 #define _ASSEMBLYSPEC_H
 #include "hash.h"
-#include "memorypool.h"
 #include "assemblyspecbase.h"
 #include "domainfile.h"
 #include "holder.h"
@@ -28,10 +27,6 @@ enum FileLoadLevel;
 class AssemblySpec  : public BaseAssemblySpec
 {
   private:
-
-    friend class AppDomain;
-    friend class AssemblyNameNative;
-
     AppDomain       *m_pAppDomain;
     DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
@@ -243,12 +238,6 @@ class AssemblySpec  : public BaseAssemblySpec
             _ASSERTE(!"Unexpected content type.");
             return E_UNEXPECTED;
         }
-    }
-
-    inline BOOL CanUseWithBindingCache() const
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return HasUniqueIdentity();
     }
 };
 

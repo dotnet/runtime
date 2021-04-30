@@ -55,6 +55,11 @@
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />
     </type>
+
+     <!-- methods used by hot reload --> 
+    <type fullname="System.Reflection.Metadata.AssemblyExtensions">
+      <method name="GetApplyUpdateCapabilities" />
+    </type>
   </assembly>
 
   <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
