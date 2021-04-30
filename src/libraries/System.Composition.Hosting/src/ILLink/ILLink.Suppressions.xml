@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Composition.Hosting, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.ExportFactory.ExportFactoryExportDescriptorProvider.GetExportDescriptors(System.Composition.Hosting.Core.CompositionContract,System.Composition.Hosting.Core.DependencyAccessor)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.ExportFactory.ExportFactoryWithMetadataExportDescriptorProvider.GetExportDescriptors(System.Composition.Hosting.Core.CompositionContract,System.Composition.Hosting.Core.DependencyAccessor)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.ImportMany.ImportManyExportDescriptorProvider.GetExportDescriptors(System.Composition.Hosting.Core.CompositionContract,System.Composition.Hosting.Core.DependencyAccessor)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Lazy.LazyExportDescriptorProvider.GetExportDescriptors(System.Composition.Hosting.Core.CompositionContract,System.Composition.Hosting.Core.DependencyAccessor)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Lazy.LazyWithMetadataExportDescriptorProvider.GetExportDescriptors(System.Composition.Hosting.Core.CompositionContract,System.Composition.Hosting.Core.DependencyAccessor)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Metadata.MetadataViewProvider.GetMetadataViewProvider``1</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Metadata.MetadataViewProvider.GetMetadataViewProvider``1</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Lazy.LazyExportDescriptorProvider.&lt;&gt;c__DisplayClass2_0`1.{GetLazyDefinitions}b__0(System.Composition.Hosting.Core.CompositionDependency)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Lazy.LazyExportDescriptorProvider.&lt;&gt;c__DisplayClass2_2`1.{GetLazyDefinitions}b__3(System.Composition.Hosting.Core.LifetimeContext,System.Composition.Hosting.Core.CompositionOperation)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Lazy.LazyWithMetadataExportDescriptorProvider.&lt;&gt;c__DisplayClass2_0`2.{GetLazyDefinitions}b__0(System.Composition.Hosting.Core.CompositionDependency)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2091</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Hosting.Providers.Lazy.LazyWithMetadataExportDescriptorProvider.&lt;&gt;c__DisplayClass2_2`2.{GetLazyDefinitions}b__3(System.Composition.Hosting.Core.LifetimeContext,System.Composition.Hosting.Core.CompositionOperation)</property>
+    </attribute>
+  </assembly>
+</linker>

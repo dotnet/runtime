@@ -138,5 +138,16 @@
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 
+  <Target Name="ILLinkTrimOOBLibraries"
+          AfterTargets="GenerateRuntimeListFile"
+          DependsOnTargets="SetCommonILLinkArgs"
+          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+    <Message Importance="High" Text="Trimming $(PackageRID) OOB assemblies with ILLinker..." />
+    <MSBuild Targets="Restore;Publish"
+             Projects="$(MSBuildThisFileDirectory)trimming\trimming.csproj"
+             Properties="$(TraversalGlobalProperties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+  </Target> 
+
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 </Project>

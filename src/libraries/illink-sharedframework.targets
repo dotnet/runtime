@@ -16,8 +16,9 @@
       <!-- suppress warnings with the following codes:
            IL2009: Could not find method A in type B specified in resource C
            IL2025: Duplicate preserve of A in B
+           IL2007: Could not resolve assembly A. OOB assemblies now have Suppression xmls too, so we need to suppress this error as the sharedframework won't contain these assemblies.
       -->
-      <LinkerNoWarn>IL2009;IL2025</LinkerNoWarn>
+      <LinkerNoWarn>IL2009;IL2025;IL2007</LinkerNoWarn>
       <!-- https://github.com/dotnet/runtime/issues/40336 - need to also suppress the following on non-Windows:
            IL2008: Could not find type A specified in resource B
            and on 32-bit builds:

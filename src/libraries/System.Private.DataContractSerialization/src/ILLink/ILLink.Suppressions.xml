@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Private.DataContractSerialization, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2055</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.ClassDataContract.get_UnadaptedClassType</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.SurrogateDataContract.GetUninitializedObject(System.Type)</property>
+    </attribute>
+  </assembly>
+</linker>

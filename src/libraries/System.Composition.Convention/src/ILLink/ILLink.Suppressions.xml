@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Composition.Convention, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Convention.PartConventionBuilder.BuildOnImportsSatisfiedNotification(System.Type,System.Collections.Generic.List{System.Tuple{System.Object,System.Collections.Generic.List{System.Attribute}}}@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Convention.PartConventionBuilder.BuildPropertyAttributes(System.Type,System.Collections.Generic.List{System.Tuple{System.Object,System.Collections.Generic.List{System.Attribute}}}@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Convention.PartConventionBuilder.BuildConstructorAttributes(System.Type,System.Collections.Generic.List{System.Tuple{System.Object,System.Collections.Generic.List{System.Attribute}}}@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Convention.PartConventionBuilder.BuildDefaultConstructorAttributes(System.Type,System.Collections.Generic.List{System.Tuple{System.Object,System.Collections.Generic.List{System.Attribute}}}@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Convention.PartConventionBuilder.BuildOnImportsSatisfiedNotification(System.Type,System.Collections.Generic.List{System.Tuple{System.Object,System.Collections.Generic.List{System.Attribute}}}@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Composition.Convention.PartConventionBuilder.BuildPropertyAttributes(System.Type,System.Collections.Generic.List{System.Tuple{System.Object,System.Collections.Generic.List{System.Attribute}}}@)</property>
+    </attribute>
+  </assembly>
+</linker>
