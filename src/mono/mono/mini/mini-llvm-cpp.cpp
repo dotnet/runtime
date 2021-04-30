@@ -99,11 +99,15 @@ to_align (int alignment)
 
 /* Missing overload for building an alloca with an alignment */
 LLVMValueRef
-mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
-						LLVMValueRef ArraySize,
-						int alignment, const char *Name)
+mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, LLVMValueRef ArraySize, int alignment, const char *Name)
 {
-	return wrap (unwrap (builder)->Insert (new AllocaInst (unwrap (Ty), 0, unwrap (ArraySize), to_align (alignment)), Name));
+	auto ty = unwrap (Ty);
+	auto sz = unwrap (ArraySize);
+	auto b = unwrap (builder);
+	auto ins = alignment > 0
+		? b->Insert (new AllocaInst (ty, 0, sz, to_align (alignment), Name))
+		: b->CreateAlloca (ty, 0, sz, Name);
+	return wrap (ins);
 }
 
 LLVMValueRef 
