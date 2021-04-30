@@ -1,81 +1,83 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+    <UseAppHost>true</UseAppHost>
+
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <TrimMode>link</TrimMode>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exclude packaging wrapper projects that don't produce a library -->
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.Extensions.HostFactoryResolver\src\*.csproj" />
+    <ProjectExclusions Include="$(LibrariesProjectRoot)System.Composition\src\*.csproj" />
+    <!--Exclude projects that don't have a net6.0 compatible configuration-->
+    <ProjectExclusions Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\*.csproj" />
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.Diagnostics.Tracing.EventSource.Redist\src\*.csproj" />
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.IO.Redist\src\*.csproj" />
+    <!--Exclude Microsoft.NETCore.* assemblies-->
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.NETCore.Platforms\src\*.csproj" />
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.NETCore.Targets\src\*.csproj" />
+    <!--Exclude single Tests project that doesn't follow default naming conventions of the repo-->
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\*.csproj" />
+    <!--Exclude Source Generators-->
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.XmlSerializer.Generator\src\*.csproj" />
+    <!--Exclude Common Project-->
+    <ProjectExclusions Include="$(LibrariesProjectRoot)Common\src\*.csproj" />
+
+
+    <Compile Include="Program.cs" />
+    <_allSrc Include="$(LibrariesProjectRoot)*\src\*.csproj"
+             Exclude="@(ProjectExclusions)" />
+    <NonNetCoreAppProject Include="@(_allSrc)"
+                          Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+  </ItemGroup>
+
+  <Target Name="AddSuppressionsForLinker"
+          BeforeTargets="PrepareForILLink">
+    <!-- Add Suppression xmls -->
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
-
-        <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-        <PublishTrimmed>true</PublishTrimmed>
-        <UseAppHost>true</UseAppHost>
-
-        <TrimmerDefaultAction>link</TrimmerDefaultAction>
-        <TrimMode>link</TrimMode>
-        <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+      <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
     </PropertyGroup>
 
     <ItemGroup>
-        <!--Exclude projects that don't have a net6.0 compatible configuration-->
-        <ProjectExclusions Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\*.csproj" />
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.Diagnostics.Tracing.EventSource.Redist\src\*.csproj" />
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.IO.Redist\src\*.csproj" />
-        <!--Exclude Microsoft.NETCore.* assemblies-->
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.NETCore.Platforms\src\*.csproj" />
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.NETCore.Targets\src\*.csproj" />
-        <!--Exclude single Tests project that doesn't follow default naming conventions of the repo-->
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\*.csproj" />
-        <!--Exclude Source Generators-->
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Microsoft.XmlSerializer.Generator\src\*.csproj" />
-        <!--Exclude Common Project-->
-        <ProjectExclusions Include="$(LibrariesProjectRoot)Common\src\*.csproj" />
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
 
-
-        <Compile Include="Program.cs" />
-        <_allSrc Include="$(LibrariesProjectRoot)*\src\*.csproj"
-                 Exclude="@(ProjectExclusions)" />
-        <NonNetCoreAppProject Include="@(_allSrc)"
-                              Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
+      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
+      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
     </ItemGroup>
 
-    <Target Name="AddSuppressionsForLinker"
-            BeforeTargets="PrepareForILLink">
-        <!-- Add Suppression xmls -->
-        <PropertyGroup>
-           <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
-        </PropertyGroup>
+    <PropertyGroup>
+      <_ExtraTrimmerArgs Condition="'@(_SuppressionsXmls)' != ''">$(_ExtraTrimmerArgs) --link-attributes &quot;@(_SuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</_ExtraTrimmerArgs>
+    </PropertyGroup>
+  </Target>
 
-        <ItemGroup>
-          <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-          <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
+  <ItemGroup>
+    <ProjectReference Include="@(NonNetCoreAppProject)" />
+    <TrimmerRootAssembly Include="@(NonNetCoreAppProject -> '%(FileName)')" />
+  </ItemGroup>
 
-          <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-          <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
-          <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
-          <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
-        </ItemGroup>
-
-        <PropertyGroup>
-          <_ExtraTrimmerArgs Condition="'@(_SuppressionsXmls)' != ''">$(_ExtraTrimmerArgs) --link-attributes &quot;@(_SuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</_ExtraTrimmerArgs>
-          <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --generate-warning-suppressions xml</_ExtraTrimmerArgs>
-        </PropertyGroup>
-    </Target>
-
+  <Target Name="AddP2PsToCopyLocal" AfterTargets="ResolveAssemblyReferences">
     <ItemGroup>
-        <ProjectReference Include="@(NonNetCoreAppProject)" />
-        <TrimmerRootAssembly Include="@(NonNetCoreAppProject -> '%(FileName)')" />
+      <ReferenceCopyLocalPaths Include="%(_ResolvedProjectReferencePaths.Identity)" PostprocessAssembly="true" TrimMode="link" />
     </ItemGroup>
+  </Target>
 
-    <Target Name="AddP2PsToCopyLocal" AfterTargets="ResolveAssemblyReferences">
-        <ItemGroup>
-            <ReferenceCopyLocalPaths Include="%(_ResolvedProjectReferencePaths.Identity)" PostprocessAssembly="true" TrimMode="link" />
-        </ItemGroup>
-    </Target>
+  <Target Name="RemoveUnusedArcadePackageReferences" BeforeTargets="CollectPackageReferences">
+    <ItemGroup>
+      <PackageReference Remove="Microsoft.SourceLink.GitHub" />
+      <PackageReference Remove="Microsoft.SourceLink.AzureRepos.Git" />
+    </ItemGroup>
+  </Target>
 
-    <Target Name="RemoveUnusedArcadePackageReferences" BeforeTargets="CollectPackageReferences">
-        <ItemGroup>
-            <PackageReference Remove="Microsoft.SourceLink.GitHub" />
-            <PackageReference Remove="Microsoft.SourceLink.AzureRepos.Git" />
-        </ItemGroup>
-    </Target>
-
-    <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
 </Project>
