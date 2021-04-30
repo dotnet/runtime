@@ -17,20 +17,6 @@ using System.Runtime.Versioning;
 //
 namespace Internal.Runtime.InteropServices
 {
-    [ComImport]
-    [ComVisible(false)]
-    [Guid("00000001-0000-0000-C000-000000000046")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IClassFactory
-    {
-        void CreateInstance(
-            [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
-            ref Guid riid,
-            out IntPtr ppvObject);
-
-        void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct LICINFO
     {
@@ -70,15 +56,8 @@ namespace Internal.Runtime.InteropServices
             out IntPtr ppvObject);
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ComActivationContext
+    public partial struct ComActivationContext
     {
-        public Guid ClassId;
-        public Guid InterfaceId;
-        public string AssemblyPath;
-        public string AssemblyName;
-        public string TypeName;
-
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [CLSCompliant(false)]
         public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt)
