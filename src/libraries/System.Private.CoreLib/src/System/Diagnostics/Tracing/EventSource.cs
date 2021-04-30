@@ -1698,129 +1698,135 @@ namespace System.Diagnostics.Tracing
             // the recursion, but can we do this in a robust way?
 
             IntPtr dataPointer = data->DataPointer;
+            Debug.Assert(dataPointer != IntPtr.Zero || data->Size == 0);
 
-            switch (RuntimeTypeHandle.GetCorElementType((RuntimeType)dataType))
+            if (dataType == typeof(string))
             {
-                case CorElementType.ELEMENT_TYPE_I4:
-                    Debug.Assert(data->Size == 4);
+                goto String;
+            }
+            else if (dataType == typeof(int))
+            {
+                Debug.Assert(data->Size == 4);
+                return *(int*)dataPointer;
+            }
+
+            TypeCode typeCode = Type.GetTypeCode(dataType);
+            int size = data->Size;
+
+            if (size == 4)
+            {
+                if ((uint)(typeCode - TypeCode.SByte) <= TypeCode.UInt16 - TypeCode.SByte)
+                {
+                    Debug.Assert(dataType.IsEnum);
+                    // Enums less than 4 bytes in size should be treated as int.
                     return *(int*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_I8:
-                    Debug.Assert(data->Size == 8);
-                    return *(long*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_STRING:
-                    goto default;
-
-                case CorElementType.ELEMENT_TYPE_I:
-                    Debug.Assert(data->Size == IntPtr.Size);
-                    return *(IntPtr*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_U1:
-                    Debug.Assert(data->Size == 1);
-                    return *(byte*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (data->Size == 16)
-                    {
-                        if (dataType == typeof(Guid))
-                        {
-                            return *(Guid*)dataPointer;
-                        }
-                        else if (dataType == typeof(decimal))
-                        {
-                            return *(decimal*)dataPointer;
-                        }
-                    }
-                    else if (dataType == typeof(DateTime))
-                    {
-                        Debug.Assert(data->Size == 8);
-                        return *(DateTime*)dataPointer;
-                    }
-                    else if (dataType.IsEnum)
-                    {
-                        if (data->Size == 8)
-                        {
-                            return *(long*)dataPointer;
-                        }
-                        else
-                        {
-                            // Enums less than 4 bytes in size should be treated as int.
-                            return *(int*)dataPointer;
-                        }
-                    }
-                    Debug.Assert(dataType != typeof(Guid) && dataType != typeof(decimal),
-                       $"Invalid size passed for {dataType.Name} ({data->Size})");
-                    goto default;
-
-                case CorElementType.ELEMENT_TYPE_U4:
-                    Debug.Assert(data->Size == 4);
+                }
+                else if (typeCode == TypeCode.UInt32)
+                {
                     return *(uint*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_U8:
-                    Debug.Assert(data->Size == 8);
-                    return *(ulong*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_I1:
-                    Debug.Assert(data->Size == 1);
-                    return *(sbyte*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_I2:
-                    Debug.Assert(data->Size == 2);
-                    return *(short*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_U2:
-                    Debug.Assert(data->Size == 2);
-                    return *(ushort*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_R4:
-                    Debug.Assert(data->Size == 4);
+                }
+                else if (typeCode == TypeCode.Single)
+                {
                     return *(float*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_R8:
-                    Debug.Assert(data->Size == 8);
-                    return *(double*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    Debug.Assert(data->Size == 4);
+                }
+                else if (typeCode == TypeCode.Boolean)
+                {
                     // The manifest defines a bool as a 32bit type (WIN32 BOOL), not 1 bit as CLR Does.
                     return *(int*)dataPointer == 1;
-
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    Debug.Assert(data->Size == 2);
-                    return *(char*)dataPointer;
-
-                case CorElementType.ELEMENT_TYPE_PTR:
-                    if (dataType == typeof(byte*))
-                    {
-                        // TODO: how do we want to handle this? For now we ignore it...
-                        return null;
-                    }
-                    goto default;
-
-                case CorElementType.ELEMENT_TYPE_SZARRAY:
-                    if (dataType == typeof(byte[]))
-                    {
-                        // byte[] are written to EventData* as an int followed by a blob
-                        int size = *(int*)dataPointer;
-                        byte[] blob = new byte[size];
-                        data++;
-                        dataPointer = data->DataPointer;
-                        for (int i = 0; i < blob.Length; i++)
-                        {
-                            blob[i] = *(byte*)(dataPointer + i);
-                        }
-                        return blob;
-                    }
-                    goto default;
-
-                default:
-                    // Everything else is marshaled as a string.
-                    // ETW strings are NULL-terminated, so marshal everything up to the first
-                    // null in the string.
-                    Debug.Assert(data->Size % 2 == 0 && new Span<char>((char*)dataPointer, data->Size >> 1).IndexOf('\0') == (data->Size >> 1) - 1);
-                    return dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+                }
+                else if (dataType == typeof(byte[]))
+                {
+                    // byte[] are written to EventData* as an int followed by a blob
+                    Debug.Assert(*(int*)dataPointer == (data + 1)->Size);
+                    data++;
+                    dataPointer = data->DataPointer;
+                    goto BytePtr;
+                }
+                else if (IntPtr.Size == 4 && dataType == typeof(IntPtr))
+                {
+                    return *(IntPtr*)dataPointer;
+                }
             }
+            else if (size <= 2)
+            {
+                Debug.Assert(!dataType.IsEnum);
+                if (typeCode == TypeCode.Byte)
+                {
+                    Debug.Assert(size == 1);
+                    return *(byte*)dataPointer;
+                }
+                else if (typeCode == TypeCode.SByte)
+                {
+                    Debug.Assert(size == 1);
+                    return *(sbyte*)dataPointer;
+                }
+                else if (typeCode == TypeCode.Int16)
+                {
+                    Debug.Assert(size == 2);
+                    return *(short*)dataPointer;
+                }
+                else if (typeCode == TypeCode.UInt16)
+                {
+                    Debug.Assert(size == 2);
+                    return *(ushort*)dataPointer;
+                }
+                else if (typeCode == TypeCode.Char)
+                {
+                    Debug.Assert(size == 2);
+                    return *(char*)dataPointer;
+                }
+            }
+            else if (size == 8)
+            {
+                if (typeCode == TypeCode.Int64)
+                {
+                    return *(long*)dataPointer;
+                }
+                else if (typeCode == TypeCode.UInt64)
+                {
+                    return *(ulong*)dataPointer;
+                }
+                else if (typeCode == TypeCode.Double)
+                {
+                    return *(double*)dataPointer;
+                }
+                else if (typeCode == TypeCode.DateTime)
+                {
+                    return *(DateTime*)dataPointer;
+                }
+                else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
+                {
+                    return *(IntPtr*)dataPointer;
+                }
+            }
+            else
+            {
+                if (typeCode == TypeCode.Decimal)
+                {
+                    Debug.Assert(size == 16);
+                    return *(decimal*)dataPointer;
+                }
+                else if (dataType == typeof(Guid))
+                {
+                    Debug.Assert(size == 16);
+                    return *(Guid*)dataPointer;
+                }
+            }
+
+            if (dataType != typeof(byte*))
+            {
+                goto String;
+            }
+
+        BytePtr:
+            return new Span<byte>((byte*)dataPointer, data->Size).ToArray();
+
+        String:
+            // Everything else is marshaled as a string.
+            // ETW strings are NULL-terminated, so marshal everything up to the first
+            // null in the string.
+            Debug.Assert(data->Size % 2 == 0 && new Span<char>((char*)dataPointer, data->Size >> 1).IndexOf('\0') == (data->Size >> 1) - 1);
+            return dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
         }
 
         // Finds the Dispatcher (which holds the filtering state), for a given dispatcher for the current
