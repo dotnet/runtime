@@ -578,6 +578,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "PKCS#7 import is not available of iOS/tvOS/MacCatalyst")]
         public static void ImportStoreSavedAsPfxData()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -697,6 +698,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "PKCS#7 import is not available of iOS/tvOS/MacCatalyst")]
         public static void ExportPkcs7()
         {
             TestExportStore(X509ContentType.Pkcs7);

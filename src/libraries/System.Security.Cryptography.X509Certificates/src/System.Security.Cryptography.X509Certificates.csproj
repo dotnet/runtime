@@ -476,8 +476,6 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
@@ -498,8 +496,6 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Store.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Store.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
@@ -580,40 +576,59 @@
       <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</DependentUpon>
     </Compile>
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' != 'true'">
-    <!-- TODO: Needs iOS specific implementation -->
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.iOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.iOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.iOS.cs"
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.iOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.iOS.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.iOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.iOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.iOS.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pkcs12.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pem.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12Reader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.AppleKeychainStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.TrustedStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.ExportPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"

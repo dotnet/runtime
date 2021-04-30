@@ -405,6 +405,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Root certificate store is not accessible on iOS/tvOS/MacCatalyst")]
         [InlineData(OpenFlags.ReadOnly, false)]
         [InlineData(OpenFlags.MaxAllowed, false)]
         [InlineData(OpenFlags.ReadWrite, true)]
@@ -427,6 +428,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Root certificate store is not accessible on iOS/tvOS/MacCatalyst")]
         public static void MachineRootStore_NonEmpty()
         {
             // This test will fail on systems where the administrator has gone out of their

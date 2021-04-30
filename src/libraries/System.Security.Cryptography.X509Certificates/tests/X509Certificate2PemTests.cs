@@ -266,6 +266,7 @@ MII
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "DSA is not available of iOS/tvOS/MacCatalyst")]
         public static void CreateFromPem_Dsa_Pkcs8_Success()
         {
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.DsaCertificate, TestData.DsaPkcs8Key))
@@ -276,6 +277,7 @@ MII
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "DSA is not available of iOS/tvOS/MacCatalyst")]
         public static void CreateFromPem_Dsa_EncryptedPkcs8_Success()
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(

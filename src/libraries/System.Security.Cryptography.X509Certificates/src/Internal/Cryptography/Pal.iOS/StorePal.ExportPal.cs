@@ -1,0 +1,59 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
+
+namespace Internal.Cryptography.Pal
+{
+    internal sealed partial class StorePal
+    {
+        private sealed class AppleCertificateExporter : UnixExportProvider
+        {
+            public AppleCertificateExporter(ICertificatePalCore cert)
+                : base(cert)
+            {
+            }
+
+            public AppleCertificateExporter(X509Certificate2Collection certs)
+                : base(certs)
+            {
+            }
+
+            protected override byte[] ExportPkcs7()
+            {
+                throw new CryptographicException(
+                    SR.Cryptography_X509_PKCS7_Unsupported,
+                    new PlatformNotSupportedException(SR.Cryptography_X509_PKCS7_Unsupported));
+            }
+
+            protected override byte[] ExportPkcs8(ICertificatePalCore certificatePal, ReadOnlySpan<char> password)
+            {
+                Debug.Assert(certificatePal.HasPrivateKey);
+                AppleCertificatePal pal = (AppleCertificatePal)certificatePal;
+                AsymmetricAlgorithm algorithm;
+
+                switch (pal.KeyAlgorithm)
+                {
+                    case Oids.Rsa:
+                        algorithm = pal.GetRSAPrivateKey()!;
+                        break;
+                    case Oids.EcPublicKey:
+                        algorithm = pal.GetECDsaPrivateKey()!;
+                        break;
+                    case Oids.Dsa:
+                    default:
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, pal.KeyAlgorithm));
+                };
+
+                using (algorithm)
+                {
+                    return algorithm.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
+                }
+            }
+        }
+    }
+}

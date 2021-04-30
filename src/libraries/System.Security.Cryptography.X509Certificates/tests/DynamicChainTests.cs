@@ -12,6 +12,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class DynamicChainTests
     {
+        private static bool IsApple { get; } = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
+
         private static X509Extension BasicConstraintsCA => new X509BasicConstraintsExtension(
             certificateAuthority: true,
             hasPathLengthConstraint: false,
@@ -113,7 +115,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             intermediateCert = TamperIfNeeded(intermediateCert, intermediateErrors);
             rootCert = TamperIfNeeded(rootCert, rootErrors);
 
-            if (OperatingSystem.IsMacOS())
+            if (IsApple)
             {
                 // For the lower levels, turn NotSignatureValid into PartialChain,
                 // and clear all errors at higher levels.
@@ -138,7 +140,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     rootErrors &= ~X509ChainStatusFlags.NotSignatureValid;
 
                     // On 10.13+ it becomes PartialChain, and UntrustedRoot goes away.
-                    if (PlatformDetection.IsOSX)
+                    if (IsApple)
                     {
                         rootErrors &= ~X509ChainStatusFlags.UntrustedRoot;
                         rootErrors |= X509ChainStatusFlags.PartialChain;
@@ -559,7 +561,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "macOS appears to just completely ignore min/max.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "macOS appears to just completely ignore min/max.")]
         public static void NameConstraintViolation_PermittedTree_HasMin()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -844,7 +846,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
-            if (OperatingSystem.IsMacOS())
+            if (IsApple)
             {
                 const X509ChainStatusFlags AnyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
@@ -871,7 +873,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
         {
-            if (OperatingSystem.IsMacOS())
+            if (IsApple)
             {
                 const X509ChainStatusFlags AnyPolicyConstraintFlags =
                     X509ChainStatusFlags.NoIssuanceChainPolicy;

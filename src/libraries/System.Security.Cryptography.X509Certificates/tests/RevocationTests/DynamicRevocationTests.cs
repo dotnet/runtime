@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         private static bool SupportsEntireChainCheck => !PlatformDetection.IsAndroid;
 
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
-                PlatformDetection.IsOSX || PlatformDetection.IsAndroid ?
+                PlatformDetection.IsOSX || PlatformDetection.IsiOS || PlatformDetection.IstvOS || PlatformDetection.IsMacCatalyst || PlatformDetection.IsAndroid ?
                 X509ChainStatusFlags.RevocationStatusUnknown :
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                             // https://github.com/dotnet/runtime/issues/31249
                             // not all scenarios are working on macOS.
-                            if (PlatformDetection.IsOSX)
+                            if (PlatformDetection.IsOSX || PlatformDetection.IsiOS || PlatformDetection.IstvOS || PlatformDetection.IsMacCatalyst)
                             {
                                 if (!endEntityRevocation.HasFlag(PkiOptions.EndEntityRevocationViaOcsp))
                                 {
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeIntermediateAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeRoot(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeRootAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -292,7 +292,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeRootAndIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -328,7 +328,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeEverything(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [InlineData(PkiOptions.OcspEverywhere)]
         [InlineData(PkiOptions.IssuerRevocationViaOcsp | PkiOptions.AllEndEntityRevocation)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeEndEntity_RootUnrelatedOcsp(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -554,7 +554,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
         [Theory]
         [MemberData(nameof(PolicyErrorsNotTimeValidData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeIntermediate_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
@@ -639,7 +639,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(PolicyErrorsNotTimeValidData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
@@ -721,7 +721,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeEndEntity_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
@@ -798,7 +798,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void NothingRevoked_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
@@ -888,7 +888,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeIntermediateWithInvalidRevocationSignature(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -917,7 +917,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeIntermediateWithInvalidRevocationName(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -968,7 +968,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void RevokeIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
@@ -1035,7 +1035,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
@@ -1061,7 +1061,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void TestRevocationWithNoNextUpdate_NotRevoked()
         {
             SimpleTest(
@@ -1098,7 +1098,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void TestRevocationWithNoNextUpdate_Revoked()
         {
             SimpleTest(
@@ -1134,7 +1134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_NotRevoked()
         {
             SimpleTest(
@@ -1178,7 +1178,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_Revoked()
         {
             SimpleTest(
