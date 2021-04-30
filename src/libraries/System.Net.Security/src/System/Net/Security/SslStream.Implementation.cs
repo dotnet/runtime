@@ -821,7 +821,7 @@ namespace System.Net.Security
 
             async ValueTask<int> InternalGetFullFrameIfNeed(TIOAdapter adap, ValueTask<int> t, int frameSize)
             {
-                while (_internalBufferCount < frameSize)
+                while (true)
                 {
                     int bytesRead = await t.ConfigureAwait(false);
                     if (bytesRead == 0)
@@ -840,6 +840,14 @@ namespace System.Net.Security
                     {
                         frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     }
+
+                    if (_internalBufferCount < frameSize)
+                    {
+                        t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
+                        continue;
+                    }
+
+                    break;
                 }
 
                 return frameSize;
