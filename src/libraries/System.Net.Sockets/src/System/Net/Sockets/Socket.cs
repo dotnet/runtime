@@ -3380,6 +3380,16 @@ namespace System.Net.Sockets
                     {
                     }
                 }
+                if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                    unixEndPoint.FileName is not null)
+                {
+                    try
+                    {
+                        File.Delete(unixEndPoint.FileName);
+                    }
+                    catch
+                    { }
+                }
             }
 
             // Clean up any cached data

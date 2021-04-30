@@ -73,6 +73,8 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(SocketError.Success, args.SocketError);
                     Assert.Null(args.ConnectByNameError);
                 }
+
+                Assert.False(File.Exists(path));
             }
             finally
             {
@@ -109,6 +111,8 @@ namespace System.Net.Sockets.Tests
                         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
                         args.SocketError);
                 }
+
+                Assert.False(File.Exists(path));
             }
             finally
             {
@@ -146,6 +150,8 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
+
+                Assert.False(File.Exists(path));
             }
             finally
             {
@@ -196,6 +202,8 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
+
+                Assert.False(File.Exists(path));
             }
             finally
             {
@@ -233,6 +241,8 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
+
+                Assert.False(File.Exists(path));
             }
             finally
             {
@@ -296,6 +306,8 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Equal(writeBuffer.Length, readData.Length);
                 Assert.Equal(writeBuffer, readData.ToArray());
+
+                Assert.False(File.Exists(path));
             }
             finally
             {
@@ -448,6 +460,9 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
+
+                Assert.False(File.Exists(serverAddress));
+                Assert.False(File.Exists(clientAddress));
             }
             finally
             {
