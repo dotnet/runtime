@@ -13,7 +13,7 @@ public partial class CancelKeyPressTests
     private const int WaitFailTestTimeoutSeconds = 30;
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>

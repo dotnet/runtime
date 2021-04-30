@@ -78,7 +78,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void ReadToEnd()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -93,7 +93,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void ReadBlock()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -112,7 +112,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void Read()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -131,7 +131,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void Peek()
     {
         const string expected = "ABC";
@@ -145,7 +145,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void ReadToEndAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -160,7 +160,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void ReadBlockAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -185,7 +185,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void ReadAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -210,7 +210,7 @@ public class SyncTextReader
     }
 
     [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on Browser, iOS, or tvOS.")]
     public void ReadLineAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
