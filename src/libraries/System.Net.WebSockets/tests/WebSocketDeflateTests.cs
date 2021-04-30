@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (!Debugger.IsAttached)
             {
-                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                _cancellation = new CancellationTokenSource(30);
             }
         }
 
