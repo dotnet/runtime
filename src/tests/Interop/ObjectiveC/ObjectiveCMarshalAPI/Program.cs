@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace BridgeTests
+namespace ObjectiveCMarshalAPI
 {
     using System;
     using System.Collections.Generic;
@@ -11,21 +11,21 @@ namespace BridgeTests
 
     using TestLibrary;
 
-    class NativeBridgeTests
+    class NativeObjCMarshalTests
     {
-        [DllImport(nameof(NativeBridgeTests))]
-        public static extern unsafe void GetBridgeExports(
+        [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern unsafe void GetExports(
             out delegate* unmanaged<void> beginEndCallback,
             out delegate* unmanaged<IntPtr, int> isReferencedCallback,
             out delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 
-        [DllImport(nameof(NativeBridgeTests))]
+        [DllImport(nameof(NativeObjCMarshalTests))]
         public static extern int CallAndCatch(IntPtr fptr, int a);
 
-        [DllImport(nameof(NativeBridgeTests))]
+        [DllImport(nameof(NativeObjCMarshalTests))]
         public static extern IntPtr GetThrowInt();
 
-        [DllImport(nameof(NativeBridgeTests))]
+        [DllImport(nameof(NativeObjCMarshalTests))]
         public static extern IntPtr GetThrowException();
     }
 
@@ -38,27 +38,32 @@ namespace BridgeTests
             delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
-            NativeBridgeTests.GetBridgeExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
+            NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
 
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    Bridge.InitializeReferenceTracking(null, isReferencedCallback, trackedObjectEnteredFinalization);
+                    ObjectiveCMarshal.Initialize(null, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    Bridge.InitializeReferenceTracking(beginEndCallback, null, trackedObjectEnteredFinalization);
+                    ObjectiveCMarshal.Initialize(beginEndCallback, null, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    Bridge.InitializeReferenceTracking(beginEndCallback, isReferencedCallback, null);
+                    ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, null, OnUnhandledExceptionPropagationHandler);
                 });
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    Bridge.CreateReferenceTrackingHandle(null , out _);
+                    ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, null);
+                });
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.CreateReferenceTrackingHandle(null , out _);
                 });
         }
 
@@ -74,7 +79,7 @@ namespace BridgeTests
             public nuint RefCountUp;
         };
 
-        [TrackedNativeReferenceAttribute]
+        [ObjectiveCTrackedTypeAttribute]
         class Base
         {
             public static int AllocCount = 0;
@@ -121,36 +126,42 @@ namespace BridgeTests
             ~DerivedWithFinalizer() { }
         }
 
-        [TrackedNativeReferenceAttribute]
+        [ObjectiveCTrackedTypeAttribute]
         class AttributedNoFinalizer { }
 
-        static void InitializeReferenceTracking()
+        static void InitializeObjectiveCMarshal()
         {
             delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
-            NativeBridgeTests.GetBridgeExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
+            NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
 
-            Bridge.InitializeReferenceTracking(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization);
+            ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
         static GCHandle AllocAndTrackObject<T>() where T : Base, new()
         {
             var obj = new T();
-            GCHandle h = Bridge.CreateReferenceTrackingHandle(obj, out IntPtr s);
+            GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> s);
+
+            // Validate contract length for tagged memory.
+            Assert.AreEqual(2, s.Length);
 
             // Make the "is referenced" callback run a few times.
-            obj.SetScratch(s, count: 3);
+            fixed (void* p = s)
+                obj.SetScratch((IntPtr)p, count: 3);
             return h;
         }
 
         static void Validate_AllocAndFreeAnotherHandle<T>(GCHandle handle) where T : Base, new()
         {
             var obj = (T)handle.Target;
-            GCHandle h = Bridge.CreateReferenceTrackingHandle(obj, out IntPtr s);
+            GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> s);
 
             // Validate the scratch is the same but the GCHandles are distinct.
-            Assert.AreEqual(obj.Scratch, s);
+            fixed (void* p = s)
+                Assert.AreEqual(obj.Scratch, new IntPtr(p));
+
             Assert.AreNotEqual(handle, h);
             h.Free();
         }
@@ -165,16 +176,16 @@ namespace BridgeTests
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    Bridge.CreateReferenceTrackingHandle(new Base(), out _);
+                    ObjectiveCMarshal.CreateReferenceTrackingHandle(new Base(), out _);
                 });
 
-            InitializeReferenceTracking();
+            InitializeObjectiveCMarshal();
 
             // Type attributed but no finalizer.
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    Bridge.CreateReferenceTrackingHandle(new AttributedNoFinalizer(), out _);
+                    ObjectiveCMarshal.CreateReferenceTrackingHandle(new AttributedNoFinalizer(), out _);
                 });
 
             {
@@ -194,12 +205,11 @@ namespace BridgeTests
             }
 
             // Trigger the GC
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            for (int i = 0; i < 5; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
 
             // Validate we finalized all the objects we allocated.
             // It is important to validate the count prior to freeing
@@ -211,17 +221,9 @@ namespace BridgeTests
             {
                 h.Free();
             }
-        }
 
-        static void Validate_InitializeReferenceTracking_FailsOnSecondAttempt()
-        {
-            Console.WriteLine($"Running {nameof(Validate_InitializeReferenceTracking_FailsOnSecondAttempt)}...");
-            
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                {
-                    InitializeReferenceTracking();
-                });
+            // Validate the exception propagation logic.
+            _Validate_ExceptionPropagation();
         }
 
         private class IntException : Exception
@@ -256,11 +258,11 @@ namespace BridgeTests
             if (e is IntException ie)
             {
                 context = new IntPtr(ie.Value);
-                return (delegate* unmanaged<IntPtr, void>)NativeBridgeTests.GetThrowInt();
+                return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowInt();
             }
             else if (e is ExceptionException)
             {
-                return (delegate* unmanaged<IntPtr, void>)NativeBridgeTests.GetThrowException();
+                return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowException();
             }
 
             Assert.Fail("Unknown exception type");
@@ -274,12 +276,9 @@ namespace BridgeTests
             public int Expected;
         }
 
-        static void Validate_ExceptionPropagation()
+        // Do not call this method from Main as it depends on a previous test for set up.
+        static void _Validate_ExceptionPropagation()
         {
-            Console.WriteLine($"Running {nameof(Validate_ExceptionPropagation)}...");
-
-            Bridge.UnhandledExceptionPropagation += OnUnhandledExceptionPropagationHandler;
-
             var scenarios = new[]
             {
                 new Scenario((delegate* unmanaged<int, void>)&UCO_ThrowIntException, 3423),
@@ -291,11 +290,20 @@ namespace BridgeTests
             foreach (var scen in scenarios)
             {
                 delegate* unmanaged<int, void> testNativeMethod = scen.Fptr;
-                int ret = NativeBridgeTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
+                int ret = NativeObjCMarshalTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
                 Assert.AreEqual(scen.Expected, ret);
             }
+        }
 
-            Bridge.UnhandledExceptionPropagation -= OnUnhandledExceptionPropagationHandler;
+        static void Validate_Initialize_FailsOnSecondAttempt()
+        {
+            Console.WriteLine($"Running {nameof(Validate_Initialize_FailsOnSecondAttempt)}...");
+            
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    InitializeObjectiveCMarshal();
+                });
         }
 
         static int Main(string[] doNotUse)
@@ -304,8 +312,7 @@ namespace BridgeTests
             {
                 Validate_ReferenceTrackingAPIs_InvalidArgs();
                 Validate_ReferenceTracking_Scenario();
-                Validate_InitializeReferenceTracking_FailsOnSecondAttempt();
-                Validate_ExceptionPropagation();
+                Validate_Initialize_FailsOnSecondAttempt();
             }
             catch (Exception e)
             {

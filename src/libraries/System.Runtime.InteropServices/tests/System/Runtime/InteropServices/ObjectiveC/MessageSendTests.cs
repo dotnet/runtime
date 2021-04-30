@@ -10,7 +10,7 @@ using System.Runtime.InteropServices.ObjectiveC;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
-using static System.Runtime.InteropServices.ObjectiveC.Bridge;
+using static System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal;
 
 namespace System.Runtime.InteropServices.Tests
 {
@@ -22,45 +22,45 @@ namespace System.Runtime.InteropServices.Tests
         private static bool s_callbackInvoked = false;
 
         [UnmanagedCallersOnly]
-        private static IntPtr ObjCMsgSend(IntPtr inst, IntPtr sel) => ReturnPtr(MsgSendFunction.ObjCMsgSend);
+        private static IntPtr ObjCMsgSend(IntPtr inst, IntPtr sel) => ReturnPtr(MessageSendFunction.MsgSend);
 
         [UnmanagedCallersOnly]
-        private static IntPtr ObjCMsgSendFpret(IntPtr inst, IntPtr sel) => ReturnPtr(MsgSendFunction.ObjCMsgSendFpret);
+        private static IntPtr ObjCMsgSendFpret(IntPtr inst, IntPtr sel) => ReturnPtr(MessageSendFunction.MsgSendFpret);
 
         [UnmanagedCallersOnly]
-        private static void ObjCMsgSendStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = ReturnPtr(MsgSendFunction.ObjCMsgSendStret);
+        private static void ObjCMsgSendStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = ReturnPtr(MessageSendFunction.MsgSendStret);
 
         [UnmanagedCallersOnly]
-        private static IntPtr ObjCMsgSendSuper(IntPtr inst, IntPtr sel) => ReturnPtr(MsgSendFunction.ObjCMsgSendSuper);
+        private static IntPtr ObjCMsgSendSuper(IntPtr inst, IntPtr sel) => ReturnPtr(MessageSendFunction.MsgSendSuper);
 
         [UnmanagedCallersOnly]
-        private static void ObjCMsgSendSuperStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = ReturnPtr(MsgSendFunction.ObjCMsgSendSuperStret);
+        private static void ObjCMsgSendSuperStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = ReturnPtr(MessageSendFunction.MsgSendSuperStret);
 
-        private static IntPtr ReturnPtr(MsgSendFunction msgSendFunc)
+        private static IntPtr ReturnPtr(MessageSendFunction msgSendFunc)
         {
             s_callbackInvoked = true;
             return new IntPtr(s_count + (int)msgSendFunc);
         }
 
-        private static (MsgSendFunction MsgSend, IntPtr Func)[] msgSendOverrides =
+        private static (MessageSendFunction MsgSend, IntPtr Func)[] msgSendOverrides =
         {
-            (MsgSendFunction.ObjCMsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSend),
-            (MsgSendFunction.ObjCMsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendFpret),
-            (MsgSendFunction.ObjCMsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendStret),
-            (MsgSendFunction.ObjCMsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendSuper),
-            (MsgSendFunction.ObjCMsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendSuperStret),
+            (MessageSendFunction.MsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSend),
+            (MessageSendFunction.MsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendFpret),
+            (MessageSendFunction.MsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendStret),
+            (MessageSendFunction.MsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendSuper),
+            (MessageSendFunction.MsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendSuperStret),
         };
 
         [Fact]
         public void SetMessageSendCallback_NullCallback()
         {
-            Assert.Throws<ArgumentNullException>(() => Bridge.SetMessageSendCallback(MsgSendFunction.ObjCMsgSend, IntPtr.Zero));
+            Assert.Throws<ArgumentNullException>(() => ObjectiveCMarshal.SetMessageSendCallback(MessageSendFunction.MsgSend, IntPtr.Zero));
         }
 
         [Fact]
-        public void SetMessageSendCallback_InvalidMsgSendFunction()
+        public void SetMessageSendCallback_InvalidMessageSendFunction()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Bridge.SetMessageSendCallback((MsgSendFunction)100, msgSendOverrides[0].Func));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ObjectiveCMarshal.SetMessageSendCallback((MessageSendFunction)100, msgSendOverrides[0].Func));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -69,30 +69,30 @@ namespace System.Runtime.InteropServices.Tests
             RemoteExecutor.Invoke(() =>
             {
                 var (msgSend, func) = msgSendOverrides[0];
-                Bridge.SetMessageSendCallback(msgSend, func);
-                Assert.Throws<InvalidOperationException>(() => Bridge.SetMessageSendCallback(msgSend, func));
+                ObjectiveCMarshal.SetMessageSendCallback(msgSend, func);
+                Assert.Throws<InvalidOperationException>(() => ObjectiveCMarshal.SetMessageSendCallback(msgSend, func));
             }).Dispose();
         }
 
-        public static IEnumerable<object[]> MsgSendFunctionsToOverride()
+        public static IEnumerable<object[]> MessageSendFunctionsToOverride()
         {
-            yield return new[] { (MsgSendFunction[])Enum.GetValues<MsgSendFunction>() };
-            yield return new[] { new MsgSendFunction[]{ MsgSendFunction.ObjCMsgSend, MsgSendFunction.ObjCMsgSendStret } };
+            yield return new[] { (MessageSendFunction[])Enum.GetValues<MessageSendFunction>() };
+            yield return new[] { new MessageSendFunction[]{ MessageSendFunction.MsgSend, MessageSendFunction.MsgSendStret } };
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(MsgSendFunctionsToOverride))]
-        public void SetMessageSendCallback(MsgSendFunction[] funcsToOverride)
+        [MemberData(nameof(MessageSendFunctionsToOverride))]
+        public void SetMessageSendCallback(MessageSendFunction[] funcsToOverride)
         {
             // Pass functions to override as a string for remote execution
             RemoteExecutor.Invoke((string funcsToOverrideAsStr) =>
             {
                 string[] msgSendStrArray = funcsToOverrideAsStr.Split(';');
-                MsgSendFunction[] msgSendArray = new MsgSendFunction[msgSendStrArray.Length];
+                MessageSendFunction[] msgSendArray = new MessageSendFunction[msgSendStrArray.Length];
                 for (int i = 0; i < msgSendStrArray.Length; i++)
                 {
-                    MsgSendFunction msgSend = Enum.Parse<MsgSendFunction>(msgSendStrArray[i]);
-                    Assert.True(Enum.IsDefined<MsgSendFunction>(msgSend));
+                    MessageSendFunction msgSend = Enum.Parse<MessageSendFunction>(msgSendStrArray[i]);
+                    Assert.True(Enum.IsDefined<MessageSendFunction>(msgSend));
                     msgSendArray[i] = msgSend;
                 }
 
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.Tests
             }, string.Join(';', funcsToOverride)).Dispose();
         }
 
-        private static void SetMessageSendCallbackImpl(MsgSendFunction[] funcsToOverride)
+        private static void SetMessageSendCallbackImpl(MessageSendFunction[] funcsToOverride)
         {
             foreach (var (msgSend, func) in msgSendOverrides)
             {
@@ -112,12 +112,12 @@ namespace System.Runtime.InteropServices.Tests
                 if (shouldOverride)
                 {
                     // Override message send function
-                    Bridge.SetMessageSendCallback(msgSend, func);
+                    ObjectiveCMarshal.SetMessageSendCallback(msgSend, func);
                     expected = (IntPtr)(s_count + (int)msgSend);
                 }
                 else
                 {
-                    if (msgSend == MsgSendFunction.ObjCMsgSendSuper || msgSend == MsgSendFunction.ObjCMsgSendSuperStret)
+                    if (msgSend == MessageSendFunction.MsgSendSuper || msgSend == MessageSendFunction.MsgSendSuperStret)
                     {
                         // Calling super message functions requires a valid superclass and selector
                         var super = new LibObjC.objc_super()

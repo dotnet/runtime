@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-using static System.Runtime.InteropServices.ObjectiveC.Bridge;
+using static System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal;
 
 namespace System.Runtime.InteropServices.Tests
 {
@@ -44,30 +44,30 @@ namespace System.Runtime.InteropServices.Tests
             public IntPtr super_class;
         }
 
-        public static IntPtr CallPInvoke(MsgSendFunction msgSend, IntPtr inst, IntPtr sel)
+        public static IntPtr CallPInvoke(MessageSendFunction msgSend, IntPtr inst, IntPtr sel)
         {
             switch (msgSend)
             {
-                case MsgSendFunction.ObjCMsgSend:
+                case MessageSendFunction.MsgSend:
                     return LibObjC.objc_msgSend(inst, sel);
-                case MsgSendFunction.ObjCMsgSendFpret:
+                case MessageSendFunction.MsgSendFpret:
                     return LibObjC.objc_msgSend_fpret(inst, sel);
-                case MsgSendFunction.ObjCMsgSendStret:
+                case MessageSendFunction.MsgSendStret:
                 {
                     IntPtr ret;
                     LibObjC.objc_msgSend_stret(out ret, inst, sel);
                     return ret;
                 }
-                case MsgSendFunction.ObjCMsgSendSuper:
+                case MessageSendFunction.MsgSendSuper:
                     return LibObjC.objc_msgSendSuper(inst, sel);
-                case MsgSendFunction.ObjCMsgSendSuperStret:
+                case MessageSendFunction.MsgSendSuperStret:
                 {
                     IntPtr ret;
                     LibObjC.objc_msgSendSuper_stret(out ret, inst, sel);
                     return ret;
                 }
                 default:
-                    throw new ArgumentException($"Unknown {nameof(MsgSendFunction)}: {msgSend}");
+                    throw new ArgumentException($"Unknown {nameof(MessageSendFunction)}: {msgSend}");
             }
         }
     }

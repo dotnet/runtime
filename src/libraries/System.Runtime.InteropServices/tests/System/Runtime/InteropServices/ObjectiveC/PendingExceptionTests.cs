@@ -10,7 +10,7 @@ using System.Runtime.InteropServices.ObjectiveC;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
-using static System.Runtime.InteropServices.ObjectiveC.Bridge;
+using static System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal;
 
 namespace System.Runtime.InteropServices.Tests
 {
@@ -40,38 +40,38 @@ namespace System.Runtime.InteropServices.Tests
 
         private static IntPtr SetPendingException([CallerMemberName] string callerName = "")
         {
-            Bridge.SetMessageSendPendingExceptionForThread(new PendingException(callerName));
+            ObjectiveCMarshal.SetMessageSendPendingException(new PendingException(callerName));
             return IntPtr.Zero;
         }
 
-        private static (MsgSendFunction MsgSend, IntPtr Func)[] msgSendOverrides =
+        private static (MessageSendFunction MsgSend, IntPtr Func)[] msgSendOverrides =
         {
-            (MsgSendFunction.ObjCMsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSend),
-            (MsgSendFunction.ObjCMsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendFpret),
-            (MsgSendFunction.ObjCMsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendStret),
-            (MsgSendFunction.ObjCMsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendSuper),
-            (MsgSendFunction.ObjCMsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendSuperStret),
+            (MessageSendFunction.MsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSend),
+            (MessageSendFunction.MsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendFpret),
+            (MessageSendFunction.MsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendStret),
+            (MessageSendFunction.MsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendSuper),
+            (MessageSendFunction.MsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendSuperStret),
         };
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(MsgSendFunction.ObjCMsgSend)]
-        [InlineData(MsgSendFunction.ObjCMsgSendFpret)]
-        [InlineData(MsgSendFunction.ObjCMsgSendStret)]
-        [InlineData(MsgSendFunction.ObjCMsgSendSuper)]
-        [InlineData(MsgSendFunction.ObjCMsgSendSuperStret)]
-        public void ValidateSetMessageSendPendingException(MsgSendFunction func)
+        [InlineData(MessageSendFunction.MsgSend)]
+        [InlineData(MessageSendFunction.MsgSendFpret)]
+        [InlineData(MessageSendFunction.MsgSendStret)]
+        [InlineData(MessageSendFunction.MsgSendSuper)]
+        [InlineData(MessageSendFunction.MsgSendSuperStret)]
+        public void ValidateSetMessageSendPendingException(MessageSendFunction func)
         {
             // Pass functions to override as a string for remote execution
             RemoteExecutor.Invoke((string funcToOverrideAsStr) =>
             {
-                MsgSendFunction msgSend = Enum.Parse<MsgSendFunction>(funcToOverrideAsStr);
-                Assert.True(Enum.IsDefined<MsgSendFunction>(msgSend));
+                MessageSendFunction msgSend = Enum.Parse<MessageSendFunction>(funcToOverrideAsStr);
+                Assert.True(Enum.IsDefined<MessageSendFunction>(msgSend));
 
                 ValidateSetMessageSendPendingExceptionImpl(msgSend);
             }, func.ToString()).Dispose();
         }
 
-        private static void ValidateSetMessageSendPendingExceptionImpl(MsgSendFunction funcToOverride)
+        private static void ValidateSetMessageSendPendingExceptionImpl(MessageSendFunction funcToOverride)
         {
             foreach (var (msgSend, func) in msgSendOverrides)
             {
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.Tests
                 }
 
                 // Override message send function
-                Bridge.SetMessageSendCallback(msgSend, func);
+                ObjectiveCMarshal.SetMessageSendCallback(msgSend, func);
 
                 // Call message send function through P/Invoke
                 IntPtr inst = IntPtr.Zero;

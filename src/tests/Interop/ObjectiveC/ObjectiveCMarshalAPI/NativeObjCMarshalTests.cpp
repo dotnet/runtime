@@ -78,7 +78,7 @@ namespace
     }
 }
 
-extern "C" DLL_EXPORT void GetBridgeExports(
+extern "C" DLL_EXPORT void GetExports(
     BeginEndCallback* beginEnd,
     IsReferencedCallback* isRef,
     EnteredFinalizationCallback* enteredFinalizer)
