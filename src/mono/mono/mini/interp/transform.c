@@ -7984,7 +7984,7 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 
 
 static InterpInst*
-interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
+interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, gboolean *folded)
 {
 	int *local_ref_count = td->local_ref_count;
 	// ins should be a binop, therefore it should have a single dreg and two sregs
@@ -7994,6 +7994,8 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	LocalValue *val1 = &local_defs [sreg1];
 	LocalValue *val2 = &local_defs [sreg2];
 	LocalValue result;
+
+	*folded = FALSE;
 
 	if (val1->type != LOCAL_VALUE_I4 && val1->type != LOCAL_VALUE_I8)
 		return ins;
@@ -8066,7 +8068,7 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
 	mono_interp_stats.constant_folds++;
-
+	*folded = TRUE;
 	if (result.type == LOCAL_VALUE_I4)
 		ins = interp_get_ldc_i4_from_const (td, ins, result.i, dreg);
 	else if (result.type == LOCAL_VALUE_I8)
@@ -8341,7 +8343,42 @@ retry:
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, local_defs, ins);
 			} else if (MINT_IS_BINOP (opcode)) {
-				ins = interp_fold_binop (td, local_defs, ins);
+				gboolean folded;
+				ins = interp_fold_binop (td, local_defs, ins, &folded);
+				if (!folded) {
+					int sreg = -1;
+					int mov_op;
+					if ((opcode == MINT_MUL_I4 || opcode == MINT_DIV_I4) &&
+							local_defs [ins->sregs [1]].type == LOCAL_VALUE_I4 &&
+							local_defs [ins->sregs [1]].i == 1) {
+						sreg = ins->sregs [0];
+						mov_op = MINT_MOV_4;
+					} else if ((opcode == MINT_MUL_I8 || opcode == MINT_DIV_I8) &&
+							local_defs [ins->sregs [1]].type == LOCAL_VALUE_I8 &&
+							local_defs [ins->sregs [1]].l == 1) {
+						sreg = ins->sregs [0];
+						mov_op = MINT_MOV_8;
+					} else if (opcode == MINT_MUL_I4 &&
+							local_defs [ins->sregs [0]].type == LOCAL_VALUE_I4 &&
+							local_defs [ins->sregs [0]].i == 1) {
+						sreg = ins->sregs [1];
+						mov_op = MINT_MOV_4;
+					} else if (opcode == MINT_MUL_I8 &&
+							local_defs [ins->sregs [0]].type == LOCAL_VALUE_I8 &&
+							local_defs [ins->sregs [0]].l == 1) {
+						sreg = ins->sregs [1];
+						mov_op = MINT_MOV_8;
+					}
+					if (sreg != -1) {
+						ins->opcode = mov_op;
+						ins->sregs [0] = sreg;
+						if (td->verbose_level) {
+							g_print ("Replace idempotent binop :\n\t");
+							dump_interp_inst (ins);
+						}
+						needs_retry = TRUE;
+					}
+				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_binop_cond_br (td, bb, local_defs, ins);
 			} else if (MINT_IS_LDFLD (opcode) && ins->data [0] == 0) {
