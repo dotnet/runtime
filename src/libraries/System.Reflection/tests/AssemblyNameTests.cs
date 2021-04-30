@@ -404,14 +404,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void Name_Set_FullName_Invalid()
-        {
-            AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
-            assemblyName.Name = "";
-            Assert.Equal(assemblyName.Name, assemblyName.FullName);
-        }
-
-        [Fact]
         public void Name_CurrentlyExecutingAssembly()
         {
             AssemblyName assemblyName = typeof(AssemblyNameTests).GetTypeInfo().Assembly.GetName();
@@ -641,13 +633,12 @@ namespace System.Reflection.Tests
             Assert.Equal(assemblyName.FullName, assemblyName.ToString());
         }
 
-        [Theory]
-        [InlineData("")]
-        public void ToStringEmptyNameTest(string name)
+        [Fact]
+        public void ToStringEmptyNameTest()
         {
             var assemblyName = new AssemblyName("test");
-            assemblyName.Name = name;
-            Assert.StartsWith(name, assemblyName.ToString());
+            assemblyName.Name = "";
+            Assert.StartsWith(string.Empty, assemblyName.ToString());
             Assert.Equal(assemblyName.FullName, assemblyName.ToString());
         }
 
