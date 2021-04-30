@@ -1853,8 +1853,6 @@ BOOL Thread::HasStarted()
         SetThread(this);
         SetAppDomain(m_pDomain);
 
-        ThreadStore::TransferStartedThread(this);
-
         // Initialize the thread for the platform as the final step.
         // The Finalizer thread is a special case because it is started
         // prior to managed assemblies being loaded. Since initializing
@@ -1865,6 +1863,8 @@ BOOL Thread::HasStarted()
             fCanCleanupCOMState = TRUE;
             InitPlatformContext();
         }
+
+        ThreadStore::TransferStartedThread(this);
 
 #ifdef FEATURE_EVENT_TRACE
         ETW::ThreadLog::FireThreadCreated(this);
