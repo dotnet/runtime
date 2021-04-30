@@ -657,7 +657,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal ValueTask<ReadResult> ReadAsync(int minimumBytes, CancellationToken token)
+        internal ValueTask<ReadResult> ReadAtLeastAsync(int minimumBytes, CancellationToken token)
         {
             if (_readerCompletion.IsCompleted)
             {
