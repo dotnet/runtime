@@ -7,9 +7,9 @@
 #define REPLY_PACKET 0x80
 
 #ifdef TARGET_AMD64
-#define POS_RAX 0x78
+#define POS_RSP 0x98
 #else
-#define POS_RAX 0 //TODO fix for other platforms
+#define POS_RSP 0 //TODO fix for other platforms
 #endif
 
 
@@ -41,7 +41,8 @@ typedef enum {
 	MDBGPROT_CMD_VM_START_BUFFERING = 14,
 	MDBGPROT_CMD_VM_STOP_BUFFERING = 15,
 	MDBGPROT_CMD_VM_READ_MEMORY = 16,
-	MDBGPROT_CMD_VM_WRITE_MEMORY = 17
+	MDBGPROT_CMD_VM_WRITE_MEMORY = 17,
+	MDBGPROT_CMD_VM_SET_CLIENT_PLATFORM = 18
 } MdbgProtCmdVM;
 
 typedef enum {

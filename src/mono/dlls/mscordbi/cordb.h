@@ -23,6 +23,9 @@
 #ifdef HOST_WIN32
 #include <windows.h>
 #include <ws2tcpip.h>
+#define DIR_SEPARATOR '\\'
+#else
+#define DIR_SEPARATOR '/'
 #endif
 
 #define return_if_nok(error)                                                                                           \

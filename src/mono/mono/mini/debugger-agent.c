@@ -385,6 +385,9 @@ static MonoCoopMutex debugger_thread_exited_mutex;
 /* The protocol version of the client */
 static int major_version, minor_version;
 
+/* The debugger client platform, used to encode and decode context to icordbg*/ 
+static int pos_rsp;
+
 /* If the debugger is using icordbg interface */
 static gboolean using_icordbg;
 
@@ -6629,6 +6632,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
 	}
+	case MDBGPROT_CMD_VM_SET_CLIENT_PLATFORM: {
+		pos_rsp = decode_int (p, &p, end);
+		break;
+	}
 	case CMD_VM_ALL_THREADS: {
 		// FIXME: Domains
 		gboolean remove_gc_finalizing = FALSE;
@@ -8774,12 +8781,12 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		compute_frame_info(thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
 
-		MonoContext ctx;
-		memcpy(&ctx, contextMemoryReceived+POS_RAX, sizeof(MonoContext));
+		gpointer sp;
+		memcpy(&sp, contextMemoryReceived+pos_rsp, sizeof(gpointer));
 		for (int i = 0; i < tls->frame_count; i++)
 		{
-			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p] - [%p]\n", i, MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx), MONO_CONTEXT_GET_SP(&ctx));
-			if (MONO_CONTEXT_GET_SP(&ctx) == MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx)) {
+			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p] - [%p]\n", i, MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx), sp);
+			if (sp == MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx)) {
 				buffer_add_int(buf, i);
 				break;
 			}
@@ -8806,7 +8813,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (start_frame < tls->frame_count)
 		{
-			buffer_add_byte_array (buf, (uint8_t *)&tls->frames [start_frame]->ctx, sizeof(MonoContext));
+			buffer_add_long(buf, (uint64_t)MONO_CONTEXT_GET_SP(&tls->frames [start_frame]->ctx));
 		}
 		break;
 	}
@@ -9668,7 +9675,10 @@ static const char* vm_cmds_str [] = {
 	"GET_TYPES",
 	"INVOKE_METHODS",
 	"START_BUFFERING",
-	"STOP_BUFFERING"
+	"STOP_BUFFERING",
+	"READ_MEMORY",
+	"WRITE_MEMORY",
+	"SET_CLIENT_PLATFORM"
 };
 
 static const char* thread_cmds_str[] = {
