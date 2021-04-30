@@ -15,16 +15,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 return services.BuildServiceProvider();
             }
 
-            IServiceProviderEngine engine = mode switch
+            var provider = new ServiceProvider(services, ServiceProviderOptions.Default);
+            ServiceProviderEngine engine = mode switch
             {
-                ServiceProviderMode.Dynamic => new DynamicServiceProviderEngine(services),
-                ServiceProviderMode.Runtime => new RuntimeServiceProviderEngine(services),
-                ServiceProviderMode.Expressions => new ExpressionsServiceProviderEngine(services),
-                ServiceProviderMode.ILEmit => new ILEmitServiceProviderEngine(services),
+                ServiceProviderMode.Dynamic => new DynamicServiceProviderEngine(provider),
+                ServiceProviderMode.Runtime => RuntimeServiceProviderEngine.Instance,
+                ServiceProviderMode.Expressions => new ExpressionsServiceProviderEngine(provider),
+                ServiceProviderMode.ILEmit => new ILEmitServiceProviderEngine(provider),
                 _ => throw new NotSupportedException()
             };
 
-            return new ServiceProvider(services, engine, ServiceProviderOptions.Default);
+            provider._engine = engine;
+            return provider;
         }
     }
 }

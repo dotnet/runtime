@@ -36,12 +36,13 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.ServiceProvider BuildServiceProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.DependencyInjection.ServiceProviderOptions options) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceProvider BuildServiceProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, bool validateScopes) { throw null; }
     }
-    public sealed partial class ServiceProvider : System.IAsyncDisposable, System.IDisposable, System.IServiceProvider
+    public sealed partial class ServiceProvider : Microsoft.Extensions.DependencyInjection.IServiceScopeFactory, System.IAsyncDisposable, System.IDisposable, System.IServiceProvider
     {
         internal ServiceProvider() { }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public object GetService(System.Type serviceType) { throw null; }
+        Microsoft.Extensions.DependencyInjection.IServiceScope Microsoft.Extensions.DependencyInjection.IServiceScopeFactory.CreateScope() { throw null; }
     }
     public partial class ServiceProviderOptions
     {

@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private bool _disposed;
         private readonly ScopeState _state;
 
-        public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
+        public ServiceProviderEngineScope(ServiceProvider provider, bool isRoot = false)
         {
-            Engine = engine;
+            RootProvider = provider;
             _state = new ScopeState(isRoot);
         }
 
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // For other scopes, it protects ResolvedServices and the list of disposables
         internal object Sync => _state;
 
-        public ServiceProviderEngine Engine { get; }
+        internal ServiceProvider RootProvider { get; set; }
 
         public object GetService(Type serviceType)
         {
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return Engine.GetService(serviceType, this);
+            return RootProvider.GetService(serviceType, this);
         }
 
         public IServiceProvider ServiceProvider => this;
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 // Track statistics about the scope (number of disposable objects and number of disposed services)
-                _state.Track(Engine);
+                _state.Track(RootProvider);
 
                 // We've transitioned to the disposed state, so future calls to
                 // CaptureDisposable will immediately dispose the object.

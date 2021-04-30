@@ -7,12 +7,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class ServiceScopeFactoryCallSite : ServiceCallSite
     {
-        public ServiceScopeFactoryCallSite() : base(ResultCache.None)
+        public ServiceScopeFactoryCallSite(IServiceScopeFactory value) : base(ResultCache.None)
         {
+            Value = value;
         }
 
         public override Type ServiceType { get; } = typeof(IServiceScopeFactory);
         public override Type ImplementationType { get; } = typeof(ServiceProviderEngine);
         public override CallSiteKind Kind { get; } = CallSiteKind.ServiceScopeFactory;
+        public IServiceScopeFactory Value { get; }
     }
 }

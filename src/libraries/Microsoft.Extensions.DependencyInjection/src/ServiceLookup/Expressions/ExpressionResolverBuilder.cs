@@ -44,39 +44,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     Expression.Call(ScopeParameter, CaptureDisposableMethodInfo, CaptureDisposableParameter),
                     CaptureDisposableParameter);
 
-        private readonly CallSiteRuntimeResolver _runtimeResolver;
-
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-
         private readonly ServiceProviderEngineScope _rootScope;
 
         private readonly ConcurrentDictionary<ServiceCacheKey, Func<ServiceProviderEngineScope, object>> _scopeResolverCache;
 
         private readonly Func<ServiceCacheKey, ServiceCallSite, Func<ServiceProviderEngineScope, object>> _buildTypeDelegate;
 
-        public ExpressionResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope)
+        public ExpressionResolverBuilder(ServiceProvider serviceProvider)
         {
-            if (runtimeResolver == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeResolver));
-            }
-
+            _rootScope = serviceProvider.Root;
             _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, Func<ServiceProviderEngineScope, object>>();
-            _runtimeResolver = runtimeResolver;
-            _serviceScopeFactory = serviceScopeFactory;
-            _rootScope = rootScope;
             _buildTypeDelegate = (key, cs) => BuildNoCache(cs);
         }
 
         public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            // Optimize singleton case
-            if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
-            {
-                object value = _runtimeResolver.Resolve(callSite, _rootScope);
-                return scope => value;
-            }
-
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
@@ -117,7 +99,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitRootCache(ServiceCallSite singletonCallSite, object context)
         {
-            return Expression.Constant(_runtimeResolver.Resolve(singletonCallSite, _rootScope));
+            return Expression.Constant(CallSiteRuntimeResolver.Instance.Resolve(singletonCallSite, _rootScope));
         }
 
         protected override Expression VisitConstant(ConstantCallSite constantCallSite, object context)
@@ -132,7 +114,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, object context)
         {
-            return Expression.Constant(_serviceScopeFactory);
+            return Expression.Constant(serviceScopeFactoryCallSite.Value);
         }
 
         protected override Expression VisitFactory(FactoryCallSite factoryCallSite, object context)

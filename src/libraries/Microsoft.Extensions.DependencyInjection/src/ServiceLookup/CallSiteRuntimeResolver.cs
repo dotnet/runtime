@@ -13,6 +13,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class CallSiteRuntimeResolver : CallSiteVisitor<RuntimeResolverContext, object>
     {
+        public static CallSiteRuntimeResolver Instance { get; } = new();
+
+        private CallSiteRuntimeResolver()
+        {
+        }
+
         public object Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
         {
             return VisitCallSite(callSite, new RuntimeResolverContext
@@ -67,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Monitor.Enter(callSite, ref lockTaken);
             try
             {
-                return ResolveService(callSite, context, lockType, serviceProviderEngine: context.Scope.Engine.Root);
+                return ResolveService(callSite, context, lockType, serviceProviderEngine: context.Scope.RootProvider.Root);
             }
             finally
             {
@@ -82,7 +88,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // Check if we are in the situation where scoped service was promoted to singleton
             // and we need to lock the root
-            return context.Scope == context.Scope.Engine.Root ?
+            return context.Scope == context.Scope.RootProvider.Root ?
                 VisitRootCache(callSite, context) :
                 VisitCache(callSite, context, context.Scope, RuntimeResolverLock.Scope);
         }
@@ -152,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, RuntimeResolverContext context)
         {
-            return context.Scope.Engine;
+            return serviceScopeFactoryCallSite.Value;
         }
 
         protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, RuntimeResolverContext context)

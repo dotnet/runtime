@@ -22,9 +22,9 @@ namespace Microsoft.Extensions.DependencyInjection
             ResolvedServices = isRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
         }
 
-        public void Track(ServiceProviderEngine engine)
+        public void Track(ServiceProvider provider)
         {
-            DependencyInjectionEventSource.Log.ScopeDisposed(engine, this);
+            DependencyInjectionEventSource.Log.ScopeDisposed(provider, this);
         }
     }
 }
