@@ -2,7 +2,6 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
-Imports System.Diagnostics.CodeAnalysis
 Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Runtime.Versioning
@@ -540,7 +539,6 @@ Namespace Microsoft.VisualBasic
             End Try
         End Function
 
-        <RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url:= "https://aka.ms/dotnet-illink/com")>
         <SupportedOSPlatform("windows")>
         Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
             'Only works for Com2 objects, not for COM+ objects.
