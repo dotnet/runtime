@@ -1403,6 +1403,15 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, g
 		g_string_append_printf (str, ")");
 		break;
 	}
+	case MintOpShortAndShortBranch:
+		if (ins) {
+			/* the target IL is already embedded in the instruction */
+			g_string_append_printf (str, " %u, BB%d", *(guint16*)data, ins->info.target_bb->index);
+		} else {
+			target = ins_offset + *(gint16*)(data + 1);
+			g_string_append_printf (str, " %u, IR_%04x", *(guint16*)data, target);
+		}
+		break;
 	default:
 		g_string_append_printf (str, "unknown arg type\n");
 	}
@@ -7540,10 +7549,14 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		}
 	} else if ((opcode >= MINT_BRFALSE_I4_S && opcode <= MINT_BRTRUE_R8_S) ||
 			(opcode >= MINT_BEQ_I4_S && opcode <= MINT_BLT_UN_R8_S) ||
+			(opcode >= MINT_BRFALSE_I4_SP && opcode <= MINT_BLT_UN_I8_IMM_SP) ||
 			opcode == MINT_BR_S || opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK || opcode == MINT_CALL_HANDLER_S) {
 		const int br_offset = start_ip - td->new_code;
+		gboolean has_imm = opcode >= MINT_BEQ_I4_IMM_SP && opcode <= MINT_BLT_UN_I8_IMM_SP;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
 			*ip++ = td->locals [ins->sregs [i]].offset;
+		if (has_imm)
+			*ip++ = ins->data [0];
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it.
 			*ip++ = ins->info.target_bb->native_offset - br_offset;
@@ -7551,7 +7564,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
 			reloc->type = RELOC_SHORT_BRANCH;
-			reloc->skip = mono_interp_op_sregs [opcode];
+			reloc->skip = mono_interp_op_sregs [opcode] + has_imm;
 			reloc->offset = br_offset;
 			reloc->target_bb = ins->info.target_bb;
 			g_ptr_array_add (td->relocs, reloc);
@@ -8459,6 +8472,74 @@ get_sreg_imm (TransformData *td, int sreg, gint16 *imm)
 	return FALSE;
 }
 
+static int
+get_binop_condbr_imm_sp (int opcode)
+{
+	switch (opcode) {
+		case MINT_BEQ_I4_S: return MINT_BEQ_I4_IMM_SP;
+		case MINT_BEQ_I8_S: return MINT_BEQ_I8_IMM_SP;
+		case MINT_BGE_I4_S: return MINT_BGE_I4_IMM_SP;
+		case MINT_BGE_I8_S: return MINT_BGE_I8_IMM_SP;
+		case MINT_BGT_I4_S: return MINT_BGT_I4_IMM_SP;
+		case MINT_BGT_I8_S: return MINT_BGT_I8_IMM_SP;
+		case MINT_BLT_I4_S: return MINT_BLT_I4_IMM_SP;
+		case MINT_BLT_I8_S: return MINT_BLT_I8_IMM_SP;
+		case MINT_BLE_I4_S: return MINT_BLE_I4_IMM_SP;
+		case MINT_BLE_I8_S: return MINT_BLE_I8_IMM_SP;
+		case MINT_BNE_UN_I4_S: return MINT_BNE_UN_I4_IMM_SP;
+		case MINT_BNE_UN_I8_S: return MINT_BNE_UN_I8_IMM_SP;
+		case MINT_BGE_UN_I4_S: return MINT_BGE_UN_I4_IMM_SP;
+		case MINT_BGE_UN_I8_S: return MINT_BGE_UN_I8_IMM_SP;
+		case MINT_BGT_UN_I4_S: return MINT_BGT_UN_I4_IMM_SP;
+		case MINT_BGT_UN_I8_S: return MINT_BGT_UN_I8_IMM_SP;
+		case MINT_BLE_UN_I4_S: return MINT_BLE_UN_I4_IMM_SP;
+		case MINT_BLE_UN_I8_S: return MINT_BLE_UN_I8_IMM_SP;
+		case MINT_BLT_UN_I4_S: return MINT_BLT_UN_I4_IMM_SP;
+		case MINT_BLT_UN_I8_S: return MINT_BLT_UN_I8_IMM_SP;
+		default: return MINT_NOP;
+	}
+}
+
+static int
+get_binop_condbr_sp (int opcode)
+{
+	switch (opcode) {
+		case MINT_BEQ_I4_S: return MINT_BEQ_I4_SP;
+		case MINT_BEQ_I8_S: return MINT_BEQ_I8_SP;
+		case MINT_BGE_I4_S: return MINT_BGE_I4_SP;
+		case MINT_BGE_I8_S: return MINT_BGE_I8_SP;
+		case MINT_BGT_I4_S: return MINT_BGT_I4_SP;
+		case MINT_BGT_I8_S: return MINT_BGT_I8_SP;
+		case MINT_BLT_I4_S: return MINT_BLT_I4_SP;
+		case MINT_BLT_I8_S: return MINT_BLT_I8_SP;
+		case MINT_BLE_I4_S: return MINT_BLE_I4_SP;
+		case MINT_BLE_I8_S: return MINT_BLE_I8_SP;
+		case MINT_BNE_UN_I4_S: return MINT_BNE_UN_I4_SP;
+		case MINT_BNE_UN_I8_S: return MINT_BNE_UN_I8_SP;
+		case MINT_BGE_UN_I4_S: return MINT_BGE_UN_I4_SP;
+		case MINT_BGE_UN_I8_S: return MINT_BGE_UN_I8_SP;
+		case MINT_BGT_UN_I4_S: return MINT_BGT_UN_I4_SP;
+		case MINT_BGT_UN_I8_S: return MINT_BGT_UN_I8_SP;
+		case MINT_BLE_UN_I4_S: return MINT_BLE_UN_I4_SP;
+		case MINT_BLE_UN_I8_S: return MINT_BLE_UN_I8_SP;
+		case MINT_BLT_UN_I4_S: return MINT_BLT_UN_I4_SP;
+		case MINT_BLT_UN_I8_S: return MINT_BLT_UN_I8_SP;
+		default: return MINT_NOP;
+	}
+}
+
+static int
+get_unop_condbr_sp (int opcode)
+{
+	switch (opcode) {
+		case MINT_BRFALSE_I4_S: return MINT_BRFALSE_I4_SP;
+		case MINT_BRFALSE_I8_S: return MINT_BRFALSE_I8_SP;
+		case MINT_BRTRUE_I4_S: return MINT_BRTRUE_I4_SP;
+		case MINT_BRTRUE_I8_S: return MINT_BRTRUE_I8_SP;
+		default: return MINT_NOP;
+	}
+}
+
 static void
 interp_super_instructions (TransformData *td)
 {
@@ -8640,6 +8721,56 @@ interp_super_instructions (TransformData *td)
 					interp_clear_ins (def);
 					local_ref_count [obj_sreg]--;
 					mono_interp_stats.super_instructions++;
+				}
+			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
+				gint16 imm;
+				int sreg_imm = ins->sregs [1];
+				if (get_sreg_imm (td, sreg_imm, &imm)) {
+					int condbr_op = get_binop_condbr_imm_sp (opcode);
+					if (condbr_op != MINT_NOP) {
+						InterpInst *prev_ins = interp_prev_ins (ins);
+						// The new instruction does a safepoint
+						if (prev_ins && prev_ins->opcode == MINT_SAFEPOINT)
+							interp_clear_ins (prev_ins);
+						InterpInst *new_ins = interp_insert_ins (td, ins, condbr_op);
+						new_ins->sregs [0] = ins->sregs [0];
+						new_ins->data [0] = imm;
+						new_ins->info.target_bb = ins->info.target_bb;
+						interp_clear_ins (td->locals [sreg_imm].def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_imm]--;
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							dump_interp_inst (new_ins);
+						}
+					}
+				} else {
+					InterpInst *prev_ins = interp_prev_ins (ins);
+					if (prev_ins && prev_ins->opcode == MINT_SAFEPOINT) {
+						int condbr_op = get_binop_condbr_sp (opcode);
+						if (condbr_op != MINT_NOP) {
+							interp_clear_ins (prev_ins);
+							ins->opcode = condbr_op;
+							if (td->verbose_level) {
+								g_print ("superins: ");
+								dump_interp_inst (ins);
+							}
+						}
+					}
+				}
+			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
+				InterpInst *prev_ins = interp_prev_ins (ins);
+				if (prev_ins && prev_ins->opcode == MINT_SAFEPOINT) {
+					int condbr_op = get_unop_condbr_sp (opcode);
+					if (condbr_op != MINT_NOP) {
+						interp_clear_ins (prev_ins);
+						ins->opcode = condbr_op;
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							dump_interp_inst (ins);
+						}
+					}
+
 				}
 			}
 		}
