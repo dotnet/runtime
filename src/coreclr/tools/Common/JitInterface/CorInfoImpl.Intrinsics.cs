@@ -82,16 +82,12 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Address, "Address", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Set, "Set", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StringGetChar, "get_Chars", "System", "String");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StringLength, "get_Length", "System", "String");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray, "InitializeArray", "System.Runtime.CompilerServices", "RuntimeHelpers");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetTypeFromHandle, "GetTypeFromHandle", "System", "Type");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal, "GetValueInternal", "System", "RuntimeTypeHandle");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeEQ, "op_Equality", "System", "Type");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeNEQ, "op_Inequality", "System", "Type");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Object_GetType, "GetType", "System", "Object");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContext, "GetStubContext", "System.StubHelpers", "StubHelpers"); // interop-specific
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr, "GetStubContextAddr", "System.StubHelpers", "StubHelpers"); // interop-specific
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget, "GetNDirectTarget", "System.StubHelpers", "StubHelpers"); // interop-specific
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress, "NextCallReturnAddress", "System.StubHelpers", "StubHelpers");
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InterlockedAdd32, "Add", System.Threading", "Interlocked"); // unused
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InterlockedAdd64, "Add", System.Threading", "Interlocked"); // unused

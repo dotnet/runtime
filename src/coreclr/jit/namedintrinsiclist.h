@@ -55,6 +55,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Array_Clone,
     NI_System_Object_MemberwiseClone,
 
+    NI_System_String_get_Length,
+    NI_System_Type_op_Equality,
+    NI_System_Type_op_Inequality,
+
     // These are used by HWIntrinsics but are defined more generally
     // to allow dead code optimization and handle the recursion case
 

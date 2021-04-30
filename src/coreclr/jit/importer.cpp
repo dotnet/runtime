@@ -3874,38 +3874,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
-        case CORINFO_INTRINSIC_StringLength:
-            op1 = impPopStack().val;
-            if (opts.OptimizationEnabled())
-            {
-                if (op1->OperIs(GT_CNS_STR))
-                {
-                    // Optimize `ldstr + String::get_Length()` to CNS_INT
-                    // e.g. "Hello".Length => 5
-                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
-                    if (iconNode != nullptr)
-                    {
-                        retNode = iconNode;
-                        break;
-                    }
-                }
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
-                op1                   = arrLen;
-            }
-            else
-            {
-                /* Create the expression "*(str_addr + stringLengthOffset)" */
-                op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                    gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
-                op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
-            }
-
-            // Getting the length of a null string should throw
-            op1->gtFlags |= GTF_EXCEPT;
-
-            retNode = op1;
-            break;
-
         case CORINFO_INTRINSIC_StringGetChar:
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -4200,35 +4168,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
         }
 
-        case CORINFO_INTRINSIC_TypeEQ:
-        case CORINFO_INTRINSIC_TypeNEQ:
-        {
-            JITDUMP("Importing Type.op_*Equality intrinsic\n");
-            op1              = impStackTop(1).val;
-            op2              = impStackTop(0).val;
-            GenTree* optTree = gtFoldTypeEqualityCall(intrinsicID, op1, op2);
-            if (optTree != nullptr)
-            {
-                // Success, clean up the evaluation stack.
-                impPopStack();
-                impPopStack();
-
-                // See if we can optimize even further, to a handle compare.
-                optTree = gtFoldTypeCompare(optTree);
-
-                // See if we can now fold a handle compare to a constant.
-                optTree = gtFoldExpr(optTree);
-
-                retNode = optTree;
-            }
-            else
-            {
-                // Retry optimizing these later
-                isSpecial = true;
-            }
-            break;
-        }
-
         default:
             /* Unknown intrinsic */
             intrinsicID = CORINFO_INTRINSIC_Illegal;
@@ -4241,6 +4180,69 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         assert(retNode == nullptr);
         switch (ni)
         {
+            case NI_System_String_get_Length:
+            {
+                GenTree* op1 = impPopStack().val;
+                if (opts.OptimizationEnabled())
+                {
+                    if (op1->OperIs(GT_CNS_STR))
+                    {
+                        // Optimize `ldstr + String::get_Length()` to CNS_INT
+                        // e.g. "Hello".Length => 5
+                        GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                        if (iconNode != nullptr)
+                        {
+                            retNode = iconNode;
+                            break;
+                        }
+                    }
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                    op1 = arrLen;
+                }
+                else
+                {
+                    /* Create the expression "*(str_addr + stringLengthOffset)" */
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
+                    op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
+                }
+
+                // Getting the length of a null string should throw
+                op1->gtFlags |= GTF_EXCEPT;
+
+                retNode = op1;
+                break;
+            }
+
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+            {
+                JITDUMP("Importing Type.op_*Equality intrinsic\n");
+                GenTree* op1     = impStackTop(1).val;
+                GenTree* op2     = impStackTop(0).val;
+                GenTree* optTree = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
+                if (optTree != nullptr)
+                {
+                    // Success, clean up the evaluation stack.
+                    impPopStack();
+                    impPopStack();
+
+                    // See if we can optimize even further, to a handle compare.
+                    optTree = gtFoldTypeCompare(optTree);
+
+                    // See if we can now fold a handle compare to a constant.
+                    optTree = gtFoldExpr(optTree);
+
+                    retNode = optTree;
+                }
+                else
+                {
+                    // Retry optimizing these later
+                    isSpecial = true;
+                }
+                break;
+            }
+
             case NI_System_Enum_HasFlag:
             {
                 GenTree* thisOp  = impStackTop(1).val;
@@ -4894,6 +4896,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsAssignableTo") == 0)
             {
                 result = NI_System_Type_IsAssignableTo;
+            }
+            else if (strcmp(methodName, "op_Equality") == 0)
+            {
+                result = NI_System_Type_op_Equality;
+            }
+            else if (strcmp(methodName, "op_Inequality") == 0)
+            {
+                result = NI_System_Type_op_Inequality;
             }
         }
     }

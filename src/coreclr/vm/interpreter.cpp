@@ -9036,9 +9036,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case CORINFO_INTRINSIC_StringLength:
-            DoStringLength(); didIntrinsic = true;
-            break;
         case CORINFO_INTRINSIC_StringGetChar:
             DoStringGetChar(); didIntrinsic = true;
             break;

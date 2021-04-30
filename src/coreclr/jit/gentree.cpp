@@ -12749,20 +12749,33 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         return call;
     }
 
-    // Fetch id of the intrinsic.
-    const CorInfoIntrinsics methodID = info.compCompHnd->getIntrinsicID(call->gtCallMethHnd);
+    // Check for a new-style jit intrinsic.
+    const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
 
-    switch (methodID)
+    switch (ni)
     {
-        case CORINFO_INTRINSIC_TypeEQ:
-        case CORINFO_INTRINSIC_TypeNEQ:
+        case NI_System_Enum_HasFlag:
+        {
+            GenTree* thisOp = call->gtCallThisArg->GetNode();
+            GenTree* flagOp = call->gtCallArgs->GetNode();
+            GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
+
+            if (result != nullptr)
+            {
+                return result;
+            }
+            break;
+        }
+
+        case NI_System_Type_op_Equality:
+        case NI_System_Type_op_Inequality:
         {
             noway_assert(call->TypeGet() == TYP_INT);
             GenTree* op1 = call->gtCallArgs->GetNode();
             GenTree* op2 = call->gtCallArgs->GetNext()->GetNode();
 
             // If either operand is known to be a RuntimeType, this can be folded
-            GenTree* result = gtFoldTypeEqualityCall(methodID, op1, op2);
+            GenTree* result = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
             if (result != nullptr)
             {
                 return result;
@@ -12774,21 +12787,6 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
             break;
     }
 
-    // Check for a new-style jit intrinsic.
-    const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
-
-    if (ni == NI_System_Enum_HasFlag)
-    {
-        GenTree* thisOp = call->gtCallThisArg->GetNode();
-        GenTree* flagOp = call->gtCallArgs->GetNode();
-        GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
-
-        if (result != nullptr)
-        {
-            return result;
-        }
-    }
-
     return call;
 }
 
@@ -12796,9 +12794,9 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 // gtFoldTypeEqualityCall: see if a (potential) type equality call is foldable
 //
 // Arguments:
-//    methodID -- type equality intrinsic ID
-//    op1 -- first argument to call
-//    op2 -- second argument to call
+//    isEq -- is it == or != operator
+//    op1  -- first argument to call
+//    op2  -- second argument to call
 //
 // Returns:
 //    nulltpr if no folding happened.
@@ -12809,20 +12807,17 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 //    equality methods will simply check object identity and so we can
 //    fold the call into a simple compare of the call's operands.
 
-GenTree* Compiler::gtFoldTypeEqualityCall(CorInfoIntrinsics methodID, GenTree* op1, GenTree* op2)
+GenTree* Compiler::gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2)
 {
-    // The method must be be a type equality intrinsic
-    assert(methodID == CORINFO_INTRINSIC_TypeEQ || methodID == CORINFO_INTRINSIC_TypeNEQ);
-
     if ((gtGetTypeProducerKind(op1) == TPK_Unknown) && (gtGetTypeProducerKind(op2) == TPK_Unknown))
     {
         return nullptr;
     }
 
-    const genTreeOps simpleOp = (methodID == CORINFO_INTRINSIC_TypeEQ) ? GT_EQ : GT_NE;
+    const genTreeOps simpleOp = isEq ? GT_EQ : GT_NE;
 
     JITDUMP("\nFolding call to Type:op_%s to a simple compare via %s\n",
-            methodID == CORINFO_INTRINSIC_TypeEQ ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
+        isEq ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
 
     GenTree* compare = gtNewOperNode(simpleOp, TYP_INT, op1, op2);
 
