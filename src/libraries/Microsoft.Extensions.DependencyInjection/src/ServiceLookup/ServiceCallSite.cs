@@ -10,8 +10,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     /// </summary>
     internal abstract class ServiceCallSite
     {
-        private volatile object _value;
-
         protected ServiceCallSite(ResultCache cache)
         {
             Cache = cache;
@@ -21,7 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public abstract Type ImplementationType { get; }
         public abstract CallSiteKind Kind { get; }
         public ResultCache Cache { get; }
-        public object Value { get => _value; set => _value = value; }
+        public object Value { get; set; }
 
         public bool CaptureDisposable =>
             ImplementationType == null ||

@@ -130,7 +130,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private ServiceCallSite TryCreateEnumerable(Type serviceType, CallSiteChain callSiteChain)
         {
-            if (_callSiteCache.TryGetValue(new ServiceCacheKey(serviceType, DefaultSlot), out ServiceCallSite serviceCallSite))
+            ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, DefaultSlot);
+            if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
             {
                 return serviceCallSite;
             }
@@ -191,10 +192,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ResultCache resultCache = ResultCache.None;
                     if (cacheLocation == CallSiteResultCacheLocation.Scope || cacheLocation == CallSiteResultCacheLocation.Root)
                     {
-                        resultCache = new ResultCache(cacheLocation, new ServiceCacheKey(serviceType, DefaultSlot));
+                        resultCache = new ResultCache(cacheLocation, callSiteKey);
                     }
 
-                    return _callSiteCache[new ServiceCacheKey(serviceType, DefaultSlot)] = new IEnumerableCallSite(resultCache, itemType, callSites.ToArray());
+                    return _callSiteCache[callSiteKey] = new IEnumerableCallSite(resultCache, itemType, callSites.ToArray());
                 }
 
                 return null;
@@ -214,7 +215,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (serviceType == descriptor.ServiceType)
             {
-                if (_callSiteCache.TryGetValue(new ServiceCacheKey(serviceType, slot), out ServiceCallSite serviceCallSite))
+                ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, slot);
+                if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
                 {
                     return serviceCallSite;
                 }
@@ -238,7 +240,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
 
-                return _callSiteCache[new ServiceCacheKey(serviceType, slot)] = callSite;
+                return _callSiteCache[callSiteKey] = callSite;
             }
 
             return null;
@@ -249,7 +251,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (serviceType.IsConstructedGenericType &&
                 serviceType.GetGenericTypeDefinition() == descriptor.ServiceType)
             {
-                if (_callSiteCache.TryGetValue(new ServiceCacheKey(serviceType, slot), out ServiceCallSite serviceCallSite))
+                ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, slot);
+                if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
                 {
                     return serviceCallSite;
                 }
@@ -271,7 +274,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return null;
                 }
 
-                return _callSiteCache[new ServiceCacheKey(serviceType, slot)] = CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
+                return _callSiteCache[callSiteKey] = CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
             }
 
             return null;
