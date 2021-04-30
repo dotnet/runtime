@@ -16,14 +16,6 @@ namespace ClassLibrary
 
     public class test
     {
-        public const int DefaultSeed = 20010415;
-        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
-        {
-            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
-            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
-            _ => DefaultSeed
-        };
-
         const float EPS = Single.Epsilon;
         const int steps = 100;
         const float INF = Single.PositiveInfinity;
@@ -253,7 +245,7 @@ namespace ClassLibrary
         static int Main(string[] args)
         {
             List<Point> points = new List<Point>();
-            Random random = new Random(Seed);
+            Random random = new Random(13);
             for (int i = 0; i < 100; ++i)
             {
                 Point p;
@@ -264,13 +256,13 @@ namespace ClassLibrary
             convex_hull(points);
             Point O;
             float r;
-            bool result = FindCircle(points, out O, out r);
+            FindCircle(points, out O, out r);
 
-            // Check that we found a circle, our radius is greater than 0
-            if(result && r > 0)
+            float expRes = 75656240.0F;
+            float ulp    =        8.0F;
+            if (Math.Abs(r - expRes) <= ulp)
                 return 100;
-            else 
-                return 0;
+            return 0;
         }
     }
 }

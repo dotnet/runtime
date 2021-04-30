@@ -40,6 +40,7 @@ namespace Span
     {
         const int Iterations = 1000000;
         const int DefaultLength = 1024;
+        const byte Expected = 70;
         static bool HasFailure = false;
 
         [Benchmark(InnerIterationCount = Iterations)]
@@ -879,11 +880,10 @@ namespace Span
                 double timeInMs = sw.Elapsed.TotalMilliseconds;
                 Console.Write("{0,25}: {1,7:F2}ms", name, timeInMs);
 
-                // Validate that check is just not 0, as this means our random data was not correct.
-                bool failed = (check == 0);
+                bool failed = (check != Expected);
                 if (failed)
                 {
-                    Console.Write(" -- failed to validate, check was 0 but should not have been");
+                    Console.Write(" -- failed to validate, got {0} expected {1}", check, Expected);
                     HasFailure = true;
                 }
                 Console.WriteLine();
@@ -897,17 +897,9 @@ namespace Span
             return data;
         }
 
-        public const int DefaultSeed = 20010415;
-        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
-        {
-            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
-            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
-            _ => DefaultSeed
-        };
-
         static void SetData(byte[] data)
         {
-            Random Rnd = new Random(Seed);
+            Random Rnd = new Random(42);
             Rnd.NextBytes(data);
         }
 
