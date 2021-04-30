@@ -98,7 +98,7 @@ HRESULT CordbAssembly::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[
                     if (m_pAssemblyName[pos_separator] == DIR_SEPARATOR)
                         break;
                 }
-                m_nAssemblyNameLen = size_path + strlen(c_mobile_symbols_path);
+                m_nAssemblyNameLen = (int)(size_path + strlen(c_mobile_symbols_path));
                 char* symbols_full_path = (char*)malloc(m_nAssemblyNameLen);
                 sprintf_s(symbols_full_path, m_nAssemblyNameLen, "%s%s", c_mobile_symbols_path , m_pAssemblyName + pos_separator + 1);
 
