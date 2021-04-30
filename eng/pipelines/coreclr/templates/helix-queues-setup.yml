@@ -26,18 +26,22 @@ jobs:
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
+    # iOS/tvOS simulator x64/x86
+    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86', 'tvOSSimulator_x64') }}:
+      - OSX.1015.Amd64.Open
+
     # Android arm64
     - ${{ if in(parameters.platform, 'Android_arm64') }}:
       - Windows.10.Amd64.Android.Open
-    
+
     # Android x64
     - ${{ if in(parameters.platform, 'Android_x64') }}:
       - Ubuntu.1804.Amd64.Android.Open
-    
+
     # Browser wasm
     - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
       - Ubuntu.1804.Amd64.Open
-    
+
     # Linux arm
     - ${{ if eq(parameters.platform, 'Linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
