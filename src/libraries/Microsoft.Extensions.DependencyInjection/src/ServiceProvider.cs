@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private bool _disposed;
 
-        internal ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>> RealizedServices { get; }
+        private ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>> _realizedServices;
 
         internal CallSiteFactory CallSiteFactory { get; }
 
@@ -34,12 +34,12 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             _engine = GetEngine();
             _createServiceAccessor = CreateServiceAccessor;
+            _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
 
             Root = new ServiceProviderEngineScope(this);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
             CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(this));
-            RealizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
 
             if (options.ValidateScopes)
             {
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            Func<ServiceProviderEngineScope, object> realizedService = RealizedServices.GetOrAdd(serviceType, _createServiceAccessor);
+            Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
             return realizedService.Invoke(serviceProviderEngineScope);
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal void ReplaceServiceAccessor(ServiceCallSite callSite, Func<ServiceProviderEngineScope, object> accessor)
         {
-            RealizedServices[callSite.ImplementationType] = accessor;
+            _realizedServices[callSite.ImplementationType] = accessor;
         }
 
         IServiceScope IServiceScopeFactory.CreateScope()

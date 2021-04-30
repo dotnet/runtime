@@ -14,20 +14,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal Action<object> _captureDisposableCallback;
 
         private bool _disposed;
-        private readonly ScopeState _state;
+        private List<object> _disposables;
 
         public ServiceProviderEngineScope(ServiceProvider provider)
         {
+            ResolvedServices = new Dictionary<ServiceCacheKey, object>();
             RootProvider = provider;
-            _state = new ScopeState();
         }
 
-        internal Dictionary<ServiceCacheKey, object> ResolvedServices => _state.ResolvedServices;
+        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; }
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
-        // the list of disposable entries only, since ResolvedServices is a concurrent dictionary.
+        // the list of disposable entries only, since ResolvedServices are cached on CallSites
         // For other scopes, it protects ResolvedServices and the list of disposables
-        internal object Sync => _state;
+        internal object Sync => ResolvedServices;
 
         internal ServiceProvider RootProvider { get; set; }
 
@@ -69,9 +69,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ThrowHelper.ThrowObjectDisposedException();
                 }
 
-                _state.Disposables ??= new List<object>();
+                _disposables ??= new List<object>();
 
-                _state.Disposables.Add(service);
+                _disposables.Add(service);
             }
 
             return service;
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 // Track statistics about the scope (number of disposable objects and number of disposed services)
-                _state.Track(RootProvider);
+                DependencyInjectionEventSource.Log.ScopeDisposed(RootProvider.GetHashCode(), ResolvedServices.Count, _disposables?.Count ?? 0);
 
                 // We've transitioned to the disposed state, so future calls to
                 // CaptureDisposable will immediately dispose the object.
@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // trying to get a cached singleton service. If it doesn't find it
                 // it will try to create a new one which will result in an ObjectDisposedException.
 
-                return _state.Disposables;
+                return _disposables;
             }
         }
     }

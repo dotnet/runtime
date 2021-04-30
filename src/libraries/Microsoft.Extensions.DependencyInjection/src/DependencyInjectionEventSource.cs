@@ -68,15 +68,6 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [NonEvent]
-        public void ScopeDisposed(ServiceProvider provider, ScopeState state)
-        {
-            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
-            {
-                ScopeDisposed(provider.GetHashCode(), state.ResolvedServicesCount, state.DisposableServicesCount);
-            }
-        }
-
-        [NonEvent]
         public void ServiceResolved(Type serviceType)
         {
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
