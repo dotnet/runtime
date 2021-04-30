@@ -108,3 +108,5 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1030`__ | [System.Text.Json.SourceGeneration] Did not generate serialization metadata for type. |
+|  __`SYSLIB1031`__ | [System.Text.Json.SourceGeneration] Duplicate type name. |
