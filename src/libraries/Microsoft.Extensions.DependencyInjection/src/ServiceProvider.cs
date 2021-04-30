@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.DependencyInjection
             _engine = GetEngine();
             _createServiceAccessor = CreateServiceAccessor;
 
-            Root = new ServiceProviderEngineScope(this, isRoot: true);
+            Root = new ServiceProviderEngineScope(this);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
             CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(this));

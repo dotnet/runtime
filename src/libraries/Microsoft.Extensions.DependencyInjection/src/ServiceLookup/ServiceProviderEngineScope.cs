@@ -16,13 +16,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private bool _disposed;
         private readonly ScopeState _state;
 
-        public ServiceProviderEngineScope(ServiceProvider provider, bool isRoot = false)
+        public ServiceProviderEngineScope(ServiceProvider provider)
         {
             RootProvider = provider;
-            _state = new ScopeState(isRoot);
+            _state = new ScopeState();
         }
 
-        internal IDictionary<ServiceCacheKey, object> ResolvedServices => _state.ResolvedServices;
+        internal Dictionary<ServiceCacheKey, object> ResolvedServices => _state.ResolvedServices;
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
         // the list of disposable entries only, since ResolvedServices is a concurrent dictionary.

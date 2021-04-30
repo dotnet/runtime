@@ -15,6 +15,5 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public override Type ServiceType { get; } = typeof(IServiceScopeFactory);
         public override Type ImplementationType { get; } = typeof(ServiceProviderEngine);
         public override CallSiteKind Kind { get; } = CallSiteKind.ServiceScopeFactory;
-        public IServiceScopeFactory Value { get; }
     }
 }

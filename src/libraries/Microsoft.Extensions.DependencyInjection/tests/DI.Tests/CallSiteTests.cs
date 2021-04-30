@@ -87,9 +87,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var compiledCallSite = CompileCallSite(callSite, provider);
             var compiledCollectionCallSite = CompileCallSite(collectionCallSite, provider);
 
-            var service1 = Invoke(callSite, provider);
-            var service2 = compiledCallSite(provider.Root);
-            var serviceEnumerator = ((IEnumerable)compiledCollectionCallSite(provider.Root)).GetEnumerator();
+            using var scope = (ServiceProviderEngineScope)provider.CreateScope();
+
+            var service1 = Invoke(callSite, scope);
+            var service2 = compiledCallSite(scope);
+            var serviceEnumerator = ((IEnumerable)compiledCollectionCallSite(scope)).GetEnumerator();
 
             Assert.NotNull(service1);
             Assert.True(compare(service1, service2));
@@ -112,10 +114,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
-            var serviceC = (ServiceC)compiledCallSite(provider.Root);
+            using var scope = (ServiceProviderEngineScope)provider.CreateScope();
+
+            var serviceC = (ServiceC)compiledCallSite(scope);
 
             Assert.NotNull(serviceC.ServiceB.ServiceA);
-            Assert.Equal(serviceC, Invoke(callSite, provider));
+            Assert.Equal(serviceC, Invoke(callSite, scope));
         }
 
         [Theory]
@@ -369,9 +373,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        private static object Invoke(ServiceCallSite callSite, ServiceProvider provider)
+        private static object Invoke(ServiceCallSite callSite, ServiceProviderEngineScope scope)
         {
-            return CallSiteRuntimeResolver.Instance.Resolve(callSite, provider.Root);
+            return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
         }
 
         private static Func<ServiceProviderEngineScope, object> CompileCallSite(ServiceCallSite callSite, ServiceProvider provider)
