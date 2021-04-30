@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// The default IServiceProvider.
     /// </summary>
-    public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable, IServiceScopeFactory
+    public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
         private readonly CallSiteValidator _callSiteValidator;
 
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Root = new ServiceProviderEngineScope(this);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
-            CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(this));
+            CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(Root));
 
             if (options.ValidateScopes)
             {
@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.DependencyInjection
             _realizedServices[callSite.ImplementationType] = accessor;
         }
 
-        IServiceScope IServiceScopeFactory.CreateScope()
+        internal IServiceScope CreateScope()
         {
             if (_disposed)
             {

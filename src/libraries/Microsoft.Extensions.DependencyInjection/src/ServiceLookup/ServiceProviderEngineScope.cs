@@ -8,7 +8,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable
+    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
         // For testing only
         internal Action<object> _captureDisposableCallback;
@@ -42,6 +42,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         public IServiceProvider ServiceProvider => this;
+
+        public IServiceScope CreateScope() => RootProvider.CreateScope();
 
         internal object CaptureDisposable(object service)
         {
