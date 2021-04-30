@@ -37,17 +37,14 @@
       <_PublishFramework Include="$(TargetFrameworks)" />
 
       <!-- non-net4* -->
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(MSBuildProjectName)*"
-                      Condition="!$([System.String]::Copy('%(_PublishFramework.Identity)').StartsWith('net4'))"
-                      TargetPath="tasks\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\publish\System.Reflection.MetadataLoadContext.dll"
-                      Condition="!$([System.String]::Copy('%(_PublishFramework.Identity)').StartsWith('net4'))"
-                      TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\publish\System.Reflection.MetadataLoadContext.dll"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
 
       <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\publish\*"
-                      Condition="$([System.String]::Copy('%(_PublishFramework.Identity)').StartsWith('net4'))"
-                      TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)net472\publish\*"
+                      TargetPath="tasks\net472" />
     </ItemGroup>
   </Target>
 
