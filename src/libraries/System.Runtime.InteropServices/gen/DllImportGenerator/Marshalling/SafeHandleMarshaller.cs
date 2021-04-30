@@ -181,7 +181,7 @@ namespace Microsoft.Interop
                     StatementSyntax unmarshalStatement = ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                ParseTypeName(TypeNames.MarshalEx(options)),
+                                ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal),
                                 IdentifierName("InitHandle")),
                             ArgumentList(SeparatedList(
                                 new []

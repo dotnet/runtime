@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
@@ -10,9 +10,6 @@
     <!-- Indicate to the compiler to output generated files to disk. Source addded
          by the DllImportGenerator can be found in the intermediate directory. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-
-    <!-- See https://github.com/dotnet/runtime/issues/42745 for why this is needed. -->
-    <UseAppHost>true</UseAppHost>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

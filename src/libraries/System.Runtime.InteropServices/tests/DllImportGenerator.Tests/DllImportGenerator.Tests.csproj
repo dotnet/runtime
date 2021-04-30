@@ -2,7 +2,7 @@
   <Import Project="$(RepoRoot)DllImportGenerator\DllImportGenerator\Microsoft.Interop.DllImportGenerator.props" />
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <LangVersion>Preview</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

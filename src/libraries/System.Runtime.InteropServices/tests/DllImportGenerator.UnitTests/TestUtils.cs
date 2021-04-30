@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -71,8 +72,13 @@ namespace DllImportGenerator.UnitTests
 
         public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies()
         {
-            // TODO: When .NET 5.0 releases, we can simplify this.
-            var referenceAssemblies = ReferenceAssemblies.Net.Net50;
+            // TODO: When .NET 6.0 releases, we can simplify this.
+            var referenceAssemblies = new ReferenceAssemblies(
+                    "net6.0",
+                    new PackageIdentity(
+                        "Microsoft.NETCore.App.Ref",
+                        "6.0.0-preview.5.21226.5"),
+                    Path.Combine("ref", "net6.0"));
 
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL

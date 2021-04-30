@@ -261,7 +261,7 @@ namespace Microsoft.Interop
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.MarshalEx(options)),
+                                    ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
                                     IdentifierName("SetLastSystemError")),
                                 ArgumentList(SingletonSeparatedList(
                                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(SuccessErrorCode)))))));
@@ -274,7 +274,7 @@ namespace Microsoft.Interop
                                 InvocationExpression(
                                     MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.MarshalEx(options)),
+                                    ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
                                     IdentifierName("GetLastSystemError")))));
 
                         invokeStatement = Block(clearLastError, invokeStatement, getLastError);
@@ -326,7 +326,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.MarshalEx(options)),
+                            ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
                             IdentifierName("SetLastPInvokeError")),
                         ArgumentList(SingletonSeparatedList(
                             Argument(IdentifierName(LastErrorIdentifier)))))));
