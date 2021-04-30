@@ -151,8 +151,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression/tests/System.IO.Compression.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51335 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/51332 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Algorithms/tests/System.Security.Cryptography.Algorithms.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51330 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs/tests/System.Security.Cryptography.Pkcs.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/36897 -->
