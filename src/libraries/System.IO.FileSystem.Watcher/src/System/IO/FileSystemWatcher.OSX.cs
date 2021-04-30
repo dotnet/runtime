@@ -135,9 +135,6 @@ namespace System.IO
             // The bitmask of events that we want to send to the user
             private readonly FSEventStreamEventFlags _filterFlags;
 
-            // Callback delegate for the EventStream events
-            private readonly Interop.EventStream.FSEventStreamCallback _callback;
-
             // GC handle to keep this running instance rooted
             private GCHandle _gcHandle;
 
@@ -172,7 +169,6 @@ namespace System.IO
                     _fullDirectory += "/";
                 }
 
-                _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
                 _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
@@ -285,7 +281,7 @@ namespace System.IO
                 }
             }
 
-            internal void Start(CancellationToken cancellationToken)
+            internal unsafe void Start(CancellationToken cancellationToken)
             {
                 SafeCreateHandle? path = null;
                 SafeCreateHandle? arrPaths = null;
@@ -316,11 +312,14 @@ namespace System.IO
 
                     cleanupGCHandle = true;
 
+                    Interop.EventStream.FSEventStreamContext context = default;
+                    context.info = GCHandle.ToIntPtr(_gcHandle);
+
                     // Create the event stream for the path and tell the stream to watch for file system events.
                     SafeEventStreamHandle eventStream = Interop.EventStream.FSEventStreamCreate(
                         IntPtr.Zero,
-                        _callback,
-                        IntPtr.Zero,
+                        &FileSystemEventCallback,
+                        &context,
                         arrPaths,
                         Interop.EventStream.kFSEventStreamEventIdSinceNow,
                         0.0f,
@@ -374,7 +373,8 @@ namespace System.IO
                 }
             }
 
-            private unsafe void FileSystemEventCallback(
+            [UnmanagedCallersOnly]
+            private static unsafe void FileSystemEventCallback(
                 FSEventStreamRef streamRef,
                 IntPtr clientCallBackInfo,
                 size_t numEvents,
@@ -382,28 +382,31 @@ namespace System.IO
                 FSEventStreamEventFlags* eventFlags,
                 FSEventStreamEventId* eventIds)
             {
+                RunningInstance? instance = (RunningInstance?)GCHandle.FromIntPtr(clientCallBackInfo).Target;
+                Debug.Assert(instance != null);
+
                 // Try to get the actual watcher from our weak reference.  We maintain a weak reference most of the time
                 // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
                 // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
                 // there's nothing more to do (we can't raise events), so bail.
-                if (!_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                if (!instance._weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                 {
-                    CleanupEventStream();
+                    instance.CleanupEventStream();
                     return;
                 }
 
-                ExecutionContext? context = _context;
+                ExecutionContext? context = instance._context;
                 if (context is null)
                 {
                     // Flow suppressed, just run here
-                    ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher);
+                    instance.ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher);
                 }
                 else
                 {
                     ExecutionContext.Run(
                         context,
                         (object? o) => ((RunningInstance)o!).ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher),
-                        this);
+                        instance);
                 }
             }
 
