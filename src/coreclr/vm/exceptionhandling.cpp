@@ -4491,7 +4491,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", ex.ManagedToNativeExceptionCallback, controlPc, sp);
 
                 UpdateContextForPropagationCallback(ex, currentFrameContext);
-                ExceptionTracker::ResumeExecution(currentFrameContext, NULL);
+                ExceptionTracker::ResumeExecution(currentFrameContext);
             }
             else
             {
