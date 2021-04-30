@@ -7549,6 +7549,9 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it.
 			*ip++ = ins->info.target_bb->native_offset - br_offset;
+		} else if (opcode == MINT_BR_S && ins->info.target_bb == td->cbb->next_bb) {
+			// Ignore branch to the next basic block. Revert the added MINT_BR_S.
+			ip--;
 		} else {
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
@@ -7696,6 +7699,7 @@ generate_compacted_code (TransformData *td)
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins = bb->first_ins;
 		bb->native_offset = ip - td->new_code;
+		td->cbb = bb;
 		while (ins) {
 			ip = emit_compacted_instruction (td, ip, ins);
 			ins = ins->next;
