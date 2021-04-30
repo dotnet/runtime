@@ -151,11 +151,7 @@ namespace System.Net.Security
             return Interop.Ssl.SslGetAlpnSelected(context.SslContext);
         }
 
-<<<<<<< HEAD
-        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, bool encrypt, out int resultSize, ref byte[] newBuffer)
-=======
-        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int offset, int size, bool encrypt, ref byte[] output, out int resultSize)
->>>>>>> 1a18528d13228f0eef727ff49767726b2c8c50dd
+        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteSslContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, bool encrypt, out int resultSize, ref byte[] newBuffer)
         {
             resultSize = 0;
             try

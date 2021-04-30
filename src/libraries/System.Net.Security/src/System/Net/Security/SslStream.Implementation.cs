@@ -747,6 +747,105 @@ namespace System.Net.Security
             }
         }
 
+        private bool haveFullTlsFrame(ref int frameSize)
+        {
+            if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+            {
+                frameSize = int.MaxValue;
+                return false;
+            }
+
+            frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+            return _internalBufferCount >= frameSize;
+        }
+
+        private ValueTask<int> getFullFrameIfNeed<TIOAdapter>(TIOAdapter adapter)
+            where TIOAdapter : IReadWriteAdapter
+        {
+            int frameSize;
+            if (_internalBufferCount >= SecureChannel.ReadHeaderSize)
+            {
+                frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                if (_internalBufferCount >= frameSize)
+                {
+                    return new ValueTask<int>(frameSize);
+                }
+            }
+            else
+            {
+                frameSize = int.MaxValue;
+            }
+
+            // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
+            // So we will attempt larger read - that is trade of with extra copy.
+            // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
+            ResetReadBuffer();
+
+            // _internalOffset is 0 after ResetReadBuffer and we use _internalBufferCount to determined where to read.
+            while (_internalBufferCount < frameSize)
+            {
+                // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
+                // done in this method both to better consolidate error handling logic (the first read is the special
+                // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
+                // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
+                // helper needs to yield and allocate a state machine.
+
+                ValueTask<int> t = adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount));
+                if (!t.IsCompletedSuccessfully)
+                {
+                    return InternalGetFullFrameIfNeed(adapter, t, frameSize);
+                }
+
+                int bytesRead = t.Result;
+                if (bytesRead == 0)
+                {
+                    if (_internalBufferCount != 0)
+                    {
+                        // we got EOF in middle of TLS frame. Treat that as error.
+                        throw new IOException(SR.net_io_eof);
+                    }
+
+                    return new ValueTask<int>(0);
+                }
+
+                _internalBufferCount += bytesRead;
+
+                if (frameSize == int.MaxValue && _internalBufferCount > SecureChannel.ReadHeaderSize)
+                {
+                    // recalculate frame size if needed e.g. we could not get it before.
+                    frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                }
+            }
+
+            return new ValueTask<int>(frameSize);
+
+            async ValueTask<int> InternalGetFullFrameIfNeed(TIOAdapter adap, ValueTask<int> t, int frameSize)
+            {
+                while (_internalBufferCount < frameSize)
+                {
+                    int bytesRead = await t.ConfigureAwait(false);
+                    if (bytesRead == 0)
+                    {
+                        if (_internalBufferCount != 0)
+                        {
+                            // we got EOF in middle of TLS frame. Treat that as error.
+                            throw new IOException(SR.net_io_eof);
+                        }
+
+                        return 0;
+                    }
+
+                    _internalBufferCount += bytesRead;
+                    if (frameSize == int.MaxValue && _internalBufferCount > SecureChannel.ReadHeaderSize)
+                    {
+                        frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                    }
+                }
+
+                return frameSize;
+            }
+        }
+
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -758,15 +857,22 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
 
             Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
+            int processedLength = 0;
+            int payloadBytes = 0;
 
             try
             {
 
                 if (_decryptedBytesCount != 0)
                 {
-                    int length = CopyDecryptedData(buffer);
-                    ReturnReadBufferIfEmpty();
-                    return length;
+                    processedLength = CopyDecryptedData(buffer);
+                    if (_decryptedBytesCount != 0 || !haveFullTlsFrame(ref payloadBytes))
+                    {
+                        // We either filled whole buffer or used all buffered frames.
+                        return processedLength;
+                    }
+
+                    buffer = buffer.Slice(processedLength);
                 }
 
                 if (receivedEOF)
@@ -775,10 +881,9 @@ namespace System.Net.Security
                     return 0;
                 }
 
-                Debug.Assert(_decryptedBytesOffset == 0);
                 Debug.Assert(_decryptedBytesCount == 0);
+                Debug.Assert(_decryptedBytesOffset == 0);
 
-                int processedLength = 0;
                 while (true)
                 {
                     if (buffer.Length == 0 && _internalBuffer is null)
@@ -793,61 +898,13 @@ namespace System.Net.Security
                         await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
                     }
 
-                    // Read the next frame header.
-                    int payloadBytes = int.MaxValue;
-                    if (_internalBufferCount >= SecureChannel.ReadHeaderSize)
+                    payloadBytes = await getFullFrameIfNeed(adapter).ConfigureAwait(false);
+                    if (payloadBytes == 0)
                     {
-                        payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-                        if (payloadBytes < 0)
-                        {
-                            throw new IOException(SR.net_frame_read_size);
-                        }
+                        receivedEOF = true;
+                        break;
                     }
 
-                    if (_internalBufferCount < payloadBytes)
-                    {
-                        // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
-                        // So we will attempt larger read - that is trade of with extra copy.
-                        // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
-                        ResetReadBuffer();
-
-                        // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
-                        // done in this method both to better consolidate error handling logic (the first read is the special
-                        // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
-                        // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
-                        // helper needs to yield and allocate a state machine.
-                        int readBytes = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
-                        if (readBytes == 0)
-                        {
-                            receivedEOF = true;
-                            break;
-                        }
-
-                        _internalBufferCount += readBytes;
-                        if (_internalBufferCount < SecureChannel.ReadHeaderSize)
-                        {
-                            await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-                        }
-
-                        if (payloadBytes == int.MaxValue)
-                        {
-                            // Parse the frame header to determine the payload size unless already done above.
-//                            payloadBytes = GetFrameSize(_internalBuffer.Span.Slice(_internalOffset));
-                            payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-                            if (payloadBytes < 0)
-                            {
-                                throw new IOException(SR.net_frame_read_size);
-                            }
-                        }
-
-                        // Read in the rest of the payload if we don't have it.
-                        if (_internalBufferCount < payloadBytes)
-                        {
-                            await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
-                        }
-                    }
-
-                haveFullTlsFrame:
                     // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
@@ -935,7 +992,7 @@ namespace System.Net.Security
                     {
                         // This may be service frame to update keys or renegotiation.
                         // Keep waiting for real data.
-                        if (processedLength > 0)
+                        if (processedLength > 0 && !haveFullTlsFrame(ref payloadBytes))
                         {
                             // We have some data. Hand them to caller before going for another iteration.
                             break;
@@ -955,16 +1012,17 @@ namespace System.Net.Security
                     }
 
                     // Check if we have enough data to process next TLS frame
-                    if (_internalBufferCount > SecureChannel.ReadHeaderSize && _framing == Framing.SinceSSL3)
+                    if (haveFullTlsFrame(ref payloadBytes))
                     {
                         TlsFrameHelper.TryGetFrameHeader(_internalBuffer.AsSpan(_internalOffset), ref _lastFrame.Header);
-                        payloadBytes = _lastFrame.Header.GetFrameSize();
-                        if (payloadBytes <= _internalBufferCount && _lastFrame.Header.Type == TlsContentType.AppData)
+                        // Process another frame if possible.
+                        // Alerts, handshake and anything else will be processed separately.
+                        if (_lastFrame.Header.Type == TlsContentType.AppData)
                         {
                             // skip over the already written decrypted data.
                             buffer = buffer.Slice(decryptedCount);
                             Debug.Assert(_decryptedBytesOffset <= _internalOffset);
-                            goto haveFullTlsFrame;
+                            continue;
                         }
                     }
 
@@ -1122,6 +1180,11 @@ namespace System.Net.Security
 
                 _decryptedBytesOffset += copyBytes;
                 _decryptedBytesCount -= copyBytes;
+            }
+
+            if (_decryptedBytesCount == 0)
+            {
+                _decryptedBytesOffset = 0;
             }
 
             return copyBytes;
@@ -1341,7 +1404,7 @@ namespace System.Net.Security
                     payloadSize = ((buffer[3] << 8) | buffer[4]) + 5;
                     break;
                 default:
-                    break;
+                    throw new IOException(SR.net_frame_read_size);
             }
 
             return payloadSize;

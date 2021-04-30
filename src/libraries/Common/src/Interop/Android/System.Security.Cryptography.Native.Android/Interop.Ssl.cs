@@ -162,7 +162,7 @@ internal static partial class Interop
             out int bytesRead);
         internal static unsafe PAL_SSLStreamStatus SSLStreamRead(
             SafeSslHandle sslHandle,
-            Span<byte> buffer,
+            ReadOnlySpan<byte> buffer,
             out int bytesRead)
         {
             fixed (byte* bufferPtr = buffer)
