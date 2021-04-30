@@ -87,6 +87,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
             if (ipv6 && PlatformDetection.IsOSX)
