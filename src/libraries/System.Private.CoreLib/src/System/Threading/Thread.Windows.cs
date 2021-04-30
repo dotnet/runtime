@@ -15,6 +15,7 @@ namespace System.Threading
         internal static void AllocateThreadlocalAutoreleasePool()
             => throw new PlatformNotSupportedException();
 
+#if !CORECLR
         internal static void UninterruptibleSleep0() => Interop.Kernel32.Sleep(0);
 
         private static void SleepInternal(int millisecondsTimeout)
@@ -22,5 +23,6 @@ namespace System.Threading
             Debug.Assert(millisecondsTimeout >= -1);
             Interop.Kernel32.Sleep((uint)millisecondsTimeout);
         }
+#endif
     }
 }

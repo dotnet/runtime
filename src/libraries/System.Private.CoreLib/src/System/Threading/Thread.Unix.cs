@@ -14,8 +14,10 @@ namespace System.Threading
         internal static void AllocateThreadlocalAutoreleasePool()
             => throw new PlatformNotSupportedException();
 
+#if !CORECLR
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();
 
         private static void SleepInternal(int millisecondsTimeout) => WaitSubsystem.Sleep(millisecondsTimeout);
+#endif
     }
 }
