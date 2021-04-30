@@ -8,18 +8,20 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 
 | MSBuild Property Name | AppContext Setting | Description |
 |-|-|-|
+| CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
 | DebuggerSupport | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
+| EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
 | EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding | Insecure UTF-7 encoding is trimmed when set to false |
 | EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
 | EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
 | InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
-| UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
 | HttpActivityPropagationSupport | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
 | UseNativeHttpHandler | System.Net.Http.UseNativeHttpHandler | HttpClient uses by default platform native implementation of HttpMessageHandler if set to true. |
 | StartupHookSupport | System.StartupHookProvider.IsSupported | Startup hooks are disabled when set to false. Startup hook related functionality can be trimmed. |
+| UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
 | TBD | System.Threading.ThreadPool.EnableDispatchAutoreleasePool | When set to true, creates an NSAutoreleasePool around each thread pool work item on applicable platforms. |
-| CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
-| EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
+| _EnableCallingManagedFunctionFromNative | Internal.Runtime.InteropServices.ComponentActivator.IsSupported | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
+| _EnableIJWHostActivation | Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported | Enabling an IJW host to load managed code is disabled when set to false and related functionality can be trimmed. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

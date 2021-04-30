@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -13,6 +14,10 @@ namespace Internal.Runtime.InteropServices
     {
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
+
+        private static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("Internal.Runtime.InteropServices.ComponentActivator.IsSupported", out bool isSupported) ? isSupported : true;
 
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 
@@ -43,6 +48,9 @@ namespace Internal.Runtime.InteropServices
                                                                    IntPtr reserved,
                                                                    IntPtr functionHandle)
         {
+            if (!IsSupported)
+                return -1;
+
             try
             {
                 // Validate all parameters first.
@@ -91,6 +99,9 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr reserved,
                                                     IntPtr functionHandle)
         {
+            if (!IsSupported)
+                return -1;
+
             try
             {
                 // Validate all parameters first.
@@ -123,6 +134,7 @@ namespace Internal.Runtime.InteropServices
             return 0;
         }
 
+        [RequiresUnreferencedCode("The trimmer might remove methods")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
             IsolatedComponentLoadContext? alc;
@@ -139,6 +151,7 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
+        [RequiresUnreferencedCode("The trimmer might remove methods")]
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
                                                          string methodName,

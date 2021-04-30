@@ -25,6 +25,18 @@
     <type fullname="System.SZArrayHelper">
       <method name=".ctor" />
     </type>
+
+    <!-- Native hosting accesses managed methods in the ComponentActivator class. -->
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <method name="LoadAssemblyAndGetFunctionPointer" />
+      <method name="GetFunctionPointer" />
+    </type>
+
+    <!-- Enables the .NET IJW host to load an in-memory module as a .NET assembly. -->
+    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
+      <method name="LoadInMemoryAssembly" />
+    </type>
+
   </assembly>
 
   <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->
