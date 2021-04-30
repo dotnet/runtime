@@ -121,7 +121,7 @@ namespace System.Net.Sockets
         }
 
         internal string? FileName
-            => IsAbstract(_path) ? null : _path
+            => IsAbstract(_path) ? null : _path;
 
         private static bool IsAbstract(string path) => path.Length > 0 && path[0] == '\0';
 

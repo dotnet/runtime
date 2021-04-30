@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -504,6 +505,41 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("path", () => new UnixDomainSocketEndPoint(""));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("path", () => new UnixDomainSocketEndPoint(new string('s', 1000)));
             Assert.Throws<PlatformNotSupportedException>(() => new UnixDomainSocketEndPoint("hello"));
+        }
+
+//        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixDomainSocketEndPoint_RelativePathDeletesFile()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    // Bind to a relative path.
+                    string path = GetRandomNonExistingFilePath();
+                    string wd = Path.GetDirectoryName(path);
+                    Directory.SetCurrentDirectory(wd);
+                    socket.Bind(new UnixDomainSocketEndPoint(Path.GetFileName(path)));
+                    Assert.True(File.Exists(path));
+
+                    string otherDir = GetRandomNonExistingFilePath();
+                    Directory.CreateDirectory(otherDir);
+                    try
+                    {
+                        // Change to another directory.
+                        Directory.SetCurrentDirectory(Path.GetDirectoryName(path));
+
+                        // Dispose deletes file from original path.
+                        socket.Dispose();
+                        Assert.False(File.Exists(path));
+                    }
+                    finally
+                    {
+                        Directory.SetCurrentDirectory(wd);
+                        Directory.Delete(otherDir);
+                    }
+                }
+            }).Dispose();
         }
 
         private static string GetRandomNonExistingFilePath()

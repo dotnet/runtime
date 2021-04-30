@@ -809,6 +809,14 @@ namespace System.Net.Sockets
             {
                 // Save a copy of the EndPoint so we can use it for Create().
                 _rightEndPoint = endPointSnapshot;
+
+                // Capture the absolute path for UnixDomainSocketEndPoint.
+                if (endPointSnapshot is UnixDomainSocketEndPoint unixEndPoint &&
+                    unixEndPoint.FileName is not null &&
+                    !Path.IsPathRooted(unixEndPoint.FileName))
+                {
+                    _rightEndPoint = new UnixDomainSocketEndPoint(Path.Combine(Directory.GetCurrentDirectory(), unixEndPoint.Filename));
+                }
             }
         }
 
