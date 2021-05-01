@@ -325,7 +325,7 @@ namespace System.IO.Pipelines
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                     await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
 #else
-                    await InnerStream.CopyToAsync(destination, 81920, cancellationToken).ConfigureAwait(false);
+                    await InnerStream.CopyToAsync(destination, 81920, tokenSource.Token).ConfigureAwait(false);
 #endif
                 }
                 catch (OperationCanceledException)

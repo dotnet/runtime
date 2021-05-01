@@ -151,17 +151,17 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        //[Fact]
-        //public async Task EmptyBufferNotWrittenToStream()
-        //{
-        //    var pipe = new Pipe(s_testPipeOptions);
-        //    var pipeReader = PipeReader.Create(pipe.Reader.AsStream(), s_testOptions);
-        //    pipe.Writer.Complete();
+        [Fact]
+        public async Task EmptyBufferNotWrittenToStream()
+        {
+            var pipe = new Pipe(s_testPipeOptions);
+            var pipeReader = PipeReader.Create(pipe.Reader.AsStream(), s_testOptions);
+            pipe.Writer.Complete();
 
-        //    var stream = new ThrowingStream();
-        //    await pipeReader.CopyToAsync(stream);
-        //    pipeReader.Complete();
-        //}
+            var stream = new ThrowingStream();
+            await pipeReader.CopyToAsync(stream);
+            pipeReader.Complete();
+        }
 
         [Fact]
         public async Task CancelingThePendingReadThrowsOperationCancelledException()
