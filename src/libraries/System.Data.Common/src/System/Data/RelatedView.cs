@@ -89,7 +89,7 @@ namespace System.Data
             Reset();
         }
 
-        public override bool Equals(DataView? dv)
+        public override bool Equals([NotNullWhen(true)] DataView? dv)
         {
             RelatedView? other = dv as RelatedView;
             if (other == null)
