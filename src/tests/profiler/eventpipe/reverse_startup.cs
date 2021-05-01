@@ -26,6 +26,7 @@ namespace ReverseStartupTests
         {
             if (args.Length > 0 && args[0].Equals("RunTest", StringComparison.OrdinalIgnoreCase))
             {
+                Console.WriteLine("In RunTest, exiting.");
                 return 100;
             }
 
@@ -33,7 +34,7 @@ namespace ReverseStartupTests
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ReverseStartup",
                                           profilerClsid: Guid.Empty,
-                                          profileeOptions: ProfileeOptions.NoStartupAttach);
+                                          profileeOptions: ProfileeOptions.NoStartupAttach | ProfileeOptions.ReverseDiagnosticsMode);
         }
 
         public static void AttachProfiler(Process childProcess)
@@ -56,7 +57,7 @@ namespace ReverseStartupTests
             string profilerPath = Path.Combine(rootPath, profilerName);
 
             Console.WriteLine($"Setting profiler {profilerPath} as startup profiler via diagnostics IPC.");
-            ProfilerControlHelpers.SetStartupProfilerViaIPC(ReverseStartupProfilerGuid, profilerPath, childProcess.Id);
+            ProfilerControlHelpers.SetStartupProfilerViaIPC(childProcess.Id, ReverseStartupProfilerGuid, profilerPath);
         }
     }
 }
