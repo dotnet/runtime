@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             unchecked
             {
-                return (Type.GetHashCode() * 397) ^ Slot;
+                return ((Type?.GetHashCode() ?? 23) * 397) ^ Slot;
             }
         }
     }
