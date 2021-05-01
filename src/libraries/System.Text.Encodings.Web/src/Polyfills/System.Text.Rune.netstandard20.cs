@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Encodings.Web;
+using System.Diagnostics.CodeAnalysis;
 
 // Contains a polyfill implementation of System.Text.Rune that works on netstandard2.0.
 // Implementation copied from:
