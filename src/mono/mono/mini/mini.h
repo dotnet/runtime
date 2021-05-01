@@ -2208,7 +2208,7 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, co
 
 void              mono_trampolines_init (void);
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
-gpointer          mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
+gpointer          mono_create_specific_trampoline (MonoMemoryManager *mem_manager, gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
 gpointer          mono_create_jump_trampoline (MonoMethod *method, 
 											   gboolean add_sync_wrapper,
 											   MonoError *error);
