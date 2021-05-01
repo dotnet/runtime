@@ -409,8 +409,6 @@ namespace Internal.JitInterface
 
     public enum CorInfoIntrinsics
     {
-        CORINFO_INTRINSIC_GetChar,              // fetch character out of string
-        CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
         CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
         CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array

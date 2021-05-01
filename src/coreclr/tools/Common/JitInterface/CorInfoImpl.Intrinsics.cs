@@ -76,8 +76,6 @@ namespace Internal.JitInterface
         {
             IntrinsicHashtable table = new IntrinsicHashtable();
 
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetChar, null, null, null); // unused
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_GetDimLength, "GetLength", "System", "Array"); // not handled
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get, "Get", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Address, "Address", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Set, "Set", null, null);
