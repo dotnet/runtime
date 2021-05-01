@@ -550,28 +550,29 @@ if(FEATURE_STANDALONE_GC)
         )
 endif(FEATURE_STANDALONE_GC)
 
+#
 # Targeted interop scenarios
-if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
-    # Shared assets
-    list(APPEND VM_SOURCES_WKS
-        interoplibinterface_shared.cpp
-        )
-    list(APPEND VM_HEADERS_WKS
-        interoplibinterface.h
-        )
-
+#
+# Shared assets
+list(APPEND VM_SOURCES_WKS
+    interoplibinterface_shared.cpp
+)
+list(APPEND VM_HEADERS_WKS
+    interoplibinterface.h
+)
+if(FEATURE_COMWRAPPERS OR FEATURE_OBJCBRIDGE)
     if (FEATURE_COMWRAPPERS)
         list(APPEND VM_SOURCES_WKS
             interoplibinterface.cpp
-            )
+        )
     endif (FEATURE_COMWRAPPERS)
 
     if (FEATURE_OBJCMARSHAL)
         list(APPEND VM_SOURCES_WKS
             interoplibinterface_objc.cpp
-            )
-    endif (FEATURE_OBJCMARSHAL)
-endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
+        )
+    endif (FEATURE_OBJCBRIDGE)
+endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCBRIDGE)
 
 if(CLR_CMAKE_TARGET_WIN32)
 
