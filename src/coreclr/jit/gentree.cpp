@@ -12806,8 +12806,8 @@ GenTree* Compiler::gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2)
 
     const genTreeOps simpleOp = isEq ? GT_EQ : GT_NE;
 
-    JITDUMP("\nFolding call to Type:op_%s to a simple compare via %s\n",
-        isEq ? "Equality" : "Inequality", GenTree::OpName(simpleOp));
+    JITDUMP("\nFolding call to Type:op_%s to a simple compare via %s\n", isEq ? "Equality" : "Inequality",
+            GenTree::OpName(simpleOp));
 
     GenTree* compare = gtNewOperNode(simpleOp, TYP_INT, op1, op2);
 

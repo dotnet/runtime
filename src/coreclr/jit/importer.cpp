@@ -3987,7 +3987,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;
-                retNode = gtNewIndexRef(TYP_USHORT, op1, op2);
+                retNode      = gtNewIndexRef(TYP_USHORT, op1, op2);
                 retNode->gtFlags |= GTF_INX_STRING_LAYOUT;
                 break;
             }
@@ -4009,13 +4009,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                     }
                     GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
-                    op1 = arrLen;
+                    op1                   = arrLen;
                 }
                 else
                 {
                     /* Create the expression "*(str_addr + stringLengthOffset)" */
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
+                                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
                     op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
                 }
 
@@ -4043,17 +4043,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->sigInst.classInstCount == 1);
                 assert(sig->numArgs == 1);
                 CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
-                const unsigned       elemSize = info.compCompHnd->getClassSize(spanElemHnd);
+                const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
                 assert(elemSize > 0);
 
                 const bool isReadOnly = (ni == NI_System_ReadOnlySpan_get_Item);
 
-                JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Item, T=%s, sizeof(T)=%u\n", isReadOnly ? "ReadOnly" : "",
-                    info.compCompHnd->getClassName(spanElemHnd), elemSize);
+                JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Item, T=%s, sizeof(T)=%u\n",
+                        isReadOnly ? "ReadOnly" : "", info.compCompHnd->getClassName(spanElemHnd), elemSize);
 
-                GenTree* index = impPopStack().val;
-                GenTree* ptrToSpan = impPopStack().val;
-                GenTree* indexClone = nullptr;
+                GenTree* index          = impPopStack().val;
+                GenTree* ptrToSpan      = impPopStack().val;
+                GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(varTypeIsIntegral(index));
                 assert(ptrToSpan->TypeGet() == TYP_BYREF);
@@ -4070,25 +4070,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 // We need to use both index and ptr-to-span twice, so clone or spill.
                 index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                    nullptr DEBUGARG("Span.get_Item index"));
+                                     nullptr DEBUGARG("Span.get_Item index"));
                 ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                    nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+                                         nullptr DEBUGARG("Span.get_Item ptrToSpan"));
 
                 // Bounds check
-                CORINFO_FIELD_HANDLE lengthHnd = info.compCompHnd->getFieldInClass(clsHnd, 1);
+                CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
-                GenTree* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                GenTree* length      = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
                 GenTree* boundsCheck = new (this, GT_ARR_BOUNDS_CHECK)
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
-                GenTree* indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
-                GenTree* sizeofNode = gtNewIconNode(elemSize);
-                GenTree* mulNode = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
-                CORINFO_FIELD_HANDLE ptrHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree* data = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree* result = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
+                GenTree*             indexIntPtr = impImplicitIorI4Cast(indexClone, TYP_I_IMPL);
+                GenTree*             sizeofNode  = gtNewIconNode(elemSize);
+                GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
+                CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -4100,7 +4100,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_GetTypeFromHandle:
             {
-                GenTree* op1 = impStackTop(0).val;
+                GenTree*        op1 = impStackTop(0).val;
                 CorInfoHelpFunc typeHandleHelper;
                 if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
@@ -4173,8 +4173,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         // do for LDTOKEN since the return value of this operator is Type,
                         // not RuntimeTypeHandle.
                         impPopStack();
-                        GenTreeCall::Use* helperArgs = gtNewCallArgs(boxTypeHandle);
-                        GenTree* runtimeType =
+                        GenTreeCall::Use* helperArgs  = gtNewCallArgs(boxTypeHandle);
+                        GenTree*          runtimeType =
                             gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
                         retNode = runtimeType;
                     }
@@ -4203,8 +4203,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             assert(compDonotInline());
                             return nullptr;
                         }
-                        GenTreeCall::Use* helperArgs = gtNewCallArgs(typeHandleOp);
-                        GenTree* runtimeType =
+                        GenTreeCall::Use* helperArgs  = gtNewCallArgs(typeHandleOp);
+                        GenTree*          runtimeType =
                             gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
                         retNode = runtimeType;
                     }
@@ -4228,7 +4228,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     JITDUMP("Expanding as special intrinsic\n");
                     impPopStack();
-                    op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, ni, method);
+                    op1 = new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, ni, method);
 
                     // Set the CALL flag to indicate that the operator is implemented by a call.
                     // Set also the EXCEPTION flag because the native implementation of
