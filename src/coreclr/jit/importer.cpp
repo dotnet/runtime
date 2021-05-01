@@ -4078,8 +4078,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Bounds check
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
-                GenTree* length      = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                GenTree* boundsCheck = new (this, GT_ARR_BOUNDS_CHECK)
+                GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                GenTree*             boundsCheck  = new (this, GT_ARR_BOUNDS_CHECK)
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
@@ -4174,7 +4174,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         // do for LDTOKEN since the return value of this operator is Type,
                         // not RuntimeTypeHandle.
                         impPopStack();
-                        GenTreeCall::Use* helperArgs  = gtNewCallArgs(boxTypeHandle);
+                        GenTreeCall::Use* helperArgs = gtNewCallArgs(boxTypeHandle);
                         GenTree*          runtimeType =
                             gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
                         retNode = runtimeType;
@@ -4204,7 +4204,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             assert(compDonotInline());
                             return nullptr;
                         }
-                        GenTreeCall::Use* helperArgs  = gtNewCallArgs(typeHandleOp);
+                        GenTreeCall::Use* helperArgs = gtNewCallArgs(typeHandleOp);
                         GenTree*          runtimeType =
                             gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
                         retNode = runtimeType;
