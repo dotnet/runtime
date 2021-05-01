@@ -41,7 +41,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly LocalizableAttribute Default = No;
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is LocalizableAttribute other && other.IsLocalizable == IsLocalizable;
 
         public override int GetHashCode() => base.GetHashCode();

@@ -39,7 +39,7 @@ namespace System.ComponentModel
         /// </summary>
         protected string DescriptionValue { get; set; }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is DescriptionAttribute other && other.Description == Description;
 
         public override int GetHashCode() => Description?.GetHashCode() ?? 0;

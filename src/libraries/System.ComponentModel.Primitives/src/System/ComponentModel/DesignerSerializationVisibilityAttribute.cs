@@ -51,7 +51,7 @@ namespace System.ComponentModel
         /// </summary>
         public DesignerSerializationVisibility Visibility { get; }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is DesignerSerializationVisibilityAttribute other && other.Visibility == Visibility;
 
         public override int GetHashCode() => base.GetHashCode();

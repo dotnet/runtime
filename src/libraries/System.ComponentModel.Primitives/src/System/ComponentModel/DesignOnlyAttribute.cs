@@ -41,7 +41,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool IsDesignOnly { get; }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is DesignOnlyAttribute other && other.IsDesignOnly == IsDesignOnly;
 
         public override int GetHashCode() => IsDesignOnly.GetHashCode();

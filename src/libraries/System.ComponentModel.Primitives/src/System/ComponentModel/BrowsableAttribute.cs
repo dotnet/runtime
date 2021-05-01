@@ -42,7 +42,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Browsable { get; }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is BrowsableAttribute other && other.Browsable == Browsable;
 
         public override int GetHashCode() => Browsable.GetHashCode();

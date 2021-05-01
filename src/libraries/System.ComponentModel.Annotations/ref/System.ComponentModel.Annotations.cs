@@ -174,7 +174,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string FilterUIHint { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial interface IValidatableObject
@@ -280,7 +280,7 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IDictionary<string, object?> ControlParameters { get { throw null; } }
         public string? PresentationLayer { get { throw null; } }
         public string UIHint { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]

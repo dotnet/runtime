@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Tests whether the specified object is the same as the current object.
         /// </summary>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is NotifyParentPropertyAttribute other && other.NotifyParent == NotifyParent;
 
         public override int GetHashCode() => base.GetHashCode();

@@ -37,7 +37,7 @@ namespace System.ComponentModel
         /// </summary>
         public RefreshProperties RefreshProperties { get; }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is RefreshPropertiesAttribute other && other.RefreshProperties == RefreshProperties;
 
         public override int GetHashCode() => base.GetHashCode();

@@ -41,7 +41,7 @@ namespace System.ComponentModel
 
         public bool Immutable { get; }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ImmutableObjectAttribute other && other.Immutable == Immutable;
 
         public override int GetHashCode() => base.GetHashCode();

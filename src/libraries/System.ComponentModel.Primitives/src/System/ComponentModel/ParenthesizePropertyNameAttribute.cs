@@ -39,7 +39,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Compares the specified object to this object and tests for equality.
         /// </summary>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ParenthesizePropertyNameAttribute other && other.NeedParenthesis == NeedParenthesis;
 
         public override int GetHashCode() => base.GetHashCode();
