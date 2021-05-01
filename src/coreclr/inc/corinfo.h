@@ -886,9 +886,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
     CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
     CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-    CORINFO_INTRINSIC_StringGetChar,        // fetch character out of string
     CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-    CORINFO_INTRINSIC_GetTypeFromHandle,
     CORINFO_INTRINSIC_RTH_GetValueInternal,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
@@ -906,8 +904,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_ByReference_Ctor,
     CORINFO_INTRINSIC_ByReference_Value,
-    CORINFO_INTRINSIC_Span_GetItem,
-    CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
     CORINFO_INTRINSIC_GetRawHandle,
 
     CORINFO_INTRINSIC_Count,
