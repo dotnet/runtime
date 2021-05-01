@@ -387,7 +387,7 @@ namespace System.Text
             return OperationStatus.NeedMoreData;
         }
 
-        public override bool Equals(object? obj) => (obj is Rune other) && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
         public bool Equals(Rune other) => this == other;
 
