@@ -3786,7 +3786,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     switch (intrinsicID)
     {
         GenTree* op1;
-        GenTree* op2;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
@@ -3816,6 +3815,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             assert(callType != TYP_STRUCT);
             assert(sig->numArgs == 2);
 
+            GenTree* op2;
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -3862,6 +3862,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             assert(callType != TYP_STRUCT);
             assert(sig->numArgs == 3);
+            GenTree* op2;
             GenTree* op3;
 
             op3 = impPopStack().val; // comparand
