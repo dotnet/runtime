@@ -299,69 +299,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task MissingStringType()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                namespace System
-                {
-                    public class Object {}
-                    public class Void {}
-                    public class Exception {}
-                    public struct DateTime {}
-                }
-                namespace System.Collections
-                {
-                    public interface IEnumerable {}
-                }
-                namespace Microsoft.Extensions.Logging
-                {
-                    public enum LogLevel {}
-                    public interface ILogger {}
-                }
-                namespace Microsoft.Extensions.Logging
-                {
-                    public class LoggerMessageAttribute {}
-                }
-                partial class C
-                {
-                }
-            ", false, includeBaseReferences: false, includeLoggingReferences: false);
-
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.MissingRequiredType.Id, diagnostics[0].Id);
-        }
-
-        [Fact]
-        public async Task MissingEnumerableType()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                namespace System
-                {
-                    public class Object {}
-                    public class Void {}
-                    public class Exception {}
-                    public struct DateTime {}
-                    public class String {}
-                }
-                namespace Microsoft.Extensions.Logging
-                {
-                    public enum LogLevel {}
-                    public interface ILogger {}
-                }
-                namespace Microsoft.Extensions.Logging
-                {
-                    public class LoggerMessageAttribute {}
-                }
-                partial class C
-                {
-                }
-            ", false, includeBaseReferences: false, includeLoggingReferences: false);
-
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.MissingRequiredType.Id, diagnostics[0].Id);
-        }
-
-        [Fact]
         public async Task MissingLoggerMessageAttributeType()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

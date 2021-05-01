@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
@@ -58,6 +58,8 @@
     <Compile Include="System\Text\Json\Node\JsonObject.cs" />
     <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Node\JsonObject.IDictionary.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.ValueCollection.cs" />
     <Compile Include="System\Text\Json\Node\JsonValue.cs" />
     <Compile Include="System\Text\Json\Node\JsonValueOfT.cs" />
     <Compile Include="System\Text\Json\Node\MetaDynamic.cs" />
@@ -262,6 +264,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>

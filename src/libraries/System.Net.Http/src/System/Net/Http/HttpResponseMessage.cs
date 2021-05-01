@@ -137,7 +137,8 @@ namespace System.Net.Http
             set
             {
                 CheckDisposed();
-                if (value != null) NetEventSource.Associate(this, value);
+                if (value is not null && NetEventSource.Log.IsEnabled())
+                    NetEventSource.Associate(this, value);
                 _requestMessage = value;
             }
         }
