@@ -213,11 +213,11 @@ namespace System.IO.Pipelines
 
         private async Task CopyToAsyncCore<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask<FlushResult>> writeAsync, CancellationToken cancellationToken)
         {
-            while (true)
+            bool completed = false;
+            while (!completed)
             {
                 ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
-                bool completed = await WriteAsyncInternal(destination, writeAsync, result, cancellationToken).ConfigureAwait(false);
-                if (completed) break;
+                completed = await WriteAsyncInternal(destination, writeAsync, result, cancellationToken).ConfigureAwait(false);
             }
         }
 
