@@ -550,38 +550,54 @@ namespace System.Security.Cryptography.Algorithms.Tests
                     () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, okm, Array.Empty<byte>(), Array.Empty<byte>()));
             }
 
-            [Fact]
-            public void Rfc5869ExtractOverlapsPrkOverKeyMaterial()
+            [Theory]
+            [InlineData(0, 0)] // Overlap exactly
+            [InlineData(0, 10)] // Output +10 offset over ikm
+            [InlineData(10, 0)] // ikm +10 offset over output
+            [InlineData(10, 20)] // Both offset, output +10 over ikm
+            public void Rfc5869ExtractOverlapsPrkOverKeyMaterial(int ikmOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> ikm = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b".HexToByteArray();
                 ReadOnlySpan<byte> salt = "000102030405060708090a0b0c".HexToByteArray();
                 byte[] expectedPrk = "077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5".HexToByteArray();
 
-                Span<byte> overlap = new byte[expectedPrk.Length];
-                ikm.CopyTo(overlap);
-                ikm = overlap.Slice(0, ikm.Length);
+                int length = Math.Max(ikm.Length, expectedPrk.Length) + Math.Max(ikmOffset, outputOffset);
+                Span<byte> buffer = new byte[length];
+                Span<byte> ikmBuffer = buffer.Slice(ikmOffset, ikm.Length);
+                Span<byte> outputBuffer = buffer.Slice(outputOffset, expectedPrk.Length);
+                ikm.CopyTo(ikmBuffer);
 
-                HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt, overlap);
-                Assert.Equal(expectedPrk, overlap.ToArray());
+                HKDF.Extract(HashAlgorithmName.SHA256, ikmBuffer, salt, outputBuffer);
+                Assert.Equal(expectedPrk, outputBuffer.ToArray());
             }
 
-            [Fact]
-            public void Rfc5869ExtractOverlapsPrkOverSalt()
+            [Theory]
+            [InlineData(0, 0)] // Overlap exactly
+            [InlineData(0, 10)] // Output +10 offset over salt
+            [InlineData(10, 0)] // salt +10 offset over output
+            [InlineData(10, 20)] // Both offset, output +10 over salt
+            public void Rfc5869ExtractOverlapsPrkOverSalt(int saltOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> ikm = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b".HexToByteArray();
                 ReadOnlySpan<byte> salt = "000102030405060708090a0b0c".HexToByteArray();
                 byte[] expectedPrk = "077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5".HexToByteArray();
 
-                Span<byte> overlap = new byte[expectedPrk.Length];
-                salt.CopyTo(overlap);
-                salt = overlap.Slice(0, salt.Length);
+                int length = Math.Max(ikm.Length, expectedPrk.Length) + Math.Max(saltOffset, outputOffset);
+                Span<byte> buffer = new byte[length];
+                Span<byte> saltBuffer = buffer.Slice(saltOffset, salt.Length);
+                Span<byte> outputBuffer = buffer.Slice(outputOffset, expectedPrk.Length);
+                salt.CopyTo(saltBuffer);
 
-                HKDF.Extract(HashAlgorithmName.SHA256, ikm, salt, overlap);
-                Assert.Equal(expectedPrk, overlap.ToArray());
+                HKDF.Extract(HashAlgorithmName.SHA256, ikm, saltBuffer, outputBuffer);
+                Assert.Equal(expectedPrk, outputBuffer.ToArray());
             }
 
-            [Fact]
-            public void Rfc5869ExpandOverlapsOutputOverInfo()
+            [Theory]
+            [InlineData(0, 0)] // Overlap exactly
+            [InlineData(0, 10)] // Output +10 offset over info
+            [InlineData(10, 0)] // Info +10 offset over output
+            [InlineData(10, 20)] // Both offset, output +10 over info
+            public void Rfc5869ExpandOverlapsOutputOverInfo(int infoOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> info = (
                     "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
@@ -594,16 +610,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
                     "59045a99cac7827271cb41c65e590e09da3275600c2f09b8367793a9aca3db71" +
                     "cc30c58179ec3e87c14c01d5c1f3434f1d87").HexToByteArray();
 
-                Span<byte> overlap = new byte[expectedOkm.Length];
-                info.CopyTo(overlap);
-                info = overlap.Slice(0, info.Length);
+                int length = Math.Max(info.Length, expectedOkm.Length) + Math.Max(infoOffset, outputOffset);
+                Span<byte> buffer = new byte[length];
+                Span<byte> infoBuffer = buffer.Slice(infoOffset, info.Length);
+                Span<byte> outputBuffer = buffer.Slice(outputOffset, expectedOkm.Length);
+                info.CopyTo(infoBuffer);
 
-                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: overlap, info: info);
-                Assert.Equal(expectedOkm, overlap.ToArray());
+                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: outputBuffer, info: infoBuffer);
+                Assert.Equal(expectedOkm, outputBuffer.ToArray());
             }
 
-            [Fact]
-            public void Rfc5869ExpandOverlapsOutputOverInfoShortOkm()
+            [Theory]
+            [InlineData(0, 0)] // Overlap exactly
+            [InlineData(0, 10)] // Output +10 offset over info
+            [InlineData(10, 0)] // Info +10 offset over output
+            [InlineData(10, 20)] // Both offset, output +10 over info
+            public void Rfc5869ExpandOverlapsOutputOverInfoShortOkm(int infoOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> info = (
                     "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
@@ -614,16 +636,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 byte[] expectedOkm =
                     "b11e398dc80327a1c8e7f78c596a49344f012eda2d4efad8a050cc4c19afa97c".HexToByteArray();
 
-                Span<byte> overlap = new byte[info.Length];
-                info.CopyTo(overlap);
-                info = overlap;
+                int length = Math.Max(info.Length, expectedOkm.Length) + Math.Max(infoOffset, outputOffset);
+                Span<byte> buffer = new byte[length];
+                Span<byte> infoBuffer = buffer.Slice(infoOffset, info.Length);
+                Span<byte> outputBuffer = buffer.Slice(outputOffset, expectedOkm.Length);
+                info.CopyTo(infoBuffer);
 
-                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: overlap, info: info);
-                Assert.Equal(expectedOkm, overlap.Slice(0, expectedOkm.Length).ToArray());
+                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: outputBuffer, info: infoBuffer);
+                Assert.Equal(expectedOkm, outputBuffer.ToArray());
             }
 
-            [Fact]
-            public void Rfc5869ExpandOverlapsOutputOverPrk()
+            [Theory]
+            [InlineData(0, 0)] // Overlap exactly
+            [InlineData(0, 10)] // Output +10 offset over prk
+            [InlineData(10, 0)] // Prk +10 offset over output
+            [InlineData(10, 20)] // Both offset, output +10 over prk
+            public void Rfc5869ExpandOverlapsOutputOverPrk(int prkOffset, int outputOffset)
             {
                 ReadOnlySpan<byte> info = (
                     "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
@@ -636,12 +664,14 @@ namespace System.Security.Cryptography.Algorithms.Tests
                     "59045a99cac7827271cb41c65e590e09da3275600c2f09b8367793a9aca3db71" +
                     "cc30c58179ec3e87c14c01d5c1f3434f1d87").HexToByteArray();
 
-                Span<byte> overlap = new byte[expectedOkm.Length];
-                prk.CopyTo(overlap);
-                prk = overlap.Slice(0, prk.Length);
+                int length = Math.Max(prk.Length, expectedOkm.Length) + Math.Max(prkOffset, outputOffset);
+                Span<byte> buffer = new byte[length];
+                Span<byte> prkBuffer = buffer.Slice(prkOffset, prk.Length);
+                Span<byte> outputBuffer = buffer.Slice(outputOffset, expectedOkm.Length);
+                prk.CopyTo(prkBuffer);
 
-                HKDF.Expand(HashAlgorithmName.SHA256, prk, output: overlap, info: info);
-                Assert.Equal(expectedOkm, overlap.ToArray());
+                HKDF.Expand(HashAlgorithmName.SHA256, prkBuffer, output: outputBuffer, info: info);
+                Assert.Equal(expectedOkm, outputBuffer.ToArray());
             }
         }
     }
