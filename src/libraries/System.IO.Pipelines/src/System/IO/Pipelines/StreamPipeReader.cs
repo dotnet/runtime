@@ -266,48 +266,40 @@ namespace System.IO.Pipelines
 
             // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
-            if (TryReadInternal(tokenSource, out ReadResult readResult))
+            if (tokenSource.IsCancellationRequested)
             {
-                ReadOnlySequence<byte> buffer = readResult.Buffer;
-                SequencePosition position = buffer.Start;
-                SequencePosition consumed = position;
+                ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+            }
 
+            if (_bufferedBytes > 0 && (!_examinedEverything || _isStreamCompleted))
+            {
+                BufferSegment? segment = _readHead;
                 try
                 {
-                    if (readResult.IsCanceled)
+                    while (segment != null)
                     {
-                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
-                    }
-
-                    while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
-                    {
-                        FlushResult flushResult = await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+                        FlushResult flushResult = await destination.WriteAsync(segment.AvailableMemory, cancellationToken).ConfigureAwait(false);
                         if (flushResult.IsCanceled)
                         {
                             ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
                         }
 
-                        consumed = position;
+                        segment = segment.NextSegment;
 
                         if (flushResult.IsCompleted)
                         {
                             return;
                         }
                     }
-
-                    // The while loop completed succesfully, so we've consumed the entire buffer.
-                    consumed = buffer.End;
-
-                    if (readResult.IsCompleted)
-                    {
-                        return;
-                    }
                 }
                 finally
                 {
                     // Advance even if WriteAsync throws so the PipeReader is not left in the
                     // currently reading state
-                    AdvanceTo(consumed);
+                    if (segment != null)
+                    {
+                        AdvanceTo(segment, segment.End, segment, segment.End);
+                    }
                 }
             }
 
@@ -344,38 +336,31 @@ namespace System.IO.Pipelines
 
             // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
-            if (TryReadInternal(tokenSource, out ReadResult readResult))
+            if (tokenSource.IsCancellationRequested)
             {
-                ReadOnlySequence<byte> buffer = readResult.Buffer;
-                SequencePosition position = buffer.Start;
-                SequencePosition consumed = position;
+                ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+            }
 
+            if (_bufferedBytes > 0 && (!_examinedEverything || _isStreamCompleted))
+            {
+                BufferSegment? segment = _readHead;
                 try
                 {
-                    if (readResult.IsCanceled)
+                    while (segment != null)
                     {
-                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
-                    }
+                        await destination.WriteAsync(segment.AvailableMemory, cancellationToken).ConfigureAwait(false);
 
-                    while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
-                    {
-                        await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
-                        consumed = position;
-                    }
-
-                    // The while loop completed succesfully, so we've consumed the entire buffer.
-                    consumed = buffer.End;
-
-                    if (readResult.IsCompleted)
-                    {
-                        return;
+                        segment = segment.NextSegment;
                     }
                 }
                 finally
                 {
                     // Advance even if WriteAsync throws so the PipeReader is not left in the
                     // currently reading state
-                    AdvanceTo(consumed);
+                    if (segment != null)
+                    {
+                        AdvanceTo(segment, segment.End, segment, segment.End);
+                    }
                 }
             }
 
