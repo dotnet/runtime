@@ -4,12 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
+using Tracing.Tests.Common;
 
 namespace Profiler.Tests
 {
@@ -23,23 +25,6 @@ namespace Profiler.Tests
             int processId = Process.GetCurrentProcess().Id;
             DiagnosticsClient client = new DiagnosticsClient(processId);
             client.AttachProfiler(TimeSpan.MaxValue, profilerGuid, profilerPath, null);
-        }
-
-        public static void SetStartupProfilerViaIPC(int processId, Guid profilerGuid, string profilerPath)
-        {
-            MethodInfo startupProfiler = typeof(DiagnosticsClient).GetMethod("SetStartupProfiler", BindingFlags.Public);
-            if (startupProfiler != null)
-            {
-                throw new Exception("You updated DiagnosticsClient to a version that supports SetStartupProfiler, please remove this nonsense and replace it with the calls commented out below.");
-                // DiagnosticsClient client = new DiagnosticsClient(processId);
-                // client.SetStartupProfiler(profilerGuid, profilerPath);
-                // client.ResumeRuntime();
-            }
-
-            // This is to work around having to wait for an update to the DiagnosticsClient nuget before adding
-            // a test. I really hope this isn't permanent
-            DiagnosticsIPCWorkaround client = new DiagnosticsIPCWorkaround(processId);
-            client.SetStartupProfiler(profilerGuid, profilerPath);
         }
 
         public static EventPipeSession AttachEventPipeSessionToSelf(IEnumerable<EventPipeProvider> providers)

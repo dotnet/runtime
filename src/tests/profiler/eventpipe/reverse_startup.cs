@@ -11,11 +11,28 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
+using Tracing.Tests.Common;
 
 namespace ReverseStartupTests
 {
+    internal static class BinaryWriterExtensions
+    {
+        public static void WriteString(this BinaryWriter @this, string value)
+        {
+            if (@this == null)
+                throw new ArgumentNullException(nameof(@this));
+
+            @this.Write(value != null ? (value.Length + 1) : 0);
+            if (value != null)
+                @this.Write(Encoding.Unicode.GetBytes(value + '\0'));
+        }
+
+    }
+
     public delegate void ProfilerCallback();
 
     class ReverseStartup
@@ -30,14 +47,71 @@ namespace ReverseStartupTests
                 return 100;
             }
 
-            ProfilerTestRunner.ProcessLaunched += AttachProfiler;
+            string serverName = ReverseServer.MakeServerAddress();
+            Task backgroundTask = Task.Run(() =>
+            {
+                ReverseServer server = null;
+                try
+                {
+                    Task task = Task.Run(async () =>
+                    {
+                        server = new ReverseServer(serverName);
+                        using (Stream serverStream = await server.AcceptAsync())
+                        {
+                            IpcAdvertise advertise = IpcAdvertise.Parse(serverStream);
+                            Console.WriteLine($"Got IpcAdvertise: {advertise}");
+                            
+                            int processId = (int)advertise.ProcessId;
+
+                            string profilerPath = GetProfilerPath();
+                            DiagnosticsIPCWorkaround client = new DiagnosticsIPCWorkaround(processId);
+                            client.SetStartupProfiler(ReverseStartupProfilerGuid, profilerPath);
+                            // using (MemoryStream memoryStream = new MemoryStream())
+                            // using (BinaryWriter writer = new BinaryWriter(memoryStream))
+                            // {
+                            //     writer.Write(ReverseStartupProfilerGuid.ToByteArray());
+                            //     string profilerPath = GetProfilerPath();
+                            //     Console.WriteLine($"Setting profiler {profilerPath} as startup profiler via diagnostics IPC.");
+                            //     writer.WriteString(profilerPath);
+
+                            //     writer.Flush();
+                            //     byte[] payload = memoryStream.ToArray();
+                                
+                            //     // Profiler startup message
+                            //     IpcMessage profilerMessage = new IpcMessage(0x03,0x02, payload);
+                            //     Console.WriteLine($"Sent startup profiler message: {profilerMessage.ToString()}");
+                            //     IpcMessage profilerResponse = IpcClient.SendMessage(serverStream, profilerMessage);
+                            //     Logger.logger.Log($"Received: {profilerResponse.ToString()}");
+                            // }
+
+                            // Resume runtime message
+                            IpcMessage resumeMessage = new IpcMessage(0x04,0x01);
+                            Console.WriteLine($"Sent resume runtime message: {resumeMessage.ToString()}");
+                            IpcMessage resumeResponse = IpcClient.SendMessage(serverStream, resumeMessage);
+                            Logger.logger.Log($"Received: {resumeResponse.ToString()}");
+                        }
+                    });
+
+                    task.Wait();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"ReverseServer saw exception {e.Message}");
+                }
+                finally
+                {
+                    server?.Shutdown();
+                }
+            });
+
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ReverseStartup",
                                           profilerClsid: Guid.Empty,
-                                          profileeOptions: ProfileeOptions.NoStartupAttach | ProfileeOptions.ReverseDiagnosticsMode);
+                                          profileeOptions: ProfileeOptions.NoStartupAttach | ProfileeOptions.ReverseDiagnosticsMode,
+                                          reverseServerName: serverName);
         }
 
-        public static void AttachProfiler(Process childProcess)
+        public static string GetProfilerPath()
         {
             string profilerName;
             if (TestLibrary.Utilities.IsWindows)
@@ -56,8 +130,7 @@ namespace ReverseStartupTests
             string rootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string profilerPath = Path.Combine(rootPath, profilerName);
 
-            Console.WriteLine($"Setting profiler {profilerPath} as startup profiler via diagnostics IPC.");
-            ProfilerControlHelpers.SetStartupProfilerViaIPC(childProcess.Id, ReverseStartupProfilerGuid, profilerPath);
+            return profilerPath;
         }
     }
 }

@@ -21,15 +21,12 @@ namespace Profiler.Tests
 
     public class ProfilerTestRunner
     {
-        public delegate void ProcessEventHandler(Process process);
-
-        public static event ProcessEventHandler ProcessLaunched;
-
         public static int Run(string profileePath,
                               string testName,
                               Guid profilerClsid,
                               string profileeArguments = "",
-                              ProfileeOptions profileeOptions = ProfileeOptions.None)
+                              ProfileeOptions profileeOptions = ProfileeOptions.None,
+                              string reverseServerName = null)
         {
             string arguments;
             string program;
@@ -57,6 +54,12 @@ namespace Profiler.Tests
             if (profileeOptions.HasFlag(ProfileeOptions.ReverseDiagnosticsMode))
             {
                 Console.WriteLine("Launching profilee in reverse diagnostics port mode.");
+                if (String.IsNullOrEmpty(reverseServerName))
+                {
+                    throw new ArgumentException();
+                }
+
+                envVars.Add("DOTNET_DiagnosticPorts", reverseServerName);
                 envVars.Add("DOTNET_DefaultDiagnosticPortSuspend", "1");
             }
 
@@ -91,8 +94,6 @@ namespace Profiler.Tests
                 verifier.WriteLine(args.Data);
             };
             process.Start();
-
-            ProcessLaunched?.Invoke(process);
 
             process.BeginOutputReadLine();
 

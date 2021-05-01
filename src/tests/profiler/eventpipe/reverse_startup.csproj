@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="../common/profiler_common.csproj" />
+    <ProjectReference Include="$(TestSourceDir)tracing/eventpipe/common/common.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
   </ItemGroup>
 </Project>

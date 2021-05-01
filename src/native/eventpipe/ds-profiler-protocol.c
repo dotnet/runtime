@@ -109,7 +109,14 @@ profiler_protocol_helper_attach_profiler (
 	if (!stream)
 		return false;
 
-	bool result = false;
+    bool result = false;
+
+    if (!ep_rt_is_running ()) {
+        ds_ipc_message_send_error (stream, DS_IPC_E_NOT_YET_AVAILABLE);
+        ds_ipc_stream_free (stream);
+        ep_raise_error ();
+    }
+
 	DiagnosticsAttachProfilerCommandPayload *payload;
 	payload = (DiagnosticsAttachProfilerCommandPayload *)ds_ipc_message_try_parse_payload (message, attach_profiler_command_try_parse_payload);
 
@@ -131,7 +138,7 @@ profiler_protocol_helper_attach_profiler (
 
 ep_on_exit:
 	ds_attach_profiler_command_payload_free (payload);
-	ds_ipc_stream_free (stream);
+    ds_ipc_stream_free (stream);
 	return result;
 
 ep_on_error:
@@ -167,7 +174,6 @@ profiler_protocol_helper_unknown_command (
 {
 	DS_LOG_WARNING_1 ("Received unknown request type (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (message)));
 	ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_COMMAND);
-	ds_ipc_stream_free (stream);
 	return true;
 }
 
@@ -238,7 +244,7 @@ profiler_protocol_helper_startup_profiler (
 
 ep_on_exit:
 	ds_startup_profiler_command_payload_free (payload);
-	ds_ipc_stream_free (stream);
+    ds_ipc_stream_free (stream);
 	return result;
 
 ep_on_error:
@@ -256,12 +262,6 @@ ds_profiler_protocol_helper_handle_ipc_message (
 
 	bool result = false;
 
-	if (!ep_rt_is_running ()) {
-		ds_ipc_message_send_error (stream, DS_IPC_E_NOT_YET_AVAILABLE);
-		ds_ipc_stream_free (stream);
-		ep_raise_error ();
-	}
-
 	switch ((DiagnosticsProfilerCommandId)ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (message))) {
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 	case DS_PROFILER_COMMANDID_ATTACH_PROFILER:
@@ -276,12 +276,7 @@ ds_profiler_protocol_helper_handle_ipc_message (
 		break;
 	}
 
-ep_on_exit:
 	return result;
-
-ep_on_error:
-	EP_ASSERT (!result);
-	ep_exit_error_handler ();
 }
 #else // PROFILING_SUPPORTED
 bool
@@ -294,7 +289,7 @@ ds_profiler_protocol_helper_handle_ipc_message (
 
 	DS_LOG_WARNING_0 ("Profiler support not enabled in this runtime");
 	ds_ipc_message_send_error (stream, DS_IPC_E_NOTSUPPORTED);
-	ds_ipc_stream_free (stream);
+    ds_ipc_stream_free (stream);
 
 	return true;
 }
