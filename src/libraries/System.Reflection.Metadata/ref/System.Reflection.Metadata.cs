@@ -661,8 +661,8 @@ namespace System.Reflection.Metadata
     {
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
-        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.DocumentNameBlobHandle other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Reflection.Metadata.DocumentNameBlobHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.DocumentNameBlobHandle left, System.Reflection.Metadata.DocumentNameBlobHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.DocumentNameBlobHandle (System.Reflection.Metadata.BlobHandle handle) { throw null; }
