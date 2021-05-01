@@ -1065,12 +1065,13 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
     // promote objects pointed to by variable handles whose dynamic type is VHT_STRONG
     TraceVariableHandles(PromoteObject, uintptr_t(sc), uintptr_t(fn), VHT_STRONG, condemned, maxgen, flags);
 
-    GCToEEInterface::RefCountedHandleCallbacksBefore();
 
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
     // don't scan ref-counted handles during concurrent phase as the clean-up of CCWs can race with AD unload and cause AV's
     if (!sc->concurrent)
     {
+        GCToEEInterface::RefCountedHandleCallbacksBefore();
+
         // promote ref-counted handles
         uint32_t type = HNDTYPE_REFCOUNTED;
 
@@ -1085,10 +1086,10 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
                 }
             walk = walk->pNext;
         }
+
+        GCToEEInterface::RefCountedHandleCallbacksAfter();
     }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
-
-    GCToEEInterface::RefCountedHandleCallbacksAfter();
 }
 
 

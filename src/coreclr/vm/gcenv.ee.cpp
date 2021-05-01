@@ -317,7 +317,7 @@ void GCToEEInterface::RefCountedHandleCallbacksBefore()
     CONTRACTL_END;
 
 #ifdef FEATURE_OBJCMARSHAL
-    ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+    ObjCMarshalNative::BeforeRefCountedHandlePromoteCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 }
 
@@ -364,7 +364,7 @@ void GCToEEInterface::RefCountedHandleCallbacksAfter()
     CONTRACTL_END;
 
 #ifdef FEATURE_OBJCMARSHAL
-    ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+    ObjCMarshalNative::AfterRefCountedHandlePromoteCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 
 }

@@ -348,7 +348,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     RETURN callback;
 }
 
-void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()
+void ObjCMarshalNative::BeforeRefCountedHandlePromoteCallbacks()
 {
     CONTRACTL
     {
@@ -361,7 +361,7 @@ void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()
         g_BeginEndCallback();
 }
 
-void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
+void ObjCMarshalNative::AfterRefCountedHandlePromoteCallbacks()
 {
     CONTRACTL
     {

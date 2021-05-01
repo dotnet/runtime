@@ -158,8 +158,8 @@ public: // Exceptions
         _Outptr_ void** context);
 
 public: // GC interaction
-    static void BeforeRefCountedHandleCallbacks();
-    static void AfterRefCountedHandleCallbacks();
+    static void BeforeRefCountedHandlePromoteCallbacks();
+    static void AfterRefCountedHandlePromoteCallbacks();
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
