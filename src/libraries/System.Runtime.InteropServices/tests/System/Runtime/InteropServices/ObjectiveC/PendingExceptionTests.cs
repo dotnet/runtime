@@ -24,19 +24,19 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [UnmanagedCallersOnly]
-        private static IntPtr ObjCMsgSend(IntPtr inst, IntPtr sel) => SetPendingException();
+        private static IntPtr MsgSend(IntPtr inst, IntPtr sel) => SetPendingException();
 
         [UnmanagedCallersOnly]
-        private static IntPtr ObjCMsgSendFpret(IntPtr inst, IntPtr sel) => SetPendingException();
+        private static IntPtr MsgSendFpret(IntPtr inst, IntPtr sel) => SetPendingException();
 
         [UnmanagedCallersOnly]
-        private static void ObjCMsgSendStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = SetPendingException();
+        private static void MsgSendStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = SetPendingException();
 
         [UnmanagedCallersOnly]
-        private static IntPtr ObjCMsgSendSuper(IntPtr inst, IntPtr sel) => SetPendingException();
+        private static IntPtr MsgSendSuper(IntPtr inst, IntPtr sel) => SetPendingException();
 
         [UnmanagedCallersOnly]
-        private static void ObjCMsgSendSuperStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = SetPendingException();
+        private static void MsgSendSuperStret(IntPtr* ret, IntPtr inst, IntPtr sel) => *ret = SetPendingException();
 
         private static IntPtr SetPendingException([CallerMemberName] string callerName = "")
         {
@@ -46,11 +46,11 @@ namespace System.Runtime.InteropServices.Tests
 
         private static (MessageSendFunction MsgSend, IntPtr Func)[] msgSendOverrides =
         {
-            (MessageSendFunction.MsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSend),
-            (MessageSendFunction.MsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendFpret),
-            (MessageSendFunction.MsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendStret),
-            (MessageSendFunction.MsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&ObjCMsgSendSuper),
-            (MessageSendFunction.MsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendSuperStret),
+            (MessageSendFunction.MsgSend,           (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSend),
+            (MessageSendFunction.MsgSendFpret,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSendFpret),
+            (MessageSendFunction.MsgSendStret,      (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&MsgSendStret),
+            (MessageSendFunction.MsgSendSuper,      (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr>)&MsgSendSuper),
+            (MessageSendFunction.MsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&MsgSendSuperStret),
         };
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
