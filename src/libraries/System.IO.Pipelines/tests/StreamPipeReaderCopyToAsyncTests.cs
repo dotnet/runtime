@@ -91,39 +91,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task CopyToAsyncPipeWriterResume()
-        {
-            var messages = new List<byte[]>()
-            {
-                Encoding.UTF8.GetBytes("Hello World1"),
-                Encoding.UTF8.GetBytes("Hello World2"),
-                Encoding.UTF8.GetBytes("Hello World3"),
-            };
-
-            var pipe = new Pipe(s_testPipeOptions);
-            var pipeReader = PipeReader.Create(pipe.Reader.AsStream(), s_testOptions);
-            var targetPipe = new Pipe(s_testPipeOptions);
-            targetPipe.Reader.Complete();
-            Task task = pipeReader.CopyToAsync(targetPipe.Writer);
-            foreach (var msg in messages)
-            {
-                await pipe.Writer.WriteAsync(msg);
-            }
-            pipe.Writer.Complete();
-            await task;
-
-            var resumePipe = new Pipe(s_testPipeOptions);
-            await pipeReader.CopyToAsync(resumePipe.Writer);
-
-            ReadResult readResult = await resumePipe.Reader.ReadAsync();
-            Assert.Equal(messages.SelectMany(msg => msg).ToArray(), readResult.Buffer.ToArray());
-
-            resumePipe.Reader.AdvanceTo(readResult.Buffer.End);
-            resumePipe.Reader.Complete();
-            resumePipe.Writer.Complete();
-        }
-
-        [Fact]
         public async Task MultiSegmentWritesWorks()
         {
             using (var pool = new TestMemoryPool())
