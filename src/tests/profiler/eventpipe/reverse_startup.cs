@@ -12,11 +12,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Diagnostics.NETCore.Client;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
-namespace EventPipeTests
+namespace ReverseStartupTests
 {
+    public delegate void ProfilerCallback();
+
     class ReverseStartup
     {
         static readonly Guid ReverseStartupProfilerGuid = new Guid("9C1A6E14-2DEC-45CE-9061-F31964D8884D");
@@ -25,16 +25,17 @@ namespace EventPipeTests
         {
             if (args.Length > 0 && args[0].Equals("RunTest", StringComparison.OrdinalIgnoreCase))
             {
-                return RunTest();
+                return 100;
             }
 
+            ProfilerTestRunner.ProcessLaunched += AttachProfiler;
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ReverseStartup",
-                                          profilerClsid: ReverseStartupProfilerGuid,
+                                          profilerClsid: Guid.Empty,
                                           profileeOptions: ProfileeOptions.NoStartupAttach);
         }
 
-        public static int RunTest()
+        public static void AttachProfiler(Process childProcess)
         {
             string profilerName;
             if (TestLibrary.Utilities.IsWindows)
@@ -53,16 +54,9 @@ namespace EventPipeTests
             string rootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string profilerPath = Path.Combine(rootPath, profilerName);
 
-            _profilerDone = new ManualResetEvent(false);
-            Console.WriteLine($"Attaching profiler {profilerPath} to self.");
-            ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
-
-            PassCallbackToProfiler(() => _profilerDone.Set());
-            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
-            {
-                Console.WriteLine("Profiler did not set the callback, test will fail.");
-            }
-
+            Console.WriteLine($"Setting profiler {profilerPath} as startup profiler via diagnostics IPC.");
+            ProfilerControlHelpers.SetStartupProfilerViaIPC(ReleaseOnShutdownGuid, profilerPath, childProcess.Id);
+            
             return 100;
         }
     }

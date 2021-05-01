@@ -24,6 +24,12 @@ namespace Profiler.Tests
             client.AttachProfiler(TimeSpan.MaxValue, profilerGuid, profilerPath, null);
         }
 
+        public static void SetStartupProfilerViaIPC(Guid profilerGuid, string profilerPath, int processId)
+        {
+            DiagnosticsClient client = new DiagnosticsClient(processId);
+            client.SetStartupProfiler(profilerGuid, profilerPath);
+        }
+
         public static EventPipeSession AttachEventPipeSessionToSelf(IEnumerable<EventPipeProvider> providers)
         {
             int processId = Process.GetCurrentProcess().Id;
