@@ -159,7 +159,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is Handle && Equals((Handle)obj);
         }

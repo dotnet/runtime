@@ -2518,7 +2518,7 @@ namespace System.Reflection.Metadata
             return StringHandle.FromOffset(GetHeapOffset());
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is NamespaceDefinitionHandle && Equals((NamespaceDefinitionHandle)obj);
         }
@@ -2649,7 +2649,7 @@ namespace System.Reflection.Metadata
             get { return unchecked((ushort)(_value >> 8)); }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is BlobHandle && Equals((BlobHandle)obj);
         }
@@ -2717,7 +2717,7 @@ namespace System.Reflection.Metadata
             get { return _index; }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is GuidHandle && Equals((GuidHandle)obj);
         }

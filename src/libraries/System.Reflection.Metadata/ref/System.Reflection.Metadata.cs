@@ -291,7 +291,7 @@ namespace System.Reflection.Metadata
         public System.Guid Guid { get { throw null; } }
         public bool IsDefault { get { throw null; } }
         public uint Stamp { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.BlobContentId other) { throw null; }
         public static System.Reflection.Metadata.BlobContentId FromHash(byte[] hashCode) { throw null; }
         public static System.Reflection.Metadata.BlobContentId FromHash(System.Collections.Immutable.ImmutableArray<byte> hashCode) { throw null; }
@@ -305,7 +305,7 @@ namespace System.Reflection.Metadata
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.BlobHandle other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.BlobHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.BlobHandle left, System.Reflection.Metadata.BlobHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.BlobHandle (System.Reflection.Metadata.Handle handle) { throw null; }
@@ -539,7 +539,7 @@ namespace System.Reflection.Metadata
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.CustomDebugInformationHandle other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.CustomDebugInformationHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.CustomDebugInformationHandle left, System.Reflection.Metadata.CustomDebugInformationHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.CustomDebugInformationHandle (System.Reflection.Metadata.EntityHandle handle) { throw null; }
@@ -662,7 +662,7 @@ namespace System.Reflection.Metadata
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.DocumentNameBlobHandle other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.DocumentNameBlobHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.DocumentNameBlobHandle left, System.Reflection.Metadata.DocumentNameBlobHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.DocumentNameBlobHandle (System.Reflection.Metadata.BlobHandle handle) { throw null; }
@@ -676,7 +676,7 @@ namespace System.Reflection.Metadata
         public static readonly System.Reflection.Metadata.ModuleDefinitionHandle ModuleDefinition;
         public bool IsNil { get { throw null; } }
         public System.Reflection.Metadata.HandleKind Kind { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.EntityHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.EntityHandle left, System.Reflection.Metadata.EntityHandle right) { throw null; }
@@ -933,7 +933,7 @@ namespace System.Reflection.Metadata
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.GuidHandle other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.GuidHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.GuidHandle left, System.Reflection.Metadata.GuidHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.GuidHandle (System.Reflection.Metadata.Handle handle) { throw null; }
@@ -947,7 +947,7 @@ namespace System.Reflection.Metadata
         public static readonly System.Reflection.Metadata.ModuleDefinitionHandle ModuleDefinition;
         public bool IsNil { get { throw null; } }
         public System.Reflection.Metadata.HandleKind Kind { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.Handle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.Handle left, System.Reflection.Metadata.Handle right) { throw null; }
@@ -1320,7 +1320,7 @@ namespace System.Reflection.Metadata
     {
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.ImportScopeHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.ImportScopeHandle left, System.Reflection.Metadata.ImportScopeHandle right) { throw null; }
@@ -1401,7 +1401,7 @@ namespace System.Reflection.Metadata
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.LocalConstantHandle other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.LocalConstantHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.LocalConstantHandle left, System.Reflection.Metadata.LocalConstantHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.LocalConstantHandle (System.Reflection.Metadata.EntityHandle handle) { throw null; }
@@ -2007,7 +2007,7 @@ namespace System.Reflection.Metadata
         private readonly int _dummyPrimitive;
         public bool IsNil { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.NamespaceDefinitionHandle other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.Metadata.NamespaceDefinitionHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.NamespaceDefinitionHandle left, System.Reflection.Metadata.NamespaceDefinitionHandle right) { throw null; }
         public static explicit operator System.Reflection.Metadata.NamespaceDefinitionHandle (System.Reflection.Metadata.Handle handle) { throw null; }
@@ -2176,7 +2176,7 @@ namespace System.Reflection.Metadata
         public int Offset { get { throw null; } }
         public int StartColumn { get { throw null; } }
         public int StartLine { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.SequencePoint other) { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -2248,7 +2248,7 @@ namespace System.Reflection.Metadata
         public bool IsInstance { get { throw null; } }
         public System.Reflection.Metadata.SignatureKind Kind { get { throw null; } }
         public byte RawValue { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.SignatureHeader other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.SignatureHeader left, System.Reflection.Metadata.SignatureHeader right) { throw null; }
@@ -2588,7 +2588,7 @@ namespace System.Reflection.Metadata.Ecma335
         public EditAndContinueLogEntry(System.Reflection.Metadata.EntityHandle handle, System.Reflection.Metadata.Ecma335.EditAndContinueOperation operation) { throw null; }
         public System.Reflection.Metadata.EntityHandle Handle { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.EditAndContinueOperation Operation { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.Ecma335.EditAndContinueLogEntry other) { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -2684,7 +2684,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly int _dummyPrimitive;
         public int Id { get { throw null; } }
         public bool IsNil { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Metadata.Ecma335.LabelHandle other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.Ecma335.LabelHandle left, System.Reflection.Metadata.Ecma335.LabelHandle right) { throw null; }
