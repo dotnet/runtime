@@ -3778,6 +3778,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 costSz = 15;
                                 break;
 
+                            case NI_System_Object_GetType:
+                                // Giving intrinsics a large fixed execution cost is because we'd like to CSE
+                                // them, even if they are implemented by calls. This is different from modeling
+                                // user calls since we never CSE user calls.
+                                costEx = 36;
+                                costSz = 4;
+                                break;
+
                             case NI_System_Math_Acos:
                             case NI_System_Math_Acosh:
                             case NI_System_Math_Asin:
@@ -3828,23 +3836,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         // old style intrinsic
                         assert(intrinsic->gtIntrinsicName == NI_Illegal);
-
-                        switch (intrinsic->gtIntrinsicId)
-                        {
-                            default:
-                                assert(!"missing case for gtIntrinsicId");
-                                costEx = 12;
-                                costSz = 12;
-                                break;
-
-                            case CORINFO_INTRINSIC_Object_GetType:
-                                // Giving intrinsics a large fixed execution cost is because we'd like to CSE
-                                // them, even if they are implemented by calls. This is different from modeling
-                                // user calls since we never CSE user calls.
-                                costEx = 36;
-                                costSz = 4;
-                                break;
-                        }
+                        assert(!"missing case for gtIntrinsicName");
+                        costEx = 12;
+                        costSz = 12;
                     }
                     level++;
                     break;
@@ -11828,6 +11822,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                         printf(" tanh");
                         break;
 
+                    case NI_System_Object_GetType:
+                        printf(" objGetType");
+                        break;
+
                     default:
                         unreached();
                 }
@@ -11836,15 +11834,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 // old style intrinsic
                 assert(intrinsic->gtIntrinsicName == NI_Illegal);
-                switch (intrinsic->gtIntrinsicId)
-                {
-                    case CORINFO_INTRINSIC_Object_GetType:
-                        printf(" objGetType");
-                        break;
-
-                    default:
-                        unreached();
-                }
+                unreached();
             }
         }
 
@@ -16441,13 +16431,13 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
         }
         else if (tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
         {
-            if (info.compCompHnd->getIntrinsicID(tree->AsCall()->gtCallMethHnd) == CORINFO_INTRINSIC_Object_GetType)
+            if (lookupNamedIntrinsic(tree->AsCall()->gtCallMethHnd) == NI_System_Object_GetType)
             {
                 return TPK_GetType;
             }
         }
     }
-    else if ((tree->gtOper == GT_INTRINSIC) && (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType))
+    else if ((tree->gtOper == GT_INTRINSIC) && (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
     {
         return TPK_GetType;
     }
@@ -18010,7 +18000,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             GenTreeIntrinsic* intrinsic = obj->AsIntrinsic();
 
-            if (intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)
+            if (intrinsic->gtIntrinsicName == NI_System_Object_GetType)
             {
                 CORINFO_CLASS_HANDLE runtimeType = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
                 assert(runtimeType != NO_CLASS_HANDLE);

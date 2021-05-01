@@ -890,7 +890,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
     CORINFO_INTRINSIC_GetTypeFromHandle,
     CORINFO_INTRINSIC_RTH_GetValueInternal,
-    CORINFO_INTRINSIC_Object_GetType,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
     CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
