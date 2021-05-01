@@ -47,7 +47,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             SortedSetEqualityComparer<T>? comparer = obj as SortedSetEqualityComparer<T>;
             return comparer != null && _comparer == comparer._comparer;
