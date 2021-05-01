@@ -532,7 +532,6 @@ namespace VirtualStaticInterfaceMethodTestGen
 
                 string expectedString = constrainedTypePrefix + AppendSuffixToConstrainedType(scenario, GetConstrainedTypeName(scenario.ConstrainedTypeDefinition, withImplPrefix: false), out _) + "'" + interfaceTypeSansImplPrefix + "." + interfaceMethodRoot + "'" + interfaceMethodInstantiation;
                 expectedString = expectedString.Replace(ImplPrefix, "");
-                expectedString = expectedString.Replace("<class GenericClass`1<!!0>>", "<class GenericClass`1<!0>>");
 
                 if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
                 {

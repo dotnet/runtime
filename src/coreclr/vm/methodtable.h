@@ -2283,7 +2283,7 @@ public:
 
 
     // Resolve virtual static interface method pInterfaceMD on this type.
-    MethodDesc *ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD, BOOL allowInstParam, BOOL allowNullResult);
+    MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2300,7 +2300,6 @@ public:
     MethodDesc * TryResolveConstraintMethodApprox(
         TypeHandle   ownerType,
         MethodDesc * pMD,
-        BOOL         fExactResolution = FALSE,
         BOOL *       pfForceUseRuntimeLookup = NULL);
 
     //-------------------------------------------------------------------
@@ -2401,7 +2400,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, BOOL allowInstParam);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);

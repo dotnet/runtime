@@ -9185,14 +9185,42 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 //==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
 MethodDesc *
-MethodTable::ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD, BOOL allowInstParam, BOOL allowNullResult)
+MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult)
 {
-    for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
+    if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
-        MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceMD, allowInstParam);
-        if (pMD != nullptr)
+        // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
+        // we cannot exactly compute a target method result, as even if there is an exact match in the type hierarchy
+        // it isn't guaranteed that we will always find the right result, as we may find a match on a base type when we should find the match
+        // on a more derived type.
+
+        MethodTable *pInterfaceTypeCanonical = pInterfaceType->GetCanonicalMethodTable();
+        bool canonicalEquivalentFound = false;
+        if (pInterfaceType != pInterfaceTypeCanonical)
         {
-            return pMD;
+            InterfaceMapIterator it = IterateInterfaceMap();
+            while (it.Next())
+            {
+                if (pInterfaceTypeCanonical == it.GetInterface())
+                {
+                    canonicalEquivalentFound = true;
+                    break;
+                    return NULL;
+                }
+            }
+        }
+
+        if (!canonicalEquivalentFound)
+        {
+            // Search for match on a per-level in the type hierarchy
+            for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
+            {
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD);
+                if (pMD != nullptr)
+                {
+                    return pMD;
+                }
+            }
         }
     }
 
@@ -9206,7 +9234,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodDesc* pInterfaceMD, BOOL allowInst
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, BOOL allowInstParam)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -9221,6 +9249,8 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
 
     // This gets the count out of the metadata interface.
     uint32_t dwNumberMethodImpls = hEnumMethodImpl.EnumMethodImplGetCount();
+
+    // TODO: support type-equivalent interface type matches and variant interface scenarios
 
     // Iterate through each MethodImpl declared on this class
     for (uint32_t i = 0; i < dwNumberMethodImpls; i++)
@@ -9249,8 +9279,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
             tkParent,
             &sigTypeContext)
             .GetMethodTable();
-        if (pInterfaceMT != pInterfaceMD->GetMethodTable() &&
-            pInterfaceMT->GetCanonicalMethodTable() != pInterfaceMD->GetMethodTable())
+        if (pInterfaceMT != pInterfaceType)
         {
             continue;
         }
@@ -9268,6 +9297,13 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
         {
             continue;
         }
+
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must be MethodDef tokens.
+        if (TypeFromToken(methodBody) != mdtMethodDef)
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+        
         MethodDesc *pMethodImpl = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
             GetModule(),
             methodBody,
@@ -9279,9 +9315,16 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodDesc* pInterfaceMD, B
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
+        // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must to methods 
+        // defined on the same type that defines the MethodImpl
+        if (!HasSameTypeDefAs(pMethodImpl->GetMethodTable()))
+        {
+            COMPlusThrow(kTypeLoadException, E_FAIL);
+        }
+
         if (pInterfaceMD->HasMethodInstantiation() || pMethodImpl->HasMethodInstantiation() || HasInstantiation())
         {
-            return pMethodImpl->FindOrCreateAssociatedMethodDesc(pMethodImpl, this, FALSE, pInterfaceMD->GetMethodInstantiation(), allowInstParam);
+            return pMethodImpl->FindOrCreateAssociatedMethodDesc(pMethodImpl, this, FALSE, pInterfaceMD->GetMethodInstantiation(), /* allowInstParam */ FALSE);
         }
         else
         {
@@ -9304,7 +9347,6 @@ MethodDesc *
 MethodTable::TryResolveConstraintMethodApprox(
     TypeHandle   thInterfaceType,
     MethodDesc * pInterfaceMD,
-    BOOL         allowInstParam,
     BOOL *       pfForceUseRuntimeLookup)   // = NULL
 {
     CONTRACTL {
@@ -9314,7 +9356,9 @@ MethodTable::TryResolveConstraintMethodApprox(
 
     if (pInterfaceMD->IsStatic())
     {
-        MethodDesc *result = ResolveVirtualStaticMethod(pInterfaceMD, allowInstParam, pfForceUseRuntimeLookup != NULL);
+        _ASSERTE(!thInterfaceType.IsTypeDesc());
+        _ASSERTE(thInterfaceType.IsInterface());
+        MethodDesc *result = ResolveVirtualStaticMethod(thInterfaceType.GetMethodTable(), pInterfaceMD, pfForceUseRuntimeLookup != NULL);
         if (result == NULL)
         {
             *pfForceUseRuntimeLookup = TRUE;

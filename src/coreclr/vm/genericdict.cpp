@@ -1382,11 +1382,11 @@ Dictionary::PopulateEntry(
                 }
                 _ASSERTE(!constraintType.IsNull());
 
-                MethodDesc *pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod, !pMethod->IsStatic());
+                MethodDesc *pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);
 
                 // All such calls should be resolvable.  If not then for now just throw an error.
                 _ASSERTE(pResolvedMD);
-                INDEBUG(if (!pResolvedMD) constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod, !pMethod->IsStatic());)
+                INDEBUG(if (!pResolvedMD) constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);)
                 if (!pResolvedMD)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 

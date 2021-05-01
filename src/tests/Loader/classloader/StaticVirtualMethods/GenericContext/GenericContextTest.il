@@ -18368,7 +18368,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::NormalMethod()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod<T>
@@ -18382,7 +18382,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod<T>
@@ -18399,7 +18399,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod<T>
@@ -18448,7 +18448,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::GenericMethod<int32>()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt<T>
@@ -18462,7 +18462,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt<T>
@@ -18479,7 +18479,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt<T>
@@ -18528,7 +18528,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::GenericMethod<string>()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString<T>
@@ -18542,7 +18542,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString<T>
@@ -18559,7 +18559,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString<T>
@@ -18608,7 +18608,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::GenericMethod<!!0>()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
@@ -18622,7 +18622,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
@@ -18639,7 +18639,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
@@ -19648,7 +19648,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::NormalMethod()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod<T>
@@ -19662,7 +19662,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod<T>
@@ -19679,7 +19679,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.NormalMethod'"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod<T>
@@ -19728,7 +19728,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::GenericMethod<int32>()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt<T>
@@ -19742,7 +19742,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt<T>
@@ -19759,7 +19759,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<int32>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt<T>
@@ -19808,7 +19808,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::GenericMethod<string>()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString<T>
@@ -19822,7 +19822,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString<T>
@@ -19839,7 +19839,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString<T>
@@ -19888,7 +19888,7 @@
     constrained. class [GenericContextCommonAndImplementation]GenericClass`1<!!0>
     call void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGeneric`1<class [GenericContextCommonAndImplementation]GenericClass`1<!!0>>::GenericMethod<!!0>()
     ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
@@ -19902,7 +19902,7 @@
     ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::FtnHolder
     calli      void()
     ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
@@ -19919,7 +19919,7 @@
     ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) [GenericContextCommonCs]Statics::ActionHolder
     callvirt instance void[System.Runtime] System.Action::Invoke()
     ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+    ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
     call void [GenericContextCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<T>
@@ -37949,7 +37949,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverInt32_Generic
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -37962,7 +37962,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGen
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -37975,7 +37975,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.NormalMethod'"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38027,7 +38027,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverInt32_Curious
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38040,7 +38040,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGen
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38053,7 +38053,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38105,7 +38105,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverInt32_Curious
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38118,7 +38118,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGen
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38131,7 +38131,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38183,7 +38183,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverInt32_Curious
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38196,7 +38196,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGen
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -38209,7 +38209,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverInt32_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<int32>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<int32>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39197,7 +39197,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverString_Generi
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.NormalMethod'"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39210,7 +39210,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.NormalMethod'"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39223,7 +39223,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_NormalMethod"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.NormalMethod'"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.NormalMethod'"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39275,7 +39275,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverString_Curiou
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39288,7 +39288,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39301,7 +39301,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverInt"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<int32>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<int32>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39353,7 +39353,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverString_Curiou
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39366,7 +39366,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39379,7 +39379,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverString"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39431,7 +39431,7 @@ CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverString_Curiou
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39444,7 +39444,7 @@ Call_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGe
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
@@ -39457,7 +39457,7 @@ Ldftn_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringG
     } catch [System.Runtime]System.Exception {
         stloc.0
         ldstr "CreateDelegate_GenericOverTypeParameterGenericClass_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter"
-        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>.GenericMethod'<string>"
+        ldstr "class GenericClass`1<string>'IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<string>>.GenericMethod'<string>"
         ldloc.0
         callvirt   instance string [System.Runtime]System.Object::ToString()
         call void [GenericContextCommonCs]Statics::CheckForFailure(string,string,string)
