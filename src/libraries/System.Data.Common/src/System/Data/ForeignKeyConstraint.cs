@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
