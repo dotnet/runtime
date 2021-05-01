@@ -259,83 +259,83 @@ namespace System.IO.Pipelines
             }
         }
 
-//        /// <inheritdoc />
-//        public override async Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
-//        {
-//            ThrowIfCompleted();
+        /// <inheritdoc />
+        public override async Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
+        {
+            ThrowIfCompleted();
 
-//            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
-//            CancellationTokenSource tokenSource = InternalTokenSource;
-//            if (TryReadInternal(tokenSource, out ReadResult readResult))
-//            {
-//                await WriteAsyncInternal(
-//                    destination,
-//                    (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
-//                    readResult,
-//                    cancellationToken).ConfigureAwait(false);
-//            }
+            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
+            CancellationTokenSource tokenSource = InternalTokenSource;
+            if (TryReadInternal(tokenSource, out ReadResult readResult))
+            {
+                await WriteAsyncInternal(
+                    destination,
+                    (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
+                    readResult,
+                    cancellationToken).ConfigureAwait(false);
+            }
 
-//            if (_isStreamCompleted) return;
+            if (_isStreamCompleted) return;
 
-//            CancellationTokenRegistration reg = default;
-//            if (cancellationToken.CanBeCanceled)
-//            {
-//                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
-//            }
+            CancellationTokenRegistration reg = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+            }
 
-//            using (reg)
-//            {
-//                try
-//                {
-//                    await InnerStream.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
-//                }
-//                catch (OperationCanceledException)
-//                {
-//                    ClearCancellationToken();
+            using (reg)
+            {
+                try
+                {
+                    await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    ClearCancellationToken();
 
-//                    if (!tokenSource.IsCancellationRequested || cancellationToken.IsCancellationRequested) throw;
-//                }
-//            }
-//        }
+                    throw;
+                }
+            }
+        }
 
-//        /// <inheritdoc />
-//        public override async Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
-//        {
-//            ThrowIfCompleted();
+        /// <inheritdoc />
+        public override async Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
+        {
+            ThrowIfCompleted();
 
-//            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
-//            CancellationTokenSource tokenSource = InternalTokenSource;
-//            if (TryReadInternal(tokenSource, out ReadResult readResult))
-//            {
-//                await WriteAsyncInternal(destination, WriteAsyncFunc(), readResult, cancellationToken).ConfigureAwait(false);
-//            }
+            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
+            CancellationTokenSource tokenSource = InternalTokenSource;
+            if (TryReadInternal(tokenSource, out ReadResult readResult))
+            {
+                await WriteAsyncInternal(destination, WriteAsyncFunc(), readResult, cancellationToken).ConfigureAwait(false);
+            }
 
-//            if (_isStreamCompleted) return;
+            if (_isStreamCompleted) return;
 
-//            CancellationTokenRegistration reg = default;
-//            if (cancellationToken.CanBeCanceled)
-//            {
-//                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
-//            }
+            CancellationTokenRegistration reg = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+            }
 
-//            using (reg)
-//            {
-//                try
-//                {
-//#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-//                    await InnerStream.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
-//#else
-//                    await InnerStream.CopyToAsync(destination, 81920, cancellationToken).ConfigureAwait(false);
-//#endif
-//                }
-//                catch (OperationCanceledException)
-//                {
-//                    ClearCancellationToken();
+            using (reg)
+            {
+                try
+                {
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+                    await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
+#else
+                    await InnerStream.CopyToAsync(destination, 81920, cancellationToken).ConfigureAwait(false);
+#endif
+                }
+                catch (OperationCanceledException)
+                {
+                    ClearCancellationToken();
 
-//                    if (!tokenSource.IsCancellationRequested || cancellationToken.IsCancellationRequested) throw;
-//                }
-//            }
-//        }
+                    throw;
+                }
+            }
+        }
 
         private void ClearCancellationToken()
         {

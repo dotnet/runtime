@@ -59,8 +59,6 @@ namespace System.IO.Pipelines
         public abstract bool TryRead(out System.IO.Pipelines.ReadResult result);
         protected internal static Func<Stream, ReadOnlyMemory<byte>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<FlushResult>> WriteAsyncFunc() { throw null; }
         protected internal System.Threading.Tasks.Task<bool> WriteAsyncInternal<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<FlushResult>> writeAsync, ReadResult result, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-
-
     }
     public abstract partial class PipeScheduler
     {

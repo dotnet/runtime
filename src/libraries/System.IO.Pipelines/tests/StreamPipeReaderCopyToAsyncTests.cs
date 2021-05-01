@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines.Tests.Infrastructure;
@@ -17,7 +16,6 @@ namespace System.IO.Pipelines.Tests
     {
         private static readonly StreamPipeReaderOptions s_testOptions = default;
         private static readonly PipeOptions s_testPipeOptions = new PipeOptions(readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false);
-
 
         [Fact]
         public async Task CopyToAsyncThrowsArgumentNullExceptionForNullDestination()
