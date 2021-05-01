@@ -11378,11 +11378,6 @@ extern const BYTE genActualTypes[];
 
 /*****************************************************************************/
 
-extern BasicBlock dummyBB;
-
-/*****************************************************************************/
-/*****************************************************************************/
-
 // foreach_block: An iterator over all blocks in the function.
 //    __compiler: the Compiler* object
 //    __block   : a BasicBlock*, already declared, that gets updated each iteration.
