@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {

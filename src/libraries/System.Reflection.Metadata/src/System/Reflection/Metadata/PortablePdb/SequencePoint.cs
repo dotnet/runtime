@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {

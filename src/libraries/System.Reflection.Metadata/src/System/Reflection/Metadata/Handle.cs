@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {

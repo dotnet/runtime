@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
