@@ -108,7 +108,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is OpCode other && Equals(other);
 
         public bool Equals(OpCode obj) => obj.Value == Value;

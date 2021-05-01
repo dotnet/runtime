@@ -237,7 +237,7 @@ namespace System
         /// </summary>
         /// <param name="value">The object to compare to this instance.</param>
         /// <returns>true if value is an instance of DateOnly and equals the value of this instance; otherwise, false.</returns>
-        public override bool Equals(object? value) => value is DateOnly dateOnly && _dayNumber == dateOnly._dayNumber;
+        public override bool Equals([NotNullWhen(true)] object? value) => value is DateOnly dateOnly && _dayNumber == dateOnly._dayNumber;
 
         /// <summary>
         /// Returns the hash code for this instance.
