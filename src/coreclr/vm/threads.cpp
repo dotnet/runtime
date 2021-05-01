@@ -1588,10 +1588,7 @@ Thread::Thread()
     m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
-    {
-        GCX_COOP_NO_THREAD_BROKEN();
-        m_pDomain = SystemDomain::System()->DefaultDomain();
-    }
+    m_pDomain = SystemDomain::System()->DefaultDomain();
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
