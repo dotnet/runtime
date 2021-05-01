@@ -26,13 +26,19 @@ namespace Profiler.Tests
 
     }
 
-    internal class DiagnosticsIPCWorkaround
+    public class DiagnosticsIPCWorkaround
     {
         private int _processId;
 
         public DiagnosticsIPCWorkaround(int processId)
         {
             _processId = processId;
+
+            MethodInfo startupProfiler = typeof(DiagnosticsClient).GetMethod("SetStartupProfiler", BindingFlags.Public);
+            if (startupProfiler != null)
+            {
+                throw new Exception("You updated DiagnosticsClient to a version that supports SetStartupProfiler, please remove this nonsense and use the real code.");
+            }
         }
 
         public void SetStartupProfiler(Guid profilerGuid, string profilerPath)

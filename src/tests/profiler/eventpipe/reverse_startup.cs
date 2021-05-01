@@ -63,26 +63,10 @@ namespace ReverseStartupTests
                             
                             int processId = (int)advertise.ProcessId;
 
+                            // While we are paused in startup send the profiler startup command
                             string profilerPath = GetProfilerPath();
                             DiagnosticsIPCWorkaround client = new DiagnosticsIPCWorkaround(processId);
                             client.SetStartupProfiler(ReverseStartupProfilerGuid, profilerPath);
-                            // using (MemoryStream memoryStream = new MemoryStream())
-                            // using (BinaryWriter writer = new BinaryWriter(memoryStream))
-                            // {
-                            //     writer.Write(ReverseStartupProfilerGuid.ToByteArray());
-                            //     string profilerPath = GetProfilerPath();
-                            //     Console.WriteLine($"Setting profiler {profilerPath} as startup profiler via diagnostics IPC.");
-                            //     writer.WriteString(profilerPath);
-
-                            //     writer.Flush();
-                            //     byte[] payload = memoryStream.ToArray();
-                                
-                            //     // Profiler startup message
-                            //     IpcMessage profilerMessage = new IpcMessage(0x03,0x02, payload);
-                            //     Console.WriteLine($"Sent startup profiler message: {profilerMessage.ToString()}");
-                            //     IpcMessage profilerResponse = IpcClient.SendMessage(serverStream, profilerMessage);
-                            //     Logger.logger.Log($"Received: {profilerResponse.ToString()}");
-                            // }
 
                             // Resume runtime message
                             IpcMessage resumeMessage = new IpcMessage(0x04,0x01);
