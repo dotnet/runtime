@@ -189,84 +189,75 @@ namespace System.IO.Pipelines
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return CopyToAsyncCore(destination, WriteAsyncFunc(), cancellationToken);
+            return CopyToAsyncCore(destination, (destination, memory, cancellationToken) =>
+            {
+                ValueTask task = destination.WriteAsync(memory, cancellationToken);
+
+                if (task.IsCompletedSuccessfully)
+                {
+                    task.GetAwaiter().GetResult();
+                    return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: false));
+                }
+
+                static async ValueTask<FlushResult> Awaited(ValueTask writeTask)
+                {
+                    await writeTask.ConfigureAwait(false);
+                    return new FlushResult(isCanceled: false, isCompleted: false);
+                }
+
+                return Awaited(task);
+            },
+            cancellationToken);
         }
-
-        protected internal static Func<Stream, ReadOnlyMemory<byte>, CancellationToken, ValueTask<FlushResult>> WriteAsyncFunc() => (destination, memory, cancellationToken) =>
-        {
-            ValueTask task = destination.WriteAsync(memory, cancellationToken);
-
-            if (task.IsCompletedSuccessfully)
-            {
-                task.GetAwaiter().GetResult();
-                return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: false));
-            }
-
-            static async ValueTask<FlushResult> Awaited(ValueTask writeTask)
-            {
-                await writeTask.ConfigureAwait(false);
-                return new FlushResult(isCanceled: false, isCompleted: false);
-            }
-
-            return Awaited(task);
-        };
 
         private async Task CopyToAsyncCore<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask<FlushResult>> writeAsync, CancellationToken cancellationToken)
         {
-            bool completed = false;
-            while (!completed)
+            while (true)
             {
                 ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
-                completed = await WriteAsyncInternal(destination, writeAsync, result, cancellationToken).ConfigureAwait(false);
-            }
-        }
+                ReadOnlySequence<byte> buffer = result.Buffer;
+                SequencePosition position = buffer.Start;
+                SequencePosition consumed = position;
 
-        protected internal async Task<bool> WriteAsyncInternal<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask<FlushResult>> writeAsync, ReadResult result, CancellationToken cancellationToken = default)
-        {
-            ReadOnlySequence<byte> buffer = result.Buffer;
-            SequencePosition position = buffer.Start;
-            SequencePosition consumed = position;
-
-            try
-            {
-                if (result.IsCanceled)
+                try
                 {
-                    ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
-                }
-
-                while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
-                {
-                    FlushResult flushResult = await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
-
-                    if (flushResult.IsCanceled)
+                    if (result.IsCanceled)
                     {
-                        ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
                     }
 
-                    consumed = position;
-
-                    if (flushResult.IsCompleted)
+                    while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                     {
-                        return true;
+                        FlushResult flushResult = await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
+
+                        if (flushResult.IsCanceled)
+                        {
+                            ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                        }
+
+                        consumed = position;
+
+                        if (flushResult.IsCompleted)
+                        {
+                            return;
+                        }
+                    }
+
+                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    consumed = buffer.End;
+
+                    if (result.IsCompleted)
+                    {
+                        break;
                     }
                 }
-
-                // The while loop completed succesfully, so we've consumed the entire buffer.
-                consumed = buffer.End;
-
-                if (result.IsCompleted)
+                finally
                 {
-                    return true;
+                    // Advance even if WriteAsync throws so the PipeReader is not left in the
+                    // currently reading state
+                    AdvanceTo(consumed);
                 }
             }
-            finally
-            {
-                // Advance even if WriteAsync throws so the PipeReader is not left in the
-                // currently reading state
-                AdvanceTo(consumed);
-            }
-
-            return false;
         }
     }
 }

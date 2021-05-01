@@ -268,14 +268,53 @@ namespace System.IO.Pipelines
             CancellationTokenSource tokenSource = InternalTokenSource;
             if (TryReadInternal(tokenSource, out ReadResult readResult))
             {
-                await WriteAsyncInternal(
-                    destination,
-                    (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
-                    readResult,
-                    cancellationToken).ConfigureAwait(false);
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+                SequencePosition position = buffer.Start;
+                SequencePosition consumed = position;
+
+                try
+                {
+                    if (readResult.IsCanceled)
+                    {
+                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+                    }
+
+                    while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
+                    {
+                        FlushResult flushResult = await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+                        if (flushResult.IsCanceled)
+                        {
+                            ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                        }
+
+                        consumed = position;
+
+                        if (flushResult.IsCompleted)
+                        {
+                            return;
+                        }
+                    }
+
+                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    consumed = buffer.End;
+
+                    if (readResult.IsCompleted)
+                    {
+                        return;
+                    }
+                }
+                finally
+                {
+                    // Advance even if WriteAsync throws so the PipeReader is not left in the
+                    // currently reading state
+                    AdvanceTo(consumed);
+                }
             }
 
-            if (_isStreamCompleted) return;
+            if (_isStreamCompleted)
+            {
+                return;
+            }
 
             CancellationTokenRegistration reg = default;
             if (cancellationToken.CanBeCanceled)
@@ -307,10 +346,43 @@ namespace System.IO.Pipelines
             CancellationTokenSource tokenSource = InternalTokenSource;
             if (TryReadInternal(tokenSource, out ReadResult readResult))
             {
-                await WriteAsyncInternal(destination, WriteAsyncFunc(), readResult, cancellationToken).ConfigureAwait(false);
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+                SequencePosition position = buffer.Start;
+                SequencePosition consumed = position;
+
+                try
+                {
+                    if (readResult.IsCanceled)
+                    {
+                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+                    }
+
+                    while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
+                    {
+                        await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+                        consumed = position;
+                    }
+
+                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    consumed = buffer.End;
+
+                    if (readResult.IsCompleted)
+                    {
+                        return;
+                    }
+                }
+                finally
+                {
+                    // Advance even if WriteAsync throws so the PipeReader is not left in the
+                    // currently reading state
+                    AdvanceTo(consumed);
+                }
             }
 
-            if (_isStreamCompleted) return;
+            if (_isStreamCompleted)
+            {
+                return;
+            }
 
             CancellationTokenRegistration reg = default;
             if (cancellationToken.CanBeCanceled)
