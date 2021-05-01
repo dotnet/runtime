@@ -5,6 +5,7 @@ using Profiler.Tests;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
@@ -55,9 +56,7 @@ namespace ReverseStartupTests
             string profilerPath = Path.Combine(rootPath, profilerName);
 
             Console.WriteLine($"Setting profiler {profilerPath} as startup profiler via diagnostics IPC.");
-            ProfilerControlHelpers.SetStartupProfilerViaIPC(ReleaseOnShutdownGuid, profilerPath, childProcess.Id);
-            
-            return 100;
+            ProfilerControlHelpers.SetStartupProfilerViaIPC(ReverseStartupProfilerGuid, profilerPath, childProcess.Id);
         }
     }
 }
