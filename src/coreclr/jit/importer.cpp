@@ -19198,9 +19198,12 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pInfo = new (pParam->pThis, CMK_Inlining) InlineCandidateInfo;
 
                 // Null out bits we don't use when we're just inlining
-                pInfo->guardedClassHandle  = nullptr;
-                pInfo->guardedMethodHandle = nullptr;
-                pInfo->stubAddr            = nullptr;
+                pInfo->guardedClassHandle              = nullptr;
+                pInfo->guardedMethodHandle             = nullptr;
+                pInfo->guardedMethodUnboxedEntryHandle = nullptr;
+                pInfo->stubAddr                        = nullptr;
+                pInfo->likelihood                      = 0;
+                pInfo->requiresInstMethodTableArg      = false;
             }
 
             pInfo->methInfo                       = methInfo;
@@ -20338,8 +20341,15 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodHandle;
-        methAttr  = info.compCompHnd->getMethodAttribs(fncHandle);
+        if (call->gtGuardedDevirtualizationCandidateInfo->guardedMethodUnboxedEntryHandle != nullptr)
+        {
+            fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodUnboxedEntryHandle;
+        }
+        else
+        {
+            fncHandle = call->gtGuardedDevirtualizationCandidateInfo->guardedMethodHandle;
+        }
+        methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
     }
     else
     {
@@ -20636,16 +20646,20 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //     code after inlining, if the return value of the inlined call is
 //     the 'this obj' of a subsequent virtual call.
 //
-//     If devirtualization succeeds and the call's this object is the
-//     result of a box, the jit will ask the EE for the unboxed entry
-//     point. If this exists, the jit will see if it can rework the box
-//     to instead make a local copy. If that is doable, the call is
-//     updated to invoke the unboxed entry on the local copy.
+//     If devirtualization succeeds and the call's this object is a
+//     (boxed) value type, the jit will ask the EE for the unboxed entry
+//     point. If this exists, the jit will invoke the unboxed entry
+//     on the box payload. In addition if the boxing operation is
+//     visible to the jit and the call is the only consmer of the box,
+//     the jit will try analyze the box to see if the call can be instead
+//     instead made on a local copy. If that is doable, the call is
+//     updated to invoke the unboxed entry on the local copy and the
+//     boxing operation is removed.
 //
 //     When guarded devirtualization is enabled, this method will mark
 //     calls as guarded devirtualization candidates, if the type of `this`
 //     is not exactly known, and there is a plausible guess for the type.
-
+//
 void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                    CORINFO_METHOD_HANDLE*  method,
                                    unsigned*               methodFlags,
@@ -20981,16 +20995,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 #endif // defined(DEBUG)
 
-    // If the 'this' object is a box, see if we can find the unboxed entry point for the call.
-    if (thisObj->IsBoxedValue())
+    // If the 'this' object is a value class, see if we can rework the call to invoke the
+    // unboxed entry. This effectively inlines the normally un-inlineable wrapper stub
+    // and exposes the potentially inlinable unboxed entry method.
+    if (info.compCompHnd->isValueClass(derivedClass))
     {
-        JITDUMP("Now have direct call to boxed entry point, looking for unboxed entry point\n");
-
-        if (isExplicitTailCall)
-        {
-            JITDUMP("Call is an explicit tail call, we cannot perform an unbox\n");
-            return;
-        }
+        JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");
 
         // Note for some shared methods the unboxed entry point requires an extra parameter.
         bool                  requiresInstMethodTableArg = false;
@@ -20999,81 +21009,106 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (unboxedEntryMethod != nullptr)
         {
-            // Since the call is the only consumer of the box, we know the box can't escape
-            // since it is being passed an interior pointer.
+            bool optimizedTheBox = false;
+
+            // If the 'this' object is a local box, see if we can revise things
+            // to not require boxing.
             //
-            // So, revise the box to simply create a local copy, use the address of that copy
-            // as the this pointer, and update the entry point to the unboxed entry.
-            //
-            // Ideally, we then inline the boxed method and and if it turns out not to modify
-            // the copy, we can undo the copy too.
-            if (requiresInstMethodTableArg)
+            if (thisObj->IsBoxedValue() && !isExplicitTailCall)
             {
-                // Perform a trial box removal and ask for the type handle tree.
-                JITDUMP("Unboxed entry needs method table arg...\n");
-                GenTree* methodTableArg = gtTryRemoveBoxUpstreamEffects(thisObj, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
-
-                if (methodTableArg != nullptr)
+                // Since the call is the only consumer of the box, we know the box can't escape
+                // since it is being passed an interior pointer.
+                //
+                // So, revise the box to simply create a local copy, use the address of that copy
+                // as the this pointer, and update the entry point to the unboxed entry.
+                //
+                // Ideally, we then inline the boxed method and and if it turns out not to modify
+                // the copy, we can undo the copy too.
+                if (requiresInstMethodTableArg)
                 {
-                    // If that worked, turn the box into a copy to a local var
-                    JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
-                    GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                    // Perform a trial box removal and ask for the type handle tree that fed the box.
+                    //
+                    JITDUMP("Unboxed entry needs method table arg...\n");
+                    GenTree* methodTableArg = gtTryRemoveBoxUpstreamEffects(thisObj, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
 
-                    if (localCopyThis != nullptr)
+                    if (methodTableArg != nullptr)
                     {
-                        // Pass the local var as this and the type handle as a new arg
-                        JITDUMP("Success! invoking unboxed entry point on local copy, and passing method table arg\n");
-                        call->gtCallThisArg = gtNewCallArgs(localCopyThis);
-                        call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                        // If that worked, turn the box into a copy to a local var
+                        //
+                        JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
+                        GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
 
-                        // Prepend for R2L arg passing or empty L2R passing
-                        if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+                        if (localCopyThis != nullptr)
                         {
-                            call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
-                        }
-                        // Append for non-empty L2R
-                        else
-                        {
-                            GenTreeCall::Use* beforeArg = call->gtCallArgs;
-                            while (beforeArg->GetNext() != nullptr)
+                            // Pass the local var as this and the type handle as a new arg
+                            //
+                            JITDUMP(
+                                "Success! invoking unboxed entry point on local copy, and passing method table arg\n");
+                            call->gtCallThisArg = gtNewCallArgs(localCopyThis);
+                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+
+                            // Prepend for R2L arg passing or empty L2R passing
+                            // Append for non-empty L2R
+                            //
+                            if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
                             {
-                                beforeArg = beforeArg->GetNext();
+                                call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                            }
+                            else
+                            {
+                                GenTreeCall::Use* beforeArg = call->gtCallArgs;
+                                while (beforeArg->GetNext() != nullptr)
+                                {
+                                    beforeArg = beforeArg->GetNext();
+                                }
+
+                                beforeArg->SetNext(gtNewCallArgs(methodTableArg));
                             }
 
-                            beforeArg->SetNext(gtNewCallArgs(methodTableArg));
+                            call->gtCallMethHnd = unboxedEntryMethod;
+                            derivedMethod       = unboxedEntryMethod;
+
+                            // Method attributes will differ because unboxed entry point is shared
+                            //
+                            const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                            JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                    unboxedMethodAttribs);
+                            derivedMethodAttribs = unboxedMethodAttribs;
+                            optimizedTheBox      = true;
                         }
-
-                        call->gtCallMethHnd = unboxedEntryMethod;
-                        derivedMethod       = unboxedEntryMethod;
-
-                        // Method attributes will differ because unboxed entry point is shared
-                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                unboxedMethodAttribs);
-                        derivedMethodAttribs = unboxedMethodAttribs;
+                        else
+                        {
+                            JITDUMP("Sorry, failed to undo the box -- can't convert to local copy\n");
+                        }
                     }
                     else
                     {
-                        JITDUMP("Sorry, failed to undo the box -- can't convert to local copy\n");
+                        JITDUMP("Sorry, failed to undo the box -- can't find method table arg\n");
                     }
                 }
                 else
                 {
-                    JITDUMP("Sorry, failed to undo the box -- can't find method table arg\n");
-                }
-            }
-            else
-            {
-                JITDUMP("Found unboxed entry point, trying to simplify box to a local copy\n");
-                GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                    JITDUMP("Found unboxed entry point, trying to simplify box to a local copy\n");
+                    GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
 
-                if (localCopyThis != nullptr)
+                    if (localCopyThis != nullptr)
+                    {
+                        JITDUMP("Success! invoking unboxed entry point on local copy\n");
+                        call->gtCallThisArg = gtNewCallArgs(localCopyThis);
+                        call->gtCallMethHnd = unboxedEntryMethod;
+                        call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                        derivedMethod = unboxedEntryMethod;
+
+                        optimizedTheBox = true;
+                    }
+                    else
+                    {
+                        JITDUMP("Sorry, failed to undo the box\n");
+                    }
+                }
+
+                if (optimizedTheBox)
                 {
-                    JITDUMP("Success! invoking unboxed entry point on local copy\n");
-                    call->gtCallThisArg = gtNewCallArgs(localCopyThis);
-                    call->gtCallMethHnd = unboxedEntryMethod;
-                    call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
-                    derivedMethod = unboxedEntryMethod;
 
 #if FEATURE_TAILCALL_OPT
                     if (call->IsImplicitTailCall())
@@ -21087,9 +21122,74 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     }
 #endif // FEATURE_TAILCALL_OPT
                 }
+            }
+
+            if (!optimizedTheBox)
+            {
+                // If we get here, we have a boxed value class that either wasn't boxed
+                // locally, or was boxed locally but we were unable to remove the box for
+                // various reasons.
+                //
+                // We can still update the call to invoke the unboxed entry.
+                //
+                if (requiresInstMethodTableArg)
+                {
+                    JITDUMP("revising call to invoke unboxed entry\n");
+
+                    // Update the 'this' pointer to refer to the box payload
+                    //
+                    GenTree* const thisArg       = call->gtCallThisArg->GetNode();
+                    GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                    GenTree* const boxPayload    = gtNewOperNode(GT_ADD, TYP_BYREF, thisArg, payloadOffset);
+
+                    call->gtCallThisArg = gtNewCallArgs(boxPayload);
+                    call->gtCallMethHnd = unboxedEntryMethod;
+                    call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+
+                    // Method attributes will differ because unboxed entry point is shared
+                    //
+                    const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                    JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                            unboxedMethodAttribs);
+                    derivedMethod        = unboxedEntryMethod;
+                    derivedMethodAttribs = unboxedMethodAttribs;
+
+                    // Add the method table argument...note we know the value of the class handle
+                    // (we could also fetch this via indir off of the 'this' arg)
+                    //
+                    JITDUMP("call to unboxed entry requires inst method table arg -- adding\n");
+                    GenTree* const methodTableArg = gtNewIconEmbClsHndNode(derivedClass);
+
+                    // Prepend for R2L arg passing or empty L2R passing
+                    // Append for non-empty L2R
+                    //
+                    if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+                    {
+                        call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                    }
+                    else
+                    {
+                        GenTreeCall::Use* beforeArg = call->gtCallArgs;
+                        while (beforeArg->GetNext() != nullptr)
+                        {
+                            beforeArg = beforeArg->GetNext();
+                        }
+
+                        beforeArg->SetNext(gtNewCallArgs(methodTableArg));
+                    }
+                }
                 else
                 {
-                    JITDUMP("Sorry, failed to undo the box\n");
+                    JITDUMP("revising call to invoke unboxed entry\n");
+
+                    GenTree* const thisArg       = call->gtCallThisArg->GetNode();
+                    GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                    GenTree* const boxPayload    = gtNewOperNode(GT_ADD, TYP_BYREF, thisArg, payloadOffset);
+
+                    call->gtCallThisArg = gtNewCallArgs(boxPayload);
+                    call->gtCallMethHnd = unboxedEntryMethod;
+                    call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                    derivedMethod = unboxedEntryMethod;
                 }
             }
         }
@@ -21514,9 +21614,28 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     //
     GuardedDevirtualizationCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
-    pInfo->guardedMethodHandle = methodHandle;
-    pInfo->guardedClassHandle  = classHandle;
-    pInfo->likelihood          = likelihood;
+    pInfo->guardedMethodHandle             = methodHandle;
+    pInfo->guardedMethodUnboxedEntryHandle = nullptr;
+    pInfo->guardedClassHandle              = classHandle;
+    pInfo->likelihood                      = likelihood;
+    pInfo->requiresInstMethodTableArg      = false;
+
+    // If the guarded class is a value class, look for an unboxed entry point.
+    //
+    if ((classAttr & CORINFO_FLG_VALUECLASS) != 0)
+    {
+        JITDUMP("    ... class is a value class, looking for unboxed entry\n");
+        bool                  requiresInstMethodTableArg = false;
+        CORINFO_METHOD_HANDLE unboxedEntryMethodHandle =
+            info.compCompHnd->getUnboxedEntry(methodHandle, &requiresInstMethodTableArg);
+
+        if (unboxedEntryMethodHandle != nullptr)
+        {
+            JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
+            pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
+            pInfo->requiresInstMethodTableArg      = requiresInstMethodTableArg;
+        }
+    }
 
     // Save off the stub address since it shares a union with the candidate info.
     //
