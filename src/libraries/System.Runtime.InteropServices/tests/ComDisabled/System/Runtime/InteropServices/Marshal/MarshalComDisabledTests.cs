@@ -9,16 +9,16 @@ namespace System.Runtime.InteropServices.Tests
     public partial class MarshalComDisabledTests
     {
         [Fact]
-        public void GetTypeFromCLSID_ThrowsNotSupportedException()
-        {
-            Assert.Throws<NotSupportedException>(() => Marshal.GetTypeFromCLSID(Guid.Empty));
-        }
-
-        [Fact]
         public void CreateAggregatedObject_ThrowsNotSupportedException()
         {
             object value = new object();
             Assert.Throws<NotSupportedException>(() => Marshal.CreateAggregatedObject(IntPtr.Zero, value));
+        }
+
+        [Fact]
+        public void GetTypeFromCLSID_ThrowsNotSupportedException()
+        {
+            Assert.Throws<NotSupportedException>(() => Marshal.GetTypeFromCLSID(Guid.Empty));
         }
 
         [Fact]
