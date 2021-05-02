@@ -44,11 +44,18 @@ namespace Profiler.Tests
         public void SetStartupProfiler(Guid profilerGuid, string profilerPath)
         {
             DiagnosticsClient client = new DiagnosticsClient(_processId);
-            
+
+            Console.WriteLine("Sending startup profiler message.");            
             // Send StartupProfiler command
             object ipcMessage = MakeStartupProfilerMessage(profilerGuid, profilerPath);
             SendMessage(_processId, ipcMessage);
 
+            // TODO: the runtime will refuse to resume the runtime if there are any active ports
+            // that haven't resumed the runtime. Since we created this port to send the profiler
+            // command, we have to issue the resume runtime or it will deadlock.
+            // This seems counterintuitive, should probably review that design. I didn't expect
+            // to have to issue the resume runtime message twice.
+            Console.WriteLine("Sending resume runtime message.");
             // Send ResumeRuntime command
             ipcMessage = MakeResumeRuntimeMessage();
             SendMessage(_processId, ipcMessage);
@@ -98,12 +105,35 @@ namespace Profiler.Tests
             return typeof(DiagnosticsClient).Assembly.GetType(typeName);
         }
 
+        private static int GetResponseCommandSet(object response)
+        {
+            PropertyInfo header = response.GetType().GetProperty("Header");
+            object ipcHeader = header.GetValue(response);
+
+            FieldInfo commandId = ipcHeader.GetType().GetField("CommandSet");
+            byte id = (byte)commandId.GetValue(ipcHeader);
+            return id;
+        }
+
+        private static int GetResponseCommandId(object response)
+        {
+            PropertyInfo header = response.GetType().GetProperty("Header");
+            object ipcHeader = header.GetValue(response);
+
+            FieldInfo commandId = ipcHeader.GetType().GetField("CommandId");
+            byte id = (byte)commandId.GetValue(ipcHeader);
+            return id;
+        }
+
         private static void SendMessage(object processId, object message)
         {
             Type ipcClientType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.IpcClient");
             Type ipcMessageType = GetPrivateType("Microsoft.Diagnostics.NETCore.Client.IpcMessage");
             MethodInfo clientSendMessage = ipcClientType.GetMethod("SendMessage", new Type[] { typeof(int), ipcMessageType } );
-            clientSendMessage.Invoke(null, new object[] { processId, message });
+            object response = clientSendMessage.Invoke(null, new object[] { processId, message });
+            int responseCommandSet = GetResponseCommandSet(response);
+            int responseCommandId = GetResponseCommandId(response);
+            Console.WriteLine($"SendMessage response CommandSet={responseCommandSet} CommandId={responseCommandId}");
         }
     }
 }

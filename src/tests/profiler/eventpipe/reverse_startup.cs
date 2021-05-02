@@ -81,6 +81,12 @@ namespace ReverseStartupTests
                 catch (Exception e)
                 {
                     Console.WriteLine($"ReverseServer saw exception {e.Message}");
+                    Console.WriteLine(e.StackTrace);
+
+
+                    Console.WriteLine($"Inner exception {e.InnerException?.Message}");
+                    Console.WriteLine(e.InnerException?.StackTrace);
+                    
                 }
                 finally
                 {
