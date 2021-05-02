@@ -1819,13 +1819,22 @@ namespace System.Diagnostics.Tracing
             }
 
         BytePtr:
-            return new Span<byte>((byte*)dataPointer, data->Size).ToArray();
+            byte[] blob = new byte[data->Size];
+            for (int i = 0; i < blob.Length; i++)
+            {
+                blob[i] = *((byte*)dataPointer + i);
+            }
+            return blob;
 
         String:
             // Everything else is marshaled as a string.
             // ETW strings are NULL-terminated, so marshal everything up to the first
             // null in the string.
-            Debug.Assert(data->Size % 2 == 0 && new Span<char>((char*)dataPointer, data->Size >> 1).IndexOf('\0') == (data->Size >> 1) - 1);
+#if DEBUG
+            Debug.Assert(data->Size % 2 == 0, "String size should be even");
+            for (int i = 0; i < data->Size / 2 - 1; i++) Debug.Assert(*((char*)dataPointer + i) != 0, "String may not contain null chars");
+            Debug.Assert(*((char*)dataPointer + data->Size / 2 - 1) == 0, "String must be null terminated");
+#endif
             return dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
         }
 
@@ -2058,7 +2067,11 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < args.Length; i++, data++)
                     {
                         IntPtr dataPointer = data->DataPointer;
-                        Debug.Assert(data->Size % 2 == 0 && new Span<char>((char*)dataPointer, data->Size >> 1).IndexOf('\0') == (data->Size >> 1) - 1);
+#if DEBUG
+                        Debug.Assert(data->Size % 2 == 0, "String size should be even");
+                        for (int j = 0; j < data->Size / 2 - 1; j++) Debug.Assert(*((char*)dataPointer + j) != 0, "String may not contain null chars");
+                        Debug.Assert(*((char*)dataPointer + data->Size / 2 - 1) == 0, "String must be null terminated");
+#endif
                         args[i] = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
                     }
                 }
