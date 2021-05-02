@@ -1715,7 +1715,7 @@ namespace System.Diagnostics.Tracing
 
             if (size == 4)
             {
-                if ((uint)(typeCode - TypeCode.SByte) <= TypeCode.UInt16 - TypeCode.SByte)
+                if ((uint)(typeCode - TypeCode.SByte) <= TypeCode.Int32 - TypeCode.SByte)
                 {
                     Debug.Assert(dataType.IsEnum);
                     // Enums less than 4 bytes in size should be treated as int.
