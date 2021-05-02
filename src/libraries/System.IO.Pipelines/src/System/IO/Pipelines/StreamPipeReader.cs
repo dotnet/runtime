@@ -281,36 +281,33 @@ namespace System.IO.Pipelines
             {
                 try
                 {
-                    if (_bufferedBytes > 0)
+                    BufferSegment? segment = _readHead;
+                    try
                     {
-                        BufferSegment? segment = _readHead;
-                        try
+                        while (segment != null)
                         {
-                            while (segment != null)
+                            FlushResult flushResult = await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+
+                            if (flushResult.IsCanceled)
                             {
-                                FlushResult flushResult = await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+                                ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                            }
 
-                                if (flushResult.IsCanceled)
-                                {
-                                    ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
-                                }
+                            segment = segment.NextSegment;
 
-                                segment = segment.NextSegment;
-
-                                if (flushResult.IsCompleted)
-                                {
-                                    return;
-                                }
+                            if (flushResult.IsCompleted)
+                            {
+                                return;
                             }
                         }
-                        finally
+                    }
+                    finally
+                    {
+                        // Advance even if WriteAsync throws so the PipeReader is not left in the
+                        // currently reading state
+                        if (segment != null)
                         {
-                            // Advance even if WriteAsync throws so the PipeReader is not left in the
-                            // currently reading state
-                            if (segment != null)
-                            {
-                                AdvanceTo(segment, segment.End, segment, segment.End);
-                            }
+                            AdvanceTo(segment, segment.End, segment, segment.End);
                         }
                     }
 
@@ -352,26 +349,23 @@ namespace System.IO.Pipelines
             {
                 try
                 {
-                    if (_bufferedBytes > 0)
+                    BufferSegment? segment = _readHead;
+                    try
                     {
-                        BufferSegment? segment = _readHead;
-                        try
+                        while (segment != null)
                         {
-                            while (segment != null)
-                            {
-                                await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+                            await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
 
-                                segment = segment.NextSegment;
-                            }
+                            segment = segment.NextSegment;
                         }
-                        finally
+                    }
+                    finally
+                    {
+                        // Advance even if WriteAsync throws so the PipeReader is not left in the
+                        // currently reading state
+                        if (segment != null)
                         {
-                            // Advance even if WriteAsync throws so the PipeReader is not left in the
-                            // currently reading state
-                            if (segment != null)
-                            {
-                                AdvanceTo(segment, segment.End, segment, segment.End);
-                            }
+                            AdvanceTo(segment, segment.End, segment, segment.End);
                         }
                     }
 
