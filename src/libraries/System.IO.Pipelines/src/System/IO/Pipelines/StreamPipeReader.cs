@@ -52,6 +52,7 @@ namespace System.IO.Pipelines
         private bool LeaveOpen => _options.LeaveOpen;
         private bool UseZeroByteReads => _options.UseZeroByteReads;
         private int BufferSize => _options.BufferSize;
+        private int MaxBufferSize => _options.MaxBufferSize;
         private int MinimumReadThreshold => _options.MinimumReadSize;
         private MemoryPool<byte> Pool => _options.Pool;
 
@@ -238,7 +239,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        private async Task ReadAsyncInternal(CancellationToken cancellationToken)
+        private async Task ReadAsyncInternal(CancellationToken cancellationToken, int? minimumSize = null)
         {
             // This optimization only makes sense if we don't have anything buffered
             if (UseZeroByteReads && _bufferedBytes == 0)
@@ -247,7 +248,7 @@ namespace System.IO.Pipelines
                 await InnerStream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
             }
 
-            AllocateReadTail();
+            AllocateReadTail(minimumSize);
 
             Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
 
@@ -297,7 +298,7 @@ namespace System.IO.Pipelines
                 {
                     while (_bufferedBytes < minimumSize && !_isStreamCompleted)
                     {
-                        await ReadAsyncInternal(tokenSource.Token).ConfigureAwait(false);
+                        await ReadAsyncInternal(tokenSource.Token, minimumSize).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
@@ -495,12 +496,12 @@ namespace System.IO.Pipelines
             return new ReadOnlySequence<byte>(_readHead, _readIndex, _readTail, _readTail.End);
         }
 
-        private void AllocateReadTail()
+        private void AllocateReadTail(int? minimumSize = null)
         {
             if (_readHead == null)
             {
                 Debug.Assert(_readTail == null);
-                _readHead = AllocateSegment();
+                _readHead = AllocateSegment(minimumSize);
                 _readTail = _readHead;
             }
             else
@@ -508,24 +509,25 @@ namespace System.IO.Pipelines
                 Debug.Assert(_readTail != null);
                 if (_readTail.WritableBytes < MinimumReadThreshold)
                 {
-                    BufferSegment nextSegment = AllocateSegment();
+                    BufferSegment nextSegment = AllocateSegment(minimumSize);
                     _readTail.SetNext(nextSegment);
                     _readTail = nextSegment;
                 }
             }
         }
 
-        private BufferSegment AllocateSegment()
+        private BufferSegment AllocateSegment(int? minimumSize = null)
         {
             BufferSegment nextSegment = CreateSegmentUnsynchronized();
 
+            var bufferSize = Math.Min(minimumSize ?? BufferSize, MaxBufferSize);
             if (_options.IsDefaultSharedMemoryPool)
             {
-                nextSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(BufferSize));
+                nextSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(bufferSize));
             }
             else
             {
-                nextSegment.SetOwnedMemory(Pool.Rent(BufferSize));
+                nextSegment.SetOwnedMemory(Pool.Rent(bufferSize));
             }
 
             return nextSegment;

@@ -32,12 +32,14 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task CanReadAtLeast(bool bufferedRead)
+        [InlineData(-1, false)]
+        [InlineData(-1, true)]
+        [InlineData(5, false)]
+        [InlineData(5, true)]
+        public async Task CanReadAtLeast(int bufferSize, bool bufferedRead)
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
-            var reader = PipeReader.Create(stream);
+            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello Pipelines World"));
+            var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(bufferSize: bufferSize));
 
             if (bufferedRead)
             {
@@ -45,12 +47,12 @@ namespace System.IO.Pipelines.Tests
                 Assert.NotEqual(0, bufferedReadResult.Buffer.Length);
             }
 
-            ReadResult readResult = await reader.ReadAtLeastAsync(10);
+            ReadResult readResult = await reader.ReadAtLeastAsync(20);
             ReadOnlySequence<byte> buffer = readResult.Buffer;
 
-            Assert.Equal(11, buffer.Length);
-            Assert.True(buffer.IsSingleSegment);
-            Assert.Equal("Hello World", Encoding.ASCII.GetString(buffer.ToArray()));
+            Assert.Equal(21, buffer.Length);
+            Assert.Equal(bufferSize == -1 || !bufferedRead, buffer.IsSingleSegment);
+            Assert.Equal("Hello Pipelines World", Encoding.ASCII.GetString(buffer.ToArray()));
 
             reader.AdvanceTo(buffer.End);
             reader.Complete();
