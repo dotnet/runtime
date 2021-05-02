@@ -9,8 +9,8 @@ using std::thread;
 
 Profiler *Profiler::Instance = nullptr;
 
-std::atomic<bool> ShutdownGuard::s_preventHooks = false;
-std::atomic<int> ShutdownGuard::s_hooksInProgress = 0;
+std::atomic<bool> ShutdownGuard::s_preventHooks(false);
+std::atomic<int> ShutdownGuard::s_hooksInProgress(0);
 
 Profiler::Profiler() : refCount(0), pCorProfilerInfo(nullptr)
 {

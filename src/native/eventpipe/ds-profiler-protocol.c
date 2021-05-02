@@ -110,6 +110,7 @@ profiler_protocol_helper_attach_profiler (
 		return false;
 
     bool result = false;
+    DiagnosticsAttachProfilerCommandPayload *payload = NULL;
 
     if (!ep_rt_is_running ()) {
         ds_ipc_message_send_error (stream, DS_IPC_E_NOT_YET_AVAILABLE);
@@ -117,7 +118,6 @@ profiler_protocol_helper_attach_profiler (
         ep_raise_error ();
     }
 
-	DiagnosticsAttachProfilerCommandPayload *payload;
 	payload = (DiagnosticsAttachProfilerCommandPayload *)ds_ipc_message_try_parse_payload (message, attach_profiler_command_try_parse_payload);
 
 	if (!payload) {
@@ -217,13 +217,14 @@ profiler_protocol_helper_startup_profiler (
 	if (!stream)
 		return false;
 
+    bool result = false;
+    DiagnosticsStartupProfilerCommandPayload *payload = NULL;
+
 	if (!ds_server_is_paused_in_startup()) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_INVALIDARG);
 		ep_raise_error ();
 	}		
 
-	bool result = false;
-	DiagnosticsStartupProfilerCommandPayload *payload;
 	payload = (DiagnosticsStartupProfilerCommandPayload *)ds_ipc_message_try_parse_payload (message, startup_profiler_command_try_parse_payload);
 
 	if (!payload) {
