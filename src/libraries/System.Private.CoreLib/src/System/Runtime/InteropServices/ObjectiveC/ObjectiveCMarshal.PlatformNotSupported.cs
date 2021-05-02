@@ -140,5 +140,18 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendPendingException(Exception? exception)
             => throw new PlatformNotSupportedException();
+
+#if CORECLR
+        // [TODO] Remove when https://github.com/dotnet/runtime/issues/51991 is fixed.
+        internal static bool AvailableUnhandledExceptionPropagation()
+            => throw new PlatformNotSupportedException();
+
+        // [TODO] Remove when https://github.com/dotnet/runtime/issues/51991 is fixed.
+        internal static unsafe void* InvokeUnhandledExceptionPropagation(
+            Exception exception,
+            object methodInfoStub,
+            out IntPtr context)
+            => throw new PlatformNotSupportedException();
+#endif
     }
 }
