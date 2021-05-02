@@ -271,43 +271,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
             }
 
-            if (_bufferedBytes > 0 && (!_examinedEverything || _isStreamCompleted))
-            {
-                BufferSegment? segment = _readHead;
-                try
-                {
-                    while (segment != null)
-                    {
-                        FlushResult flushResult = await destination.WriteAsync(segment.AvailableMemory, cancellationToken).ConfigureAwait(false);
-                        if (flushResult.IsCanceled)
-                        {
-                            ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
-                        }
-
-                        segment = segment.NextSegment;
-
-                        if (flushResult.IsCompleted)
-                        {
-                            return;
-                        }
-                    }
-                }
-                finally
-                {
-                    // Advance even if WriteAsync throws so the PipeReader is not left in the
-                    // currently reading state
-                    if (segment != null)
-                    {
-                        AdvanceTo(segment, segment.End, segment, segment.End);
-                    }
-                }
-            }
-
-            if (_isStreamCompleted)
-            {
-                return;
-            }
-
             CancellationTokenRegistration reg = default;
             if (cancellationToken.CanBeCanceled)
             {
@@ -318,6 +281,44 @@ namespace System.IO.Pipelines
             {
                 try
                 {
+                    if (_bufferedBytes > 0)
+                    {
+                        BufferSegment? segment = _readHead;
+                        try
+                        {
+                            while (segment != null)
+                            {
+                                FlushResult flushResult = await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+
+                                if (flushResult.IsCanceled)
+                                {
+                                    ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                                }
+
+                                segment = segment.NextSegment;
+
+                                if (flushResult.IsCompleted)
+                                {
+                                    return;
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            // Advance even if WriteAsync throws so the PipeReader is not left in the
+                            // currently reading state
+                            if (segment != null)
+                            {
+                                AdvanceTo(segment, segment.End, segment, segment.End);
+                            }
+                        }
+                    }
+
+                    if (_isStreamCompleted)
+                    {
+                        return;
+                    }
+
                     await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -341,34 +342,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
             }
 
-            if (_bufferedBytes > 0 && (!_examinedEverything || _isStreamCompleted))
-            {
-                BufferSegment? segment = _readHead;
-                try
-                {
-                    while (segment != null)
-                    {
-                        await destination.WriteAsync(segment.AvailableMemory, cancellationToken).ConfigureAwait(false);
-
-                        segment = segment.NextSegment;
-                    }
-                }
-                finally
-                {
-                    // Advance even if WriteAsync throws so the PipeReader is not left in the
-                    // currently reading state
-                    if (segment != null)
-                    {
-                        AdvanceTo(segment, segment.End, segment, segment.End);
-                    }
-                }
-            }
-
-            if (_isStreamCompleted)
-            {
-                return;
-            }
-
             CancellationTokenRegistration reg = default;
             if (cancellationToken.CanBeCanceled)
             {
@@ -379,6 +352,34 @@ namespace System.IO.Pipelines
             {
                 try
                 {
+                    if (_bufferedBytes > 0)
+                    {
+                        BufferSegment? segment = _readHead;
+                        try
+                        {
+                            while (segment != null)
+                            {
+                                await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+
+                                segment = segment.NextSegment;
+                            }
+                        }
+                        finally
+                        {
+                            // Advance even if WriteAsync throws so the PipeReader is not left in the
+                            // currently reading state
+                            if (segment != null)
+                            {
+                                AdvanceTo(segment, segment.End, segment, segment.End);
+                            }
+                        }
+                    }
+
+                    if (_isStreamCompleted)
+                    {
+                        return;
+                    }
+
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                     await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
 #else

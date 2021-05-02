@@ -90,6 +90,70 @@ namespace System.IO.Pipelines.Tests
             targetPipe.Writer.Complete();
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task CopyToAsyncStreamWorksWithBufferedSegments()
+        {
+            var messages = new List<byte[]>()
+            {
+                Encoding.UTF8.GetBytes("Hello World1"),
+                Encoding.UTF8.GetBytes("Hello World2"),
+                Encoding.UTF8.GetBytes("Hello World3"),
+            };
+
+            var pipe = new Pipe(s_testPipeOptions);
+            var pipeReader = PipeReader.Create(pipe.Reader.AsStream(), s_testOptions);
+
+            foreach (var msg in messages)
+            {
+                await pipe.Writer.WriteAsync(msg);
+            }
+            pipe.Writer.Complete();
+
+            byte[] expected = messages.SelectMany(msg => msg).ToArray();
+
+            var readResult = await pipeReader.ReadAsync();
+            Assert.Equal(expected, readResult.Buffer.ToArray());
+
+            var stream = new MemoryStream();
+            await pipeReader.CopyToAsync(stream);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        [Fact]
+        public async Task CopyToAsyncPipeWriterWorksWithBufferedSegments()
+        {
+            var messages = new List<byte[]>()
+            {
+                Encoding.UTF8.GetBytes("Hello World1"),
+                Encoding.UTF8.GetBytes("Hello World2"),
+                Encoding.UTF8.GetBytes("Hello World3"),
+            };
+
+            var pipe = new Pipe(s_testPipeOptions);
+            var pipeReader = PipeReader.Create(pipe.Reader.AsStream(), s_testOptions);
+            var targetPipe = new Pipe(s_testPipeOptions);
+
+            foreach (var msg in messages)
+            {
+                await pipe.Writer.WriteAsync(msg);
+            }
+            pipe.Writer.Complete();
+
+            byte[] expected = messages.SelectMany(msg => msg).ToArray();
+
+            var readResult = await pipeReader.ReadAsync();
+            Assert.Equal(expected, readResult.Buffer.ToArray());
+
+            await pipeReader.CopyToAsync(targetPipe.Writer);
+
+            readResult = await targetPipe.Reader.ReadAsync();
+            Assert.Equal(expected, readResult.Buffer.ToArray());
+
+            targetPipe.Reader.AdvanceTo(readResult.Buffer.End);
+            targetPipe.Reader.Complete();
+            targetPipe.Writer.Complete();
+        }
+
         [Fact]
         public async Task MultiSegmentWritesWorks()
         {
