@@ -4917,6 +4917,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Type_op_Inequality;
             }
+            else if (strcmp(methodName, "GetTypeFromHandle") == 0)
+            {
+                result = NI_System_Type_GetTypeFromHandle;
+            }
         }
         else if (strcmp(className, "String") == 0)
         {
@@ -4929,14 +4933,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_String_get_Length;
             }
         }
-        else if (strcmp(className, "Span") == 0)
+        else if (strcmp(className, "Span`1") == 0)
         {
             if (strcmp(methodName, "get_Item") == 0)
             {
                 result = NI_System_Span_get_Item;
             }
         }
-        else if (strcmp(className, "ReadOnlySpan") == 0)
+        else if (strcmp(className, "ReadOnlySpan`1") == 0)
         {
             if (strcmp(methodName, "get_Item") == 0)
             {
