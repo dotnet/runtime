@@ -892,7 +892,7 @@ Thread* SetupMainThread()
 //
 // When there is, complete the setup with code:Thread::HasStarted()
 //-------------------------------------------------------------------------
-Thread* SetupUnstartedThread(BOOL bRequiresThreadStoreLock)
+Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
     CONTRACTL {
         THROWS;
@@ -902,8 +902,11 @@ Thread* SetupUnstartedThread(BOOL bRequiresThreadStoreLock)
 
     Thread* pThread = new Thread();
 
-    if (!bRequiresThreadStoreLock)
+    if (!(flags & SUTF_RequiresThreadStoreLock))
         pThread->SetSkipThreadStoreLock();
+
+    if (!(flags & SUTF_PerformPlatformInit))
+        pThread->SetDeferPlatformInit();
 
     FastInterlockOr((ULONG *) &pThread->m_State,
                     (Thread::TS_Unstarted | Thread::TS_WeOwn));
@@ -1850,12 +1853,9 @@ BOOL Thread::HasStarted()
         SetThread(this);
         SetAppDomain(m_pDomain);
 
-        // Initialize the thread for the platform as the final step.
-        // The Finalizer thread is a special case because it is started
-        // prior to managed assemblies being loaded. Since initializing
-        // the platform context may use managed code, we skip this and
-        // rely on the Finalizer thread to handle it being a special case.
-        if (!IsFinalizerThread())
+        // Initialize the thread for the platform as the final step, unless
+        // the Thread creator has indicated the platform init should be deferred.
+        if (!DeferredPlatformInit())
         {
             fCanCleanupCOMState = TRUE;
             InitPlatformContext();

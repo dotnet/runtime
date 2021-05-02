@@ -581,8 +581,23 @@ enum ThreadpoolThreadType
 Thread* SetupThread();
 Thread* SetupMainThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
-// WARNING : only GC calls this with bRequiresThreadStoreLock set to FALSE.
-Thread* SetupUnstartedThread(BOOL bRequiresThreadStoreLock = TRUE);
+
+enum SetupUnstartedThreadFlags
+{
+    SUTF_None = 0,
+
+    // When the thread enters the thread store, the lock should be taken.
+    SUTF_RequiresThreadStoreLock = 1,
+
+    // The should be called implicitly at the right time for the thread.
+    // If this is not set, the Thread owner may perform this function at
+    // any time by calling Thread::InitPlatformContext().
+    SUTF_PerformPlatformInit = 2,
+
+    // The default flags for the majority of threads.
+    SUTF_Default = (SUTF_RequiresThreadStoreLock | SUTF_PerformPlatformInit),
+};
+Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
@@ -1159,6 +1174,7 @@ public:
         TT_CallCoInitialize       = 0x00000002, // CoInitialize needs to be called.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         TT_SkipThreadStoreLock    = 0x00000004,    // Skip thread store lock. GC is only consumer.
+        TT_DeferPlatformInit      = 0x00000008,    // Defer any specialized platform initialization.
     };
 
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
@@ -1326,6 +1342,18 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         FastInterlockOr((ULONG *)&m_ThreadTasks, TT_SkipThreadStoreLock);
+    }
+
+    DWORD DeferredPlatformInit()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_ThreadTasks & TT_DeferPlatformInit);
+    }
+
+    void SetDeferPlatformInit()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG *)&m_ThreadTasks, TT_DeferPlatformInit);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
