@@ -2120,13 +2120,14 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var keys = new List<TKey>(count);
+                int index = 0;
+                var keys = new TKey[count];
                 Node?[] buckets = _tables._buckets;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        keys.Add(current._key);
+                        keys[index++] = current._key;
                     }
                 }
 
@@ -2154,13 +2155,14 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var values = new List<TValue>(count);
+                int index = 0;
+                var values = new TValue[count];
                 Node?[] buckets = _tables._buckets;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        values.Add(current._value);
+                        values[index++] = current._value;
                     }
                 }
 
