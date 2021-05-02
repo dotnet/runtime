@@ -443,7 +443,7 @@ void FinalizerThread::FinalizerThreadCreate()
     hEventFinalizerToShutDown->CreateAutoEvent(FALSE);
 
     _ASSERTE(g_pFinalizerThread == 0);
-    g_pFinalizerThread = SetupUnstartedThread(SUTF_RequiresThreadStoreLock);
+    g_pFinalizerThread = SetupUnstartedThread(SUTF_None);
 
     // We don't want the thread block disappearing under us -- even if the
     // actual thread terminates.

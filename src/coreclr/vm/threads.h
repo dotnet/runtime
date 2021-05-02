@@ -586,18 +586,16 @@ enum SetupUnstartedThreadFlags
 {
     SUTF_None = 0,
 
-    // When the thread enters the thread store, the lock should be taken.
-    SUTF_RequiresThreadStoreLock = 1,
-
     // The should be called implicitly at the right time for the thread.
     // If this is not set, the Thread owner may perform this function at
     // any time by calling Thread::InitPlatformContext().
-    SUTF_PerformPlatformInit = 2,
+    SUTF_PerformPlatformInit = 1,
 
     // The default flags for the majority of threads.
-    SUTF_Default = (SUTF_RequiresThreadStoreLock | SUTF_PerformPlatformInit),
+    SUTF_Default = SUTF_PerformPlatformInit,
 };
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
+Thread* SetupUnstartedGCThread();
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
@@ -1231,7 +1229,7 @@ public:
         TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
 #endif // FEATURE_COMINTEROP
 
-        // TSNC_Unused                  = 0x10000000,
+        TSNC_CreatedForGC               = 0x10000000, // thread created for the GC.
 
         TSNC_CallingManagedCodeDisabled = 0x20000000, // Use by multicore JIT feature to asert on calling managed code/loading module in background thread
                                                       // Exception, system module is allowed, security demand is allowed
@@ -1314,6 +1312,15 @@ public:
         return HasThreadStateNC(Thread::TSNC_EtwStackWalkInProgress);
     }
 
+    BOOL RequireThreadStoreLock()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        // Threads that are created by the GC do not
+        // need the ThreadStore lock.
+        return !HasThreadStateNC(Thread::TSNC_CreatedForGC);
+    }
+
     DWORD RequireSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1330,18 +1337,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         FastInterlockAnd((ULONG *)&m_ThreadTasks, ~TT_CleanupSyncBlock);
-    }
-
-    DWORD RequireThreadStoreLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !(m_ThreadTasks & TT_SkipThreadStoreLock);
-    }
-
-    void SetSkipThreadStoreLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockOr((ULONG *)&m_ThreadTasks, TT_SkipThreadStoreLock);
     }
 
     DWORD DeferredPlatformInit()

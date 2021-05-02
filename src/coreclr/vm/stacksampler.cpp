@@ -132,7 +132,7 @@ StackSampler::StackSampler()
     }
 
     // Launch the thread.
-    m_pThread = SetupUnstartedThread(SUTF_RequiresThreadStoreLock);
+    m_pThread = SetupUnstartedThread(SUTF_None);
     m_pThread->SetBackground(TRUE);
 
     // Passing "this" to the thread in the constructor.

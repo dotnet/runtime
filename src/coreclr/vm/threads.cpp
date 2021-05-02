@@ -883,6 +883,30 @@ Thread* SetupMainThread()
     return SetupThreadWorker(/* isMainThread */ true);
 }
 
+static Thread* SetupUnstartedThreadWorker(SetupUnstartedThreadFlags flags, bool createdForGC)
+{
+    CONTRACTL {
+        THROWS;
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+    }
+    CONTRACTL_END;
+
+    Thread* pThread = new Thread();
+
+    if (!(flags & SUTF_PerformPlatformInit))
+        pThread->SetDeferPlatformInit();
+
+    if (createdForGC)
+        pThread->SetThreadStateNC(Thread::TSNC_CreatedForGC);
+
+    FastInterlockOr((ULONG *) &pThread->m_State,
+                    (Thread::TS_Unstarted | Thread::TS_WeOwn));
+
+    ThreadStore::AddThread(pThread);
+
+    return pThread;
+}
+
 //-------------------------------------------------------------------------
 // Public function: SetupUnstartedThread()
 // This sets up a Thread object for an exposed System.Thread that
@@ -894,26 +918,18 @@ Thread* SetupMainThread()
 //-------------------------------------------------------------------------
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
-    CONTRACTL {
-        THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
+    return SetupUnstartedThreadWorker(flags, /* for GC*/  false);
+}
 
-    Thread* pThread = new Thread();
-
-    if (!(flags & SUTF_RequiresThreadStoreLock))
-        pThread->SetSkipThreadStoreLock();
-
-    if (!(flags & SUTF_PerformPlatformInit))
-        pThread->SetDeferPlatformInit();
-
-    FastInterlockOr((ULONG *) &pThread->m_State,
-                    (Thread::TS_Unstarted | Thread::TS_WeOwn));
-
-    ThreadStore::AddThread(pThread);
-
-    return pThread;
+//-------------------------------------------------------------------------
+// Public function: SetupUnstartedGCThread()
+// This sets up a Thread object for the GC.
+//-------------------------------------------------------------------------
+Thread* SetupUnstartedGCThread()
+{
+    WRAPPER_NO_CONTRACT;
+    return SetupUnstartedThreadWorker(SUTF_None, /* for GC*/  true);
 }
 
 //-------------------------------------------------------------------------

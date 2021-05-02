@@ -1519,7 +1519,7 @@ HRESULT MulticoreJitProfilePlayer::ProcessProfile(const WCHAR * pFileName)
     {
         _ASSERTE(m_pThread == NULL);
 
-        m_pThread = SetupUnstartedThread(SUTF_RequiresThreadStoreLock);
+        m_pThread = SetupUnstartedThread(SUTF_None);
 
         _ASSERTE(m_pThread != NULL);
 
