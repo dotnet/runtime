@@ -69,10 +69,10 @@ VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
     END_QCALL;
 }
 
-// IsComSupported
+// IsBuiltInComSupported
 // Built-in COM support is only checked from the native side to ensure the runtime
 // is in a consistent state
-BOOL QCALLTYPE MarshalNative::IsComSupported()
+BOOL QCALLTYPE MarshalNative::IsBuiltInComSupported()
 {
     QCALL_CONTRACT;
 
