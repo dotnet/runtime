@@ -76,18 +76,11 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     if [[ "$platform" == "Darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
     else
-        cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
+        if [ -z "$TOOLCHAIN_FILE" ]; then
+            TOOLCHAIN_FILE="$scriptroot/../common/cross/toolchain.cmake"
+        fi
+        cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE"
     fi
-
-    if [ -z "$TOOLCHAIN_FILE" ]; then
-        TOOLCHAIN_FILE="$scriptroot/../common/cross/toolchain.cmake"
-    fi
-
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE"
-fi
-
-if [[ "$build_arch" == "armel" ]]; then
-    cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
 if ! cmake_command=$(command -v cmake); then

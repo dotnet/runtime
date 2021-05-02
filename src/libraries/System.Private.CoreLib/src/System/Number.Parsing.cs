@@ -2164,11 +2164,7 @@ namespace System
             }
             else
             {
-<<<<<<< HEAD
                 ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
-=======
-                ushort bits = (ushort)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Half));
->>>>>>> Half: An IEEE 754 compliant float16 type (#37630) (#38416)
                 result = new Half(bits);
             }
 

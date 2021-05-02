@@ -36,9 +36,6 @@ add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-typedef-redefinition)
 add_compile_options(-Wno-c11-extensions)
 add_compile_options(-Wno-unknown-pragmas)
-add_compile_options(-Wno-atomic-alignment)
-# Required for clang versions that don't understand -Wno-atomic-alignment
-add_compile_options(-Wno-unknown-warning-option)
 
 check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
 if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)

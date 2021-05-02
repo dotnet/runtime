@@ -541,7 +541,7 @@ namespace System
                 {
                     result /= scale;
                 }
-                else if (info.DenormalMantissaBits == 23)
+                else
                 {
                     result *= scale;
                 }

@@ -1634,6 +1634,7 @@ CorUnix::InternalSetThreadDescription(
 
 // The exact API of pthread_setname_np varies very wildly depending on OS.
 // For now, only Linux and macOS are implemented.
+#if HAVE_PTHREAD_SETNAME_NP
 #if defined(__linux__) || defined(__APPLE__)
 
     palError = InternalGetThreadDataFromHandle(
@@ -1680,7 +1681,6 @@ CorUnix::InternalSetThreadDescription(
         goto InternalSetThreadDescriptionExit;
     }
 
-#if HAVE_PTHREAD_SETNAME_NP
     // Null terminate early.
     // pthread_setname_np only accepts up to 16 chars on Linux and
     // 64 chars on macOS.
@@ -1705,7 +1705,6 @@ CorUnix::InternalSetThreadDescription(
     {
         palError = ERROR_INTERNAL_ERROR;
     }
-#endif
 
 InternalSetThreadDescriptionExit:
 
@@ -1724,6 +1723,7 @@ InternalSetThreadDescriptionExit:
     }
 
 #endif //defined(__linux__) || defined(__APPLE__)
+#endif //HAVE_PTHREAD_SETNAME_NP
 
     return palError;
 }
