@@ -216,27 +216,88 @@ namespace System.IO.Pipelines
                 var isCanceled = false;
                 try
                 {
-                    // This optimization only makes sense if we don't have anything buffered
-                    if (UseZeroByteReads && _bufferedBytes == 0)
+                    await ReadAsyncInternal(tokenSource.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    ClearCancellationToken();
+
+                    if (tokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                     {
-                        // Wait for data by doing 0 byte read before
-                        await InnerStream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                        // Catch cancellation and translate it into setting isCanceled = true
+                        isCanceled = true;
+                    }
+                    else
+                    {
+                        throw;
                     }
 
-                    AllocateReadTail();
+                }
 
-                    Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
+                return new ReadResult(GetCurrentReadOnlySequence(), isCanceled, _isStreamCompleted);
+            }
+        }
 
-                    int length = await InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
+        private async Task ReadAsyncInternal(CancellationToken cancellationToken)
+        {
+            // This optimization only makes sense if we don't have anything buffered
+            if (UseZeroByteReads && _bufferedBytes == 0)
+            {
+                // Wait for data by doing 0 byte read before
+                await InnerStream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+            }
 
-                    Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
+            AllocateReadTail();
 
-                    _readTail.End += length;
-                    _bufferedBytes += length;
+            Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
 
-                    if (length == 0)
+            int length = await InnerStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
+
+            _readTail.End += length;
+            _bufferedBytes += length;
+
+            if (length == 0)
+            {
+                _isStreamCompleted = true;
+            }
+        }
+
+        protected override async ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumSize, CancellationToken cancellationToken)
+        {
+            // TODO ReadyAsync needs to throw if there are overlapping reads.
+            ThrowIfCompleted();
+
+            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
+            CancellationTokenSource tokenSource = InternalTokenSource;
+            if (TryReadInternal(tokenSource, out ReadResult readResult))
+            {
+                if (readResult.Buffer.Length >= minimumSize || readResult.IsCompleted || readResult.IsCanceled)
+                {
+                    return readResult;
+                }
+            }
+
+            if (_isStreamCompleted)
+            {
+                return new ReadResult(buffer: default, isCanceled: false, isCompleted: true);
+            }
+
+            CancellationTokenRegistration reg = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+            }
+
+            using (reg)
+            {
+                var isCanceled = false;
+                try
+                {
+                    while (_bufferedBytes < minimumSize && !_isStreamCompleted)
                     {
-                        _isStreamCompleted = true;
+                        await ReadAsyncInternal(tokenSource.Token).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)

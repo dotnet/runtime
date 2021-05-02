@@ -31,11 +31,19 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [Fact]
-        public async Task CanReadAtLeast()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CanReadAtLeast(bool bufferedRead)
         {
             var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
             var reader = PipeReader.Create(stream);
+
+            if (bufferedRead)
+            {
+                ReadResult bufferedReadResult = await reader.ReadAsync();
+                Assert.NotEqual(0, bufferedReadResult.Buffer.Length);
+            }
 
             ReadResult readResult = await reader.ReadAtLeastAsync(10);
             ReadOnlySequence<byte> buffer = readResult.Buffer;
