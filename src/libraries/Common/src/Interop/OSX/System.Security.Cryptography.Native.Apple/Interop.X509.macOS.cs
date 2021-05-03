@@ -404,6 +404,50 @@ internal static partial class Interop
                 }
             }
         }
+
+        internal static SafeSecCertificateHandle X509GetCertFromIdentity(SafeSecIdentityHandle identity)
+        {
+            SafeSecCertificateHandle cert;
+            int osStatus = AppleCryptoNative_X509CopyCertFromIdentity(identity, out cert);
+
+            SafeTemporaryKeychainHandle.TrackItem(cert);
+
+            if (osStatus != 0)
+            {
+                cert.Dispose();
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (cert.IsInvalid)
+            {
+                cert.Dispose();
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
+            return cert;
+        }
+
+        internal static bool X509DemuxAndRetainHandle(
+            IntPtr handle,
+            out SafeSecCertificateHandle certHandle,
+            out SafeSecIdentityHandle identityHandle)
+        {
+            int result = AppleCryptoNative_X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle);
+
+            SafeTemporaryKeychainHandle.TrackItem(certHandle);
+            SafeTemporaryKeychainHandle.TrackItem(identityHandle);
+
+            switch (result)
+            {
+                case 1:
+                    return true;
+                case 0:
+                    return false;
+                default:
+                    Debug.Fail($"AppleCryptoNative_X509DemuxAndRetainHandle returned {result}");
+                    throw new CryptographicException();
+            }
+        }
     }
 }
 
