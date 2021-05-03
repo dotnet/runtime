@@ -49,16 +49,6 @@ namespace Profiler.Tests
             // Send StartupProfiler command
             object ipcMessage = MakeStartupProfilerMessage(profilerGuid, profilerPath);
             SendMessage(_processId, ipcMessage);
-
-            // TODO: the runtime will refuse to resume the runtime if there are any active ports
-            // that haven't resumed the runtime. Since we created this port to send the profiler
-            // command, we have to issue the resume runtime or it will deadlock.
-            // This seems counterintuitive, should probably review that design. I didn't expect
-            // to have to issue the resume runtime message twice.
-            Console.WriteLine("Sending resume runtime message.");
-            // Send ResumeRuntime command
-            ipcMessage = MakeResumeRuntimeMessage();
-            SendMessage(_processId, ipcMessage);
         }
 
         private static object MakeHeader(byte commandSet, byte commandId)

@@ -60,7 +60,6 @@ namespace Profiler.Tests
                 }
 
                 envVars.Add("DOTNET_DiagnosticPorts", reverseServerName);
-                envVars.Add("DOTNET_DefaultDiagnosticPortSuspend", "1");
             }
 
             envVars.Add("Profiler_Test_Name", testName);
