@@ -25,6 +25,8 @@
       release, increase this number by one.
     -->
     <NETStandardPatchVersion>0</NETStandardPatchVersion>
+    <MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>6.0.0-preview.4.21212.1</MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2012Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
