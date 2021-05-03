@@ -936,6 +936,19 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 }
 
+typedef struct {
+	MonoException *ex;
+	MonoContext *ctx;
+} HandleExceptionCbData;
+
+static void
+handle_exception_cb (gpointer arg)
+{
+	HandleExceptionCbData *cb_data = (HandleExceptionCbData*)arg;
+
+	mono_handle_exception (cb_data->ctx, (MonoObject*)cb_data->ex);
+}
+
 /*
  * interp_throw:
  *   Throw an exception from the interpreter.
@@ -972,7 +985,22 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 * Since ctx.ip is 0, this will start unwinding from the LMF frame
 	 * pushed above, which points to our frames.
 	 */
-	mono_handle_exception (&ctx, (MonoObject*)ex);
+	HandleExceptionCbData cb_data = { ex, &ctx };
+	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
+		gboolean thrown = FALSE;
+		/*
+		 * If the exception is uncaught in interpreter code, mono_handle_exception_internal () will rethrow it.
+		 * Catch and rethrow it here again so we can pop the LMF.
+		 */
+		mono_llvm_cpp_catch_exception (handle_exception_cb, &cb_data, &thrown);
+		if (thrown) {
+			interp_pop_lmf (&ext);
+			mono_llvm_rethrow_exception ((MonoObject*)ex);
+		}
+	} else {
+		handle_exception_cb (&cb_data);
+	}
+
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */
 		mono_restore_context (&ctx);
