@@ -6,7 +6,7 @@ using System.Text.Json.Node;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonValueConverter : JsonConverter<JsonValue>
+    internal sealed class JsonValueConverter : JsonConverter<JsonValue>
     {
         public override void Write(Utf8JsonWriter writer, JsonValue value, JsonSerializerOptions options)
         {

@@ -7905,13 +7905,13 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 /*****************************************************************************
  *
- *  Display an reloc value
- *  If we are formatting for an assembly listing don't print the hex value
+ *  Display a reloc value
+ *  If we are formatting for a diffable assembly listing don't print the hex value
  *  since it will prevent us from doing assembly diffs
  */
 void emitter::emitDispReloc(ssize_t value)
 {
-    if (emitComp->opts.disAsm)
+    if (emitComp->opts.disAsm && emitComp->opts.disDiffable)
     {
         printf("(reloc)");
     }

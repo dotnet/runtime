@@ -18,44 +18,72 @@ namespace System.Text.Json.Node.Tests
             var jObject = new JsonObject();
             jObject["One"] = 1;
             jObject["Two"] = 2;
+            Test();
 
-            KeyValuePair<string, JsonNode?> kvp1 = default;
-            KeyValuePair<string, JsonNode?> kvp2 = default;
+            jObject = new JsonObject { { "One", 1 }, { "Two", 2 } };
+            Test();
 
-            int count = 0;
-            foreach (KeyValuePair<string, JsonNode?> kvp in jObject)
+            void Test()
             {
-                if (count == 0)
+                KeyValuePair<string, JsonNode?> kvp1 = default;
+                KeyValuePair<string, JsonNode?> kvp2 = default;
+
+                int count = 0;
+                foreach (KeyValuePair<string, JsonNode?> kvp in jObject)
                 {
-                    kvp1 = kvp;
-                }
-                else
-                {
-                    kvp2 = kvp;
+                    if (count == 0)
+                    {
+                        kvp1 = kvp;
+                    }
+                    else
+                    {
+                        kvp2 = kvp;
+                    }
+
+                    count++;
                 }
 
-                count++;
+                Assert.Equal(2, count);
+
+                ICollection<KeyValuePair<string, JsonNode?>> iCollection = jObject;
+                Assert.True(iCollection.Contains(kvp1));
+                Assert.True(iCollection.Contains(kvp2));
+                Assert.False(iCollection.Contains(new KeyValuePair<string, JsonNode?>("?", null)));
+
+                Assert.True(iCollection.Remove(kvp1));
+                Assert.Equal(1, jObject.Count);
+
+                Assert.False(iCollection.Remove(new KeyValuePair<string, JsonNode?>("?", null)));
+                Assert.Equal(1, jObject.Count);
             }
-
-            Assert.Equal(2, count);
-
-            ICollection<KeyValuePair<string, JsonNode?>> iCollection = jObject;
-            Assert.True(iCollection.Contains(kvp1));
-            Assert.True(iCollection.Contains(kvp2));
-            Assert.False(iCollection.Contains(new KeyValuePair<string, JsonNode?>("?", null)));
-
-            Assert.True(iCollection.Remove(kvp1));
-            Assert.Equal(1, jObject.Count);
-
-            Assert.False(iCollection.Remove(new KeyValuePair<string, JsonNode?>("?", null)));
-            Assert.Equal(1, jObject.Count);
         }
 
         [Fact]
         public static void IsReadOnly()
         {
-            ICollection<KeyValuePair<string, JsonNode?>> jObject = new JsonObject();
-            Assert.False(jObject.IsReadOnly);
+            var jsonObject = new JsonObject();
+
+            ICollection<KeyValuePair<string, JsonNode?>> iCollectionOfKVP = jsonObject;
+            Assert.False(iCollectionOfKVP.IsReadOnly);
+
+            IDictionary<string, JsonNode?> iDictionary = jsonObject;
+            Assert.True(iDictionary.Keys.IsReadOnly);
+            Assert.True(iDictionary.Values.IsReadOnly);
+        }
+
+        [Fact]
+        public static void KeyAndValueCollections_ThrowsNotSupportedException()
+        {
+            IDictionary<string, JsonNode?> jsonObject = new JsonObject();
+
+            Assert.Throws<NotSupportedException>(() => jsonObject.Keys.Add("Hello"));
+            Assert.Throws<NotSupportedException>(() => jsonObject.Values.Add("Hello"));
+
+            Assert.Throws<NotSupportedException>(() => jsonObject.Keys.Clear());
+            Assert.Throws<NotSupportedException>(() => jsonObject.Values.Clear());
+
+            Assert.Throws<NotSupportedException>(() => jsonObject.Keys.Remove("Hello"));
+            Assert.Throws<NotSupportedException>(() => jsonObject.Values.Remove("Hello"));
         }
 
         [Fact]
@@ -72,9 +100,24 @@ namespace System.Text.Json.Node.Tests
         [Fact]
         public static void NullPropertyNameFail()
         {
+            ArgumentNullException ex;
+
             var jObject = new JsonObject();
-            Assert.Throws<ArgumentNullException>(() => jObject.Add(null, JsonValue.Create(0)));
-            Assert.Throws<ArgumentNullException>(() => jObject[null] = JsonValue.Create(0));
+            ex = Assert.Throws<ArgumentNullException>(() => jObject.Add(null, 42));
+            Assert.Contains("propertyName", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => jObject[null] = 42);
+            Assert.Contains("propertyName", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => jObject.ContainsKey(null));
+            Assert.Contains("propertyName", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => jObject.Remove(null));
+            Assert.Contains("propertyName", ex.ToString());
+
+            var iDictionary = (IDictionary<string, JsonNode?>)jObject;
+            ex = Assert.Throws<ArgumentNullException>(() => iDictionary.TryGetValue(null, out JsonNode _));
+            Assert.Contains("propertyName", ex.ToString());
         }
 
         [Fact]
@@ -86,7 +129,7 @@ namespace System.Text.Json.Node.Tests
 
             IEnumerable enumerable = jObject;
             int count = 0;
-            foreach (KeyValuePair<string, JsonNode?> node in enumerable)
+            foreach (KeyValuePair<string, JsonNode?> kvp in enumerable)
             {
                 count++;
             }
@@ -138,6 +181,25 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
+        public static void Clear_JsonElement()
+        {
+            const string Json = "{\"MyProperty\":42}";
+            JsonObject obj;
+
+            // Baseline
+            obj = JsonSerializer.Deserialize<JsonObject>(Json);
+            Assert.Equal(1, obj.Count);
+            obj.Clear();
+            Assert.Equal(0, obj.Count);
+
+            // Call clear with only JsonElement (not yet expanded to JsonNodes).
+            obj = JsonSerializer.Deserialize<JsonObject>(Json);
+            obj.Clear();
+            // Don't check for Count of 1 since that will create nodes.
+            Assert.Equal(0, obj.Count);
+        }
+
+        [Fact]
         public static void CaseSensitivity_ReadMode()
         {
             var options = new JsonSerializerOptions();
@@ -157,6 +219,41 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
+        public static void CaseInsensitive_Remove()
+        {
+            var options = new JsonSerializerOptions() { PropertyNameCaseInsensitive = true };
+            JsonObject obj = JsonSerializer.Deserialize<JsonObject>("{\"MyProperty\":42}", options);
+
+            Assert.True(obj.ContainsKey("MyProperty"));
+            Assert.True(obj.ContainsKey("myproperty"));
+            Assert.True(obj.ContainsKey("MYPROPERTY"));
+
+            Assert.True(obj.Remove("myproperty"));
+            Assert.False(obj.Remove("myproperty"));
+            Assert.False(obj.Remove("MYPROPERTY"));
+            Assert.False(obj.Remove("MyProperty"));
+        }
+
+        [Fact]
+        public static void CaseSensitive_Remove()
+        {
+            var options = new JsonSerializerOptions() { PropertyNameCaseInsensitive = false };
+            JsonObject obj = JsonSerializer.Deserialize<JsonObject>("{\"MYPROPERTY\":42,\"myproperty\":43}", options);
+
+            Assert.False(obj.ContainsKey("MyProperty"));
+            Assert.True(obj.ContainsKey("MYPROPERTY"));
+            Assert.True(obj.ContainsKey("myproperty"));
+
+            Assert.False(obj.Remove("MyProperty"));
+
+            Assert.True(obj.Remove("MYPROPERTY"));
+            Assert.False(obj.Remove("MYPROPERTY"));
+
+            Assert.True(obj.Remove("myproperty"));
+            Assert.False(obj.Remove("myproperty"));
+        }
+
+        [Fact]
         public static void CaseSensitivity_EditMode()
         {
             var jArray = new JsonArray();
@@ -172,7 +269,7 @@ namespace System.Text.Json.Node.Tests
             jArray.Add(jObject);
             Assert.Throws<ArgumentException>(() => jObject.Add("myproperty", 42));
 
-            // Options on parent node.
+            // Options on parent node (deferred creation of options until Add).
             jArray = new JsonArray(options);
             jObject = new JsonObject();
             jArray.Add(jObject);
@@ -184,7 +281,7 @@ namespace System.Text.Json.Node.Tests
             jObject = new JsonObject();
             jObject.Add("MyProperty", 42);
             jArray.Add(jObject);
-            jObject.Add("myproperty", 42); // no exception since options were not set in time.
+            jObject.Add("myproperty", 42); // No exception since options were not set in time.
         }
 
         [Fact]
@@ -283,6 +380,68 @@ namespace System.Text.Json.Node.Tests
             Assert.Throws<ArgumentException>(() => jObject.CopyTo(arr, 1));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => jObject.CopyTo(arr, -1));
+        }
+
+        [Fact]
+        public static void CopyTo_KeyAndValueCollections()
+        {
+            IDictionary<string, JsonNode?> jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+
+            string[] stringArray = new string[3];
+            jObject.Keys.CopyTo(stringArray, 1);
+            Assert.Null(stringArray[0]);
+            Assert.Equal("One", stringArray[1]);
+            Assert.Equal("Two", stringArray[2]);
+
+            JsonNode[] nodeArray = new JsonNode[3];
+            jObject.Values.CopyTo(nodeArray, 1);
+            Assert.Null(nodeArray[0]);
+            Assert.Equal(1, nodeArray[1].GetValue<int>());
+            Assert.Equal(2, nodeArray[2].GetValue<int>());
+
+            Assert.Throws<ArgumentException>(() => jObject.Keys.CopyTo(stringArray, 2));
+            Assert.Throws<ArgumentException>(() => jObject.Values.CopyTo(nodeArray, 2));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.Keys.CopyTo(stringArray, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.Values.CopyTo(nodeArray, -1));
+        }
+
+        [Fact]
+        public static void Contains_KeyAndValueCollections()
+        {
+            IDictionary<string, JsonNode?> jObject = new JsonObject();
+            jObject["One"] = 1;
+
+            Assert.True(jObject.Keys.Contains("One"));
+            Assert.False(jObject.Keys.Contains("Two"));
+
+            Assert.True(jObject.Values.Contains(jObject["One"]));
+            Assert.False(jObject.Values.Contains(1)); // Reference semantics causes this to be false.
+        }
+
+        [Fact]
+        public static void IEnumerable_KeyAndValueCollections()
+        {
+            IDictionary<string, JsonNode?> jObject = new JsonObject();
+            jObject["One"] = 1;
+
+            IEnumerable enumerable = jObject.Keys;
+            int count = 0;
+            foreach (string str in enumerable)
+            {
+                count++;
+            }
+            Assert.Equal(1, count);
+
+            enumerable = jObject.Values;
+            count = 0;
+            foreach (JsonNode node in enumerable)
+            {
+                count++;
+            }
+            Assert.Equal(1, count);
         }
 
         [Fact]
@@ -404,7 +563,8 @@ namespace System.Text.Json.Node.Tests
 
             var jObject = new JsonObject();
             jObject.Add("Prop", jValue);
-            Assert.Throws<InvalidOperationException>(() => jObject.Add("Prop", jValue));
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => jObject.Add("Prop", jValue));
+            Assert.Contains("Prop", ex.ToString());
         }
 
         [Fact]
@@ -483,6 +643,137 @@ namespace System.Text.Json.Node.Tests
 
             string json_out = JsonSerializer.Serialize(blogPosts);
             Assert.Equal(expected, json_out);
+        }
+
+        [Theory]
+        [MemberData(nameof(JObjectCollectionData))]
+
+        public static void ListToDictionaryConversions(JsonObject jObject, int count)
+        {
+            Assert.Equal(count, jObject.Count);
+
+            int i;
+
+            for (i = 0; i < count; i++)
+            {
+                Assert.Equal(i, jObject[i.ToString()].GetValue<int>());
+            }
+
+            i = 0;
+            foreach (KeyValuePair<string, JsonNode?> kvp in jObject)
+            {
+                Assert.Equal(i.ToString(), kvp.Key);
+                Assert.Equal(i, kvp.Value.GetValue<int>());
+                i++;
+            }
+
+            i = 0;
+            foreach (object o in (IEnumerable)jObject)
+            {
+                var kvp = (KeyValuePair<string, JsonNode?>)o;
+                Assert.Equal(i.ToString(), kvp.Key);
+                Assert.Equal(i, kvp.Value.GetValue<int>());
+                i++;
+            }
+
+            var dictionary = (IDictionary<string, JsonNode?>)jObject;
+
+            i = 0;
+            foreach (string propertyName in dictionary.Keys)
+            {
+                Assert.Equal(i.ToString(), propertyName);
+                i++;
+            }
+
+            i = 0;
+            foreach (JsonNode? node in dictionary.Values)
+            {
+                Assert.Equal(i, node.GetValue<int>());
+                i++;
+            }
+
+            string expectedJson = jObject.ToJsonString();
+
+            // Use indexers to replace items.
+            for (i = 0; i < count; i++)
+            {
+                string key = i.ToString();
+
+                // Contains does a reference comparison on JsonNode so it needs to be done before modifying.
+                Assert.True(jObject.Contains(new KeyValuePair<string, JsonNode?>(key, jObject[key])));
+
+                jObject[key] = JsonValue.Create(i);
+                jObject[key] = jObject[key]; // Should have no effect.
+
+                Assert.False(jObject.Contains(new KeyValuePair<string, JsonNode?>("MISSING", jObject[key])));
+                Assert.True(jObject.ContainsKey(key));
+
+                // Remove() should not affect result when missing.
+                bool success = jObject.Remove("MISSING");
+                Assert.False(success);
+            }
+
+            // JSON shouldn't change.
+            Assert.Equal(expectedJson, jObject.ToJsonString());
+
+            // Remove every other entry.
+            for (i = 0; i < count; i += 2)
+            {
+                bool success = dictionary.Remove(i.ToString());
+                Assert.True(success);
+            }
+
+            Assert.Equal(count / 2, jObject.Count);
+
+            // The new JSON contains half the entries.
+            expectedJson = jObject.ToJsonString();
+
+            // Add back every other entry (to the end)
+            for (i = 0; i < count; i += 2)
+            {
+                jObject.Add(i.ToString(), JsonValue.Create(i));
+            }
+            Assert.Equal(count, jObject.Count);
+
+            // The beginning part of the JSON should be the same.
+            string json = jObject.ToJsonString();
+            Assert.Contains(expectedJson.TrimEnd('}'), json);
+
+            const int ItemsToAdd = 10;
+            for (i = 10000; i < 10000 + ItemsToAdd; i++)
+            {
+                jObject.Add(i.ToString(), i);
+            }
+
+            // Original items should still be in front.
+            json = jObject.ToJsonString();
+            Assert.Contains(expectedJson.TrimEnd('}'), json);
+
+            Assert.Equal(count + ItemsToAdd, jObject.Count);
+        }
+
+        public static IEnumerable<object[]> JObjectCollectionData()
+        {
+            // Ensure that the list-to-dictionary threshold is hit (currently 9).
+            for (int i = 0; i < 20; i++)
+            {
+                yield return CreateArray(i);
+            }
+
+            yield return CreateArray(123);
+            yield return CreateArray(1000);
+
+            object[] CreateArray(int count)
+            {
+                var jObject = new JsonObject();
+
+                for (int i = 0; i < count; i++)
+                {
+                    jObject[i.ToString()] = i;
+                }
+
+                return new object[] { jObject, count };
+            }
         }
     }
 }

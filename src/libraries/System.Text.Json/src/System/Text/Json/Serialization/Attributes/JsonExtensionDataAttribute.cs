@@ -4,14 +4,20 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// When placed on a property or field of type <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, any
-    /// properties that do not have a matching property or field are added to that Dictionary during deserialization and written during serialization.
+    /// When placed on a property or field of type <see cref="System.Text.Json.Node.JsonObject"/> or
+    /// <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, any properties that do not have a
+    /// matching property or field are added during deserialization and written during serialization.
     /// </summary>
     /// <remarks>
-    /// The TKey value must be <see cref="string"/> and TValue must be <see cref="JsonElement"/> or <see cref="object"/>.
+    /// When using <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, the TKey value must be <see cref="string"/>
+    /// and TValue must be <see cref="JsonElement"/> or <see cref="object"/>.
     ///
-    /// During deserializing, when using <see cref="object"/> a "null" JSON value is treated as a <c>null</c> object reference, and when using
-    /// <see cref="JsonElement"/> a "null" is treated as a JsonElement with <see cref="JsonElement.ValueKind"/> set to <see cref="JsonValueKind.Null"/>.
+    /// During deserializing with a <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/> extension property with TValue as
+    /// <see cref="object"/>, the type of object created will either be a <see cref="System.Text.Json.Node.JsonNode"/> or a
+    /// <see cref="JsonElement"/> depending on the value of <see cref="System.Text.Json.JsonSerializerOptions.UnknownTypeHandling"/>.
+    ///
+    /// If a <see cref="JsonElement"/> is created, a "null" JSON value is treated as a JsonElement with <see cref="JsonElement.ValueKind"/>
+    /// set to <see cref="JsonValueKind.Null"/>, otherwise a "null" JSON value is treated as a <c>null</c> object reference.
     ///
     /// During serializing, the name of the extension data member is not included in the JSON;
     /// the data contained within the extension data is serialized as properties of the JSON object.

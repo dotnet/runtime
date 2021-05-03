@@ -361,7 +361,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
 
-        internal bool ReadJsonAndAddExtensionProperty(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        internal bool ReadJsonAndAddExtensionProperty(
+            object obj,
+            ref ReadStack state,
+            ref Utf8JsonReader reader)
         {
             object propValue = GetValueAsObject(obj)!;
 
@@ -376,8 +379,20 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(JsonTypeInfo.ObjectType);
-                    if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
+                    JsonConverter converter;
+                    JsonTypeInfo? dictionaryValueInfo = RuntimeTypeInfo.ElementTypeInfo;
+                    if (dictionaryValueInfo != null)
+                    {
+                        // Fast path when there is a generic type such as Dictionary<string, object>.
+                        converter = dictionaryValueInfo.PropertyInfoForTypeInfo.ConverterBase;
+                    }
+                    else
+                    {
+                        // Slower path for non-generic types that implement IDictionary<string, object>.
+                        converter = JsonMetadataServices.ObjectConverter;
+                    }
+
+                    if (!converter.TryReadAsObject(ref reader, Options, ref state, out object? value))
                     {
                         return false;
                     }
@@ -385,20 +400,22 @@ namespace System.Text.Json.Serialization.Metadata
                     dictionaryObject[state.Current.JsonPropertyNameAsString!] = value;
                 }
             }
-            else
+            else if (propValue is IDictionary<string, JsonElement> dictionaryJsonElement)
             {
-                // Handle case where extension property is JsonElement-based.
-
-                Debug.Assert(propValue is IDictionary<string, JsonElement>);
-                IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
-
-                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
+                JsonConverter<JsonElement> converter = JsonMetadataServices.JsonElementConverter;
                 if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
                 {
                     return false;
                 }
 
                 dictionaryJsonElement[state.Current.JsonPropertyNameAsString!] = value;
+            }
+            else
+            {
+                // Avoid a type reference to JsonObject and its converter to support trimming.
+                Debug.Assert(propValue is Node.JsonObject);
+
+                ConverterBase.ReadElementAndSetProperty(propValue, state.Current.JsonPropertyNameAsString!, ref reader, Options, ref state);
             }
 
             return true;
@@ -418,7 +435,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
-            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverterInternal(typeof(JsonElement));
             if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
             {
                 // JsonElement is a struct that must be read in full.
