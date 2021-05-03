@@ -4,13 +4,9 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Formats.Asn1;
 using System.Text;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.Asn1.Pkcs12;
-using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -123,37 +119,7 @@ namespace Internal.Cryptography.Pal
 
             private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
             {
-                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
-                {
-                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
-                    SubjectPublicKey = encodedKeyValue,
-                };
-
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                spki.Encode(writer);
-
-                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-
-                if (!writer.TryEncode(rented, out int written))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new InvalidOperationException();
-                }
-
-                DSA dsa = DSA.Create();
-                IDisposable? toDispose = dsa;
-
-                try
-                {
-                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
-                   toDispose = null;
-                   return dsa;
-                }
-                finally
-                {
-                    toDispose?.Dispose();
-                    CryptoPool.Return(rented, written);
-                }
+                throw new PlatformNotSupportedException();
             }
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
@@ -175,87 +141,6 @@ namespace Internal.Cryptography.Pal
                     multiLine);
             }
 
-            private static bool IsPkcs12(ReadOnlySpan<byte> rawData)
-            {
-                try
-                {
-                    unsafe
-                    {
-                        fixed (byte* pin = rawData)
-                        {
-                            using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                            {
-                                PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
-                            }
-
-                            return true;
-                        }
-                    }
-                }
-                catch (CryptographicException)
-                {
-                }
-
-                return false;
-            }
-
-            private static bool IsPkcs7Signed(ReadOnlySpan<byte> rawData)
-            {
-                try
-                {
-                    unsafe
-                    {
-                        fixed (byte* pin = rawData)
-                        {
-                            using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                            {
-                                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
-
-                                ContentInfoAsn.Decode(ref reader, manager.Memory, out ContentInfoAsn contentInfo);
-
-                                switch (contentInfo.ContentType)
-                                {
-                                    case Oids.Pkcs7Signed:
-                                    case Oids.Pkcs7SignedEnveloped:
-                                        return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (CryptographicException)
-                {
-                }
-
-                return false;
-            }
-
-            private X509ContentType GetDerCertContentType(ReadOnlySpan<byte> rawData)
-            {
-                const int errSecUnknownFormat = -25257;
-
-                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData);
-
-                // Apple doesn't seem to recognize PFX files with no MAC, so try a quick maybe-it's-a-PFX test
-                if (contentType == X509ContentType.Unknown)
-                {
-                    if (IsPkcs12(rawData))
-                    {
-                        return X509ContentType.Pkcs12;
-                    }
-
-                    if (IsPkcs7Signed(rawData))
-                    {
-                        return X509ContentType.Pkcs7;
-                    }
-
-                    // Throw to match Windows and Unix behavior.
-                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
-                }
-
-                return contentType;
-            }
-
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
@@ -272,16 +157,22 @@ namespace Internal.Cryptography.Pal
                     rawData,
                     derData =>
                     {
-                        result = GetDerCertContentType(derData);
+                        result = AppleCertificatePal.GetDerCertContentType(derData);
                         return false;
                     });
 
-                if (result != X509ContentType.Unknown)
+                if (result == X509ContentType.Unknown)
                 {
-                    return result;
+                    result = AppleCertificatePal.GetDerCertContentType(rawData);
                 }
 
-                return GetDerCertContentType(rawData);
+                if (result == X509ContentType.Unknown)
+                {
+                    // Throw to match Windows and Unix behavior.
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
+                }
+
+                return result;
             }
 
             public X509ContentType GetCertContentType(string fileName)

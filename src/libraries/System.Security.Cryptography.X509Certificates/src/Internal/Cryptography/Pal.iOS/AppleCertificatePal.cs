@@ -9,6 +9,9 @@ using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs12;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -71,6 +74,81 @@ namespace Internal.Cryptography.Pal
             return pal;
         }
 
+        private static bool IsPkcs12(ReadOnlySpan<byte> rawData)
+        {
+            try
+            {
+                unsafe
+                {
+                    fixed (byte* pin = rawData)
+                    {
+                        using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
+                        {
+                            PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                        }
+
+                        return true;
+                    }
+                }
+            }
+            catch (CryptographicException)
+            {
+            }
+
+            return false;
+        }
+
+        private static bool IsPkcs7Signed(ReadOnlySpan<byte> rawData)
+        {
+            try
+            {
+                unsafe
+                {
+                    fixed (byte* pin = rawData)
+                    {
+                        using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
+                        {
+                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+
+                            ContentInfoAsn.Decode(ref reader, manager.Memory, out ContentInfoAsn contentInfo);
+
+                            switch (contentInfo.ContentType)
+                            {
+                                case Oids.Pkcs7Signed:
+                                case Oids.Pkcs7SignedEnveloped:
+                                    return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (CryptographicException)
+            {
+            }
+
+            return false;
+        }
+
+        internal static X509ContentType GetDerCertContentType(ReadOnlySpan<byte> rawData)
+        {
+            X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData);
+
+            if (contentType == X509ContentType.Unknown)
+            {
+                if (IsPkcs12(rawData))
+                {
+                    return X509ContentType.Pkcs12;
+                }
+
+                if (IsPkcs7Signed(rawData))
+                {
+                    return X509ContentType.Pkcs7;
+                }
+            }
+
+            return contentType;
+        }
+
         private static ICertificatePal FromDerBlob(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
@@ -78,7 +156,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
-            X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
+            X509ContentType contentType = GetDerCertContentType(rawData);
 
             if (contentType == X509ContentType.Pkcs7)
             {
@@ -96,7 +174,7 @@ namespace Internal.Cryptography.Pal
             SafeSecIdentityHandle identityHandle;
             SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(
                 rawData,
-                X509ContentType.Cert,
+                contentType,
                 password,
                 out identityHandle);
 

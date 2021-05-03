@@ -37,7 +37,7 @@ namespace Internal.Cryptography.Pal
                 return new ApplePemCertLoader(pemCerts);
             }
 
-            X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
+            X509ContentType contentType = AppleCertificatePal.GetDerCertContentType(rawData);
 
             if (contentType == X509ContentType.Pkcs7)
             {
