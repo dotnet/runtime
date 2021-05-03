@@ -85,7 +85,11 @@ HRESULT STDMETHODCALLTYPE CordbStackWalk::SetContext(CorDebugSetContextFlag flag
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
         m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
-        m_dbgprot_buffer_add_byte_array(&localbuf, context, contextSize);
+        int64_t stack_pointer;
+        memcpy(&stack_pointer, context+POS_RSP, sizeof(int64_t));
+        m_dbgprot_buffer_add_long(&localbuf, stack_pointer);
+
+        LOG((LF_CORDB, LL_INFO100000, "CordbStackWalk - SetContext - IMPLEMENTED - %d - %lld\n", m_nCurrentFrame, stack_pointer));
 
         int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_SET_CONTEXT, &localbuf);
         m_dbgprot_buffer_free(&localbuf);
