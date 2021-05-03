@@ -20926,16 +20926,29 @@ void gc_heap::enque_pinned_plug (uint8_t* plug,
 
     if (save_pre_plug_info_p)
     {
-#ifdef SHORT_PLUGS
-        BOOL is_padded = is_plug_padded (last_object_in_last_plug);
-        if (is_padded)
-            clear_plug_padded (last_object_in_last_plug);
-#endif //SHORT_PLUGS
+#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
+        // In the case of short plugs or doubly linked free lists, there may be extra bits
+        // set in the method table pointer.
+        // Clear these bits for the copy saved in saved_pre_plug, but not for the copy
+        // saved in saved_pre_plug_reloc.
+        // This is because we need these bits for compaction, but not for mark & sweep.
+        MethodTable* pRawMethodTable = header(last_object_in_last_plug)->RawGetMethodTable();
+        MethodTable* pMethodTable = header(last_object_in_last_plug)->GetMethodTable();
+        if (pRawMethodTable != pMethodTable)
+        {
+            header(last_object_in_last_plug)->RawSetMethodTable (pMethodTable);
+            dprintf (3, ("method table for plug %Ix has low bits set: %Ix",
+                last_object_in_last_plug,
+                ((size_t)pRawMethodTable) - ((size_t)pMethodTable)));
+        }
+#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
+        // now copy the bits over
         memcpy (&(m.saved_pre_plug), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
-#ifdef SHORT_PLUGS
-        if (is_padded)
-            set_plug_padded (last_object_in_last_plug);
-#endif //SHORT_PLUGS
+#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
+        // restore the bits in the original
+        if (pRawMethodTable != pMethodTable)
+            header(last_object_in_last_plug)->RawSetMethodTable (pRawMethodTable);
+#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
 
         memcpy (&(m.saved_pre_plug_reloc), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
 
@@ -20945,7 +20958,7 @@ void gc_heap::enque_pinned_plug (uint8_t* plug,
         {
             record_interesting_data_point (idp_pre_short);
 #ifdef SHORT_PLUGS
-            if (is_padded)
+            if (is_plug_padded (last_object_in_last_plug))
                 record_interesting_data_point (idp_pre_short_padded);
 #endif //SHORT_PLUGS
             dprintf (3, ("encountered a short object %Ix right before pinned plug %Ix!",
@@ -20989,16 +21002,30 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
     assert (last_pinned_plug == m.first);
     m.saved_post_plug_info_start = (uint8_t*)&(((plug_and_gap*)post_plug)[-1]);
 
-#ifdef SHORT_PLUGS
-    BOOL is_padded = is_plug_padded (last_object_in_last_plug);
-    if (is_padded)
-        clear_plug_padded (last_object_in_last_plug);
-#endif //SHORT_PLUGS
+#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
+    // In the case of short plugs or doubly linked free lists, there may be extra bits
+    // set in the method table pointer.
+    // Clear these bits for the copy saved in saved_post_plug, but not for the copy
+    // saved in saved_post_plug_reloc.
+    // This is because we need these bits for compaction, but not for mark & sweep.
+    // Note that currently none of these bits will ever be set in the object saved *after*
+    // a pinned plug - this object is currently pinned along with the pinned object before it
+    MethodTable* pRawMethodTable = header(last_object_in_last_plug)->RawGetMethodTable();
+    MethodTable* pMethodTable = header(last_object_in_last_plug)->GetMethodTable();
+    if (pRawMethodTable != pMethodTable)
+    {
+        header(last_object_in_last_plug)->RawSetMethodTable (pMethodTable);
+        dprintf (3, ("method table for plug %Ix has low bits set: %Ix",
+            last_object_in_last_plug,
+            ((size_t)pRawMethodTable) - ((size_t)pMethodTable)));
+    }
+#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
     memcpy (&(m.saved_post_plug), m.saved_post_plug_info_start, sizeof (gap_reloc_pair));
-#ifdef SHORT_PLUGS
-    if (is_padded)
-        set_plug_padded (last_object_in_last_plug);
-#endif //SHORT_PLUGS
+#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
+    // restore the bits in the original
+    if (pRawMethodTable != pMethodTable)
+        header(last_object_in_last_plug)->RawSetMethodTable (pRawMethodTable);
+#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
 
     memcpy (&(m.saved_post_plug_reloc), m.saved_post_plug_info_start, sizeof (gap_reloc_pair));
 
@@ -21017,7 +21044,7 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
         dprintf (3, ("PP %Ix last obj %Ix is too short", last_pinned_plug, last_object_in_last_plug));
         record_interesting_data_point (idp_post_short);
 #ifdef SHORT_PLUGS
-        if (is_padded)
+        if (is_plug_padded (last_object_in_last_plug))
             record_interesting_data_point (idp_post_short_padded);
 #endif //SHORT_PLUGS
         m.set_post_short();
