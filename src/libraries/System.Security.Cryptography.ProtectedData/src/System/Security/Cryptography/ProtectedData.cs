@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-
 using Internal.Cryptography;
+using System.Runtime.InteropServices;
 
 using DATA_BLOB = Interop.Crypt32.DATA_BLOB;
 using CryptProtectDataFlags = Interop.Crypt32.CryptProtectDataFlags;
@@ -63,7 +62,11 @@ namespace System.Security.Cryptography
                             Interop.Crypt32.CryptUnprotectData(ref userDataBlob, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob);
                         if (!success)
                         {
+#if NET6_0
+                            int lastWin32Error = Marshal.GetLastPInvokeError();
+#else
                             int lastWin32Error = Marshal.GetLastWin32Error();
+#endif
                             if (protect && ErrorMayBeCausedByUnloadedProfile(lastWin32Error))
                                 throw new CryptographicException(SR.Cryptography_DpApi_ProfileMayNotBeLoaded);
                             else

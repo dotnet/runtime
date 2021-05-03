@@ -53,7 +53,11 @@ internal static partial class Interop
             // We got back an error.  If the error indicated that there wasn't enough room to store
             // the error message, then call FormatMessage again, but this time rather than passing in
             // a buffer, have the method allocate one, which we then need to free.
+#if NET6_0
+            if (Marshal.GetLastPInvokeError() == ERROR_INSUFFICIENT_BUFFER)
+#else
             if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER)
+#endif
             {
                 IntPtr nativeMsgPtr = default;
                 try
