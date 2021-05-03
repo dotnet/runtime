@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
 
             await sp.DisposeAsync();
-            
+
             Assert.True(disposable.Disposed);
             Assert.True(asyncDisposable.DisposeAsyncCalled);
             if (includeDelayedAsyncDisposable)
@@ -449,7 +449,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public InnerSingleton(ManualResetEvent mre1, ManualResetEvent mre2)
             {
                 // Making sure ctor gets called only once
-                Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0)); 
+                Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0));
 
                 // Then use mre2 to signal execution reached this ctor call
                 mre2.Set();
@@ -493,13 +493,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     // This waits on InnerSingleton singleton lock that is taken in thread 1
                     innerSingleton = sp.GetRequiredService<InnerSingleton>();
                 });
-                
+
                 mreForThread3.WaitOne();
 
                 // Set a timeout before unblocking execution of both thread1 and thread2 via mre1:
                 Assert.False(mreForThread1.WaitOne(10));
 
-                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1. 
+                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1.
                 // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for InnerSingleton
                 // (rather than trying to instantiating InnerSingleton twice).
                 mreForThread1.Set();
@@ -546,7 +546,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     sb.Append("3");
                     mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
 
-                    // by this time, Thread 2 is holding a singleton lock for Thing2, 
+                    // by this time, Thread 2 is holding a singleton lock for Thing2,
                     // and Thread one holds the lazy lock
                     // the call below to resolve Thing0 does not hang
                     // since singletons do not share the same lock upon resolve anymore.
@@ -896,6 +896,67 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncCallsDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            await scope.DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncPrefersDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            await scope.DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposePrefersServiceDispose()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            scope.Dispose();
+
+            Assert.True(disposable.DisposeCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposeThrowsWhenOnlyDisposeAsyncImplemented()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            var exception = Assert.Throws<InvalidOperationException>(() => scope.Dispose());
+            Assert.Equal(
+                "'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderContainerTests+AsyncDisposable' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.",
+                exception.Message);
+        }
+
+        [Fact]
         public void SingletonServiceCreatedFromFactoryIsDisposedWhenContainerIsDisposed()
         {
             // Arrange
@@ -1031,7 +1092,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             var types = new Type[]
             {
-                typeof(A), typeof(B), typeof(C), typeof(D), typeof(E), 
+                typeof(A), typeof(B), typeof(C), typeof(D), typeof(E),
                 typeof(F), typeof(G), typeof(H), typeof(I), typeof(J)
             };
 

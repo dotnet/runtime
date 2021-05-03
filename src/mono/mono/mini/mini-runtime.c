@@ -4309,6 +4309,9 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.init_mem_manager = init_jit_mem_manager;
 	callbacks.free_mem_manager = free_jit_mem_manager;
 
+	callbacks.get_jit_stats = get_jit_stats;
+	callbacks.get_exception_stats = get_exception_stats;
+
 	mono_install_callbacks (&callbacks);
 
 #ifndef HOST_WIN32

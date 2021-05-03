@@ -553,7 +553,6 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         (ARG_SLOT) 1, // AssemblyVersionCompatibility.SameMachine
         ObjToArgSlot(gc.CodeBase),
         (ARG_SLOT) m_dwFlags,
-        (ARG_SLOT) NULL // key pair
     };
 
     init.Call(MethodArgs);
@@ -800,12 +799,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
     AppDomain* pDomain = GetAppDomain();
 
-    DomainAssembly* pAssembly = nullptr;
-    if (CanUseWithBindingCache())
-    {
-        pAssembly = pDomain->FindCachedAssembly(this);
-    }
-
+    DomainAssembly* pAssembly = pDomain->FindCachedAssembly(this);
     if (pAssembly)
     {
         BinderTracing::AssemblyBindOperation bindOperation(this);

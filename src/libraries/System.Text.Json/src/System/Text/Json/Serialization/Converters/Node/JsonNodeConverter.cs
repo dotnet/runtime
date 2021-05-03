@@ -6,14 +6,23 @@ using System.Text.Json.Node;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonNodeConverter : JsonConverter<object>
+    /// <summary>
+    /// Converter for JsonNode-derived types. The {T} value must be Object and not JsonNode
+    /// since we allow Object-declared members\variables to deserialize as {JsonNode}.
+    /// </summary>
+    internal sealed class JsonNodeConverter : JsonConverter<object?>
     {
-        public static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
-        public JsonArrayConverter ArrayConverter { get; } = new JsonArrayConverter();
-        public JsonObjectConverter ObjectConverter { get; } = new JsonObjectConverter();
-        public JsonValueConverter ValueConverter { get; } = new JsonValueConverter();
+        private static JsonNodeConverter? s_nodeConverter;
+        private static JsonArrayConverter? s_arrayConverter;
+        private static JsonObjectConverter? s_objectConverter;
+        private static JsonValueConverter? s_valueConverter;
 
-        public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+        public static JsonNodeConverter Instance => s_nodeConverter ??= new JsonNodeConverter();
+        public static JsonArrayConverter ArrayConverter => s_arrayConverter ??= new JsonArrayConverter();
+        public static JsonObjectConverter ObjectConverter => s_objectConverter ??= new JsonObjectConverter();
+        public static JsonValueConverter ValueConverter => s_valueConverter ??= new JsonValueConverter();
+
+        public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
             if (value == null)
             {
@@ -41,8 +50,6 @@ namespace System.Text.Json.Serialization.Converters
         {
             switch (reader.TokenType)
             {
-                case JsonTokenType.Null:
-                    return null;
                 case JsonTokenType.String:
                 case JsonTokenType.False:
                 case JsonTokenType.True:

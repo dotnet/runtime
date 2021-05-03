@@ -113,6 +113,9 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         RETURN pvObj;
     }
 
+    if (!g_pConfig->IsBuiltInCOMSupported())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
+
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
 
     InteropSyncBlockInfo* pInteropInfo = pBlock->GetInteropInfo();
@@ -200,6 +203,9 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 
         RETURN pvObj;
     }
+
+    if (!g_pConfig->IsBuiltInCOMSupported())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
 
     MethodTable *pMT = (*poref)->GetMethodTable();
 
@@ -386,6 +392,9 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
 
         return;
     }
+
+    if (!g_pConfig->IsBuiltInCOMSupported())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
 
     Thread * pThread = GetThread();
 

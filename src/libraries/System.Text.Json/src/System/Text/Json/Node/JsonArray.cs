@@ -258,7 +258,7 @@ namespace System.Text.Json.Node
 
                         if (Value is JsonObject jsonObject)
                         {
-                            return $"JsonObject[{jsonObject.Dictionary.Count}]";
+                            return $"JsonObject[{jsonObject.Count}]";
                         }
 
                         JsonArray jsonArray = (JsonArray)Value;

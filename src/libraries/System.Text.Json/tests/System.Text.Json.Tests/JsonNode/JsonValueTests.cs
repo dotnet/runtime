@@ -191,6 +191,30 @@ namespace System.Text.Json.Node.Tests
             Assert.False(jValue.TryGetValue(out Guid _));
         }
 
+        [Fact]
+        public static void TryGetValue_FromBoolean()
+        {
+            JsonValue jValue = JsonNode.Parse("true").AsValue();
+
+            Assert.True(jValue.TryGetValue(out bool _));
+            Assert.False(jValue.TryGetValue(out byte _));
+            Assert.False(jValue.TryGetValue(out short _));
+            Assert.False(jValue.TryGetValue(out int _));
+            Assert.False(jValue.TryGetValue(out long _));
+            Assert.False(jValue.TryGetValue(out sbyte _));
+            Assert.False(jValue.TryGetValue(out ushort _));
+            Assert.False(jValue.TryGetValue(out uint _));
+            Assert.False(jValue.TryGetValue(out ulong _));
+            Assert.False(jValue.TryGetValue(out float _));
+            Assert.False(jValue.TryGetValue(out double _));
+            Assert.False(jValue.TryGetValue(out decimal _));
+            Assert.False(jValue.TryGetValue(out string _));
+            Assert.False(jValue.TryGetValue(out char _));
+            Assert.False(jValue.TryGetValue(out DateTime _));
+            Assert.False(jValue.TryGetValue(out DateTimeOffset _));
+            Assert.False(jValue.TryGetValue(out Guid _));
+        }
+
         [Theory]
         [InlineData("\"A\"")]
         [InlineData("\" \"")]
