@@ -1116,31 +1116,31 @@
     },
     "ios.10": {
       "#import": [
-        "ios.9"
+        "ios"
       ]
     },
     "ios.10-arm": {
       "#import": [
         "ios.10",
-        "ios.9-arm"
+        "ios-arm"
       ]
     },
     "ios.10-arm64": {
       "#import": [
         "ios.10",
-        "ios.9-arm64"
+        "ios-arm64"
       ]
     },
     "ios.10-x64": {
       "#import": [
         "ios.10",
-        "ios.9-x64"
+        "ios-x64"
       ]
     },
     "ios.10-x86": {
       "#import": [
         "ios.10",
-        "ios.9-x86"
+        "ios-x86"
       ]
     },
     "ios.11": {
@@ -1194,62 +1194,21 @@
         "ios.12-x64"
       ]
     },
-    "ios.8": {
+    "ios.14": {
       "#import": [
-        "ios"
+        "ios.13"
       ]
     },
-    "ios.8-arm": {
+    "ios.14-arm64": {
       "#import": [
-        "ios.8",
-        "ios-arm"
+        "ios.14",
+        "ios.13-arm64"
       ]
     },
-    "ios.8-arm64": {
+    "ios.14-x64": {
       "#import": [
-        "ios.8",
-        "ios-arm64"
-      ]
-    },
-    "ios.8-x64": {
-      "#import": [
-        "ios.8",
-        "ios-x64"
-      ]
-    },
-    "ios.8-x86": {
-      "#import": [
-        "ios.8",
-        "ios-x86"
-      ]
-    },
-    "ios.9": {
-      "#import": [
-        "ios.8"
-      ]
-    },
-    "ios.9-arm": {
-      "#import": [
-        "ios.9",
-        "ios.8-arm"
-      ]
-    },
-    "ios.9-arm64": {
-      "#import": [
-        "ios.9",
-        "ios.8-arm64"
-      ]
-    },
-    "ios.9-x64": {
-      "#import": [
-        "ios.9",
-        "ios.8-x64"
-      ]
-    },
-    "ios.9-x86": {
-      "#import": [
-        "ios.9",
-        "ios.8-x86"
+        "ios.14",
+        "ios.13-x64"
       ]
     },
     "iossimulator": {
@@ -1277,25 +1236,25 @@
     },
     "iossimulator.10": {
       "#import": [
-        "iossimulator.9"
+        "iossimulator"
       ]
     },
     "iossimulator.10-arm64": {
       "#import": [
         "iossimulator.10",
-        "iossimulator.9-arm64"
+        "iossimulator-arm64"
       ]
     },
     "iossimulator.10-x64": {
       "#import": [
         "iossimulator.10",
-        "iossimulator.9-x64"
+        "iossimulator-x64"
       ]
     },
     "iossimulator.10-x86": {
       "#import": [
         "iossimulator.10",
-        "iossimulator.9-x86"
+        "iossimulator-x86"
       ]
     },
     "iossimulator.11": {
@@ -1349,50 +1308,21 @@
         "iossimulator.12-x64"
       ]
     },
-    "iossimulator.8": {
+    "iossimulator.14": {
       "#import": [
-        "iossimulator"
+        "iossimulator.13"
       ]
     },
-    "iossimulator.8-arm64": {
+    "iossimulator.14-arm64": {
       "#import": [
-        "iossimulator.8",
-        "iossimulator-arm64"
+        "iossimulator.14",
+        "iossimulator.13-arm64"
       ]
     },
-    "iossimulator.8-x64": {
+    "iossimulator.14-x64": {
       "#import": [
-        "iossimulator.8",
-        "iossimulator-x64"
-      ]
-    },
-    "iossimulator.8-x86": {
-      "#import": [
-        "iossimulator.8",
-        "iossimulator-x86"
-      ]
-    },
-    "iossimulator.9": {
-      "#import": [
-        "iossimulator.8"
-      ]
-    },
-    "iossimulator.9-arm64": {
-      "#import": [
-        "iossimulator.9",
-        "iossimulator.8-arm64"
-      ]
-    },
-    "iossimulator.9-x64": {
-      "#import": [
-        "iossimulator.9",
-        "iossimulator.8-x64"
-      ]
-    },
-    "iossimulator.9-x86": {
-      "#import": [
-        "iossimulator.9",
-        "iossimulator.8-x86"
+        "iossimulator.14",
+        "iossimulator.13-x64"
       ]
     },
     "linux": {

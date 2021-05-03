@@ -168,6 +168,15 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("Default1", factory.Create("1").Message);
         }
 
+        [Fact]
+        public void CanCreateOptionsFactory()
+        {
+            var factory = new OptionsFactory<FakeOptions>(new IConfigureOptions<FakeOptions>[0],
+                new IPostConfigureOptions<FakeOptions>[] { });
+            
+            Assert.Equal("", factory.Create("").Message);
+        }
+
         public class FakeOptionsSetupA : ConfigureOptions<FakeOptions>
         {
             public FakeOptionsSetupA() : base(o => o.Message += "A") { }

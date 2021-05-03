@@ -82,7 +82,7 @@ jobs:
     value: ''
   - ${{ if eq(parameters.pgoType, 'PGO' )}}:
     - name: pgoInstrumentArg
-      value: '-pgoInstrument '
+      value: '-pgoinstrument '
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -227,6 +227,7 @@ jobs:
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
+        $(pgoInstrumentArg)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OutputRidArg)

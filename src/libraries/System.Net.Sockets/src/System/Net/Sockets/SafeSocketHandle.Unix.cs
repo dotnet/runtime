@@ -15,7 +15,6 @@ namespace System.Net.Sockets
         private int _receiveTimeout = -1;
         private int _sendTimeout = -1;
         private bool _nonBlocking;
-        private bool _underlyingHandleNonBlocking;
         private SocketAsyncContext? _asyncContext;
 
         private TrackedSocketOptions _trackedOptions;
@@ -110,19 +109,12 @@ namespace System.Net.Sockets
             }
         }
 
-        // This will set the underlying OS handle to be nonblocking, for whatever reason --
-        // performing an async operation or using a timeout will cause this to happen.
-        // Once the OS handle is nonblocking, it never transitions back to blocking.
-        private void SetHandleNonBlocking()
-        {
-            // We don't care about synchronization because this is idempotent
-            if (!_underlyingHandleNonBlocking)
-            {
-                AsyncContext.SetNonBlocking();
-                _underlyingHandleNonBlocking = true;
-            }
-        }
-
+        /// <summary>
+        /// This represents whether the Socket instance is blocking or non-blocking *from the user's point of view*,
+        /// i.e. it corresponds to the Socket.Blocking property (except in reverse).
+        /// Even if this is false, the underlying native socket may still be non-blocking if anything ever caused it to become non-blocking,
+        /// either by issuing an async operation or explicitly setting this property to true.
+        /// </summary>
         internal bool IsNonBlocking
         {
             get
@@ -133,26 +125,18 @@ namespace System.Net.Sockets
             {
                 _nonBlocking = value;
 
-                //
-                // If transitioning to non-blocking, we need to set the native socket to non-blocking mode.
-                // If we ever transition back to blocking, we keep the native socket in non-blocking mode, and emulate
-                // blocking.  This avoids problems with switching to native blocking while there are pending async
-                // operations.
-                //
+                // If transitioning from blocking to non-blocking, we need to set the native socket to non-blocking mode.
+                // If transitioning from non-blocking to blocking, we keep the native socket in non-blocking mode, and emulate
+                // blocking operations within SocketAsyncContext on top of epoll/kqueue.
+                // This avoids problems with switching to native blocking while there are pending operations.
                 if (value)
                 {
-                    SetHandleNonBlocking();
+                    AsyncContext.SetHandleNonBlocking();
                 }
             }
         }
 
-        internal bool IsUnderlyingBlocking
-        {
-            get
-            {
-                return !_underlyingHandleNonBlocking;
-            }
-        }
+        internal bool IsUnderlyingHandleBlocking => !AsyncContext.IsHandleNonBlocking;
 
         internal int ReceiveTimeout
         {

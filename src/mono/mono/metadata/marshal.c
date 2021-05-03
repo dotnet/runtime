@@ -49,6 +49,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
+#include "mono/metadata/jit-info.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
@@ -540,7 +541,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		void **method_data;
 		MonoMethod *method;
 
-		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
+		ji = mono_jit_info_table_find_internal (mono_get_addr_from_ftnptr (ptr), TRUE, FALSE);
 		/* FIXME we leak wrapper with the interpreter */
 		if (!ji)
 			return;
@@ -2503,6 +2504,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		info = mono_wrapper_info_create (mb, virtual_ ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
 		info->d.runtime_invoke.method = method;
 		res = mono_mb_create_and_cache_full (method_cache, method_key, mb, csig, sig->param_count + 16, info, NULL);
+		((MonoMethodWrapper*)res)->mem_manager = m_method_get_mem_manager (method);
 	} else {
 		MonoWrapperSignatureCacheKey *sig_key = g_new0 (MonoWrapperSignatureCacheKey, 1);
 		sig_key->signature = callsig;
@@ -2520,6 +2522,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		if (!res) {
 			MonoMethod *newm;
 			newm = mono_mb_create (mb, csig, sig->param_count + 16, info);
+			((MonoMethodWrapper*)newm)->mem_manager = m_method_get_mem_manager (method);
 
 			mono_marshal_lock ();
 			res = (MonoMethod *)g_hash_table_lookup (sig_cache, sig_key);
@@ -4784,19 +4787,19 @@ mono_marshal_clear_last_error (void)
 #endif
 }
 
-guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError (void)
 {
 	return GPOINTER_TO_INT (mono_native_tls_get_value (last_error_tls_id));
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error (guint32 err)
+ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 err)
 {
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (err));
 }
 
-guint32 
+guint32
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (rtype)) {

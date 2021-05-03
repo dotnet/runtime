@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.ComponentModel;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Xml;
@@ -752,6 +755,7 @@ namespace System.Runtime.Serialization
         private static Type? s_typeOfHashtable;
         internal static Type TypeOfHashtable
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_typeOfHashtable == null)
@@ -806,6 +810,7 @@ namespace System.Runtime.Serialization
 
         private static readonly Type? s_typeOfScriptObject;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {
             Debug.Assert(s_typeOfScriptObject != null);

@@ -114,7 +114,7 @@ struct _EventPipeBufferManager_Internal {
 	EventPipeBuffer *current_buffer;
 	EventPipeBufferList *current_buffer_list;
 	// The total allocation size of buffers under management.
-	size_t size_of_all_buffers;
+	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.
 	// Attempted allocations above this threshold result in
 	// dropped events.

@@ -3,34 +3,56 @@
 
 #include "pal_ssl.h"
 
-int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
+PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
 {
     JNIEnv* env = GetJNIEnv();
-    jobject sslCtxObj = (*env)->CallStaticObjectMethod(env, g_sslCtxClass, g_sslCtxGetDefaultMethod);
-    jobject sslParametersObj = (*env)->CallObjectMethod(env, sslCtxObj, g_sslCtxGetDefaultSslParamsMethod);
-    jobjectArray protocols = (jobjectArray)(*env)->CallObjectMethod(env, sslParametersObj, g_sslParamsGetProtocolsMethod);
+    PAL_SslProtocol supported = 0;
+    INIT_LOCALS(loc, context, params, protocols);
 
-    int protocolsCount = (*env)->GetArrayLength(env, protocols);
-    int supported = 0;
-    for (int i = 0; i < protocolsCount; i++)
+    // SSLContext context = SSLContext.getDefault();
+    // SSLParameters params = context.getDefaultSSLParameters();
+    // String[] protocols = params.getProtocols();
+    loc[context] = (*env)->CallStaticObjectMethod(env, g_sslCtxClass, g_sslCtxGetDefaultMethod);
+    loc[params] = (*env)->CallObjectMethod(env, loc[context], g_sslCtxGetDefaultSslParamsMethod);
+    loc[protocols] = (*env)->CallObjectMethod(env, loc[params], g_SSLParametersGetProtocols);
+
+    const char tlsv1[] = "TLSv1";
+    size_t tlsv1Len = (sizeof(tlsv1) / sizeof(*tlsv1)) - 1;
+
+    jsize count = (*env)->GetArrayLength(env, loc[protocols]);
+    for (int32_t i = 0; i < count; i++)
     {
-        jstring protocolStr = (jstring) ((*env)->GetObjectArrayElement(env, protocols, i));
-        const char* protocolStrPtr = (*env)->GetStringUTFChars(env, protocolStr, NULL);
-        if ((!strcmp(protocolStrPtr, "TLSv1")   && protocol == PAL_SSL_TLS)   ||
-            (!strcmp(protocolStrPtr, "TLSv1.1") && protocol == PAL_SSL_TLS11) ||
-            (!strcmp(protocolStrPtr, "TLSv1.2") && protocol == PAL_SSL_TLS12) ||
-            (!strcmp(protocolStrPtr, "TLSv1.3") && protocol == PAL_SSL_TLS13))
+        jstring protocol = (*env)->GetObjectArrayElement(env, loc[protocols], i);
+        const char* protocolStr = (*env)->GetStringUTFChars(env, protocol, NULL);
+        if (strncmp(protocolStr, tlsv1, tlsv1Len) == 0)
         {
-            supported = 1;
-            (*env)->ReleaseStringUTFChars(env, protocolStr, protocolStrPtr);
-            (*env)->DeleteLocalRef(env, protocolStr);
-            break;
+            if (strlen(protocolStr) == tlsv1Len)
+            {
+                supported |= PAL_SslProtocol_Tls10;
+            }
+            else if (strcmp(protocolStr + tlsv1Len, ".1") == 0)
+            {
+                supported |= PAL_SslProtocol_Tls11;
+            }
+            else if (strcmp(protocolStr + tlsv1Len, ".2") == 0)
+            {
+                supported |= PAL_SslProtocol_Tls12;
+            }
+            else if (strcmp(protocolStr + tlsv1Len, ".3") == 0)
+            {
+                supported |= PAL_SslProtocol_Tls13;
+            }
         }
-        (*env)->ReleaseStringUTFChars(env, protocolStr, protocolStrPtr);
-        (*env)->DeleteLocalRef(env, protocolStr);
+
+        (*env)->ReleaseStringUTFChars(env, protocol, protocolStr);
+        (*env)->DeleteLocalRef(env, protocol);
     }
-    (*env)->DeleteLocalRef(env, sslCtxObj);
-    (*env)->DeleteLocalRef(env, sslParametersObj);
-    (*env)->DeleteLocalRef(env, protocols);
+
+    RELEASE_LOCALS(loc, env);
     return supported;
+}
+
+bool AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration(void)
+{
+    return g_SSLParametersSetApplicationProtocols != NULL;
 }

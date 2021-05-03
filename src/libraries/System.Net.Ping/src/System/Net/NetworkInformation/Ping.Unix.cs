@@ -295,6 +295,8 @@ namespace System.Net.NetworkInformation
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
+            // Set LC_ALL=C to make sure to get ping output which is not affected by locale environment variables such as LANG and LC_MESSAGES.
+            psi.EnvironmentVariables["LC_ALL"] = "C";
             return new Process() { StartInfo = psi };
         }
 

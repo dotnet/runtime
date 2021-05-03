@@ -3443,13 +3443,14 @@ size_t get_region_size (heap_segment* region_info)
 
 bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest)
 {
-    actual_start = start;
+    uint8_t* actual_start = start;
     region_alignment = alignment;
     large_region_alignment = LARGE_REGION_FACTOR * alignment;
     global_region_start = (uint8_t*)align_region_up ((size_t)actual_start);
     uint8_t* actual_end = end;
     global_region_end = (uint8_t*)align_region_down ((size_t)actual_end);
-    global_region_used = global_region_start;
+    global_region_left_used = global_region_start;
+    global_region_right_used = global_region_end;
 
     // Note: I am allocating a map that covers the whole reserved range.
     // We can optimize it to only cover the current heap range.
@@ -3460,8 +3461,11 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
     if (unit_map)
     {
         memset (unit_map, 0, sizeof (uint32_t) * total_num_units);
-        region_map_start = unit_map;
-        region_map_end = region_map_start;
+        region_map_left_start = unit_map;
+        region_map_left_end = region_map_left_start;
+                
+        region_map_right_start = unit_map + total_num_units;
+        region_map_right_end = region_map_right_start;
 
         dprintf (REGIONS_LOG, ("start: %Ix, end: %Ix, total %Idmb(alignment: %Idmb), map units %d",
             (size_t)start, (size_t)end,
@@ -3479,44 +3483,33 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
 inline
 uint8_t* region_allocator::region_address_of (uint32_t* map_index)
 {
-    return (global_region_start + ((map_index - region_map_start) * region_alignment));
+    return (global_region_start + ((map_index - region_map_left_start) * region_alignment));
 }
 
 inline
 uint32_t* region_allocator::region_map_index_of (uint8_t* address)
 {
-    return (region_map_start + ((address - global_region_start) / region_alignment));
+    return (region_map_left_start + ((address - global_region_start) / region_alignment));
 }
 
 void region_allocator::make_busy_block (uint32_t* index_start, uint32_t num_units)
 {
 #ifdef _DEBUG
-    dprintf (REGIONS_LOG, ("MBB[B: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
+    dprintf (REGIONS_LOG, ("MBB[B: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_left_start), (int)(index_start - region_map_left_start + num_units)));
 #endif //_DEBUG
     ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
-    *index_start = num_units;
+    uint32_t* index_end = index_start + (num_units - 1);
+    *index_start = *index_end = num_units;
 }
 
 void region_allocator::make_free_block (uint32_t* index_start, uint32_t num_units)
 {
 #ifdef _DEBUG
-    dprintf (REGIONS_LOG, ("MFB[F: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
+    dprintf (REGIONS_LOG, ("MFB[F: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_left_start), (int)(index_start - region_map_left_start + num_units)));
 #endif //_DEBUG
     ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
-    *index_start = region_alloc_free_bit | num_units;
-}
-
-// make [current_free_index_start, [current_free_index_start + num_units into a busy block.
-// make [current_free_index_start + num_units, [current_free_index_start + num_contiguous_free_units
-// into a new free block.
-void region_allocator::adjust_map (uint32_t* current_free_index_start,
-    uint32_t num_contiguous_free_units, uint32_t num_busy_units)
-{
-    make_busy_block (current_free_index_start, num_busy_units);
-    if ((num_contiguous_free_units - num_busy_units) > 0)
-    {
-        make_free_block ((current_free_index_start + num_busy_units), (num_contiguous_free_units - num_busy_units));
-    }
+    uint32_t* index_end = index_start + (num_units - 1);
+    *index_start = *index_end = region_alloc_free_bit | num_units;
 }
 
 void region_allocator::print_map (const char* msg)
@@ -3526,45 +3519,69 @@ void region_allocator::print_map (const char* msg)
     const char* heap_type = "UH";
     dprintf (REGIONS_LOG, ("[%s]-----printing----%s", heap_type, msg));
 
-    uint32_t* current_index = region_map_start;
-    uint32_t* end_index = region_map_end;
-    uint32_t* map_start = current_index;
+    uint32_t* current_index = region_map_left_start;
+    uint32_t* end_index = region_map_left_end;
+    uint32_t  count_free_units = 0;
 
-    while (current_index < end_index)
+    for (int i = 0; i < 2; i++)
     {
-        uint32_t current_val = *current_index;
-        uint32_t current_num_units = get_num_units (current_val);
-        bool free_p = is_unit_memory_free (current_val);
+        while (current_index < end_index)
+        {
+            uint32_t current_val = *current_index;
+            uint32_t current_num_units = get_num_units (current_val);
+            bool free_p = is_unit_memory_free (current_val);
 
-        dprintf (REGIONS_LOG, ("[%s][%s: %Id]%d->%d", heap_type, (free_p ? "F" : "B"), (size_t)current_num_units,
-            (int)(current_index - map_start),
-            (int)(current_index - map_start + current_num_units)));
+            dprintf (REGIONS_LOG, ("[%s][%s: %Id]%d->%d", heap_type, (free_p ? "F" : "B"), (size_t)current_num_units,
+                (int)(current_index - region_map_left_start),
+                (int)(current_index - region_map_left_start + current_num_units)));
 
-        current_index += current_num_units;
+            if (free_p)
+            {
+                count_free_units += current_num_units;
+            }
+
+            current_index += current_num_units;
+        }
+        current_index = region_map_right_start;
+        end_index = region_map_right_end;
     }
+
+    count_free_units += (uint32_t)(region_map_right_start - region_map_left_end);
+    assert(count_free_units == total_free_units);
 
     uint32_t total_regions = (uint32_t)((global_region_end - global_region_start) / region_alignment); 
 
-    dprintf (REGIONS_LOG, ("[%s]-----end printing----[%d total, used %d]\n", heap_type, total_regions, (end_index - map_start)));
+    dprintf (REGIONS_LOG, ("[%s]-----end printing----[%d total, left used %d, right used %d]\n", heap_type, total_regions, (region_map_left_end - region_map_left_start), (region_map_right_end - region_map_right_start)));
 #endif //_DEBUG
 }
 
-uint8_t* region_allocator::allocate_end (uint32_t num_units)
+uint8_t* region_allocator::allocate_end (uint32_t num_units, allocate_direction direction)
 {
     uint8_t* alloc = NULL;
 
     ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
 
-    if (global_region_used < global_region_end)
+    if (global_region_left_used < global_region_right_used)
     {
-        size_t end_remaining = global_region_end - global_region_used;
+        size_t end_remaining = global_region_right_used - global_region_left_used;
 
         if ((end_remaining / region_alignment) >= num_units)
         {
-            make_busy_block (region_map_end, num_units);
-            region_map_end += num_units;
-            alloc = global_region_used;
-            global_region_used += num_units * region_alignment;
+            if (direction == allocate_forward)
+            {
+                make_busy_block (region_map_left_end, num_units);
+                region_map_left_end += num_units;
+                alloc = global_region_left_used;
+                global_region_left_used += num_units * region_alignment;
+            }
+            else
+            {            
+                assert(direction == allocate_backward);
+                region_map_right_start -= num_units;
+                make_busy_block (region_map_right_start, num_units);
+                global_region_right_used -= num_units * region_alignment;
+                alloc = global_region_right_used;
+            }
         }
     }
 
@@ -3596,81 +3613,85 @@ void region_allocator::leave_spin_lock()
 #endif //_DEBUG
 }
 
-uint8_t* region_allocator::allocate (uint32_t num_units)
+uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction)
 {
     enter_spin_lock();
 
-    uint32_t* current_index = region_map_start;
-    uint32_t* end_index = region_map_end;
+    uint32_t* current_index;
+    uint32_t* end_index;
+    if (direction == allocate_forward)
+    {
+        current_index = region_map_left_start;
+        end_index = region_map_left_end;
+    }
+    else
+    {
+        assert(direction == allocate_backward);
+        current_index = region_map_right_end;
+        end_index = region_map_right_start;
+    }
 
-    dprintf (REGIONS_LOG, ("searching %d->%d", (int)(current_index - region_map_start), (int)(end_index - region_map_start)));
-    uint32_t* current_free_index_start = 0;
-    uint32_t num_contiguous_free_units = 0;
-    uint32_t last_num_free_units = 0;
+    dprintf (REGIONS_LOG, ("searching %d->%d", (int)(current_index - region_map_left_start), (int)(end_index - region_map_left_start)));
 
     print_map ("before alloc");
 
-    while (current_index < end_index)
+    while (((direction == allocate_forward) && (current_index < end_index)) ||
+           ((direction == allocate_backward) && (current_index > end_index)))
     {
-        uint32_t current_val = *current_index;
+        uint32_t current_val = *(current_index - ((direction == -1) ? 1 : 0));
         uint32_t current_num_units = get_num_units (current_val);
         bool free_p = is_unit_memory_free (current_val);
         dprintf (REGIONS_LOG, ("ALLOC[%s: %Id]%d->%d", (free_p ? "F" : "B"), (size_t)current_num_units,
-            (int)(current_index - region_map_start), (int)(current_index + current_num_units - region_map_start)));
+            (int)(current_index - region_map_left_start), (int)(current_index + current_num_units - region_map_left_start)));
 
         if (free_p)
         {
-            if (!current_free_index_start)
-            {
-                current_free_index_start = current_index;
-            }
-
-            last_num_free_units = current_num_units;
-            num_contiguous_free_units += current_num_units;
-
-            if (num_contiguous_free_units >= num_units)
+            if (current_num_units >= num_units)
             {
                 dprintf (REGIONS_LOG, ("found %Id contiguous free units(%d->%d), sufficient",
-                    (size_t)num_contiguous_free_units,
-                    (int)(current_free_index_start - region_map_start),
-                    (int)(current_free_index_start - region_map_start + num_contiguous_free_units)));
+                    (size_t)current_val,
+                    (int)(current_index - region_map_left_start),
+                    (int)(current_index - region_map_left_start + current_val)));
 
-                adjust_map (current_free_index_start, num_contiguous_free_units, num_units);
+                uint32_t* busy_block;
+                uint32_t* free_block;
+                if (direction == 1)
+                {
+                    busy_block = current_index;
+                    free_block = current_index + num_units;
+                }
+                else
+                {
+                    busy_block = current_index - num_units;
+                    free_block = current_index - current_num_units;
+                }
+
+                make_busy_block (busy_block, num_units);
+                if ((current_num_units - num_units) > 0)
+                {
+                    make_free_block (free_block, (current_num_units - num_units));
+                }
 
                 total_free_units -= num_units;
                 print_map ("alloc: found in free");
 
                 leave_spin_lock();
 
-                return region_address_of (current_free_index_start);
+                return region_address_of (busy_block);
             }
+        }
+
+        if (direction == allocate_forward)
+        {
+            current_index += current_num_units;
         }
         else
         {
-            // Take this opportunity to coalesce free blocks.
-            if (num_contiguous_free_units > last_num_free_units)
-            {
-                dprintf (REGIONS_LOG, ("Observed %Id free units in multiple blocks(%Id), coalescing",
-                    (size_t)num_contiguous_free_units, (size_t)last_num_free_units));
-                make_free_block (current_free_index_start, num_contiguous_free_units);
-            }
-            current_free_index_start = 0;
-            num_contiguous_free_units = 0;
+            current_index -= current_num_units;
         }
-
-        current_index += current_num_units;
     }
 
-    // If at this point current_free_index_start is not 0, it means we had
-    // free units at the end. Simply adjust used to be where the last free 
-    // block starts.
-    if (current_free_index_start != 0)
-    {
-        global_region_used = region_address_of (current_free_index_start);
-        region_map_end = current_free_index_start;
-    }
-
-    uint8_t* alloc = allocate_end (num_units);
+    uint8_t* alloc = allocate_end (num_units, direction);
 
     if (alloc)
     {
@@ -3679,7 +3700,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
     }
     else
     {
-        dprintf (REGIONS_LOG, ("couldn't find memory at the end! only %Id bytes left", (global_region_end - global_region_used)));
+        dprintf (REGIONS_LOG, ("couldn't find memory at the end! only %Id bytes left", (global_region_right_used - global_region_left_used)));
     }
 
     leave_spin_lock();
@@ -3689,9 +3710,8 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
 
 // ETW TODO: need to fire create seg events for these methods.
 // FIRE_EVENT(GCCreateSegment_V1
-bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end)
+bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction)
 {
-    uint32_t* map_start = region_map_start;
     size_t alignment = region_alignment;
     size_t alloc_size = align_region_up (size);
 
@@ -3700,7 +3720,7 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
     uint8_t* alloc = NULL;
     dprintf (REGIONS_LOG, ("----GET %d-----", num_units));
 
-    alloc = allocate (num_units);
+    alloc = allocate (num_units, direction);
     *start = alloc;
     *end = alloc + alloc_size;
     ret = (alloc != NULL);
@@ -3710,44 +3730,75 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
 
 bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end)
 {
-    return allocate_region (region_alignment, start, end);
+    return allocate_region (region_alignment, start, end, allocate_forward);
 }
 
 // Large regions are 8x basic region sizes by default. If you need a larger region than that,
 // call allocate_region with the size.
-bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end)
+bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction)
 {
-    return allocate_region (large_region_alignment, start, end);
+    return allocate_region (large_region_alignment, start, end, direction);
 }
 
-void region_allocator::delete_region (uint8_t* start)
+void region_allocator::delete_region (uint8_t* region_start)
 {
     enter_spin_lock();
 
-    assert (is_region_aligned (start));
+    assert (is_region_aligned (region_start));
 
     print_map ("before delete");
 
-    uint32_t* current_index = region_map_index_of (start);
+    uint32_t* current_index = region_map_index_of (region_start);
     uint32_t current_val = *current_index;
     assert (!is_unit_memory_free (current_val));
 
-    dprintf (REGIONS_LOG, ("----DEL %d-----", (current_index - region_map_start)));
+    dprintf (REGIONS_LOG, ("----DEL %d-----", (current_index - region_map_left_start)));
+    uint32_t* region_end_index = current_index + current_val;
+    uint8_t* region_end = region_address_of (region_end_index);
 
-    uint8_t* region_end = region_address_of (current_index + current_val);
-    if (region_end == global_region_used)
+    int free_block_size = current_val;
+    uint32_t* free_index = current_index;
+    if ((current_index != region_map_left_start) && (current_index != region_map_right_start))
     {
-        region_map_end = current_index;
-        dprintf (REGIONS_LOG, ("adjust global used from %Ix to %Ix", 
-            global_region_used, region_address_of (current_index)));
-        global_region_used = region_address_of (current_index);
+        uint32_t previous_val = *(current_index - 1);
+        if (is_unit_memory_free(previous_val))
+        {
+            uint32_t previous_size = get_num_units (previous_val);
+            free_index -= previous_size;
+            free_block_size += previous_size;
+        }
+    }
+    if ((region_end != global_region_left_used) && (region_end != global_region_end))
+    {
+        uint32_t next_val = *region_end_index;
+        if (is_unit_memory_free(next_val))
+        {
+            uint32_t next_size = get_num_units (next_val);
+            free_block_size += next_size;
+            region_end += next_size;
+        }
+    }
+    if (region_end == global_region_left_used)
+    {
+        region_map_left_end = free_index;
+        dprintf (REGIONS_LOG, ("adjust global left used from %Ix to %Ix", 
+            global_region_left_used, region_address_of (free_index)));
+        global_region_left_used = region_address_of (free_index);
+    }
+    else if (region_start == global_region_right_used)
+    {
+        region_map_right_start = free_index + free_block_size;
+        dprintf (REGIONS_LOG, ("adjust global right used from %Ix to %Ix", 
+            global_region_right_used, region_address_of (free_index + free_block_size)));
+        global_region_right_used = region_address_of (free_index + free_block_size);
     }
     else
     {
-        make_free_block (current_index, current_val);
+        make_free_block (free_index, free_block_size);
     }
 
     total_free_units += current_val;
+
     print_map ("after delete");
 
     leave_spin_lock();
@@ -4964,6 +5015,16 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         }
     }
 
+    if (reserve_success && separated_poh_p)
+    {
+        for (int heap_no = 0; (reserve_success && (heap_no < num_heaps)); heap_no++)
+        {
+            if (!GCToOSInterface::VirtualCommit(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size))
+            {
+                reserve_success = FALSE;
+            }
+        }
+    }
 
     return reserve_success;
 }
@@ -6581,7 +6642,6 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
 
 void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
 {
-    assert(!heap_hard_limit);
     bool release_succeeded_p = GCToOSInterface::VirtualRelease (add, allocated_size);
     if (release_succeeded_p)
     {
@@ -10526,7 +10586,8 @@ bool gc_heap::initial_make_uoh_regions (int gen, gc_heap* hp)
     uint8_t* region_start;
     uint8_t* region_end;
 
-    if (!global_region_allocator.allocate_large_region (&region_start, &region_end))
+    // REGIONS TODO: allocate POH regions on the right
+    if (!global_region_allocator.allocate_large_region (&region_start, &region_end, allocate_forward))
         return false;
 
     size_t region_size = region_end - region_start;
@@ -11739,6 +11800,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, 
                                  use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
+    if (separated_poh_p)
+    {
+        heap_hard_limit_oh[poh] = min_segment_size_hard_limit * number_of_heaps;
+        heap_hard_limit += heap_hard_limit_oh[poh];
+    }
 #endif //USE_REGIONS
 
 #ifdef CARD_BUNDLE
@@ -12532,11 +12598,14 @@ gc_heap::init_gc_heap (int  h_number)
 #endif //BGC_SERVO_TUNING
     freeable_soh_segment = 0;
     gchist_index_per_heap = 0;
-    uint8_t** b_arr = new (nothrow) (uint8_t* [MARK_STACK_INITIAL_LENGTH]);
-    if (!b_arr)
-        return 0;
+    if (gc_can_use_concurrent)
+    {
+        uint8_t** b_arr = new (nothrow) (uint8_t * [MARK_STACK_INITIAL_LENGTH]);
+        if (!b_arr)
+            return 0;
 
-    make_background_mark_stack (b_arr);
+        make_background_mark_stack(b_arr);
+    }
 #endif //BACKGROUND_GC
 
 #ifndef USE_REGIONS
@@ -19059,6 +19128,10 @@ void gc_heap::gc1()
     verify_soh_segment_list();
 
 #ifdef BACKGROUND_GC
+    if (gc_can_use_concurrent)
+    {
+        check_bgc_mark_stack_length();
+    }
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC
 
@@ -22140,6 +22213,46 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
     }
 }
 
+void gc_heap::grow_bgc_mark_stack (size_t new_size)
+{
+    if ((background_mark_stack_array_length < new_size) &&
+        ((new_size - background_mark_stack_array_length) > (background_mark_stack_array_length / 2)))
+    {
+        dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
+
+        uint8_t** tmp = new (nothrow) uint8_t* [new_size];
+        if (tmp)
+        {
+            delete [] background_mark_stack_array;
+            background_mark_stack_array = tmp;
+            background_mark_stack_array_length = new_size;
+            background_mark_stack_tos = background_mark_stack_array;
+        }
+    }
+}
+
+void gc_heap::check_bgc_mark_stack_length()
+{
+    if ((settings.condemned_generation < (max_generation - 1)) || gc_heap::background_running_p())
+        return;
+
+    size_t total_heap_size = get_total_heap_size();
+
+    if (total_heap_size < ((size_t)4*1024*1024*1024))
+        return;
+
+#ifdef MULTIPLE_HEAPS
+    int total_heaps = n_heaps;
+#else
+    int total_heaps = 1;
+#endif //MULTIPLE_HEAPS
+    size_t size_based_on_heap = total_heap_size / (size_t)(100 * 100 * total_heaps * sizeof (uint8_t*)); 
+
+    size_t new_size = max (background_mark_stack_array_length, size_based_on_heap);
+
+    grow_bgc_mark_stack (new_size);
+}
+
 uint8_t* gc_heap::background_seg_end (heap_segment* seg, BOOL concurrent_p)
 {
 #ifndef USE_REGIONS
@@ -22421,20 +22534,7 @@ recheck:
                 new_size = min(new_max_size, new_size);
             }
 
-            if ((background_mark_stack_array_length < new_size) &&
-                ((new_size - background_mark_stack_array_length) > (background_mark_stack_array_length / 2)))
-            {
-                dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
-
-                uint8_t** tmp = new (nothrow) uint8_t* [new_size];
-                if (tmp)
-                {
-                    delete [] background_mark_stack_array;
-                    background_mark_stack_array = tmp;
-                    background_mark_stack_array_length = new_size;
-                    background_mark_stack_tos = background_mark_stack_array;
-                }
-            }
+            grow_bgc_mark_stack (new_size);
         }
         else
         {
@@ -27503,8 +27603,9 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 {
     uint8_t* start = 0;
     uint8_t* end = 0;
+    // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ? 
-        global_region_allocator.allocate_large_region (&start, &end) :
+        global_region_allocator.allocate_large_region (&start, &end, allocate_forward) :
         global_region_allocator.allocate_basic_region (&start, &end));
 
     if (!allocated_p)
@@ -33640,7 +33741,7 @@ bool gc_heap::find_next_chunk(card_marking_enumerator& card_mark_enumerator, hea
             dprintf (3, ("No more chunks on heap %d\n", heap_number));
             return false;
         }
-        card = card_of (chunk_low);
+        card = max(card, card_of(chunk_low));
         card_word_end = (card_of(align_on_card_word(chunk_high)) / card_word_width);
         dprintf (3, ("Moved to next chunk on heap %d: [%Ix,%Ix[", heap_number, (size_t)chunk_low, (size_t)chunk_high));
     }
@@ -40115,15 +40216,17 @@ HRESULT GCHeap::Initialize()
     gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
     gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
+    gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
+
     if (gc_heap::heap_hard_limit_oh[soh] || gc_heap::heap_hard_limit_oh[loh] || gc_heap::heap_hard_limit_oh[poh])
     {
         if (!gc_heap::heap_hard_limit_oh[soh])
         {
-            return E_INVALIDARG;
+            return CLR_E_GC_BAD_HARD_LIMIT;
         }
         if (!gc_heap::heap_hard_limit_oh[loh])
         {
-            return E_INVALIDARG;
+            return CLR_E_GC_BAD_HARD_LIMIT;
         }
         gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + 
             gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
@@ -40137,19 +40240,19 @@ HRESULT GCHeap::Initialize()
         {
             if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             gc_heap::heap_hard_limit_oh[soh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
             gc_heap::heap_hard_limit_oh[loh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
@@ -40157,6 +40260,11 @@ HRESULT GCHeap::Initialize()
             gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + 
                 gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
         }
+    }
+
+    if (gc_heap::heap_hard_limit_oh[soh] && (!gc_heap::heap_hard_limit_oh[poh]) && (!gc_heap::use_large_pages_p))
+    {
+        return CLR_E_GC_BAD_HARD_LIMIT;
     }
 
     if (!(gc_heap::heap_hard_limit))
@@ -40178,6 +40286,12 @@ HRESULT GCHeap::Initialize()
             gc_heap::heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
         }
     }
+
+    if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
+    {
+        return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
+    }
+
 #endif //HOST_64BIT
 
     uint32_t nhp = 1;
@@ -40250,7 +40364,6 @@ HRESULT GCHeap::Initialize()
 #ifndef USE_REGIONS
     if (gc_heap::heap_hard_limit)
     {
-        gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
         if (gc_heap::heap_hard_limit_oh[soh])
         {
 #ifdef MULTIPLE_HEAPS
@@ -40344,7 +40457,12 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
-    gc_heap::min_segment_size_shr = index_of_highest_set_bit (REGION_SIZE);
+    size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
+    {
+        return E_OUTOFMEMORY;
+    }
+    gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //USE_REGIONS

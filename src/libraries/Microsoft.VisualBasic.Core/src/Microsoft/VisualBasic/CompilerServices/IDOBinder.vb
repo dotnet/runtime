@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.Collections.Generic
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Dynamic
 Imports System.Linq.Expressions
 Imports System.Reflection
@@ -16,6 +17,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB late binder for IDynamicMetaObjectProvider.
     Friend Class IDOBinder
+
+        Friend Const UnsafeSubclassCtorMessage As String = "This subclass is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe."
+        Friend Const SuppressionJustification As String = "The constructor of this subclass has been annotated."
 
         Private Sub New()
             Throw New InternalErrorException()
@@ -59,6 +63,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return SaveCopyBack.GetCopyBack()
         End Function
 
+        <RequiresUnreferencedCode("Calls VBCallBinder.ctor")>
         Friend Shared Function IDOCall(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -82,6 +87,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Function
 
+        <RequiresUnreferencedCode("Calls VBGetBinder.ctor")>
         Friend Shared Function IDOGet(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -104,6 +110,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Function
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateRefCallSiteAndInvoke")>
         Friend Shared Function IDOInvokeDefault(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -126,6 +133,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Function
 
+        <RequiresUnreferencedCode("Calls VBInvokeDefaultFallbackBinder.ctor")>
         Friend Shared Function IDOFallbackInvokeDefault(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -149,6 +157,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <RequiresUnreferencedCode("Calls LateIndexSet")>
         Friend Shared Sub IDOSet(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -175,6 +184,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls LateIndexSetComplex")>
         Friend Shared Sub IDOSetComplex(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -205,6 +215,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateFuncCallSiteAndInvoke")>
         Friend Shared Sub IDOIndexSet(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -221,6 +232,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateFuncCallSiteAndInvoke")>
         Friend Shared Sub IDOIndexSetComplex(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -239,6 +251,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateConvertCallSiteAndInvoke")>
         Friend Shared Function UserDefinedConversion(
                 ByVal expression As IDynamicMetaObjectProvider,
                 ByVal targetType As System.Type) As Object
@@ -248,6 +261,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 expression)
         End Function
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateFuncCallSiteAndInvoke")>
         Friend Shared Function InvokeUserDefinedOperator(
                 ByVal op As UserDefinedOperator,
                 ByVal arguments As Object()) As Object
@@ -276,6 +290,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _ignoreReturn As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String,
                 ByVal callInfo As CallInfo,
                 ByVal ignoreReturn As Boolean)
@@ -284,6 +299,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             _ignoreReturn = ignoreReturn
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvokeMember(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -329,6 +346,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             )
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -353,11 +372,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBGetBinder
         Inherits InvokeMemberBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String,
                 ByVal callInfo As CallInfo)
             MyBase.New(memberName, True, callInfo)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvokeMember(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -402,6 +424,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             )
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -431,11 +455,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' True if this is coming from LateCall, false if it's for LateGet
         Private ReadOnly _lateCall As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal lateCall As Boolean)
             MyBase.New(callInfo)
             _lateCall = lateCall
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -502,11 +529,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _reportErrors As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal reportErrors As Boolean)
             MyBase.New(callInfo)
             Me._reportErrors = reportErrors
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs As DynamicMetaObject(),
@@ -568,11 +598,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _reportErrors As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal reportErrors As Boolean)
             MyBase.New(callInfo)
             Me._reportErrors = reportErrors
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackGetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs As DynamicMetaObject(),
@@ -632,10 +665,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBSetBinder
         Inherits SetMemberBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String)
             MyBase.New(name:=memberName, ignoreCase:=True)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackSetMember(
                     ByVal target As DynamicMetaObject,
                     ByVal value As DynamicMetaObject,
@@ -684,12 +720,15 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private ReadOnly _optimisticSet As Boolean
         Private ReadOnly _rValueBase As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String, ByVal optimisticSet As Boolean, ByVal rValueBase As Boolean)
             MyBase.New(name:=memberName, ignoreCase:=True)
             Me._optimisticSet = optimisticSet
             Me._rValueBase = rValueBase
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackSetMember(
                     ByVal target As DynamicMetaObject,
                     ByVal value As DynamicMetaObject,
@@ -778,10 +817,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBConversionBinder
         Inherits ConvertBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal t As Type)
             MyBase.New(t, True)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackConvert(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject
@@ -823,11 +865,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _Op As UserDefinedOperator
 
+        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Public Sub New(ByVal op As UserDefinedOperator, ByVal linqOp As ExpressionType)
             MyBase.New(linqOp)
             _Op = op
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackUnaryOperation(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject
@@ -868,11 +913,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private ReadOnly _Op As UserDefinedOperator
 
+        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Public Sub New(ByVal op As UserDefinedOperator, ByVal linqOp As ExpressionType)
             MyBase.New(linqOp)
             _Op = op
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackBinaryOperation(
                 ByVal target As DynamicMetaObject,
                 ByVal arg As DynamicMetaObject,
@@ -914,10 +962,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
     Friend Class VBIndexSetBinder
         Inherits SetIndexBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo)
             MyBase.New(callInfo)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackSetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedIndexes As DynamicMetaObject(),
@@ -982,12 +1033,15 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private ReadOnly _optimisticSet As Boolean
         Private ReadOnly _rValueBase As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal optimisticSet As Boolean, ByVal rValueBase As Boolean)
             MyBase.New(callInfo)
             Me._optimisticSet = optimisticSet
             Me._rValueBase = rValueBase
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackSetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedIndexes As DynamicMetaObject(),
@@ -1273,6 +1327,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' MRU Dictionary of invoker delegates. We keep 16 most recently used ones, rest is GC'd
         Private Shared Invokers As New CacheDict(Of Integer, Func(Of CallSiteBinder, Object, Object(), Object))(16)
 
+        <RequiresUnreferencedCode("Calls CreateInvoker")>
         Public Shared Function CreateRefCallSiteAndInvoke(
                 ByVal action As CallSiteBinder,
                 ByVal instance As Object,
@@ -1302,6 +1357,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         '''     ' args(0), args(1) and args(2) are passed ByRef
         '''     return site.Target.Invoke(site, instance, args(0), args(1), args(2))
         ''' End Function
+        <RequiresUnreferencedCode("Calls Type.GetMethod() that cannot be statically analyzed")>
         Private Shared Function CreateInvoker(ByVal ArgLength As Integer) As Func(Of CallSiteBinder, Object, Object(), Object)
             ' Useful Types
             Dim ObjectType As Type = GetType(Object)
@@ -1347,6 +1403,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return DirectCast(InvokerMethod.CreateDelegate(GetType(Func(Of CallSiteBinder, Object, Object(), Object))), Func(Of CallSiteBinder, Object, Object(), Object))
         End Function
 
+        <RequiresUnreferencedCode("Calls Object.GetType().GetField()")>
         Public Shared Function CreateFuncCallSiteAndInvoke(
                        ByVal action As CallSiteBinder,
                        ByVal instance As Object,
@@ -1409,6 +1466,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         ' The type of the Convert call site must match the type we are converting to
+        <RequiresUnreferencedCode("Calls Object.GetType().GetField()")>
         Public Shared Function CreateConvertCallSiteAndInvoke(
                 ByVal action As ConvertBinder,
                 ByVal instance As Object) As Object
