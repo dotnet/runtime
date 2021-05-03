@@ -217,6 +217,8 @@ namespace Internal.TypeSystem
                     case TypeFlags.UInt32:
                     case TypeFlags.Int64:
                     case TypeFlags.UInt64:
+                    case TypeFlags.IntPtr:
+                    case TypeFlags.UIntPtr:
                     case TypeFlags.Single:
                     case TypeFlags.Double:
                         return true;

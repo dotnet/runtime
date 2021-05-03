@@ -30,7 +30,7 @@ namespace Internal.IO
             {
                 if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
-                    errorCode = Marshal.GetLastWin32Error();
+                    errorCode = Marshal.GetLastPInvokeError();
                     if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                     {
                         // Files that are marked for deletion will not let you GetFileAttributes,
@@ -43,7 +43,7 @@ namespace Internal.IO
                         {
                             if (handle.IsInvalid)
                             {
-                                errorCode = Marshal.GetLastWin32Error();
+                                errorCode = Marshal.GetLastPInvokeError();
                             }
                             else
                             {

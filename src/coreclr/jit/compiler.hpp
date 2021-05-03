@@ -760,36 +760,6 @@ inline const char* varTypeGCstring(var_types type)
 
 const char* varTypeName(var_types);
 
-/*****************************************************************************
- *
- *  Helpers to pull big-endian values out of a byte stream.
- */
-
-inline unsigned genGetU1(const BYTE* addr)
-{
-    return addr[0];
-}
-
-inline signed genGetI1(const BYTE* addr)
-{
-    return (signed char)addr[0];
-}
-
-inline unsigned genGetU2(const BYTE* addr)
-{
-    return (addr[0] << 8) | addr[1];
-}
-
-inline signed genGetI2(const BYTE* addr)
-{
-    return (signed short)((addr[0] << 8) | addr[1]);
-}
-
-inline unsigned genGetU4(const BYTE* addr)
-{
-    return (addr[0] << 24) | (addr[1] << 16) | (addr[2] << 8) | addr[3];
-}
-
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
 
