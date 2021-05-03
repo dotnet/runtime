@@ -4494,17 +4494,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				init_bb_stack_state (td, new_bb);
 			}
 			link_bblocks = TRUE;
-			if (!inlining) {
-				int index = td->clause_indexes [in_offset];
-				if (index != -1) {
-					MonoExceptionClause *clause = &header->clauses [index];
-					if ((clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
-						clause->flags == MONO_EXCEPTION_CLAUSE_FAULT) &&
-							in_offset == clause->handler_offset)
-						interp_add_ins (td, MINT_START_ABORT_PROT);
-				}
-			}
-
 		}
 		td->offset_to_bb [in_offset] = td->cbb;
 		td->in_start = td->ip;

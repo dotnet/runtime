@@ -6171,12 +6171,7 @@ call:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_START_ABORT_PROT)
-			mono_threads_begin_abort_protected_block ();
-			ip ++;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY) {
-			mono_threads_end_abort_protected_block ();
 			guint16 clause_index = *(ip + 1);
 
 			guint16 *ret_ip = *(guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]);
