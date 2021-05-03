@@ -316,7 +316,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	ERROR_DECL (error);
 	MonoClass *klass = vtable->klass;
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 	MonoException *ex;
 	gchar *full_name;
 
@@ -328,9 +328,9 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	 * in the hash.
 	 */
 	ex = NULL;
-	mono_mem_manager_lock (memory_manager);
-	ex = (MonoException *)mono_g_hash_table_lookup (memory_manager->type_init_exception_hash, klass);
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_lock (mem_manager);
+	ex = (MonoException *)mono_g_hash_table_lookup (mem_manager->type_init_exception_hash, klass);
+	mono_mem_manager_unlock (mem_manager);
 
 	if (!ex) {
 		const char *klass_name_space = m_class_get_name_space (klass);
@@ -429,7 +429,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return TRUE;
 
 	MonoClass *klass = vtable->klass;
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (!mono_runtime_run_module_cctor (klass_image, error)) {
@@ -565,9 +565,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
 			 */
-			mono_mem_manager_lock (memory_manager);
-			mono_g_hash_table_insert_internal (memory_manager->type_init_exception_hash, klass, exc_to_throw);
-			mono_mem_manager_unlock (memory_manager);
+			mono_mem_manager_lock (mem_manager);
+			mono_g_hash_table_insert_internal (mem_manager->type_init_exception_hash, klass, exc_to_throw);
+			mono_mem_manager_unlock (mem_manager);
 		}
 
 		/* Signal to the other threads that we are done */
@@ -1911,7 +1911,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	MonoVTable *vt;
 	MonoClassField *field;
-	MonoMemoryManager *memory_manager;
+	MonoMemoryManager *mem_manager;
 	char *t;
 	int i, vtable_slots;
 	size_t imt_table_bytes;
@@ -2051,7 +2051,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
 	}
 
-	MonoMemoryManager *mem_manager = m_class_get_mem_manager (klass);
+	mem_manager = m_class_get_mem_manager (klass);
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
@@ -2178,10 +2178,9 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
-	memory_manager = mono_mem_manager_get_ambient ();
-	mono_mem_manager_lock (memory_manager);
-	g_ptr_array_add (memory_manager->class_vtable_array, vt);
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_lock (mem_manager);
+	g_ptr_array_add (mem_manager->class_vtable_array, vt);
+	mono_mem_manager_unlock (mem_manager);
 
 	/*
 	 * Store the vtable in klass_vtable.

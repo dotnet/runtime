@@ -5066,7 +5066,7 @@ init_plt (MonoAotModule *amodule)
 	if (amodule->plt_inited)
 		return;
 
-	tramp = mono_create_specific_trampoline (amodule, MONO_TRAMPOLINE_AOT_PLT, NULL);
+	tramp = mono_create_specific_trampoline (get_default_mem_manager (), amodule, MONO_TRAMPOLINE_AOT_PLT, NULL);
 	tramp = mono_create_ftnptr (tramp);
 
 	amodule_lock (amodule);
@@ -5269,7 +5269,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 			 * resolve the patch info by hand.
 			 */
 			if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
-				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
+				target = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES) {
 				target = amodule->info.specific_trampolines;
@@ -5965,7 +5965,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 			addr = load_function (amodule, "rgctx_fetch_trampoline_general");
 		info = (void **)mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (gpointer) * 2);
 		info [0] = GUINT_TO_POINTER (slot);
-		info [1] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
+		info [1] = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, NULL);
 		code = mono_aot_get_static_rgctx_trampoline (info, addr);
 		return mono_create_ftnptr (code);
 	}
