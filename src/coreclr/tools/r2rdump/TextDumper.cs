@@ -561,13 +561,13 @@ namespace R2RDump
                     Count = group.Count()
                 }).OrderByDescending(x => x.Count);
 
-            Console.WriteLine($"                      Fixup | Count");
+            _writer.WriteLine($"                      Fixup | Count");
             foreach (var fixupAndCount in sortedFixupCounts)
             {
-                Console.WriteLine($"{fixupAndCount.FixupKind, 27} | {fixupAndCount.Count, 5}");
+                _writer.WriteLine($"{fixupAndCount.FixupKind, 27} | {fixupAndCount.Count, 5}");
             }
-            Console.WriteLine("-----------------------------------");
-            Console.WriteLine($"                      Total | {sortedFixupCounts.Sum(x => x.Count), 5}");
+            _writer.WriteLine("-----------------------------------");
+            _writer.WriteLine($"                      Total | {sortedFixupCounts.Sum(x => x.Count), 5}");
             SkipLine();
         }
     }
