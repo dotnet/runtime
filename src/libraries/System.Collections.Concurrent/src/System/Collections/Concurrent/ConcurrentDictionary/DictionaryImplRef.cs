@@ -53,9 +53,9 @@ namespace System.Collections.Concurrent
         }
 
         // inline the base implementation to devirtualize calls to hash and keyEqual
-        internal override object TryGetValue(TKey key)
+        internal override bool TryGetValue(TKey key, out TValue value)
         {
-            return base.TryGetValue(key);
+            return base.TryGetValue(key, out value);
         }
 
         protected override int hash(TKey key)

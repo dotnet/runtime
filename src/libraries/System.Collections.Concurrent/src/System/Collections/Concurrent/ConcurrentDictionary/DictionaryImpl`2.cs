@@ -21,7 +21,7 @@ namespace System.Collections.Concurrent
         internal abstract void Clear();
         internal abstract int Count { get; }
 
-        internal abstract object TryGetValue(TKey key);
+        internal abstract bool TryGetValue(TKey key, out TValue value);
         internal abstract bool PutIfMatch(TKey key, TValue newVal, ref TValue oldValue, ValueMatch match);
         internal abstract bool RemoveIfMatch(TKey key, ref TValue oldValue, ValueMatch match);
         internal abstract TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory);
@@ -31,8 +31,8 @@ namespace System.Collections.Concurrent
         internal abstract class Snapshot
         {
             protected int _idx;
-            protected TKey _curKey, _nextK;
-            protected object _curValue, _nextV;
+            protected TKey _curKey;
+            protected TValue _curValue;
 
             public abstract int Count { get; }
             public abstract bool MoveNext();
@@ -42,19 +42,7 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    var curValue = this._curValue;
-                    if (curValue == NULLVALUE)
-                    {
-                        // undefined behavior or throw?
-                        // current implementation returns things
-                        return default;
-                    }
-
-                    var curValueUnboxed = default(TValue) != null ?
-                        Unsafe.As<Boxed<TValue>>(curValue).Value :
-                        (TValue)curValue;
-
-                    return new DictionaryEntry(this._curKey, curValueUnboxed);
+                    return new DictionaryEntry(_curKey, _curValue);
                 }
             }
 
@@ -62,18 +50,7 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    var curValue = this._curValue;
-                    if (curValue == NULLVALUE)
-                    {
-                        // undefined behavior
-                        return default;
-                    }
-
-                    var curValueUnboxed = default(TValue) != null ?
-                                            Unsafe.As<Boxed<TValue>>(curValue).Value :
-                                            (TValue)curValue;
-
-                    return new KeyValuePair<TKey, TValue>(this._curKey, curValueUnboxed);
+                    return new KeyValuePair<TKey, TValue>(this._curKey, _curValue);
                 }
             }
         }
