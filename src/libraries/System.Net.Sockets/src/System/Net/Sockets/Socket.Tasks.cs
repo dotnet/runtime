@@ -636,6 +636,7 @@ namespace System.Net.Sockets
                 Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
 
+            saea.SendPacketsFlags = flags;
             saea.SendPacketsElements = sendPacketsElements;
             saea.WrapExceptionsForNetworkStream = false;
             return saea.SendPacketsAsync(this, cancellationToken);
