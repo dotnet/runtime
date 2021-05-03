@@ -11,8 +11,10 @@
           TargetPath="buildTransitive\netcoreapp3.0" />
     <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
     <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore50;uap10.0;net46" />
+  </ItemGroup>
+  <PropertyGroup>
     <!-- Disable support check as harvested assets have older assembly versions. TODO: Re-enable after the 6.0 package shipped. -->
     <SkipSupportCheck>true</SkipSupportCheck>
-  </ItemGroup>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
