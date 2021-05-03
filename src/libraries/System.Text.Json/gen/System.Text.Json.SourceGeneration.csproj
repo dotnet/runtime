@@ -27,8 +27,8 @@
     <Compile Include="ClassType.cs" />
     <Compile Include="CollectionType.cs" />
     <Compile Include="JsonSourceGenerator.cs" />
-    <Compile Include="JsonSourceGenerator.Parser.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
+    <Compile Include="JsonSourceGenerator.Parser.cs" />
     <Compile Include="ObjectConstructionStrategy.cs" />
     <Compile Include="PropertyMetadata.cs" />
     <Compile Include="Reflection\AssemblyWrapper.cs" />

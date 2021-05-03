@@ -16,7 +16,7 @@ namespace System.Text.Json.SourceGeneration
 {
     public sealed partial class JsonSourceGenerator
     {
-        internal sealed class Parser
+        private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
 
@@ -78,16 +78,11 @@ namespace System.Text.Json.SourceGeneration
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
 
-                PopulateKnownTypes(_metadataLoadContext);
+                PopulateKnownTypes();
             }
 
-            public Dictionary<string, TypeMetadata>? GetRootSerializableTypes(List<CompilationUnitSyntax>? compilationUnits)
+            public Dictionary<string, TypeMetadata>? GetRootSerializableTypes(List<CompilationUnitSyntax> compilationUnits)
             {
-                if (compilationUnits == null)
-                {
-                    return null;
-                }
-
                 TypeExtensions.NullableOfTType = _metadataLoadContext.Resolve(typeof(Nullable<>));
 
                 const string JsonSerializableAttributeName = "System.Text.Json.Serialization.JsonSerializableAttribute";
@@ -273,7 +268,6 @@ namespace System.Text.Json.SourceGeneration
 
                     if (type.GetConstructor(Type.EmptyTypes) != null && !type.IsAbstract && !type.IsInterface)
                     {
-                        // TODO: support parameterized ctors.
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
 
@@ -474,25 +468,25 @@ namespace System.Text.Json.SourceGeneration
                 return $"new {converterType.GetUniqueCompilableTypeName()}()";
             }
 
-            private void PopulateNumberTypes(MetadataLoadContextInternal metadataLoadContext)
+            private void PopulateNumberTypes()
             {
                 Debug.Assert(_numberTypes != null);
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(byte)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(decimal)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(double)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(short)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(sbyte)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(int)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(long)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(float)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(ushort)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(uint)));
-                _numberTypes.Add(metadataLoadContext.Resolve(typeof(ulong)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(byte)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(decimal)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(double)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(short)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(sbyte)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(int)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(long)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(float)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(ushort)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(uint)));
+                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(ulong)));
             }
 
-            private void PopulateKnownTypes(MetadataLoadContextInternal metadataLoadContext)
+            private void PopulateKnownTypes()
             {
-                PopulateNumberTypes(metadataLoadContext);
+                PopulateNumberTypes();
 
                 Debug.Assert(_knownTypes != null);
                 Debug.Assert(_numberTypes != null);
@@ -504,7 +498,7 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_dateTimeType);
                 _knownTypes.Add(_dateTimeOffsetType);
                 _knownTypes.Add(_guidType);
-                _knownTypes.Add(metadataLoadContext.Resolve(typeof(object)));
+                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(object)));
                 _knownTypes.Add(_stringType);
 
                 // System.Private.Uri may not be loaded in input compilation.
@@ -513,7 +507,7 @@ namespace System.Text.Json.SourceGeneration
                     _knownTypes.Add(_uriType);
                 }
 
-                _knownTypes.Add(metadataLoadContext.Resolve(typeof(Version)));
+                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(Version)));
             }
 
             private bool IsPrimitive(Type type)

@@ -21,8 +21,12 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         public static bool IsInitOnly(this MethodInfo method)
         {
-            MethodInfoWrapper? methodInfoWrapper = method as MethodInfoWrapper;
-            Debug.Assert(methodInfoWrapper != null);
+            if (method == null)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+
+            MethodInfoWrapper methodInfoWrapper = (MethodInfoWrapper)method;
             return methodInfoWrapper.IsInitOnly;
         }
     }

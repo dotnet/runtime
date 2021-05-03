@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.SourceGeneration.Reflection;
@@ -20,7 +21,7 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? SerializableTypes => _rootTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
         private Dictionary<string, TypeMetadata>? _rootTypes;
 
         /// <summary>
@@ -38,12 +39,21 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
-            Parser parser = new(executionContext.Compilation);
             SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
+            List<CompilationUnitSyntax> compilationUnits = receiver.CompilationUnits;
+            if (compilationUnits == null)
+            {
+                return;
+            }
+
+            Parser parser = new(executionContext.Compilation);
             _rootTypes = parser.GetRootSerializableTypes(receiver.CompilationUnits);
 
-            Emitter emitter = new(executionContext, _rootTypes);
-            emitter.Emit();
+            if (_rootTypes != null)
+            {
+                Emitter emitter = new(executionContext, _rootTypes);
+                emitter.Emit();
+            }
         }
 
         internal sealed class SyntaxReceiver : ISyntaxReceiver

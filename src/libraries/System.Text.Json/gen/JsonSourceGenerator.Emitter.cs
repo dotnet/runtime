@@ -13,7 +13,7 @@ namespace System.Text.Json.SourceGeneration
 {
     public sealed partial class JsonSourceGenerator
     {
-        internal sealed class Emitter
+        private sealed class Emitter
         {
             private const string RuntimeCustomConverterFetchingMethodName = "GetRuntimeProvidedCustomConverter";
 
@@ -47,7 +47,7 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly string _generationNamespace;
 
-            // TODO: consider public option for this.
+            // TODO (https://github.com/dotnet/runtime/issues/52218): consider public option for this.
             // Converter-honoring logic generation can be simplified
             // if we don't plan to have a feature around this.
             private readonly bool _honorRuntimeProvidedCustomConverters = true;
@@ -63,9 +63,9 @@ namespace System.Text.Json.SourceGeneration
             /// <summary>
             /// Types that were specified with System.Text.Json.Serialization.JsonSerializableAttribute.
             /// </summary>
-            private readonly Dictionary<string, TypeMetadata>? _rootSerializableTypes;
+            private readonly Dictionary<string, TypeMetadata> _rootSerializableTypes = null!;
 
-            public Emitter(in GeneratorExecutionContext executionContext, Dictionary<string, TypeMetadata>? rootSerializableTypes)
+            public Emitter(in GeneratorExecutionContext executionContext, Dictionary<string, TypeMetadata> rootSerializableTypes)
             {
                 _executionContext = executionContext;
                 _generationNamespace = $"{executionContext.Compilation.AssemblyName}.JsonSourceGeneration";
@@ -74,11 +74,6 @@ namespace System.Text.Json.SourceGeneration
 
             public void Emit()
             {
-                if (_rootSerializableTypes == null || _rootSerializableTypes.Count == 0)
-                {
-                    return;
-                }
-
                 foreach (KeyValuePair<string, TypeMetadata> pair in _rootSerializableTypes)
                 {
                     TypeMetadata typeMetadata = pair.Value;
@@ -86,7 +81,7 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Add base default instance source.
-                _executionContext.AddSource("JsonContext.g.cs", SourceText.From(BaseJsonContextImplementation(), Encoding.UTF8));
+                _executionContext.AddSource("JsonContext.g.cs", SourceText.From(GetBaseJsonContextImplementation(), Encoding.UTF8));
 
                 // Add GetJsonTypeInfo override implementation.
                 _executionContext.AddSource("JsonContext.GetJsonTypeInfo.g.cs", SourceText.From(GetGetTypeInfoImplementation(), Encoding.UTF8));
@@ -196,8 +191,8 @@ namespace System.Text.Json.SourceGeneration
 
                 StringBuilder sb = new();
 
+                // TODO (https://github.com/dotnet/runtime/issues/52218): consider moving this verification source to common helper.
                 string metadataInitSource = $@"JsonConverter converter = {typeMetadata.ConverterInstantiationLogic};
-                    // TODO: consider moving this verification source to common helper.
                     Type typeToConvert = typeof({typeCompilableName});
                     if (!converter.CanConvert(typeToConvert))
                     {{
@@ -488,8 +483,7 @@ namespace {_generationNamespace}
                     }}";
             }
 
-            // Base source generation context partial class.
-            private string BaseJsonContextImplementation()
+            private string GetBaseJsonContextImplementation()
             {
                 StringBuilder sb = new();
                 sb.Append(@$"using System.Text.Json;
@@ -525,11 +519,11 @@ namespace {_generationNamespace}
                     return "";
                 }
 
+                // TODO (https://github.com/dotnet/runtime/issues/52218): use a dictionary if count > ~15.
                 return @$"private JsonConverter {RuntimeCustomConverterFetchingMethodName}(System.Type type)
         {{
             System.Collections.Generic.IList<JsonConverter> converters = {OptionsInstanceVariableName}.Converters;
 
-            // TODO: use a dictionary if count > ~15.
             for (int i = 0; i < converters.Count; i++)
             {{
                 JsonConverter converter = converters[i];
@@ -573,7 +567,7 @@ namespace {_generationNamespace}
         public override JsonTypeInfo GetTypeInfo(System.Type type)
         {{");
 
-                // TODO: Make this Dictionary-lookup-based if _handledType.Count > 64.
+                // TODO (https://github.com/dotnet/runtime/issues/52218): Make this Dictionary-lookup-based if root-serializable type count > 64.
                 foreach (TypeMetadata metadata in _rootSerializableTypes.Values)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
