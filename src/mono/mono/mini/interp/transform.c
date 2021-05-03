@@ -2164,7 +2164,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			MonoClassField *field = m_class_get_fields (target_method->klass);
 			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
 			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
-			td->last_ins->data [0] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+			td->last_ins->data [0] = get_data_item_index (td, mono_static_field_get_addr (vtable, field));
 			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (mono_defaults.string_class, error));
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
@@ -4002,7 +4002,7 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 		interp_add_ins (td, MINT_LDSFLDA);
 		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 		td->last_ins->data [0] = get_data_item_index (td, vtable);
-		td->last_ins->data [1] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+		td->last_ins->data [1] = get_data_item_index (td, mono_static_field_get_addr (vtable, field));
 	}
 }
 
@@ -4111,7 +4111,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 		}
 	} else {
-		gpointer field_addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
+		gpointer field_addr = mono_static_field_get_addr (vtable, field);
 		int size = 0;
 		if (mt == MINT_TYPE_VT)
 			size = mono_class_value_size (field_class, NULL);

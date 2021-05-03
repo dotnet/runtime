@@ -5526,8 +5526,14 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
                     printf("B %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
                     break;
+                case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
+                    printf("B %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
                 case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
                     printf("E %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
+                    printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
@@ -6704,28 +6710,40 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
 
         size_t minOffset = (size_t) ~0;
         size_t maxOffset = 0;
-        uint32_t totalCount = 0;
+        uint64_t totalCount = 0;
 
         if (SUCCEEDED(pgoHR))
         {
-            // Locate the range of the counter data.
+            // Locate the range of the data.
             //
             for (UINT32 i = 0; i < schemaCount; i++)
             {
-                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
-                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+                size_t start = schema[i].Offset;
+                size_t end;
+                switch (schema[i].InstrumentationKind)
                 {
-                    if (schema[i].Offset < minOffset)
-                    {
-                        minOffset = schema[i].Offset;
-                    }
+                    case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                    case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+                        totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                        end = start + 4;
+                        break;
+                    case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
+                    case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
+                        totalCount += *(uint64_t*)(schemaData + schema[i].Offset);
+                        end = start + 8;
+                        break;
+                    default:
+                        continue;
+                }
 
-                    if (schema[i].Offset > maxOffset)
-                    {
-                        maxOffset = schema[i].Offset;
-                    }
+                if (start < minOffset)
+                {
+                    minOffset = start;
+                }
 
-                    totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                if (end > maxOffset)
+                {
+                    maxOffset = end;
                 }
             }
 
@@ -6734,10 +6752,10 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
             if (minOffset < maxOffset)
             {
                 char pgoHash[MD5_HASH_BUFFER_SIZE];
-                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset + sizeof(int) - minOffset), pgoHash,
+                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset - minOffset), pgoHash,
                                     MD5_HASH_BUFFER_SIZE);
 
-                t = sprintf_s(buff, len, " Pgo Counters %u, Count %u, Hash: %s", schemaCount, totalCount, pgoHash);
+                t = sprintf_s(buff, len, " Pgo Counters %u, Count %llu, Hash: %s", schemaCount, totalCount, pgoHash);
                 buff += t;
                 len -= t;
             }
@@ -6780,6 +6798,7 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
+    hasLikelyClass = false;
 
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
@@ -6799,6 +6818,7 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             for (UINT32 i = 0; i < schemaCount; i++)
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
+                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
                 hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
