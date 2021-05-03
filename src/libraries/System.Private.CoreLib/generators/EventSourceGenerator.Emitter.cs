@@ -52,7 +52,8 @@ namespace {ec.Namespace}
     {{");
                 GenerateConstructor(ec);
 
-                GenerateLogSingleton(ec.ClassName);
+                if (ec.EmitLogProperty)
+                    GenerateLogSingleton(ec.ClassName);
 
                 GenerateProviderMetadata(ec.SourceName);
 

@@ -59,7 +59,6 @@ namespace Generators
                             return results?.ToArray() ?? Array.Empty<EventSourceClass>();
                         }
 
-                        bool autoGenerate = false;
                         foreach (AttributeListSyntax? cal in classDef.AttributeLists)
                         {
                             foreach (AttributeSyntax? ca in cal.Attributes)
@@ -75,9 +74,25 @@ namespace Generators
 
                                 if (autogenerateAttribute.Equals(caSymbol.ContainingType, SymbolEqualityComparer.Default))
                                 {
-                                    autoGenerate = true;
+                                    eventSourceClass ??= new EventSourceClass();
+
+                                    SeparatedSyntaxList<AttributeArgumentSyntax>? args = ca?.ArgumentList?.Arguments;
+                                    if (args is not null)
+                                    {
+                                        foreach (AttributeArgumentSyntax argSyntax in args)
+                                        {
+                                            if (argSyntax.NameEquals?.Name.Identifier.Text == "SkipLogSingleton" &&
+                                                argSyntax.Expression is LiteralExpressionSyntax les && les.Token.Kind() == SyntaxKind.TrueKeyword)
+                                            {
+                                                eventSourceClass.EmitLogProperty = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+
                                     continue;
                                 }
+
                                 if (eventSourceAttribute.Equals(caSymbol.ContainingType, SymbolEqualityComparer.Default))
                                 {
                                     string nspace = string.Empty;
@@ -134,21 +149,14 @@ namespace Generators
                                         result = GenerateGuidFromName(name.ToUpperInvariant());
                                     }
 
-                                    eventSourceClass = new EventSourceClass
-                                    {
-                                        Namespace = nspace,
-                                        ClassName = className,
-                                        SourceName = name,
-                                        Guid = result
-                                    };
+                                    eventSourceClass ??= new EventSourceClass();
+                                    eventSourceClass.Namespace = nspace;
+                                    eventSourceClass.ClassName = className;
+                                    eventSourceClass.SourceName = name;
+                                    eventSourceClass.Guid = result;
                                     continue;
                                 }
                             }
-                        }
-
-                        if (!autoGenerate)
-                        {
-                            continue;
                         }
 
                         if (eventSourceClass is null)

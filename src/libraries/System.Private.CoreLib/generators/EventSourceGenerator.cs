@@ -107,6 +107,8 @@ namespace Generators
             public string ClassName = string.Empty;
             public string SourceName = string.Empty;
             public Guid Guid = Guid.Empty;
+
+            public bool EmitLogProperty = true;
         }
     }
 }
