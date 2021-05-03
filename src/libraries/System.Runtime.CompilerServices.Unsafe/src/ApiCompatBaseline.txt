@@ -1,4 +1,3 @@
-Compat issues with assembly System.Runtime.CompilerServices.Unsafe:
 CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'left' on member 'System.Runtime.CompilerServices.Unsafe.AreSame<T>(T, T)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'right' on member 'System.Runtime.CompilerServices.Unsafe.AreSame<T>(T, T)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' exists on parameter 'origin' on member 'System.Runtime.CompilerServices.Unsafe.ByteOffset<T>(T, T)' in the contract but not the implementation.
