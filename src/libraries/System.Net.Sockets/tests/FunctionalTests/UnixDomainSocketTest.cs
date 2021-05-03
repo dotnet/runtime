@@ -80,9 +80,6 @@ namespace System.Net.Sockets.Tests
             finally
             {
                 server.Dispose();
-
-                try { File.Delete(path); }
-                catch { }
             }
         }
 
@@ -91,35 +88,27 @@ namespace System.Net.Sockets.Tests
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.RemoteEndPoint = endPoint;
+            args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
+
+            var complete = new TaskCompletionSource();
+            args.UserToken = complete;
+
+            using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
-
-                var complete = new TaskCompletionSource();
-                args.UserToken = complete;
-
-                using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                bool willRaiseEvent = sock.ConnectAsync(args);
+                if (willRaiseEvent)
                 {
-                    bool willRaiseEvent = sock.ConnectAsync(args);
-                    if (willRaiseEvent)
-                    {
-                        await complete.Task;
-                    }
-
-                    Assert.Equal(
-                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
-                        args.SocketError);
+                    await complete.Task;
                 }
 
-                Assert.False(File.Exists(path));
+                Assert.Equal(
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
+                    args.SocketError);
             }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+
+            Assert.False(File.Exists(path));
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
@@ -127,38 +116,30 @@ namespace System.Net.Sockets.Tests
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                client.Connect(endPoint);
+                using (Socket accepted = server.Accept())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-
-                    client.Connect(endPoint);
-                    using (Socket accepted = server.Accept())
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
+                        data[0] = (byte)i;
 
-                            accepted.Send(data);
-                            data[0] = 0;
+                        accepted.Send(data);
+                        data[0] = 0;
 
-                            Assert.Equal(1, client.Receive(data));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, client.Receive(data));
+                        Assert.Equal(i, data[0]);
                     }
                 }
+            }
 
-                Assert.False(File.Exists(path));
-            }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+            Assert.False(File.Exists(path));
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
@@ -166,51 +147,43 @@ namespace System.Net.Sockets.Tests
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             {
-                using var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                server.Bind(endPoint);
+                server.Listen(1);
+                client.Connect(endPoint);
+
+                using (Socket accepted = server.Accept())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-                    client.Connect(endPoint);
+                    using var clientClone = new Socket(client.SafeHandle);
+                    using var acceptedClone = new Socket(accepted.SafeHandle);
 
-                    using (Socket accepted = server.Accept())
+                    _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                    _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+
+                    Assert.True(clientClone.Connected);
+                    Assert.True(acceptedClone.Connected);
+                    Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
+                    Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
+                    Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
+                    Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
+
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        using var clientClone = new Socket(client.SafeHandle);
-                        using var acceptedClone = new Socket(accepted.SafeHandle);
+                        data[0] = (byte)i;
 
-                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
-                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+                        acceptedClone.Send(data);
+                        data[0] = 0;
 
-                        Assert.True(clientClone.Connected);
-                        Assert.True(acceptedClone.Connected);
-                        Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
-                        Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
-                        Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
-                        Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
-
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
-
-                            acceptedClone.Send(data);
-                            data[0] = 0;
-
-                            Assert.Equal(1, clientClone.Receive(data));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, clientClone.Receive(data));
+                        Assert.Equal(i, data[0]);
                     }
                 }
+            }
 
-                Assert.False(File.Exists(path));
-            }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+            Assert.False(File.Exists(path));
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
@@ -218,38 +191,30 @@ namespace System.Net.Sockets.Tests
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                await client.ConnectAsync(endPoint);
+                using (Socket accepted = await server.AcceptAsync())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-
-                    await client.ConnectAsync(endPoint);
-                    using (Socket accepted = await server.AcceptAsync())
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
+                        data[0] = (byte)i;
 
-                            await accepted.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
-                            data[0] = 0;
+                        await accepted.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
+                        data[0] = 0;
 
-                            Assert.Equal(1, await client.ReceiveAsync(new ArraySegment<byte>(data), SocketFlags.None));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, await client.ReceiveAsync(new ArraySegment<byte>(data), SocketFlags.None));
+                        Assert.Equal(i, data[0]);
                     }
                 }
+            }
 
-                Assert.False(File.Exists(path));
-            }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+            Assert.False(File.Exists(path));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
@@ -266,55 +231,47 @@ namespace System.Net.Sockets.Tests
 
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                Task<Socket> serverAccept = server.AcceptAsync();
+                await Task.WhenAll(serverAccept, client.ConnectAsync(endPoint));
+
+                Task clientReceives = Task.Run(async () =>
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-
-                    Task<Socket> serverAccept = server.AcceptAsync();
-                    await Task.WhenAll(serverAccept, client.ConnectAsync(endPoint));
-
-                    Task clientReceives = Task.Run(async () =>
+                    byte[] buffer = new byte[readBufferSize];
+                    while (true)
                     {
-                        byte[] buffer = new byte[readBufferSize];
-                        while (true)
+                        int bytesRead = await client.ReceiveAsync(new Memory<byte>(buffer), SocketFlags.None);
+                        if (bytesRead == 0)
                         {
-                            int bytesRead = await client.ReceiveAsync(new Memory<byte>(buffer), SocketFlags.None);
-                            if (bytesRead == 0)
-                            {
-                                break;
-                            }
-                            Assert.InRange(bytesRead, 1, writeBuffer.Length - readData.Length);
-                            readData.Write(buffer, 0, bytesRead);
+                            break;
                         }
-                    });
-
-                    using (Socket accepted = await serverAccept)
-                    {
-                        for (int iter = 0; iter < iterations; iter++)
-                        {
-                            Task<int> sendTask = accepted.SendAsync(new ArraySegment<byte>(writeBuffer, iter * writeBufferSize, writeBufferSize), SocketFlags.None);
-                            await await Task.WhenAny(clientReceives, sendTask);
-                            Assert.Equal(writeBufferSize, await sendTask);
-                        }
+                        Assert.InRange(bytesRead, 1, writeBuffer.Length - readData.Length);
+                        readData.Write(buffer, 0, bytesRead);
                     }
+                });
 
-                    await clientReceives;
+                using (Socket accepted = await serverAccept)
+                {
+                    for (int iter = 0; iter < iterations; iter++)
+                    {
+                        Task<int> sendTask = accepted.SendAsync(new ArraySegment<byte>(writeBuffer, iter * writeBufferSize, writeBufferSize), SocketFlags.None);
+                        await await Task.WhenAny(clientReceives, sendTask);
+                        Assert.Equal(writeBufferSize, await sendTask);
+                    }
                 }
 
-                Assert.Equal(writeBuffer.Length, readData.Length);
-                Assert.Equal(writeBuffer, readData.ToArray());
+                await clientReceives;
+            }
 
-                Assert.False(File.Exists(path));
-            }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+            Assert.Equal(writeBuffer.Length, readData.Length);
+            Assert.Equal(writeBuffer, readData.ToArray());
+
+            Assert.False(File.Exists(path));
         }
 
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
@@ -441,40 +398,27 @@ namespace System.Net.Sockets.Tests
                 expectedClientAddress = clientAddress;
             }
 
-            try
+            using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                {
-                    server.Bind(new UnixDomainSocketEndPoint(serverAddress));
-                    server.Listen(1);
+                server.Bind(new UnixDomainSocketEndPoint(serverAddress));
+                server.Listen(1);
 
-                    using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    // Bind the client.
+                    client.Bind(new UnixDomainSocketEndPoint(clientAddress));
+                    client.Connect(new UnixDomainSocketEndPoint(serverAddress));
+                    using (Socket acceptedClient = server.Accept())
                     {
-                        // Bind the client.
-                        client.Bind(new UnixDomainSocketEndPoint(clientAddress));
-                        client.Connect(new UnixDomainSocketEndPoint(serverAddress));
-                        using (Socket acceptedClient = server.Accept())
-                        {
-                            // Verify the client address on the server.
-                            EndPoint clientAddressOnServer = acceptedClient.RemoteEndPoint;
-                            Assert.True(string.CompareOrdinal(expectedClientAddress, clientAddressOnServer.ToString()) == 0);
-                        }
+                        // Verify the client address on the server.
+                        EndPoint clientAddressOnServer = acceptedClient.RemoteEndPoint;
+                        Assert.True(string.CompareOrdinal(expectedClientAddress, clientAddressOnServer.ToString()) == 0);
                     }
                 }
+            }
 
-                Assert.False(File.Exists(serverAddress));
-                Assert.False(File.Exists(clientAddress));
-            }
-            finally
-            {
-                if (!abstractAddress)
-                {
-                    try { File.Delete(serverAddress); }
-                    catch { }
-                    try { File.Delete(clientAddress); }
-                    catch { }
-                }
-            }
+            Assert.False(File.Exists(serverAddress));
+            Assert.False(File.Exists(clientAddress));
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
