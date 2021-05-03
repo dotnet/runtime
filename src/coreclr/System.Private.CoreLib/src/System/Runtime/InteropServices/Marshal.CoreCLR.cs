@@ -782,17 +782,17 @@ namespace System.Runtime.InteropServices
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
-            Justification = "The calling method is guarded")]
+            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void CreateBindCtx(uint reserved, out IBindCtx ppbc);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
-            Justification = "The calling method is guarded")]
+            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IMoniker ppmk);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
-            Justification = "The calling method is guarded")]
+            Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
 
