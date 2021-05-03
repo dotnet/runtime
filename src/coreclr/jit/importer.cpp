@@ -4222,25 +4222,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
 #endif
 
-                // Else expand as an intrinsic, unless the call is constrained,
-                // in which case we defer expansion to allow impImportCall do the
-                // special constraint processing.
-                if ((retNode == nullptr) && (pConstrainedResolvedToken == nullptr))
-                {
-                    JITDUMP("Expanding as special intrinsic\n");
-                    impPopStack();
-                    op1 = new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, ni, method);
-
-                    // Set the CALL flag to indicate that the operator is implemented by a call.
-                    // Set also the EXCEPTION flag because the native implementation of
-                    // NI_System_Object_GetType intrinsic can throw NullReferenceException.
-                    op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
-                    retNode = op1;
-                    // Might be further optimizable, so arrange to leave a mark behind
-                    isSpecial = true;
-                }
-
                 if (retNode == nullptr)
                 {
                     JITDUMP("Leaving as normal call\n");
