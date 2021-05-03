@@ -113,6 +113,8 @@ elseif (CLR_CMAKE_HOST_UNIX)
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 
+  add_linker_flag(-fuse-ld=lld)
+
   set(CLR_SANITIZE_CXX_OPTIONS "")
   set(CLR_SANITIZE_LINK_OPTIONS "")
 
