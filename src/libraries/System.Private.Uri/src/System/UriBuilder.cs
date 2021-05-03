@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -18,7 +19,7 @@ namespace System
         private string _fragment = string.Empty;
 
         private bool _changed = true;
-        private Uri _uri = null!; // initialized in ctor via helper
+        private Uri? _uri;
 
         public UriBuilder()
         {
@@ -240,6 +241,10 @@ namespace System
                     SetFieldsFromUri();
                     _changed = false;
                 }
+                else
+                {
+                    Debug.Assert(_uri is not null);
+                }
                 return _uri;
             }
         }
@@ -250,6 +255,7 @@ namespace System
 
         private void SetFieldsFromUri()
         {
+            Debug.Assert(_uri is not null);
             _scheme = _uri.Scheme;
             _host = _uri.Host;
             _port = _uri.Port;
