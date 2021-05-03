@@ -2241,7 +2241,7 @@ bool        affinity_config_specified_p = false;
 
 #ifdef USE_REGIONS
 region_allocator global_region_allocator;
-uint8_t** initial_regions = nullptr;
+uint8_t*(*initial_regions)[total_generation_count][2] = nullptr;
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -10547,44 +10547,24 @@ int gc_heap::object_gennum_plan (uint8_t* o)
 #endif //_MSC_VER && TARGET_X86
 
 #ifdef USE_REGIONS
-void get_initial_region(int nhp, int gen, int hn, uint8_t** region_start, uint8_t** region_end)
+void get_initial_region(int gen, int hn, uint8_t** region_start, uint8_t** region_end)
 {
-    int initial_region_index;
-    if (gen == poh_generation)
-    {
-        initial_region_index = hn;
-    }
-    else
-    {
-        int soh_start = nhp;
-        if (gen == loh_generation)
-        {
-            int loh_start = soh_start + nhp * (max_generation + 1);
-            initial_region_index = loh_start + hn;
-        }
-        else
-        {
-            initial_region_index = soh_start + (max_generation - gen) * nhp + hn;
-        }
-    }
-    *region_start = initial_regions[2 *initial_region_index];
-    *region_end = initial_regions[2 * initial_region_index + 1];
+    *region_start = initial_regions[hn][gen][0];
+    *region_end = initial_regions[hn][gen][1];
 }
 
 bool gc_heap::initial_make_soh_regions (gc_heap* hp)
 {
     uint8_t* region_start;
     uint8_t* region_end;
-    uint32_t num_heaps = 1;
-    uint32_t the_heap_number = 0;
+    uint32_t hn = 0;
 #ifdef MULTIPLE_HEAPS
-    num_heaps = gc_heap::n_heaps;
-    the_heap_number = hp->heap_number;
+    hn = hp->heap_number;
 #endif //MULTIPLE_HEAPS
 
     for (int i = max_generation; i >= 0; i--)
     {
-        get_initial_region(num_heaps, i, the_heap_number, &region_start, &region_end);
+        get_initial_region(i, hn, &region_start, &region_end);
 
         size_t region_size = region_end - region_start;
 
@@ -10619,14 +10599,12 @@ bool gc_heap::initial_make_uoh_regions (int gen, gc_heap* hp)
 {
     uint8_t* region_start;
     uint8_t* region_end;
-    uint32_t num_heaps = 1;
-    uint32_t the_heap_number = 0;
+    uint32_t hn = 0;
 #ifdef MULTIPLE_HEAPS
-    num_heaps = gc_heap::n_heaps;
-    the_heap_number = hp->heap_number;
+    hn = hp->heap_number;
 #endif //MULTIPLE_HEAPS
 
-    get_initial_region(num_heaps, gen, the_heap_number, &region_start, &region_end);
+    get_initial_region(gen, hn, &region_start, &region_end);
 
     size_t region_size = region_end - region_start;
     heap_segment* uoh_region = make_heap_segment (region_start, region_size, hp, gen);
@@ -11686,32 +11664,28 @@ size_t gc_heap::get_segment_size_hard_limit (uint32_t* num_heaps, bool should_ad
 #ifdef USE_REGIONS
 bool allocate_initial_regions(int number_of_heaps)
 {
-    initial_regions = new (nothrow) uint8_t*[number_of_heaps * 10];
+    initial_regions = new (nothrow) uint8_t*[number_of_heaps][total_generation_count][2];
     if (initial_regions == nullptr)
     {
         return false;
     }
-    int j = 0;
     for (int i = 0; i < number_of_heaps; i++)
     {
-        bool succeed = global_region_allocator.allocate_large_region(&initial_regions[j], &initial_regions[j+1], allocate_forward);
-        j += 2;
+        bool succeed = global_region_allocator.allocate_large_region(&initial_regions[i][poh_generation][0], &initial_regions[i][poh_generation][1], allocate_forward);
         assert(succeed);
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
         for (int gen = max_generation; gen >= 0; gen--)
         {
-            bool succeed = global_region_allocator.allocate_basic_region(&initial_regions[j], &initial_regions[j+1]);
+            bool succeed = global_region_allocator.allocate_basic_region(&initial_regions[i][gen][0], &initial_regions[i][gen][1]);
             assert(succeed);
-            j += 2;
         }
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
-        bool succeed = global_region_allocator.allocate_large_region(&initial_regions[j], &initial_regions[j+1], allocate_forward);
+        bool succeed = global_region_allocator.allocate_large_region(&initial_regions[i][loh_generation][0], &initial_regions[i][loh_generation][1], allocate_forward);
         assert(succeed);
-        j += 2;
     }
     return true;
 }
