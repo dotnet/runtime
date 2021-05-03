@@ -1361,7 +1361,7 @@ namespace
 
         EX_TRY
         {
-            args.Thread = SetupUnstartedGCThread();
+            args.Thread = SetupUnstartedThread(SUTF_ThreadStoreLockAlreadyTaken);
         }
         EX_CATCH
         {

@@ -591,11 +591,13 @@ enum SetupUnstartedThreadFlags
     // any time by calling Thread::InitPlatformContext().
     SUTF_PerformPlatformInit = 1,
 
+    // The ThreadStoreLock is being held during Thread startup.
+    SUTF_ThreadStoreLockAlreadyTaken = 2,
+
     // The default flags for the majority of threads.
     SUTF_Default = SUTF_PerformPlatformInit,
 };
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
-Thread* SetupUnstartedGCThread();
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
@@ -1228,7 +1230,8 @@ public:
         TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
 #endif // FEATURE_COMINTEROP
 
-        TSNC_CreatedForGC               = 0x10000000, // thread created for the GC.
+        TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechansim during
+                                                      // thread startup so can be skipped.
 
         TSNC_CallingManagedCodeDisabled = 0x20000000, // Use by multicore JIT feature to asert on calling managed code/loading module in background thread
                                                       // Exception, system module is allowed, security demand is allowed
@@ -1309,15 +1312,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         return HasThreadStateNC(Thread::TSNC_EtwStackWalkInProgress);
-    }
-
-    BOOL RequireThreadStoreLock()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Threads that are created by the GC do not
-        // need the ThreadStore lock.
-        return !HasThreadStateNC(Thread::TSNC_CreatedForGC);
     }
 
     DWORD RequireSyncBlockCleanup()
@@ -1658,7 +1652,7 @@ private:
     DWORD dbg_m_cSuspendedThreads;
     // Count of suspended threads that we know are not in native code (and therefore cannot hold OS lock which prevents us calling out to host)
     DWORD dbg_m_cSuspendedThreadsWithoutOSLock;
-    EEThreadId m_Creater;
+    EEThreadId m_Creator;
 #endif
 
     // A thread may forbid its own suspension. For example when holding certain locks.
