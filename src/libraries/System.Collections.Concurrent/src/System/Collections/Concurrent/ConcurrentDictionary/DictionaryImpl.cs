@@ -49,16 +49,15 @@ namespace System.Collections.Concurrent
         // having only these bits set in a case of Ref key means that the slot is permanently deleted.
         protected const int SPECIAL_HASH_BITS = TOMBPRIMEHASH | ZEROHASH;
 
-        protected const int REPROBE_LIMIT = 4;
-        protected const int REPROBE_LIMIT_SHIFT = 1;
         // Heuristic to decide if we have reprobed toooo many times.  Running over
         // the reprobe limit on a 'get' call acts as a 'miss'; on a 'put' call it
         // can trigger a table resize.  Several places must have exact agreement on
         // what the reprobe_limit is, so we share it here.
         protected static int ReprobeLimit(int lenMask)
         {
-            // 1/2 of table with some extra
-            return REPROBE_LIMIT + (lenMask >> REPROBE_LIMIT_SHIFT);
+            // limit to 4 reprobes on small tables, but allow more in larger ones
+            // to handle gracefully cases with poor hash functions.
+            return 4 + (lenMask >> 256);
         }
 
         protected static bool EntryValueNullOrDead(object entryValue)
@@ -71,17 +70,12 @@ namespace System.Collections.Concurrent
         {
             var h = (uint)fullHash;
 
-            // hashcodes often exhibit clustering behavior (i.e. ...,42,43,44,45,46,47...)
-            // unchanged that would cause clustering in the table
-            // some clustering is good, since it improves locality of sequential accesses
-            // excessive clustering may result in long reprobes in case of collisions.
-
-            // we will use lower LBITS bits as-is and mix up other bits to break clusters.
-            const int LBITS = 6;
-
-            uint upper = (h >> LBITS) * 2654435769u;
-            upper &= ~((1u << LBITS) - 1u);
-            h += upper;
+            // xor-shift some upper bits down, in case if variations are mostly in high bits
+            // and scatter the bits a little to break up clusters if hahses are periodic (like 42, 43, 44, ...)
+            // long clusters can cause long reprobes. small clusters are ok though.
+            h ^= h >> 15;
+            h ^= h >> 8;
+            h += (h >> 3) * 2654435769u;
 
             return (int)h & lenMask;
         }

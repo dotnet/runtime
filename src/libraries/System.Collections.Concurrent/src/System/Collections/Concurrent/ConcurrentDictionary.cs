@@ -183,8 +183,8 @@ namespace System.Collections.Concurrent
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ConcurrentDictionary_CapacityMustNotBeNegative);
             }
 
-            // add some extra so that filled to capacity would be at nice 75% density
-            capacity = Math.Max(capacity, capacity + capacity / 2);
+            // add some extra so that filled to capacity would be at 50% density
+            capacity = Math.Max(capacity, capacity * 2);
 
             if (!typeof(TKey).IsValueType)
             {
@@ -276,10 +276,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            object oldValObj = _table.TryGetValue(key);
-            Debug.Assert(!(oldValObj is Prime));
-
-            return oldValObj != null;
+            return _table.TryGetValue(key, out _);
         }
 
         /// <summary>
@@ -348,20 +345,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            object oldValObj = _table.TryGetValue(key);
-
-            Debug.Assert(!(oldValObj is Prime));
-
-            if (oldValObj != null)
-            {
-                value = FromObjectValue(oldValObj);
-                return true;
-            }
-            else
-            {
-                value = default(TValue);
-                return false;
-            }
+            return _table.TryGetValue(key, out value);
         }
 
         /// <summary>
@@ -578,11 +562,9 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowKeyNullException();
                 }
 
-                object oldValObj = _table.TryGetValue(key);
-                Debug.Assert(!(oldValObj is Prime));
-                if (oldValObj != null)
+                if (_table.TryGetValue(key, out var value))
                 {
-                    return FromObjectValue(oldValObj);
+                    return value;
                 }
 
                 ThrowKeyNotFoundException(key);
@@ -606,34 +588,6 @@ namespace System.Collections.Concurrent
         [DoesNotReturn]
         private static void ThrowKeyNotFoundException(TKey key) =>
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
-
-        /// <summary>
-        /// Fetches the actual value from an object form used by the table.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal TValue FromObjectValue(object obj)
-        {
-            // regular value type
-            if (default(TValue) != null)
-            {
-                return Unsafe.As<Boxed<TValue>>(obj).Value;
-            }
-
-            // null
-            if (obj == NULLVALUE)
-            {
-                return default(TValue);
-            }
-
-            // ref type
-            if (!typeof(TValue).IsValueType)
-            {
-                return Unsafe.As<object, TValue>(ref obj);
-            }
-
-            // nullable
-            return (TValue)obj;
-        }
 
         /// <summary>
         /// Gets the <see cref="IEqualityComparer{TKey}" />
@@ -723,12 +677,9 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
             }
 
-            object oldValObj = _table.TryGetValue(key);
-            Debug.Assert(!(oldValObj is Prime));
-
-            if (oldValObj != null)
+            if (_table.TryGetValue(key, out var value))
             {
-                return FromObjectValue(oldValObj);
+                return value;
             }
             else
             {
@@ -770,7 +721,7 @@ namespace System.Collections.Concurrent
                 return value;
             }
 
-            return FromObjectValue(oldVal);
+            return oldVal;
         }
 
 
@@ -943,7 +894,7 @@ namespace System.Collections.Concurrent
             }
         }
 
-         /// <summary>
+        /// <summary>
         /// Gets a value that indicates whether the <see cref="ConcurrentDictionary{TKey,TValue}"/> is empty.
         /// </summary>
         /// <value>true if the <see cref="ConcurrentDictionary{TKey,TValue}"/> is empty; otherwise,
@@ -1154,7 +1105,7 @@ namespace System.Collections.Concurrent
         /// <see cref="IDictionary"/>.</summary>
         /// <returns>An <see cref="IDictionaryEnumerator"/> for the <see
         /// cref="IDictionary"/>.</returns>
-        IDictionaryEnumerator IDictionary.GetEnumerator()=> new SnapshotIDictionaryEnumerator(_table.GetSnapshot());
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new SnapshotIDictionaryEnumerator(_table.GetSnapshot());
 
         /// <summary>
         /// Gets a value indicating whether the <see
