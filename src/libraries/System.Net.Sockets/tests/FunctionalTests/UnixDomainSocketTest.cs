@@ -74,12 +74,12 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(SocketError.Success, args.SocketError);
                     Assert.Null(args.ConnectByNameError);
                 }
-
-                Assert.False(File.Exists(path));
             }
             finally
             {
                 server.Dispose();
+
+                Assert.False(File.Exists(path));
             }
         }
 
