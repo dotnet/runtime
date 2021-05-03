@@ -1018,6 +1018,8 @@ public:
 
     var_types GetRegisterType() const;
 
+    var_types GetActualRegisterType() const;
+
     bool IsEnregisterable() const
     {
         return GetRegisterType() != TYP_UNDEF;

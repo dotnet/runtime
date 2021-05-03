@@ -864,7 +864,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         // therefore be store-normalized (rather than load-normalized). In fact, not performing store normalization
         // can lead to problems on architectures where a lclVar may be allocated to a register that is not
         // addressable at the granularity of the lclVar's defined type (e.g. x86).
-        var_types lclType = genActualType(varDsc->GetRegisterType());
+        var_types lclType = varDsc->GetActualRegisterType();
         emitAttr  size    = emitTypeSize(lclType);
 
         // If this is a write-thru variable, we don't actually spill at a use, but we will kill the var in the reg
@@ -1197,7 +1197,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // later used as a long, we will have incorrectly truncated the long.
             // In the normalizeOnLoad case ins_Load will return an appropriate sign- or zero-
             // extending load.
-            var_types lclActualType = genActualType(varDsc->GetRegisterType());
+            var_types lclActualType = varDsc->GetActualRegisterType();
             assert(lclActualType != TYP_UNDEF);
             if (spillType != lclActualType && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
             {
@@ -2049,7 +2049,7 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
 void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum)
 {
     const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-    assert(!varDsc->lvNormalizeOnStore() || (type == genActualType(varDsc->GetRegisterType())));
+    assert(!varDsc->lvNormalizeOnStore() || (type == varDsc->GetActualRegisterType()));
 
     // We have a register candidate local that is marked with GTF_SPILL.
     // This flag generally means that we need to spill this local.

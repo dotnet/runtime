@@ -4671,7 +4671,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
         regNumber regNum = varDsc->GetArgInitReg();
         assert(regNum != REG_STK);
 
-        var_types regType = genActualType(varDsc->GetRegisterType());
+        var_types regType = varDsc->GetActualRegisterType();
 
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
         regSet.verifyRegUsed(regNum);

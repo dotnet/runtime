@@ -1781,7 +1781,7 @@ void LinearScan::identifyCandidates()
 
         if (varDsc->lvLRACandidate)
         {
-            var_types type = genActualType(varDsc->GetRegisterType());
+            var_types type = varDsc->GetActualRegisterType();
             if (varTypeUsesFloatReg(type))
             {
                 compiler->compFloatingPointUsed = true;
