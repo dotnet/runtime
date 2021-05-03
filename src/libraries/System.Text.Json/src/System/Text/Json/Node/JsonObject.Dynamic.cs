@@ -4,7 +4,7 @@
 using System.Dynamic;
 using System.Reflection;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     public partial class JsonObject
     {

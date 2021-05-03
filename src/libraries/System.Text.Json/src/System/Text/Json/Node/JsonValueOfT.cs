@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     [DebuggerDisplay("{ToJsonString(),nq}")]
     [DebuggerTypeProxy(typeof(JsonValue<>.DebugView))]

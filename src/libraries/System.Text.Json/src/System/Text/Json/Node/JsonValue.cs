@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     /// <summary>
     /// Represents a mutable JSON value.
