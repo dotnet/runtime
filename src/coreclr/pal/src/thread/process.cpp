@@ -3360,7 +3360,8 @@ PROCAbort()
 
     PROCCreateCrashDumpIfEnabled();
 
-    SEHCleanupSignals();
+    // Restore the SIGABORT handler to prevent recursion
+    SEHCleanupAbort();
 
     // Abort the process after waiting for the core dump to complete
     abort();

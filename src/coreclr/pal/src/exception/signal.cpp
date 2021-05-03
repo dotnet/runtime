@@ -215,7 +215,6 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 #endif // HAVE_MACH_EXCEPTIONS
     }
 
-#if !HAVE_MACH_EXCEPTIONS
     /* The default action for SIGPIPE is process termination.
        Since SIGPIPE can be signaled when trying to write on a socket for which
        the connection has been dropped, we need to tell the system we want
@@ -225,7 +224,6 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
        issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
     */
     signal(SIGPIPE, SIG_IGN);
-#endif // !HAVE_MACH_EXCEPTIONS
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER)
     {
@@ -285,6 +283,22 @@ void SEHCleanupSignals()
     if (g_registered_sigterm_handler)
     {
         restore_signal(SIGTERM, &g_previous_sigterm);
+    }
+}
+
+/*++
+Function :
+    SEHCleanupAbort()
+
+    Restore default SIGABORT signal handlers
+
+    (no parameters, no return value)
+--*/
+void SEHCleanupAbort()
+{
+    if (g_registered_signal_handlers)
+    {
+        restore_signal(SIGABRT, &g_previous_sigabrt);
     }
 }
 
