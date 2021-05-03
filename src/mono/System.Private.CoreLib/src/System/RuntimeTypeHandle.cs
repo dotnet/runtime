@@ -284,7 +284,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase, bool reflectionOnly);
+        private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase);
 
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
@@ -299,7 +299,7 @@ namespace System
                 else
                     return null;
 
-            RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase, false);
+            RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase);
             if (throwOnError && t == null)
                 throw new TypeLoadException("Error loading '" + typeName + "'");
             return t;
