@@ -8782,7 +8782,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		for (int i = 0; i < tls->frame_count; i++)
 		{
-			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p] - [%p]\n", i, MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx), sp_received);
+			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p] - [%p]\n", i, MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx), sp_received);
 			if (sp_received == (uint64_t)MONO_CONTEXT_GET_SP (&tls->frames [i]->ctx)) {
 				buffer_add_int(buf, i);
 				break;
