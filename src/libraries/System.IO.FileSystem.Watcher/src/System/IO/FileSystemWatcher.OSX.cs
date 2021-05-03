@@ -135,8 +135,8 @@ namespace System.IO
             // The bitmask of events that we want to send to the user
             private readonly FSEventStreamEventFlags _filterFlags;
 
-            // Callback delegate for the EventStream events
-            private readonly Interop.EventStream.FSEventStreamCallback _callback;
+            // GC handle to keep this running instance rooted
+            private GCHandle _gcHandle;
 
             // The EventStream to listen for events on
             private SafeEventStreamHandle? _eventStream;
@@ -169,7 +169,6 @@ namespace System.IO
                     _fullDirectory += "/";
                 }
 
-                _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
                 _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
@@ -270,76 +269,112 @@ namespace System.IO
                 if (eventStream != null)
                 {
                     _cancellationRegistration.Unregister();
-                    try
-                    {
-                        // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
-                        Interop.EventStream.FSEventStreamStop(eventStream);
-                    }
-                    finally
-                    {
-                        StaticWatcherRunLoopManager.UnscheduleFromRunLoop(eventStream);
-                        eventStream.Close();
-                    }
+
+                    // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
+                    Interop.EventStream.FSEventStreamStop(eventStream);
+
+                    StaticWatcherRunLoopManager.UnscheduleFromRunLoop(eventStream);
+                    eventStream.Dispose();
+
+                    Debug.Assert(_gcHandle.IsAllocated);
+                    _gcHandle.Free();
                 }
             }
 
-            internal void Start(CancellationToken cancellationToken)
+            internal unsafe void Start(CancellationToken cancellationToken)
             {
-                // Get the path to watch and verify we created the CFStringRef
-                SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_fullDirectory);
-                if (path.IsInvalid)
+                SafeCreateHandle? path = null;
+                SafeCreateHandle? arrPaths = null;
+                bool cleanupGCHandle = false;
+                try
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
-                }
-
-                // Take the CFStringRef and put it into an array to pass to the EventStream
-                SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, (UIntPtr)1);
-                if (arrPaths.IsInvalid)
-                {
-                    path.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
-                }
-
-                _context = ExecutionContext.Capture();
-
-                // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
-                Interop.Sys.Sync();
-
-                // Create the event stream for the path and tell the stream to watch for file system events.
-                _eventStream = Interop.EventStream.FSEventStreamCreate(
-                    _callback,
-                    arrPaths,
-                    Interop.EventStream.kFSEventStreamEventIdSinceNow,
-                    0.0f,
-                    EventStreamFlags);
-                if (_eventStream.IsInvalid)
-                {
-                    arrPaths.Dispose();
-                    path.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
-                }
-
-                StaticWatcherRunLoopManager.ScheduleEventStream(_eventStream);
-
-                bool started = Interop.EventStream.FSEventStreamStart(_eventStream);
-                if (started)
-                {
-                    // Once we've started, register to stop the watcher on cancellation being requested.
-                    _cancellationRegistration = cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CleanupEventStream(), this);
-                }
-                else
-                {
-                    // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
-                    int error = Marshal.GetLastWin32Error();
-                    if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                    // Get the path to watch and verify we created the CFStringRef
+                    path = Interop.CoreFoundation.CFStringCreateWithCString(_fullDirectory);
+                    if (path.IsInvalid)
                     {
-                        // An error occurred while trying to start the run loop so fail out
-                        watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, error)));
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                    }
+
+                    // Take the CFStringRef and put it into an array to pass to the EventStream
+                    arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, (UIntPtr)1);
+                    if (arrPaths.IsInvalid)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                    }
+
+                    _context = ExecutionContext.Capture();
+
+                    // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
+                    Interop.Sys.Sync();
+
+                    Debug.Assert(!_gcHandle.IsAllocated);
+                    _gcHandle = GCHandle.Alloc(this);
+
+                    cleanupGCHandle = true;
+
+                    Interop.EventStream.FSEventStreamContext context = default;
+                    context.info = GCHandle.ToIntPtr(_gcHandle);
+
+                    // Create the event stream for the path and tell the stream to watch for file system events.
+                    SafeEventStreamHandle eventStream = Interop.EventStream.FSEventStreamCreate(
+                        IntPtr.Zero,
+                        &FileSystemEventCallback,
+                        &context,
+                        arrPaths,
+                        Interop.EventStream.kFSEventStreamEventIdSinceNow,
+                        0.0f,
+                        EventStreamFlags);
+                    if (eventStream.IsInvalid)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                    }
+
+                    cleanupGCHandle = false;
+
+                    _eventStream = eventStream;
+                }
+                finally
+                {
+                    if (cleanupGCHandle)
+                        _gcHandle.Free();
+                    arrPaths?.Dispose();
+                    path?.Dispose();
+                }
+
+                bool success = false;
+                try
+                {
+                    StaticWatcherRunLoopManager.ScheduleEventStream(_eventStream);
+
+                    if (!Interop.EventStream.FSEventStreamStart(_eventStream))
+                    {
+                        // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
+                        int error = Marshal.GetLastWin32Error();
+                        if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                        {
+                            // An error occurred while trying to start the run loop so fail out
+                            watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, error)));
+                        }
+                    }
+                    else
+                    {
+                        // Once we've started, register to stop the watcher on cancellation being requested.
+                        _cancellationRegistration = cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CleanupEventStream(), this);
+
+                        success = true;
+                    }
+                }
+                finally
+                {
+                    if (!success)
+                    {
+                        CleanupEventStream();
                     }
                 }
             }
 
-            private unsafe void FileSystemEventCallback(
+            [UnmanagedCallersOnly]
+            private static unsafe void FileSystemEventCallback(
                 FSEventStreamRef streamRef,
                 IntPtr clientCallBackInfo,
                 size_t numEvents,
@@ -347,28 +382,31 @@ namespace System.IO
                 FSEventStreamEventFlags* eventFlags,
                 FSEventStreamEventId* eventIds)
             {
+                RunningInstance? instance = (RunningInstance?)GCHandle.FromIntPtr(clientCallBackInfo).Target;
+                Debug.Assert(instance != null);
+
                 // Try to get the actual watcher from our weak reference.  We maintain a weak reference most of the time
                 // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
                 // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
                 // there's nothing more to do (we can't raise events), so bail.
-                if (!_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                if (!instance._weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                 {
-                    CleanupEventStream();
+                    instance.CleanupEventStream();
                     return;
                 }
 
-                ExecutionContext? context = _context;
+                ExecutionContext? context = instance._context;
                 if (context is null)
                 {
                     // Flow suppressed, just run here
-                    ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher);
+                    instance.ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher);
                 }
                 else
                 {
                     ExecutionContext.Run(
                         context,
                         (object? o) => ((RunningInstance)o!).ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher),
-                        this);
+                        instance);
                 }
             }
 

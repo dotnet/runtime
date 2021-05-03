@@ -15422,7 +15422,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (allocSize <= maxSize)
                             {
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
-                                JITDUMP("Converting stackalloc of %lld bytes to new local V%02u\n", allocSize,
+                                JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;

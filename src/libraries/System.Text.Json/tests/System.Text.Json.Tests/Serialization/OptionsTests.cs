@@ -337,9 +337,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
 
-            // Initialize the built-in converters.
-            JsonSerializer.Serialize("", options);
-
             JsonConverter<T> converter = (JsonConverter<T>)options.GetConverter(typeof(T));
             Assert.Equal(converterName, converter.GetType().Name);
 

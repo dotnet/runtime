@@ -9638,7 +9638,7 @@ calli_end:
 						EMIT_NEW_SFLDACONST (cfg, ins, field);
 					else {
 						g_assert (vtable);
-						addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
+						addr = mono_static_field_get_addr (vtable, field);
 						g_assert (addr);
 						EMIT_NEW_PCONST (cfg, ins, addr);
 					}
@@ -9683,7 +9683,7 @@ calli_end:
 						(!context_used && !cfg->compile_aot && vtable->initialized))) {
 					int ro_type = ftype->type;
 					if (!addr)
-						addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
+						addr = mono_static_field_get_addr (vtable, field);
 					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
 						ro_type = mono_class_enum_basetype_internal (ftype->data.klass)->type;
 					}
