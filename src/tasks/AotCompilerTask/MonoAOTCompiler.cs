@@ -99,9 +99,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? AotModulesTableLanguage { get; set; } = nameof(MonoAotModulesTableLanguage.C);
 
     /// <summary>
-    /// Choose between 'Normal', 'Full', 'LLVMOnly', 'LLVMOnlyInterp'.
+    /// Choose between 'Normal', 'Full', 'FullInterp', 'LLVMOnly', 'LLVMOnlyInterp'.
     /// LLVMOnly means to use only LLVM for FullAOT, AOT result will be a LLVM Bitcode file (the cross-compiler must be built with LLVM support)
-    /// The "interp" options mean generate necessary support to fall back to interpreter if AOT code is not possible for some methods.
+    /// The "interp" options ('LLVMOnlyInterp' and 'FullInterp') mean generate necessary support to fall back to interpreter if AOT code is not possible for some methods.
     /// </summary>
     public string Mode { get; set; } = nameof(MonoAotMode.Normal);
 
@@ -322,9 +322,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            if (parsedAotMode == MonoAotMode.Full)
+            if (parsedAotMode == MonoAotMode.Full || parsedAotMode == MonoAotMode.FullInterp)
             {
                 aotArgs.Add("full");
+            }
+
+            if (parsedAotMode == MonoAotMode.FullInterp)
+            {
+                aotArgs.Add("interp");
             }
 
             if (parsedOutputType == MonoAotOutputType.AsmOnly)
@@ -505,6 +510,7 @@ public enum MonoAotMode
 {
     Normal,
     Full,
+    FullInterp,
     LLVMOnly,
     LLVMOnlyInterp
 }
