@@ -6,13 +6,6 @@
 #define HEADER_LENGTH 11
 #define REPLY_PACKET 0x80
 
-#ifdef TARGET_AMD64
-#define POS_RSP 0x98
-#else
-#define POS_RSP 0 //TODO fix for other platforms
-#endif
-
-
 /* 
  * Wire Protocol definitions
  */
@@ -41,8 +34,7 @@ typedef enum {
 	MDBGPROT_CMD_VM_START_BUFFERING = 14,
 	MDBGPROT_CMD_VM_STOP_BUFFERING = 15,
 	MDBGPROT_CMD_VM_READ_MEMORY = 16,
-	MDBGPROT_CMD_VM_WRITE_MEMORY = 17,
-	MDBGPROT_CMD_VM_SET_CLIENT_POS_CONTEXT_SP = 18
+	MDBGPROT_CMD_VM_WRITE_MEMORY = 17
 } MdbgProtCmdVM;
 
 typedef enum {

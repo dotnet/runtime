@@ -385,9 +385,6 @@ static MonoCoopMutex debugger_thread_exited_mutex;
 /* The protocol version of the client */
 static int major_version, minor_version;
 
-/* The debugger client platform, used to encode and decode context to icordbg*/ 
-static int pos_rsp;
-
 /* If the debugger is using icordbg interface */
 static gboolean using_icordbg;
 
@@ -6632,10 +6629,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
 	}
-	case MDBGPROT_CMD_VM_SET_CLIENT_POS_CONTEXT_SP: {
-		pos_rsp = decode_int (p, &p, end);
-		break;
-	}
 	case CMD_VM_ALL_THREADS: {
 		// FIXME: Domains
 		gboolean remove_gc_finalizing = FALSE;
@@ -9673,8 +9666,7 @@ static const char* vm_cmds_str [] = {
 	"START_BUFFERING",
 	"STOP_BUFFERING",
 	"READ_MEMORY",
-	"WRITE_MEMORY",
-	"SET_CLIENT_POS_CONTEXT_SP"
+	"WRITE_MEMORY"
 };
 
 static const char* thread_cmds_str[] = {

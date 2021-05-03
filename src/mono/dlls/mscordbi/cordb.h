@@ -44,6 +44,13 @@ static UTSemReadWrite* m_pSemReadWrite;
 #define LOGGING
 #endif
 
+#ifdef TARGET_AMD64
+#define POS_RSP 0x98
+#else
+#define POS_RSP 0 //TODO fix for other platforms
+#endif
+
+
 #define CreateProcess CreateProcessW
 
 class Socket;
