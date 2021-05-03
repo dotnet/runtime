@@ -6,6 +6,9 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
+
+    <!-- these tests depend on the pdb files -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
@@ -72,6 +75,8 @@
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
   <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+
     <!-- Assemblies that should be excluded from the bundle -->
     <__ExcludeFromBundle Include="TestAssembly.dll" />
   </ItemGroup>

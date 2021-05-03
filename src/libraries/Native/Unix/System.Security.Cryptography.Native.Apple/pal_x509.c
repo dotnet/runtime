@@ -528,10 +528,6 @@ int32_t AppleCryptoNative_X509ExportData(CFArrayRef data,
 
 static OSStatus AddKeyToKeychain(SecKeyRef privateKey, SecKeychainRef targetKeychain, SecKeyRef* importedKey)
 {
-    // This is quite similar to pal_seckey's ExportImportKey, but
-    // a) is used to put something INTO a keychain, instead of to take it out.
-    // b) Doesn't assume that the input should be CFRelease()d and overwritten.
-    // c) Works on private keys.
     SecExternalFormat dataFormat = kSecFormatWrappedPKCS8;
     CFDataRef exportData = NULL;
 

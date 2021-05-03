@@ -5222,7 +5222,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     SetIP(&frameContext, osrMethodCode);
 
     // Transition!
-    RtlRestoreContext(&frameContext, NULL);
+    ClrRestoreNonvolatileContext(&frameContext);
 }
 
 #else

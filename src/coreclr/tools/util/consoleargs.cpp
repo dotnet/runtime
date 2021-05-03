@@ -953,6 +953,11 @@ void ConsoleArgs::ProcessResponseArgs()
 #endif
 
         TextToArgs(szActualText, &listCurArg->next);
+
+        delete[] pwzFileBuffer;
+#ifndef TARGET_UNIX
+        delete[] szExpandedBuffer;
+#endif
         }
 
 CONTINUE:  // remove the response file argument, and continue to the next.
