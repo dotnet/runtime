@@ -3251,16 +3251,18 @@ decode_exception_debug_info (MonoAotModule *amodule,
 
 		p += mono_seq_point_info_read (&seq_points, p, FALSE);
 
-		// FIXME: Call a function in seq-points.c
-		// FIXME:
-		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-		jit_mm_lock (jit_mm);
-		/* This could be set already since this function can be called more than once for the same method */
-		if (!g_hash_table_lookup (jit_mm->seq_points, method))
-			g_hash_table_insert (jit_mm->seq_points, method, seq_points);
-		else
-			mono_seq_point_info_free (seq_points);
-		jit_mm_unlock (jit_mm);
+		if (!async) {
+			// FIXME: Call a function in seq-points.c
+			// FIXME:
+			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+			jit_mm_lock (jit_mm);
+			/* This could be set already since this function can be called more than once for the same method */
+			if (!g_hash_table_lookup (jit_mm->seq_points, method))
+				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
+			else
+				mono_seq_point_info_free (seq_points);
+			jit_mm_unlock (jit_mm);
+		}
 
 		jinfo->seq_points = seq_points;
 	}
@@ -3280,7 +3282,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		p += map_size;
 	}
 
-	if (amodule != m_class_get_image (jinfo->d.method->klass)->aot_module) {
+	if (amodule != m_class_get_image (jinfo->d.method->klass)->aot_module && !async) {
 		mono_aot_lock ();
 		if (!ji_to_amodule)
 			ji_to_amodule = g_hash_table_new (NULL, NULL);
@@ -3601,8 +3603,8 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
-	/* Add it to the normal JitInfo tables */
 	if (async) {
+		/* Add it to the async JitInfo tables */
 		JitInfoMap *old_table, *new_table;
 		int len;
 
@@ -3629,6 +3631,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 				break;
 		}
 	} else {
+		/* Add it to the normal JitInfo tables */
 		mono_jit_info_table_add (jinfo);
 	}
 
