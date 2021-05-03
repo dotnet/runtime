@@ -204,6 +204,32 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task ReadAtLeastAsyncUnblocksWriterIfMinimumlowerThanResumeThreshold()
+        {
+            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            Assert.False(flushAsync.IsCompleted);
+
+            ValueTask<ReadResult> readAsync = _pipe.Reader.ReadAtLeastAsync(PauseWriterThreshold * 3);
+
+            Assert.False(readAsync.IsCompleted);
+
+            // This should unblock the flush
+            Assert.True(flushAsync.IsCompleted);
+
+            for (int i = 0; i < 2; i++)
+            {
+                writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
+                flushAsync = writableBuffer.FlushAsync();
+                Assert.True(flushAsync.IsCompleted);
+            }
+
+            var result = await readAsync;
+            Assert.Equal(PauseWriterThreshold * 3, result.Buffer.Length);
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+        }
+
+        [Fact]
         public async Task FlushAsyncThrowsIfReaderCompletedWithException()
         {
             _pipe.Reader.Complete(new InvalidOperationException("Reader failed"));

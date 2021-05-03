@@ -2907,8 +2907,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	MonoRuntimeGenericContext *orig_rgctx;
 	int rgctx_index;
 	gboolean do_free;
-	// FIXME:
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
 
 	/*
 	 * Need a fastpath since this is called without trampolines in llvmonly mode.
