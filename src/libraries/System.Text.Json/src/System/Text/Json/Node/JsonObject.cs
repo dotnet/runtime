@@ -12,7 +12,7 @@ namespace System.Text.Json.Node
     ///   Represents a mutable JSON object.
     /// </summary>
     /// <remarks>
-    /// It is safe to perform multiple concurrent read operations on a <see cref="JsonObject"/>,
+    /// It's safe to perform multiple concurrent read operations on a <see cref="JsonObject"/>,
     /// but issues can occur if the collection is modified while it's being read.
     /// </remarks>
     [DebuggerDisplay("JsonObject[{Count}]")]

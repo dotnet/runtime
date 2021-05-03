@@ -755,7 +755,7 @@ namespace System.Text.Json.Node.Tests
         public static IEnumerable<object[]> JObjectCollectionData()
         {
             // Ensure that the list-to-dictionary threshold is hit (currently 9).
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 25; i++)
             {
                 yield return CreateArray(i);
                 yield return CreateArray_JsonElement(i);
@@ -764,8 +764,8 @@ namespace System.Text.Json.Node.Tests
             yield return CreateArray(123);
             yield return CreateArray_JsonElement(122);
 
-            yield return CreateArray(1000);
-            yield return CreateArray_JsonElement(999);
+            yield return CreateArray(300);
+            yield return CreateArray_JsonElement(299);
 
             object[] CreateArray(int count)
             {
