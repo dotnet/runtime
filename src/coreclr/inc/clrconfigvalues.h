@@ -663,6 +663,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgEnableMiniDump, W("DbgEnableMiniDump"), 0, 
 RETAIL_CONFIG_STRING_INFO(INTERNAL_DbgMiniDumpName, W("DbgMiniDumpName"), "Crash dump name")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgMiniDumpType, W("DbgMiniDumpType"), 0, "Crash dump type: 1 normal, 2 withheap, 3 triage, 4 full")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CreateDumpDiagnostics, W("CreateDumpDiagnostics"), 0, "Enable crash dump generation diagnostic logging")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableDumpOnSigTerm, W("EnableDumpOnSigTerm"), 0, "Enable crash dump generation on SIGTERM")
 
 ///
 /// Zap

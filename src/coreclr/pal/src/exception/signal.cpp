@@ -62,8 +62,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 using namespace CorUnix;
 
-extern bool g_enableDumpOnSigTerm;
-
 /* local type definitions *****************************************************/
 
 typedef void (*SIGFUNC)(int, siginfo_t *, void *);
@@ -724,11 +722,6 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         _ASSERTE(g_pSynchronizationManager != nullptr);
 
         g_pSynchronizationManager->SendTerminationRequestToWorkerThread();
-
-        if (g_enableDumpOnSigTerm)
-        {
-            PROCCreateCrashDumpIfEnabled();
-        }
     }
     else
     {

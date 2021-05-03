@@ -233,7 +233,6 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 char* g_argvCreateDump[8] = { nullptr };
-bool g_enableDumpOnSigTerm = false;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -3255,9 +3254,6 @@ PROCAbortInitialize()
     char* enabled = getenv("COMPlus_DbgEnableMiniDump");
     if (enabled != nullptr && _stricmp(enabled, "1") == 0)
     {
-        char* sigterm = getenv("COMPlus_EnableDumpOnSigTerm");
-        g_enableDumpOnSigTerm = sigterm != nullptr && strcmp(sigterm, "1") == 0;
-
         char* dumpName = getenv("COMPlus_DbgMiniDumpName");
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
