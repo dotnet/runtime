@@ -297,14 +297,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         // compute output mode and file names
-        if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
+        if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.LLVMOnlyInterp)
         {
             aotArgs.Add("llvmonly");
 
             string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
             aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
 
-            if (parsedAotMode == MonoAotMode.AotInterp)
+            if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
             {
                 aotArgs.Add("interp");
             }
@@ -465,7 +465,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine("#define EE_MODE_LLVMONLY 1");
                 }
 
-                if (parsedAotMode == MonoAotMode.AotInterp)
+                if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
                 {
                     writer.WriteLine("#define EE_MODE_LLVMONLY_INTERP 1");
                 }
@@ -505,7 +505,7 @@ public enum MonoAotMode
     Normal,
     Full,
     LLVMOnly,
-    AotInterp
+    LLVMOnlyInterp
 }
 
 public enum MonoAotOutputType
