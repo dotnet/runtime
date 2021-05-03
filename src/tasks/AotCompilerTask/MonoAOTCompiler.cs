@@ -99,8 +99,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? AotModulesTableLanguage { get; set; } = nameof(MonoAotModulesTableLanguage.C);
 
     /// <summary>
-    /// Choose between 'Normal', 'Full', 'LLVMOnly'.
+    /// Choose between 'Normal', 'Full', 'LLVMOnly', 'LLVMOnlyInterp'.
     /// LLVMOnly means to use only LLVM for FullAOT, AOT result will be a LLVM Bitcode file (the cross-compiler must be built with LLVM support)
+    /// The "interp" options mean generate necessary support to fall back to interpreter if AOT code is not possible for some methods.
     /// </summary>
     public string Mode { get; set; } = nameof(MonoAotMode.Normal);
 
