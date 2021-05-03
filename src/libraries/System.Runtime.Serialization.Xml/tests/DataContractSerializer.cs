@@ -3940,49 +3940,51 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_MemoryStream_Serialize_UsesBuiltInAdapter()
     {
-        MemoryStream ms = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
-        SerializeObjectAndValidate(ms, new byte[] { 1, 2, 3, 4, 5 }, 0, false);
+        ValidateObject(
+            original: new MemoryStream(),
+            expectedXml: @"<MemoryStream xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""http://schemas.datacontract.org/2004/07/System.IO""><__identity i:nil=""true"" xmlns=""http://schemas.datacontract.org/2004/07/System"" /><_buffer></_buffer><_capacity>0</_capacity><_expandable>false</_expandable><_exposable>true</_exposable><_isOpen>true</_isOpen><_length>0</_length><_origin>0</_origin><_position>0</_position><_writable>true</_writable></MemoryStream>",
+            expectedData: new byte[0],
+            expectedPosition: 0,
+            expectedExposable: true);
 
-        ms = new MemoryStream(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, 2, 5, true, true); // partial buffer
-        SerializeObjectAndValidate(ms, new byte[] { 3, 4, 5, 6, 7 }, 0, true);
+        ValidateObject(
+            original: new MemoryStream(new byte[] { 1, 2, 3, 4, 5 }),
+            expectedXml: @"<MemoryStream xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""http://schemas.datacontract.org/2004/07/System.IO""><__identity i:nil=""true"" xmlns=""http://schemas.datacontract.org/2004/07/System"" /><_buffer>AQIDBAU=</_buffer><_capacity>5</_capacity><_expandable>false</_expandable><_exposable>false</_exposable><_isOpen>true</_isOpen><_length>5</_length><_origin>0</_origin><_position>0</_position><_writable>true</_writable></MemoryStream>",
+            expectedData: new byte[] { 1, 2, 3, 4, 5 },
+            expectedPosition: 0,
+            expectedExposable: false);
 
-        ms = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 }, 0, 4, writable: false, publiclyVisible: true) { Position = 2 };
-        SerializeObjectAndValidate(ms, new byte[] { 1, 2, 3, 4 }, 2, true);
+        ValidateObject(
+            original: new MemoryStream(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, 2, 5, true, true), // partial buffer
+            expectedXml: @"<MemoryStream xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""http://schemas.datacontract.org/2004/07/System.IO""><__identity i:nil=""true"" xmlns=""http://schemas.datacontract.org/2004/07/System"" /><_buffer>AwQFBgc=</_buffer><_capacity>5</_capacity><_expandable>false</_expandable><_exposable>true</_exposable><_isOpen>true</_isOpen><_length>5</_length><_origin>0</_origin><_position>0</_position><_writable>true</_writable></MemoryStream>",
+            expectedData: new byte[] { 3, 4, 5, 6, 7 },
+            expectedPosition: 0,
+            expectedExposable: true);
 
-        ms = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 }, 0, 4, writable: false, publiclyVisible: false) { Position = 4 };
-        SerializeObjectAndValidate(ms, new byte[] { 1, 2, 3, 4 }, 4, false);
+        ValidateObject(
+            original: new MemoryStream(new byte[] { 1, 2, 3, 4, 5 }, 0, 4, writable: false, publiclyVisible: true) { Position = 2 },
+            expectedXml: @"<MemoryStream xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""http://schemas.datacontract.org/2004/07/System.IO""><__identity i:nil=""true"" xmlns=""http://schemas.datacontract.org/2004/07/System"" /><_buffer>AQIDBA==</_buffer><_capacity>4</_capacity><_expandable>false</_expandable><_exposable>true</_exposable><_isOpen>true</_isOpen><_length>4</_length><_origin>0</_origin><_position>2</_position><_writable>false</_writable></MemoryStream>",
+            expectedData: new byte[] { 1, 2, 3, 4 },
+            expectedPosition: 2,
+            expectedExposable: true);
 
-        static void SerializeObjectAndValidate(MemoryStream obj, byte[] expectedData, int expectedPosition, bool expectedExposable)
+        ValidateObject(
+           original: new MemoryStream(new byte[] { 1, 2, 3, 4, 5 }, 0, 4, writable: false, publiclyVisible: false) { Position = 4 },
+           expectedXml: @"<MemoryStream xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""http://schemas.datacontract.org/2004/07/System.IO""><__identity i:nil=""true"" xmlns=""http://schemas.datacontract.org/2004/07/System"" /><_buffer>AQIDBA==</_buffer><_capacity>4</_capacity><_expandable>false</_expandable><_exposable>false</_exposable><_isOpen>true</_isOpen><_length>4</_length><_origin>0</_origin><_position>4</_position><_writable>false</_writable></MemoryStream>",
+           expectedData: new byte[] { 1, 2, 3, 4 },
+           expectedPosition: 4,
+           expectedExposable: false);
+
+        static void ValidateObject(MemoryStream original, string expectedXml, byte[] expectedData, int expectedPosition, bool expectedExposable)
         {
-            // First, inspect the XML manually, since we want to validate that the structure
-            // matches what we expect for the Full Framework.
-
-            StringWriter stringWriter = new StringWriter();
-            new DataContractSerializer(typeof(MemoryStream)).WriteObject(new XmlTextWriter(stringWriter), obj);
-            XElement root = XDocument.Parse(stringWriter.ToString()).Root;
-
-            XNamespace xns = "http://schemas.datacontract.org/2004/07/System.IO";
-
-            Assert.Equal(Convert.ToBase64String(expectedData), root.Element(xns.GetName("_buffer")).Value);
-            Assert.Equal(XmlConvert.ToString(0), root.Element(xns.GetName("_origin")).Value);
-            Assert.Equal(XmlConvert.ToString(expectedData.Length), root.Element(xns.GetName("_capacity")).Value);
-            Assert.Equal(XmlConvert.ToString(expectedData.Length), root.Element(xns.GetName("_length")).Value);
-            Assert.Equal(XmlConvert.ToString(expectedExposable), root.Element(xns.GetName("_exposable")).Value);
-            Assert.Equal(XmlConvert.ToString(expectedPosition), root.Element(xns.GetName("_position")).Value);
-            Assert.Equal(XmlConvert.ToString(obj.CanWrite), root.Element(xns.GetName("_writable")).Value);
-            Assert.Equal("false", root.Element(xns.GetName("_expandable")).Value);
-            Assert.Equal("true", root.Element(xns.GetName("_isOpen")).Value);
-
-            // Then, round-trip the instance and compare the runtime properties
-
-            MemoryStream roundTripped = DataContractSerializerHelper.SerializeAndDeserialize(obj, stringWriter.ToString(), skipStringCompare: true);
+            MemoryStream roundTripped = DataContractSerializerHelper.SerializeAndDeserialize(original, expectedXml);
 
             Assert.NotNull(roundTripped);
             Assert.Equal(expectedData, roundTripped.ToArray());
-            Assert.Equal(obj.Position, roundTripped.Position);
-            Assert.Equal(obj.Length, roundTripped.Length);
-            Assert.Equal(obj.Capacity, roundTripped.Capacity);
-            Assert.Equal(obj.CanWrite, roundTripped.CanWrite);
+            Assert.Equal(original.Position, roundTripped.Position);
+            Assert.Equal(original.Length, roundTripped.Length);
+            Assert.Equal(original.Capacity, roundTripped.Capacity);
+            Assert.Equal(original.CanWrite, roundTripped.CanWrite);
             Assert.Equal(expectedExposable, roundTripped.TryGetBuffer(out ArraySegment<byte> innerBuffer));
 
             if (expectedExposable)
@@ -4030,6 +4032,15 @@ public static partial class DataContractSerializerTests
 
         DeserializeObjectAndValidate(
             input: "<MemoryStream xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://schemas.datacontract.org/2004/07/System.IO\"><__identity i:nil=\"true\" xmlns=\"http://schemas.datacontract.org/2004/07/System\" /><_buffer>AQIDBAU=</_buffer><_capacity>500000</_capacity><_expandable>false</_expandable><_exposable>false</_exposable><_isOpen>false</_isOpen><_length>5</_length><_origin>0</_origin><_position>0</_position><_writable>true</_writable></MemoryStream>",
+            expectedData: new byte[] { 1, 2, 3, 4, 5 },
+            expectedPosition: 0,
+            expectedExposable: false,
+            expectedWritable: true);
+
+        // Demonstrates that we ignore _expandable
+
+        DeserializeObjectAndValidate(
+            input: "<MemoryStream xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://schemas.datacontract.org/2004/07/System.IO\"><__identity i:nil=\"true\" xmlns=\"http://schemas.datacontract.org/2004/07/System\" /><_buffer>AQIDBAU=</_buffer><_capacity>5</_capacity><_expandable>true</_expandable><_exposable>false</_exposable><_isOpen>false</_isOpen><_length>5</_length><_origin>0</_origin><_position>0</_position><_writable>true</_writable></MemoryStream>",
             expectedData: new byte[] { 1, 2, 3, 4, 5 },
             expectedPosition: 0,
             expectedExposable: false,

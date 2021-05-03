@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization
     internal abstract class MarshalByRefObjectAdapter
     {
         // never used, but must be first in the hierarchy in order to maintain NetFX compat
-        [DataMember(Name = "__identity")]
+        [DataMember(Name = "__identity", Order = 0)]
         public object? Identity { get { return null; } set { } }
     }
 
@@ -20,31 +20,31 @@ namespace System.Runtime.Serialization
     [DataContract(Name = "MemoryStream", Namespace = Globals.DataContractXsdBaseNamespace + "System.IO")]
     internal sealed class MemoryStreamAdapter : MarshalByRefObjectAdapter
     {
-        [DataMember(Name = "_buffer")]
+        [DataMember(Name = "_buffer", Order = 1)]
         public byte[]? Buffer { get; set; }
 
-        [DataMember(Name = "_capacity")]
+        [DataMember(Name = "_capacity", Order = 2)]
         public int Capacity { get; set; }
 
-        [DataMember(Name = "_expandable")]
+        [DataMember(Name = "_expandable", Order = 3)]
         public bool Expandable { get; set; }
 
-        [DataMember(Name = "_exposable")]
+        [DataMember(Name = "_exposable", Order = 4)]
         public bool Exposable { get; set; }
 
-        [DataMember(Name = "_isOpen")]
+        [DataMember(Name = "_isOpen", Order = 5)]
         public bool IsOpen { get; set; }
 
-        [DataMember(Name = "_length")]
+        [DataMember(Name = "_length", Order = 6)]
         public int Length { get; set; }
 
-        [DataMember(Name = "_origin")]
+        [DataMember(Name = "_origin", Order = 7)]
         public int Origin { get; set; }
 
-        [DataMember(Name = "_position")]
+        [DataMember(Name = "_position", Order = 8)]
         public int Position { get; set; }
 
-        [DataMember(Name = "_writable")]
+        [DataMember(Name = "_writable", Order = 9)]
         public bool Writable { get; set; }
 
         public static MemoryStream GetMemoryStream(MemoryStreamAdapter value)
