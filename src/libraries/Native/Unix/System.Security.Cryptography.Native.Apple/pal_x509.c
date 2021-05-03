@@ -42,8 +42,17 @@ AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* 
 
 static void InitCertificateCopy()
 {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+    // SecCertificateCopyPublicKey on iOS/tvOS has same function prototype as SecCertificateCopyKey
+    secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyKey");
+    if (secCertificateCopyKey == NULL)
+    {
+        secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyPublicKey");
+    }
+#else
     secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyKey");
     secCertificateCopyPublicKey = (OSStatus (*)(SecCertificateRef, SecKeyRef*))dlsym(RTLD_DEFAULT, "SecCertificateCopyPublicKey");
+#endif
 }
 
 int32_t

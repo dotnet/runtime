@@ -116,8 +116,9 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t i
             SecCertificateRef cert = (SecCertificateRef)CONST_CAST(void*, certOrIdentity);
             SecKeyRef publicKey = NULL;
             CFTypeRef publicKeyLabel = NULL;
+            int32_t dummyStatus;
 
-            if (AppleCryptoNative_X509GetPublicKey(cert, &publicKey, &status))
+            if (AppleCryptoNative_X509GetPublicKey(cert, &publicKey, &dummyStatus))
             {
                 CFDictionaryRef attrs = SecKeyCopyAttributes(publicKey);
                 publicKeyLabel = CFRetain(CFDictionaryGetValue(attrs, kSecAttrApplicationLabel));
