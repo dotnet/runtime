@@ -330,7 +330,7 @@ namespace System
         {
             Assembly? asm = null;
             if (assemblyResolver == null && typeResolver == null)
-                return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, false, ref stackMark);
+                return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, ref stackMark);
 
             if (assembly_name != null)
             {
