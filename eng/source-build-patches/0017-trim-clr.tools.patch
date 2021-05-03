@@ -9,10 +9,10 @@ dagood: (6.0) used '$(DotNetBuildFromSource)' != 'true' in fixup
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/eng/Subsets.props b/eng/Subsets.props
-index ce3049f51cb..a2363fcd2b0 100644
+index 24b4bd2..5e6e299 100644
 --- a/eng/Subsets.props
 +++ b/eng/Subsets.props
-@@ -49,6 +49,7 @@
+@@ -51,6 +51,7 @@
      <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
  
      <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
@@ -20,13 +20,14 @@ index ce3049f51cb..a2363fcd2b0 100644
  
      <DefaultHostSubsets>host.native+host.pkg+host.tools+host.tests</DefaultHostSubsets>
      <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono'"></DefaultHostSubsets>
-@@ -201,12 +201,11 @@
+@@ -201,12 +202,12 @@
      <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
                               $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
                               $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
 -                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
 -                             $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
 +                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
++    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
  
      <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
      <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
