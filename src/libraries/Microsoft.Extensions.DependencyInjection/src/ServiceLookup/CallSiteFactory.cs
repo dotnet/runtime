@@ -481,7 +481,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 if (descriptor == _item)
                 {
-                    return 0;
+                    return Count - 1;
                 }
 
                 if (_items != null)
@@ -489,7 +489,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int index = _items.IndexOf(descriptor);
                     if (index != -1)
                     {
-                        return index + 1;
+                        return Count - index + 1;
                     }
                 }
 
