@@ -3852,33 +3852,39 @@ var_types LclVarDsc::lvaArgType()
 //    tree - node that uses the local, its type is checked first.
 //
 // Return Value:
-//    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
 //
 var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
 {
     var_types targetType = tree->gtType;
+    var_types lclVarType = TypeGet();
+
+    if (targetType == TYP_STRUCT)
+    {
+        if (lclVarType == TYP_STRUCT)
+        {
+            lclVarType = GetLayout()->GetRegisterType();
+        }
+        targetType = lclVarType;
+    }
 
 #ifdef DEBUG
-    // Ensure that lclVar nodes are typed correctly.
-    if (tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+    if ((targetType != TYP_UNDEF) && tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
     {
-        // TODO: update that assert to work with TypeGet() == TYP_STRUCT case.
-        // assert(targetType == genActualType(TypeGet()));
+        const bool phiStore = (tree->gtGetOp1()->OperIsNonPhiLocal() == false);
+        // Ensure that the lclVar node is typed correctly,
+        // does not apply to phi-stores because they do not produce code in the merge block.
+        assert(phiStore || targetType == genActualType(lclVarType));
     }
 #endif
-
-    if (targetType != TYP_STRUCT)
-    {
-        return targetType;
-    }
-    return GetLayout()->GetRegisterType();
+    return targetType;
 }
 
 //------------------------------------------------------------------------
 // GetRegisterType: Determine register type for this local var.
 //
 // Return Value:
-//    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
 //
 var_types LclVarDsc::GetRegisterType() const
 {
