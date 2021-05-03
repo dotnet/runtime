@@ -1171,8 +1171,7 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         TT_CallCoInitialize       = 0x00000002, // CoInitialize needs to be called.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TT_SkipThreadStoreLock    = 0x00000004,    // Skip thread store lock. GC is only consumer.
-        TT_DeferPlatformInit      = 0x00000008,    // Defer any specialized platform initialization.
+        TT_DeferPlatformInit      = 0x00000004, // Defer any specialized platform initialization.
     };
 
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
@@ -4729,10 +4728,6 @@ public:
     static Thread *GetAllThreadList(Thread *Prev, ULONG mask, ULONG bits);
     static Thread *GetThreadList(Thread *Prev);
 
-    // Every EE process can lazily create a GUID that uniquely identifies it (for
-    // purposes of remoting).
-    const GUID    &GetUniqueEEId();
-
     // We shut down the EE when the last non-background thread terminates.  This event
     // is used to signal the main thread when this condition occurs.
     void            WaitForOtherThreads();
@@ -4786,7 +4781,7 @@ private:
     // m_PendingThreadCount is used to solve a race condition.  The main thread could
     // start another thread running and then exit.  The main thread might then start
     // tearing down the EE before the new thread moves itself out of m_UnstartedThread-
-    // Count in TransferUnstartedThread.  This count is atomically bumped in
+    // Count in TransferStartedThread.  This count is atomically bumped in
     // CreateNewThread, and atomically reduced within a locked thread store.
     //
     // m_DeadThreadCount is the subset of m_ThreadCount which have died.  The Win32
@@ -4829,10 +4824,6 @@ private:
     bool        m_TriggerGCForDeadThreads;
 
 private:
-    // Space for the lazily-created GUID.
-    GUID        m_EEGuid;
-    BOOL        m_GuidCreated;
-
     // Even in the release product, we need to know what thread holds the lock on
     // the ThreadStore.  This is so we never deadlock when the GC thread halts a
     // thread that holds this lock.

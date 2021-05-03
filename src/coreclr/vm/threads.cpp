@@ -4610,11 +4610,7 @@ void Thread::SetBackground(BOOL isBack)
         return;
 
     LOG((LF_SYNC, INFO3, "SetBackground obtain lock\n"));
-    ThreadStoreLockHolder TSLockHolder(FALSE);
-    if (RequireThreadStoreLock())
-    {
-        TSLockHolder.Acquire();
-    }
+    ThreadStoreLockHolder TSLockHolder(RequireThreadStoreLock());
 
     if (IsDead())
     {
@@ -4657,11 +4653,6 @@ void Thread::SetBackground(BOOL isBack)
             _ASSERTE(ThreadStore::s_pThreadStore->m_BackgroundThreadCount <=
                      ThreadStore::s_pThreadStore->m_ThreadCount);
         }
-    }
-
-    if (RequireThreadStoreLock())
-    {
-        TSLockHolder.Release();
     }
 }
 
@@ -5172,7 +5163,6 @@ ThreadStore::ThreadStore()
              m_DeadThreadCount(0),
              m_DeadThreadCountForGCTrigger(0),
              m_TriggerGCForDeadThreads(false),
-             m_GuidCreated(FALSE),
              m_HoldingThread(0)
 {
     CONTRACTL {
@@ -5277,11 +5267,7 @@ void ThreadStore::AddThread(Thread *newThread)
 
     LOG((LF_SYNC, INFO3, "AddThread obtain lock\n"));
 
-    ThreadStoreLockHolder TSLockHolder(FALSE);
-    if (newThread->RequireThreadStoreLock())
-    {
-        TSLockHolder.Acquire();
-    }
+    ThreadStoreLockHolder TSLockHolder(newThread->RequireThreadStoreLock());
 
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
 
@@ -5296,11 +5282,6 @@ void ThreadStore::AddThread(Thread *newThread)
 
     _ASSERTE(!newThread->IsBackground());
     _ASSERTE(!newThread->IsDead());
-
-    if (newThread->RequireThreadStoreLock())
-    {
-        TSLockHolder.Release();
-    }
 }
 
 // this function is just desgined to avoid deadlocks during abnormal process termination, and should not be used for any other purpose
@@ -5408,19 +5389,15 @@ BOOL ThreadStore::RemoveThread(Thread *target)
 void ThreadStore::TransferStartedThread(Thread *thread)
 {
     CONTRACTL {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
     }
     CONTRACTL_END;
 
     _ASSERTE(GetThreadNULLOk() == thread);
 
-    LOG((LF_SYNC, INFO3, "TransferUnstartedThread obtain lock\n"));
-    ThreadStoreLockHolder TSLockHolder(FALSE);
-    if (thread->RequireThreadStoreLock())
-    {
-        TSLockHolder.Acquire();
-    }
+    LOG((LF_SYNC, INFO3, "TransferStartedThread obtain lock\n"));
+    ThreadStoreLockHolder TSLockHolder(thread->RequireThreadStoreLock());
 
     _ASSERTE(s_pThreadStore->DbgFindThread(thread));
     _ASSERTE(thread->HasValidThreadHandle());
@@ -5428,14 +5405,8 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     _ASSERTE(thread->IsUnstarted());
     _ASSERTE(!thread->IsDead());
 
-    if (thread->m_State & Thread::TS_AbortRequested)
-    {
-        PAL_CPP_THROW(EEException *, new EEException(COR_E_THREADABORTED));
-    }
-
     // Of course, m_ThreadCount is already correct since it includes started and
     // unstarted threads.
-
     s_pThreadStore->m_UnstartedThreadCount--;
 
     // We only count background threads that have been started
@@ -5449,12 +5420,6 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     // stopping, interruption, etc.
     FastInterlockAnd((ULONG *) &thread->m_State, ~Thread::TS_Unstarted);
     FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_LegalToJoin);
-
-    // release ThreadStore Crst to avoid Crst Violation when calling HandleThreadAbort later
-    if (thread->RequireThreadStoreLock())
-    {
-        TSLockHolder.Release();
-    }
 
     // One of the components of OtherThreadsComplete() has changed, so check whether
     // we should now exit the EE.
@@ -5788,36 +5753,6 @@ void ThreadStore::WaitForOtherThreads()
         _ASSERTE(ret == WAIT_OBJECT_0);
     }
 }
-
-
-// Every EE process can lazily create a GUID that uniquely identifies it (for
-// purposes of remoting).
-const GUID &ThreadStore::GetUniqueEEId()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (!m_GuidCreated)
-    {
-        ThreadStoreLockHolder TSLockHolder(TRUE);
-        if (!m_GuidCreated)
-        {
-            HRESULT hr = ::CoCreateGuid(&m_EEGuid);
-
-            _ASSERTE(SUCCEEDED(hr));
-            if (SUCCEEDED(hr))
-                m_GuidCreated = TRUE;
-        }
-
-        if (!m_GuidCreated)
-            return IID_NULL;
-    }
-    return m_EEGuid;
-}
-
 
 #ifdef _DEBUG
 BOOL ThreadStore::DbgFindThread(Thread *target)
