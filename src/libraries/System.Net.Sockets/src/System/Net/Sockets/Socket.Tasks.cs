@@ -589,6 +589,12 @@ namespace System.Net.Sockets
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
+            if (ProtocolType == ProtocolType.Udp)
+            {
+                SocketException soex = new((int)SocketError.NotConnected);
+                return ValueTask.FromException(soex);
+            }
+
             int packetsCount = 0;
 
             if (fileName is not null)
