@@ -5,7 +5,7 @@ The P/Invoke source generator is responsible for finding all methods marked with
 1. [Process the symbols and metadata](#symbols-and-metadata-processing) for the method, its parameters, and its return type.
 1. [Determine the marshalling generators](#marshalling-generators) that will be responsible for generating the stub code for each parameter and return
 1. [Generate the stub code](#stub-code-generation)
-1. [Generate the corresponding P/Invoke](#p/invoke)
+1. [Generate the corresponding P/Invoke](#pinvoke)
 1. Add the generated source to the compilation.
 
 The pipeline uses the Roslyn [Syntax APIs](https://docs.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.syntax) to create the generated code. This imposes some structure for the marshalling generators and allows for easier inspection or modification (if desired) of the generated code.
