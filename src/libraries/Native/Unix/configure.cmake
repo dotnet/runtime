@@ -502,12 +502,9 @@ check_c_source_compiles(
 check_c_source_compiles(
     "
     #include <signal.h>
-    int main(void){
-        unsigned long flags = 0;
-        struct sigaction action;
-        action.sa_flags = flags;
-        int result = sigaction(SIGTTOU, &action, 0);
-        return 0;
+    int main(void)
+    {
+        return sizeof(sigaction::sa_flags) == 8 ? 0 : 1;
     }
     "
     HAVE_SIGACTION_ULONG_FLAGS
