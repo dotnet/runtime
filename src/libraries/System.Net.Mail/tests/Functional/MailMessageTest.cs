@@ -12,6 +12,7 @@
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Net.Mail.Tests
@@ -27,7 +28,7 @@ namespace System.Net.Mail.Tests
             messageWithSubjectAndBody.Subject = "the subject";
             messageWithSubjectAndBody.Body = "hello";
             messageWithSubjectAndBody.AlternateViews.Add(AlternateView.CreateAlternateViewFromString("<html><body>hello</body></html>", null, "text/html"));
-            Attachment a = Attachment.CreateAttachmentFromString("blah blah", "text/plain");
+            Attachment a = Attachment.CreateAttachmentFromString("blah blah", "AttachmentName");
             messageWithSubjectAndBody.Attachments.Add(a);
 
             emptyMessage = new MailMessage("from@example.com", "r1@t1.com, r2@t1.com");
@@ -65,6 +66,8 @@ namespace System.Net.Mail.Tests
             Assert.Equal(1, messageWithSubjectAndBody.Attachments.Count);
             Attachment at = messageWithSubjectAndBody.Attachments[0];
             Assert.Equal("text/plain", at.ContentType.MediaType);
+            Assert.Equal("AttachmentName", at.ContentType.Name);
+            Assert.Equal("AttachmentName", at.Name);
         }
 
         [Fact]
@@ -146,7 +149,60 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Not passing as internal System.Net.Mail.MailWriter stripped from build
+        [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
+        public void SendMailMessageTest()
+        {
+            string expected = @"X-Sender: from@example.com
+X-Receiver: to@example.com
+MIME-Version: 1.0
+From: from@example.com
+To: to@example.com
+Date: DATE
+Subject: the subject
+Content-Type: multipart/mixed;
+ boundary=--boundary_1_GUID
+
+
+----boundary_1_GUID
+Content-Type: multipart/alternative;
+ boundary=--boundary_0_GUID
+
+
+----boundary_0_GUID
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
+
+hello
+----boundary_0_GUID
+Content-Type: text/html; charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
+
+<html><body>hello</body></html>
+----boundary_0_GUID--
+
+----boundary_1_GUID
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment
+Content-Transfer-Encoding: quoted-printable
+
+blah blah
+----boundary_1_GUID--
+";
+            expected = expected.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
+
+            string sent = DecodeSentMailMessage(messageWithSubjectAndBody).Raw;
+            sent = Regex.Replace(sent, "Date:.*?\r\n", "Date: DATE\r\n");
+            sent = Regex.Replace(sent, @"_.{8}-.{4}-.{4}-.{4}-.{12}", "_GUID");
+
+            // name and charset can appear in different order
+            Assert.Contains("; name=AttachmentName", sent);
+            sent = sent.Replace("; name=AttachmentName", string.Empty);
+
+            Assert.Equal(expected, sent);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
             // The special length follows pattern: (3N - 1) * 0x4400 + 1
@@ -161,7 +217,9 @@ namespace System.Net.Mail.Tests
             {
                 var message = new MailMessage("sender@test.com", "user1@pop.local", "testSubject", "testBody");
                 message.Attachments.Add(new Attachment(tempFile.Path));
-                string decodedAttachment = DecodeSentMailMessage(message);
+
+                string attachment = DecodeSentMailMessage(message).Attachment;
+                string decodedAttachment = Encoding.UTF8.GetString(Convert.FromBase64String(attachment));
 
                 // Make sure last byte is not encoded twice.
                 Assert.Equal(specialLength, decodedAttachment.Length);
@@ -169,7 +227,7 @@ namespace System.Net.Mail.Tests
             }
         }
 
-        private static string DecodeSentMailMessage(MailMessage mail)
+        private static (string Raw, string Attachment) DecodeSentMailMessage(MailMessage mail)
         {
             // Create a MIME message that would be sent using System.Net.Mail.
             var stream = new MemoryStream();
@@ -192,11 +250,9 @@ namespace System.Net.Mail.Tests
 
             // Decode contents.
             string result = Encoding.UTF8.GetString(stream.ToArray());
-            string encodedAttachment = result.Split(new[] { "attachment" }, StringSplitOptions.None)[1].Trim().Split('-')[0].Trim();
-            byte[] data = Convert.FromBase64String(encodedAttachment);
-            string decodedString = Encoding.UTF8.GetString(data);
+            string attachment = result.Split(new[] { "attachment" }, StringSplitOptions.None)[1].Trim().Split('-')[0].Trim();
 
-            return decodedString;
+            return (result, attachment);
         }
     }
 }

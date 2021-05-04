@@ -13,11 +13,8 @@ using System.Security;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class Utils
+    internal static class Utils
     {
-        // To stop the compiler from autogenerating a constructor for this class
-        private Utils() { }
-
         //
         // byte utilities
         //

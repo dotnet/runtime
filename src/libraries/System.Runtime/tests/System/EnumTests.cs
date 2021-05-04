@@ -1979,23 +1979,20 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnumType_TestData()
         {
-            if (PlatformDetection.IsReflectionEmitSupported)
-            {
-                yield return new object[] { s_floatEnumType, 1.0f };
-                yield return new object[] { s_doubleEnumType, 1.0 };
-                yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
-                yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
-            }
+            yield return new object[] { s_floatEnumType, 1.0f };
+            yield return new object[] { s_doubleEnumType, 1.0 };
+            yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
+            yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(UnsupportedEnumType_TestData))]
         public static void GetName_Unsupported_ThrowsArgumentException(Type enumType, object value)
         {
             AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(enumType, value));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(UnsupportedEnumType_TestData))]
         public static void IsDefined_UnsupportedEnumType_ThrowsInvalidOperationException(Type enumType, object value)
         {
@@ -2012,7 +2009,7 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(UnsupportedEnum_TestData))]
         public static void ToString_UnsupportedEnumType_ThrowsArgumentException(Enum e)
         {
@@ -2021,7 +2018,7 @@ namespace System.Tests
             Assert.True(formatXExceptionName == nameof(InvalidOperationException) || formatXExceptionName == "ContractException");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(UnsupportedEnumType_TestData))]
         public static void Format_UnsupportedEnumType_ThrowsArgumentException(Type enumType, object value)
         {

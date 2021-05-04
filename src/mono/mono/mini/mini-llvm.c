@@ -335,8 +335,8 @@ static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
 	#define INTRINS_OVR(sym, ...) 0,
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) spec,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, spec) spec,
+	#define INTRINS_OVR_TAG(sym, _, arch, spec) spec,
+	#define INTRINS_OVR_TAG_KIND(sym, _, kind, arch, spec) spec,
 	#include "llvm-intrinsics.h"
 };
 
@@ -352,8 +352,8 @@ static const uint8_t intrin_kind [] = {
 	#define INTRINS_OVR(sym, ...) 0,
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) 0,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, spec) kind,
+	#define INTRINS_OVR_TAG(sym, _, arch, spec) 0,
+	#define INTRINS_OVR_TAG_KIND(sym, _, arch, kind, spec) kind,
 	#include "llvm-intrinsics.h"
 };
 
@@ -572,6 +572,13 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			return LLVMVectorType (LLVMInt64Type (), size / 8);
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+			return LLVMVectorType (LLVMInt64Type (), size / 8);
+#else
+			return LLVMVectorType (LLVMInt32Type (), size / 4);
+#endif
 		case MONO_TYPE_R4:
 			return LLVMVectorType (LLVMFloatType (), size / 4);
 		case MONO_TYPE_R8:
@@ -604,6 +611,13 @@ type_to_sse_type (int type)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 		return LLVMVectorType (LLVMInt64Type (), 2);
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return LLVMVectorType (LLVMInt64Type (), 2);
+#else
+		return LLVMVectorType (LLVMInt32Type (), 4);
+#endif
 	case MONO_TYPE_R8:
 		return LLVMVectorType (LLVMDoubleType (), 2);
 	case MONO_TYPE_R4:
@@ -774,6 +788,7 @@ primitive_type_is_unsigned (MonoTypeEnum t)
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
 		return TRUE;
 	default:
 		return FALSE;
@@ -1462,7 +1477,12 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
+#ifdef TARGET_WASM
+		/* Need volatile stores otherwise the compiler might move them */
+		mono_llvm_build_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg], TRUE, LLVM_BARRIER_NONE);
+#else
 		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
+#endif
 	}
 }
 
@@ -2849,7 +2869,7 @@ emit_get_method (MonoLLVMModule *module)
 {
 	LLVMModuleRef lmodule = module->lmodule;
 	LLVMValueRef func, switch_ins, m;
-	LLVMBasicBlockRef entry_bb, fail_bb, bb, code_start_bb, code_end_bb;
+	LLVMBasicBlockRef entry_bb, fail_bb, bb, code_start_bb, code_end_bb, main_bb;
 	LLVMBasicBlockRef *bbs = NULL;
 	LLVMTypeRef rtype;
 	LLVMBuilderRef builder = LLVMCreateBuilder ();
@@ -2869,12 +2889,13 @@ emit_get_method (MonoLLVMModule *module)
 
 	rtype = LLVMPointerType (LLVMInt8Type (), 0);
 
+	int table_len = module->max_method_idx + 1;
+
 	if (emit_table) {
 		LLVMTypeRef table_type;
 		LLVMValueRef *table_elems;
 		char *table_name;
 
-		int table_len = module->max_method_idx + 1;
 		table_type = LLVMArrayType (rtype, table_len);
 		table_name = g_strdup_printf ("%s_method_table", module->global_prefix);
 		table = LLVMAddGlobal (lmodule, table_type, table_name);
@@ -2921,13 +2942,21 @@ emit_get_method (MonoLLVMModule *module)
 
 	if (emit_table) {
 		/*
+		 * Because table_len is computed using the method indexes available for us, it
+		 * might not include methods which are not compiled because of AOT profiles.
+		 * So table_len can be smaller than info->nmethods. Add a bounds check because
+		 * of that.
 		 * switch (index) {
 		 * case -1: return code_start;
 		 * case -2: return code_end;
-		 * default: return method_table [index];
+		 * default: return index < table_len ? method_table [index] : 0;
 		 */
-		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
-		LLVMPositionBuilderAtEnd (builder, default_bb);
+		fail_bb = LLVMAppendBasicBlock (func, "FAIL");
+		LLVMPositionBuilderAtEnd (builder, fail_bb);
+		LLVMBuildRet (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), rtype, ""));
+
+		main_bb = LLVMAppendBasicBlock (func, "MAIN");
+		LLVMPositionBuilderAtEnd (builder, main_bb);
 		LLVMValueRef base = table;
 		LLVMValueRef indexes [2];
 		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -2935,6 +2964,11 @@ emit_get_method (MonoLLVMModule *module)
 		LLVMValueRef addr = LLVMBuildGEP (builder, base, indexes, 2, "");
 		LLVMValueRef res = mono_llvm_build_load (builder, addr, "", FALSE);
 		LLVMBuildRet (builder, res);
+
+		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
+		LLVMPositionBuilderAtEnd (builder, default_bb);
+		LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntSGE, LLVMGetParam (func, 0), LLVMConstInt (LLVMInt32Type (), table_len, FALSE), "");
+		LLVMBuildCondBr (builder, cmp, fail_bb, main_bb);
 
 		LLVMPositionBuilderAtEnd (builder, entry_bb);
 
@@ -11260,11 +11294,14 @@ is_linkonce_method (MonoMethod *method)
 	 * FIXME: Fails System.Core tests
 	 * -> amodule->sorted_methods contains duplicates, screwing up jit tables.
 	 */
+	// FIXME: This works, but the aot data for the methods is still kept, so size still increases
+#if 0
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 			return TRUE;
 	}
+#endif
 #endif
 	return FALSE;
 }
@@ -12307,10 +12344,10 @@ add_intrinsic (LLVMModuleRef module, int id)
 
 	/* Register overloaded intrinsics */
 	switch (id) {
-	#define INTRINS(intrin_name, llvm_id)
-	#define INTRINS_OVR(intrin_name, llvm_id, llvm_type) case INTRINS_ ## intrin_name: intrins = add_intrins1(module, id, llvm_type); break;
-	#define INTRINS_OVR_2_ARG(intrin_name, llvm_id, llvm_type1, llvm_type2) case INTRINS_ ## intrin_name: intrins = add_intrins2(module, id, llvm_type1, llvm_type2); break;
-	#define INTRINS_OVR_3_ARG(intrin_name, llvm_id, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3); break;
+	#define INTRINS(intrin_name, llvm_id, arch)
+	#define INTRINS_OVR(intrin_name, llvm_id, arch, llvm_type) case INTRINS_ ## intrin_name: intrins = add_intrins1(module, id, llvm_type); break;
+	#define INTRINS_OVR_2_ARG(intrin_name, llvm_id, arch, llvm_type1, llvm_type2) case INTRINS_ ## intrin_name: intrins = add_intrins2(module, id, llvm_type1, llvm_type2); break;
+	#define INTRINS_OVR_3_ARG(intrin_name, llvm_id, arch, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3); break;
 	#define INTRINS_OVR_TAG(...)
 	#define INTRINS_OVR_TAG_KIND(...)
 	#include "llvm-intrinsics.h"
@@ -12391,18 +12428,6 @@ mono_llvm_init (gboolean enable_jit)
 
 	if (enable_jit)
 		mono_llvm_jit_init ();
-}
-
-void
-mono_llvm_cleanup (void)
-{
-	MonoLLVMModule *module = &aot_module;
-
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
-	if (module->context)
-		LLVMContextDispose (module->context);
 }
 
 void
@@ -13705,6 +13730,10 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },
+#endif
+// flags_map cannot be zero length in MSVC, so add useless dummy entry for arm32
+#if defined(TARGET_ARM) && defined(HOST_WIN32)
+		{ "inited",	MONO_CPU_INITED},
 #endif
 	};
 	if (!cpu_features)

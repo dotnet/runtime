@@ -547,7 +547,7 @@ namespace System.Text.RegularExpressions
                 strLength -= 2;
             }
 
-            return string.Create(strLength, (set, category, startsWithNulls), (span, state) =>
+            return string.Create(strLength, (set, category, startsWithNulls), static (span, state) =>
             {
                 int index;
 

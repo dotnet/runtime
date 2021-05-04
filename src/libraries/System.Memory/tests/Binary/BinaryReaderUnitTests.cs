@@ -14,9 +14,15 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanRead()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
-            ulong value = 0x8877665544332211; // [11 22 33 44 55 66 77 88]
+            ulong value; // [11 22 33 44 55 66 77 88]
+            if (BitConverter.IsLittleEndian)
+            {
+                value = 0x8877665544332211;
+            }
+            else
+            {
+                value = 0x1122334455667788;
+            }
             Span<byte> span;
             unsafe
             {
@@ -113,9 +119,15 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void ReadOnlySpanRead()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
-            ulong value = 0x8877665544332211; // [11 22 33 44 55 66 77 88]
+            ulong value; // [11 22 33 44 55 66 77 88]
+            if (BitConverter.IsLittleEndian)
+            {
+                value = 0x8877665544332211;
+            }
+            else
+            {
+                value = 0x1122334455667788;
+            }
             ReadOnlySpan<byte> span;
             unsafe
             {
@@ -282,8 +294,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWriteAndReadBigEndianHeterogeneousStruct()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
             Span<byte> spanBE = new byte[Unsafe.SizeOf<TestStruct>()];
 
             WriteInt16BigEndian(spanBE, s_testStruct.S0);
@@ -358,8 +368,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanWriteAndReadLittleEndianHeterogeneousStruct()
         {
-            Assert.True(BitConverter.IsLittleEndian);
-
             Span<byte> spanLE = new byte[Unsafe.SizeOf<TestStruct>()];
 
             WriteInt16LittleEndian(spanLE, s_testStruct.S0);
@@ -434,7 +442,6 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void ReadingStructFieldByFieldOrReadAndReverseEndianness()
         {
-            Assert.True(BitConverter.IsLittleEndian);
             Span<byte> spanBE = new byte[Unsafe.SizeOf<TestHelpers.TestStructExplicit>()];
 
             var testExplicitStruct = new TestHelpers.TestStructExplicit

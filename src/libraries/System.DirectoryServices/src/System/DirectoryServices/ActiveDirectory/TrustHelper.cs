@@ -35,7 +35,7 @@ namespace System.DirectoryServices.ActiveDirectory
         TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL = 0x00000040
     }
 
-    internal class TrustHelper
+    internal static class TrustHelper
     {
         private const int STATUS_OBJECT_NAME_NOT_FOUND = 2;
         internal const int ERROR_NOT_FOUND = 1168;
@@ -54,8 +54,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int ERROR_ALREADY_EXISTS = 183;
         private const int ERROR_INVALID_LEVEL = 124;
         private static readonly char[] s_punctuations = "!@#$%^&*()_-+=[{]};:>|./?".ToCharArray();
-
-        private TrustHelper() { }
 
         internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool isForest)
         {

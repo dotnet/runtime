@@ -8,9 +8,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemSecurityCryptographyEncoding_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Use Android native crypto when ANDROID_OPENSSL_AAR is not defined.
-         TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
-    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'" />

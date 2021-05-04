@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeWinHttpHandle WinHttpOpen(

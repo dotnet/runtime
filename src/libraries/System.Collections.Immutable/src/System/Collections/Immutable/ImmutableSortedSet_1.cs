@@ -1132,7 +1132,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An reverse enumerable of a sorted set.
         /// </summary>
-        private class ReverseEnumerable : IEnumerable<T>
+        private sealed class ReverseEnumerable : IEnumerable<T>
         {
             /// <summary>
             /// The root node to enumerate.

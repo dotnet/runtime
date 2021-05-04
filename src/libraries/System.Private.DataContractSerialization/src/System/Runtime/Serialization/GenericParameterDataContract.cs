@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -10,6 +11,7 @@ namespace System.Runtime.Serialization
     {
         private readonly GenericParameterDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
         {
@@ -30,11 +32,14 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private readonly int _parameterPosition;
 
-            internal GenericParameterDataContractCriticalHelper(Type type)
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            internal GenericParameterDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
+                Type type)
                 : base(type)
             {
                 SetDataContractName(DataContract.GetStableName(type));

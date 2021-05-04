@@ -68,7 +68,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class DecimalSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<decimal>
+        private sealed class DecimalSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<decimal>
         {
             private readonly QueryOperatorEnumerator<decimal, TKey> _source; // The source data.
 
@@ -103,7 +103,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         tempSum += element;
                     }

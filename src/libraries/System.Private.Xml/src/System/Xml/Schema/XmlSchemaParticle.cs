@@ -160,7 +160,7 @@ namespace System.Xml.Schema
             return XmlQualifiedName.Empty; //If ever called on other particles
         }
 
-        private class EmptyParticle : XmlSchemaParticle
+        private sealed class EmptyParticle : XmlSchemaParticle
         {
             internal override bool IsEmpty
             {

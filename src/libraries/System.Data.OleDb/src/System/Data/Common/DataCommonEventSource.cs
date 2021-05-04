@@ -7,7 +7,7 @@ using System.Threading;
 namespace System.Data
 {
     [EventSource(Name = "System.Data.DataCommonEventSource")]
-    internal class DataCommonEventSource : EventSource
+    internal sealed class DataCommonEventSource : EventSource
     {
         internal static readonly DataCommonEventSource Log = new DataCommonEventSource();
         private const int TraceEventId = 1;

@@ -30,6 +30,7 @@
     <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
     <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="ILReader.cs" />
+    <Compile Include="..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs" Link="TypeSystemMetadataEmitter" />
   </ItemGroup>
 
   <ItemGroup>

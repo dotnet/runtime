@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.Configuration.Xml
 {
-    internal class XmlConfigurationElementTextContent
+    internal sealed class XmlConfigurationElementTextContent
     {
         public XmlConfigurationElementTextContent(string textContent, int? linePosition, int? lineNumber)
         {

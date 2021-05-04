@@ -43,7 +43,7 @@ namespace System.DirectoryServices.Protocols
         PhantomRoot = 2
     }
 
-    internal class UtilityHandle
+    internal static class UtilityHandle
     {
         private static readonly ConnectionHandle s_handle = new ConnectionHandle();
 

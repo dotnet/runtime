@@ -215,7 +215,7 @@ namespace System.Xml
             }
         }
 
-        private class NamespaceDecl
+        private sealed class NamespaceDecl
         {
             public string prefix;
             public string uri;
@@ -254,7 +254,7 @@ namespace System.Xml
             }
         }
 
-        private class NestedBinXml
+        private sealed class NestedBinXml
         {
             public SymbolTables symbolTables;
             public int docState;

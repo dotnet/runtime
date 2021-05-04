@@ -10,7 +10,7 @@ using System.Composition.Hosting.Providers.Metadata;
 
 namespace System.Composition.Hosting.Providers.Lazy
 {
-    internal class LazyWithMetadataExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class LazyWithMetadataExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly MethodInfo s_getLazyDefinitionsMethod = typeof(LazyWithMetadataExportDescriptorProvider).GetTypeInfo().GetDeclaredMethod("GetLazyDefinitions");
 

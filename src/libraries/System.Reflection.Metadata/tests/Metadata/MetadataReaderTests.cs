@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -203,11 +204,11 @@ namespace System.Reflection.Metadata.Tests
             byte[] peImage = (byte[])PortablePdbs.DocumentsPdb.Clone();
             GCHandle pinned = GetPinnedPEImage(peImage);
 
-            //38654710855 is the external table mask from PortablePdbs.DocumentsPdb
-            int externalTableMaskIndex = IndexOf(peImage, BitConverter.GetBytes(38654710855), 0);
+            //0x900001447 is the external table mask from PortablePdbs.DocumentsPdb
+            int externalTableMaskIndex = IndexOf(peImage, new byte[] { 0x47, 0x14, 0, 0, 9, 0, 0, 0 }, 0);
             Assert.NotEqual(externalTableMaskIndex, -1);
 
-            Array.Copy(BitConverter.GetBytes(38654710855 + 1), 0, peImage, externalTableMaskIndex, BitConverter.GetBytes(38654710855 + 1).Length);
+            Array.Copy(new byte[] { 0x48, 0x14, 0, 0, 9, 0, 0, 0 }, 0, peImage, externalTableMaskIndex, 8);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject(), peImage.Length));
         }
 
@@ -245,30 +246,30 @@ namespace System.Reflection.Metadata.Tests
             GCHandle pinned = GetPinnedPEImage(peImage);
             PEHeaders headers = new PEHeaders(new MemoryStream(peImage));
 
-            //1392 is the remaining bytes from NetModule.AppCS
-            int remainingBytesIndex = IndexOf(peImage, BitConverter.GetBytes(1392), headers.MetadataStartOffset);
+            //0x0570 is the remaining bytes from NetModule.AppCS
+            int remainingBytesIndex = IndexOf(peImage, new byte[] { 0x70, 0x05, 0, 0 }, headers.MetadataStartOffset);
             Assert.NotEqual(remainingBytesIndex, -1);
-            //14057656686423 is the presentTables from NetModule.AppCS, must be after remainingBytesIndex
-            int presentTablesIndex = IndexOf(peImage, BitConverter.GetBytes(14057656686423), headers.MetadataStartOffset + remainingBytesIndex);
+            //0xcc90da21757 is the presentTables from NetModule.AppCS, must be after remainingBytesIndex
+            int presentTablesIndex = IndexOf(peImage, new byte[] { 0x57, 0x17, 0xa2, 0x0d, 0xc9, 0x0c, 0, 0 }, headers.MetadataStartOffset + remainingBytesIndex);
             Assert.NotEqual(presentTablesIndex, -1);
 
             //Set this.ModuleTable.NumberOfRows to 0
-            Array.Copy(BitConverter.GetBytes((ulong)0), 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset + 16, BitConverter.GetBytes((ulong)0).Length);
+            Array.Copy(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset + 16, 8);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize));
             //set row counts greater than TokenTypeIds.RIDMask
-            Array.Copy(BitConverter.GetBytes((ulong)16777216), 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset + 16, BitConverter.GetBytes((ulong)16777216).Length);
+            Array.Copy(new byte[] { 0, 0, 1, 0 }, 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset + 16, 4);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize));
             //set remaining bytes smaller than required for row counts.
-            Array.Copy(BitConverter.GetBytes(25), 0, peImage, remainingBytesIndex + headers.MetadataStartOffset, BitConverter.GetBytes(25).Length);
+            Array.Copy(new byte[] { 25, 0, 0, 0 }, 0, peImage, remainingBytesIndex + headers.MetadataStartOffset, 4);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize));
-            //14057656686424 is a value to make (presentTables & ~validTables) != 0 but not (presentTables & (ulong)(TableMask.PtrTables | TableMask.EnCMap)) != 0
-            Array.Copy(BitConverter.GetBytes((ulong)14057656686424), 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset, BitConverter.GetBytes((ulong)14057656686424).Length);
+            //0xcc90da21758 is a value to make (presentTables & ~validTables) != 0 but not (presentTables & (ulong)(TableMask.PtrTables | TableMask.EnCMap)) != 0
+            Array.Copy(new byte[] { 0x58, 0x17, 0xa2, 0x0d, 0xc9, 0x0c, 0, 0 }, 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset, 8);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize));
-            //14066246621015 makes (presentTables & ~validTables) != 0 fail
-            Array.Copy(BitConverter.GetBytes((ulong)14066246621015), 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset, BitConverter.GetBytes((ulong)14066246621015).Length);
+            //0xccb0da21757 makes (presentTables & ~validTables) != 0 fail
+            Array.Copy(new byte[] { 0x57, 0x17, 0xa2, 0x0d, 0xcb, 0x0c, 0, 0 }, 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset, 8);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize));
             //set remaining bytes smaller than MetadataStreamConstants.SizeOfMetadataTableHeader
-            Array.Copy(BitConverter.GetBytes(1), 0, peImage, remainingBytesIndex + headers.MetadataStartOffset, BitConverter.GetBytes(1).Length);
+            Array.Copy(new byte[] { 1, 0, 0, 0 }, 0, peImage, remainingBytesIndex + headers.MetadataStartOffset, 4);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize));
         }
 
@@ -3033,18 +3034,25 @@ namespace System.Reflection.Metadata.Tests
             Array.Copy(unobfuscated, obfuscated, offsetToModuleTable);
             Array.Copy(unobfuscated, offsetToModuleTable, obfuscated, offsetToModuleTable + sizeOfExtraData, unobfuscated.Length - offsetToModuleTable);
 
-            fixed (byte* ptr = obfuscated)
+            // increase size of metadata
+            Span<byte> MetadataSizeSpan = new Span<byte>(obfuscated, offsetToMetadataSize, 4);
+            uint MetadataSize = BinaryPrimitives.ReadUInt32LittleEndian(MetadataSizeSpan);
+            BinaryPrimitives.WriteUInt32LittleEndian(MetadataSizeSpan, MetadataSize + sizeOfExtraData);
+
+            // increase size of table stream
+            Span<byte> TableStreamSpan = new Span<byte>(obfuscated, streamHeaders[tableStreamIndex].OffsetToSize, 4);
+            uint TableStreamSize = BinaryPrimitives.ReadUInt32LittleEndian(TableStreamSpan);
+            BinaryPrimitives.WriteUInt32LittleEndian(TableStreamSpan, TableStreamSize + sizeOfExtraData);
+
+            // adjust offset of any streams that follow it
+            for (int i = 0; i < streamHeaders.Length; i++)
             {
-                // increase size of metadata
-                *(int*)(ptr + offsetToMetadataSize) += sizeOfExtraData;
-
-                // increase size of table stream
-                *(int*)(ptr + streamHeaders[tableStreamIndex].OffsetToSize) += sizeOfExtraData;
-
-                // adjust offset of any streams that follow it
-                for (int i = 0; i < streamHeaders.Length; i++)
-                    if (streamHeaders[i].Offset > streamHeaders[tableStreamIndex].Offset)
-                        *(int*)(ptr + streamHeaders[i].OffsetToOffset) += sizeOfExtraData;
+                if (streamHeaders[i].Offset > streamHeaders[tableStreamIndex].Offset)
+                {
+                    Span<byte> OffsetSpan = new Span<byte>(obfuscated, streamHeaders[i].OffsetToOffset, 4);
+                    uint Offset = BinaryPrimitives.ReadUInt32LittleEndian(OffsetSpan);
+                    BinaryPrimitives.WriteUInt32LittleEndian(OffsetSpan, Offset + sizeOfExtraData);
+                }
             }
 
             // write non-zero "extra data" to make sure so that our assertion of leading Module.Generation == 0

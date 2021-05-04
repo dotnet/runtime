@@ -1,8 +1,9 @@
 MONO_CONFIG=Release
-MONO_ARCH=x64
+MONO_ARCH?=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
+DEPLOY_AND_RUN?=true
 
 all: runtimepack run
 
@@ -14,7 +15,7 @@ run:
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:TargetOS=Android \
 	/p:Configuration=$(MONO_CONFIG) \
-	/p:DeployAndRun=true \
+	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:ForceAOT=$(AOT) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:RunActivity=false

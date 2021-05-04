@@ -505,7 +505,7 @@ public:
         m_pOverride(NULL),
         m_pMethodBeingCompiled(fd),
         m_fVerifyOnly(fVerifyOnly),
-        m_pThread(GetThread()),
+        m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
         m_pMethodForSecurity_Value(NULL),
 #if defined(FEATURE_GDBJIT)
@@ -685,14 +685,6 @@ public:
             PgoInstrumentationSchema** pSchema, /* OUT */
             uint32_t* pCountSchemaItems, /* OUT */
             uint8_t**pInstrumentationData /* OUT */
-            ) override final;
-
-    CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            uint32_t              ilOffset,
-            uint32_t *            pLikelihood,
-            uint32_t *            pNumberOfClasses
             ) override final;
 
     void recordCallSite(

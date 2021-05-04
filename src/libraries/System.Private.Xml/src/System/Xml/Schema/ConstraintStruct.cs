@@ -41,7 +41,7 @@ namespace System.Xml.Schema
     }
 
     // ActiveAxis plus the location plus the state of matching in the constraint table : only for field
-    internal class LocatedActiveAxis : ActiveAxis
+    internal sealed class LocatedActiveAxis : ActiveAxis
     {
         private readonly int _column;                     // the column in the table (the field sequence)
         internal bool isMatched;                  // if it's matched, then fill value in the validator later
@@ -76,7 +76,7 @@ namespace System.Xml.Schema
     // 6. taking care of updating ConstraintStruct.axisFields
     // 7. remove constraintTable from ConstraintStruct
     // 8. still need centralized locatedactiveaxis for movetoattribute purpose
-    internal class SelectorActiveAxis : ActiveAxis
+    internal sealed class SelectorActiveAxis : ActiveAxis
     {
         private readonly ConstraintStruct _cs;            // pointer of constraintstruct, to enable 6
         private readonly ArrayList _KSs;                  // stack of KSStruct, will not become less
@@ -145,7 +145,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class KSStruct
+    internal sealed class KSStruct
     {
         public int depth;                       // depth of selector when it matches
         public KeySequence ks;                  // ks of selector when it matches and assigned -- needs to new each time
@@ -158,9 +158,9 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class TypedObject
+    internal sealed class TypedObject
     {
-        private class DecimalStruct
+        private sealed class DecimalStruct
         {
             private bool _isDecimal;         // rare case it will be used...
             private readonly decimal[] _dvalue;               // to accelerate equals operation.  array <-> list
@@ -386,7 +386,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class KeySequence
+    internal sealed class KeySequence
     {
         private readonly TypedObject[] _ks;
         private readonly int _dim;

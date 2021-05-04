@@ -138,7 +138,7 @@ namespace System.Linq.Parallel
             // operator).
             //
 
-            private class ChildResultsRecipient : IPartitionedStreamRecipient<TInput>
+            private sealed class ChildResultsRecipient : IPartitionedStreamRecipient<TInput>
             {
                 private readonly IPartitionedStreamRecipient<TOutput> _outputRecipient;
                 private readonly UnaryQueryOperator<TInput, TOutput> _op;

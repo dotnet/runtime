@@ -522,8 +522,6 @@ FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
     EXCEPTION_POINTERS* retVal = NULL;
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
     if (pThread->IsExceptionInProgress())
     {
         retVal = pThread->GetExceptionState()->GetExceptionPointers();
@@ -540,8 +538,6 @@ FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
     INT32 retVal = 0;
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
     if (pThread->IsExceptionInProgress())
     {
         retVal = pThread->GetExceptionState()->GetExceptionCode();

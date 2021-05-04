@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                     {
                         // "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
                         // So we do a conversion to simplify later processing
-                        currentArg = string.Format("--{0}", currentArg.Substring(1));
+                        currentArg = $"--{currentArg.Substring(1)}";
                         keyStartIndex = 2;
                     }
 

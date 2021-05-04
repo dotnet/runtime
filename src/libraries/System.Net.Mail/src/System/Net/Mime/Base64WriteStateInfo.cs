@@ -3,7 +3,7 @@
 
 namespace System.Net.Mime
 {
-    internal class Base64WriteStateInfo : WriteStateInfoBase
+    internal sealed class Base64WriteStateInfo : WriteStateInfoBase
     {
         internal Base64WriteStateInfo() { }
 

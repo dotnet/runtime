@@ -338,19 +338,6 @@ mono_global_loader_cache_init (void)
 	mono_coop_mutex_init (&native_library_module_lock);
 }
 
-void
-mono_global_loader_cache_cleanup (void)
-{
-	if (global_module_map != NULL) {
-		g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
-
-		g_hash_table_destroy(global_module_map);
-		global_module_map = NULL;
-	}
-
-	// No need to clean up the native library hash tables since they're netcore-only, where this is never called
-}
-
 static gboolean
 is_absolute_path (const char *path)
 {
@@ -990,12 +977,12 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		orig_scope = method_aux->dll;
 	}
 	else {
-		if (!piinfo->implmap_idx || piinfo->implmap_idx > im->rows)
+		if (!piinfo->implmap_idx || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
 			goto exit;
 
 		mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
-		if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
+		if (!im_cols [MONO_IMPLMAP_SCOPE] || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, im_cols [MONO_IMPLMAP_SCOPE]))
 			goto exit;
 
 		piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
@@ -1237,7 +1224,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 		g_hash_table_add (native_library_module_blocklist, module);
 		mono_dl_close (module);
 	} else {
-		MonoDl raw_module = { 0 };
+		MonoDl raw_module = { { 0 } };
 		raw_module.handle = lib;
 		mono_dl_close (&raw_module);
 	}
@@ -1268,7 +1255,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_GetSymbol (gpointer lib, 
 		if (!symbol)
 			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
 	} else {
-		MonoDl raw_module = { 0 };
+		MonoDl raw_module = { { 0 } };
 		raw_module.handle = lib;
 		mono_dl_symbol (&raw_module, symbol_name, &symbol);
 		if (!symbol)

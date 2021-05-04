@@ -139,11 +139,12 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb)
 // Evaluates - Evaluate a given loop cloning condition if it can be statically evaluated.
 //
 // Arguments:
-//      pResult     The evaluation result
+//      pResult     OUT parameter. The evaluation result
 //
 // Return Values:
 //      Returns true if the condition can be statically evaluated. If the condition's result
-//      is statically unknown then return false. In other words, true if "pResult" is valid.
+//      is statically unknown then return false. In other words, `*pResult` is valid only if the
+//      function returns true.
 //
 bool LC_Condition::Evaluates(bool* pResult)
 {
@@ -240,7 +241,7 @@ JitExpandArrayStack<LcOptInfo*>* LoopCloneContext::GetLoopOptInfo(unsigned loopN
 //
 void LoopCloneContext::CancelLoopOptInfo(unsigned loopNum)
 {
-    JITDUMP("Cancelling loop cloning for loop L_%02u\n", loopNum);
+    JITDUMP("Cancelling loop cloning for loop " FMT_LP "\n", loopNum);
     optInfo[loopNum] = nullptr;
     if (conditions[loopNum] != nullptr)
     {
@@ -392,36 +393,40 @@ JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* LoopCloneContext::Ensur
 #ifdef DEBUG
 void LoopCloneContext::PrintBlockConditions(unsigned loopNum)
 {
+    printf("Block conditions:\n");
+
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = blockConditions[loopNum];
     if (levelCond == nullptr || levelCond->Size() == 0)
     {
-        JITDUMP("No block conditions\n");
+        printf("No block conditions\n");
         return;
     }
 
     for (unsigned i = 0; i < levelCond->Size(); ++i)
     {
-        JITDUMP("%d = {", i);
+        printf("%d = {", i);
         for (unsigned j = 0; j < ((*levelCond)[i])->Size(); ++j)
         {
             if (j != 0)
             {
-                JITDUMP(" & ");
+                printf(" & ");
             }
             (*((*levelCond)[i]))[j].Print();
         }
-        JITDUMP("}\n");
+        printf("}\n");
     }
 }
 #endif
 
 //--------------------------------------------------------------------------------------------------
-// EvaluateConditions - Evaluate the loop cloning conditions statically, if it can be evaluated.
+// EvaluateConditions - Evaluate the loop cloning conditions statically, if they can be evaluated.
 //
 // Arguments:
 //      loopNum     the loop index.
-//      pAllTrue    all the cloning conditions evaluated to "true" statically.
-//      pAnyFalse   some cloning condition evaluated to "false" statically.
+//      pAllTrue    OUT parameter. `*pAllTrue` is set to `true` if all the cloning conditions statically
+//                  evaluate to true.
+//      pAnyFalse   OUT parameter. `*pAnyFalse` is set to `true` if some cloning condition statically
+//                  evaluate to false.
 //      verbose     verbose logging required.
 //
 // Return Values:
@@ -436,8 +441,12 @@ void LoopCloneContext::PrintBlockConditions(unsigned loopNum)
 //      all be "AND"ed, so statically we know we will never take the fast path.
 //
 //      Sometimes we simply can't say statically whether "V02 > V01.length" is true or false.
-//      In that case, the "pAllTrue" will be false because this condition doesn't evaluate to "true" and
-//      "pAnyFalse" could be false if no other condition statically evaluates to "false".
+//      In that case, `*pAllTrue` will be false because this condition doesn't evaluate to "true" and
+//      `*pAnyFalse` could be false if no other condition statically evaluates to "false".
+//
+//      If `*pAnyFalse` is true, we set that and return, and `*pAllTrue` is not accurate, since the loop cloning
+//      needs to be aborted.
+//
 void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool* pAnyFalse DEBUGARG(bool verbose))
 {
     bool allTrue  = true;
@@ -445,7 +454,7 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
 
     JitExpandArrayStack<LC_Condition>& conds = *conditions[loopNum];
 
-    JITDUMP("Evaluating %d loop cloning conditions for loop %d\n", conds.Size(), loopNum);
+    JITDUMP("Evaluating %d loop cloning conditions for loop " FMT_LP "\n", conds.Size(), loopNum);
 
     assert(conds.Size() > 0);
     for (unsigned i = 0; i < conds.Size(); ++i)
@@ -462,11 +471,15 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
         // Check if this condition evaluates to true or false.
         if (conds[i].Evaluates(&res))
         {
-            JITDUMP(") evaluates to %d\n", res);
+            JITDUMP(") evaluates to %s\n", dspBool(res));
             if (!res)
             {
                 anyFalse = true;
-                return;
+
+                // Since this will force us to abort loop cloning, there is no need compute an accurate `allTrue`,
+                // so we can break out of the loop now.
+                // REVIEW: it appears we never hit this condition in any test.
+                break;
             }
         }
         else
@@ -476,7 +489,7 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
         }
     }
 
-    JITDUMP("Evaluation result allTrue = %d, anyFalse = %d\n", allTrue, anyFalse);
+    JITDUMP("Evaluation result allTrue = %s, anyFalse = %s\n", dspBool(allTrue), dspBool(anyFalse));
     *pAllTrue  = allTrue;
     *pAnyFalse = anyFalse;
 }
@@ -643,6 +656,7 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
     if (conditions[loopNum]->Size() == 0)
     {
         JITDUMP("Conditions were optimized away! Will always take cloned path.");
+        return;
     }
     for (unsigned i = 0; i < conditions[loopNum]->Size(); ++i)
     {

@@ -44,7 +44,7 @@ set COMPLUS_TC_QuickJitForLoops=
 set COMPLUS_TC_CallCountThreshold=
 set COMPLUS_ReadyToRun=
 
-dotnet-pgo --trace trace.nettrace --output trace.mibc
+dotnet-pgo create-mibc --trace trace.nettrace --output trace.mibc
 
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -p:ReadyToRunOptimizationData=trace.mibc
 ```

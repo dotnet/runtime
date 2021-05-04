@@ -182,7 +182,7 @@ namespace System.Resources
         // For cases where users can't create an instance of the deserialized
         // type in memory, and need to pass us serialized blobs instead.
         // LocStudio's managed code parser will do this in some cases.
-        private class PrecannedResource
+        private sealed class PrecannedResource
         {
             internal readonly string TypeName;
             internal readonly object Data;
@@ -194,7 +194,7 @@ namespace System.Resources
             }
         }
 
-        private class StreamWrapper
+        private sealed class StreamWrapper
         {
             internal readonly Stream Stream;
             internal readonly bool CloseAfterWrite;

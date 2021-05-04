@@ -7,7 +7,7 @@
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="System.Security" />

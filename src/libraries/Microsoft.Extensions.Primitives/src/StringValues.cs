@@ -419,7 +419,7 @@ namespace Microsoft.Extensions.Primitives
         /// Indicates whether the specified <see cref="StringValues"/> contains no string values.
         /// </summary>
         /// <param name="value">The <see cref="StringValues"/> to test.</param>
-        /// <returns>true if <paramref name="value">value</paramref> contains a single null string or empty array; otherwise, false.</returns>
+        /// <returns>true if <paramref name="value">value</paramref> contains a single null or empty string or an empty array; otherwise, false.</returns>
         public static bool IsNullOrEmpty(StringValues value)
         {
             object data = value._values;

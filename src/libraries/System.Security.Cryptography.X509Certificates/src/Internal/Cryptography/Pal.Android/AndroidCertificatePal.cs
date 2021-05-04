@@ -121,12 +121,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private AndroidCertificatePal(SafeX509Handle handle)
+        internal AndroidCertificatePal(SafeX509Handle handle)
         {
             _cert = handle;
         }
 
-        private AndroidCertificatePal(SafeX509Handle handle, SafeKeyHandle privateKey)
+        internal AndroidCertificatePal(SafeX509Handle handle, SafeKeyHandle privateKey)
         {
             _cert = handle;
             _privateKey = privateKey;

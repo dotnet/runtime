@@ -24,6 +24,8 @@
     <Compile Include="System\Security\AccessControl\Rules.cs" />
     <Compile Include="System\Security\AccessControl\Win32.cs" />
     <Compile Include="System\Security\Principal\Win32.cs" />
+    <Compile Include="System\Security\Policy\Evidence.cs" />
+    <Compile Include="System\Security\Policy\EvidenceBase.cs" />
     <!-- PInvoke sources -->
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />

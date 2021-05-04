@@ -203,7 +203,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             else if (t.Equals(typeof(PropertyInfo)))
             {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Property; ;
+                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Property;
                 Default = (MemberPolicies<M>)(object)(new PropertyPolicies());
             }
             else if (t.Equals(typeof(EventInfo)))

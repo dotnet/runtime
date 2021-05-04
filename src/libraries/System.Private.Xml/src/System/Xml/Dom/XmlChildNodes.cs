@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace System.Xml
 {
-    internal class XmlChildNodes : XmlNodeList
+    internal sealed class XmlChildNodes : XmlNodeList
     {
         private readonly XmlNode _container;
 

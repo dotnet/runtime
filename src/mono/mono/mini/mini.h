@@ -30,6 +30,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-machine.h>
 #include <mono/utils/mono-stack-unwinding.h>
@@ -1643,8 +1644,7 @@ typedef enum {
 
 typedef enum {
 	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1,
-	MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE = 1 << 2
+	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
 } MonoSimdIntrinsicsFlags;
 
 typedef struct {
@@ -1720,6 +1720,23 @@ typedef struct {
 } MonoJitStats;
 
 extern MonoJitStats mono_jit_stats;
+
+static inline void
+get_jit_stats (gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes)
+{
+	*methods_compiled = mono_jit_stats.methods_compiled;
+	*cil_code_size_bytes = mono_jit_stats.cil_code_size;
+	*native_code_size_bytes = mono_jit_stats.native_code_size;
+}
+
+guint32
+mono_get_exception_count (void);
+
+static inline void
+get_exception_stats (guint32 *exception_count)
+{
+	*exception_count = mono_get_exception_count ();
+}
 
 /* opcodes: value assigned after all the CIL opcodes */
 #ifdef MINI_OP
@@ -2190,9 +2207,8 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, co
 #endif // __cplusplus
 
 void              mono_trampolines_init (void);
-void              mono_trampolines_cleanup (void);
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
-gpointer          mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
+gpointer          mono_create_specific_trampoline (MonoMemoryManager *mem_manager, gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
 gpointer          mono_create_jump_trampoline (MonoMethod *method, 
 											   gboolean add_sync_wrapper,
 											   MonoError *error);
@@ -2299,8 +2315,8 @@ void              mono_emit_unwind_op (MonoCompile *cfg, int when,
 									   int val);
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops);
 void              mono_tramp_info_free (MonoTrampInfo *info);
-void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
-void              mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
+void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
+void              mono_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
 int mini_exception_id_by_name (const char *name);
 gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 
@@ -2717,7 +2733,6 @@ gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *v
 					  gint32 rgctx_index);
 
 void mono_generic_sharing_init (void);
-void mono_generic_sharing_cleanup (void);
 
 MonoClass* mini_class_get_container_class (MonoClass *klass);
 MonoGenericContext* mini_class_get_context (MonoClass *klass);

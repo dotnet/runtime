@@ -506,6 +506,53 @@ private:
     TokenPairList *m_pNext;
 };  // class TokenPairList
 
+// Attempts to parse the provided calling convention names to construct a
+// calling convention with known modifiers.
+//
+// The Add* functions return false if the type is known but cannot be applied.
+// Otherwise, they return true.
+class CallConvBuilder final
+{
+public:
+    enum CallConvModifiers
+    {
+        CALL_CONV_MOD_NONE = 0,
+        CALL_CONV_MOD_SUPPRESSGCTRANSITION = 0x1,
+        CALL_CONV_MOD_MEMBERFUNCTION = 0x2
+    };
+
+    struct State
+    {
+        CorInfoCallConvExtension CallConvBase;
+        CallConvModifiers CallConvModifiers;
+    };
+
+private:
+    State _state;
+
+public:
+    // The initial "unset" base calling convention.
+    static const CorInfoCallConvExtension UnsetValue;
+
+    CallConvBuilder();
+
+    // Add a fully qualified type name to the calling convention computation.
+    bool AddFullyQualifiedTypeName(
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName);
+
+    // Add a simple type name to the calling convention computation.
+    bool AddTypeName(
+        _In_ size_t typeLength,
+        _In_z_ LPCSTR typeName);
+
+    // Get the currently computed calling convention value.
+    CorInfoCallConvExtension GetCurrentCallConv() const;
+
+    // Check if the modifier is set on the computed calling convention.
+    bool IsCurrentCallConvModSet(_In_ CallConvModifiers mod) const;
+};
+
 //---------------------------------------------------------------------------------------
 //
 class MetaSig
@@ -784,8 +831,7 @@ class MetaSig
         // Gets the unmanaged calling convention by reading any modopts.
         //
         // Returns:
-        //   S_OK - Calling convention was read from modopt
-        //   S_FALSE - Calling convention was not read from modopt
+        //   S_OK - No errors
         //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
         //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
         //                          than one calling convention specified)
@@ -794,8 +840,7 @@ class MetaSig
             _In_ CORINFO_MODULE_HANDLE pModule,
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
-            _Out_ CorInfoCallConvExtension *callConvOut,
-            _Out_ bool* suppressGCTransitionOut,
+            _Inout_ CallConvBuilder *builder,
             _Out_ UINT *errorResID);
 
         static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
@@ -1165,7 +1210,6 @@ public:
         BYTE            m_flags;
         BYTE            m_CallConv;
 };  // class MetaSig
-
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);
 

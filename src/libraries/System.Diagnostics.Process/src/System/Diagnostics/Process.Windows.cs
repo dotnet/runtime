@@ -89,6 +89,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Terminates the associated process immediately.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))

@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-internal class Utils
+internal static class Utils
 {
     private static readonly object s_SyncObj = new object();
 
@@ -102,6 +102,7 @@ internal class Utils
         return outputBuilder.ToString().Trim('\r', '\n');
     }
 
+#if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
     {
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
@@ -118,6 +119,7 @@ internal class Utils
             File.Copy(file, Path.Combine(destDir, relativePath), true);
         }
     }
+#endif
 
     public static TaskLoggingHelper? Logger { get; set; }
 

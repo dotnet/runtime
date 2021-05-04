@@ -257,10 +257,7 @@ FCallTransitionState::FCallTransitionState ()
     WRAPPER_NO_CONTRACT;
 
     m_pThread = GetThread();
-    _ASSERTE(m_pThread);
-
     m_pPreviousHelperMethodFrameCallerList = m_pThread->m_pHelperMethodFrameCallerList;
-
     m_pThread->m_pHelperMethodFrameCallerList = NULL;
 }
 
@@ -278,8 +275,6 @@ PermitHelperMethodFrameState::PermitHelperMethodFrameState ()
     WRAPPER_NO_CONTRACT;
 
     m_pThread = GetThread();
-    _ASSERTE(m_pThread);
-
     CONSISTENCY_CHECK_MSG((HelperMethodFrameCallerList*)-1 != m_pThread->m_pHelperMethodFrameCallerList,
                           "fcall entry point is missing a FCALL_TRANSITION_BEGIN or a FCIMPL\n");
 
@@ -320,8 +315,6 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
     //
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
     HelperMethodFrameCallerList *pList = pThread->m_pHelperMethodFrameCallerList;
     PCODE CurrentIP;
     TADDR CurrentSP;
@@ -378,10 +371,7 @@ CompletedFCallTransitionState::CompletedFCallTransitionState ()
     WRAPPER_NO_CONTRACT;
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
     m_pLastHelperMethodFrameCallerList = pThread->m_pHelperMethodFrameCallerList;
-
     pThread->m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
 }
 
@@ -391,8 +381,6 @@ CompletedFCallTransitionState::~CompletedFCallTransitionState ()
     WRAPPER_NO_CONTRACT;
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
     pThread->m_pHelperMethodFrameCallerList = m_pLastHelperMethodFrameCallerList;
 }
 

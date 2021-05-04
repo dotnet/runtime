@@ -484,7 +484,7 @@ namespace System.ComponentModel.Design
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }
 
-            private class OptionPropertyDescriptor : PropertyDescriptor
+            private sealed class OptionPropertyDescriptor : PropertyDescriptor
             {
                 private readonly DesignerOptionCollection _option;
 

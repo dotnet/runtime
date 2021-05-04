@@ -92,7 +92,7 @@ namespace System.Resources
 
     public partial class ResourceManager
     {
-        internal class CultureNameResourceSetPair
+        internal sealed class CultureNameResourceSetPair
         {
             public string? lastCultureName;
             public ResourceSet? lastResourceSet;
@@ -743,7 +743,7 @@ namespace System.Resources
             return ums;
         }
 
-        internal class ResourceManagerMediator
+        internal sealed class ResourceManagerMediator
         {
             private readonly ResourceManager _rm;
 

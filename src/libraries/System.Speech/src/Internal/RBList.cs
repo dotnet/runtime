@@ -572,7 +572,7 @@ namespace System.Speech.Internal
 
         #region Private Types
 
-        private class MyEnumerator : IEnumerator
+        private sealed class MyEnumerator : IEnumerator
         {
             internal MyEnumerator(TreeNode node)
             {
@@ -632,7 +632,7 @@ namespace System.Speech.Internal
 #if DEBUG
         [DebuggerDisplay("{((System.Speech.Internal.SrgsCompiler.Arc)Key).ToString ()}")]
 #endif
-        private class TreeNode
+        private sealed class TreeNode
         {
             internal TreeNode(object key)
             {

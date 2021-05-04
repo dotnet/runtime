@@ -61,7 +61,7 @@ namespace
             std::vector<const pal::char_t*> argv;
             argv.push_back(app_path.c_str());
 
-            rc = hostfxr.init_command_line(argv.size(), argv.data(), nullptr, &handle);
+            rc = hostfxr.init_command_line(static_cast<int32_t>(argv.size()), argv.data(), nullptr, &handle);
             if (rc != StatusCode::Success)
             {
                 test_output << _X("hostfxr_initialize_for_command_line failed: ") << std::hex << std::showbase << rc << std::endl;

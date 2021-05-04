@@ -10,18 +10,34 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.")]
-    public static class DynamicRevocationTests
+    [ConditionalClass(typeof(DynamicRevocationTests), nameof(SupportsDynamicRevocation))]
+    public static partial class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
         internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
 
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 
+        private static bool SupportsEntireChainCheck => !PlatformDetection.IsAndroid;
+
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
-                PlatformDetection.IsOSX ?
+                PlatformDetection.IsOSX || PlatformDetection.IsAndroid ?
                 X509ChainStatusFlags.RevocationStatusUnknown :
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
+        // Android will stop checking after the first revocation error, so any revoked certificates
+        // after will have RevocationStatusUnknown instead of Revoked
+        private static readonly X509ChainStatusFlags ThisOsRevokedWithPreviousRevocationError =
+                PlatformDetection.IsAndroid ?
+                X509ChainStatusFlags.RevocationStatusUnknown :
+                X509ChainStatusFlags.Revoked;
+
+        // Android will stop checking after the first revocation error, so any non-revoked certificates
+        // after will have RevocationStatusUnknown instead of NoError
+        private static readonly X509ChainStatusFlags ThisOsNoErrorWithPreviousRevocationError =
+                PlatformDetection.IsAndroid ?
+                X509ChainStatusFlags.RevocationStatusUnknown :
+                X509ChainStatusFlags.NoError;
 
         private delegate void RunSimpleTest(
             CertificateAuthority root,
@@ -79,10 +95,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void NothingRevoked(PkiOptions pkiOptions)
         {
+            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>
                 {
+                    if (PlatformDetection.IsAndroid && usingCrl)
+                    {
+                        // Android uses the verification time when determining if a CRL is relevant. If there
+                        // are no relevant CRLs based on that time, the revocation status will be unknown.
+                        // SimpleTest sets the verification time to the end entity's NotBefore + 1 minute,
+                        // while the revocation responder uses the current time to set thisUpdate/nextUpdate.
+                        // If using CRLs, set the verification time to the current time so that fetched CRLs
+                        //  will be considered relevant.
+                        holder.Chain.ChainPolicy.VerificationTime = DateTime.UtcNow;
+                    }
+
                     SimpleRevocationBody(
                         holder,
                         endEntity,
@@ -489,7 +517,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain,
                         rootStatus: X509ChainStatusFlags.NoError,
                         issrStatus: ThisOsRevocationStatusUnknown,
-                        leafStatus: X509ChainStatusFlags.NoError);
+                        leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
                     Assert.False(chainBuilt, "Chain built with ExcludeRoot.");
                     holder.DisposeChainElements();
@@ -508,10 +536,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 });
         }
 
+        public static IEnumerable<object[]> PolicyErrorsNotTimeValidData
+        {
+            get
+            {
+                // Values are { policyErrors, notTimeValid }
+                yield return new object[] { true, false};
+
+                // Android always validates timestamp as part of building a path,
+                // so we don't include test cases with invalid time here
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { false, true};
+                    yield return new object[] { true, true};
+                }
+            }
+        }
         [Theory]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
+        [MemberData(nameof(PolicyErrorsNotTimeValidData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediate_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
@@ -596,9 +638,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Theory]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
+        [MemberData(nameof(PolicyErrorsNotTimeValidData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
@@ -719,7 +759,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     chain,
                     rootStatus: X509ChainStatusFlags.NoError,
                     issrStatus: ThisOsRevocationStatusUnknown,
-                    leafStatus: X509ChainStatusFlags.Revoked);
+                    leafStatus: ThisOsRevokedWithPreviousRevocationError);
 
                 Assert.False(chainBuilt, "Chain built with ExcludeRoot.");
                 holder.DisposeChainElements();
@@ -737,19 +777,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 Assert.False(chainBuilt, "Chain built with EndCertificateOnly");
                 holder.DisposeChainElements();
 
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                if (SupportsEntireChainCheck)
+                {
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
 
-                chainBuilt = chain.Build(endEntity);
+                    chainBuilt = chain.Build(endEntity);
 
-                // Potentially surprising result: Even in EntireChain mode,
-                // root revocation is NoError, not RevocationStatusUnknown.
-                AssertChainStatus(
-                    chain,
-                    rootStatus: X509ChainStatusFlags.NoError,
-                    issrStatus: ThisOsRevocationStatusUnknown,
-                    leafStatus: X509ChainStatusFlags.Revoked);
+                    // Potentially surprising result: Even in EntireChain mode,
+                    // root revocation is NoError, not RevocationStatusUnknown.
+                    AssertChainStatus(
+                        chain,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: ThisOsRevocationStatusUnknown,
+                        leafStatus: X509ChainStatusFlags.Revoked);
 
-                Assert.False(chainBuilt, "Chain built with EntireChain");
+                    Assert.False(chainBuilt, "Chain built with EntireChain");
+                }
             }
         }
 
@@ -792,7 +835,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     chain,
                     rootStatus: X509ChainStatusFlags.NoError,
                     issrStatus: ThisOsRevocationStatusUnknown,
-                    leafStatus: X509ChainStatusFlags.NoError);
+                    leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
                 Assert.False(chainBuilt, "Chain built with ExcludeRoot.");
                 holder.DisposeChainElements();
@@ -810,19 +853,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 Assert.True(chainBuilt, "Chain built with EndCertificateOnly");
                 holder.DisposeChainElements();
 
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                if (SupportsEntireChainCheck)
+                {
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
 
-                chainBuilt = chain.Build(endEntity);
+                    chainBuilt = chain.Build(endEntity);
 
-                // Potentially surprising result: Even in EntireChain mode,
-                // root revocation is NoError, not RevocationStatusUnknown.
-                AssertChainStatus(
-                    chain,
-                    rootStatus: X509ChainStatusFlags.NoError,
-                    issrStatus: ThisOsRevocationStatusUnknown,
-                    leafStatus: X509ChainStatusFlags.NoError);
+                    // Potentially surprising result: Even in EntireChain mode,
+                    // root revocation is NoError, not RevocationStatusUnknown.
+                    AssertChainStatus(
+                        chain,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: ThisOsRevocationStatusUnknown,
+                        leafStatus: X509ChainStatusFlags.NoError);
 
-                Assert.False(chainBuilt, "Chain built with EntireChain");
+                    Assert.False(chainBuilt, "Chain built with EntireChain");
+                }
             }
         }
 
@@ -893,6 +939,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTime revocationTime = endEntity.NotBefore;
+                    if (PlatformDetection.IsAndroid)
+                    {
+                        // Android seems to use different times (+/- some buffer) to determine whether or not
+                        // to use the revocation data it fetches.
+                        //   CRL  : verification time
+                        //   OCSP : current time
+                        // This test dynamically build the certs such that the current time falls within their
+                        // period of validity (with more than a one second range), so we should be able to use
+                        // the current time as revocation time and one second past that as verification time.
+                        revocationTime = DateTime.UtcNow;
+                        Assert.True(revocationTime >= endEntity.NotBefore && revocationTime < endEntity.NotAfter);
+                    }
+
                     holder.Chain.ChainPolicy.VerificationTime = revocationTime.AddSeconds(1);
 
                     intermediate.RevocationExpiration = revocationTime;
@@ -917,6 +976,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTime revocationTime = endEntity.NotBefore;
+                    if (PlatformDetection.IsAndroid)
+                    {
+                        // Android seems to use different times (+/- some buffer) to determine whether or not
+                        // to use the revocation data it fetches.
+                        //   CRL  : verification time
+                        //   OCSP : current time
+                        // This test dynamically build the certs such that the current time falls within their
+                        // period of validity (with more than a one second range), so we should be able to use
+                        // the current time as revocation time and one second past that as verification time.
+                        // This should allow the fetched data from both CRL and OCSP to be considered relevant.
+                        revocationTime = DateTime.UtcNow;
+                        Assert.True(revocationTime >= endEntity.NotBefore && revocationTime < endEntity.NotAfter);
+                    }
+
                     holder.Chain.ChainPolicy.VerificationTime = revocationTime.AddSeconds(1);
 
                     using (X509Certificate2 intermediatePub = intermediate.CloneIssuerCert())
@@ -938,11 +1011,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void CheckEndEntityWithExpiredRevocation(PkiOptions pkiOptions)
         {
+            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.RevocationExpiration = endEntity.NotBefore;
+                    if (PlatformDetection.IsAndroid && usingCrl)
+                    {
+                        // Android seems to use different times (+/- some buffer) to determine whether or not
+                        // to use the revocation data it fetches.
+                        //   CRL  : verification time
+                        //   OCSP : current time
+                        // If using CRL, set the verification time to the current time. This should result in
+                        // the fetched CRL for checking the issuer being considered relevant and that for the
+                        // end entity considered irrelevant.
+                        holder.Chain.ChainPolicy.VerificationTime = DateTime.UtcNow;
+                    }
 
                     RunWithInconclusiveEndEntityRevocation(holder, endEntity);
                 });
@@ -953,11 +1038,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
+            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.RevocationExpiration = endEntity.NotBefore;
+                    if (PlatformDetection.IsAndroid && usingCrl)
+                    {
+                        // Android seems to use different times (+/- some buffer) to determine whether or not
+                        // to use the revocation data it fetches.
+                        //   CRL  : verification time
+                        //   OCSP : current time
+                        // If using CRL, set the verification time to the current time. This should result in
+                        // the fetched CRL for checking the issuer being considered irrelevant and that for the
+                        // end entity considered relevant.
+                        holder.Chain.ChainPolicy.VerificationTime = DateTime.UtcNow;
+                    }
 
                     RunWithInconclusiveIntermediateRevocation(holder, endEntity);
                 });
@@ -977,12 +1074,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     // cache. We don't care about the build result.
                     holder.Chain.Build(endEntity);
 
-                    SimpleRevocationBody(
-                        holder,
-                        endEntity,
-                        rootRevoked: false,
-                        issrRevoked: false,
-                        leafRevoked: false);
+                    if (PlatformDetection.IsAndroid)
+                    {
+                        // Android uses the verification time when determining if a CRL is relevant.
+                        // Set the verification time to the current time so that fetched CRLs will
+                        // be considered relevant.
+                        holder.Chain.ChainPolicy.VerificationTime = DateTime.UtcNow;
+
+                        // Android treats not having NextUpdate as invalid for determining revocation status,
+                        // so the revocation status will be unknown
+                        RunWithInconclusiveEndEntityRevocation(holder, endEntity);
+                    }
+                    else
+                    {
+                        SimpleRevocationBody(
+                            holder,
+                            endEntity,
+                            rootRevoked: false,
+                            issrRevoked: false,
+                            leafRevoked: false);
+                    }
                 });
         }
 
@@ -1004,17 +1115,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     // cache. We don't care about the build result.
                     holder.Chain.Build(endEntity);
 
-                    SimpleRevocationBody(
-                        holder,
-                        endEntity,
-                        rootRevoked: false,
-                        issrRevoked: false,
-                        leafRevoked: true);
+                    if (PlatformDetection.IsAndroid)
+                    {
+                        // Android treats not having NextUpdate as invalid for determining revocation status,
+                        // so the revocation status will be unknown
+                        RunWithInconclusiveEndEntityRevocation(holder, endEntity);
+                    }
+                    else
+                    {
+                        SimpleRevocationBody(
+                            holder,
+                            endEntity,
+                            rootRevoked: false,
+                            issrRevoked: false,
+                            leafRevoked: true);
+                    }
                 });
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_NotRevoked()
         {
             SimpleTest(
@@ -1058,7 +1178,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_Revoked()
         {
             SimpleTest(
@@ -1147,15 +1267,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             holder.DisposeChainElements();
             X509Chain chain = holder.Chain;
 
-            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-            bool chainBuilt = chain.Build(rootCert);
+            bool chainBuilt;
+            if (SupportsEntireChainCheck)
+            {
+                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                chainBuilt = chain.Build(rootCert);
 
-            Assert.Equal(1, chain.ChainElements.Count);
-            Assert.Equal(X509ChainStatusFlags.Revoked, chain.ChainElements[0].AllStatusFlags());
-            Assert.Equal(X509ChainStatusFlags.Revoked, chain.AllStatusFlags());
-            Assert.False(chainBuilt, "Chain validated with revoked root self-test, EntireChain");
+                Assert.Equal(1, chain.ChainElements.Count);
+                Assert.Equal(X509ChainStatusFlags.Revoked, chain.ChainElements[0].AllStatusFlags());
+                Assert.Equal(X509ChainStatusFlags.Revoked, chain.AllStatusFlags());
+                Assert.False(chainBuilt, "Chain validated with revoked root self-test, EntireChain");
 
-            holder.DisposeChainElements();
+                holder.DisposeChainElements();
+            }
+
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
             chainBuilt = chain.Build(rootCert);
 
@@ -1227,7 +1352,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain,
                 rootStatus: X509ChainStatusFlags.NoError,
                 issrStatus: ThisOsRevocationStatusUnknown,
-                leafStatus: X509ChainStatusFlags.NoError);
+                leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
             Assert.False(chainBuilt, "Chain built with ExcludeRoot (without flags)");
             holder.DisposeChainElements();
@@ -1248,6 +1373,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
             chain.ChainPolicy.VerificationFlags |=
                 X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown;
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android stops validation at the first failure, so the end certificate would
+                // end up marked with RevocationStatusUnknown
+                chain.ChainPolicy.VerificationFlags |= X509VerificationFlags.IgnoreEndRevocationUnknown;
+            }
 
             chainBuilt = chain.Build(endEntity);
 
@@ -1255,7 +1386,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain,
                 rootStatus: X509ChainStatusFlags.NoError,
                 issrStatus: ThisOsRevocationStatusUnknown,
-                leafStatus: X509ChainStatusFlags.NoError);
+                leafStatus: ThisOsNoErrorWithPreviousRevocationError);
 
             Assert.True(chainBuilt, "Chain built with ExcludeRoot (with ignore flags)");
         }
@@ -1281,7 +1412,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
             AssertRevocationLevel(chain, endEntityCert, false, false, leafRevoked);
 
-            if (testWithRootRevocation)
+            if (testWithRootRevocation && SupportsEntireChainCheck)
             {
                 holder.DisposeChainElements();
 

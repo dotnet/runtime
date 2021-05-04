@@ -18,7 +18,7 @@ STDAPI  GetMetaDataInternalInterfaceFromPublic(
 //* constructor for RefClassWriter
 //*
 //******************************************************
-HRESULT RefClassWriter::Init(ICeeGen *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
+HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
 {
     CONTRACT(HRESULT) {
         NOTHROW;

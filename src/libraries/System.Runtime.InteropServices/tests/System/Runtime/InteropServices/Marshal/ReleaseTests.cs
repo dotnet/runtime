@@ -30,14 +30,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Release_Unix_ThrowsPlatformNotSupportedException()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.Release(IntPtr.Zero));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void Release_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.Release(IntPtr.Zero));

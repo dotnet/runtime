@@ -96,6 +96,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49931", TestPlatforms.Android)]
         public static void CreateWithCulturesTest(string lowerForm, string upperForm, string cultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -195,6 +196,7 @@ namespace System.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49931", TestPlatforms.Android)]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -206,6 +208,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49931", TestPlatforms.Android)]
         public static void CreateFromCultureAndOptionsStringSort(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

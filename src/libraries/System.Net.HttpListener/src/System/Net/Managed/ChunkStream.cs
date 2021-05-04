@@ -51,7 +51,7 @@ namespace System.Net
             Trailer
         }
 
-        private class Chunk
+        private sealed class Chunk
         {
             public byte[] Bytes;
             public int Offset;

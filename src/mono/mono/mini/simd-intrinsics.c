@@ -292,6 +292,7 @@ type_is_unsigned (MonoType *type) {
 	case MONO_TYPE_U2:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
 		return TRUE;
 	}
 	return FALSE;
@@ -329,6 +330,13 @@ type_to_expand_op (MonoType *type)
 		return OP_EXPAND_R4;
 	case MONO_TYPE_R8:
 		return OP_EXPAND_R8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_EXPAND_I8;
+#else
+		return OP_EXPAND_I4;
+#endif
 	default:
 		g_assert_not_reached ();
 	}
@@ -354,6 +362,13 @@ type_to_insert_op (MonoType *type)
 		return OP_INSERT_R4;
 	case MONO_TYPE_R8:
 		return OP_INSERT_R8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_INSERT_I8;
+#else
+		return OP_INSERT_I4;
+#endif
 	default:
 		g_assert_not_reached ();
 	}
@@ -427,6 +442,7 @@ emit_hardware_intrinsics (
 		case MONO_TYPE_U2:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_U8:
+		case MONO_TYPE_U:
 			is_unsigned = TRUE;
 			break;
 		case MONO_TYPE_R4:
@@ -502,7 +518,7 @@ is_elementwise_create_overload (MonoMethodSignature *fsig, MonoType *ret_type)
 	uint16_t param_count = fsig->param_count;
 	if (param_count < 1) return FALSE;
 	MonoType *type = fsig->params [0];
-	gboolean is_vector_primitive = MONO_TYPE_IS_PRIMITIVE (type) && (type->type >= MONO_TYPE_I1 && type->type <= MONO_TYPE_R8);
+	gboolean is_vector_primitive = MONO_TYPE_IS_PRIMITIVE (type) && ((type->type >= MONO_TYPE_I1 && type->type <= MONO_TYPE_R8) || type->type == MONO_TYPE_I || type->type <= MONO_TYPE_U);
 	if (!is_vector_primitive) return FALSE;
 	if (!mono_metadata_type_equal (ret_type, type)) return FALSE;
 	for (uint16_t i = 1; i < param_count; ++i)
@@ -759,6 +775,17 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			opcode = OP_XEXTRACT_R4;
 			dreg = alloc_freg (cfg);
 			break;
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+			opcode = OP_XEXTRACT_I64;
+			is64 = TRUE;
+			dreg = alloc_lreg (cfg);
+#else
+			opcode = OP_XEXTRACT_I32;
+			dreg = alloc_ireg (cfg);
+#endif
+			break;
 		default:
 			opcode = OP_XEXTRACT_I32;
 			dreg = alloc_ireg (cfg);
@@ -875,7 +902,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	case SN_LessThan:
 	case SN_LessThanOrEqual:
 		g_assert (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type));
-		is_unsigned = etype->type == MONO_TYPE_U1 || etype->type == MONO_TYPE_U2 || etype->type == MONO_TYPE_U4 || etype->type == MONO_TYPE_U8;
+		is_unsigned = etype->type == MONO_TYPE_U1 || etype->type == MONO_TYPE_U2 || etype->type == MONO_TYPE_U4 || etype->type == MONO_TYPE_U8 || etype->type == MONO_TYPE_U;
 		ins = emit_xcompare (cfg, klass, etype->type, args [0], args [1]);
 		switch (id) {
 		case SN_GreaterThan:
@@ -1001,6 +1028,13 @@ type_to_extract_var_op (MonoTypeEnum type)
 	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_EXTRACT_VAR_I8;
 	case MONO_TYPE_R4: return OP_EXTRACT_VAR_R4;
 	case MONO_TYPE_R8: return OP_EXTRACT_VAR_R8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return OP_EXTRACT_VAR_I8;
+#else
+		return OP_EXTRACT_VAR_I4;
+#endif
 	default: g_assert_not_reached ();
 	}
 }
@@ -1438,6 +1472,9 @@ emit_arm64_intrinsics (
 	MonoCPUFeatures feature = intrin_group->feature;
 
 	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
+#if TARGET_SIZEOF_VOID_P == 4
+	arg0_i32 = arg0_i32 || (arg0_type == MONO_TYPE_I) || (arg0_type == MONO_TYPE_U);
+#endif
 
 	if (feature == MONO_CPU_ARM64_BASE) {
 		switch (id) {
@@ -1565,6 +1602,16 @@ emit_arm64_intrinsics (
 			case MONO_TYPE_I8: case MONO_TYPE_U8: insert_op = OP_XINSERT_I8; extract_op = OP_EXTRACT_I8; break;
 			case MONO_TYPE_R4: insert_op = OP_XINSERT_R4; extract_op = OP_EXTRACT_R4; break;
 			case MONO_TYPE_R8: insert_op = OP_XINSERT_R8; extract_op = OP_EXTRACT_R8; break;
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+				insert_op = OP_XINSERT_I8;
+				extract_op = OP_EXTRACT_I8;
+#else
+				insert_op = OP_XINSERT_I4;
+				extract_op = OP_EXTRACT_I4;
+#endif
+				break;
 			default: g_assert_not_reached ();
 			}
 			int val_src_reg = args [2]->dreg;
@@ -2433,6 +2480,14 @@ emit_x86_intrinsics (
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8: op = OP_XEXTRACT_I64; break;
 			case MONO_TYPE_R4: op = OP_XEXTRACT_R4; break;
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+				op = OP_XEXTRACT_I64;
+#else
+				op = OP_XEXTRACT_I32;
+#endif
+				break;
 			default: g_assert_not_reached(); break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, op, arg0_type, 0, fsig, args);
@@ -2694,7 +2749,7 @@ emit_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	g_assert (size);
 	len = 16 / size;
 
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN)
+	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN || etype->type == MONO_TYPE_I || etype->type == MONO_TYPE_U)
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
@@ -2742,7 +2797,7 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	g_assert (size);
 	len = 32 / size;
 
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN)
+	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN || etype->type == MONO_TYPE_I || etype->type == MONO_TYPE_U)
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
@@ -2813,10 +2868,8 @@ MonoInst*
 emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *simd_inst = emit_amd64_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
-	if (simd_inst != NULL) {
+	if (simd_inst != NULL)
 		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
-		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE;
-	}
 	return simd_inst;
 }
 #else
@@ -2864,12 +2917,13 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 static gboolean
 decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
 {
-	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE)
+	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS)
 		return TRUE;
 
 	switch (ins->opcode) {
 	case OP_XMOVE:
 	case OP_XZERO:
+	case OP_XPHI:
 	case OP_LOADX_MEMBASE:
 	case OP_LOADX_ALIGNED_MEMBASE:
 	case OP_STOREX_MEMBASE:
@@ -2899,26 +2953,38 @@ decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *in
 	}
 }
 
+static void
+decompose_vtype_opt_store_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *dreg_int32)
+{
+	guint32 *dreg = (guint32*)dreg_int32;
+	MonoInst *dest_var = get_vreg_to_inst (cfg, *dreg);
+	if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
+		MonoInst *varload_ins, *store_ins;
+		*dreg = alloc_xreg (cfg);
+		NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);
+		mono_bblock_insert_after_ins (bb, ins, varload_ins);
+		MONO_INST_NEW (cfg, store_ins, OP_STOREX_MEMBASE);
+		store_ins->klass = dest_var->klass;
+		store_ins->type = STACK_VTYPE;
+		store_ins->sreg1 = *dreg;
+		store_ins->dreg = varload_ins->dreg;
+		mono_bblock_insert_after_ins (bb, varload_ins, store_ins);
+	}
+}
+
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
-	if (cfg->opt & MONO_OPT_SIMD && decompose_vtype_opt_uses_simd_intrinsics (cfg, ins)) {
-		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg1));
-		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg2));
-		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg3));
-		MonoInst *dest_var = get_vreg_to_inst (cfg, ins->dreg);
-		if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
-			MonoInst *varload_ins, *store_ins;
-			ins->dreg = alloc_xreg (cfg);
-			NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);
-			mono_bblock_insert_after_ins (bb, ins, varload_ins);
-			MONO_INST_NEW (cfg, store_ins, OP_STOREX_MEMBASE);
-			store_ins->klass = dest_var->klass;
-			store_ins->type = STACK_VTYPE;
-			store_ins->sreg1 = ins->dreg;
-			store_ins->dreg = varload_ins->dreg;
-			mono_bblock_insert_after_ins (bb, varload_ins, store_ins);
-		}
+	if ((cfg->opt & MONO_OPT_SIMD) && decompose_vtype_opt_uses_simd_intrinsics(cfg, ins)) {
+		const char *spec = INS_INFO (ins->opcode);
+		if (spec [MONO_INST_SRC1] == 'x')
+			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg1));
+		if (spec [MONO_INST_SRC2] == 'x')
+			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg2));
+		if (spec [MONO_INST_SRC3] == 'x')
+			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg3));
+		if (spec [MONO_INST_DEST] == 'x')
+			decompose_vtype_opt_store_arg (cfg, bb, ins, &(ins->dreg));
 	}
 }
 #else

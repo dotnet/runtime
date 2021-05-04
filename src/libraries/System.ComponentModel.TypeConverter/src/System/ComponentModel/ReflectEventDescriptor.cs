@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel
@@ -58,6 +59,7 @@ namespace System.ComponentModel
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
         private Type _type;           // the delegate type for the event
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _componentClass; // the class of the component this info is for
 
         private MethodInfo _addMethod;     // the method to use when adding an event
@@ -68,7 +70,11 @@ namespace System.ComponentModel
         /// <summary>
         /// This is the main constructor for an ReflectEventDescriptor.
         /// </summary>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
+        public ReflectEventDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            Attribute[] attributes)
             : base(name, attributes)
         {
             if (componentClass == null)
@@ -84,9 +90,13 @@ namespace System.ComponentModel
             _type = type;
         }
 
-        public ReflectEventDescriptor(Type componentClass, EventInfo eventInfo)
+        public ReflectEventDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            EventInfo eventInfo)
             : base(eventInfo.Name, Array.Empty<Attribute>())
         {
+            Debug.Assert(eventInfo.ReflectedType.IsAssignableFrom(componentClass), "eventInfo.ReflectedType is used below, but only componentClass is annotated with DynamicallyAccessedMembers. Ensure ReflectedType is in componentClass's hierarchy.");
+
             _componentClass = componentClass ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             _realEvent = eventInfo;
         }
@@ -95,7 +105,10 @@ namespace System.ComponentModel
         /// This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the
         /// passed-in attributes.
         /// </summary>
-        public ReflectEventDescriptor(Type componentType, EventDescriptor oldReflectEventDescriptor, Attribute[] attributes)
+        public ReflectEventDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            EventDescriptor oldReflectEventDescriptor,
+            Attribute[] attributes)
             : base(oldReflectEventDescriptor, attributes)
         {
             _componentClass = componentType;
@@ -234,12 +247,15 @@ namespace System.ComponentModel
             base.FillAttributes(attributes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "currentReflectType is in _componentClass's hierarchy. Since _componentClass is annotated with All, this means currentReflectType is annotated with All as well.")]
         private void FillEventInfoAttribute(EventInfo realEventInfo, IList attributes)
         {
             string eventName = realEventInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
             Type currentReflectType = realEventInfo.ReflectedType;
             Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
+            Debug.Assert(currentReflectType.IsAssignableFrom(_componentClass), "currentReflectType must be in _componentClass's hierarchy");
             int depth = 0;
 
             // First, calculate the depth of the object hierarchy. We do this so we can do a single
@@ -351,12 +367,15 @@ namespace System.ComponentModel
             _filledMethods = true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "currentReflectType is in _componentClass's hierarchy. Since _componentClass is annotated with All, this means currentReflectType is annotated with All as well.")]
         private void FillSingleMethodAttribute(MethodInfo realMethodInfo, IList attributes)
         {
             string methodName = realMethodInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
             Type currentReflectType = realMethodInfo.ReflectedType;
             Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
+            Debug.Assert(currentReflectType.IsAssignableFrom(_componentClass), "currentReflectType must be in _componentClass's hierarchy");
 
             // First, calculate the depth of the object hierarchy. We do this so we can do a single
             // object create for an array of attributes.

@@ -43,6 +43,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/exception-internals.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
@@ -104,21 +105,6 @@ mono_loader_init ()
 
 		inited = TRUE;
 	}
-}
-
-void
-mono_loader_cleanup (void)
-{
-#ifndef DISABLE_DLLMAP
-	mono_global_dllmap_cleanup ();
-#endif
-	mono_global_loader_cache_cleanup ();
-
-	mono_native_tls_free (loader_lock_nest_id);
-
-	mono_coop_mutex_destroy (&loader_mutex);
-	mono_os_mutex_destroy (&global_loader_data_mutex);
-	loader_lock_inited = FALSE;	
 }
 
 void
@@ -1476,10 +1462,10 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 		param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		if (idx < methodt->rows)
+		if (idx < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows + 1;
+			lastp = table_info_get_rows (paramt) + 1;
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 			if (cols [MONO_PARAM_SEQUENCE] && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) /* skip return param spec and bounds check*/
@@ -1571,10 +1557,10 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		if (idx < methodt->rows)
+		if (idx < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows + 1;
+			lastp = table_info_get_rows (paramt) + 1;
 
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
@@ -1625,10 +1611,10 @@ mono_method_has_marshal_info (MonoMethod *method)
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		if (idx + 1 < methodt->rows)
+		if (idx + 1 < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows + 1;
+			lastp = table_info_get_rows (paramt) + 1;
 
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
@@ -1670,6 +1656,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
 	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+	case FRAME_TYPE_INTERP_ENTRY:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
@@ -2000,6 +1987,7 @@ get_method_update_rva (MonoImage *image_base, uint32_t idx)
 {
 	gpointer loc = NULL;
 	uint32_t cur = mono_metadata_update_get_thread_generation ();
+	int generation = -1;
 	GList *ptr = image_base->delta_image;
 	/* Go through all the updates that the current thread can see and see
 	 * if they updated the method.  Keep the latest visible update */
@@ -2007,9 +1995,18 @@ get_method_update_rva (MonoImage *image_base, uint32_t idx)
 		MonoImage *image_delta = (MonoImage*) ptr->data;
 		if (image_delta->generation > cur)
 			break;
-		if (image_delta->method_table_update)
-			loc = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+		if (image_delta->method_table_update) {
+			gpointer result = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+			/* if it's not in the table of a later generation, the
+			 * later generation didn't modify the method
+			 */
+			if (result != NULL) {
+				loc = result;
+				generation = image_delta->generation;
+			}
+		}
 	}
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "method lookup idx=0x%08x returned gen=%d il=%p", idx, generation, loc);
 	return loc;
 }
 #endif

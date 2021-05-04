@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomModule : ProjectingModule
+    internal sealed class CustomModule : ProjectingModule
     {
         public CustomModule(Module template, CustomReflectionContext context)
             : base(template, context.Projector)

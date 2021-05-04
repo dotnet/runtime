@@ -1502,7 +1502,7 @@ int MethodTable::GetVectorSize()
             // We need to verify that T (the element or "base" type) is a primitive type.
             TypeHandle typeArg = GetInstantiation()[0];
             CorElementType corType = typeArg.GetSignatureCorElementType();
-            if (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8)
+            if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
             {
                 _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;
@@ -2439,7 +2439,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "GC description for '%s':\n\n", pszClassName));
         }
 
-        if (ContainsPointersOrCollectible())
+        if (ContainsPointers())
         {
             CGCDescSeries *pSeries;
             CGCDescSeries *pHighest;

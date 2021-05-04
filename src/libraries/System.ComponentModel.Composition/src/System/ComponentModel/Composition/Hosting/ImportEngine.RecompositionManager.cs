@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     that will be affected by changes to exports. This allows the <see cref="ImportEngine"/> to properly
         ///     block breaking changes and also recompose imports as appropriate.
         /// </summary>
-        private class RecompositionManager
+        private sealed class RecompositionManager
         {
             private readonly WeakReferenceCollection<PartManager> _partsToIndex = new WeakReferenceCollection<PartManager>();
             private readonly WeakReferenceCollection<PartManager> _partsToUnindex = new WeakReferenceCollection<PartManager>();

@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
-    internal class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
+    internal sealed class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
     {
         internal void Write_string(object? o)
         {
@@ -224,12 +225,13 @@ namespace System.Xml.Serialization
             WriteNullableQualifiedNameLiteral(@"QName", @"", ((global::System.Xml.XmlQualifiedName)o));
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
         }
     }
 
-    internal class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
+    internal sealed class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
     {
         internal object? Read_string()
         {
@@ -708,6 +710,7 @@ namespace System.Xml.Serialization
             return (object?)o;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
         }

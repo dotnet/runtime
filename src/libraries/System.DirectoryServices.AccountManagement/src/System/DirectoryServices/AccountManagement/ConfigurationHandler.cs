@@ -10,7 +10,7 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class ConfigSettings
+    internal sealed class ConfigSettings
     {
         public ConfigSettings(DebugLevel debugLevel, string debugLogFile)
         {

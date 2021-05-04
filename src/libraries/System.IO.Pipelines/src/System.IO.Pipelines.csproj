@@ -31,6 +31,7 @@
     <Compile Include="System\IO\Pipelines\PipeWriterStream.cs" />
     <Compile Include="System\IO\Pipelines\ReadResult.cs" />
     <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
+    <Compile Include="System\IO\Pipelines\SequencePipeReader.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeExtensions.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeReader.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeReaderOptions.cs" />

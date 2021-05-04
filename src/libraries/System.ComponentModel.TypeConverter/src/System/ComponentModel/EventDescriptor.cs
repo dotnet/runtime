@@ -8,6 +8,8 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class EventDescriptor : MemberDescriptor
     {
+        internal const string RequiresUnreferencedCodeMessage = "The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.";
+
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with the
         /// specified name and attribute array.

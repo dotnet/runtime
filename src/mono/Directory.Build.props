@@ -13,8 +13,8 @@
 
   <PropertyGroup>
     <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
-    <iOSVersionMin>8.0</iOSVersionMin>
-    <tvOSVersionMin>9.0</tvOSVersionMin>
+    <iOSVersionMin>10.0</iOSVersionMin>
+    <tvOSVersionMin>10.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.13</macOSVersionMin>
@@ -34,6 +34,13 @@
   <!-- Output paths -->
   <PropertyGroup>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm', 'emsdk'))</ProvisionEmscriptenDir>
+    <ShouldProvisionEmscripten Condition="'$(OS)' == 'Windows_NT' and '$(TargetArchitecture)' == 'wasm' and '$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
+    <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -57,6 +64,7 @@
   <PropertyGroup>
     <!-- default metadata update support for specific platforms -->
     <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')">true</MonoMetadataUpdate>
+    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">true</MonoMetadataUpdate>
     <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">false</MonoMetadataUpdate>
   </PropertyGroup>
 </Project>

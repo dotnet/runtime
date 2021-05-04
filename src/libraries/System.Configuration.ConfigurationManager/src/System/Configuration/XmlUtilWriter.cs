@@ -19,7 +19,7 @@ namespace System.Configuration
     //
     // Note also that this class is used at runtime to copy sections, so performance of all
     // writing functions directly affects application startup time.
-    internal class XmlUtilWriter
+    internal sealed class XmlUtilWriter
     {
         private const char Space = ' ';
         private const string NewLine = "\r\n";
@@ -356,7 +356,7 @@ namespace System.Configuration
         }
 
         // Class that contains the state of the writer and its underlying stream.
-        private class StreamWriterCheckpoint
+        private sealed class StreamWriterCheckpoint
         {
             internal readonly bool _isLastLineBlank;
             internal readonly int _lineNumber;

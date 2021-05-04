@@ -71,11 +71,16 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return type;
         }
 
-        public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+        public override MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
         {
             MetadataType type = GetTypeInternal(nameSpace, name);
-            if ((type == null) && throwIfNotFound)
-                ThrowHelper.ThrowTypeLoadException(nameSpace, name, this);
+            if ((type == null) && notFoundBehavior != NotFoundBehavior.ReturnNull)
+            {
+                ResolutionFailure failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, this);
+                ModuleDesc.GetTypeResolutionFailure = failure;
+                if (notFoundBehavior == NotFoundBehavior.Throw)
+                    failure.Throw();
+            }
             return type;
         }
     }

@@ -79,7 +79,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes @(_SuppressionsXmls->'%(FullPath)', ' --link-attributes ')</ILLinkArgs>
+      <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes &quot;@(_SuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</ILLinkArgs>
     </PropertyGroup>
 
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.

@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal partial class XmlTextReaderImpl
+    internal sealed partial class XmlTextReaderImpl
     {
         static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver)
         {

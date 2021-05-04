@@ -21,7 +21,7 @@ namespace System.Xml
         void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose);
     }
 
-    internal class XmlUTF8TextReader : XmlBaseReader, IXmlLineInfo, IXmlTextReaderInitializer
+    internal sealed class XmlUTF8TextReader : XmlBaseReader, IXmlLineInfo, IXmlTextReaderInitializer
     {
         private const int MaxTextChunk = 2048;
 

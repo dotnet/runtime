@@ -595,7 +595,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
 
-    CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument    
+    CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
@@ -711,17 +711,20 @@ enum class CorInfoCallConvExtension
     C,
     Stdcall,
     Thiscall,
-    Fastcall
+    Fastcall,
     // New calling conventions supported with the extensible calling convention encoding go here.
+    CMemberFunction,
+    StdcallMemberFunction,
+    FastcallMemberFunction
 };
 
 #ifdef TARGET_X86
 inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 {
 #ifdef UNIX_X86_ABI
-    return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C;
+    return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
 #else
-    return callConv == CorInfoCallConvExtension::C;
+    return callConv == CorInfoCallConvExtension::C || callConv == CorInfoCallConvExtension::CMemberFunction;
 #endif // UNIX_X86_ABI
 }
 #endif
@@ -729,7 +732,7 @@ inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 // Determines whether or not this calling convention is an instance method calling convention.
 inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)
 {
-    return callConv == CorInfoCallConvExtension::Thiscall;
+    return callConv == CorInfoCallConvExtension::Thiscall || callConv == CorInfoCallConvExtension::CMemberFunction || callConv == CorInfoCallConvExtension::StdcallMemberFunction || callConv == CorInfoCallConvExtension::FastcallMemberFunction;
 }
 
 // These are returned from getMethodOptions
@@ -1524,6 +1527,9 @@ enum CorInfoTokenKind
 
     // token comes from CEE_LDVIRTFTN
     CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
+
+    // token comes from devirtualizing a method
+    CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -1946,6 +1952,9 @@ public:
     // ICorMethodInfo
     //
     /**********************************************************************************/
+
+    // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_JIT_INTRINSIC, except faster.
+    virtual bool isJitIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getMethodAttribs (

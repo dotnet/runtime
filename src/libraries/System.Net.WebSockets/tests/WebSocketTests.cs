@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
@@ -169,6 +170,16 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(count, r.Count);
             Assert.Equal(messageType, r.MessageType);
             Assert.Equal(endOfMessage, r.EndOfMessage);
+        }
+
+        [Fact]
+        public async Task ThrowWhenContinuationWithDifferentCompressionFlags()
+        {
+            using WebSocket client = CreateFromStream(new MemoryStream(), isServer: false, null, TimeSpan.Zero);
+
+            await client.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, default);
+            Assert.Throws<ArgumentException>("messageFlags", () =>
+               client.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Binary, WebSocketMessageFlags.EndOfMessage, default));
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket

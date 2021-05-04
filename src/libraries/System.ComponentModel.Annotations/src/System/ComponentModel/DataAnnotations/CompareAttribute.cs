@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,7 @@ namespace System.ComponentModel.DataAnnotations
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class CompareAttribute : ValidationAttribute
     {
+        [RequiresUnreferencedCode("The property referenced by 'otherProperty' may be trimmed. Ensure it is preserved.")]
         public CompareAttribute(string otherProperty) : base(SR.CompareAttribute_MustMatch)
         {
             OtherProperty = otherProperty ?? throw new ArgumentNullException(nameof(otherProperty));
@@ -25,6 +27,8 @@ namespace System.ComponentModel.DataAnnotations
             string.Format(
                 CultureInfo.CurrentCulture, ErrorMessageString, name, OtherPropertyDisplayName ?? OtherProperty);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "The ctor is marked with RequiresUnreferencedCode informing the caller to preserve the other property.")]
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var otherPropertyInfo = validationContext.ObjectType.GetRuntimeProperty(OtherProperty);

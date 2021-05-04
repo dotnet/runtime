@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -90,7 +91,7 @@ namespace System.Net.Http
                 // Only send start event to users who subscribed for it, but start activity anyway
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {
-                    diagnosticListener.StartActivity(activity, new ActivityStartData(request));
+                    StartActivity(diagnosticListener, activity, new ActivityStartData(request));
                 }
                 else
                 {
@@ -102,7 +103,7 @@ namespace System.Net.Http
             {
                 long timestamp = Stopwatch.GetTimestamp();
                 loggingRequestId = Guid.NewGuid();
-                diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
+                Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
                     new RequestData(request, loggingRequestId, timestamp));
             }
 
@@ -138,7 +139,7 @@ namespace System.Net.Http
                     // If request was initially instrumented, Activity.Current has all necessary context for logging
                     // Request is passed to provide some context if instrumentation was disabled and to avoid
                     // extensive Activity.Tags usage to tunnel request properties
-                    diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new ExceptionData(ex, request));
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ExceptionEventName, new ExceptionData(ex, request));
                 }
                 throw;
             }
@@ -147,7 +148,7 @@ namespace System.Net.Http
                 // always stop activity if it was started
                 if (activity != null)
                 {
-                    diagnosticListener.StopActivity(activity, new ActivityStopData(
+                    StopActivity(diagnosticListener, activity, new ActivityStopData(
                         response,
                         // If request is failed or cancelled, there is no response, therefore no information about request;
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
@@ -159,7 +160,7 @@ namespace System.Net.Http
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
                     long timestamp = Stopwatch.GetTimestamp();
-                    diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
                         new ResponseData(
                             response,
                             loggingRequestId,
@@ -173,6 +174,12 @@ namespace System.Net.Http
 
         private sealed class ActivityStartData
         {
+            // matches the properties selected in https://github.com/dotnet/diagnostics/blob/ffd0254da3bcc47847b1183fa5453c0877020abd/src/Microsoft.Diagnostics.Monitoring.EventPipe/Configuration/HttpRequestSourceConfiguration.cs#L36-L40
+            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(HttpRequestMessage.Method), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(Uri.Host), typeof(Uri))]
+            [DynamicDependency(nameof(Uri.Port), typeof(Uri))]
             internal ActivityStartData(HttpRequestMessage request)
             {
                 Request = request;
@@ -201,6 +208,14 @@ namespace System.Net.Http
 
         private sealed class ExceptionData
         {
+            // preserve the same properties as ActivityStartData above + common Exception properties
+            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(HttpRequestMessage.Method), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(Uri.Host), typeof(Uri))]
+            [DynamicDependency(nameof(Uri.Port), typeof(Uri))]
+            [DynamicDependency(nameof(System.Exception.Message), typeof(Exception))]
+            [DynamicDependency(nameof(System.Exception.StackTrace), typeof(Exception))]
             internal ExceptionData(Exception exception, HttpRequestMessage request)
             {
                 Exception = exception;
@@ -215,6 +230,12 @@ namespace System.Net.Http
 
         private sealed class RequestData
         {
+            // preserve the same properties as ActivityStartData above
+            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(HttpRequestMessage.Method), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
+            [DynamicDependency(nameof(Uri.Host), typeof(Uri))]
+            [DynamicDependency(nameof(Uri.Port), typeof(Uri))]
             internal RequestData(HttpRequestMessage request, Guid loggingRequestId, long timestamp)
             {
                 Request = request;
@@ -231,6 +252,7 @@ namespace System.Net.Http
 
         private sealed class ResponseData
         {
+            [DynamicDependency(nameof(HttpResponseMessage.StatusCode), typeof(HttpResponseMessage))]
             internal ResponseData(HttpResponseMessage? response, Guid loggingRequestId, long timestamp, TaskStatus requestTaskStatus)
             {
                 Response = response;
@@ -314,6 +336,36 @@ namespace System.Net.Http
                     request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
                 }
             }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The values being passed into Write have the commonly used properties being preserved with DynamicDependency.")]
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            string name,
+            T value)
+        {
+            diagnosticSource.Write(name, value);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The args being passed into StartActivity have the commonly used properties being preserved with DynamicDependency.")]
+        private static Activity StartActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            Activity activity,
+            T? args)
+        {
+            return diagnosticSource.StartActivity(activity, args);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The args being passed into StopActivity have the commonly used properties being preserved with DynamicDependency.")]
+        private static void StopActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            Activity activity,
+            T? args)
+        {
+            diagnosticSource.StopActivity(activity, args);
         }
 
         #endregion

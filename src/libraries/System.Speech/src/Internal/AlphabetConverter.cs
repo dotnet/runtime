@@ -228,7 +228,7 @@ namespace System.Speech.Internal
 
         internal class PhoneMapData
         {
-            private class ConversionUnit
+            private sealed class ConversionUnit
             {
                 public string sapi;
                 public string ups;

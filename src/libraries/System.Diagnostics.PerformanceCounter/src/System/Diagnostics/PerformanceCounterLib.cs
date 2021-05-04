@@ -20,7 +20,7 @@ using MemoryMarshal = System.Diagnostics.PerformanceCounterLib;
 
 namespace System.Diagnostics
 {
-    internal class PerformanceCounterLib
+    internal sealed class PerformanceCounterLib
     {
         internal const string PerfShimName = "netfxperf.dll";
         private const string PerfShimFullNameSuffix = @"\netfxperf.dll";
@@ -1265,7 +1265,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class PerformanceMonitor
+    internal sealed class PerformanceMonitor
     {
         private PerformanceDataRegistryKey perfDataKey;
         private readonly string machineName;
@@ -1378,7 +1378,7 @@ namespace System.Diagnostics
 
     }
 
-    internal class CategoryEntry
+    internal sealed class CategoryEntry
     {
         internal int NameIndex;
         internal int HelpIndex;
@@ -1676,7 +1676,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class CounterDefinitionSample
+    internal sealed class CounterDefinitionSample
     {
         internal readonly int _nameIndex;
         internal readonly int _counterType;

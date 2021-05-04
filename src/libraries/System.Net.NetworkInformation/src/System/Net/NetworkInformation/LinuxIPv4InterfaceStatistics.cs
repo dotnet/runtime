@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPv4InterfaceStatistics : IPv4InterfaceStatistics
+    internal sealed class LinuxIPv4InterfaceStatistics : IPv4InterfaceStatistics
     {
         private readonly LinuxIPInterfaceStatistics _statistics;
 

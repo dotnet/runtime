@@ -517,8 +517,9 @@ SingleResponse ::= SEQUENCE {
                         }
                         else if (status == CertStatus.Revoked)
                         {
+                            // Android does not support all precisions for seconds - just omit fractional seconds for testing on Android
                             writer.PushSequence(s_context1);
-                            writer.WriteGeneralizedTime(revokedTime);
+                            writer.WriteGeneralizedTime(revokedTime, omitFractionalSeconds: OperatingSystem.IsAndroid());
                             writer.PopSequence(s_context1);
                         }
                         else

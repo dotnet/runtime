@@ -329,7 +329,7 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
     return false;
 }
 
-size_t index_of_non_numeric(const pal::string_t& str, unsigned i)
+size_t index_of_non_numeric(const pal::string_t& str, size_t i)
 {
     return str.find_first_not_of(_X("0123456789"), i);
 }
@@ -340,7 +340,7 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     {
         return false;
     }
-    if (index_of_non_numeric(str, 0) != pal::string_t::npos)
+    if (index_of_non_numeric(str, 0u) != pal::string_t::npos)
     {
         return false;
     }

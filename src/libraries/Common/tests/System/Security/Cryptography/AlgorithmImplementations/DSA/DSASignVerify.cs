@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public sealed class DSASignVerify_Array : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public sealed class DSASignVerify_Stream : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Dsa.Tests
     }
 
 #if NETCOREAPP
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public sealed class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 #endif
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public abstract partial class DSASignVerify
     {
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
@@ -163,7 +163,21 @@ namespace System.Security.Cryptography.Dsa.Tests
             Assert.Throws<ObjectDisposedException>(
                 () =>
                 {
-                    key.KeySize = 576;
+                    try
+                    {
+                        key.KeySize = 576;
+                    }
+                    catch (CryptographicException)
+                    {
+                        // DSACryptoServiceProvider on Android only supports 1024 and does an early check for legal
+                        // key sizes, since it is more restrictive than the wrapped implementation. It will throw
+                        // CryptographicException. SignData should still throw ObjectDisposedException.
+                        if (!PlatformDetection.IsAndroid)
+                        {
+                            throw;
+                        }
+                    }
+
                     SignData(key, data, HashAlgorithmName.SHA1);
                 });
         }

@@ -17,6 +17,7 @@
     <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" Private="true"/>
     <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" Private="true"/>
     <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" Private="true"/>
+    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true"/>
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
@@ -30,6 +31,7 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 

@@ -372,6 +372,7 @@ namespace System.DirectoryServices.Protocols
         public bool RootDseCache { get { throw null; } set { } }
         public string SaslMethod { get { throw null; } set { } }
         public bool Sealing { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool SecureSocketLayer { get { throw null; } set { } }
         public object SecurityContext { get { throw null; } }
         public System.TimeSpan SendTimeout { get { throw null; } set { } }

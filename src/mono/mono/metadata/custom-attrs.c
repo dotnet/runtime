@@ -1623,6 +1623,8 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	error_init (error);
 
 	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	/* FIXME: metadata-update */
+	int rows = table_info_get_rows (ca);
 
 	i = mono_metadata_custom_attrs_from_index (image, idx);
 	if (!i)
@@ -1630,7 +1632,7 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	i --;
 	// initial size chosen arbitrarily, but default is 16 which is rather small
 	attr_array = g_array_sized_new (TRUE, TRUE, sizeof (guint32), 128);
-	while (i < ca->rows) {
+	while (i < rows) {
 		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
 			break;
 		attr_array = g_array_append_val (attr_array, i);
@@ -1978,14 +1980,15 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 		return NULL;
 	ca = &image->tables [MONO_TABLE_METHOD];
 
+	/* FIXME: metadata-update */
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
-	if (method_index == ca->rows) {
-		ca = &image->tables [MONO_TABLE_PARAM];
-		param_last = ca->rows + 1;
+	if (method_index == table_info_get_rows (ca)) {
+		param_last = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
 	} else {
 		param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
-		ca = &image->tables [MONO_TABLE_PARAM];
 	}
+	ca = &image->tables [MONO_TABLE_PARAM];
+
 	found = FALSE;
 	for (i = param_list; i < param_last; ++i) {
 		param_pos = mono_metadata_decode_row_col (ca, i - 1, MONO_PARAM_SEQUENCE);
@@ -2345,7 +2348,7 @@ custom_attr_class_name_from_methoddef (MonoImage *image, guint32 method_token, c
 		guint32 cols [MONO_TYPEDEF_SIZE];
 		guint tidx = mono_metadata_token_index (type_token);
 
-		if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows) {
+		if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx)) {
 			/* "Invalid typedef token %x", type_token */
 			return FALSE;
 		}
@@ -2485,7 +2488,8 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 		return;
 	i --;
 	gboolean stop_iterating = FALSE;
-	while (!stop_iterating && i < ca->rows) {
+	int rows = table_info_get_rows (ca);
+	while (!stop_iterating && i < rows) {
 		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
 			break;
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
@@ -2600,7 +2604,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 
 		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 		guint32 parent, field_idx, col, mtoken, idx;
-		for (int i = 0; i < tdef->rows; ++i) {
+		int rows = table_info_get_rows (tdef);
+		for (int i = 0; i < rows; ++i) {
 			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
 			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
 				continue;
@@ -2616,13 +2621,16 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 			}
 		}
 	} else {
+		/* FIXME: metadata-update */
+
 		/* Memberref pointing to a typeref */
 		tdef = &image->tables [MONO_TABLE_MEMBERREF];
 
 		/* Check whenever the assembly references the WeakAttribute type */
 		gboolean found = FALSE;
 		tdef = &image->tables [MONO_TABLE_TYPEREF];
-		for (int i = 0; i < tdef->rows; ++i) {
+		int rows = table_info_get_rows (tdef);
+		for (int i = 0; i < rows; ++i) {
 			guint32 string_offset = mono_metadata_decode_row_col (tdef, i, MONO_TYPEREF_NAME);
 			const char *name = mono_metadata_string_heap (image, string_offset);
 			if (!strcmp (name, "WeakAttribute")) {
@@ -2636,7 +2644,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 
 		/* Find the memberref pointing to a typeref */
 		tdef = &image->tables [MONO_TABLE_MEMBERREF];
-		for (int i = 0; i < tdef->rows; ++i) {
+		rows = table_info_get_rows (tdef);
+		for (int i = 0; i < rows; ++i) {
 			guint32 cols [MONO_MEMBERREF_SIZE];
 			const char *sig;
 
@@ -2686,7 +2695,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 
 		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 		guint32 parent, field_idx, col, mtoken, idx;
-		for (int i = 0; i < tdef->rows; ++i) {
+		rows = table_info_get_rows (tdef);
+		for (int i = 0; i < rows; ++i) {
 			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
 			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
 				continue;

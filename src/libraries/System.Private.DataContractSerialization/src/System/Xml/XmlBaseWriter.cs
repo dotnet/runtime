@@ -1792,7 +1792,7 @@ namespace System.Xml
                 _attributeValue += value;
         }
 
-        private class Element
+        private sealed class Element
         {
             private string? _prefix;
             private string? _localName;
@@ -1850,7 +1850,7 @@ namespace System.Xml
             End         // Nothing further to write
         }
 
-        private class NamespaceManager
+        private sealed class NamespaceManager
         {
             private Namespace[]? _namespaces;
             private Namespace? _lastNameSpace;
@@ -2301,7 +2301,7 @@ namespace System.Xml
                 }
             }
 
-            private class XmlAttribute
+            private sealed class XmlAttribute
             {
                 private XmlSpace _space;
                 private string? _lang;
@@ -2353,7 +2353,7 @@ namespace System.Xml
                 }
             }
 
-            private class Namespace
+            private sealed class Namespace
             {
                 private string? _prefix;
                 private string? _ns;

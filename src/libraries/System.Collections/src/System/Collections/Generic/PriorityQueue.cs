@@ -358,9 +358,40 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
+            int count = 0;
+            var collection = items as ICollection<(TElement Element, TPriority Priority)>;
+            if (collection is not null && (count = collection.Count) > _nodes.Length - _size)
+            {
+                Grow(_size + count);
+            }
+
             if (_size == 0)
             {
-                _nodes = EnumerableHelpers.ToArray(items, out _size);
+                // build using Heapify() if the queue is empty.
+
+                if (collection is not null)
+                {
+                    collection.CopyTo(_nodes, 0);
+                    _size = count;
+                }
+                else
+                {
+                    int i = 0;
+                    (TElement, TPriority)[] nodes = _nodes;
+                    foreach ((TElement element, TPriority priority) in items)
+                    {
+                        if (nodes.Length == i)
+                        {
+                            Grow(i + 1);
+                            nodes = _nodes;
+                        }
+
+                        nodes[i++] = (element, priority);
+                    }
+
+                    _size = i;
+                }
+
                 _version++;
 
                 if (_size > 1)
@@ -370,11 +401,6 @@ namespace System.Collections.Generic
             }
             else
             {
-                if (EnumerableHelpers.TryGetCount(items, out int count) && _nodes.Length - _size < count)
-                {
-                    Grow(_size + count);
-                }
-
                 foreach ((TElement element, TPriority priority) in items)
                 {
                     Enqueue(element, priority);
@@ -398,22 +424,28 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(elements));
             }
 
-            if (EnumerableHelpers.TryGetCount(elements, out int count) && _nodes.Length - _size < count)
+            int count;
+            if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
+                (count = collection.Count) > _nodes.Length - _size)
             {
                 Grow(_size + count);
             }
 
             if (_size == 0)
             {
+                // build using Heapify() if the queue is empty.
+
                 int i = 0;
+                (TElement, TPriority)[] nodes = _nodes;
                 foreach (TElement element in elements)
                 {
-                    if (_nodes.Length == i)
+                    if (nodes.Length == i)
                     {
                         Grow(i + 1);
+                        nodes = _nodes;
                     }
 
-                    _nodes[i++] = (element, priority);
+                    nodes[i++] = (element, priority);
                 }
 
                 _size = i;
@@ -497,8 +529,6 @@ namespace System.Collections.Generic
         {
             Debug.Assert(_nodes.Length < minCapacity);
 
-            // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
-            const int MaxArrayLength = 0X7FEFFFFF;
             const int GrowFactor = 2;
             const int MinimumGrow = 4;
 
@@ -506,13 +536,13 @@ namespace System.Collections.Generic
 
             // Allow the queue to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _nodes.Length overflowed thanks to the (uint) cast
-            if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
+            if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
             // Ensure minimum growth is respected.
             newcapacity = Math.Max(newcapacity, _nodes.Length + MinimumGrow);
 
             // If the computed capacity is still less than specified, set to the original argument.
-            // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+            // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
             if (newcapacity < minCapacity) newcapacity = minCapacity;
 
             Array.Resize(ref _nodes, newcapacity);
@@ -523,25 +553,25 @@ namespace System.Collections.Generic
         /// </summary>
         private void RemoveRootNode()
         {
-            // The idea is to replace the root node by the very last
-            // node and shorten the array by one.
-            int lastNodeIndex = _size - 1;
-            (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+            int lastNodeIndex = --_size;
+            _version++;
+
+            if (lastNodeIndex > 0)
+            {
+                (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+                if (_comparer == null)
+                {
+                    MoveDownDefaultComparer(lastNode, 0);
+                }
+                else
+                {
+                    MoveDownCustomComparer(lastNode, 0);
+                }
+            }
+
             if (RuntimeHelpers.IsReferenceOrContainsReferences<(TElement, TPriority)>())
             {
                 _nodes[lastNodeIndex] = default;
-            }
-
-            _size--;
-            _version++;
-
-            if (_comparer == null)
-            {
-                MoveDownDefaultComparer(lastNode, 0);
-            }
-            else
-            {
-                MoveDownCustomComparer(lastNode, 0);
             }
         }
 
@@ -593,6 +623,7 @@ namespace System.Collections.Generic
             // a similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             (TElement Element, TPriority Priority)[] nodes = _nodes;
 
@@ -624,6 +655,7 @@ namespace System.Collections.Generic
             // a similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is not null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             IComparer<TPriority> comparer = _comparer;
             (TElement Element, TPriority Priority)[] nodes = _nodes;
@@ -657,6 +689,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             (TElement Element, TPriority Priority)[] nodes = _nodes;
             int size = _size;
@@ -704,6 +737,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is not null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             IComparer<TPriority> comparer = _comparer;
             (TElement Element, TPriority Priority)[] nodes = _nodes;
@@ -876,10 +910,7 @@ namespace System.Collections.Generic
                 /// Gets the element at the current position of the enumerator.
                 /// </summary>
                 public (TElement Element, TPriority Priority) Current => _current;
-
-                object IEnumerator.Current =>
-                    _index == 0 || _index == _queue._size + 1 ? throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen) :
-                    Current;
+                object IEnumerator.Current => _current;
 
                 void IEnumerator.Reset()
                 {

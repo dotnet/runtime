@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-internal partial class Interop
+internal static partial class Interop
 {
     internal static partial class Crypt32
     {

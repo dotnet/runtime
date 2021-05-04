@@ -32,7 +32,7 @@ namespace System.Diagnostics
             timeSync = new TimeSync();
         }
 
-        private class TimeSync
+        private sealed class TimeSync
         {
             public readonly DateTime SyncUtcNow = DateTime.UtcNow;
             public readonly long SyncStopwatchTicks = Stopwatch.GetTimestamp();

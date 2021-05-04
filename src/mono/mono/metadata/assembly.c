@@ -70,6 +70,7 @@ static char **assemblies_path = NULL;
 
 /* keeps track of loaded assemblies, excluding dynamic ones */
 static GList *loaded_assemblies = NULL;
+static guint32 loaded_assembly_count = 0;
 static MonoAssembly *corlib;
 
 static char* unquote (const char *str);
@@ -95,6 +96,8 @@ static const MonoBundledAssembly **bundles;
 static const MonoBundledSatelliteAssembly **satellite_bundles;
 
 /* Class lazy loading functions */
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
+
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute")
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload);
@@ -651,7 +654,7 @@ mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 	gint32 machine, flags;
 
-	if (!t->rows)
+	if (!table_info_get_rows (t))
 		return FALSE;
 
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
@@ -1155,25 +1158,6 @@ leave:
 	return reference;
 }
 
-static MonoImage *
-open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
-{
-	if (!satellite_bundles)
-		return NULL;
-
-	MonoImage *image = NULL;
-	char *name = g_strdup (filename);
-	for (int i = 0; !image && satellite_bundles [i]; ++i) {
-		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
-			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, name, NULL);
-			break;
-		}
-	}
-
-	g_free (name);
-	return image;
-}
-
 /**
  * mono_assembly_get_assemblyref_checked:
  * \param image pointer to the \c MonoImage to extract the information from.
@@ -1254,8 +1238,9 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (!image->references) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	
-		image->references = g_new0 (MonoAssembly *, t->rows + 1);
-		image->nreferences = t->rows;
+		int n = table_info_get_rows (t);
+		image->references = g_new0 (MonoAssembly *, n + 1);
+		image->nreferences = n;
 	}
 	reference = image->references [index];
 	mono_image_unlock (image);
@@ -1445,17 +1430,6 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	mono_install_assembly_load_hook_v1 (func, user_data);
 }
 
-static void
-free_assembly_load_hooks (void)
-{
-	AssemblyLoadHook *hook, *next;
-
-	for (hook = assembly_load_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
-
 typedef struct AssemblySearchHook AssemblySearchHook;
 struct AssemblySearchHook {
 	AssemblySearchHook *next;
@@ -1550,17 +1524,6 @@ mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_da
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE);
 }	
-
-static void
-free_assembly_search_hooks (void)
-{
-	AssemblySearchHook *hook, *next;
-
-	for (hook = assembly_search_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
 
 /**
  * mono_install_assembly_refonly_search_hook:
@@ -1705,17 +1668,6 @@ mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer 
 	}
 }
 
-static void
-free_assembly_preload_hooks (void)
-{
-	AssemblyPreLoadHook *hook, *next;
-
-	for (hook = assembly_preload_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
-
 typedef struct AssemblyAsmCtxFromPathHook AssemblyAsmCtxFromPathHook;
 struct AssemblyAsmCtxFromPathHook {
 	AssemblyAsmCtxFromPathHook *next;
@@ -1774,18 +1726,6 @@ assembly_invoke_asmctx_from_path_hook (const char *absfname, MonoAssembly *reque
 			return TRUE;
 	}
 	return FALSE;
-}
-
-
-static void
-free_assembly_asmctx_from_path_hooks (void)
-{
-	AssemblyAsmCtxFromPathHook *hook, *next;
-
-	for (hook = assembly_asmctx_from_path_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
 }
 
 static gchar *
@@ -1868,6 +1808,28 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	return image;
 }
 
+static MonoImage *
+open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
+{
+	if (!satellite_bundles)
+		return NULL;
+
+	MonoImage *image = NULL;
+	char *name = g_strdup (filename);
+
+	for (int i = 0; !image && satellite_bundles [i]; ++i) {
+		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
+			char *bundle_name = g_strconcat (culture, "/", name, (const char *)NULL);
+			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, bundle_name, NULL);
+			g_free (bundle_name);
+			break;
+		}
+	}
+
+	g_free (name);
+	return image;
+}
+
 /** 
  * mono_assembly_open_from_bundle:
  * \param filename Filename requested
@@ -1881,7 +1843,7 @@ MonoImage *
 mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
 {
 	/*
-	 * we do a very simple search for bundled assemblies: it's not a general 
+	 * we do a very simple search for bundled assemblies: it's not a general
 	 * purpose assembly loading mechanism.
 	 */
 	MonoImage *image = NULL;
@@ -1973,34 +1935,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		status = &def_status;
 	*status = MONO_IMAGE_OK;
 
-	if (strncmp (filename, "file://", 7) == 0) {
-		GError *gerror = NULL;
-		gchar *uri = (gchar *) filename;
-		gchar *tmpuri;
-
-		/*
-		 * MS allows file://c:/... and fails on file://localhost/c:/... 
-		 * They also throw an IndexOutOfRangeException if "file://"
-		 */
-		if (uri [7] != '/')
-			uri = g_strdup_printf ("file:///%s", uri + 7);
-	
-		tmpuri = uri;
-		uri = mono_escape_uri_string (tmpuri);
-		fname = g_filename_from_uri (uri, NULL, &gerror);
-		g_free (uri);
-
-		if (tmpuri != filename)
-			g_free (tmpuri);
-
-		if (gerror != NULL) {
-			g_warning ("%s\n", gerror->message);
-			g_error_free (gerror);
-			fname = g_strdup (filename);
-		}
-	} else {
-		fname = g_strdup (filename);
-	}
+	fname = g_strdup (filename);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", fname);
@@ -2329,7 +2264,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	predicate = req->predicate;
 	user_data = req->predicate_ud;
 
-	if (!image->tables [MONO_TABLE_ASSEMBLY].rows) {
+	if (!table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
 		/* 'image' doesn't have a manifest -- maybe someone is trying to Assembly.Load a .netmodule */
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
@@ -2453,6 +2388,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 		image->assembly = ass;
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
+	loaded_assembly_count++;
 	mono_assemblies_unlock ();
 
 #ifdef HOST_WIN32
@@ -3351,6 +3287,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 
 	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
+	loaded_assembly_count--;
 	mono_assemblies_unlock ();
 
 	assembly->image->assembly = NULL;
@@ -3454,12 +3391,6 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 void
 mono_assemblies_cleanup (void)
 {
-	mono_os_mutex_destroy (&assemblies_mutex);
-
-	free_assembly_asmctx_from_path_hooks ();
-	free_assembly_load_hooks ();
-	free_assembly_search_hooks ();
-	free_assembly_preload_hooks ();
 }
 
 /*
@@ -3680,7 +3611,8 @@ mono_assembly_has_skip_verification (MonoAssembly *assembly)
 
 	t = &assembly->image->tables [MONO_TABLE_DECLSECURITY];
 
-	for (i = 0; i < t->rows; ++i) {
+	int rows = table_info_get_rows (t);
+	for (i = 0; i < rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 		if ((cols [MONO_DECL_SECURITY_PARENT] & MONO_HAS_DECL_SECURITY_MASK) != MONO_HAS_DECL_SECURITY_ASSEMBLY)
 			continue;
@@ -3719,4 +3651,84 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
 	return names [asmctx->kind];
+}
+
+/**
+ * mono_assembly_is_jit_optimizer_disabled:
+ *
+ * \param assm the assembly
+ *
+ * Returns TRUE if the System.Diagnostics.DebuggableAttribute has the
+ *  DebuggingModes.DisableOptimizations bit set.
+ *
+ */
+gboolean
+mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
+{
+	ERROR_DECL (error);
+
+	g_assert (ass);
+	if (ass->jit_optimizer_disabled_inited)
+		return ass->jit_optimizer_disabled;
+
+	MonoClass *klass = mono_class_try_get_debuggable_attribute_class ();
+
+	if (!klass) {
+		/* Linked away */
+		ass->jit_optimizer_disabled = FALSE;
+		mono_memory_barrier ();
+		ass->jit_optimizer_disabled_inited = TRUE;
+		return FALSE;
+	}
+
+	gboolean disable_opts = FALSE;
+	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	mono_error_cleanup (error); /* FIXME don't swallow the error */
+	if (attrs) {
+		for (int i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			const gchar *p;
+			MonoMethodSignature *sig;
+
+			if (!attr->ctor || attr->ctor->klass != klass)
+				continue;
+			/* Decode the attribute. See reflection.c */
+			p = (const char*)attr->data;
+			g_assert (read16 (p) == 0x0001);
+			p += 2;
+
+			// FIXME: Support named parameters
+			sig = mono_method_signature_internal (attr->ctor);
+			MonoClass *param_class;
+			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_BOOLEAN && sig->params [1]->type == MONO_TYPE_BOOLEAN) {
+
+				/* Two boolean arguments */
+				p ++;
+				disable_opts = *p;
+			} else if (sig->param_count == 1 &&
+				   sig->params[0]->type == MONO_TYPE_VALUETYPE &&
+				   (param_class = mono_class_from_mono_type_internal (sig->params[0])) != NULL &&
+				   m_class_is_enumtype (param_class) &&
+				   !strcmp (m_class_get_name (param_class), "DebuggingModes")) {
+				/* System.Diagnostics.DebuggableAttribute+DebuggingModes */
+				int32_t flags = read32 (p);
+				p += 4;
+				disable_opts = (flags & 0x0100) != 0;
+			}
+		}
+		mono_custom_attrs_free (attrs);
+	}
+
+	ass->jit_optimizer_disabled = disable_opts;
+	mono_memory_barrier ();
+	ass->jit_optimizer_disabled_inited = TRUE;
+
+	return disable_opts;
+
+}
+
+guint32
+mono_assembly_get_count (void)
+{
+	return loaded_assembly_count;
 }

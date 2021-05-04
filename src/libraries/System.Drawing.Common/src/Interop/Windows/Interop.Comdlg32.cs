@@ -15,7 +15,7 @@ internal static partial class Interop
         internal static extern bool PrintDlg([In, Out] PRINTDLGX86 lppd);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal class PRINTDLG
+        internal sealed class PRINTDLG
         {
             internal int lStructSize;
             internal IntPtr hwndOwner;
@@ -39,7 +39,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
-        internal class PRINTDLGX86
+        internal sealed class PRINTDLGX86
         {
             internal int lStructSize;
             internal IntPtr hwndOwner;

@@ -3,9 +3,9 @@
 
 using System;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class User32
+    internal static partial class User32
     {
         public delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
     }

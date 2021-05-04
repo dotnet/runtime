@@ -228,7 +228,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Supports a simple ForEach-style iteration over a collection.
         /// </devdoc>
-        private class ResultsEnumerator : IEnumerator
+        private sealed class ResultsEnumerator : IEnumerator
         {
             private readonly NetworkCredential? _parentCredentials;
             private readonly AuthenticationTypes _parentAuthenticationType;

@@ -7,7 +7,7 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
         internal static bool CanDeriveNewPublicKey { get; }
@@ -188,6 +188,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android does not validate curve parameters")]
         public static void TestExplicitImportValidationNegative()
         {
             unchecked

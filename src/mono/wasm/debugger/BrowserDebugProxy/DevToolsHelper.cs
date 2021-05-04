@@ -192,6 +192,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_get_variables({scopeId}, {JsonConvert.SerializeObject(var_ids)})");
         }
 
+        public static MonoCommands SetVariableValue(int scopeId, int index, string name, string newValue)
+        {
+            return new MonoCommands($"MONO.mono_wasm_set_variable_value({scopeId}, {index}, '{name}', '{newValue}')");
+        }
+
         public static MonoCommands EvaluateMemberAccess(int scopeId, string expr, params VarInfo[] vars)
         {
             var var_ids = vars.Select(v => new { index = v.Index, name = v.Name }).ToArray();
@@ -218,7 +223,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         BpNotFound = 100000,
     }
 
-    internal class MonoConstants
+    internal static class MonoConstants
     {
         public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";

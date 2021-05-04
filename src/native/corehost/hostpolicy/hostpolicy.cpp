@@ -247,7 +247,7 @@ int run_app_for_context(
     // Execute the application
     unsigned int exit_code;
     auto hr = context.coreclr->execute_assembly(
-        argv_local.size(),
+        (int32_t)argv_local.size(),
         argv_local.data(),
         managed_app.data(),
         &exit_code);
@@ -448,7 +448,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
             return rc;
 
         // Get length in character count not including null terminator
-        int len = output_string.length();
+        int32_t len = static_cast<int32_t>(output_string.length());
 
         if (len + 1 > buffer_size)
         {
@@ -894,6 +894,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     {
         // This should really never happen, but fail gracefully if it does anyway.
         assert(false);
+        delete app;
+        app = nullptr;
         trace::error(_X("Failed to initialize empty runtime config for the component."));
         return StatusCode::InvalidConfigFile;
     }

@@ -16,7 +16,7 @@ if(CLR_CMAKE_HOST_WIN32)
     include_directories(../../inc) #needed for warning control
 
     if(CLR_CMAKE_TARGET_WIN32)
-            set (EVENTPIPE_PAL_SOURCES "${SHARED_EVENTPIPE_DIR}/ds-ipc-win32.c")
+            set (EVENTPIPE_PAL_SOURCES "${SHARED_EVENTPIPE_DIR}/ds-ipc-pal-namedpipe.c")
             set_source_files_properties(${EVENTPIPE_PAL_SOURCES} PROPERTIES LANGUAGE CXX)
 
         set(TWO_WAY_PIPE_SOURCES
@@ -36,7 +36,7 @@ if(CLR_CMAKE_HOST_UNIX)
     add_definitions(-DPAL_IMPLEMENTATION)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
 
-    set (EVENTPIPE_PAL_SOURCES "${SHARED_EVENTPIPE_DIR}/ds-ipc-posix.c")
+    set (EVENTPIPE_PAL_SOURCES "${SHARED_EVENTPIPE_DIR}/ds-ipc-pal-socket.c")
     set_source_files_properties(${EVENTPIPE_PAL_SOURCES} PROPERTIES LANGUAGE CXX)
     if (CMAKE_VERSION VERSION_GREATER 3.11 OR CMAKE_VERSION VERSION_EQUAL 3.11)
         set_source_files_properties(${EVENTPIPE_PAL_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
@@ -52,6 +52,6 @@ if(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_UNIX)
 
-_add_library(debug-pal_obj OBJECT ${TWO_WAY_PIPE_SOURCES})
+add_library_clr(debug-pal_obj OBJECT ${TWO_WAY_PIPE_SOURCES})
 add_library(debug-pal INTERFACE)
 target_sources(debug-pal INTERFACE $<TARGET_OBJECTS:debug-pal_obj>)

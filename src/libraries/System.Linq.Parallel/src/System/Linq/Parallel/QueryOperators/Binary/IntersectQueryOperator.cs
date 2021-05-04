@@ -123,12 +123,12 @@ namespace System.Linq.Parallel
         // only returns elements that are seen twice (returning each one only once).
         //
 
-        private class IntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
+        private sealed class IntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
             private readonly IEqualityComparer<TInputOutput>? _comparer; // Comparer to use for equality/hash-coding.
-            private Set<TInputOutput>? _hashLookup; // The hash lookup, used to produce the intersection.
+            private HashSet<TInputOutput>? _hashLookup; // The hash lookup, used to produce the intersection.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount;
 
@@ -164,7 +164,7 @@ namespace System.Linq.Parallel
                 if (_hashLookup == null)
                 {
                     _outputLoopCount = new Shared<int>(0);
-                    _hashLookup = new Set<TInputOutput>(_comparer);
+                    _hashLookup = new HashSet<TInputOutput>(_comparer);
 
                     Pair<TInputOutput, NoKeyMemoizationRequired> rightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     int rightKeyUnused = default(int);
@@ -173,7 +173,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         _hashLookup.Add(rightElement.First);
                     }
@@ -187,7 +187,7 @@ namespace System.Linq.Parallel
                 {
                     Debug.Assert(_outputLoopCount != null);
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     // If we found the element in our set, and if we haven't returned it yet,
                     // we can yield it to the caller. We also mark it so we know we've returned
@@ -225,7 +225,7 @@ namespace System.Linq.Parallel
         }
 
 
-        private class OrderedIntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
+        private sealed class OrderedIntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
@@ -274,7 +274,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref leftElement, ref leftKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // For each element, we track the smallest order key for that element that we saw so far
                         Pair<TInputOutput, TLeftKey> oldEntry;
@@ -298,7 +298,7 @@ namespace System.Linq.Parallel
                 while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     // If we found the element in our set, and if we haven't returned it yet,
                     // we can yield it to the caller. We also mark it so we know we've returned

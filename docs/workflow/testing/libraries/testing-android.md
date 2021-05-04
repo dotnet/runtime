@@ -45,15 +45,7 @@ curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-
 mkdir ${ANDROID_SDK_ROOT} && unzip ~/asdk.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools && rm -rf ~/asdk.zip
 yes | ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
 ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
-
-# We also need to download precompiled binaries and headers for OpenSSL from maven, this step is a temporary hack
-# and will be removed once we figure out how to integrate OpenSSL properly as a dependency
-export ANDROID_OPENSSL_AAR=~/openssl-android
-curl https://maven.google.com/com/android/ndk/thirdparty/openssl/${OPENSSL_VER}/openssl-${OPENSSL_VER}.aar -L --output ~/openssl.zip
-unzip ~/openssl.zip -d ${ANDROID_OPENSSL_AAR} && rm -rf ~/openssl.zip
-printf "\n\nexport ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}\nexport ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}\nexport ANDROID_OPENSSL_AAR=${ANDROID_OPENSSL_AAR}\n" >> ${BASHRC}
 ```
-Save it to a file (e.g. `deps.sh`) and execute using `source` (e.g. `chmod +x deps.sh && source ./deps.sh`) in order to propogate the `ANDROID_NDK_ROOT`, `ANDROID_SDK_ROOT` and `ANDROID_OPENSSL_AAR` environment variables to the current process.
 
 ## Building Libs and Tests for Android
 

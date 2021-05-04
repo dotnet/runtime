@@ -300,7 +300,7 @@ def generateKeywordsClass(providerNode, outputFile):
         keywordsNode = node
         break;
 
-    writeOutput(outputFile, "public class Keywords\n")
+    writeOutput(outputFile, "public static class Keywords\n")
     writeOutput(outputFile, "{\n")
     increaseTabLevel()
 

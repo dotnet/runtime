@@ -90,6 +90,16 @@ if(CLR_CMAKE_TARGET_MACCATALYST)
     endif()
 endif()
 
+if(CLR_CMAKE_TARGET_TVOS)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
+    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
+    add_compile_options(-fembed-bitcode)
+    add_link_options(-fembed-bitcode)
+endif()
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DTARGET_64BIT=1)
     add_definitions(-DTARGET_AMD64)
@@ -254,13 +264,8 @@ elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
-elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
-        message("Using Android OpenSSL")
-        set(PREFER_OPENSSL_ANDROID 1)
-        add_subdirectory(System.Security.Cryptography.Native)
-    endif()
+elseif(CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
@@ -269,10 +274,4 @@ endif()
 
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
-endif()
-
-# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
-if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
-    message("Using Android Native Crypto")
-    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

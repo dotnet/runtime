@@ -3946,7 +3946,6 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
     Thread *pCurThread = GetThread();
-
     if (pCurThread->CatchAtSafePointOpportunistic())
     {
         goto FramedLockHelper;
@@ -5223,7 +5222,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     SetIP(&frameContext, osrMethodCode);
 
     // Transition!
-    RtlRestoreContext(&frameContext, NULL);
+    ClrRestoreNonvolatileContext(&frameContext);
 }
 
 #else

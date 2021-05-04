@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\src\HostFactoryResolver.cs" />
+    <Compile Include="HostFactoryResolverTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,31 +25,62 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
-  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
-    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
-        <_Parameter1>windows</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
       <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
-  
-  <!-- Enables browser warnings for cross platform or Brwoser targeted builds -->
+
+  <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
+  <ItemGroup>
+    <SupportedPlatform Include="Android" />
+    <SupportedPlatform Include="iOS" />
+    <SupportedPlatform Include="tvOS" />
+    <SupportedPlatform Include="macCatalyst" />
+  </ItemGroup>
+
+  <!-- Enables browser warnings for cross platform or Browser targeted builds -->
   <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
-  <ItemGroup>
-    <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+  <!-- Add target platforms into MSBuild SupportedPlatform list -->
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
+    <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
+    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvOS"/>
+    <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
   </ItemGroup>
 
-  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild" Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
+  <!-- Adds UnsupportedOSPlatform and SupportedOSPlatform attributes to the assembly when:
+      * This isn't a test project
+      * This is a cross-platform target
+      * The build isn't targeting .NET Framework
+    -->
+  <Target Name="AddOSPlatformAttributes" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
+    Condition="'$(TargetsAnyOS)' == 'true' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <!-- Defensively de-dupe the values -->
     <ItemGroup>
+      <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+      <_supportedOSPlatforms Include="$(SupportedOSPlatforms)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_unsupportedOSPlatforms)' != ''">
+      <!-- Add the assembly attribute -->
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
+
+      <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
+      <SupportedPlatform Include="%(_unsupportedOSPlatforms.Identity)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_supportedOSPlatforms)' != ''">
+      <!-- Add the assembly attribute -->
+      <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
+      </AssemblyAttribute>
+
+      <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
+      <SupportedPlatform Include="%(_supportedOSPlatforms.Identity)" />
     </ItemGroup>
   </Target>
 

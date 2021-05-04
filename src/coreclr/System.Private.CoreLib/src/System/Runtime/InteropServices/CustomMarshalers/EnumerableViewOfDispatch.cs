@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class EnumerableViewOfDispatch : ICustomAdapter, System.Collections.IEnumerable
+    internal sealed class EnumerableViewOfDispatch : ICustomAdapter, System.Collections.IEnumerable
     {
         // Reserved DISPID slot for getting an enumerator from an IDispatch-implementing COM interface.
         private const int DISPID_NEWENUM = -4;

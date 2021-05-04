@@ -8,19 +8,6 @@
 #include "pal_utilities.h"
 #include "pal_misc.h"
 
-
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS_ENV(name, releaseFn) \
-do { \
-    for (int i = 0; i < count_##name; ++i) \
-    { \
-        releaseFn(env, name[i]); \
-    } \
-} while(0)
-
 int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                         int32_t includePrivate,
                                         jobject* qx,
@@ -253,10 +240,12 @@ error:
     ReleaseGRef(env, *seed);
     *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    // Clear local BigInteger instances. On success, these are converted to global
+    // references for the out variables, so the local release is only on error.
     RELEASE_LOCALS_ENV(bn, ReleaseLRef);
 
 exit:
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return rc;
 }
 
@@ -328,18 +317,20 @@ static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
     goto cleanup;
 
 error:
-    if (loc[privateKey])
+    if (loc[privateKey] && (*env)->IsInstanceOf(env, loc[privateKey], g_DestroyableClass))
     {
         // Destroy the private key data.
         (*env)->CallVoidMethod(env, loc[privateKey], g_destroy);
-        CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+        (void)TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
     }
 
 cleanup:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyPair;
 }
+
+#define CURVE_NOT_SUPPORTED -1
 
 int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                 const char* oid,
@@ -365,7 +356,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     *key = AndroidCryptoNative_EcKeyCreateByOid(oid);
     if (*key == NULL)
     {
-        return FAIL;
+        return CURVE_NOT_SUPPORTED;
     }
 
     // Release the reference to the generated key pair. We're going to make our own with the explicit keys.
@@ -555,7 +546,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     keyInfo = AndroidCryptoNative_NewEcKey(AddGRef(env, loc[paramSpec]), keyPair);
 
 error:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyInfo;
 }

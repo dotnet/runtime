@@ -205,6 +205,10 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     }
 #endif  // FEATURE_READYTORUN_COMPILER
 
+#ifdef ARM_SOFTFP
+    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI);
+#endif
+
     return jitFlags;
 }
 
@@ -1132,16 +1136,6 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     *pInstrumentationData = pgoResults->pInstrumentationData;
 
     return pgoResults->m_hr;
-}
-
-CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
-    CORINFO_METHOD_HANDLE ftnHnd,
-    CORINFO_CLASS_HANDLE  baseHnd,
-    UINT32                ilOffset,
-    UINT32*               pLikelihood,
-    UINT32*               pNumberOfClasses)
-{
-    return NULL;
 }
 
 void ZapInfo::allocMem(
@@ -3953,6 +3947,11 @@ const char* ZapInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const 
 unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 {
     return m_pEEJitInfo->getMethodHash(ftn);
+}
+
+bool ZapInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    return m_pEEJitInfo->isJitIntrinsic(ftn);
 }
 
 uint32_t ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)

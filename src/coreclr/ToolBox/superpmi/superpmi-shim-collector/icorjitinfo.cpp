@@ -17,6 +17,17 @@
 // ICorMethodInfo
 //
 /**********************************************************************************/
+
+// Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
+// CORINFO_FLG_JIT_INTRINSIC, except faster.
+bool interceptor_ICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("isJitIntrinsic");
+    bool temp = original_ICorJitInfo->isJitIntrinsic(ftn);
+    mc->recIsJitIntrinsic(ftn, temp);
+    return temp;
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
@@ -1710,6 +1721,13 @@ void interceptor_ICJI::getCallInfo(
     param.flags                     = flags;
     param.pResult                   = pResult;
 
+#ifdef HOST_UNIX
+    // We don't seem to be able to capture the exception code in PAL exceptions when thrown
+    // from crossgen2. So assume there will be some error, then set it to zero (no error)
+    // if the `getCallInfo` call doesn't throw.
+    param.exceptionCode = 1;
+#endif // HOST_UNIX
+
     PAL_TRY(Param*, pOuterParam, &param)
     {
         PAL_TRY(Param*, pParam, pOuterParam)
@@ -1717,6 +1735,9 @@ void interceptor_ICJI::getCallInfo(
             pParam->pThis->mc->cr->AddCall("getCallInfo");
             pParam->pThis->original_ICorJitInfo->getCallInfo(pParam->pResolvedToken, pParam->pConstrainedResolvedToken,
                                                              pParam->callerHandle, pParam->flags, pParam->pResult);
+#ifdef HOST_UNIX
+            pParam->exceptionCode = 0;
+#endif // HOST_UNIX
         }
         PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
         {
@@ -2061,21 +2082,6 @@ HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE    
     HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
     mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, temp);
     return temp;
-}
-
-// Get the likely implementing class for a virtual call or interface call made by ftnHnd
-// at the indicated IL offset. baseHnd is the interface class or base class for the method
-// being called.
-CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd,
-                                                      CORINFO_CLASS_HANDLE  baseHnd,
-                                                      uint32_t              ilOffset,
-                                                      uint32_t*             pLikelihood,
-                                                      uint32_t*             pNumberOfClasses)
-{
-    mc->cr->AddCall("getLikelyClass");
-    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
-    mc->recGetLikelyClass(ftnHnd, baseHnd, ilOffset, result, pLikelihood, pNumberOfClasses);
-    return result;
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

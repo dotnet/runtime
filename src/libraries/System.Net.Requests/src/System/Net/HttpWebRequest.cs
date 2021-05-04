@@ -96,7 +96,7 @@ namespace System.Net
             Default = AllowAutoRedirect | AllowWriteStreamBuffering | ExpectContinue
         }
 
-        private class HttpClientParameters
+        private sealed class HttpClientParameters
         {
             public readonly bool Async;
             public readonly DecompressionMethods AutomaticDecompression;
@@ -183,12 +183,10 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-#pragma warning disable SYSLIB0014
         internal HttpWebRequest(Uri uri)
         {
             _requestUri = uri;
         }
-#pragma warning restore SYSLIB0014
 
         private void SetSpecialHeaders(string HeaderName, string? value)
         {
@@ -758,9 +756,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
-#pragma warning restore SYSLIB0014
 
         public RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 
@@ -1555,10 +1551,6 @@ namespace System.Net
                     try
                     {
                         socket.NoDelay = true;
-                        if (parameters.ReadWriteTimeout > 0) // default is 5 minutes, so this is generally going to be true
-                        {
-                            socket.SendTimeout = socket.ReceiveTimeout = parameters.ReadWriteTimeout;
-                        }
 
                         if (parameters.Async)
                         {
@@ -1573,6 +1565,11 @@ namespace System.Net
 
                             // Throw in case cancellation caused the socket to be disposed after the Connect completed
                             cancellationToken.ThrowIfCancellationRequested();
+                        }
+
+                        if (parameters.ReadWriteTimeout > 0) // default is 5 minutes, so this is generally going to be true
+                        {
+                            socket.SendTimeout = socket.ReceiveTimeout = parameters.ReadWriteTimeout;
                         }
                     }
                     catch

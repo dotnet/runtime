@@ -207,7 +207,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders()
         {
             WriteTestFiles();
@@ -247,7 +247,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProvidersWithAbsolutePath()
         {
             WriteTestFiles();
@@ -288,7 +288,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanOverrideValuesWithNewConfigurationProvider()
         {
             WriteTestFiles();
@@ -361,7 +361,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnJsonParseError()
         {
             _fileSystem.WriteFile(Path.Combine(_basePath, "error.json"), @"{""JsonKey1"": ", absolute: true);
@@ -381,7 +381,7 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(jsonLoadError)
                     .Build();
             }
-            catch (Exception e)
+            catch (InvalidDataException e)
             {
                 Assert.Equal(e, jsonError);
             }
@@ -390,7 +390,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnXmlParseError()
         {
             _fileSystem.WriteFile("error.xml", @"gobblygook");
@@ -409,7 +409,7 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (Exception e)
+            catch (InvalidDataException e)
             {
                 Assert.Equal(e, error);
             }
@@ -418,7 +418,7 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnIniLoadError()
         {
             _fileSystem.WriteFile("error.ini", @"IniKey1=IniValue1
@@ -438,15 +438,16 @@ IniKey1=IniValue2");
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (FormatException e)
+            catch (InvalidDataException e)
             {
                 Assert.Equal(e, error);
             }
+
             Assert.NotNull(provider);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorCanIgnoreErrors()
         {
             _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
@@ -819,7 +820,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadIncorrectJsonFile_ThrowException()
         {
             var json = @"{
@@ -831,12 +832,12 @@ IniKey1=IniValue2");
             }";
             _fileSystem.WriteFile(_jsonFile, json);
 
-            var exception = Assert.Throws<FormatException>(() => CreateBuilder().AddJsonFile(_jsonFile).Build());
-            Assert.Contains("Could not parse the JSON file.", exception.Message);
+            var exception = Assert.Throws<InvalidDataException>(() => CreateBuilder().AddJsonFile(_jsonFile).Build());
+            Assert.Contains("Could not parse the JSON file.", exception.InnerException.Message);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void SetBasePathCalledMultipleTimesForEachSourceLastOneWins()
         {
             var builder = new ConfigurationBuilder();
@@ -870,7 +871,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void GetDefaultBasePathForSources()
         {
             var builder = new ConfigurationBuilder();
@@ -900,8 +901,8 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnMono("System.IO.FileSystem.Watcher is not supported on wasm", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
         public void CanEnumerateProviders()
         {
             var config = CreateBuilder()
@@ -948,7 +949,7 @@ IniKey1=IniValue2");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();

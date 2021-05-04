@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class BCrypt
+    internal static partial class BCrypt
     {
         // Pseudo-handles, as defined in bcrypt.h
         // TODO: This really should be backed by 'nuint' (see https://github.com/dotnet/roslyn/issues/44110)
@@ -19,5 +19,7 @@ internal partial class Interop
             BCRYPT_SHA512_ALG_HANDLE = 0x00000061,
             BCRYPT_PBKDF2_ALG_HANDLE = 0x00000331,
         }
+
+        internal static bool PseudoHandlesSupported { get; } = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
     }
 }

@@ -8,9 +8,11 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <ProductBrandPrefix>Microsoft .NET</ProductBrandPrefix>
-    <GenerateInstallers>true</GenerateInstallers>
-    <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PgoInstrument)' != 'true'">
+    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>
 </Project>

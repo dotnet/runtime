@@ -3739,7 +3739,7 @@ namespace System.Configuration
             }
         }
 
-        private class IndirectLocationInputComparer : IComparer<SectionInput>
+        private sealed class IndirectLocationInputComparer : IComparer<SectionInput>
         {
             public int Compare(SectionInput x, SectionInput y)
             {

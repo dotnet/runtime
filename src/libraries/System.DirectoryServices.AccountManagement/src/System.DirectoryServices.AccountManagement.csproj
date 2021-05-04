@@ -12,7 +12,6 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.DirectoryServicesAccountManagement_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <Compile Include="System\DirectoryServices\AccountManagement\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\interopt.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\PrincipalSearcher.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\Utils.cs" />

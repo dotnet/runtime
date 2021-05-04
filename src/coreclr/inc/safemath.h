@@ -24,7 +24,7 @@
 // we can rely on that is available everywhere.  In
 // several other tools we just take the recourse of disabling asserts,
 // we'll do the same here.
-// Ideally we'd have a collection of common utilities available evererywhere.
+// Ideally we'd have a collection of common utilities available everywhere.
 #define _ASSERTE_SAFEMATH(a)
 #endif
 #endif

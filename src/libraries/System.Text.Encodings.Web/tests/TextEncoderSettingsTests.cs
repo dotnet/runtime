@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.Internal;
 using System.Text.Unicode;
 using Xunit;
 
@@ -13,16 +11,23 @@ namespace System.Text.Encodings.Web.Tests
 {
     internal static class TextEncoderSettingsExtensions
     {
-        public static AllowedCharactersBitmap GetAllowedCharacters(this TextEncoderSettings settings)
+        private static readonly Lazy<IntPtr> _lazyGetBitmapFnPtr = new Lazy<IntPtr>(InitializeGetBitmapFnPtr);
+
+        private static IntPtr InitializeGetBitmapFnPtr()
         {
-            object bitmap = settings.GetType().InvokeMember("GetAllowedCharacters", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, settings, null);
-            object underlyingArray = bitmap.GetType().GetField("_allowedCharacters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bitmap);
-            return (AllowedCharactersBitmap)typeof(AllowedCharactersBitmap).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(uint[]) }, null).Invoke(new object[] { underlyingArray });
+            var mi = typeof(TextEncoderSettings).GetMethod("GetAllowedCodePointsBitmap", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            return mi.MethodHandle.GetFunctionPointer();
+        }
+
+        public static unsafe ref readonly AllowedBmpCodePointsBitmap GetAllowedBmpCodePointsBitmap(this TextEncoderSettings settings)
+        {
+            IntPtr getBitmapFnPtr = _lazyGetBitmapFnPtr.Value;
+            return ref ((delegate* managed<TextEncoderSettings, ref readonly AllowedBmpCodePointsBitmap>)getBitmapFnPtr)(settings);
         }
 
         public static bool IsCharacterAllowed(this TextEncoderSettings settings, char character)
         {
-            return GetAllowedCharacters(settings).IsCharacterAllowed(character);
+            return GetAllowedBmpCodePointsBitmap(settings).IsCharAllowed(character);
         }
     }
 
@@ -400,6 +405,22 @@ namespace System.Text.Encodings.Web.Tests
 
             // Assert
             Assert.Equal<int>(expected, retVal);
+        }
+
+        [Fact]
+        public void GetAllowedCodePointsBmp_WhenSubclassed()
+        {
+            // Arrange
+            var settings = new OddTextEncoderSettings();
+
+            // Act
+            ref readonly var bitmap = ref settings.GetAllowedBmpCodePointsBitmap();
+
+            // Assert
+            for (int i = 0; i <= char.MaxValue; i++)
+            {
+                Assert.Equal(i % 2 == 1, bitmap.IsCharAllowed((char)i)); // only odd chars are allowed
+            }
         }
 
         // a code point filter which allows only odd code points through

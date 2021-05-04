@@ -8,7 +8,7 @@
 
 namespace Microsoft.Extensions.Logging.Debug
 {
-    internal partial class DebugLogger
+    internal sealed partial class DebugLogger
     {
         private void DebugWriteLine(string message, string name)
         {
