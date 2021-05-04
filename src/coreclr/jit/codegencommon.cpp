@@ -4747,15 +4747,21 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (varDsc->lvIsTemp && !varDsc->HasGCPtr())
+        const bool isTemp      = varDsc->lvIsTemp;
+        const bool hasGCPtr    = varDsc->HasGCPtr();
+        const bool isTracked   = varDsc->lvTracked;
+        const bool isStruct    = varTypeIsStruct(varDsc);
+        const bool compInitMem = compiler->info.compInitMem;
+
+        if (isTemp && !hasGCPtr)
         {
             varDsc->lvMustInit = 0;
             continue;
         }
 
-        if (compiler->info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
+        if (compInitMem || hasGCPtr || varDsc->lvMustInit)
         {
-            if (varDsc->lvTracked)
+            if (isTracked)
             {
                 /* For uninitialized use of tracked variables, the liveness
                  * will bubble to the top (compiler->fgFirstBB) in fgInterBlockLocalVarLiveness()
@@ -4794,20 +4800,42 @@ void CodeGen::genCheckUseBlockInit()
                 }
             }
 
-            /* With compInitMem, all untracked vars will have to be init'ed */
-            /* VSW 102460 - Do not force initialization of compiler generated temps,
-                unless they are untracked GC type or structs that contain GC pointers */
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame)
+            if (varDsc->lvOnFrame)
             {
-
-                varDsc->lvMustInit = true;
-
-                if (!counted)
+                bool mustInitThisVar = false;
+                if (hasGCPtr && !isTracked)
                 {
-                    initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
-                    counted = true;
+                    JITDUMP("must init V%02u because it has a GC ref\n", varNum);
+                    mustInitThisVar = true;
+                }
+                else if (hasGCPtr && isStruct)
+                {
+                    // TODO-1stClassStructs: support precise liveness reporting for such structs.
+                    JITDUMP("must init a tracked V%02u because it a struct with a GC ref\n", varNum);
+                    mustInitThisVar = true;
+                }
+                else
+                {
+                    // We are done with tracked or GC vars, now look at untracked vars without GC refs.
+                    if (!isTracked)
+                    {
+                        assert(!hasGCPtr && !isTemp);
+                        if (compInitMem)
+                        {
+                            JITDUMP("must init V%02u because compInitMem is set and it is not a temp\n", varNum);
+                            mustInitThisVar = true;
+                        }
+                    }
+                }
+                if (mustInitThisVar)
+                {
+                    varDsc->lvMustInit = true;
+
+                    if (!counted)
+                    {
+                        initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
+                        counted = true;
+                    }
                 }
             }
         }

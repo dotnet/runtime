@@ -40,6 +40,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(string json, JsonSerializerOptions? options = null)
         {
             if (json == null)
@@ -73,6 +74,7 @@ namespace System.Text.Json
         /// <remarks>Using a UTF-16 span is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
         {
             // default/null span is treated as empty
@@ -107,6 +109,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(string json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (json == null)
@@ -149,6 +152,7 @@ namespace System.Text.Json
         /// <remarks>Using a UTF-16 span is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(ReadOnlySpan<char> json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             // default/null span is treated as empty
@@ -345,6 +349,7 @@ namespace System.Text.Json
             return ReadUsingMetadata<object?>(json, GetTypeInfo(context, returnType));
         }
 
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options)
             => ReadUsingMetadata<TValue>(json, GetTypeInfo(returnType, options));
 

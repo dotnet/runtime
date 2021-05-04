@@ -1,15 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'net461'">true</IsPartialFacadeAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Drawing.Common.cs" />
-    <Compile Include="System.Drawing.Common.Forwards.cs" />
+    <Compile Include="System.Drawing.Common.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System.Drawing.Common.Forwards.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System.Drawing.Common.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />

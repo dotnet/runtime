@@ -689,8 +689,6 @@ OPDEF(MINT_SDB_SEQ_POINT, "sdb_seq_point", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_SDB_BREAKPOINT, "sdb_breakpoint", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_LD_DELEGATE_METHOD_PTR, "ld_delegate_method_ptr", 3, 1, 1, MintOpNoArgs)
 
-OPDEF(MINT_START_ABORT_PROT, "start_abort_protected", 1, 0, 0, MintOpNoArgs)
-
 // Math intrinsics
 // double
 OPDEF(MINT_ABS, "abs", 3, 1, 1, MintOpNoArgs)

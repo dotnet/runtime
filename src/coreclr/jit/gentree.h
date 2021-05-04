@@ -935,9 +935,6 @@ public:
 #define GTF_ARRLEN_ARR_IDX          0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 #define GTF_ARRLEN_NONFAULTING      0x20000000 // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-#define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
-                                               //            even if they have been retyped as SIMD16.
-
 #define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                                //                   rarther than from gtGetStructHandleForHWSIMD.
 

@@ -52,7 +52,7 @@ namespace System.Text.Json.Node
             throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvert, _value!.GetType(), typeof(T)));
         }
 
-        public override bool TryGetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] T>([NotNullWhen(true)] out T value)
+        public override bool TryGetValue<T>([NotNullWhen(true)] out T value)
         {
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)
@@ -73,8 +73,6 @@ namespace System.Text.Json.Node
             return false;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:ystem.Text.Json.Node.JsonValue<TValue>.WriteTo(Utf8JsonWriter,JsonSerializerOptions): 'inputType' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicFields', 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Text.Json.JsonSerializer.Serialize(Utf8JsonWriter,Object,Type,JsonSerializerOptions)'. The return value of method 'System.Object.GetType()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.",
-            Justification = "The 'inputType' parameter if obtained by calling System.Object.GetType().")]
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             if (writer == null)

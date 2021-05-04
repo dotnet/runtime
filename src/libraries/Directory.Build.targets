@@ -12,6 +12,7 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage Condition="'$(IsPackable)' == 'true'">$(TargetsForTfmSpecificContentInPackage);LibIntellisenseDocs</TargetsForTfmSpecificContentInPackage>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')))">$(NoWarn);nullable</NoWarn>
     <NoWarn Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);nullable;CA1052</NoWarn>
@@ -229,6 +230,11 @@
     <ExcludeFromPackage Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(DotnetBuildFromSource)' == 'true' and '$(IsPackable)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetFrameworkIdentifier)' != '.NETStandard' and '$(TargetFrameworkVersion)' != 'v2.0'">
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
   <!-- If a project is downlevel from net5.0 but uses the platform support attributes, then we include the
        System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
 
@@ -272,4 +278,21 @@
       </ItemGroup>
     </When>
   </Choose>
+
+  <Target Name="LibIntellisenseDocs" Condition="'$(IncludeBuildOutput)' == 'true'">
+   <ItemGroup>
+      <TfmSpecificPackageFile Include="$(XmlDocFileRoot)1033\$(TargetName).xml"
+                              Condition="Exists('$(XmlDocFileRoot)1033\$(TargetName).xml')"
+                              PackagePath="lib/$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- TODO: Remove this after https://github.com/NuGet/NuGet.Client/pull/3980 is merged.-->
+  <Target Name="RemoveXmlFilesFromBuildOutput" BeforeTargets="GenerateNuspec">
+    <PropertyGroup>
+      <AllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;</AllowedOutputExtensionsInPackageBuildOutputFolder> 
+      <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>.pdb;.mdb;$(AllowedOutputExtensionsInPackageBuildOutputFolder)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
+    </PropertyGroup>
+  </Target>
+
 </Project>

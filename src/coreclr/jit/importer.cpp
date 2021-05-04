@@ -11508,11 +11508,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDC_R4:
                 cval.dblVal = getR4LittleEndian(codeAddr);
                 JITDUMP(" %#.17g", cval.dblVal);
-                {
-                    GenTree* cnsOp = gtNewDconNode(cval.dblVal);
-                    cnsOp->gtType  = TYP_FLOAT;
-                    impPushOnStack(cnsOp, typeInfo(TI_DOUBLE));
-                }
+                impPushOnStack(gtNewDconNode(cval.dblVal, TYP_FLOAT), typeInfo(TI_DOUBLE));
                 break;
 
             case CEE_LDSTR:
@@ -15426,7 +15422,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (allocSize <= maxSize)
                             {
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
-                                JITDUMP("Converting stackalloc of %lld bytes to new local V%02u\n", allocSize,
+                                JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;

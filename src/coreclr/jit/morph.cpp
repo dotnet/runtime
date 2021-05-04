@@ -13444,6 +13444,31 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled())
+            {
+                GenTree* op1 = tree->AsOp()->gtOp1;
+                GenTree* op2 = tree->AsOp()->gtOp2;
+                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1->TypeGet()) && op2->IsIntegralConst(0))
+                {
+                    GenTree* op1op2 = op1->AsOp()->gtOp2;
+                    if (op1op2->IsCnsIntOrI())
+                    {
+                        ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                        }
+                    }
+                }
+            }
+
             cns2 = op2;
 
             /* Check for "(expr +/- icon1) ==/!= (non-zero-icon2)" */

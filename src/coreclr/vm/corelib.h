@@ -869,7 +869,7 @@ DEFINE_FIELD_U(_requireWaitNotification, SynchronizationContextObject, _requireW
 DEFINE_CLASS(SYNCHRONIZATION_CONTEXT,    Threading,              SynchronizationContext)
 DEFINE_METHOD(SYNCHRONIZATION_CONTEXT,  INVOKE_WAIT_METHOD_HELPER, InvokeWaitMethodHelper, SM_SyncCtx_ArrIntPtr_Bool_Int_RetInt)
 
-#ifdef _DEBUG
+#ifdef DEBUG
 DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 #endif
 
