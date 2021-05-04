@@ -102,7 +102,9 @@ namespace System.IO
                 if (excessLength < memberName.Length + "...".Length)
                 {
                     // Take a chunk out of the middle as perhaps it's the least interesting part of the name
-                    memberName = memberName.Substring(0, memberName.Length / 2 - excessLength / 2) + "..." + memberName.Substring(memberName.Length / 2 + excessLength / 2);
+                    int halfMemberNameLength = (int)Math.Floor((double)memberName.Length / 2);
+                    int halfExcessLength = (int)Math.Floor((double)excessLength / 2);
+                    memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength + 1);
 
                     testFileName = GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
