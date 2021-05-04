@@ -15,7 +15,9 @@ namespace System.IO.Pipelines
         /// <summary>Attempts to synchronously read data from the <see cref="System.IO.Pipelines.PipeReader" />.</summary>
         /// <param name="result">When this method returns <see langword="true" />, this value is set to a <see cref="System.IO.Pipelines.ReadResult" /> instance that represents the result of the read call; otherwise, this value is set to <see langword="default" />.</param>
         /// <returns><see langword="true" /> if data was available, or if the call was canceled or the writer was completed; otherwise, <see langword="false" />.</returns>
-        /// <remarks>If the pipe returns <see langword="false" />, there is no need to call <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" />.</remarks>
+        /// <remarks>If the pipe returns <see langword="false" />, there is no need to call <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" />.
+        /// If the current <see cref="System.IO.Pipelines.PipeReader" /> implementation is a <see cref="System.IO.Pipelines.StreamPipeReader" />,
+        /// <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> must be called first in order to asynchronously retrieve data from the <see cref="System.IO.Pipelines.PipeReader" />.</remarks>
         public abstract bool TryRead(out ReadResult result);
 
         /// <summary>Asynchronously reads a sequence of bytes from the current <see cref="System.IO.Pipelines.PipeReader" />.</summary>
