@@ -14070,6 +14070,7 @@ DONE_MORPHING_CHILDREN:
         case GT_OR:
         case GT_XOR:
         case GT_AND:
+            // Optimize "X & (-X)" to "ret 1"
             if (op2->OperIs(GT_NEG) && op1->IsLocal() && varTypeIsIntOrI(op1->TypeGet()))
             {
                 if (tree->Compare(op1, op2->gtGetOp1()))
