@@ -115,5 +115,17 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Drawing.SafeNativeMethods.Gdip.GdipSaveImageToStream(System.Runtime.InteropServices.HandleRef,Interop.Ole32.IStream,System.Guid@,System.Runtime.InteropServices.HandleRef)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.MacSupport.GetHwndDelegate</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Drawing.MacSupport.GetHwndDelegate</property>
+    </attribute>
   </assembly>
 </linker>

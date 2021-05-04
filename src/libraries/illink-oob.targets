@@ -16,8 +16,23 @@
     </ItemGroup>
 
     <ItemGroup>
+
+      <!-- The following is the list of all the OOBs we will ignore for now -->
+      <_OOBsToIgnore Include="System.CodeDom" />
+      <_OOBsToIgnore Include="System.ComponentModel.Composition" />
+      <_OOBsToIgnore Include="System.ComponentModel.Composition.Registration" />
+      <_OOBsToIgnore Include="System.Composition.AttributedModel" />
+      <_OOBsToIgnore Include="System.Composition.Convention" />
+      <_OOBsToIgnore Include="System.Composition.Hosting" />
+      <_OOBsToIgnore Include="System.Composition.Runtime" />
+      <_OOBsToIgnore Include="System.Composition.TypedParts" />
+      <_OOBsToIgnore Include="System.Configuration.ConfigurationManager" />
+      <_OOBsToIgnore Include="System.Speech" />
+
       <_OOBsToLink Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
       <_RuntimePackLinkedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+
+      <!-- Move previous items to FileName so that we can subtract them -->
       <_OOBsToFileName Include="@(_OOBsToLink -> '%(FileName)')">
         <OriginalIdentity>%(Identity)</OriginalIdentity>
       </_OOBsToFileName>
@@ -25,12 +40,11 @@
         <OriginalIdentity>%(Identity)</OriginalIdentity>
       </_RuntimePackAssembliesToFileName>
 
-      <_FinalOOBsFileName Include="@(_OOBsToFileName)" Exclude="@(_RuntimePackAssembliesToFileName)" />
+      <_FinalOOBsFileName Include="@(_OOBsToFileName)" Exclude="@(_RuntimePackAssembliesToFileName);@(_OOBsToIgnore)" />
       <_FinalOOBReferences Include="@(_OOBsToFileName)" Exclude="@(_FinalOOBsFileName)" />
       <_FinalOOBs Include="@(_FinalOOBsFileName -> '%(OriginalIdentity)')" />
       <_FinalReferences Include="@(_FinalOOBReferences -> '%(OriginalIdentity)')" />
       <_FinalReferences Include="$(SystemPrivateCoreLibPath)" />
-
 
       <OOBRootAssemblies Include="@(_FinalOOBs)">
         <RootMode>library</RootMode>
