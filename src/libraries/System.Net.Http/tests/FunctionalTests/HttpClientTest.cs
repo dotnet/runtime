@@ -32,6 +32,8 @@ namespace System.Net.Http.Functional.Tests
             _listener = new LogHttpEventListener(output);
         }
 
+        public void Dispose() => _listener.Dispose();
+
         [Theory]
         [InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
