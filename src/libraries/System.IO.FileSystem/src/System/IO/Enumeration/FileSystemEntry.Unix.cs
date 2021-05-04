@@ -37,22 +37,20 @@ namespace System.IO.Enumeration
             entry._status.InvalidateCaches();
 
             bool isDirectory = directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR;
-            bool isSymlink = directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
+            bool isSymlink   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
+            bool isUnknown   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN;
 
             // Some operating systems don't have the inode type in the dirent structure,
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
             // directory.
-            if (!isDirectory &&
-                (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK ||
-                 directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN))
+            if (isSymlink || isUnknown)
             {
                 // DT_LNK: stat to it to see if we can resolve it to a directory
                 entry._status.TryRefreshSymbolicLinkCache(entry.FullPath);
                 isDirectory = entry._status.HasDirectoryFlag;
             }
 
-            if (!isSymlink &&
-                directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+            if (isUnknown)
             {
                 entry._status.TryRefreshFileCache(entry.FullPath);
                 isSymlink = entry._status.HasSymbolicLinkFlag;
@@ -65,7 +63,7 @@ namespace System.IO.Enumeration
                 attributes |= FileAttributes.ReparsePoint;
             if (isDirectory)
                 attributes |= FileAttributes.Directory;
-            if (directoryEntry.Name[0] == '.' ||
+            if ((directoryEntry.NameLength > 0 && directoryEntry.Name[0] == '.') ||
                 (entry._status.IsFileCacheInitialized && entry._status.HasHiddenFlag)) // soft retrieval
                 attributes |= FileAttributes.Hidden;
             if (entry._status.IsFileCacheInitialized && entry._status.HasReadOnlyFlag) // soft retrieval
@@ -130,8 +128,7 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _directoryEntry.Name[0] == '.' || _status.IsHidden(FullPath);
-
+        public bool IsHidden => _status.IsHidden(FullPath, FileName);
         internal bool IsReadOnly => _status.IsReadOnly(FullPath);
         internal bool IsSymbolicLink => _status.IsSymbolicLink(FullPath);
 

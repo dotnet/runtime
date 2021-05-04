@@ -153,11 +153,13 @@ namespace System.IO
             return HasReadOnlyFlag;
         }
 
-        internal bool IsHidden(ReadOnlySpan<char> path, bool continueOnError = false)
+        internal bool IsHidden(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
-            return HasHiddenFlag;
+            return IsNameHidden(fileName) || HasHiddenFlag;
         }
+
+        internal bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
 
         // Returns true if the path points to a directory, or if the path is a symbolic link
         // that points to a directory
@@ -191,7 +193,7 @@ namespace System.IO
             if (_isDirectory) // Refresh caches this
                 attributes |= FileAttributes.Directory;
 
-            if (fileName.Length > 0 && (fileName[0] == '.' || HasHiddenFlag))
+            if (IsNameHidden(fileName) || HasHiddenFlag)
                 attributes |= FileAttributes.Hidden;
 
             return attributes != default ? attributes : FileAttributes.Normal;
