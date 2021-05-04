@@ -34,40 +34,31 @@ namespace Internal.Cryptography.Pal
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal? certificatePal)
             {
-                AppleCertificatePal? applePal = certificatePal as AppleCertificatePal;
+                if (oid.Value != Oids.Rsa)
+                {
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+                }
 
-                if (applePal != null)
+                if (certificatePal is AppleCertificatePal applePal)
                 {
                     SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.CertificateHandle);
-
-                    switch (oid.Value)
-                    {
-                        case Oids.Rsa:
-                            Debug.Assert(!key.IsInvalid);
-                            return new RSAImplementation.RSASecurityTransforms(key);
-                        case Oids.Dsa:
-                            if (key.IsInvalid)
-                            {
-                                // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
-                                return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
-                            }
-                            return new DSAImplementation.DSASecurityTransforms(key);
-                    }
-
-                    key.Dispose();
+                    Debug.Assert(!key.IsInvalid);
+                    return new RSAImplementation.RSASecurityTransforms(key);
                 }
                 else
                 {
-                    switch (oid.Value)
+                    RSA rsa = RSA.Create();
+                    try
                     {
-                        case Oids.Rsa:
-                            return DecodeRsaPublicKey(encodedKeyValue);
-                        case Oids.Dsa:
-                            return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
+                        rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
+                        return rsa;
+                    }
+                    catch (Exception)
+                    {
+                        rsa.Dispose();
+                        throw;
                     }
                 }
-
-                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
 
             private static SafeSecKeyRefHandle DecodeECPublicKey(ICertificatePal? certificatePal)
@@ -100,26 +91,6 @@ namespace Internal.Cryptography.Pal
                 }
 
                 return key;
-            }
-
-            private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
-            {
-                RSA rsa = RSA.Create();
-                try
-                {
-                    rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
-                    return rsa;
-                }
-                catch (Exception)
-                {
-                    rsa.Dispose();
-                    throw;
-                }
-            }
-
-            private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
-            {
-                throw new PlatformNotSupportedException();
             }
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)

@@ -621,7 +621,6 @@
     <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.AppleKeychainStore.cs" />
-    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.TrustedStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
