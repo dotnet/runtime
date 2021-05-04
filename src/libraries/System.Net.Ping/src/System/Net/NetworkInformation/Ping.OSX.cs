@@ -16,19 +16,11 @@ namespace System.Net.NetworkInformation
     public partial class Ping
     {
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
-        {
-            PingReply reply = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
-                    SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
-                    SendWithPingUtility(address, buffer, timeout, options);
-            return reply;
-        }
+            => SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options);
 
         private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
-                    SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options) :
-                    SendWithPingUtilityAsync(address, buffer, timeout, options);
-
+            Task<PingReply> t = SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options);
             PingReply reply = await t.ConfigureAwait(false);
 
             if (_canceled)
