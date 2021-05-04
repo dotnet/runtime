@@ -67,6 +67,7 @@
     <Compile Include="SystemFontsTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="System\Drawing\ImageAnimatorTests.cs" />
     <Compile Include="TextureBrushTests.cs" />
     <Compile Include="ToolboxBitmapAttributeTests.cs" />
     <Compile Include="Design\CategoryNameCollectionTests.cs" />
