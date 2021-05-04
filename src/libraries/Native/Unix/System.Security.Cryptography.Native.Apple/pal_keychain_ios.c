@@ -100,6 +100,11 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t i
         kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
         &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
+    if (query == NULL)
+    {
+        return errSecAllocate;
+    }
+
     if (!isReadOnlyMode)
     {
         CFTypeID inputType = CFGetTypeID(certOrIdentity);
@@ -140,6 +145,12 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t i
                     kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
                     &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
+                if (query == NULL)
+                {
+                    CFRelease(publicKeyLabel);
+                    return errSecAllocate;
+                }
+
                 result = NULL;
                 keyStatus = SecItemCopyMatching(query, &result);
 
@@ -158,10 +169,18 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t i
                         kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
                         &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
+                    if (query == NULL)
+                    {
+                        CFRelease(publicKeyLabel);
+                        return errSecAllocate;
+                    }
+
                     SecItemDelete(query);
 
                     CFRelease(query);
                 }
+
+                CFRelease(publicKeyLabel);
             }
         }
         else
