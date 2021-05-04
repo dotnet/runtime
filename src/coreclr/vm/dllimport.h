@@ -15,10 +15,10 @@ struct PInvokeStaticSigInfo;
 struct StubSigDesc
 {
 public:
-    StubSigDesc(MethodDesc * pMD, PInvokeStaticSigInfo* pSigInfo = NULL);
-    StubSigDesc(MethodDesc*  pMD, Signature sig, Module* m_pModule);
-    StubSigDesc(MethodTable* pMT, Signature sig, Module* m_pModule);
-    StubSigDesc(std::nullptr_t, Signature sig, Module* m_pModule);
+    StubSigDesc(MethodDesc* pMD);
+    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* m_pModule);
+    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* m_pModule);
+    StubSigDesc(const Signature& sig, Module* m_pModule);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -305,12 +305,12 @@ public:
 
     PInvokeStaticSigInfo(MethodDesc* pMdDelegate, ThrowOnError throwOnError = THROW_ON_ERROR);
 
-    PInvokeStaticSigInfo(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Out_opt_ LPCUTF8 *pLibName, _Out_opt_ LPCUTF8 *pEntryPointName);
 
 private:
     void ReportErrors();
     void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
-    void DllImportInit(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
+    void DllImportInit(_In_ MethodDesc* pMD, _Out_opt_ LPCUTF8 *pLibName, _Out_opt_ LPCUTF8 *pEntryPointName);
     void PreInit(Module* pModule, MethodTable *pClass);
     void PreInit(MethodDesc* pMD);
     void SetError(WORD error) { if (!m_error) m_error = error; }
@@ -341,13 +341,13 @@ public: // getters
                (GetBestFitMapping() ? NDIRECTSTUB_FL_BESTFIT : 0) |
                (IsDelegateInterop() ? NDIRECTSTUB_FL_DELEGATE : 0);
     }
-    Module* GetModule() { LIMITED_METHOD_CONTRACT; return m_pModule; }
+    Module* GetModule() const { LIMITED_METHOD_CONTRACT; return m_pModule; }
     BOOL IsStatic() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_STATIC; }
     BOOL GetThrowOnUnmappableChar() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_THROW_ON_UNMAPPABLE_CHAR; }
     BOOL GetBestFitMapping() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_BEST_FIT; }
     BOOL IsDelegateInterop() const { LIMITED_METHOD_CONTRACT; return m_wFlags & PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP; }
     CorInfoCallConvExtension GetCallConv() const { LIMITED_METHOD_CONTRACT; return m_callConv; }
-    Signature GetSignature() { LIMITED_METHOD_CONTRACT; return m_sig; }
+    Signature GetSignature() const { LIMITED_METHOD_CONTRACT; return m_sig; }
     CorNativeLinkType GetCharSet() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkType)((m_wFlags & COR_NATIVE_LINK_TYPE_MASK) >> COR_NATIVE_LINK_TYPE_SHIFT); }
     CorNativeLinkFlags GetLinkFlags() const { LIMITED_METHOD_CONTRACT; return (CorNativeLinkFlags)((m_wFlags & COR_NATIVE_LINK_FLAGS_MASK) >> COR_NATIVE_LINK_FLAGS_SHIFT); }
 

@@ -90,46 +90,30 @@ namespace
     }
 }
 
-StubSigDesc::StubSigDesc(MethodDesc *pMD, PInvokeStaticSigInfo* pSigInfo /*= NULL*/)
+StubSigDesc::StubSigDesc(MethodDesc *pMD)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
+        PRECONDITION(pMD != NULL);
     }
     CONTRACTL_END;
 
     m_pMD = pMD;
     m_pMT = nullptr;
-    if (pSigInfo != NULL)
-    {
-        m_sig           = pSigInfo->GetSignature();
-        m_pModule       = pSigInfo->GetModule();
-    }
-    else
-    {
-        _ASSERTE(pMD != NULL);
-        m_sig           = pMD->GetSignature();
-        m_pModule       = pMD->GetModule();         // Used for token resolution.
-    }
+    m_sig           = pMD->GetSignature();
+    m_pModule       = pMD->GetModule();         // Used for token resolution.
 
-    if (pMD != NULL)
-    {
-        m_tkMethodDef = pMD->GetMemberDef();
-        SigTypeContext::InitTypeContext(pMD, &m_typeContext);
-        m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
-    }
-    else
-    {
-        m_tkMethodDef = mdMethodDefNil;
-        m_pLoaderModule = m_pModule;
-    }
+    m_tkMethodDef = pMD->GetMemberDef();
+    SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+    m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodDesc* pMD, Signature sig, Module* pModule)
+StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -161,7 +145,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, Signature sig, Module* pModule)
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodTable* pMT, Signature sig, Module* pModule)
+StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -193,7 +177,7 @@ StubSigDesc::StubSigDesc(MethodTable* pMT, Signature sig, Module* pModule)
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(std::nullptr_t, Signature sig, Module* pModule)
+StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -2722,13 +2706,13 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 
     PreInit(pModule, NULL);
     m_sig = sig;
-    SetIsStatic (!(MetaSig::GetCallingConvention(pModule, sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
+    SetIsStatic(!(MetaSig::GetCallingConvention(sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv(CallConvWinApiSentinel, FALSE);
 
     ReportErrors();
 }
 
-void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LPCUTF8 *ppEntryPointName)
+void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Out_ LPCUTF8 *ppLibName, _Out_ LPCUTF8 *ppEntryPointName)
 {
     CONTRACTL
     {
@@ -2798,7 +2782,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     else if (unmappableMask == pmThrowOnUnmappableCharDisabled)
         SetThrowOnUnmappableChar (FALSE);
 
-    // inkFlags : CorPinvoke -> CorNativeLinkFlags
+    // linkFlags : CorPinvoke -> CorNativeLinkFlags
     if (mappingFlags & pmSupportsLastError)
         SetLinkFlags ((CorNativeLinkFlags)(GetLinkFlags() | nlfLastError));
     if (mappingFlags & pmNoMangle)
@@ -5072,7 +5056,7 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
     sigBuilder.AppendBlob((const PVOID)(szMetaSig + 1), cbMetaSigSize - 1);
     szMetaSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbMetaSigSize);
 
-    StubSigDesc sigDesc(nullptr, Signature(szMetaSig, cbMetaSigSize), pModule);
+    StubSigDesc sigDesc(Signature(szMetaSig, cbMetaSigSize), pModule);
 
 #ifdef _DEBUG
     sigDesc.m_pDebugName = pFD->GetDebugName();
@@ -5227,9 +5211,14 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                          DWORD dwStubFlags,
                          MethodDesc* pMD)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pSigInfo != NULL);
+    }
+    CONTRACTL_END;
 
-    StubSigDesc sigDesc(pMD, pSigInfo);
+    StubSigDesc sigDesc(pMD, pSigInfo->GetSignature(), pSigInfo->GetModule());
 
     return CreateCLRToNativeILStub(&sigDesc,
                                     pSigInfo->GetCharSet(),
@@ -5964,7 +5953,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         dwStubFlags |= NDIRECTSTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
-        BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
+        BYTE callConv = MetaSig::GetCallingConvention(signature);
 
         // Unmanaged calling convention indicates modopt should be read
         if (callConv != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
