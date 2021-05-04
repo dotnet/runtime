@@ -746,38 +746,26 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
-            // Then invoke impDevirtualizeCall to actually
-            // transform the call for us. It should succeed.... as we have
-            // now provided an exact typed this.
+            // Then invoke impDevirtualizeCall to actually transform the call for us,
+            // given the original (base) method and the exact guarded class. It should succeed.
             //
-            CORINFO_METHOD_HANDLE  methodHnd   = inlineInfo->methInfo.ftn;
-            unsigned               methodFlags = inlineInfo->methAttr;
-            CORINFO_CONTEXT_HANDLE context     = inlineInfo->exactContextHnd;
-
-            // If we have a boxed value class the inline info might reflect the properties of the unboxed
-            // entry. For devirtualization we need these to reflect the boxed entry.
-            //
-            // The devirtualizer will update these back, if it can figure how to invoke the unboxed entry.
-            //
-            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
-            if (unboxedMethodHnd != nullptr)
-            {
-                methodHnd   = inlineInfo->guardedMethodHandle;
-                methodFlags = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
-            }
-
-            const bool isLateDevirtualization = true;
-            const bool explicitTailCall       = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            CORINFO_METHOD_HANDLE  methodHnd              = call->gtCallMethHnd;
+            unsigned               methodFlags            = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
+            CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
+            const bool             isLateDevirtualization = true;
+            const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
             compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
                                           explicitTailCall);
 
-            // Presumably devirt might fail? If so we should try and avoid
-            // making this a guarded devirt candidate instead of ending
-            // up here.
+            // We know this call can devirtualize or we would not have set up GDV here.
+            // So impDevirtualizeCall should succeed in devirtualizing.
+            //
             assert(!call->IsVirtual());
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
-            // we've set up is invalid. We won't be able to inline anyways...
+            // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
+            //
+            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
             if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
             {
                 // Demote this call to a non-inline candidate
