@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
             Span<byte> ciphertext,
             Span<byte> tag)
         {
-            // Use GetNonNullPinnableReference as a workaround for VSO #32947907
+            // bcrypt sometimes misbehaves when given nullptr buffers; ensure non-nullptr
             fixed (byte* plaintextBytes = &GetNonNullPinnableReference(plaintext))
             fixed (byte* nonceBytes = &GetNonNullPinnableReference(nonce))
             fixed (byte* ciphertextBytes = &GetNonNullPinnableReference(ciphertext))
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             bool clearPlaintextOnFailure)
         {
-            // Use GetNonNullPinnableReference as a workaround for VSO #32947907
+            // bcrypt sometimes misbehaves when given nullptr buffers; ensure non-nullptr
             fixed (byte* plaintextBytes = &GetNonNullPinnableReference(plaintext))
             fixed (byte* nonceBytes = &GetNonNullPinnableReference(nonce))
             fixed (byte* ciphertextBytes = &GetNonNullPinnableReference(ciphertext))
@@ -110,6 +110,8 @@ namespace System.Security.Cryptography
                 }
             }
         }
+
+        // Implementations below based on internal MemoryMarshal.GetNonNullPinnableReference methods.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe ref readonly byte GetNonNullPinnableReference(ReadOnlySpan<byte> buffer)
