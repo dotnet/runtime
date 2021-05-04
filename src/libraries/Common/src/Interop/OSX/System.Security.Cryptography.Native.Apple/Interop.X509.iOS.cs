@@ -22,8 +22,7 @@ internal static partial class Interop
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
             out SafeSecCertificateHandle pCertOut,
-            out SafeSecIdentityHandle pPrivateKeyOut,
-            out int pOSStatus)
+            out SafeSecIdentityHandle pPrivateKeyOut)
         {
             return AppleCryptoNative_X509ImportCertificate(
                 ref MemoryMarshal.GetReference(keyBlob),
@@ -31,8 +30,7 @@ internal static partial class Interop
                 contentType,
                 cfPfxPassphrase,
                 out pCertOut,
-                out pPrivateKeyOut,
-                out pOSStatus);
+                out pPrivateKeyOut);
         }
 
         [DllImport(Libraries.AppleCryptoNative)]
@@ -42,8 +40,7 @@ internal static partial class Interop
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
             out SafeSecCertificateHandle pCertOut,
-            out SafeSecIdentityHandle pPrivateKeyOut,
-            out int pOSStatus);
+            out SafeSecIdentityHandle pPrivateKeyOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509ImportCollection(
@@ -51,8 +48,7 @@ internal static partial class Interop
             int cbKeyBlob,
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
-            out SafeCFArrayHandle pCollectionOut,
-            out int pOSStatus);
+            out SafeCFArrayHandle pCollectionOut);
 
         internal static SafeSecCertificateHandle X509ImportCertificate(
             ReadOnlySpan<byte> bytes,
@@ -95,19 +91,16 @@ internal static partial class Interop
             out SafeSecIdentityHandle identityHandle)
         {
             SafeSecCertificateHandle certHandle;
-            int osStatus;
-
             SafeCreateHandle cfPassphrase = importPassword ?? s_emptyExportString;
 
-            int ret = AppleCryptoNative_X509ImportCertificate(
+            int osStatus = AppleCryptoNative_X509ImportCertificate(
                 bytes,
                 contentType,
                 cfPassphrase,
                 out certHandle,
-                out identityHandle,
-                out osStatus);
+                out identityHandle);
 
-            if (ret == 1)
+            if (osStatus == 0)
             {
                 return certHandle;
             }
@@ -115,21 +108,7 @@ internal static partial class Interop
             certHandle.Dispose();
             identityHandle.Dispose();
 
-            const int SeeOSStatus = 0;
-            const int ImportReturnedEmpty = -2;
-            const int ImportReturnedNull = -3;
-
-            switch (ret)
-            {
-                case SeeOSStatus:
-                    throw CreateExceptionForOSStatus(osStatus);
-                case ImportReturnedNull:
-                case ImportReturnedEmpty:
-                    throw new CryptographicException();
-                default:
-                    Debug.Fail($"Unexpected return value {ret}");
-                    throw new CryptographicException();
-            }
+            throw CreateExceptionForOSStatus(osStatus);
         }
 
         internal static SafeCFArrayHandle X509ImportCollection(
@@ -139,8 +118,6 @@ internal static partial class Interop
         {
             SafeCreateHandle cfPassphrase = s_emptyExportString;
             bool releasePassword = false;
-
-            int ret;
             SafeCFArrayHandle collectionHandle;
             int osStatus;
 
@@ -157,15 +134,14 @@ internal static partial class Interop
                     }
                 }
 
-                ret = AppleCryptoNative_X509ImportCollection(
+                osStatus = AppleCryptoNative_X509ImportCollection(
                     ref MemoryMarshal.GetReference(bytes),
                     bytes.Length,
                     contentType,
                     cfPassphrase,
-                    out collectionHandle,
-                    out osStatus);
+                    out collectionHandle);
 
-                if (ret == 1)
+                if (osStatus == 0)
                 {
                     return collectionHandle;
                 }
@@ -184,22 +160,7 @@ internal static partial class Interop
             }
 
             collectionHandle.Dispose();
-
-            const int SeeOSStatus = 0;
-            const int ImportReturnedEmpty = -2;
-            const int ImportReturnedNull = -3;
-
-            switch (ret)
-            {
-                case SeeOSStatus:
-                    throw CreateExceptionForOSStatus(osStatus);
-                case ImportReturnedNull:
-                case ImportReturnedEmpty:
-                    throw new CryptographicException();
-                default:
-                    Debug.Fail($"Unexpected return value {ret}");
-                    throw new CryptographicException();
-            }
+            throw CreateExceptionForOSStatus(osStatus);
         }
 
         internal static SafeSecCertificateHandle X509GetCertFromIdentity(SafeSecIdentityHandle identity)

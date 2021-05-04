@@ -20,21 +20,18 @@ For a PKCS#12 blob (PFX) the first public+private pair found is returned, or the
 If cfPfxPassphrase represents the NULL (but not empty) passphrase and a PFX import gets a password
 error then the empty passphrase is automatically attempted.
 
-Returns 1 on success, 0 on failure, -2 on a successful read of an empty collection, other values reprepresent invalid
-state.
+Returns the last OSStatus value.
 
 Output:
 pCertOut: If the best matched value was a certificate, receives the SecCertificateRef, otherwise receives NULL
 pIdentityOut: If the best matched value was an identity, receives the SecIdentityRef, otherwise receives NULL
-pOSStatus: Receives the return of the last call to SecItemImport
 */
 PALEXPORT int32_t AppleCryptoNative_X509ImportCertificate(uint8_t* pbData,
                                                           int32_t cbData,
                                                           PAL_X509ContentType contentType,
                                                           CFStringRef cfPfxPassphrase,
                                                           SecCertificateRef* pCertOut,
-                                                          SecIdentityRef* pIdentityOut,
-                                                          int32_t* pOSStatus);
+                                                          SecIdentityRef* pIdentityOut);
 
 /*
 Read cbData bytes of data from pbData and interpret it to a collection of certificates (or identities).
@@ -42,16 +39,14 @@ Read cbData bytes of data from pbData and interpret it to a collection of certif
 If cfPfxPassphrase represents the NULL (but not empty) passphrase and a PFX import gets a password
 error then the empty passphrase is automatically attempted.
 
-Returns 1 on success (including empty PKCS7 collections), 0 on failure, other values indicate invalid state.
+Returns the last OSStatus value.
 
 Output:
 pCollectionOut: Receives an array which contains SecCertificateRef, SecIdentityRef, and possibly other values which were
 read out of the provided blob
-pOSStatus: Receives the output of SecItemImport for the last attempted read
 */
 PALEXPORT int32_t AppleCryptoNative_X509ImportCollection(uint8_t* pbData,
                                                          int32_t cbData,
                                                          PAL_X509ContentType contentType,
                                                          CFStringRef cfPfxPassphrase,
-                                                         CFArrayRef* pCollectionOut,
-                                                         int32_t* pOSStatus);
+                                                         CFArrayRef* pCollectionOut);
