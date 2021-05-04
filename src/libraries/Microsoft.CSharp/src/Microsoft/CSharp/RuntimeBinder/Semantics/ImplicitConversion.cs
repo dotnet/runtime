@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -53,6 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
              *
              * returns true if the conversion can be made, false if not.
              */
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             public bool Bind()
             {
                 // 13.1 Implicit conversions
@@ -258,6 +260,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Some nullable conversion are NOT standard conversions. In particular, if S => T is implicit
                 then S? => T is not standard. Similarly if S => T is not implicit then S => T? is not standard.
             ***************************************************************************************************/
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool BindNubConversion(NullableType nubDst)
             {
                 // This code assumes that STANDARD and ISEXPLICIT are never both set.
@@ -389,6 +392,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromNull()
             {
                 // null type can be implicitly converted to any reference type or pointer type or type
@@ -413,6 +417,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromNullable(NullableType nubSrc)
             {
                 // We can convert T? using a boxing conversion, we can convert it to ValueType, and
@@ -457,6 +462,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return 0 == (_flags & CONVERTTYPE.NOUDC) && _binder.bindUserDefinedConversion(_exprSrc, nubSrc, _typeDest, _needsExprDest, out _exprDest, true);
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromArray()
             {
                 // 13.1.4
@@ -503,6 +509,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromPointer()
             {
                 // 27.4 Pointer conversions
@@ -525,6 +532,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromAgg(AggregateType aggTypeSrc)
             {
                 // GENERICS: The case for constructed types is very similar to types with
@@ -559,6 +567,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return bindImplicitConversionToBase(aggTypeSrc);
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionToBase(AggregateType pSource)
             {
                 // 13.1.4 Implicit reference conversions
@@ -588,6 +597,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromEnum(AggregateType aggTypeSrc)
             {
                 // 13.1.5 Boxing conversions
@@ -654,6 +664,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionBetweenSimpleTypes(AggregateType aggTypeSrc)
             {
                 AggregateSymbol aggSrc = aggTypeSrc.OwningAggregate;

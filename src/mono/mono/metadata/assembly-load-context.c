@@ -41,7 +41,7 @@ mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 	mono_loaded_images_init (li, alc);
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
-	alc->memory_manager = mono_mem_manager_create_singleton (alc, collectible);
+	alc->memory_manager = mono_mem_manager_new (&alc, 1, collectible);
 	alc->generic_memory_managers = g_ptr_array_new ();
 	mono_coop_mutex_init (&alc->memory_managers_lock);
 	alc->unloading = FALSE;
@@ -172,7 +172,7 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 
 	mono_alc_cleanup_assemblies (alc);
 
-	mono_mem_manager_free_singleton (alc->memory_manager, FALSE);
+	mono_mem_manager_free (alc->memory_manager, FALSE);
 	alc->memory_manager = NULL;
 
 	/*for (int i = 0; i < alc->generic_memory_managers->len; i++) {
@@ -188,6 +188,9 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 	g_hash_table_destroy (alc->pinvoke_scopes);
 	alc->pinvoke_scopes = NULL;
 	mono_coop_mutex_destroy (&alc->pinvoke_lock);
+
+	g_free (alc->name);
+	alc->name = NULL;
 
 	// TODO: alc unloaded profiler event
 }
@@ -224,7 +227,8 @@ mono_alc_memory_managers_unlock (MonoAssemblyLoadContext *alc)
 }
 
 gpointer
-ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC (gpointer this_gchandle_ptr, MonoBoolean is_default_alc, MonoBoolean collectible, MonoError *error)
+ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC (gpointer this_gchandle_ptr, const char *name,
+																				 MonoBoolean is_default_alc, MonoBoolean collectible, MonoError *error)
 {
 	/* If the ALC is collectible, this_gchandle is weak, otherwise it's strong. */
 	MonoGCHandle this_gchandle = (MonoGCHandle)this_gchandle_ptr;
@@ -235,8 +239,14 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC 
 		g_assert (alc);
 		if (!alc->gchandle)
 			alc->gchandle = this_gchandle;
-	} else
+	} else {
 		alc = mono_alc_create_individual (this_gchandle, collectible, error);
+	}
+
+	if (name)
+		alc->name = g_strdup (name);
+	else
+		alc->name = g_strdup ("<default>");
 
 	return alc;
 }
@@ -577,7 +587,7 @@ mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 	mono_assembly_addref (ass);
 	// Prepending here will break the test suite with frequent InvalidCastExceptions, so we have to append
 	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, ass);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC '%s'[%p], ref_count=%d", ass->aname.name, ass, alc->name, (gpointer)alc, ass->ref_count);
 	mono_alc_assemblies_unlock (alc);
 
 	alcs_lock ();

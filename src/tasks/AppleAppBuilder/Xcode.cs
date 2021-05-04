@@ -53,10 +53,11 @@ internal class Xcode
         bool forceInterpreter,
         bool invariantGlobalization,
         bool stripDebugSymbols,
+        string? staticLinkedComponentNames=null,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
+        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
         if (stripDebugSymbols)
         {
             excludes.Add(".pdb");
@@ -102,11 +103,58 @@ internal class Xcode
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
 
+        string toLink = "";
+
+        string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
+        string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
+        bool staticLinkAllComponents = false;
+        string[] componentNames = Array.Empty<string>();
+
+        if (!string.IsNullOrEmpty(staticLinkedComponentNames) && staticLinkedComponentNames.Equals("*", StringComparison.OrdinalIgnoreCase))
+            staticLinkAllComponents = true;
+        else if (!string.IsNullOrEmpty(staticLinkedComponentNames))
+            componentNames = staticLinkedComponentNames.Split(";");
+
+        // by default, component stubs will be linked and depending on how mono runtime has been build,
+        // stubs can disable or dynamic load components.
+        foreach (string staticComponentStubLib in staticComponentStubLibs)
+        {
+            string componentLibToLink = staticComponentStubLib;
+            if (staticLinkAllComponents)
+            {
+                // static link component.
+                componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                foreach (string componentName in componentNames)
+                {
+                    if (componentLibToLink.Contains(componentName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // static link component.
+                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                        break;
+                    }
+                }
+            }
+
+            // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+            if (!File.Exists(componentLibToLink))
+            {
+                Utils.LogInfo($"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                componentLibToLink = staticComponentStubLib;
+            }
+
+            toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
+        }
 
         string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
-        string toLink = "";
         foreach (string lib in Directory.GetFiles(workspace, "*.a"))
         {
+            // all component libs already added to linker.
+            if (allComponentLibs.Any(lib.Contains))
+                continue;
+
             string libName = Path.GetFileNameWithoutExtension(lib);
             // libmono must always be statically linked, for other librarires we can use dylibs
             bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");

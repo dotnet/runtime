@@ -9,4 +9,4 @@ using Xunit;
 // it's own store.
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]
 [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-[assembly: SkipOnMono("System.IO.IsolatedStorage is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.IO.IsolatedStorage is not supported on Browser")]

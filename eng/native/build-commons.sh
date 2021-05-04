@@ -282,7 +282,11 @@ elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
 else
-  __NumProc=$(nproc --all)
+  if command -v nproc > /dev/null 2>&1; then
+    __NumProc=$(nproc --all)
+  else
+    __NumProc=1
+  fi
 fi
 
 while :; do

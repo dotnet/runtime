@@ -668,6 +668,9 @@ mono_codeman_enable_write (void)
 		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
 		pthread_jit_write_protect_np (0);
 	}
+#elif defined(HOST_MACCAT) && defined(__aarch64__)
+	/* JITing in Catalyst apps is not allowed on Apple Silicon. */
+	g_assert_not_reached ();
 #endif
 }
 
@@ -689,5 +692,8 @@ mono_codeman_disable_write (void)
 		if (level == 0)
 			pthread_jit_write_protect_np (1);
 	}
+#elif defined(HOST_MACCAT) && defined(__aarch64__)
+	/* JITing in Catalyst apps is not allowed on Apple Silicon. */
+	g_assert_not_reached ();
 #endif
 }

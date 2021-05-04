@@ -64,6 +64,32 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
     return emit->emitCurIGsize;
 }
 
+//------------------------------------------------------------------------
+// IsPreviousInsNum: Returns true if the emitter is on the next instruction
+//  of the same group as this emitLocation.
+//
+// Arguments:
+//  emit - an emitter* instance
+//
+bool emitLocation::IsPreviousInsNum(emitter* emit) const
+{
+    assert(Valid());
+
+    // Within the same IG?
+    if (ig == emit->emitCurIG)
+    {
+        return (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
+    }
+
+    // Spanning an IG boundary?
+    if (ig->igNext == emit->emitCurIG)
+    {
+        return (emitGetInsNumFromCodePos(codePos) == ig->igInsCnt) && (emit->emitCurIGinsCnt == 1);
+    }
+
+    return false;
+}
+
 #ifdef DEBUG
 void emitLocation::Print(LONG compMethodID) const
 {
@@ -133,7 +159,7 @@ unsigned emitter::emitTotalIGptrs;
 unsigned emitter::emitTotalIGicnt;
 size_t   emitter::emitTotalIGsize;
 unsigned emitter::emitTotalIGmcnt;
-unsigned emitter::emitTotalIGextend;
+unsigned emitter::emitTotalIGExtend;
 
 unsigned emitter::emitTotalIDescSmallCnt;
 unsigned emitter::emitTotalIDescCnt;
@@ -170,105 +196,105 @@ void emitterStaticStats(FILE* fout)
 
     fprintf(fout, "\n");
     fprintf(fout, "insGroup:\n");
-    fprintf(fout, "Offset / size of igNext              = %2u / %2u\n", offsetof(insGroup, igNext),
+    fprintf(fout, "Offset / size of igNext           = %2zu / %2zu\n", offsetof(insGroup, igNext),
             sizeof(igDummy->igNext));
 #ifdef DEBUG
-    fprintf(fout, "Offset / size of igSelf              = %2u / %2u\n", offsetof(insGroup, igSelf),
+    fprintf(fout, "Offset / size of igSelf           = %2zu / %2zu\n", offsetof(insGroup, igSelf),
             sizeof(igDummy->igSelf));
 #endif
-    fprintf(fout, "Offset / size of igNum               = %2u / %2u\n", offsetof(insGroup, igNum),
+    fprintf(fout, "Offset / size of igNum            = %2zu / %2zu\n", offsetof(insGroup, igNum),
             sizeof(igDummy->igNum));
-    fprintf(fout, "Offset / size of igOffs              = %2u / %2u\n", offsetof(insGroup, igOffs),
+    fprintf(fout, "Offset / size of igOffs           = %2zu / %2zu\n", offsetof(insGroup, igOffs),
             sizeof(igDummy->igOffs));
-    fprintf(fout, "Offset / size of igFuncIdx           = %2u / %2u\n", offsetof(insGroup, igFuncIdx),
+    fprintf(fout, "Offset / size of igFuncIdx        = %2zu / %2zu\n", offsetof(insGroup, igFuncIdx),
             sizeof(igDummy->igFuncIdx));
-    fprintf(fout, "Offset / size of igFlags             = %2u / %2u\n", offsetof(insGroup, igFlags),
+    fprintf(fout, "Offset / size of igFlags          = %2zu / %2zu\n", offsetof(insGroup, igFlags),
             sizeof(igDummy->igFlags));
-    fprintf(fout, "Offset / size of igSize              = %2u / %2u\n", offsetof(insGroup, igSize),
+    fprintf(fout, "Offset / size of igSize           = %2zu / %2zu\n", offsetof(insGroup, igSize),
             sizeof(igDummy->igSize));
-    fprintf(fout, "Offset / size of igData              = %2u / %2u\n", offsetof(insGroup, igData),
+    fprintf(fout, "Offset / size of igData           = %2zu / %2zu\n", offsetof(insGroup, igData),
             sizeof(igDummy->igData));
-    fprintf(fout, "Offset / size of igPhData            = %2u / %2u\n", offsetof(insGroup, igPhData),
+    fprintf(fout, "Offset / size of igPhData         = %2zu / %2zu\n", offsetof(insGroup, igPhData),
             sizeof(igDummy->igPhData));
 #if EMIT_TRACK_STACK_DEPTH
-    fprintf(fout, "Offset / size of igStkLvl            = %2u / %2u\n", offsetof(insGroup, igStkLvl),
+    fprintf(fout, "Offset / size of igStkLvl         = %2zu / %2zu\n", offsetof(insGroup, igStkLvl),
             sizeof(igDummy->igStkLvl));
 #endif
-    fprintf(fout, "Offset / size of igGCregs            = %2u / %2u\n", offsetof(insGroup, igGCregs),
+    fprintf(fout, "Offset / size of igGCregs         = %2zu / %2zu\n", offsetof(insGroup, igGCregs),
             sizeof(igDummy->igGCregs));
-    fprintf(fout, "Offset / size of igInsCnt            = %2u / %2u\n", offsetof(insGroup, igInsCnt),
+    fprintf(fout, "Offset / size of igInsCnt         = %2zu / %2zu\n", offsetof(insGroup, igInsCnt),
             sizeof(igDummy->igInsCnt));
     fprintf(fout, "\n");
-    fprintf(fout, "Size of insGroup                     = %u\n", sizeof(insGroup));
+    fprintf(fout, "Size of insGroup                  = %zu\n", sizeof(insGroup));
 
     // insPlaceholderGroupData members
 
     fprintf(fout, "\n");
     fprintf(fout, "insPlaceholderGroupData:\n");
-    fprintf(fout, "Offset of igPhNext                = %2u\n", offsetof(insPlaceholderGroupData, igPhNext));
-    fprintf(fout, "Offset of igPhBB                  = %2u\n", offsetof(insPlaceholderGroupData, igPhBB));
-    fprintf(fout, "Offset of igPhInitGCrefVars       = %2u\n", offsetof(insPlaceholderGroupData, igPhInitGCrefVars));
-    fprintf(fout, "Offset of igPhInitGCrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhInitGCrefRegs));
-    fprintf(fout, "Offset of igPhInitByrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhInitByrefRegs));
-    fprintf(fout, "Offset of igPhPrevGCrefVars       = %2u\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefVars));
-    fprintf(fout, "Offset of igPhPrevGCrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefRegs));
-    fprintf(fout, "Offset of igPhPrevByrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhPrevByrefRegs));
-    fprintf(fout, "Offset of igPhType                = %2u\n", offsetof(insPlaceholderGroupData, igPhType));
-    fprintf(fout, "Size   of insPlaceholderGroupData = %u\n", sizeof(insPlaceholderGroupData));
+    fprintf(fout, "Offset of igPhNext                = %2zu\n", offsetof(insPlaceholderGroupData, igPhNext));
+    fprintf(fout, "Offset of igPhBB                  = %2zu\n", offsetof(insPlaceholderGroupData, igPhBB));
+    fprintf(fout, "Offset of igPhInitGCrefVars       = %2zu\n", offsetof(insPlaceholderGroupData, igPhInitGCrefVars));
+    fprintf(fout, "Offset of igPhInitGCrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhInitGCrefRegs));
+    fprintf(fout, "Offset of igPhInitByrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhInitByrefRegs));
+    fprintf(fout, "Offset of igPhPrevGCrefVars       = %2zu\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefVars));
+    fprintf(fout, "Offset of igPhPrevGCrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefRegs));
+    fprintf(fout, "Offset of igPhPrevByrefRegs       = %2zu\n", offsetof(insPlaceholderGroupData, igPhPrevByrefRegs));
+    fprintf(fout, "Offset of igPhType                = %2zu\n", offsetof(insPlaceholderGroupData, igPhType));
+    fprintf(fout, "Size   of insPlaceholderGroupData = %zu\n", sizeof(insPlaceholderGroupData));
 
     fprintf(fout, "\n");
     fprintf(fout, "SMALL_IDSC_SIZE           = %2u\n", SMALL_IDSC_SIZE);
-    fprintf(fout, "Size   of instrDesc       = %2u\n", sizeof(emitter::instrDesc));
-    // fprintf(fout, "Offset of _idIns      = %2u\n", offsetof(emitter::instrDesc, _idIns      ));
-    // fprintf(fout, "Offset of _idInsFmt   = %2u\n", offsetof(emitter::instrDesc, _idInsFmt   ));
-    // fprintf(fout, "Offset of _idOpSize   = %2u\n", offsetof(emitter::instrDesc, _idOpSize   ));
-    // fprintf(fout, "Offset of idSmallCns  = %2u\n", offsetof(emitter::instrDesc, idSmallCns  ));
-    // fprintf(fout, "Offset of _idAddrUnion= %2u\n", offsetof(emitter::instrDesc, _idAddrUnion));
+    fprintf(fout, "Size   of instrDesc       = %2zu\n", sizeof(emitter::instrDesc));
+    // fprintf(fout, "Offset of _idIns      = %2zu\n", offsetof(emitter::instrDesc, _idIns      ));
+    // fprintf(fout, "Offset of _idInsFmt   = %2zu\n", offsetof(emitter::instrDesc, _idInsFmt   ));
+    // fprintf(fout, "Offset of _idOpSize   = %2zu\n", offsetof(emitter::instrDesc, _idOpSize   ));
+    // fprintf(fout, "Offset of idSmallCns  = %2zu\n", offsetof(emitter::instrDesc, idSmallCns  ));
+    // fprintf(fout, "Offset of _idAddrUnion= %2zu\n", offsetof(emitter::instrDesc, _idAddrUnion));
     // fprintf(fout, "\n");
-    // fprintf(fout, "Size   of _idAddrUnion= %2u\n", sizeof(((emitter::instrDesc*)0)->_idAddrUnion));
+    // fprintf(fout, "Size   of _idAddrUnion= %2zu\n", sizeof(((emitter::instrDesc*)0)->_idAddrUnion));
 
-    fprintf(fout, "Size   of instrDescJmp    = %2u\n", sizeof(emitter::instrDescJmp));
+    fprintf(fout, "Size   of instrDescJmp    = %2zu\n", sizeof(emitter::instrDescJmp));
 #if !defined(TARGET_ARM64)
-    fprintf(fout, "Size   of instrDescLbl    = %2u\n", sizeof(emitter::instrDescLbl));
+    fprintf(fout, "Size   of instrDescLbl    = %2zu\n", sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
-    fprintf(fout, "Size   of instrDescCns    = %2u\n", sizeof(emitter::instrDescCns));
-    fprintf(fout, "Size   of instrDescDsp    = %2u\n", sizeof(emitter::instrDescDsp));
-    fprintf(fout, "Size   of instrDescCnsDsp = %2u\n", sizeof(emitter::instrDescCnsDsp));
+    fprintf(fout, "Size   of instrDescCns    = %2zu\n", sizeof(emitter::instrDescCns));
+    fprintf(fout, "Size   of instrDescDsp    = %2zu\n", sizeof(emitter::instrDescDsp));
+    fprintf(fout, "Size   of instrDescCnsDsp = %2zu\n", sizeof(emitter::instrDescCnsDsp));
 #ifdef TARGET_XARCH
-    fprintf(fout, "Size   of instrDescAmd    = %2u\n", sizeof(emitter::instrDescAmd));
-    fprintf(fout, "Size   of instrDescCnsAmd = %2u\n", sizeof(emitter::instrDescCnsAmd));
+    fprintf(fout, "Size   of instrDescAmd    = %2zu\n", sizeof(emitter::instrDescAmd));
+    fprintf(fout, "Size   of instrDescCnsAmd = %2zu\n", sizeof(emitter::instrDescCnsAmd));
 #endif // TARGET_XARCH
-    fprintf(fout, "Size   of instrDescCGCA   = %2u\n", sizeof(emitter::instrDescCGCA));
+    fprintf(fout, "Size   of instrDescCGCA   = %2zu\n", sizeof(emitter::instrDescCGCA));
 #ifdef TARGET_ARM
-    fprintf(fout, "Size   of instrDescReloc  = %2u\n", sizeof(emitter::instrDescReloc));
+    fprintf(fout, "Size   of instrDescReloc  = %2zu\n", sizeof(emitter::instrDescReloc));
 #endif // TARGET_ARM
 
     fprintf(fout, "\n");
-    fprintf(fout, "SC_IG_BUFFER_SIZE             = %2u\n", SC_IG_BUFFER_SIZE);
-    fprintf(fout, "SMALL_IDSC_SIZE per IG buffer = %2u\n", SC_IG_BUFFER_SIZE / SMALL_IDSC_SIZE);
-    fprintf(fout, "instrDesc per IG buffer       = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDesc));
-    fprintf(fout, "instrDescJmp per IG buffer    = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescJmp));
+    fprintf(fout, "SC_IG_BUFFER_SIZE             = %2zu\n", SC_IG_BUFFER_SIZE);
+    fprintf(fout, "SMALL_IDSC_SIZE per IG buffer = %2zu\n", SC_IG_BUFFER_SIZE / SMALL_IDSC_SIZE);
+    fprintf(fout, "instrDesc per IG buffer       = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDesc));
+    fprintf(fout, "instrDescJmp per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescJmp));
 #if !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescLbl per IG buffer    = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescLbl));
+    fprintf(fout, "instrDescLbl per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescCns per IG buffer    = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCns));
-    fprintf(fout, "instrDescDsp per IG buffer    = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescDsp));
-    fprintf(fout, "instrDescCnsDsp per IG buffer = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCnsDsp));
+    fprintf(fout, "instrDescCns per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCns));
+    fprintf(fout, "instrDescDsp per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescDsp));
+    fprintf(fout, "instrDescCnsDsp per IG buffer = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCnsDsp));
 #ifdef TARGET_XARCH
-    fprintf(fout, "instrDescAmd per IG buffer    = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescAmd));
-    fprintf(fout, "instrDescCnsAmd per IG buffer = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCnsAmd));
+    fprintf(fout, "instrDescAmd per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescAmd));
+    fprintf(fout, "instrDescCnsAmd per IG buffer = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCnsAmd));
 #endif // TARGET_XARCH
-    fprintf(fout, "instrDescCGCA per IG buffer   = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCGCA));
+    fprintf(fout, "instrDescCGCA per IG buffer   = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCGCA));
 #ifdef TARGET_ARM
-    fprintf(fout, "instrDescReloc per IG buffer  = %2u\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescReloc));
+    fprintf(fout, "instrDescReloc per IG buffer  = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescReloc));
 #endif // TARGET_ARM
 
     fprintf(fout, "\n");
     fprintf(fout, "GCInfo::regPtrDsc:\n");
-    fprintf(fout, "Offset of rpdNext           = %2u\n", offsetof(GCInfo::regPtrDsc, rpdNext));
-    fprintf(fout, "Offset of rpdOffs           = %2u\n", offsetof(GCInfo::regPtrDsc, rpdOffs));
-    fprintf(fout, "Offset of <union>           = %2u\n", offsetof(GCInfo::regPtrDsc, rpdPtrArg));
-    fprintf(fout, "Size   of GCInfo::regPtrDsc = %2u\n", sizeof(GCInfo::regPtrDsc));
+    fprintf(fout, "Offset of rpdNext           = %2zu\n", offsetof(GCInfo::regPtrDsc, rpdNext));
+    fprintf(fout, "Offset of rpdOffs           = %2zu\n", offsetof(GCInfo::regPtrDsc, rpdOffs));
+    fprintf(fout, "Offset of <union>           = %2zu\n", offsetof(GCInfo::regPtrDsc, rpdPtrArg));
+    fprintf(fout, "Size   of GCInfo::regPtrDsc = %2zu\n", sizeof(GCInfo::regPtrDsc));
 
     fprintf(fout, "\n");
 }
@@ -324,19 +350,19 @@ void emitterStats(FILE* fout)
         fprintf(fout, "Total of %8u methods\n", emitter::emitTotalIGmcnt);
         fprintf(fout, "Total of %8u insGroup\n", emitter::emitTotalIGcnt);
         fprintf(fout, "Total of %8u insPlaceholderGroupData\n", emitter::emitTotalPhIGcnt);
-        fprintf(fout, "Total of %8u extend insGroup\n", emitter::emitTotalIGextend);
+        fprintf(fout, "Total of %8u extend insGroup\n", emitter::emitTotalIGExtend);
         fprintf(fout, "Total of %8u instructions\n", emitter::emitTotalIGicnt);
         fprintf(fout, "Total of %8u jumps\n", emitter::emitTotalIGjmps);
         fprintf(fout, "Total of %8u GC livesets\n", emitter::emitTotalIGptrs);
         fprintf(fout, "\n");
         fprintf(fout, "Max prolog instrDesc count: %8u\n", emitter::emitMaxPrologInsCnt);
-        fprintf(fout, "Max prolog insGroup size  : %8u\n", emitter::emitMaxPrologIGSize);
+        fprintf(fout, "Max prolog insGroup size  : %8zu\n", emitter::emitMaxPrologIGSize);
         fprintf(fout, "\n");
         fprintf(fout, "Average of %8.1lf insGroup     per method\n",
                 (double)emitter::emitTotalIGcnt / emitter::emitTotalIGmcnt);
         fprintf(fout, "Average of %8.1lf insPhGroup   per method\n",
                 (double)emitter::emitTotalPhIGcnt / emitter::emitTotalIGmcnt);
-        fprintf(fout, "Average of %8.1lf extend IG   per method\n",
+        fprintf(fout, "Average of %8.1lf extend IG    per method\n",
                 (double)emitter::emitTotalIGExtend / emitter::emitTotalIGmcnt);
         fprintf(fout, "Average of %8.1lf instructions per method\n",
                 (double)emitter::emitTotalIGicnt / emitter::emitTotalIGmcnt);
@@ -357,7 +383,7 @@ void emitterStats(FILE* fout)
         fprintf(fout, "Average of %8.1lf bytes        per instrDesc\n",
                 (double)emitter::emitTotalIGsize / emitter::emitTotalIGicnt);
         fprintf(fout, "\n");
-        fprintf(fout, "A total of %8u desc.  bytes\n", emitter::emitTotalIGsize);
+        fprintf(fout, "A total of %8zu desc.  bytes\n", emitter::emitTotalIGsize);
         fprintf(fout, "\n");
 
         fprintf(fout, "Total instructions:    %8u\n", emitter::emitTotalInsCnt);
@@ -389,7 +415,7 @@ void emitterStats(FILE* fout)
         fprintf(fout, "Total instrDescReloc:  %8u (%5.2f%%)\n", emitter::emitTotalIDescRelocCnt,
                 100.0 * emitter::emitTotalIDescRelocCnt / emitter::emitTotalInsCnt);
 #endif // TARGET_ARM
-        fprintf(fout, "Total emitTotalDescAlignCnt:  %8u (%5.2f%%)\n", emitter::emitTotalDescAlignCnt,
+        fprintf(fout, "Total instrDescAlign:  %8u (%5.2f%%)\n", emitter::emitTotalDescAlignCnt,
                 100.0 * emitter::emitTotalDescAlignCnt / emitter::emitTotalInsCnt);
 
         fprintf(fout, "\n");
@@ -439,7 +465,7 @@ void emitterStats(FILE* fout)
         }
     }
 
-    fprintf(fout, "%8u bytes allocated in the emitter\n", emitter::emitTotMemAlloc);
+    fprintf(fout, "%8zu bytes allocated in the emitter\n", emitter::emitTotMemAlloc);
 }
 
 #endif // EMITTER_STATS
@@ -2475,7 +2501,10 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  *  Mark the current spot as having a label.
  */
 
-void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget)
+void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
+                            regMaskTP        gcrefRegs,
+                            regMaskTP        byrefRegs,
+                            bool isFinallyTarget DEBUG_ARG(unsigned bbNum))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2504,6 +2533,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
+    JITDUMP("Mapped " FMT_BB " to G_M%03u_IG%02u\n", bbNum, emitComp->compMethodID, emitCurIG->igNum);
+
     if (EMIT_GC_VERBOSE)
     {
         printf("Label: IG%02u, GCvars=%s ", emitCurIG->igNum, VarSetOps::ToString(emitComp, GCvars));
@@ -3600,7 +3631,16 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
             printf("%sbyrefRegs=", separator);
             printRegMaskInt(ig->igByrefRegs());
             emitDispRegSet(ig->igByrefRegs());
+            separator = ", ";
         }
+
+#if FEATURE_LOOP_ALIGN
+        if (ig->igLoopBackEdge != nullptr)
+        {
+            printf("%sloop=IG%02u", separator, ig->igLoopBackEdge->igNum);
+            separator = ", ";
+        }
+#endif // FEATURE_LOOP_ALIGN
 
         emitDispIGflags(ig->igFlags);
 
@@ -4193,8 +4233,7 @@ AGAIN:
                 }
                 else
                 {
-                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_JMP_TARGET or "
-                           "BBF_HAS_LABEL.\n",
+                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
                            jmp->idAddr()->iiaBBlabel->bbNum);
                 }
             }
@@ -4650,12 +4689,16 @@ void emitter::emitLoopAlignment()
 
     JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", paddingBytes, emitComp->compMethodID,
             emitCurIG->igNum);
+
+#ifdef DEBUG
+    emitComp->loopAlignCandidates++;
+#endif // DEBUG
 }
 
 //-----------------------------------------------------------------------------
 //  emitEndsWithAlignInstr: Checks if current IG ends with loop align instruction.
 //
-//  Returns:  true if current IG ends with align instruciton.
+//  Returns:  true if current IG ends with align instruction.
 //
 bool emitter::emitEndsWithAlignInstr()
 {
@@ -4685,9 +4728,41 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
         loopSize += igInLoop->igSize;
         if (igInLoop->isLoopAlign())
         {
-            // If igInLoop's next IG is a loop and needs alignment, then igInLoop should be the last IG
-            // of the current loop and should have backedge to current loop header.
-            assert(igInLoop->igLoopBackEdge == igLoopHeader);
+            // If igInLoop is marked as "IGF_LOOP_ALIGN", the basic block flow detected a loop start.
+            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
+            // be met and we would break as soon as loopSize > maxLoopSize.
+            //
+            // IG05:
+            //      ...
+            //      jmp IG18
+            // ...
+            // IG18:
+            //      ...
+            //      jne IG05
+            //
+            // If igInLoop is a legitimate loop, and igInLoop's next IG is also a loop that needs alignment,
+            // then igInLoop should be the last IG of the current loop and should have backedge to current
+            // loop header.
+            //
+            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+            //
+            // IG03:
+            //      ...
+            //      align
+            // IG04:
+            //      ...
+            //      ...
+            // IG05:
+            //      ...
+            //      jne IG04
+            //      align     ; <---
+            // IG06:
+            //      ...
+            //      jne IG06
+            //
+            //
+            assert((igInLoop->igLoopBackEdge == nullptr) || (igInLoop->igLoopBackEdge == igLoopHeader));
 
 #ifdef DEBUG
             if (isAlignAdjusted)
@@ -4970,7 +5045,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is already aligned
     if ((offset & (alignmentBoundary - 1)) == 0)
     {
-        JITDUMP(";; Skip alignment: 'Loop already aligned at %dB boundary.'\n", alignmentBoundary);
+        JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u already aligned at %dB boundary.'\n",
+                emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
         return 0;
     }
 
@@ -4994,7 +5070,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
-        JITDUMP(";; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", loopSize, maxLoopSize);
+        JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is big. LoopSize= %d, MaxLoopSize= %d.'\n",
+                emitComp->compMethodID, ig->igNext->igNum, loopSize, maxLoopSize);
         return 0;
     }
 
@@ -5020,15 +5097,17 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             if (nPaddingBytes == 0)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'Loop already aligned at %uB boundary.'\n", alignmentBoundary);
+                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u already aligned at %uB boundary.'\n",
+                        emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
             }
             // Check if the alignment exceeds new maxPadding limit
             else if (nPaddingBytes > nMaxPaddingBytes)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
                         "AlignmentBoundary= %dB.'\n",
-                        nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary);
+                        emitComp->compMethodID, ig->igNext->igNum, nPaddingBytes, nMaxPaddingBytes, loopSize,
+                        alignmentBoundary);
             }
         }
 
@@ -5050,8 +5129,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             else
             {
                 // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-                JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
-                        minBlocksNeededForLoop, alignmentBoundary);
+                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is aligned to fit in %d blocks of %d chunks.'\n",
+                        emitComp->compMethodID, ig->igNext->igNum, minBlocksNeededForLoop, alignmentBoundary);
             }
         }
     }
@@ -5079,8 +5158,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         else
         {
             // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-            JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n", minBlocksNeededForLoop,
-                    alignmentBoundary);
+            JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is aligned to fit in %d blocks of %d chunks.'\n",
+                    emitComp->compMethodID, ig->igNext->igNum, minBlocksNeededForLoop, alignmentBoundary);
         }
     }
 
@@ -5094,7 +5173,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     return paddingToAdd;
 }
 
-#endif
+#endif // FEATURE_LOOP_ALIGN
 
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {

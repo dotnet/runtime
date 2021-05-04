@@ -1839,7 +1839,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [SkipOnPlatform(TestPlatforms.Windows, "Not supported on Windows.")]
         public static void TestSplittingRulesWhenReported()
         {
             // This test confirm we are splitting the rules which span multiple years on Linux
@@ -2314,7 +2314,7 @@ namespace System.Tests
                 for (int i = -14; i <= 12; i++)
                 {
                     TimeZoneInfo tz = null;
- 
+
                     try
                     {
                         string id = $"Etc/GMT{i:+0;-0}";
@@ -2638,6 +2638,65 @@ namespace System.Tests
             }
         }
 
+        public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
+
+        [ConditionalFact(nameof(SupportIanaNamesConversion))]
+        public static void IsIanaIdTest()
+        {
+            bool expected = !s_isWindows;
+
+            foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
+            {
+                Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
+            }
+
+            Assert.False(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId, $"`Pacific Standard Time` should not be IANA Id.");
+            Assert.True(TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles").HasIanaId, $"'America/Los_Angeles' should be IANA Id");
+        }
+
+        [ConditionalTheory(nameof(SupportIanaNamesConversion))]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles")]
+        [InlineData("AUS Eastern Standard Time", "Australia/Sydney")]
+        [InlineData("GMT Standard Time", "Europe/London")]
+        [InlineData("Tonga Standard Time", "Pacific/Tongatapu")]
+        [InlineData("W. Australia Standard Time", "Australia/Perth")]
+        [InlineData("E. South America Standard Time", "America/Sao_Paulo")]
+        [InlineData("E. Africa Standard Time", "Africa/Nairobi")]
+        [InlineData("W. Europe Standard Time", "Europe/Berlin")]
+        [InlineData("Russian Standard Time", "Europe/Moscow")]
+        [InlineData("Libya Standard Time", "Africa/Tripoli")]
+        [InlineData("South Africa Standard Time", "Africa/Johannesburg")]
+        [InlineData("Morocco Standard Time", "Africa/Casablanca")]
+        [InlineData("Argentina Standard Time", "America/Buenos_Aires")]
+        [InlineData("Newfoundland Standard Time", "America/St_Johns")]
+        [InlineData("Iran Standard Time", "Asia/Tehran")]
+        public static void IdsConversionsTest(string windowsId, string ianaId)
+        {
+            Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
+            Assert.Equal(windowsId, winId);
+
+            Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(winId, out string ianaConvertedId));
+            Assert.Equal(ianaId, ianaConvertedId);
+        }
+
+        [ConditionalTheory(nameof(SupportIanaNamesConversion))]
+        [InlineData("Pacific Standard Time", "America/Vancouver", "CA")]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles", "US")]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles", "\u0600NotValidRegion")]
+        [InlineData("Central Europe Standard Time", "Europe/Budapest", "DJ")]
+        [InlineData("Central Europe Standard Time", "Europe/Budapest", "\uFFFFNotValidRegion")]
+        [InlineData("Central Europe Standard Time", "Europe/Prague", "CZ")]
+        [InlineData("Central Europe Standard Time", "Europe/Ljubljana", "SI")]
+        [InlineData("Central Europe Standard Time", "Europe/Bratislava", "SK")]
+        [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
+        [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
+        [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
+        public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
+        {
+            Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
+            Assert.Equal(ianaId, ianaConvertedId);
+        }
+
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalFact(nameof(IsEnglishUILanguageAndRemoteExecutorSupported))]
         public static void TestNameWithInvariantCulture()
@@ -2704,6 +2763,32 @@ namespace System.Tests
                 TimeZoneInfo.ClearCachedData();
                 Environment.SetEnvironmentVariable("TZ", originalTZ);
             }
+        }
+
+        [Fact]
+        public static void AdjustmentRuleBaseUtcOffsetDeltaTest()
+        {
+            TimeZoneInfo.TransitionTime start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 2, 0, 0), month: 3, day: 7);
+            TimeZoneInfo.TransitionTime end = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 1, 0, 0), month: 11, day: 7);
+            TimeZoneInfo.AdjustmentRule rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, new TimeSpan(1, 0, 0), start, end, baseUtcOffsetDelta: new TimeSpan(1, 0, 0));
+            TimeZoneInfo customTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+                                                            id: "Fake Time Zone",
+                                                            baseUtcOffset: new TimeSpan(0),
+                                                            displayName: "Fake Time Zone",
+                                                            standardDisplayName: "Standard Fake Time Zone",
+                                                            daylightDisplayName: "British Summer Time",
+                                                            new TimeZoneInfo.AdjustmentRule[] { rule });
+
+            TimeZoneInfo.AdjustmentRule[] rules = customTimeZone.GetAdjustmentRules();
+
+            Assert.Equal(1, rules.Length);
+            Assert.Equal(new TimeSpan(1, 0, 0), rules[0].BaseUtcOffsetDelta);
+
+            // BaseUtcOffsetDelta should be counted to the returned offset during the standard time.
+            Assert.Equal(new TimeSpan(1, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 1, 1, 2, 0, 0)));
+
+            // BaseUtcOffsetDelta should be counted to the returned offset during the daylight time.
+            Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

@@ -63,6 +63,41 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaEncrypt(
+            SafeEvpPKeyHandle pkey,
+            ref byte source,
+            int sourceLength,
+            RSAEncryptionPaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            ref byte destination,
+            int destinationLength);
+
+        internal static int RsaEncrypt(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> source,
+            RSAEncryptionPaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            Span<byte> destination)
+        {
+            int written = CryptoNative_RsaEncrypt(
+                pkey,
+                ref MemoryMarshal.GetReference(source),
+                source.Length,
+                paddingMode,
+                digestAlgorithm,
+                ref MemoryMarshal.GetReference(destination),
+                destination.Length);
+
+            if (written < 0)
+            {
+                Debug.Assert(written == -1);
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return written;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
@@ -97,11 +132,55 @@ internal static partial class Interop
             return written;
         }
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaVerifyHash(
+            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            ref byte hash,
+            int hashLength,
+            ref byte signature,
+            int signatureLength);
+
+        internal static bool RsaVerifyHash(
+            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature)
+        {
+            int ret = CryptoNative_RsaVerifyHash(
+                pkey,
+                paddingMode,
+                digestAlgorithm,
+                ref MemoryMarshal.GetReference(hash),
+                hash.Length,
+                ref MemoryMarshal.GetReference(signature),
+                signature.Length);
+
+            if (ret == 1)
+            {
+                return true;
+            }
+
+            if (ret == 0)
+            {
+                return false;
+            }
+
+            Debug.Assert(ret == -1);
+            throw CreateOpenSslCryptographicException();
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetRsa")]
         internal static extern SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, IntPtr rsa);
     }
 }

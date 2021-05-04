@@ -4322,6 +4322,12 @@ namespace System.Tests
             Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
         }
 
+        [Fact]
+        public static void MaxSizes()
+        {
+            Assert.Equal(0x7FFFFFC7, Array.MaxLength);
+        }
+
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             VerifyArray(array, elementType, lengths, lowerBounds);
@@ -4649,18 +4655,41 @@ namespace System.Tests
                 return;
             }
 
+            short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
+            a[0, 1] = 42;
+            Array.Copy(a, 1, a, Int32.MaxValue, 2);
+            Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
+
+            Array.Clear(a, Int32.MaxValue - 1, 3);
+            Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+        }
+
+        [OuterLoop] // Allocates large array
+        [ConditionalFact]
+        public static void Clear_LargeMultiDimensionalArray()
+        {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (IntPtr.Size != sizeof(long))
+            {
+                return;
+            }
+
+            short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
+            a[1, 1_999_999_999] = 0x1234;
+
+            ((IList)a).Clear();
+            Assert.Equal(0, a[1, 1_999_999_999]);
+        }
+
+        private static short[,] AllocateLargeMDArray(int dim0Length, int dim1Length)
+        {
             try
             {
-                short[,] a = new short[2, 2_000_000_000];
-                a[0, 1] = 42;
-                Array.Copy(a, 1, a, Int32.MaxValue, 2);
-                Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
-
-                Array.Clear(a, Int32.MaxValue - 1, 3);
-                Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+                return new short[dim0Length, dim1Length];
             }
             catch (OutOfMemoryException)
             {
+                // not a fatal error - we'll just skip the test in this case
                 throw new SkipTestException("Unable to allocate enough memory");
             }
         }

@@ -4,10 +4,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ClassType.{JsonClassInfo.ClassType}, {JsonClassInfo.Type.Name}")]
+    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
     internal struct ReadStackFrame
     {
         // Current property values.
@@ -30,7 +31,7 @@ namespace System.Text.Json
 
         // Current object (POCO or IEnumerable).
         public object? ReturnValue; // The current return value used for re-entry.
-        public JsonClassInfo JsonClassInfo;
+        public JsonTypeInfo JsonTypeInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
         // Validate EndObject token on array with preserve semantics.
@@ -78,7 +79,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingDictionary()
         {
-            return (JsonClassInfo.ClassType & ClassType.Dictionary) != 0;
+            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Dictionary) != 0;
         }
 
         /// <summary>
@@ -86,14 +87,14 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingEnumerable()
         {
-            return (JsonClassInfo.ClassType & ClassType.Enumerable) != 0;
+            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
         }
 
         public void Reset()
         {
             CtorArgumentStateIndex = 0;
             CtorArgumentState = null;
-            JsonClassInfo = null!;
+            JsonTypeInfo = null!;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
             OriginalTokenType = JsonTokenType.None;

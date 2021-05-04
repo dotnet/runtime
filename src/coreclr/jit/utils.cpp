@@ -657,7 +657,7 @@ const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
 
     nump = (nump == num1) ? num2 : num1;
 
-    if (refCntWtd == BB_MAX_WEIGHT)
+    if (refCntWtd >= BB_MAX_WEIGHT)
     {
         sprintf_s(temp, bufSize, "MAX   ");
     }

@@ -23,11 +23,11 @@ namespace System
             false;
 #endif
 
-        internal static string GetResourceString(string resourceKey, string? defaultString = null)
+        internal static string GetResourceString(string resourceKey)
         {
             if (UsingResourceKeys())
             {
-                return defaultString ?? resourceKey;
+                return resourceKey;
             }
 
             string? resourceString = null;
@@ -42,12 +42,14 @@ namespace System
             }
             catch (MissingManifestResourceException) { }
 
-            if (defaultString != null && resourceKey.Equals(resourceString))
-            {
-                return defaultString;
-            }
-
             return resourceString!; // only null if missing resources
+        }
+
+        internal static string GetResourceString(string resourceKey, string defaultString)
+        {
+            string resourceString = GetResourceString(resourceKey);
+
+            return resourceKey == resourceString || resourceString == null ? defaultString : resourceString;
         }
 
         internal static string Format(string resourceFormat, object? p1)

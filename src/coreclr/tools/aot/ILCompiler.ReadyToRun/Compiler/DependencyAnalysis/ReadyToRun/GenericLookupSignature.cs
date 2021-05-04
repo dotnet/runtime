@@ -140,7 +140,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(": ");
             if (_methodArgument != null)
             {
+                sb.Append(nameMangler.GetMangledTypeName(_methodArgument.OwningType));
+                sb.Append("::");
                 sb.Append(nameMangler.GetMangledMethodName(_methodArgument.Method));
+                if (_methodArgument.ConstrainedType != null)
+                {
+                    sb.Append("@");
+                    sb.Append(nameMangler.GetMangledTypeName(_methodArgument.ConstrainedType));
+                }
                 if (!_methodArgument.Token.IsNull)
                 {
                     sb.Append(" [");

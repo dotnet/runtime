@@ -61,6 +61,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/handle.h>
+#include <mono/metadata/icall-decl.h>
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -2467,32 +2468,6 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 	g_assert_not_reached ();
 }
 
-/*
- * We implement delaying of aborts when in finally blocks by reusing the
- * abort protected block mechanism. The problem is that when throwing an
- * exception in a finally block we don't get to exit the protected block.
- * We exit it here when unwinding. Given that the order of the clauses
- * in the jit info is from inner clauses to the outer clauses, when we
- * want to exit the finally blocks inner to the clause that handles the
- * exception, we need to search up to its index.
- *
- * FIXME We should do this inside interp, but with mixed mode we can
- * resume directly, without giving control back to the interp.
- */
-static void
-interp_exit_finally_abort_blocks (MonoJitInfo *ji, int start_clause, int end_clause, gpointer ip)
-{
-	int i;
-	for (i = start_clause; i < end_clause; i++) {
-		MonoJitExceptionInfo *ei = &ji->clauses [i];
-		if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY &&
-				ip >= ei->handler_start &&
-				ip < ei->data.handler_end) {
-			mono_threads_end_abort_protected_block ();
-		}
-	}
-}
-
 static MonoException *
 mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception_raw, MonoError *error)
 {
@@ -2890,7 +2865,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					mini_set_abort_threshold (&frame);
 
 					if (in_interp) {
-						interp_exit_finally_abort_blocks (ji, clause_index_start, i, ip);
 						/*
 						 * ctx->pc points into the interpreter, after the call which transitioned to
 						 * JITted code. Store the unwind state into the
@@ -2986,9 +2960,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			}
 		}
 
-		if (in_interp)
-			interp_exit_finally_abort_blocks (ji, clause_index_start, ji->num_clauses, ip);
-
 		if (MONO_PROFILER_ENABLED (method_exception_leave) &&
 		    mono_profiler_get_call_instrumentation_flags (method) & MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE) {
 			jit_tls->orig_ex_ctx_set = TRUE;
@@ -3040,6 +3011,8 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	}
 }
 
+static gint32 exceptions_thrown;
+
 /**
  * mono_handle_exception:
  * \param ctx saved processor state
@@ -3058,8 +3031,15 @@ mono_handle_exception (MonoContext *ctx, gpointer void_obj)
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_inc_i32 (&mono_perfcounters->exceptions_thrown);
 #endif
+	mono_atomic_inc_i32 (&exceptions_thrown);
 
 	return mono_handle_exception_internal (ctx, obj, FALSE, NULL);
+}
+
+guint32
+mono_get_exception_count (void)
+{
+	return (guint32)exceptions_thrown;
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -3445,7 +3425,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 
 #if HOST_WASM
-	mono_runtime_printf_err ("%s", text->str); //to print the native callstack
+	mono_runtime_printf_err ("%s\n", text->str); //to print the native callstack
 #else
 	mono_runtime_printf ("%s", text->str);
 #endif	

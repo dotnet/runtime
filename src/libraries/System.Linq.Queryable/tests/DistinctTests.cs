@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -76,6 +77,41 @@ namespace System.Linq.Tests
         {
             var count = (new int[] { 0, 1, 2, 2, 0 }).AsQueryable().Distinct(EqualityComparer<int>.Default).Count();
             Assert.Equal(3, count);
+        }
+
+        [Fact]
+        public void DistinctBy_NullSource_ThrowsArgumentNullException()
+        {
+            IQueryable<int> source = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.DistinctBy(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.DistinctBy(x => x, EqualityComparer<int>.Default));
+        }
+
+        [Fact]
+        public void DistinctBy_NullKeySelector_ThrowsArgumentNullException()
+        {
+            IQueryable<int> source = Enumerable.Empty<int>().AsQueryable();
+            Expression<Func<int, int>> keySelector = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.DistinctBy(keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.DistinctBy(keySelector, EqualityComparer<int>.Default));
+        }
+
+        [Fact]
+        public void DistinctBy()
+        {
+            var expected = Enumerable.Range(0, 3);
+            var actual = Enumerable.Range(0, 20).AsQueryable().DistinctBy(x => x % 3).ToArray();
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void DistinctBy_CustomComparison()
+        {
+            var expected = Enumerable.Range(0, 3);
+            var actual = Enumerable.Range(0, 20).AsQueryable().DistinctBy(x => x % 3, EqualityComparer<int>.Default).ToArray();
+            Assert.Equal(expected, actual);
         }
     }
 }

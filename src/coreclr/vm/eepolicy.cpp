@@ -27,9 +27,9 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
-void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
+void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
-    STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d, fAbort = %d\n", exitCode, fAbort);
+    STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
     CONTRACTL
     {
         DISABLED(GC_TRIGGERS);
@@ -87,20 +87,19 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
     g_fNoExceptions = true;
     LOG((LF_EH, LL_INFO10, "SafeExitProcess: turning off exceptions\n"));
 
-    if (sca == SCA_ExitProcessWhenShutdownComplete)
+    if (sca == SCA_TerminateProcessWhenShutdownComplete)
     {
-        // disabled because if we fault in this code path we will trigger our
-        // Watson code
+        // disabled because if we fault in this code path we will trigger our Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (fAbort)
-        {
-            CrashDumpAndTerminateProcess(exitCode);
-        }
-        else
-        {
-            ExitProcess(exitCode);
-        }
+        CrashDumpAndTerminateProcess(exitCode);
+    }
+    else if (sca == SCA_ExitProcessWhenShutdownComplete)
+    {
+        // disabled because if we fault in this code path we will trigger our Watson code
+        CONTRACT_VIOLATION(ThrowsViolation);
+
+        ExitProcess(exitCode);
     }
 }
 
@@ -179,7 +178,7 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
     {
         EEShutDown(FALSE);
     }
-    SafeExitProcess(GetLatchedExitCode(), FALSE, sca);
+    SafeExitProcess(GetLatchedExitCode(), sca);
 }
 
 
@@ -797,7 +796,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-        SafeExitProcess(exitCode, TRUE);
+        SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
     }
 
     UNREACHABLE();
