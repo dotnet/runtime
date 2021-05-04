@@ -23,6 +23,16 @@
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <runtime_version.h>
+
+#ifndef QUOTE_MACRO_L
+#define QUOTE_MACRO_L_HELPER(x)     L###x
+#define QUOTE_MACRO_L(x)            QUOTE_MACRO_L_HELPER(x)
+#endif // QUOTE_MACRO_L
+
+#ifndef PRODUCT_VERSION_L
+#define PRODUCT_VERSION_L QUOTE_MACRO_L(RuntimeProductVersion)
+#endif // PRODUCT_VERSION_L
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -1825,19 +1835,14 @@ const ep_char16_t *
 ep_rt_entrypoint_assembly_path_get_ref_utf16 (void)
 {
 	// TODO: find mono entrypoint assembly path
-	const ep_char8_t *foo = "TODO";
-	return g_utf8_to_utf16 ((const gchar *)foo, g_utf8_len (foo), NULL, NULL, NULL);
+	return (const ep_char16_t *)L"TODO";
 }
 
 static
 const ep_char16_t *
 runtime_version_string_lazy_get_ref_utf16 (void)
 {
-	// stash a utf16 copy of the version string from _version.h
-	extern ep_char16_t *runtime_version_string_utf16 = NULL;
-	if (runtime_version_string_utf16 == NULL)
-		runtime_version_string_utf16 = (ep_char16_t *)g_utf8_to_utf16 ((const gchar *)product_version_string, g_utf8_len (product_version_string), NULL, NULL, NULL);
-	return runtime_version_string_utf16;
+	return (const ep_char16_t *)PRODUCT_VERSION_L;
 }
 
 static
