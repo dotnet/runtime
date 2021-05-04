@@ -21,7 +21,7 @@ index 133c02e..ad2eadd 100644
  <Project Sdk="Microsoft.NET.Sdk">
    <PropertyGroup>
 -    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
-+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppCurrent);net47</TargetFrameworks>
++    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
      <Nullable>enable</Nullable>
    </PropertyGroup>
