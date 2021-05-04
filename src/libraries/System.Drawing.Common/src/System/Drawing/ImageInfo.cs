@@ -18,10 +18,13 @@ namespace System.Drawing
         private sealed class ImageInfo
         {
             private const int PropertyTagFrameDelay = 0x5100;
+            private const int PropertyTagLoopCount = 0x5101;
 
             private readonly Image _image;
             private int _frame;
+            private short _loop;
             private readonly int _frameCount;
+            private readonly short _loopCount;
             private bool _frameDirty;
             private readonly bool _animated;
             private EventHandler? _onFrameChangedHandler;
@@ -65,6 +68,22 @@ namespace System.Drawing
                             // Frame delays are stored in 1/100ths of a second; convert to milliseconds while accumulating
                             _frameEndTimes[f] = (lastEndTime += (BitConverter.ToInt32(values, i) * 10));
                         }
+                    }
+
+                    PropertyItem? loopCountItem = image.GetPropertyItem(PropertyTagLoopCount);
+
+                    if (loopCountItem != null)
+                    {
+                        // The loop count is a short where 0 = infinite, and a positive value indicates the
+                        // number of times to loop. The animation will be shown 1 time more than the loop count.
+                        byte[] values = loopCountItem.Value!;
+
+                        Debug.Assert(values.Length == sizeof(short), "PropertyItem has an invalid byte array. It should represent a single short value.");
+                        _loopCount = BitConverter.ToInt16(values);
+                    }
+                    else
+                    {
+                        _loopCount = 0;
                     }
                 }
                 else
@@ -113,6 +132,12 @@ namespace System.Drawing
             private long TotalAnimationTime => Animated ? _frameEndTimes![_frameCount - 1] : 0;
 
             /// <summary>
+            /// Whether animation should progress, respecting the image's animation support
+            /// and if there are animation frames or loops remaining.
+            /// </summary>
+            private bool ShouldAnimate => Animated ? (_loopCount == 0 || _loop <= _loopCount) : false;
+
+            /// <summary>
             /// Advance the animation by the specified number of milliseconds. If the advancement
             /// progresses beyond the end time of the current Frame, <see cref="FrameChangedHandler"/>
             /// will be called. Subscribed handlers often use that event to call
@@ -129,20 +154,29 @@ namespace System.Drawing
             /// <param name="milliseconds">The number of milliseconds to advance the animation by</param>
             public void AdvanceAnimationBy(long milliseconds)
             {
-                if (Animated)
+                if (ShouldAnimate)
                 {
                     int oldFrame = _frame;
                     _frameTimer += milliseconds;
 
                     if (_frameTimer > TotalAnimationTime)
                     {
-                        _frameTimer %= TotalAnimationTime;
-                    }
+                        _loop += (short)Math.DivRem(_frameTimer, TotalAnimationTime, out long newTimer);
+                        _frameTimer = newTimer;
 
-                    // If the timer is before the current frame's start time, loop
-                    if (_frame > 0 && _frameTimer < _frameEndTimes![_frame - 1])
-                    {
-                        _frame = 0;
+                        if (!ShouldAnimate)
+                        {
+                            // If we've finished looping, then freeze onto the last frame
+                            _frame = _frameCount - 1;
+                            _frameTimer = TotalAnimationTime;
+                        }
+                        else if (_frame > 0 && _frameTimer < _frameEndTimes![_frame - 1])
+                        {
+                            // If the loop put us before the current frame (which is common)
+                            // then reset back to the first frame. We will then progress
+                            // forward again from there (below).
+                            _frame = 0;
+                        }
                     }
 
                     while (_frameTimer > _frameEndTimes![_frame])
