@@ -588,7 +588,7 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Unix.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotImplemented.cs" />
+    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
@@ -679,7 +679,7 @@
     <Compile Include="Internal\Cryptography\RC2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
-    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotImplemented.cs" />
+    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
@@ -700,9 +700,9 @@
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\AesCcm.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\AesGcm.Browser.cs" />
-    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfig.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />

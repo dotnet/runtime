@@ -9,6 +9,7 @@ namespace System.Security.Cryptography
     {
         public static bool IsSupported => false;
 
+#if !BROWSER // allow GenFacades to handle browser target
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             Debug.Fail("Instance ctor should fail before we reach this point.");
@@ -40,7 +41,8 @@ namespace System.Security.Cryptography
         public void Dispose()
         {
             Debug.Fail("Instance ctor should fail before we reach this point.");
-            throw new NotImplementedException();
+            // no-op
         }
+#endif
     }
 }
