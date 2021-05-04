@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
-        /// <param name="outputLength">The length of the output keying material</param>
+        /// <param name="outputLength">The length of the output keying material.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="prk"/>is <see langword="null"/>.</exception>
@@ -113,16 +113,16 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
-        /// <param name="output">The destination buffer to receive the output keying material with a size of as least 1.</param>
+        /// <param name="output">The destination buffer to receive the output keying material.</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
-        /// <exception cref="ArgumentException"><paramref name="output"/> length is larger than the allowed length.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="output"/> legnth is less than 1.</exception>
+        /// <exception cref="ArgumentException"><paramref name="output"/> is larger than the maximum allowed length.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="output"/> is empty.</exception>
         public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
 
             if (output.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(output), SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
@@ -244,7 +244,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="ikm">The input keying material.</param>
-        /// <param name="output">The output buffer representing output keying material  with a size of as least 1.</param>
+        /// <param name="output">The output buffer representing output keying material.</param>
         /// <param name="salt">The salt value (a non-secret random value).</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
         /// <exception cref="ArgumentException"><paramref name="ikm"/> length is larger than allowed length.</exception>
@@ -254,7 +254,7 @@ namespace System.Security.Cryptography
             int hashLength = HashLength(hashAlgorithmName);
 
             if (output.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(output), SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
