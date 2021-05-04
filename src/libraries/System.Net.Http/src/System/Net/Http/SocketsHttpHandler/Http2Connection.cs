@@ -80,7 +80,7 @@ namespace System.Net.Http
         private const int InitialConnectionBufferSize = 4096;
 #endif
 
-        private const int DefaultInitialWindowSize = 65535;
+        private const int DefaultInitialWindowSize = 2 * 65535;
         private const int WindowUpdateRatio = 8;
 
         // We don't really care about limiting control flow at the connection level.
@@ -181,6 +181,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
                 // Send SETTINGS frame.  Disable push promise & set initial window size.
+#if false
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2*FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
@@ -191,6 +192,14 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(2);
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, DefaultInitialWindowSize);
                 _outgoingBuffer.Commit(4);
+#else
+                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
+                _outgoingBuffer.Commit(FrameHeader.Size);
+                BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
+                _outgoingBuffer.Commit(2);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
+                _outgoingBuffer.Commit(4);
+#endif
 
                 // Send initial connection-level WINDOW_UPDATE
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
