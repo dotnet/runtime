@@ -9668,7 +9668,7 @@ public:
 
     bool compEnregStructLocals()
     {
-        return JitConfig.JitEnregStructLocals();
+        return (JitConfig.JitEnregStructLocals() != 0);
     }
 
     // Returns true if the method returns a value in more than one return register,
