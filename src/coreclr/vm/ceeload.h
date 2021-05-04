@@ -3390,5 +3390,6 @@ struct VASigCookieEx : public VASigCookie
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
 
 LPCWSTR GetCommandLineForDiagnostics();
+LPCWSTR GetManagedEntrypointAssemblyPath();
 
 #endif // !CEELOAD_H_
