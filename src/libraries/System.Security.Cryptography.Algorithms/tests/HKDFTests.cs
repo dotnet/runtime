@@ -572,7 +572,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 byte[] prk = new byte[20];
                 byte[] okm = new byte[0];
 
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "output",
                     () => HKDF.Expand(HashAlgorithmName.SHA1, prk, okm, Array.Empty<byte>()));
             }
@@ -603,7 +603,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 byte[] ikm = new byte[20];
                 byte[] okm = new byte[0];
 
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "output",
                     () => HKDF.DeriveKey(HashAlgorithmName.SHA1, ikm, okm, Array.Empty<byte>(), Array.Empty<byte>()));
             }

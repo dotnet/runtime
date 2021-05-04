@@ -115,8 +115,7 @@ namespace System.Security.Cryptography
         /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
         /// <param name="output">The destination buffer to receive the output keying material.</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
-        /// <exception cref="ArgumentException"><paramref name="output"/> is larger than the maximum allowed length.</exception>
-        /// <exception cref="ArgumentException"><paramref name="output"/> is empty.</exception>
+        /// <exception cref="ArgumentException"><paramref name="output"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
@@ -247,8 +246,7 @@ namespace System.Security.Cryptography
         /// <param name="output">The output buffer representing output keying material.</param>
         /// <param name="salt">The salt value (a non-secret random value).</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
-        /// <exception cref="ArgumentException"><paramref name="ikm"/> length is larger than allowed length.</exception>
-        /// <exception cref="ArgumentException"><paramref name="output"/> is empty.</exception>
+        /// <exception cref="ArgumentException"><paramref name="ikm"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
