@@ -33,6 +33,14 @@ namespace Wasm.Build.Tests
         public void AOT_InvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
             => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id);
 
+
+        [Theory]
+        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        public void Invariant_WithSharding(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
+            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id,
+                                            extraProperties: "<EnableSharding>true</EnableSharding>");
+
         // TODO: What else should we use to verify a relinked build?
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]

@@ -1151,6 +1151,8 @@ var MonoSupportLib = {
 
 		_get_list_of_icu_files: function (dictionary, culture, feature_shards=true) {
 			var icu_files = []
+			if (dictionary === undefined)
+				return null;
 			if (culture == null || culture.length < 2) {
 				icu_files = [dictionary.complete];
 			} else {
@@ -1793,7 +1795,9 @@ var MonoSupportLib = {
 			if (!args.loaded_cb)
 				throw new Error ("loaded_cb not provided");
 			
-			args.assets = args.assets.concat(this._get_list_of_icu_files(args.icu_dictionary, args.application_culture));
+			var icu_files = this._get_list_of_icu_files(args.icu_dictionary, args.application_culture);
+			if (icu_files != null)
+				args.assets = args.assets.concat(icu_files);
 			var ctx = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,

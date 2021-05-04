@@ -19,53 +19,72 @@ namespace Wasm.Build.Tests
         {
         }
 
-        public static IEnumerable<object?[]> ICUShardingTestData(bool enableSharding, RunHost host)
-            => ConfigWithAOTData(false)
+        public static IEnumerable<object?[]> ICUShardingTestData_EFIGS(bool aot, RunHost host)
+            => ConfigWithAOTData(aot)
                 .Multiply(
-                    new object?[] { enableSharding, "en", "en-GB", false},      //EFIGS
-                    new object?[] { enableSharding, "en", "zh", true},          //EFIGS
-                    new object?[] { enableSharding, "es-ES", "am-ET", true},    //EFIGS
-                    new object?[] { enableSharding, "es", "fr-FR", true},       //EFIGS
-                    new object?[] { enableSharding, "zh", "zh-Hans", false},    //CJK
-                    new object?[] { enableSharding, "ko", "zh-Hans", false},    //CJK
-                    new object?[] { enableSharding, "ja-JP", "es-ES", true},    //CJK //this one should have thrown
-                    new object?[] { enableSharding, "am-ET", "de-DE", false},   //no_CJK
-                    new object?[] { enableSharding, "am-ET", "ko", true},       //no_CJK
-                    new object?[] { enableSharding, "am-ET", "ja-JP", true},    //no_CJK
-                    new object?[] { enableSharding, "am-ET", "vi-VN", false},   //no_CJK
-                    new object?[] { enableSharding, null, "zh-Hans", true})     //ALL
+                    new object?[] { "en", "en-GB", false},
+                    new object?[] { "es", "fr-FR", false},
+                    new object?[] { "en", "zh", true},
+                    new object?[] {"es-ES", "am-ET", true})
+                .WithRunHosts(host)
+                .UnwrapItemsAsArrays();
+
+        public static IEnumerable<object?[]> ICUShardingTestData_CJK(bool aot, RunHost host)
+            => ConfigWithAOTData(aot)
+                .Multiply(
+                    new object?[] { "zh", "zh-Hans", false},
+                    new object?[] { "ko", "en-US", false},
+                    new object?[] { "ja-JP", "es-ES", true},
+                    new object?[] { "ja-JP", "fr-FR", true})
+                .WithRunHosts(host)
+                .UnwrapItemsAsArrays();
+
+        public static IEnumerable<object?[]> ICUShardingTestData_no_CJK(bool aot, RunHost host)
+            => ConfigWithAOTData(aot)
+                .Multiply(
+                    new object?[] { "am-ET", "de-DE", false},
+                    new object?[] { "am-ET", "vi-VN", false},
+                    new object?[] { "am-ET", "ko", true},
+                    new object?[] { "am-ET", "ja-JP", true})
                 .WithRunHosts(host)
                 .UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(ICUShardingTestData), parameters: new object[] { true, RunHost.All })]
-        public void ShardingTests(BuildArgs buildArgs, bool enableSharding, string defaultCulture, string testCulture, bool expectToThrow, RunHost host, string id)
-            => TestICUSharding(buildArgs, enableSharding, defaultCulture, testCulture, expectToThrow, host, id);
+        [MemberData(nameof(ICUShardingTestData_EFIGS), parameters: new object[] { true, RunHost.All })]
+        [MemberData(nameof(ICUShardingTestData_EFIGS), parameters: new object[] { false, RunHost.All })]
+        [MemberData(nameof(ICUShardingTestData_CJK), parameters: new object[] { true, RunHost.All })]
+        [MemberData(nameof(ICUShardingTestData_CJK), parameters: new object[] { false, RunHost.All })]
+        [MemberData(nameof(ICUShardingTestData_no_CJK), parameters: new object[] { true, RunHost.All })]
+        [MemberData(nameof(ICUShardingTestData_no_CJK), parameters: new object[] { false, RunHost.All })]
+        public void ShardingTests(BuildArgs buildArgs, string defaultCulture, string testCulture, bool expectToThrow, RunHost host, string id)
+            => TestICUSharding(buildArgs, defaultCulture, testCulture, expectToThrow, host, id);
         
         void TestICUSharding(BuildArgs buildArgs,
-                             bool enableSharding,
                              string defaultCulture,
                              string testCulture,
                              bool expectToThrow,
                              RunHost host,
                              string id,
+                             string projectContents="",
                              bool? dotnetWasmFromRuntimePack=null)
         {
-            string projectName = $"sharding_{enableSharding}_{defaultCulture}_{testCulture}";
+            string projectName = $"sharding_{defaultCulture}_{testCulture}";
             string programText = $@"
                 using System;
                 using System.Globalization;
-                using System.Threading.Tasks;
+                using System.Text;
 
                 public class TestClass {{
                     public static int Main()
                     {{
                         try {{
                             var culture = new CultureInfo(""{testCulture}"", false);
-                            Console.WriteLine(culture.Name);
+                            string s = new string( new char[] {{'\u0063', '\u0301', '\u0327', '\u00BE'}});
+                            string normalized = s.Normalize();
+                            Console.WriteLine($""{{culture.NativeName}} - {{culture.NumberFormat.CurrencySymbol}} - {{normalized.IsNormalized(NormalizationForm.FormC)}}"");
                         }}
-                        catch {{
-                            Console.WriteLine(""Culture Not Found"");
+                        catch (CultureNotFoundException e){{
+                            Console.WriteLine($""Culture Not Found {{e.Message}}"");
                         }}
                         
                         return 42;
@@ -73,7 +92,7 @@ namespace Wasm.Build.Tests
                 }}";
 
             buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = programText };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties: $"<EnableSharding>{enableSharding}</EnableSharding><ICUDefaultCulture>{defaultCulture}</ICUDefaultCulture>");
+            buildArgs = GetBuildArgsWith(buildArgs, extraProperties: $"<EnableSharding>true</EnableSharding><ICUDefaultCulture>{defaultCulture}</ICUDefaultCulture>");
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
@@ -82,9 +101,11 @@ namespace Wasm.Build.Tests
                         id: id,
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack);
 
-            string expectedOutputString = expectToThrow == true || enableSharding == false
+            var culture = CultureInfo.GetCultureInfo(testCulture);
+
+            string expectedOutputString = expectToThrow == true
                                             ? "Culture Not Found"
-                                            : $"{CultureInfo.GetCultureInfo(testCulture).Name}";
+                                            : $"{culture.NativeName} - {culture.NumberFormat.CurrencySymbol} - True";
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                 test: output => Assert.Contains(expectedOutputString, output), host: host, id: id);
