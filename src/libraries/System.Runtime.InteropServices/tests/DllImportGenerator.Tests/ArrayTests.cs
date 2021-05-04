@@ -67,8 +67,14 @@ namespace DllImportGenerator.IntegrationTests
         [Fact]
         public void IntArrayMarshalledToNativeAsExpected()
         {
-            var array = new [] { 1, 5, 79, 165, 32, 3 };
+            var array = new[] { 1, 5, 79, 165, 32, 3 };
             Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(array, array.Length));
+        }
+
+        [Fact]
+        public void NullIntArrayMarshalledToNativeAsExpected()
+        {
+            Assert.Equal(-1, NativeExportsNE.Arrays.Sum(null, 0));
         }
 
         [Fact]
