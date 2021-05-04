@@ -8,7 +8,7 @@ using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
-    internal static class AeadBCryptHandles
+    internal static class BCryptAeadHandleCache
     {
         private static SafeAlgorithmHandle? s_aesCcm;
         private static SafeAlgorithmHandle? s_aesGcm;
@@ -24,7 +24,10 @@ namespace Internal.Cryptography
         {
             // Do we already have a handle to this algorithm?
             SafeAlgorithmHandle? existingHandle = Volatile.Read(ref handle);
-            if (existingHandle != null) { return existingHandle; }
+            if (existingHandle != null)
+            {
+                return existingHandle;
+            }
 
             // No cached handle exists; create a new handle. It's ok if multiple threads call
             // this concurrently. Only one handle will "win" and the rest will be destroyed.

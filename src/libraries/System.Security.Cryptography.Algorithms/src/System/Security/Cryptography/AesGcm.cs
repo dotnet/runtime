@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
-            AEADCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
 
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
 
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
         {
-            AEADCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }
 

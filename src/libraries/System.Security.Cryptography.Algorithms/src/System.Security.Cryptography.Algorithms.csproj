@@ -27,7 +27,7 @@
     <Compile Include="Internal\Cryptography\RC2Implementation.cs" />
     <Compile Include="Internal\Cryptography\RijndaelImplementation.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
-    <Compile Include="System\Security\Cryptography\AEADCommon.cs" />
+    <Compile Include="System\Security\Cryptography\AeadCommon.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.cs" />
@@ -278,7 +278,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\Security\Cryptography\AEADCommon.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\AeadCommon.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Windows.cs" />
@@ -307,8 +307,8 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\AesBCryptModes.cs"
              Link="Common\Interop\Windows\BCrypt\AesBCryptModes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\AEADBCryptHandles.cs"
-             Link="Common\Interop\Windows\BCrypt\AEADBCryptHandles.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\BCryptAeadHandleCache.cs"
+             Link="Common\Interop\Windows\BCrypt\BCryptAeadHandleCache.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs"
              Link="Common\Interop\Windows\BCrypt\Cng.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs"

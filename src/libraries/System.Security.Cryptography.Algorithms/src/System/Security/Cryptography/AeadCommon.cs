@@ -5,7 +5,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class AEADCommon
+    internal static partial class AeadCommon
     {
         public static void CheckArgumentsForNull(
             byte[] nonce,

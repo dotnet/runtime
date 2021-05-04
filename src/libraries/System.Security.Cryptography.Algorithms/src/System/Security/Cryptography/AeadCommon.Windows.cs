@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class AEADCommon
+    internal static partial class AeadCommon
     {
         public static unsafe void Encrypt(
             SafeKeyHandle keyHandle,

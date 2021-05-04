@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = Interop.BCrypt.BCryptImportKey(AEADBCryptHandles.AesGcm, key);
+            _keyHandle = Interop.BCrypt.BCryptImportKey(BCryptAeadHandleCache.AesGcm, key);
         }
 
         private void EncryptCore(
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AEADCommon.Encrypt(_keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
+            AeadCommon.Encrypt(_keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
         }
 
         private void DecryptCore(
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData = default)
         {
-            AEADCommon.Decrypt(_keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: true);
+            AeadCommon.Decrypt(_keyHandle, nonce, associatedData, ciphertext, tag, plaintext, clearPlaintextOnFailure: true);
         }
 
         public void Dispose()
