@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected ServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors)
         {
             _createServiceAccessor = CreateServiceAccessor;
-            Root = new ServiceProviderEngineScope(this, isRoot: true);
+            Root = new ServiceProviderEngineScope(this);
             RuntimeResolver = new CallSiteRuntimeResolver();
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());

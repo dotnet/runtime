@@ -498,15 +498,14 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoMemoryManager *mem_m
 	if (!info)
 		return;
 
-	if (mem_manager) {
-		copy = mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (MonoTrampInfo));
-	} else {
+	if (mem_manager)
+		copy = mono_mem_manager_alloc0 (mem_manager, sizeof (MonoTrampInfo));
+	else
 		copy = g_new0 (MonoTrampInfo, 1);
-	}
 
 	copy->code = info->code;
 	copy->code_size = info->code_size;
-	copy->name = g_strdup (info->name);
+	copy->name = mem_manager ? mono_mem_manager_strdup (mem_manager, info->name) : g_strdup (info->name);
 	copy->method = info->method;
 
 	if (info->unwind_ops) {
@@ -1501,7 +1500,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 				}
 			}
 		}
-		target = (char*)mono_vtable_get_static_field_data (vtable) + patch_info->data.field->offset;
+		target = mono_static_field_get_addr (vtable, patch_info->data.field);
 		break;
 	}
 	case MONO_PATCH_INFO_RVA: {
@@ -3646,7 +3645,7 @@ mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 	}
 
 	if (!vtable_trampolines [index])
-		vtable_trampolines [index] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
+		vtable_trampolines [index] = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
 	return vtable_trampolines [index];
 }
 
@@ -5112,8 +5111,6 @@ mini_get_default_mem_manager (void)
 gpointer
 mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 {
-	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
-
 	static gboolean inited = FALSE;
 	static int generic_virtual_trampolines_size = 0;
 
@@ -5124,7 +5121,7 @@ mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 	}
 	generic_virtual_trampolines_size += size;
 
-	return mono_mem_manager_code_reserve (mem_manager, size);
+	return mono_mem_manager_code_reserve (m_class_get_mem_manager (vtable->klass), size);
 }
 
 MonoException*

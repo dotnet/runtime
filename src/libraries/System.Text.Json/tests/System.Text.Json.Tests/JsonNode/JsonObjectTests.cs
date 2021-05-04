@@ -755,15 +755,25 @@ namespace System.Text.Json.Node.Tests
         public static IEnumerable<object[]> JObjectCollectionData()
         {
             // Ensure that the list-to-dictionary threshold is hit (currently 9).
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 25; i++)
             {
                 yield return CreateArray(i);
+                yield return CreateArray_JsonElement(i);
             }
 
             yield return CreateArray(123);
-            yield return CreateArray(1000);
+            yield return CreateArray_JsonElement(122);
+
+            yield return CreateArray(300);
+            yield return CreateArray_JsonElement(299);
 
             object[] CreateArray(int count)
+            {
+                JsonObject jObject = CreateJsonObject(count);
+                return new object[] { jObject, count };
+            }
+
+            JsonObject CreateJsonObject(int count)
             {
                 var jObject = new JsonObject();
 
@@ -772,8 +782,143 @@ namespace System.Text.Json.Node.Tests
                     jObject[i.ToString()] = i;
                 }
 
+                return jObject;
+            }
+
+            object[] CreateArray_JsonElement(int count)
+            {
+                JsonObject jObject = CreateJsonObject(count);
+                string json = jObject.ToJsonString();
+                jObject = JsonNode.Parse(json).AsObject();
                 return new object[] { jObject, count };
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(JObjectCollectionData))]
+        public static void ChangeCollectionWhileEnumeratingFails(JsonObject jObject, int count)
+        {
+            if (count == 0)
+            {
+                return;
+            }
+
+            Assert.Equal(count, jObject.Count);
+
+            int index = 0;
+
+            // Exception string sample: "Collection was modified; enumeration operation may not execute"
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach(KeyValuePair<string, JsonNode?> node in jObject)
+                {
+                    index++;
+                    jObject.Add("New_A", index);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (KeyValuePair<string, JsonNode?> node in jObject)
+                {
+                    index++;
+                    jObject.Remove(node.Key);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            IEnumerable iEnumerable = jObject;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (KeyValuePair<string, JsonNode?> node in iEnumerable)
+                {
+                    index++;
+                    jObject.Add("New_B", index);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (KeyValuePair<string, JsonNode?> node in iEnumerable)
+                {
+                    index++;
+                    jObject.Remove(node.Key);
+                }
+            });
+            Assert.Equal(1, index);
+
+            IDictionary<string, JsonNode?> iDictionary = jObject;
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (string str in iDictionary.Keys)
+                {
+                    index++;
+                    jObject.Add("New_C", index);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (string str in (IEnumerable)iDictionary.Keys)
+                {
+                    index++;
+                    jObject.Add("New_D", index);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (string str in iDictionary.Keys)
+                {
+                    index++;
+                    jObject.Remove(str);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (JsonNode node in iDictionary.Values)
+                {
+                    index++;
+                    jObject.Add("New_E", index);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (JsonNode node in (IEnumerable)iDictionary.Values)
+                {
+                    index++;
+                    jObject.Add("New_F", index);
+                }
+            });
+            Assert.Equal(1, index);
+
+            index = 0;
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                foreach (JsonNode node in iDictionary.Values)
+                {
+                    index++;
+                    jObject.Clear();
+                }
+            });
+            Assert.Equal(1, index);
         }
     }
 }

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(TargetFrameworkForNETFramework)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -19,7 +19,7 @@
   <ItemGroup>
     <Compile Include="MonoAOTCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
-    <Compile Include="..\Common\NotNullAttribute.cs" Condition="$(TargetFramework.StartsWith('net4'))" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MonoAOTCompiler.props">

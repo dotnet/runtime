@@ -345,9 +345,6 @@
   <data name="SerializerPropertyNameNull" xml:space="preserve">
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
-  <data name="DeserializeDuplicateKey" xml:space="preserve">
-    <value>An item with the same property name '{0}' has already been added.</value>
-  </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
     <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
   </data>
@@ -423,29 +420,8 @@
   <data name="SerializerCycleDetected" xml:space="preserve">
     <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHandler.Preserve on JsonSerializerOptions to support cycles.</value>
   </data>
-  <data name="EmptyStringToInitializeNumber" xml:space="preserve">
-    <value>Expected a number, but instead got empty string.</value>
-  </data>
-  <data name="JsonObjectDuplicateKey" xml:space="preserve">
-    <value>Property with name '{0}' already exists.</value>
-  </data>
-  <data name="PropertyNotFound" xml:space="preserve">
-    <value>Property with name '{0}' not found.</value>
-  </data>
-  <data name="PropertyTypeMismatch" xml:space="preserve">
-    <value>Property with name '{0}' has a different type than expected.</value>
-  </data>
-  <data name="InvalidDuplicatePropertyNameHandling" xml:space="preserve">
-    <value>The DuplicatePropertyNameHandling enum must be set to one of the supported values.</value>
-  </data>
   <data name="InvalidLeadingZeroInNumber" xml:space="preserve">
     <value>Invalid leading zero before '{0}'.</value>
-  </data>
-  <data name="ArrayModifiedDuringIteration" xml:space="preserve">
-    <value>The JSON array was modified during iteration.</value>
-  </data>
-  <data name="NotNodeJsonElementParent" xml:space="preserve">
-    <value>This JsonElement instance was not built from a JsonNode and is immutable.</value>
   </data>
   <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
     <value>Cannot parse a JSON object containing metadata properties like '$id' into an array or immutable collection type. Type '{0}'.</value>

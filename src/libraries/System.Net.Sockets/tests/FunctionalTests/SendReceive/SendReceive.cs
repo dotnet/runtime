@@ -471,7 +471,7 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(5000000, receivedTotal);
                         if (GuaranteedSendOrdering)
                         {
-                            Assert.Equal(sendData, receiveBuffer);
+                            AssertExtensions.SequenceEqual(sendData, receiveBuffer);
                         }
                     }
                 }

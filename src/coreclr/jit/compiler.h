@@ -6246,11 +6246,11 @@ public:
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
     PhaseStatus optFindLoops();      // Finds loops and records them in the loop table
 
-    void optCloneLoops();
+    PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
     void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
-    void optUnrollLoops(); // Unrolls loops (needs to have cost info)
-    void optRemoveRedundantZeroInits();
+    PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
+    void        optRemoveRedundantZeroInits();
 
 protected:
     // This enumeration describes what is killed by a call.
@@ -6580,6 +6580,10 @@ protected:
 
     void optInvertWhileLoop(BasicBlock* block);
 
+private:
+    static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
+    static bool optIterSmallUnderflow(int iterAtExit, var_types decrType);
+
     bool optComputeLoopRep(int        constInit,
                            int        constLimit,
                            int        iterInc,
@@ -6590,7 +6594,6 @@ protected:
                            bool       dupCond,
                            unsigned*  iterCount);
 
-private:
     static fgWalkPreFn optIsVarAssgCB;
 
 protected:
@@ -8297,6 +8300,8 @@ private:
         CORINFO_CLASS_HANDLE Vector64LongHandle;
         CORINFO_CLASS_HANDLE Vector64UIntHandle;
         CORINFO_CLASS_HANDLE Vector64ULongHandle;
+        CORINFO_CLASS_HANDLE Vector64NIntHandle;
+        CORINFO_CLASS_HANDLE Vector64NUIntHandle;
 #endif // defined(TARGET_ARM64)
         CORINFO_CLASS_HANDLE Vector128FloatHandle;
         CORINFO_CLASS_HANDLE Vector128DoubleHandle;
@@ -8308,6 +8313,8 @@ private:
         CORINFO_CLASS_HANDLE Vector128LongHandle;
         CORINFO_CLASS_HANDLE Vector128UIntHandle;
         CORINFO_CLASS_HANDLE Vector128ULongHandle;
+        CORINFO_CLASS_HANDLE Vector128NIntHandle;
+        CORINFO_CLASS_HANDLE Vector128NUIntHandle;
 #if defined(TARGET_XARCH)
         CORINFO_CLASS_HANDLE Vector256FloatHandle;
         CORINFO_CLASS_HANDLE Vector256DoubleHandle;
@@ -8319,6 +8326,8 @@ private:
         CORINFO_CLASS_HANDLE Vector256LongHandle;
         CORINFO_CLASS_HANDLE Vector256UIntHandle;
         CORINFO_CLASS_HANDLE Vector256ULongHandle;
+        CORINFO_CLASS_HANDLE Vector256NIntHandle;
+        CORINFO_CLASS_HANDLE Vector256NUIntHandle;
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
@@ -11406,11 +11415,6 @@ extern const BYTE genTypeAlignments[];
 extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];
 
-/*****************************************************************************/
-
-extern BasicBlock dummyBB;
-
-/*****************************************************************************/
 /*****************************************************************************/
 
 // foreach_block: An iterator over all blocks in the function.

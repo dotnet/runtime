@@ -25,6 +25,8 @@
       release, increase this number by one.
     -->
     <NETStandardPatchVersion>0</NETStandardPatchVersion>
+    <MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>6.0.0-preview.4.21212.1</MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2012Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
@@ -101,7 +103,6 @@
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
     <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemSecurityCryptographyCngVersion>4.7.0</SystemSecurityCryptographyCngVersion>
-    <SystemSecurityCryptographyPkcsVersion>4.7.0</SystemSecurityCryptographyPkcsVersion>
     <SystemSecurityCryptographyOpenSslVersion>4.7.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemTextJsonVersion>6.0.0-preview.5.21226.1</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0-preview.5.21226.1</SystemRuntimeCompilerServicesUnsafeVersion>
@@ -122,14 +123,10 @@
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>6.0.0-beta.21226.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>6.0.0-beta.21226.1</SystemWindowsExtensionsTestDataVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64MIBCRuntimeVersion>99.99.99-master-20210415.12</optimizationwindows_ntx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx86MIBCRuntimeVersion>99.99.99-master-20210415.12</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationlinuxx64MIBCRuntimeVersion>99.99.99-master-20210415.12</optimizationlinuxx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreFxVersion>
-    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreFxVersion>
-    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreCLRVersion>
-    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreCLRVersion>
-    <optimizationPGOCoreCLRVersion>99.99.99-master-20210420.2</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationwindows_ntx64MIBCRuntimeVersion>
+    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationwindows_ntx86MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.21228.9</optimizationlinuxx64MIBCRuntimeVersion>
+    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.21228.9</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
@@ -165,7 +162,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21226.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.5.21253.3</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.5.21226.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->

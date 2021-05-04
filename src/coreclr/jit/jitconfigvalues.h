@@ -475,6 +475,7 @@ CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
 CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
+CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
 // Profile consumption options
 CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods

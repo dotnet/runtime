@@ -124,9 +124,8 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-            return ReadUsingMetadata<TValue>(utf8Json, GetTypeInfo(returnType, options));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
+            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
         }
     }
 }

@@ -23,7 +23,8 @@ typedef enum
 	MintOpFieldToken,
 	MintOpClassToken,
 	MintOpTwoShorts,
-	MintOpShortAndInt
+	MintOpShortAndInt,
+	MintOpShortAndShortBranch
 } MintOpArgType;
 
 #define OPDEF(a,b,c,d,e,f) a,
