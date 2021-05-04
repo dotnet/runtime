@@ -403,39 +403,49 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
         MethodDesc * pMethod = m_JitInfoArray[i].GetMethodDescAndClean();
 
-        BOOL fSuccess = false;
-        EX_TRY
+        if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
-            fSuccess = ZapSig::EncodeMethod(pMethod, NULL, &sigBuilder, (LPVOID)this, (ENCODEMODULE_CALLBACK)MulticoreJitManager::EncodeModuleHelper, NULL);
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(SwallowAllExceptions);
+            BOOL fSuccess = false;
+            EX_TRY
+            {
+                fSuccess = ZapSig::EncodeMethod(pMethod, NULL, &sigBuilder, (LPVOID)this, (ENCODEMODULE_CALLBACK)MulticoreJitManager::EncodeModuleHelper, NULL);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions);
 
-        if (!fSuccess)
-        {
-            skipped++;
-            continue;
-        }
+            if (!fSuccess)
+            {
+                skipped++;
+                continue;
+            }
 
-        DWORD dwLength;
-        BYTE * pBlob = (BYTE*)sigBuilder.GetSignature(&dwLength);
-        if (dwLength >= SIGNATURE_LENGTH_MASK + 1)
-        {
-            skipped++;
-            continue;
-        }
+            DWORD dwLength;
+            BYTE * pBlob = (BYTE*)sigBuilder.GetSignature(&dwLength);
+            if (dwLength >= SIGNATURE_LENGTH_MASK + 1)
+            {
+                skipped++;
+                continue;
+            }
 
-        BYTE * pSignature = new (nothrow) BYTE[dwLength];
-        if (pSignature == nullptr)
-        {
-            skipped++;
-            continue;
-        }
+            BYTE * pSignature = new (nothrow) BYTE[dwLength];
+            if (pSignature == nullptr)
+            {
+                skipped++;
+                continue;
+            }
 
-        memcpy(pSignature, pBlob, dwLength);
-        m_JitInfoArray[i].PackSignatureForMethod(pSignature, dwLength);
+            memcpy(pSignature, pBlob, dwLength);
+            m_JitInfoArray[i].PackSignatureForGenericMethod(pSignature, dwLength);
+        }
+        else
+        {
+            _ASSERTE(m_JitInfoArray[i].IsNonGenericMethodInfo());
+
+            unsigned token = pMethod->GetMemberDef_NoLogging();
+            m_JitInfoArray[i].PackTokenForNonGenericMethod(token);
+        }
     }
 
     {
@@ -492,11 +502,11 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
             DWORD data1 = m_JitInfoArray[i].GetRawModuleData();
             hr = WriteData(pStream, &data1, sizeof(data1));
         }
-        else
+        else if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
             // Method record
             DWORD data1 = m_JitInfoArray[i].GetRawMethodData1();
-            unsigned short data2 = m_JitInfoArray[i].GetRawMethodData2();
+            unsigned short data2 = m_JitInfoArray[i].GetRawMethodData2Generic();
             BYTE * pSignature = m_JitInfoArray[i].GetRawMethodSignature();
 
             if (pSignature == nullptr)
@@ -523,11 +533,25 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
                 hr = WriteData(pStream, &tmp, paddingSize);
             }
         }
+        else
+        {
+            _ASSERTE(m_JitInfoArray[i].IsNonGenericMethodInfo());
+
+            // Method record
+            DWORD data1 = m_JitInfoArray[i].GetRawMethodData1();
+            unsigned data2 = m_JitInfoArray[i].GetRawMethodData2NonGeneric();
+
+            hr = WriteData(pStream, &data1, sizeof(data1));
+            if (SUCCEEDED(hr))
+            {
+                hr = WriteData(pStream, &data2, sizeof(data2));
+            }
+        }
     }
 
     for (LONG i = 0; i < m_JitInfoCount; i++)
     {
-        if (m_JitInfoArray[i].IsMethodInfo())
+        if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
             delete[] m_JitInfoArray[i].GetRawMethodSignature();
         }

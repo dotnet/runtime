@@ -50,7 +50,8 @@ enum
     MULTICOREJIT_HEADER_RECORD_ID           = 1,
     MULTICOREJIT_MODULE_RECORD_ID           = 2,
     MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID = 3,
-    MULTICOREJIT_METHOD_RECORD_ID           = 4
+    MULTICOREJIT_METHOD_RECORD_ID           = 4,
+    MULTICOREJIT_GENERICMETHOD_RECORD_ID    = 5,
 };
 
 inline unsigned Pack8_24(unsigned up, unsigned low)
@@ -75,7 +76,8 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 // <HeaderRecord>::=     <recordType=MULTICOREJIT_HEADER_RECORD_ID> <3byte_recordSize> <version> <timeStamp> <moduleCount> <methodCount> <DependencyCount> <unsigned short counter>*14 <unsigned counter>*3
 // <ModuleRecord>::=     <recordType=MULTICOREJIT_MODULE_RECORD_ID> <3byte_recordSize> <ModuleVersion> <JitMethodCount> <loadLevel> <lenModuleName> char*lenModuleName <padding>
 // <ModuleDependency>::= <recordType=MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID> <loadLevel_1byte> <moduleIndex_2bytes>
-// <Method> ::=          <recordType=MULTICOREJIT_METHOD_RECORD_ID> <methodFlags_1byte> <moduleIndex_2byte> <sigSize_2byte> <signature> <optional padding>
+// <GenericMethod>::=    <recordType=MULTICOREJIT_GENERICMETHOD_RECORD_ID> <methodFlags_1byte> <moduleIndex_2byte> <sigSize_2byte> <signature> <optional padding>
+// <NonGenericMethod>::= <recordType=MULTICOREJIT_METHOD_RECORD_ID> <methodFlags_1byte> <moduleIndex_2byte> <methodToken_4byte>
 //
 //
 // Actual profile has two representations: internal and the one, that is stored in file.
@@ -99,10 +101,10 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 //     RecorderInfo::ptr is set to pointer to MethodDesc.
 //     RecorderInfo::data1 is non-zero and represents additional info for method.
 //
-//     Info for method includes module index and method flags (like JIT_BY_APP_THREAD_TAG, etc.), with some additional data in higher bits (MULTICOREJIT_METHOD_RECORD_ID tag).
+//     Info for method includes module index and method flags (like JIT_BY_APP_THREAD_TAG, etc.), with some additional data in higher bits (tag).
 //     - bits 0-15 store module index
 //     - bits 16-23 store method flags
-//     - bits 24-31 store tag (MULTICOREJIT_METHOD_RECORD_ID).
+//     - bits 24-31 store tag (MULTICOREJIT_METHOD_RECORD_ID or MULTICOREJIT_GENERICMETHOD_RECORD_ID).
 //
 // II. Profile in file
 //
@@ -112,12 +114,18 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 //     For modules, no preprocessing of RecorderInfo is required, RecorderInfo::data1 is written to file as JifInfRecord.
 //
 //   2. Methods.
-//     For methods, binary signature is computed and RecorderInfo contents are changed.
-//     a) RecorderInfo::data1 doesn't change.
-//     b) RecorderInfo::data2 stores signature length.
-//     c) RecorderInfo::ptr is replaced with pointer to method's binary signature.
+//     2.1. For generic methods, binary signature is computed and RecorderInfo contents are changed.
+//       a) RecorderInfo::data1 doesn't change.
+//       b) RecorderInfo::data2 stores signature length.
+//       c) RecorderInfo::ptr is replaced with pointer to method's binary signature.
 //
-//     File write order: RecorderInfo::data1, RecorderInfo::data2, signature, extra alignment (this is optional). All of these represent JitInfRecord.
+//     2.2 For non-generic methods, method token is obtained and RecorderInfo contents are changed.
+//       a) RecorderInfo::data1 doesn't change.
+//       b) RecorderInfo::data2 stores method token.
+//       c) RecorderInfo::ptr doesn't change.
+//
+//     File write order for generic methods: RecorderInfo::data1, RecorderInfo::data2, signature, extra alignment (this is optional). All of these represent JitInfRecord.
+//     File write order for non-generic methods: RecorderInfo::data1, RecorderInfo::data2. All of these represent JitInfRecord.
 
 struct HeaderRecord
 {
@@ -289,8 +297,9 @@ private:
 
     HRESULT HandleModuleRecord(const ModuleRecord * pMod);
     HRESULT HandleModuleInfoRecord(unsigned moduleTo, unsigned level);
-    HRESULT HandleMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length);
-    void CompileMethodInfoRecord(Module *pModule, MethodDesc *pMethod);
+    HRESULT HandleNonGenericMethodInfoRecord(unsigned moduleIndex, unsigned token);
+    HRESULT HandleGenericMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length);
+    void CompileMethodInfoRecord(Module *pModule, MethodDesc *pMethod, bool isGeneric);
 
     bool CompileMethodDesc(Module * pModule, MethodDesc * pMD);
     HRESULT PlayProfile();
@@ -348,9 +357,9 @@ struct RecorderModuleInfo
 
 struct RecorderInfo
 {
-    unsigned       data1;
-    unsigned short data2;
-    BYTE *         ptr;
+    unsigned data1;
+    unsigned data2;
+    BYTE *   ptr;
 
     RecorderInfo()
     {
@@ -368,12 +377,27 @@ struct RecorderInfo
         return data1 != 0;
     }
 
-    bool IsMethodInfo()
+    bool IsGenericMethodInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsPartiallyInitialized());
+        return (data1 >> RECORD_TYPE_OFFSET) == MULTICOREJIT_GENERICMETHOD_RECORD_ID;
+    }
+
+    bool IsNonGenericMethodInfo()
     {
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsPartiallyInitialized());
         return (data1 >> RECORD_TYPE_OFFSET) == MULTICOREJIT_METHOD_RECORD_ID;
+    }
+
+    bool IsMethodInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return IsGenericMethodInfo() || IsNonGenericMethodInfo();
     }
 
     bool IsModuleInfo()
@@ -398,7 +422,14 @@ struct RecorderInfo
         }
         else
         {
-            return data2 != 0 && ptr != nullptr;
+            if (IsNonGenericMethodInfo())
+            {
+                return data2 != 0;
+            }
+            else
+            {
+                return data2 != 0 && ptr != nullptr;
+            }
         }
     }
 
@@ -418,7 +449,7 @@ struct RecorderInfo
         return data1 & MODULE_MASK;
     }
 
-    unsigned GetModuleLoadLevel()
+    int GetModuleLoadLevel()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -434,19 +465,28 @@ struct RecorderInfo
         return data1;
     }
 
-    unsigned short GetRawMethodData2()
+    unsigned GetRawMethodData2NonGeneric()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsNonGenericMethodInfo());
         return data2;
+    }
+
+    unsigned short GetRawMethodData2Generic()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsGenericMethodInfo());
+        _ASSERTE(data2 < SIGNATURE_LENGTH_MASK + 1);
+        return (unsigned short) data2;
     }
 
     BYTE * GetRawMethodSignature()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsGenericMethodInfo());
         return ptr;
     }
 
@@ -454,7 +494,7 @@ struct RecorderInfo
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsGenericMethodInfo());
         _ASSERTE(IsFullyInitialized());
 
         return data2;
@@ -464,7 +504,7 @@ struct RecorderInfo
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsGenericMethodInfo());
         _ASSERTE(IsFullyInitialized());
 
         unsigned unalignedrecSize = GetMethodSignatureSize() + sizeof(DWORD) + sizeof(unsigned short);
@@ -489,11 +529,11 @@ struct RecorderInfo
         return ret;
     }
 
-    void PackSignatureForMethod(BYTE *pSignature, unsigned signatureLength)
+    void PackSignatureForGenericMethod(BYTE *pSignature, unsigned signatureLength)
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IsMethodInfo());
+        _ASSERTE(IsGenericMethodInfo());
         _ASSERTE(data2 == 0);
         _ASSERTE(ptr == nullptr);
 
@@ -502,6 +542,19 @@ struct RecorderInfo
 
         data2 = signatureLength & SIGNATURE_LENGTH_MASK;
         ptr = pSignature;
+
+        _ASSERTE(IsFullyInitialized());
+    }
+
+    void PackTokenForNonGenericMethod(unsigned token)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(IsNonGenericMethodInfo());
+        _ASSERTE(data2 == 0);
+        _ASSERTE(ptr == nullptr);
+
+        data2 = token;
 
         _ASSERTE(IsFullyInitialized());
     }
@@ -517,7 +570,15 @@ struct RecorderInfo
         _ASSERTE(moduleIndex < MAX_MODULES);
         _ASSERTE(pMethod != NULL);
 
-        data1 = Pack8_24(MULTICOREJIT_METHOD_RECORD_ID, moduleIndex);
+        unsigned tag = MULTICOREJIT_METHOD_RECORD_ID;
+
+        if (!pMethod->IsTypicalSharedInstantiation())
+        {
+            // Generic method
+            tag = MULTICOREJIT_GENERICMETHOD_RECORD_ID;
+        }
+
+        data1 = Pack8_24(tag, moduleIndex);
 
         if (application)
         {
