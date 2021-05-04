@@ -1306,8 +1306,6 @@ namespace System.Collections.Concurrent
 
         #endregion
 
-            Debug.Assert(fromInclusive <= toExclusive);
-
         /// <summary>
         /// Gets a collection containing the keys in the dictionary.
         /// </summary>
