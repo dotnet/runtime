@@ -1980,7 +1980,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     }
     genProduceReg(lclNode);
 #else  // !UNIX_AMD64_ABI
-    assert(!"Multireg store to SIMD reg not supported on X64 Windows");
+    assert(!"Multireg store to SIMD reg not supported on Windows");
 #endif // !UNIX_AMD64_ABI
 }
 #endif // FEATURE_SIMD
@@ -3531,7 +3531,6 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
 
     // add it to the absolute address of fgFirstBB
-    compiler->fgFirstBB->bbFlags |= BBF_JMP_TARGET;
     GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, tmpReg);
     GetEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, baseReg, tmpReg);
     // jmp baseReg
@@ -3558,7 +3557,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_JMP_TARGET);
+        noway_assert(target->bbFlags & BBF_HAS_LABEL);
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -4095,15 +4094,27 @@ void CodeGen::genCodeForShift(GenTree* tree)
         emitAttr size = emitTypeSize(tree);
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
-        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
+        ssize_t intCon = shiftBy->AsIntConCommon()->IconValue();
+        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && (intCon == 1 || intCon == 2 || intCon == 3))
         {
-            if (tree->GetRegNum() == operandReg)
+            switch (intCon)
             {
-                GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+                case 1:
+                    if (tree->GetRegNum() == operandReg)
+                    {
+                        GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+                    }
+                    break;
+                case 2:
+                    GetEmitter()->emitIns_R_AX(INS_lea, size, tree->GetRegNum(), operandReg, 4, 0);
+                    break;
+                case 3:
+                    GetEmitter()->emitIns_R_AX(INS_lea, size, tree->GetRegNum(), operandReg, 8, 0);
+                    break;
             }
         }
         else
