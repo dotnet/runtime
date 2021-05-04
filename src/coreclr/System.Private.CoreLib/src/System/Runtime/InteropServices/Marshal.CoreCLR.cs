@@ -236,9 +236,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object? obj);
 
-        internal static bool IsBuiltInComSupported { get; } = InitializeIsBuiltInComSupported();
-
-        private static bool InitializeIsBuiltInComSupported() => IsBuiltInComSupportedInternal();
+        internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
 #if TARGET_WINDOWS
         /// <summary>
@@ -781,6 +779,7 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
+        // Revist after https://github.com/mono/linker/issues/1989 is fixed
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
