@@ -338,51 +338,41 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
         return FAIL;
 
     JNIEnv* env = GetJNIEnv();
+    INIT_LOCALS(bn, N, E, D, P, Q, DMP1, DMQ1, IQMP);
+    INIT_LOCALS(loc, algName, keyFactory, rsaPubKeySpec, rsaPrivateKeySpec);
 
-    jobject nObj = AndroidCryptoNative_BigNumFromBinary(n, nLength);
-    jobject eObj = AndroidCryptoNative_BigNumFromBinary(e, eLength);
+    bn[N] = AndroidCryptoNative_BigNumFromBinary(n, nLength);
+    bn[E] = AndroidCryptoNative_BigNumFromBinary(e, eLength);
 
     rsa->keyWidthInBits = nLength * 8;
 
-    jobject algName = JSTRING("RSA");
-    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algName);
+    loc[algName] = JSTRING("RSA");
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
 
     if (dLength > 0)
     {
         // private key section
-        jobject dObj = AndroidCryptoNative_BigNumFromBinary(d, dLength);
-        jobject pObj = AndroidCryptoNative_BigNumFromBinary(p, pLength);
-        jobject qObj = AndroidCryptoNative_BigNumFromBinary(q, qLength);
-        jobject dmp1Obj = AndroidCryptoNative_BigNumFromBinary(dmp1, dmp1Length);
-        jobject dmq1Obj = AndroidCryptoNative_BigNumFromBinary(dmq1, dmq1Length);
-        jobject iqmpObj = AndroidCryptoNative_BigNumFromBinary(iqmp, iqmpLength);
+        bn[D] = AndroidCryptoNative_BigNumFromBinary(d, dLength);
+        bn[P] = AndroidCryptoNative_BigNumFromBinary(p, pLength);
+        bn[Q] = AndroidCryptoNative_BigNumFromBinary(q, qLength);
+        bn[DMP1] = AndroidCryptoNative_BigNumFromBinary(dmp1, dmp1Length);
+        bn[DMQ1] = AndroidCryptoNative_BigNumFromBinary(dmq1, dmq1Length);
+        bn[IQMP] = AndroidCryptoNative_BigNumFromBinary(iqmp, iqmpLength);
 
-        jobject rsaPrivateKeySpec = (*env)->NewObject(env, g_RSAPrivateCrtKeySpecClass, g_RSAPrivateCrtKeySpecCtor,
-            nObj, eObj, dObj, pObj, qObj, dmp1Obj, dmq1Obj, iqmpObj);
+        loc[rsaPrivateKeySpec] = (*env)->NewObject(env, g_RSAPrivateCrtKeySpecClass, g_RSAPrivateCrtKeySpecCtor,
+            bn[N], bn[E], bn[D], bn[P], bn[Q], bn[DMP1], bn[DMQ1], bn[IQMP]);
 
         ReleaseGRef(env, rsa->privateKey);
-        rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, rsaPrivateKeySpec));
-
-        (*env)->DeleteGlobalRef(env, dObj);
-        (*env)->DeleteGlobalRef(env, pObj);
-        (*env)->DeleteGlobalRef(env, qObj);
-        (*env)->DeleteGlobalRef(env, dmp1Obj);
-        (*env)->DeleteGlobalRef(env, dmq1Obj);
-        (*env)->DeleteGlobalRef(env, iqmpObj);
-        (*env)->DeleteLocalRef(env, rsaPrivateKeySpec);
+        rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[rsaPrivateKeySpec]));
     }
 
-    jobject rsaPubKeySpec = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, nObj, eObj);
+    loc[rsaPubKeySpec] = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, bn[N], bn[E]);
 
     ReleaseGRef(env, rsa->publicKey);
-    rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, rsaPubKeySpec));
+    rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[rsaPubKeySpec]));
 
-    (*env)->DeleteLocalRef(env, algName);
-    (*env)->DeleteLocalRef(env, keyFactory);
-    (*env)->DeleteGlobalRef(env, nObj);
-    (*env)->DeleteGlobalRef(env, eObj);
-    (*env)->DeleteLocalRef(env, rsaPubKeySpec);
-
+    RELEASE_LOCALS(bn, env);
+    RELEASE_LOCALS(loc, env);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 

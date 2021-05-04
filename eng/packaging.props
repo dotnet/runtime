@@ -27,6 +27,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <NuSpecOutputPath Condition="'$(NuSpecOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'specs'))</NuSpecOutputPath>
     <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
   </PropertyGroup>
 

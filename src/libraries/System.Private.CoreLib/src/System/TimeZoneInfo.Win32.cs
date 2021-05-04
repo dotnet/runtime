@@ -34,6 +34,7 @@ namespace System
         private const string LastEntryValue = "LastEntry";
 
         private const int MaxKeyLength = 255;
+        private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
         private sealed partial class CachedData
         {
@@ -105,29 +106,10 @@ namespace System
             }
         }
 
-        private static unsafe string? GetAlternativeId(string id)
+        private static string? GetAlternativeId(string id, out bool idIsIana)
         {
-            if (!GlobalizationMode.Invariant && !GlobalizationMode.UseNls)
-            {
-                foreach (char c in id)
-                {
-                    // ICU uses some characters as a separator and trim the id at that character.
-                    // while we should fail if the Id contained one of these characters.
-                    if (c == '\\' || c == '\n' || c == '\r')
-                    {
-                        return null;
-                    }
-                }
-
-                char* buffer = stackalloc char[100];
-                int length = Interop.Globalization.IanaIdToWindowsId(id, buffer, 100);
-                if (length > 0)
-                {
-                    return new string(buffer, 0, length);
-                }
-            }
-
-            return null;
+            idIsIana = true;
+            return TryConvertIanaIdToWindowsId(id, out string? windowsId) ? windowsId : null;
         }
 
         private TimeZoneInfo(in TIME_ZONE_INFORMATION zone, bool dstDisabled)
@@ -1037,6 +1019,12 @@ namespace System
                 standardDisplayName = InvariantUtcStandardDisplayName;
 
             return standardDisplayName;
+        }
+
+        // Helper function to get the full display name for the UTC static time zone instance
+        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        {
+            return $"(UTC) {standardDisplayName}";
         }
     }
 }

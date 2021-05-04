@@ -4,4 +4,10 @@
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
 </Project>

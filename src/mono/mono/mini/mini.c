@@ -2056,7 +2056,7 @@ mono_codegen (MonoCompile *cfg)
 		 * overlapping address ranges, so allocate all code from the code manager
 		 * of the root domain. (#666152).
 		 */
-		code_mem_manager = mono_domain_memory_manager (mono_get_root_domain ());
+		code_mem_manager = get_default_mem_manager ();
 	else
 		code_mem_manager = cfg->mem_manager;
 

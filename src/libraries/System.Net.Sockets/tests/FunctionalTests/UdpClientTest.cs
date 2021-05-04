@@ -255,7 +255,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // BSD like doesn't have an equivalent of DontFragment
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "BSD like doesn't have an equivalent of DontFragment")]
         [Fact]
         public void DontFragment_Roundtrips()
         {

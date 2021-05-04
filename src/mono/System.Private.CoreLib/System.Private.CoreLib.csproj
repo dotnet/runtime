@@ -258,8 +258,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
-
-      <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />

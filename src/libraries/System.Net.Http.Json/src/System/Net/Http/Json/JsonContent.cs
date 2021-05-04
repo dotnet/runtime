@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !NETCOREAPP
 using System.Diagnostics;
+#endif
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -9,23 +12,28 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+    Target = "M:System.Net.Http.Json.JsonContent.<SerializeToStreamAsyncCore>d__13.MoveNext()",
+    Scope = "member",
+    Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as UnconditionalSuppressMessage.")]
+
 namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        internal const string JsonMediaType = "application/json";
-        internal const string JsonType = "application";
-        internal const string JsonSubtype = "json";
-        private static MediaTypeHeaderValue DefaultMediaType
-            => new MediaTypeHeaderValue(JsonMediaType) { CharSet = "utf-8" };
-
         internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
+        [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)]
         public Type ObjectType { get; }
         public object? Value { get; }
 
-        private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        private JsonContent(
+            object? inputValue,
+            [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType,
+            MediaTypeHeaderValue? mediaType,
+            JsonSerializerOptions? options)
         {
             if (inputType == null)
             {
@@ -39,14 +47,16 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             ObjectType = inputType;
-            Headers.ContentType = mediaType ?? DefaultMediaType;
+            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
             _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
-        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        public static JsonContent Create<[DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
-        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        public static JsonContent Create(object? inputValue, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
@@ -58,9 +68,11 @@ namespace System.Net.Http.Json
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is annotated with RequiresUnreferencedCode.")]
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
@@ -125,35 +137,6 @@ namespace System.Net.Http.Json
 #endif
                 }
             }
-        }
-
-        internal static Encoding? GetEncoding(string? charset)
-        {
-            Encoding? encoding = null;
-
-            if (charset != null)
-            {
-                try
-                {
-                    // Remove at most a single set of quotes.
-                    if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"')
-                    {
-                        encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
-                    }
-                    else
-                    {
-                        encoding = Encoding.GetEncoding(charset);
-                    }
-                }
-                catch (ArgumentException e)
-                {
-                    throw new InvalidOperationException(SR.CharSetInvalid, e);
-                }
-
-                Debug.Assert(encoding != null);
-            }
-
-            return encoding;
         }
     }
 }

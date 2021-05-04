@@ -20,7 +20,6 @@ set(UTILCODE_COMMON_SOURCES
   stgpooli.cpp
   stgpoolreadonly.cpp
   utsem.cpp
-  peinformation.cpp
   check.cpp
   log.cpp
   arraylist.cpp

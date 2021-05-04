@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -211,6 +212,23 @@ namespace Microsoft.Extensions.DependencyInjection
             // Assert
             Assert.Empty(services);
             Assert.IsType<List<IFoo>>(services);
+        }
+
+        [Fact]
+        public async Task CreateAsyncScope_Returns_AsyncServiceScope_Wrapping_ServiceScope()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IFoo, Foo1>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            await using var scope = serviceProvider.CreateAsyncScope();
+
+            // Act
+            var service = scope.ServiceProvider.GetService<IFoo>();
+
+            // Assert
+            Assert.IsType<Foo1>(service);
         }
 
         private static IServiceProvider CreateTestServiceProvider(int count)

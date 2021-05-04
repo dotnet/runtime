@@ -50,6 +50,7 @@
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
+    <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestPackages)' == 'true'">
@@ -104,7 +105,7 @@
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+  <PropertyGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
@@ -255,6 +256,8 @@
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
     </PropertyGroup>
 
+    <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
+
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
       <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
         $(HelixPostCommands);
@@ -266,7 +269,7 @@
       </HelixPostCommands>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <ItemGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDir)"                             Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />

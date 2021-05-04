@@ -18,6 +18,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/icall-internals.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/metadata-internals.h>
@@ -205,6 +206,24 @@ typedef struct {
 
 #define PROF_TLS_SET(VAL) mono_thread_info_set_tools_data (VAL)
 #define PROF_TLS_GET mono_thread_info_get_tools_data
+
+static int32_t
+domain_get_id (MonoDomain *domain)
+{
+	return 1;
+}
+
+static int32_t
+context_get_id (MonoAppContext *context)
+{
+	return 1;
+}
+
+static int32_t
+context_get_domain_id (MonoAppContext *context)
+{
+	return 1;
+}
 
 static uintptr_t
 thread_id (void)
@@ -1298,10 +1317,10 @@ gc_root_register (MonoProfiler *prof, const mono_byte *start, size_t size, MonoG
 	switch (source) {
 	case MONO_ROOT_SOURCE_DOMAIN:
 		if (key)
-			key = (void *)(uintptr_t) mono_domain_get_id ((MonoDomain *) key);
+			key = (void *)(uintptr_t) domain_get_id ((MonoDomain *) key);
 		break;
 	case MONO_ROOT_SOURCE_CONTEXT_STATIC:
-		key = (void *)(uintptr_t) mono_context_get_id ((MonoAppContext *) key);
+		key = (void *)(uintptr_t) context_get_id ((MonoAppContext *) key);
 		break;
 	default:
 		break;
@@ -1906,7 +1925,7 @@ vtable_loaded (MonoProfiler *prof, MonoVTable *vtable)
 {
 	MonoClass *klass = mono_vtable_class_internal (vtable);
 	MonoDomain *domain = mono_vtable_domain_internal (vtable);
-	uint32_t domain_id = domain ? mono_domain_get_id (domain) : 0;
+	uint32_t domain_id = domain ? domain_get_id (domain) : 0;
 
 	ENTER_LOG (&vtable_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -2211,7 +2230,7 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain)
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_ptr (logbuffer, (void*)(uintptr_t) domain_get_id (domain));
 
 	EXIT_LOG;
 }
@@ -2227,7 +2246,7 @@ domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 
 	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_ptr (logbuffer, (void*)(uintptr_t) domain_get_id (domain));
 
 	EXIT_LOG;
 }
@@ -2246,7 +2265,7 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 
 	emit_event (logbuffer, TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_ptr (logbuffer, (void*)(uintptr_t) domain_get_id (domain));
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
 
@@ -2265,8 +2284,8 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_CONTEXT);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_domain_id (context));
 
 	EXIT_LOG;
 }
@@ -2283,8 +2302,8 @@ context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 
 	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_CONTEXT);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_domain_id (context));
 
 	EXIT_LOG;
 }
@@ -3505,7 +3524,7 @@ handle_dumper_queue_entry (void)
 				g_assert (domain && "What happened to the domain pointer?");
 				g_assert (address && "What happened to the instruction pointer?");
 
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
+				MonoJitInfo *ji = mono_jit_info_table_find_internal (address, TRUE, FALSE);
 
 				if (ji)
 					method = mono_jit_info_get_method (ji);

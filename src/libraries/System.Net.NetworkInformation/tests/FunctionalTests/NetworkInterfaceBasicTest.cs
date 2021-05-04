@@ -274,7 +274,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~(TestPlatforms.OSX|TestPlatforms.FreeBSD))]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)

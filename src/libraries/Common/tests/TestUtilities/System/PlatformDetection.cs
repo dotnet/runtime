@@ -24,6 +24,7 @@ namespace System
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
+        public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -85,7 +86,7 @@ namespace System
 
             }
         }
-        
+
         public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
@@ -134,15 +135,37 @@ namespace System
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+
+        // Changed to `true` when linking
+        public static bool IsBuiltWithAggressiveTrimming => false;
+
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
-        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+        // Android - Platform supports alpn from API level 29 and higher
+        private static Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
+        private static bool GetAlpnSupport()
+        {
+            if (IsWindows && !IsWindows7 && !IsNetFramework)
+            {
+                return true;
+            }
 
-        public static bool SupportsAlpn => (IsWindows && !IsWindows7 && !IsNetFramework) ||
-            (IsOpenSslSupported &&
-            (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
+            if (IsOpenSslSupported)
+            {
+                return OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
+            }
 
+            if (IsAndroid)
+            {
+                return Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration();
+            }
+
+            return false;
+        }
+
+        public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
 
         private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
@@ -293,6 +316,13 @@ namespace System
             return ret == 1;
         }
 
+        private static readonly Lazy<SslProtocols> s_androidSupportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
+        private static bool AndroidGetSslProtocolSupport(SslProtocols protocol)
+        {
+            Debug.Assert(IsAndroid);
+            return (protocol & s_androidSupportedSslProtocols.Value) == protocol;
+        }
+
         private static bool GetTls10Support()
         {
             // on Windows, macOS, and Android TLS1.0/1.1 are supported.
@@ -348,7 +378,7 @@ namespace System
                         return c == 1 && s == 1;
                     }
                 }
-                catch { };
+                catch { }
                 // assume no if positive entry is missing on older Windows
                 // Latest insider builds have TLS 1.3 enabled by default.
                 // The build number is approximation.
@@ -358,6 +388,14 @@ namespace System
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
+            }
+            else if (IsAndroid)
+            {
+#if NETFRAMEWORK
+                return false;
+#else
+                return AndroidGetSslProtocolSupport(SslProtocols.Tls13);
+#endif
             }
             else if (IsOpenSslSupported)
             {
@@ -370,10 +408,10 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
-            // Browser is always using interpreter right now
+#if NETCOREAPP
             if (IsBrowser)
-                return true;
-
+                return RuntimeFeature.IsDynamicCodeSupported;
+#endif
             // This is a temporary solution because mono does not support interpreter detection
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");

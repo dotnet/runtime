@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
@@ -18,11 +19,16 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly IEnumerableConverter<IEnumerable> s_converterForIEnumerable = new IEnumerableConverter<IEnumerable>();
         private static readonly IListConverter<IList> s_converterForIList = new IListConverter<IList>();
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public IEnumerableConverterFactory() { }
+
         public override bool CanConvert(Type typeToConvert)
         {
             return typeof(IEnumerable).IsAssignableFrom(typeToConvert);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type converterType;

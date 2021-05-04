@@ -134,12 +134,34 @@ namespace System.Security.Cryptography
             Span<byte> t = Span<byte>.Empty;
             Span<byte> remainingOutput = output;
 
+            const int MaxStackInfoBuffer = 64;
+            Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
+            ReadOnlySpan<byte> infoBuffer = stackalloc byte[0];
+            byte[]? rentedTempInfoBuffer = null;
+
+            if (output.Overlaps(info))
+            {
+                if (info.Length > MaxStackInfoBuffer)
+                {
+                    rentedTempInfoBuffer = CryptoPool.Rent(info.Length);
+                    tempInfoBuffer = rentedTempInfoBuffer;
+                }
+
+                tempInfoBuffer = tempInfoBuffer.Slice(0, info.Length);
+                info.CopyTo(tempInfoBuffer);
+                infoBuffer = tempInfoBuffer;
+            }
+            else
+            {
+                infoBuffer = info;
+            }
+
             using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, prk))
             {
                 for (int i = 1; ; i++)
                 {
                     hmac.AppendData(t);
-                    hmac.AppendData(info);
+                    hmac.AppendData(infoBuffer);
                     counter = (byte)i;
                     hmac.AppendData(counterSpan);
 
@@ -162,6 +184,11 @@ namespace System.Security.Cryptography
                         break;
                     }
                 }
+            }
+
+            if (rentedTempInfoBuffer is not null)
+            {
+                CryptoPool.Return(rentedTempInfoBuffer, clearSize: info.Length);
             }
         }
 

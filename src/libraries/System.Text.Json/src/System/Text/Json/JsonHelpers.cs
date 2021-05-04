@@ -4,15 +4,18 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-        // Copy of Array.MaxArrayLength. For byte arrays the limit is slightly larger
-        private const int MaxArrayLength = 0X7FEFFFFF;
+        // Members accessed by the serializer when deserializing.
+        public const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
+            DynamicallyAccessedMemberTypes.PublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicProperties |
+            DynamicallyAccessedMemberTypes.PublicFields;
 
         /// <summary>
         /// Returns the span for the given reader.
@@ -121,6 +124,28 @@ namespace System.Text.Json
 #endif
         }
 
+        /// <summary>
+        /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
+        /// </summary>
+        public static Dictionary<TKey, TValue> CreateDictionaryFromCollection<TKey, TValue>(
+            IEnumerable<KeyValuePair<TKey, TValue>> collection,
+            IEqualityComparer<TKey> comparer)
+            where TKey : notnull
+        {
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            var dictionary = new Dictionary<TKey, TValue>(comparer);
+
+            foreach (KeyValuePair<TKey, TValue> item in collection)
+            {
+                dictionary.Add(item.Key, item.Value);
+            }
+
+            return dictionary;
+#else
+            return new Dictionary<TKey, TValue>(collection: collection, comparer);
+#endif
+        }
+
         public static bool IsFinite(double value)
         {
 #if BUILDING_INBOX_LIBRARY
@@ -139,18 +164,10 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
-            IsInRangeInclusive((int)handling, 0,
-                (int)(
-                JsonNumberHandling.Strict |
-                JsonNumberHandling.AllowReadingFromString |
-                JsonNumberHandling.WriteAsString |
-                JsonNumberHandling.AllowNamedFloatingPointLiterals));
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
-            if (length > MaxArrayLength)
+            if (length > 0X7FEFFFFF) // prior to .NET 6, max array length for sizeof(T) != 1 (size == 1 is larger)
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }

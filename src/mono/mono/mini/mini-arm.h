@@ -404,6 +404,10 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
+#if defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
+#define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
+#endif
+
 void
 mono_arm_throw_exception (MonoObject *exc, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips);
 

@@ -205,9 +205,6 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
-#include "../binder/inc/coreclrbindercommon.h"
-
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -305,8 +302,8 @@ HRESULT EnsureEEStarted()
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-        // Initialize our configuration cache to avoid unuseful probing.
-        CLRConfig::InitCache();
+        // Initialize our configuration.
+        CLRConfig::Initialize();
 
         BOOL bStarted=FALSE;
 
@@ -758,9 +755,6 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 #endif
-
-        // Initialize the default Assembly Binder and the binder infrastructure
-        IfFailGoLog(CCoreCLRBinderHelper::Init());
 
         if (g_pConfig != NULL)
         {

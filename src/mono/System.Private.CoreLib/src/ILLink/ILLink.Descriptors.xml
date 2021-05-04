@@ -120,7 +120,7 @@
 		</type>
 
 		<!-- domain.c: mono_defaults.enum_class -->
-		<type fullname="System.Enum" preserve="fields" />
+		<type fullname="System.Enum" preserve="nothing" />
 
 		<!-- loader.c: returned (as a string) from mono_lookup_pinvoke_call and used in … -->
 		<type fullname="System.EntryPointNotFoundException">
@@ -335,7 +335,11 @@
 		<type fullname="System.STAThreadAttribute" />
 
 		<!-- domain.c: mono_defaults.string_class -->
-		<type fullname="System.String" preserve="fields">
+		<type fullname="System.String">
+			<!-- object-internals.h: struct _MonoString -->
+			<field name="_stringLength" />
+			<field name="_firstChar" />
+
 			<!-- method-to-ir.c: mini_redirect_call -->
 			<method name="FastAllocateString" />
 			<!-- method-to-it.c: mini_emit_initobj -->
@@ -458,8 +462,6 @@
 
 		<!-- appdomain.c (ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies) -->
 		<type fullname="System.Reflection.Assembly" preserve="fields"/>
-
-		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >

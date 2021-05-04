@@ -26,12 +26,12 @@ public:
         // Default options.
         Default = 0,
 
-        // If set, do not prepend "COMPlus_" when doing environment variable lookup.
-        DontPrependCOMPlus_ = 0x1,
+        // If set, do not prepend prefix when doing environment variable lookup.
+        DontPrependPrefix = 0x1,
 
         // Remove any whitespace at beginning and end of value.  (Only applicable for
         // *string* configuration values.)
-        TrimWhiteSpaceFromStringValue = 0x2,
+        TrimWhiteSpaceFromStringValue = 0x2
     };
 
     // Struct used to store information about where/how to find a Config DWORD.
@@ -132,8 +132,8 @@ public:
     // Free a string returned by GetConfigValue
     static void FreeConfigString(__in __in_z LPWSTR name);
 
-    // Populate the caches with current state to improve lookup times.
-    static void InitCache();
+    // Initialize the configuration.
+    static void Initialize();
 };
 
 inline CLRConfig::LookupOptions operator|(CLRConfig::LookupOptions lhs, CLRConfig::LookupOptions rhs)

@@ -5,12 +5,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicStatusCodes
     {
-        internal static uint Success => OperatingSystem.IsWindows() ? Windows.Success : Linux.Success;
-        internal static uint Pending => OperatingSystem.IsWindows() ? Windows.Pending : Linux.Pending;
-        internal static uint InternalError => OperatingSystem.IsWindows() ? Windows.InternalError : Linux.InternalError;
+        internal static uint Success => OperatingSystem.IsWindows() ? Windows.Success : Posix.Success;
+        internal static uint Pending => OperatingSystem.IsWindows() ? Windows.Pending : Posix.Pending;
+        internal static uint InternalError => OperatingSystem.IsWindows() ? Windows.InternalError : Posix.InternalError;
+        internal static uint InvalidState => OperatingSystem.IsWindows() ? Windows.InvalidState : Posix.InvalidState;
+        internal static uint HandshakeFailure => OperatingSystem.IsWindows() ? Windows.HandshakeFailure : Posix.HandshakeFailure;
 
         // TODO return better error messages here.
-        public static string GetError(uint status) => OperatingSystem.IsWindows() ? Windows.GetError(status) : Linux.GetError(status);
+        public static string GetError(uint status) => OperatingSystem.IsWindows() ? Windows.GetError(status) : Posix.GetError(status);
 
         private static class Windows
         {
@@ -69,7 +71,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        private static class Linux
+        private static class Posix
         {
             internal const uint Success = 0;
             internal const uint Pending = unchecked((uint)-2);

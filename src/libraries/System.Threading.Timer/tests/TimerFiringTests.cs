@@ -284,7 +284,7 @@ namespace System.Threading.Tests
                                }));
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX & ~TestPlatforms.Browser)] // macOS and Browser in CI appears to have a lot more variation
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.Browser, "macOS and Browser in CI appears to have a lot more variation")]
         [OuterLoop("Takes several seconds")]
         [Theory] // selection based on 333ms threshold used by implementation
         [InlineData(new int[] { 15 })]

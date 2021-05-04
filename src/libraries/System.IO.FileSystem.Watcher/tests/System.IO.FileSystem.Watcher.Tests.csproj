@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
