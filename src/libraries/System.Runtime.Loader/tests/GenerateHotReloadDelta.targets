@@ -32,7 +32,7 @@
   <Target Name="ContentForDeltaFileOutputNames"
     DependsOnTargets="ComputeDeltaFileOutputNames"
     BeforeTargets="AssignTargetPaths"
-    Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingProject)' == 'true'"
+    Condition="'$(DesignTimeBuild)' != 'true'"
     >
     <ItemGroup>
       <Content Include="@(_DeltaFileForAssignTargetPaths)">
