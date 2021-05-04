@@ -1820,6 +1820,33 @@ ep_rt_diagnostics_command_line_get (void)
 	return cmd_line;
 }
 
+static
+const ep_char16_t *
+ep_rt_entrypoint_assembly_path_get_ref_utf16 ()
+{
+	// TODO: find mono entrypoint assembly path
+	const ep_char8_t *foo = "TODO";
+	return g_utf8_to_utf16 ((const gchar *)foo g_utf8_len (foo), NULL, NULL, NULL);
+}
+
+static
+const ep_char16_t *
+runtime_version_string_lazy_get_ref_utf16 ()
+{
+	// stash a utf16 copy of the version string from _version.h
+	extern ep_char16_t *runtime_version_string_utf16 = NULL;
+	if (runtime_version_string_utf16 == NULL)
+		runtime_version_string_utf16 = (ep_char16_t *)g_utf8_to_utf16 ((const gchar *)runtime_version_string, g_utf8_len (runtime_version_string), NULL, NULL, NULL);
+	return runtime_version_string_utf16;
+}
+
+static
+const ep_char16_t *
+ep_rt_runtime_version_get_ref_utf16 ()
+{
+	return runtime_version_string_lazy_get_ref_utf16 ();
+}
+
 /*
  * Thread.
  */

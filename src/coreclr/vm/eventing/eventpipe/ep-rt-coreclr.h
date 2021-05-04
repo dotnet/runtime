@@ -12,6 +12,7 @@
 #include "fstream.h"
 #include "typestring.h"
 #include "win32threadpool.h"
+#include "clrversion.h"
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
@@ -1159,6 +1160,21 @@ ep_rt_coreclr_config_lock_get (void)
 
 	extern ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 	return &_ep_rt_coreclr_config_lock_handle;
+}
+
+static
+inline
+const ep_char16_t *
+ep_rt_entrypoint_assembly_path_get_ref_utf16 ()
+{
+	return reinterpret_cast<const ep_char16_t*>(GetManagedEntrypointAssemblyPath());
+}
+
+static
+const ep_char16_t *
+ep_rt_runtime_version_get_ref_utf16 ()
+{
+	return reinterpret_cast<const ep_char16_t*>(CLR_PRODUCT_VERSION_L);
 }
 
 /*
