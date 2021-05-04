@@ -23,8 +23,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public class LargeFileBenchmark : IDisposable
     {
-        private const string HostName = "10.194.114.94";
-
         private readonly ITestOutputHelper _output;
         private LogHttpEventListener _listener;
 
@@ -36,17 +34,21 @@ namespace System.Net.Http.Functional.Tests
 
         public void Dispose() => _listener.Dispose();
 
-        [Fact]
-        public Task Download11() => TestHandler("SocketsHttpHandler HTTP 1.1", false, 5);
+        [Theory]
+        [InlineData("172.19.78.199")]
+        [InlineData("10.194.114.94")]
+        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, 1);
 
-        [Fact]
-        public Task Download20() => TestHandler("SocketsHttpHandler HTTP 2.0", true, 0.1);
+        [Theory]
+        [InlineData("172.19.78.199")]
+        [InlineData("10.194.114.94")]
+        public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 1);
 
-        private async Task TestHandler(string info, bool http2, double lengthMb)
+        private async Task TestHandler(string info, string hostName, bool http2, int lengthMb)
         {
             using var client = new HttpClient();
-            var message = GenerateRequestMessage(HostName, http2, lengthMb);
-            _output.WriteLine($"{info} / {lengthMb} MB from {HostName}");
+            var message = GenerateRequestMessage(hostName, http2, lengthMb);
+            _output.WriteLine($"{info} / {lengthMb} MB from {hostName}");
             Stopwatch sw = Stopwatch.StartNew();
             var response = await client.SendAsync(message);
             long elapsedMs = sw.ElapsedMilliseconds;
