@@ -5064,10 +5064,13 @@ MethodTableBuilder::ValidateMethods()
             }
         }
 
-        // Virtual static methods are not allowed.
-        if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()) && !IsInterface())
+        // Virtual static methods are only allowed on interfaces and they must be abstract.
+        if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()))
         {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
+            if (!IsInterface() || !IsMdAbstract(it.Attrs()))
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
+            }
         }
     }
 }

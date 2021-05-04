@@ -8686,9 +8686,9 @@ CEEInfo::getMethodSigInternal(
         // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
         //
         BOOL isCallSiteThatGoesThroughInstantiatingStub =
-            signatureKind == SK_VIRTUAL_CALLSITE &&
+            (signatureKind == SK_VIRTUAL_CALLSITE &&
             !ftn->IsStatic() &&
-            ftn->GetMethodTable()->IsInterface() ||
+            ftn->GetMethodTable()->IsInterface()) ||
             signatureKind == SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE;
         if (!isCallSiteThatGoesThroughInstantiatingStub)
             sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
