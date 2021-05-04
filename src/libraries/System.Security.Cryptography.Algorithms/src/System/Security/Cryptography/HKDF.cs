@@ -81,16 +81,18 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
-        /// <param name="outputLength">The length of the output keying material that must be larger than 0.</param>
+        /// <param name="outputLength">The length of the output keying material</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="prk"/>is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="outputLength"/> is less than 1.</exception>
         public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null)
         {
             if (prk == null)
                 throw new ArgumentNullException(nameof(prk));
 
             if (outputLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.Cryptography_OutputLength_OutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
 
             int hashLength = HashLength(hashAlgorithmName);
 
@@ -113,12 +115,14 @@ namespace System.Security.Cryptography
         /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
         /// <param name="output">The destination buffer to receive the output keying material with a size of as least 1.</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
+        /// <exception cref="ArgumentException"><paramref name="output"/> length is larger than the allowed length.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="output"/> legnth is less than 1.</exception>
         public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
 
             if (output.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(output), SR.Cryptography_OutputLength_OutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(output), SR.ArgumentOutOfRange_NeedPosNum);
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
@@ -203,17 +207,19 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="ikm">The input keying material.</param>
-        /// <param name="outputLength">The length of the output keying material that must be larger than 0.</param>
+        /// <param name="outputLength">The length of the output keying material.</param>
         /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="ikm"/>is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="outputLength"/> is less than 1.</exception>
         public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null)
         {
             if (ikm == null)
                 throw new ArgumentNullException(nameof(ikm));
 
             if (outputLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.Cryptography_OutputLength_OutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
 
             int hashLength = HashLength(hashAlgorithmName);
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
@@ -241,12 +247,14 @@ namespace System.Security.Cryptography
         /// <param name="output">The output buffer representing output keying material  with a size of as least 1.</param>
         /// <param name="salt">The salt value (a non-secret random value).</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
+        /// <exception cref="ArgumentException"><paramref name="ikm"/> length is larger than allowed length.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="output"/> has a length less than 1.</exception>
         public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
 
             if (output.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(output), SR.Cryptography_OutputLength_OutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(output), SR.ArgumentOutOfRange_NeedPosNum);
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
