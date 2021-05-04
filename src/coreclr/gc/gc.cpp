@@ -20967,11 +20967,11 @@ void gc_heap::enque_pinned_plug (uint8_t* plug,
         // Clear these bits for the copy saved in saved_pre_plug, but not for the copy
         // saved in saved_pre_plug_reloc.
         // This is because we need these bits for compaction, but not for mark & sweep.
-        size_t special_bits = clear_special_bits(last_object_in_last_plug);
+        size_t special_bits = clear_special_bits (last_object_in_last_plug);
         // now copy the bits over
         memcpy (&(m.saved_pre_plug), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
         // restore the bits in the original
-        set_special_bits(last_object_in_last_plug, special_bits);
+        set_special_bits (last_object_in_last_plug, special_bits);
 
         memcpy (&(m.saved_pre_plug_reloc), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
 
