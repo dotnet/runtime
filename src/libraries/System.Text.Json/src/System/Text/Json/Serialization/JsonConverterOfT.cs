@@ -318,7 +318,7 @@ namespace System.Text.Json.Serialization
             bool ignoreCyclesPopReference = false;
 
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                // .NET types that are parsed to JSON value types doesn't need to be tracked for cycle detection e.g: string.
+                // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
                 ConverterStrategy != ConverterStrategy.Value &&
                 !IsValueType && !IsNull(value))
             {
