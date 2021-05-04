@@ -1962,7 +1962,7 @@ ep_rt_thread_create (
 		if (thread_params) {
 			thread_params->thread_params.thread_type = thread_type;
 			if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING) {
-				thread_params->thread_params.thread = SetupUnstartedThread ();
+				thread_params->thread_params.thread = SetupUnstartedThread (SUTF_None);
 				thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
 				thread_params->thread_params.thread_params = params;
 				if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_coreclr_start_func, thread_params)) {
