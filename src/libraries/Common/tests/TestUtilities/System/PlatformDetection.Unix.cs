@@ -34,6 +34,7 @@ namespace System
         // OSX family
         public static bool IsOSXLike =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST")) ||
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
             RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
