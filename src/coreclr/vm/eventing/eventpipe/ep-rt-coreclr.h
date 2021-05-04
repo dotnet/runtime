@@ -1165,14 +1165,14 @@ ep_rt_coreclr_config_lock_get (void)
 static
 inline
 const ep_char16_t *
-ep_rt_entrypoint_assembly_path_get_ref_utf16 ()
+ep_rt_entrypoint_assembly_path_get_ref_utf16 (void)
 {
 	return reinterpret_cast<const ep_char16_t*>(GetManagedEntrypointAssemblyPath());
 }
 
 static
 const ep_char16_t *
-ep_rt_runtime_version_get_ref_utf16 ()
+ep_rt_runtime_version_get_ref_utf16 (void)
 {
 	return reinterpret_cast<const ep_char16_t*>(CLR_PRODUCT_VERSION_L);
 }
