@@ -589,7 +589,7 @@ namespace System.Net.Sockets
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            if (ProtocolType == ProtocolType.Udp)
+            if (!IsConnectionOriented)
             {
                 SocketException soex = new((int)SocketError.NotConnected);
                 return ValueTask.FromException(soex);
