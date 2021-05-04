@@ -89,7 +89,7 @@ internal class Xcode
         var entitlements = new List<KeyValuePair<string, string>>();
 
         bool hardenedRuntime = false;
-        if (Target == TargetNames.MacCatalyst && !(forceInterpreter || forceAOT)) {
+        if (Target == TargetNames.MacCatalyst && !forceAOT) {
             hardenedRuntime = true;
 
             /* for mmmap MAP_JIT */
