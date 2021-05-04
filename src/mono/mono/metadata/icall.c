@@ -1583,7 +1583,6 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
 					  MonoReflectionAssemblyHandle callerAssembly,
 					  MonoBoolean throwOnError,
 					  MonoBoolean ignoreCase,
-					  MonoBoolean reflectionOnly,
 					  MonoError *error)
 {
 	MonoTypeNameParse info;
