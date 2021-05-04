@@ -699,6 +699,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void SearchPatternCaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
