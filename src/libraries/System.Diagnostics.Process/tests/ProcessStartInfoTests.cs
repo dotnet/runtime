@@ -42,7 +42,6 @@ namespace System.Diagnostics.Tests
             // with current environmental variables.
 
             IDictionary<string, string> environment = psi.Environment;
-
             Assert.NotEqual(0, environment.Count);
 
             int countItems = environment.Count;
@@ -774,7 +773,7 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Test case is specific to Unix
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestEnvironmentVariablesPropertyUnix()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
