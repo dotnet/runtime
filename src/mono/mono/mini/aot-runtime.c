@@ -193,6 +193,7 @@ static GHashTable *static_aot_modules;
  */
 static char *container_assm_name;
 static MonoAotModule *container_amodule;
+static GHashTable *loaded_static_aot_modules;
 
 /*
  * Maps MonoJitInfo* to the aot module they belong to, this can be different
@@ -1909,12 +1910,29 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (image_is_dynamic (assembly->image))
 		return;
 
+	gboolean loaded = FALSE;
+
 	mono_aot_lock ();
 
 	if (static_aot_modules)
 		info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assembly->aname.name);
+	if (info) {
+		if (!loaded_static_aot_modules)
+			loaded_static_aot_modules = g_hash_table_new (NULL, NULL);
+		if (g_hash_table_lookup (loaded_static_aot_modules, info))
+			loaded = TRUE;
+		else
+			g_hash_table_insert (loaded_static_aot_modules, info, info);
+	}
 
 	mono_aot_unlock ();
+
+	if (loaded)
+		/*
+		 * Already loaded by another assembly with the same name, or the same assembly loaded
+		 * in another ALC.
+		 */
+		return;
 
 	sofile = NULL;
 
