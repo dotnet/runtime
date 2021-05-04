@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            EncryptInternal(nonce, plaintext, ciphertext, tag, associatedData);
+            EncryptCore(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            DecryptInternal(nonce, ciphertext, tag, plaintext, associatedData);
+            DecryptCore(nonce, ciphertext, tag, plaintext, associatedData);
         }
 
         private static void CheckParameters(

@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             _keyHandle = Interop.BCrypt.BCryptImportKey(AEADBCryptHandles.ChaCha20Poly1305, key);
         }
 
-        private void EncryptInternal(
+        private void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
             AEADCommon.Encrypt(_keyHandle, nonce, associatedData, plaintext, ciphertext, tag);
         }
 
-        private void DecryptInternal(
+        private void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,

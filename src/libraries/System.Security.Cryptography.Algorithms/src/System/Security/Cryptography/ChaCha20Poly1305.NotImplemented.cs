@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
             throw new NotImplementedException();
         }
 
-        private void EncryptInternal(
+        private void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
             throw new NotImplementedException();
         }
 
-        private void DecryptInternal(
+        private void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
