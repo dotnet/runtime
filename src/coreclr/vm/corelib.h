@@ -882,7 +882,7 @@ DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-DEFINE_METHOD(THREAD,               ALLOCATETHREADLOCALAUTORELEASEPOOL,      AllocateThreadlocalAutoreleasePool,          SM_RetVoid)
+DEFINE_METHOD(THREAD,               CREATEAUTORELEASEPOOL,          CreateAutoreleasePool,          SM_RefIntPtr_RetIntPtr)
 #endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 DEFINE_CLASS(IOCB_HELPER,              Threading,            _IOCompletionCallback)

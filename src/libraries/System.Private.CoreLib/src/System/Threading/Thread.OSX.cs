@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -29,10 +26,18 @@ namespace System.Threading
 
     public sealed partial class Thread
     {
-        internal static void AllocateThreadlocalAutoreleasePool()
+        [UnmanagedCallersOnly]
+        private static void CallDrain(IntPtr p)
+            => Interop.Sys.DrainAutoreleasePool(p);
+
+        internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
         {
-            if (ThreadOSX.EnableAutoreleasePool)
-                Interop.Sys.CreateAutoreleasePool();
+            drainFunc = IntPtr.Zero;
+            if (!ThreadOSX.EnableAutoreleasePool)
+                return IntPtr.Zero;
+
+            drainFunc = (IntPtr)(delegate* unmanaged<IntPtr, void>)&CallDrain;
+            return Interop.Sys.CreateAutoreleasePool();
         }
     }
 }

@@ -20,7 +20,7 @@
       <property name="AllTimers" />
     </type>
     <type fullname="System.Threading.Thread">
-      <method name="AllocateThreadlocalAutoreleasePool" />
+      <method name="CreateAutoreleasePool" />
     </type>
     <type fullname="System.Threading.ThreadPool">
       <method name="GetQueuedWorkItemsForDebugger" />

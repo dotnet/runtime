@@ -2910,15 +2910,21 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    // If the currently running thread is the thread that died and it is an STA thread, then we
-    // need to release all the RCW's in the current context. However, we cannot do this if we
-    // are in the middle of process detach.
     if (!IsAtProcessExit() && this == GetThreadNULLOk())
     {
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        // If the currently running thread is the thread that died and it is an STA thread, then we
+        // need to release all the RCW's in the current context. However, we cannot do this if we
+        // are in the middle of process detach.
         CleanupCOMState();
-    }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+        // Drain method for the NSAutoreleasePool instance.
+        if (m_drainPoolCallback && m_autoReleasePool)
+            m_drainPoolCallback(m_autoReleasePool);
+#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    }
 
     if (g_fEEShutDown != 0)
     {
@@ -4758,12 +4764,19 @@ void Thread::InitPlatformContext()
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
+    void* pool = NULL;
+    DrainPoolCallback drainLocal = NULL;
     {
         GCX_COOP_THREAD_EXISTS(this);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ALLOCATETHREADLOCALAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__CREATEAUTORELEASEPOOL);
+        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        args[ARGNUM_0] = PTR_TO_ARGHOLDER(&drainLocal);
+        CALL_MANAGED_METHOD(pool, void*, args);
     }
+    // Both are non-null or both are null.
+    _ASSERTE((pool != NULL && drainLocal != NULL) || (pool == NULL && drainLocal == NULL));
+    m_autoReleasePool = pool;
+    m_drainPoolCallback = drainLocal;
 
 #endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 }
