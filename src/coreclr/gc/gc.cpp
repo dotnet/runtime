@@ -4114,7 +4114,16 @@ size_t gcard_of ( uint8_t*);
 // We only do this when we decide to compact.
 #define BGC_MARKED_BY_FGC (size_t)0x2
 #define MAKE_FREE_OBJ_IN_COMPACT (size_t)0x4
-#endif //DOUBLY_LINKED_FL
+#define ALLOWED_SPECIAL_HEADER_BITS (GC_MARKED|BGC_MARKED_BY_FGC|MAKE_FREE_OBJ_IN_COMPACT)
+#else //DOUBLY_LINKED_FL
+#define ALLOWED_SPECIAL_HEADER_BITS (GC_MARKED)
+#endif //!DOUBLY_LINKED_FL
+
+#ifdef HOST_64BIT
+#define SPECIAL_HEADER_BITS (0x7)
+#else
+#define SPECIAL_HEADER_BITS (0x3)
+#endif
 
 #define slot(i, j) ((uint8_t**)(i))[(j)+1]
 
@@ -4216,11 +4225,7 @@ public:
 
     MethodTable    *GetMethodTable() const
     {
-        return( (MethodTable *) (((size_t) RawGetMethodTable()) & (~(GC_MARKED
-#ifdef DOUBLY_LINKED_FL
-            | BGC_MARKED_BY_FGC | MAKE_FREE_OBJ_IN_COMPACT
-#endif //DOUBLY_LINKED_FL
-            ))));
+        return( (MethodTable *) (((size_t) RawGetMethodTable()) & (~SPECIAL_HEADER_BITS)));
     }
 
     void SetMarked()
@@ -4287,6 +4292,26 @@ public:
         RawSetMethodTable((MethodTable *)(((size_t) RawGetMethodTable()) & (~MAKE_FREE_OBJ_IN_COMPACT)));
     }
 #endif //DOUBLY_LINKED_FL
+
+    size_t ClearSpecialBits()
+    {
+        size_t special_bits = ((size_t)RawGetMethodTable()) & SPECIAL_HEADER_BITS;
+        if (special_bits != 0)
+        {
+            assert ((special_bits & (~ALLOWED_SPECIAL_HEADER_BITS)) == 0);
+            RawSetMethodTable ((MethodTable*)(((size_t)RawGetMethodTable()) & ~(SPECIAL_HEADER_BITS)));
+        }
+        return special_bits;
+    }
+
+    void SetSpecialBits (size_t special_bits)
+    {
+        assert ((special_bits & (~ALLOWED_SPECIAL_HEADER_BITS)) == 0);
+        if (special_bits != 0)
+        {
+            RawSetMethodTable ((MethodTable*)(((size_t)RawGetMethodTable()) | special_bits));
+        }
+    }
 
     CGCDesc *GetSlotMap ()
     {
@@ -4455,6 +4480,17 @@ inline
 BOOL is_plug_padded (uint8_t* node){return FALSE;}
 #endif //SHORT_PLUGS
 
+inline
+size_t clear_special_bits (uint8_t* node)
+{
+    return header(node)->ClearSpecialBits();
+}
+
+inline
+void set_special_bits (uint8_t* node, size_t special_bits)
+{
+    header(node)->SetSpecialBits (special_bits);
+}
 
 inline size_t unused_array_size(uint8_t * p)
 {
@@ -20926,29 +20962,16 @@ void gc_heap::enque_pinned_plug (uint8_t* plug,
 
     if (save_pre_plug_info_p)
     {
-#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
         // In the case of short plugs or doubly linked free lists, there may be extra bits
         // set in the method table pointer.
         // Clear these bits for the copy saved in saved_pre_plug, but not for the copy
         // saved in saved_pre_plug_reloc.
         // This is because we need these bits for compaction, but not for mark & sweep.
-        MethodTable* pRawMethodTable = header(last_object_in_last_plug)->RawGetMethodTable();
-        MethodTable* pMethodTable = header(last_object_in_last_plug)->GetMethodTable();
-        if (pRawMethodTable != pMethodTable)
-        {
-            header(last_object_in_last_plug)->RawSetMethodTable (pMethodTable);
-            dprintf (3, ("method table for plug %Ix has low bits set: %Ix",
-                last_object_in_last_plug,
-                ((size_t)pRawMethodTable) - ((size_t)pMethodTable)));
-        }
-#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
+        size_t special_bits = clear_special_bits(last_object_in_last_plug);
         // now copy the bits over
         memcpy (&(m.saved_pre_plug), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
-#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
         // restore the bits in the original
-        if (pRawMethodTable != pMethodTable)
-            header(last_object_in_last_plug)->RawSetMethodTable (pRawMethodTable);
-#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
+        set_special_bits(last_object_in_last_plug, special_bits);
 
         memcpy (&(m.saved_pre_plug_reloc), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
 
@@ -21002,7 +21025,6 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
     assert (last_pinned_plug == m.first);
     m.saved_post_plug_info_start = (uint8_t*)&(((plug_and_gap*)post_plug)[-1]);
 
-#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
     // In the case of short plugs or doubly linked free lists, there may be extra bits
     // set in the method table pointer.
     // Clear these bits for the copy saved in saved_post_plug, but not for the copy
@@ -21010,22 +21032,10 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
     // This is because we need these bits for compaction, but not for mark & sweep.
     // Note that currently none of these bits will ever be set in the object saved *after*
     // a pinned plug - this object is currently pinned along with the pinned object before it
-    MethodTable* pRawMethodTable = header(last_object_in_last_plug)->RawGetMethodTable();
-    MethodTable* pMethodTable = header(last_object_in_last_plug)->GetMethodTable();
-    if (pRawMethodTable != pMethodTable)
-    {
-        header(last_object_in_last_plug)->RawSetMethodTable (pMethodTable);
-        dprintf (3, ("method table for plug %Ix has low bits set: %Ix",
-            last_object_in_last_plug,
-            ((size_t)pRawMethodTable) - ((size_t)pMethodTable)));
-    }
-#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
+    size_t special_bits = clear_special_bits (last_object_in_last_plug);
     memcpy (&(m.saved_post_plug), m.saved_post_plug_info_start, sizeof (gap_reloc_pair));
-#if defined(SHORT_PLUGS) || defined(DOUBLY_LINKED_FL)
     // restore the bits in the original
-    if (pRawMethodTable != pMethodTable)
-        header(last_object_in_last_plug)->RawSetMethodTable (pRawMethodTable);
-#endif //SHORT_PLUGS || DOUBLY_LINKED_FL
+    set_special_bits (last_object_in_last_plug, special_bits);
 
     memcpy (&(m.saved_post_plug_reloc), m.saved_post_plug_info_start, sizeof (gap_reloc_pair));
 
