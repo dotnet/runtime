@@ -504,7 +504,9 @@ check_c_source_compiles(
     #include <signal.h>
     int main(void)
     {
-        return sizeof(sigaction::sa_flags) == 8 ? 0 : 1;
+        struct sigaction action;
+        unsigned long *flags = &action.sa_flags;
+        return 0;
     }
     "
     HAVE_SIGACTION_ULONG_FLAGS
