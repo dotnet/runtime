@@ -114,7 +114,6 @@ profiler_protocol_helper_attach_profiler (
 
     if (!ep_rt_is_running ()) {
         ds_ipc_message_send_error (stream, DS_IPC_E_NOT_YET_AVAILABLE);
-        ds_ipc_stream_free (stream);
         ep_raise_error ();
     }
 

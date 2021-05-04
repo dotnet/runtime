@@ -34,15 +34,16 @@ namespace Profiler.Tests
         {
             _processId = processId;
 
+        }
+
+        public void SetStartupProfiler(Guid profilerGuid, string profilerPath)
+        {
             MethodInfo startupProfiler = typeof(DiagnosticsClient).GetMethod("SetStartupProfiler", BindingFlags.Public);
             if (startupProfiler != null)
             {
                 throw new Exception("You updated DiagnosticsClient to a version that supports SetStartupProfiler, please remove this nonsense and use the real code.");
             }
-        }
 
-        public void SetStartupProfiler(Guid profilerGuid, string profilerPath)
-        {
             DiagnosticsClient client = new DiagnosticsClient(_processId);
 
             Console.WriteLine("Sending startup profiler message.");            
