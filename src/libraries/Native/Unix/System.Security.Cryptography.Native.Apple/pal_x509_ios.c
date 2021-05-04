@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_x509.h"
 #include "pal_x509_ios.h"
 #include "pal_utilities.h"
+#include "pal_x509.h"
 #include <dlfcn.h>
 #include <pthread.h>
 
@@ -44,11 +44,14 @@ int32_t AppleCryptoNative_X509ImportCertificate(uint8_t* pbData,
     }
     else // PAL_Pkcs12
     {
-        const void *keys[] = { kSecImportExportPassphrase };
-        const void *values[] = { cfPfxPassphrase };
-        CFDictionaryRef attrs = CFDictionaryCreate(
-            kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-            &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        const void* keys[] = {kSecImportExportPassphrase};
+        const void* values[] = {cfPfxPassphrase};
+        CFDictionaryRef attrs = CFDictionaryCreate(kCFAllocatorDefault,
+                                                   keys,
+                                                   values,
+                                                   sizeof(keys) / sizeof(*keys),
+                                                   &kCFTypeDictionaryKeyCallBacks,
+                                                   &kCFTypeDictionaryValueCallBacks);
 
         if (attrs == NULL)
         {
@@ -130,11 +133,14 @@ int32_t AppleCryptoNative_X509ImportCollection(uint8_t* pbData,
     }
     else // PAL_Pkcs12
     {
-        const void *keys[] = { kSecImportExportPassphrase };
-        const void *values[] = { cfPfxPassphrase };
-        CFDictionaryRef attrs = CFDictionaryCreate(
-            kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-            &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        const void* keys[] = {kSecImportExportPassphrase};
+        const void* values[] = {cfPfxPassphrase};
+        CFDictionaryRef attrs = CFDictionaryCreate(kCFAllocatorDefault,
+                                                   keys,
+                                                   values,
+                                                   sizeof(keys) / sizeof(*keys),
+                                                   &kCFTypeDictionaryKeyCallBacks,
+                                                   &kCFTypeDictionaryValueCallBacks);
 
         if (attrs == NULL)
         {
@@ -161,7 +167,8 @@ int32_t AppleCryptoNative_X509ImportCollection(uint8_t* pbData,
             for (int i = 0; i < CFArrayGetCount(p12Items); i++)
             {
                 CFDictionaryRef item_dict = CFArrayGetValueAtIndex(p12Items, i);
-                SecIdentityRef identity = (SecIdentityRef)CFRetain(CFDictionaryGetValue(item_dict, kSecImportItemIdentity));
+                SecIdentityRef identity =
+                    (SecIdentityRef)CFRetain(CFDictionaryGetValue(item_dict, kSecImportItemIdentity));
                 assert(identity != NULL);
                 CFArrayAppendValue(outItems, identity);
             }

@@ -5,19 +5,21 @@
 #include "pal_utilities.h"
 #include "pal_x509.h"
 
-static int32_t
-EnumerateKeychain(CFStringRef matchType, CFArrayRef* pCertsOut)
+static int32_t EnumerateKeychain(CFStringRef matchType, CFArrayRef* pCertsOut)
 {
     assert(pCertsOut != NULL);
     assert(matchType != NULL);
 
     *pCertsOut = NULL;
 
-    const void *keys[] = { kSecReturnRef, kSecMatchLimit, kSecClass };
-    const void *values[] = { kCFBooleanTrue, kSecMatchLimitAll, matchType };
-    CFDictionaryRef query = CFDictionaryCreate(
-        kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-        &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    const void* keys[] = {kSecReturnRef, kSecMatchLimit, kSecClass};
+    const void* values[] = {kCFBooleanTrue, kSecMatchLimitAll, matchType};
+    CFDictionaryRef query = CFDictionaryCreate(kCFAllocatorDefault,
+                                               keys,
+                                               values,
+                                               sizeof(keys) / sizeof(*keys),
+                                               &kCFTypeDictionaryKeyCallBacks,
+                                               &kCFTypeDictionaryValueCallBacks);
 
     if (query == NULL)
     {
@@ -70,11 +72,14 @@ int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity)
 
     assert(certOrIdentity != NULL);
 
-    const void *keys[] = { kSecValueRef };
-    const void *values[] = { certOrIdentity };
-    CFDictionaryRef query = CFDictionaryCreate(
-        kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-        &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    const void* keys[] = {kSecValueRef};
+    const void* values[] = {certOrIdentity};
+    CFDictionaryRef query = CFDictionaryCreate(kCFAllocatorDefault,
+                                               keys,
+                                               values,
+                                               sizeof(keys) / sizeof(*keys),
+                                               &kCFTypeDictionaryKeyCallBacks,
+                                               &kCFTypeDictionaryValueCallBacks);
 
     if (query == NULL)
     {
@@ -86,19 +91,21 @@ int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity)
     return status == errSecDuplicateItem ? noErr : status;
 }
 
-int32_t
-AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t isReadOnlyMode)
+int32_t AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t isReadOnlyMode)
 {
     OSStatus status;
     CFTypeRef result = NULL;
 
     assert(certOrIdentity != NULL);
 
-    const void *keys[] = { kSecValueRef };
-    const void *values[] = { certOrIdentity };
-    CFDictionaryRef query = CFDictionaryCreate(
-        kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-        &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    const void* keys[] = {kSecValueRef};
+    const void* values[] = {certOrIdentity};
+    CFDictionaryRef query = CFDictionaryCreate(kCFAllocatorDefault,
+                                               keys,
+                                               values,
+                                               sizeof(keys) / sizeof(*keys),
+                                               &kCFTypeDictionaryKeyCallBacks,
+                                               &kCFTypeDictionaryValueCallBacks);
 
     if (query == NULL)
     {
@@ -139,11 +146,14 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t i
             {
                 OSStatus keyStatus;
 
-                const void *keys[] = { kSecClass, kSecAttrPublicKeyHash };
-                const void *values[] = { kSecClassCertificate, publicKeyLabel };
-                query = CFDictionaryCreate(
-                    kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-                    &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+                const void* keys[] = {kSecClass, kSecAttrPublicKeyHash};
+                const void* values[] = {kSecClassCertificate, publicKeyLabel};
+                query = CFDictionaryCreate(kCFAllocatorDefault,
+                                           keys,
+                                           values,
+                                           sizeof(keys) / sizeof(*keys),
+                                           &kCFTypeDictionaryKeyCallBacks,
+                                           &kCFTypeDictionaryValueCallBacks);
 
                 if (query == NULL)
                 {
@@ -163,11 +173,14 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t i
 
                 if (keyStatus == errSecItemNotFound)
                 {
-                    const void *keys[] = { kSecClass, kSecAttrApplicationLabel };
-                    const void *values[] = { kSecClassKey, publicKeyLabel };
-                    query = CFDictionaryCreate(
-                        kCFAllocatorDefault, keys, values, sizeof(keys)/sizeof(*keys),
-                        &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+                    const void* keys[] = {kSecClass, kSecAttrApplicationLabel};
+                    const void* values[] = {kSecClassKey, publicKeyLabel};
+                    query = CFDictionaryCreate(kCFAllocatorDefault,
+                                               keys,
+                                               values,
+                                               sizeof(keys) / sizeof(*keys),
+                                               &kCFTypeDictionaryKeyCallBacks,
+                                               &kCFTypeDictionaryValueCallBacks);
 
                     if (query == NULL)
                     {

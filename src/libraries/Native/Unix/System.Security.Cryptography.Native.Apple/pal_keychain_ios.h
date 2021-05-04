@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "pal_types.h"
 #include "pal_compiler.h"
+#include "pal_types.h"
 
 #include <Security/Security.h>
 
@@ -17,8 +17,7 @@ Output:
 pCertsOut: When the return value is not noErr, NULL. Otherwise NULL on "no certs found", or a CFArrayRef for the matches
 (including a single match).
 */
-PALEXPORT int32_t
-AppleCryptoNative_SecKeychainEnumerateCerts(CFArrayRef* pCertsOut);
+PALEXPORT int32_t AppleCryptoNative_SecKeychainEnumerateCerts(CFArrayRef* pCertsOut);
 
 /*
 Enumerate the certificate objects within the given keychain.
@@ -39,13 +38,11 @@ Add a certificate from the specified keychain.
 
 Returns the last OSStatus value (noErr on success).
 */
-PALEXPORT int32_t
-AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity);
+PALEXPORT int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity);
 
 /*
 Remove a certificate from the specified keychain.
 
 Returns the last OSStatus value (noErr on success).
 */
-PALEXPORT int32_t
-AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t isReadOnlyMode);
+PALEXPORT int32_t AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, uint8_t isReadOnlyMode);
