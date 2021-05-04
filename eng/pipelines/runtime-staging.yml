@@ -48,11 +48,11 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 jobs:
-# #
-# # Evaluate paths
-# #
-# - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-#   - template: /eng/pipelines/common/evaluate-default-paths.yml
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 # #
 # # Build the whole product using Mono and run libraries tests
