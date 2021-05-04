@@ -34,50 +34,44 @@ namespace System.IO.Enumeration
             entry._fullPath = ReadOnlySpan<char>.Empty;
             entry._fileName = ReadOnlySpan<char>.Empty;
 
-            // IMPORTANT: Attribute logic must match the logic in FileStatus
+            entry._status = default;
+            entry._status.InvalidateCaches();
 
-            bool isDirectory = false;
-            bool isSymlink = false;
-            if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
-            {
-                // We know it's a directory.
-                isDirectory = true;
-            }
+            bool isDirectory = directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR;
+            bool isSymlink = directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
+
             // Some operating systems don't have the inode type in the dirent structure,
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
             // directory.
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK
-                || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
+            if (!isDirectory &&
+                (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK ||
+                 directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN))
             {
-                // Symlink or unknown: Stat to it to see if we can resolve it to a directory.
-                isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-            }
-            // Same idea as the directory check, just repeated for (and tweaked due to the
-            // nature of) symlinks.
-            if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
-            {
-                isSymlink = true;
-            }
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && (Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus linkTargetStatus) >= 0))
-            {
-                isSymlink = (linkTargetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                // DT_LNK: stat to it to see if we can resolve it to a directory
+                entry._status.TryRefreshSymbolicLinkCache(entry.FullPath);
+                isDirectory = entry._status.HasDirectoryFlag;
             }
 
-            entry._status = default;
-            FileStatus.Initialize(ref entry._status, isDirectory);
+            if (!isSymlink &&
+                directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+            {
+                entry._status.TryRefreshFileCache(entry.FullPath);
+                isSymlink = entry._status.HasSymbolicLinkFlag;
+            }
+
+            entry._status.InitiallyDirectory = isDirectory;
 
             FileAttributes attributes = default;
             if (isSymlink)
                 attributes |= FileAttributes.ReparsePoint;
             if (isDirectory)
                 attributes |= FileAttributes.Directory;
-            if (directoryEntry.Name[0] == '.')
+            if (directoryEntry.Name[0] == '.' ||
+                (entry._status.IsFileCacheInitialized && entry._status.HasHiddenFlag)) // soft retrieval
                 attributes |= FileAttributes.Hidden;
+            if (entry._status.IsFileCacheInitialized && entry._status.HasReadOnlyFlag) // soft retrieval
+                attributes |= FileAttributes.ReadOnly;
 
-            if (attributes == default)
-                attributes = FileAttributes.Normal;
 
             entry._initialAttributes = attributes;
             return attributes;
@@ -133,17 +127,50 @@ namespace System.IO.Enumeration
 
         // Windows never fails getting attributes, length, or time as that information comes back
         // with the native enumeration struct. As such we must not throw here.
-
         public FileAttributes Attributes
-            // It would be hard to rationalize if the attributes change after our initial find.
-            => _initialAttributes | (_status.IsReadOnly(FullPath, continueOnError: true) ? FileAttributes.ReadOnly : 0);
+        {
+            get
+            {
+                FileAttributes attributes = _initialAttributes;
+
+                if (attributes == default)
+                {
+                    if (_status.IsReadOnly(FullPath, continueOnError: true))
+                    {
+                        attributes |= FileAttributes.ReadOnly;
+                    }
+                    if (_directoryEntry.Name[0] == '.' || _status.IsHidden(FullPath, continueOnError: true))
+                    {
+                        attributes |= FileAttributes.Hidden;
+                    }
+                    if (_status.IsSymbolicLink(FullPath, continueOnError: true))
+                    {
+                        attributes |= FileAttributes.ReparsePoint;
+                    }
+                    if (_status.InitiallyDirectory || _status.IsDirectory(FullPath, continueOnError: true))
+                    {
+                        attributes |= FileAttributes.Directory;
+                    }
+
+                    // It would be hard to rationalize if the attributes change after our initial find
+                    if (attributes == default)
+                    {
+                        attributes = FileAttributes.Normal;
+                    }
+                }
+                return attributes;
+            }
+        }
 
         public long Length => _status.GetLength(FullPath, continueOnError: true);
         public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath, continueOnError: true);
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _directoryEntry.Name[0] == '.';
+        public bool IsHidden => _directoryEntry.Name[0] == '.' || _status.IsHidden(FullPath);
+
+        internal bool IsReadOnly => _status.IsReadOnly(FullPath);
+        internal bool IsSymbolicLink => _status.IsSymbolicLink(FullPath);
 
         public FileSystemInfo ToFileSystemInfo()
         {

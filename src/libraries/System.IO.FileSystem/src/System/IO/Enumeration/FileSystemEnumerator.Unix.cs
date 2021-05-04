@@ -114,6 +114,9 @@ namespace System.IO.Enumeration
                         FileAttributes attributes = FileSystemEntry.Initialize(
                             ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
                         bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+                        bool isSymlink = (attributes & FileAttributes.ReparsePoint) != 0;
+                        bool isHidden = (attributes & FileAttributes.Hidden) != 0;
+                        bool isReadOnly = (attributes & FileAttributes.ReadOnly) != 0;
 
                         bool isSpecialDirectory = false;
                         if (isDirectory)
@@ -130,13 +133,12 @@ namespace System.IO.Enumeration
 
                         if (!isSpecialDirectory && _options.AttributesToSkip != 0)
                         {
-                            if ((_options.AttributesToSkip & FileAttributes.ReadOnly) != 0)
-                            {
-                                // ReadOnly is the only attribute that requires hitting entry.Attributes (which hits the disk)
-                                attributes = entry.Attributes;
-                            }
-
-                            if ((_options.AttributesToSkip & attributes) != 0)
+                            // IsSymbolicLink, IsHidden and IsReadOnly will hit the disk if
+                            // caches had not been initialized yet and we could not soft-retrieve the attributes in Initialize
+                            if ((ShouldSkip(FileAttributes.Directory) && isDirectory) ||
+                                (ShouldSkip(FileAttributes.ReparsePoint) && (isSymlink || entry.IsSymbolicLink)) ||
+                                (ShouldSkip(FileAttributes.Hidden) && (isHidden || entry.IsHidden)) ||
+                                (ShouldSkip(FileAttributes.ReadOnly) && (isReadOnly || entry.IsReadOnly)))
                             {
                                 continue;
                             }
@@ -161,6 +163,8 @@ namespace System.IO.Enumeration
                     } while (true);
                 }
             }
+
+            bool ShouldSkip(FileAttributes attributeToSkip) => (_options.AttributesToSkip & attributeToSkip) != 0;
         }
 
         private unsafe void FindNextEntry()
