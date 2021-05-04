@@ -18,6 +18,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 			TestMethodWithValueParam ();
 			TestMethodWithReferenceParam ();
+			TestMethodWithComplexParams_1 ();
+			TestMethodWithComplexParams_2 ();
+			TestMethodWithComplexParams_3 (3);
+			TestMethodWithComplexParams_4 ();
 			instance.TestMethodWithMultipleInParamsInstance ();
 			// TestMethodWithOutParam ();
 			TestMethodWithRefParam ();
@@ -68,6 +72,87 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept] static void MethodWithReferenceParam_Reached () { }
 		static void MethodWithReferenceParam_NeverReached () { }
+
+		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"ldnull",
+			"ldnull",
+			"call",
+			"pop",
+			"ldc.i4.1",
+			"ret"
+		})]
+		static int TestMethodWithComplexParams_1 ()
+		{
+			if (StaticMethod (null, null))
+				return 1;
+			else
+				return 2;
+		}
+
+		[Kept]
+		static bool StaticMethod (object o, int[] array)
+		{
+			return true;
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"ldc.i4.1",
+			"newobj",
+			"box",
+			"ldc.i4.0",
+			"newarr",
+			"call",
+			"pop",
+			"ldc.i4.1",
+			"ret"
+		})]
+		static int TestMethodWithComplexParams_2 ()
+		{
+			int? v = 1;
+			if (StaticMethod (v, new int[0]))
+				return 1;
+			else
+				return 2;
+		}
+
+		[Kept]
+		[ExpectBodyModified]
+		static void TestMethodWithComplexParams_3 (int arg)
+		{
+			int value = 1;
+			int? ovalue = arg;
+			if (StaticMethod (arg == 11 ? 'a' : 'b', new int[] { arg, arg++, value = arg, int.Parse (new TestStruct ().ToString ()), ovalue ?? arg }))
+				TestMethodWithComplexParams_3_Used ();
+			else
+				TestMethodWithComplexParams_3_Unused ();
+		}
+
+		[Kept] static void TestMethodWithComplexParams_3_Used () { }
+		static void TestMethodWithComplexParams_3_Unused () { }
+
+		[Kept]
+		static void TestMethodWithComplexParams_4 ()
+		{
+			if (TestMethodWithComplexParams_4_Propagate (3))
+				TestMethodWithComplexParams_4_Used ();
+			else
+				TestMethodWithComplexParams_4_Unused ();
+		}
+
+		[Kept]
+		static bool TestMethodWithComplexParams_4_Propagate (int arg)
+		{
+			//
+			// This body should propagate 'true' return value but
+			// the current implementation does only simple stack backtracking and does not track any jumps
+			// 
+			return StaticMethod (arg == 11 ? new object () : new object (), null);
+		}
+
+		[Kept] static void TestMethodWithComplexParams_4_Used () { }
+		[Kept] static void TestMethodWithComplexParams_4_Unused () { }
 
 		[Kept]
 		[ExpectBodyModified]
@@ -124,7 +209,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[LogDoesNotContain ("IsEnabledWithRefParam")]
+		[ExpectedInstructionSequence (new[] {
+			"ldc.i4.0",
+			"stloc.0",
+			"ldloca.s",
+			"call",
+			"pop",
+			"call",
+			"ret",
+		})]
 		static void TestMethodWithRefParam ()
 		{
 			int p = 0;
@@ -135,7 +228,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept] static void MethodWithRefParam_Reached1 () { }
-		[Kept] static void MethodWithRefParam_Reached2 () { }
+		static void MethodWithRefParam_Reached2 () { }
 
 		static bool _isEnabledWithMultipleRefParamsField;
 
@@ -148,7 +241,20 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[LogDoesNotContain ("IsEnabledWithMultipleRefParams")]
+		[ExpectedInstructionSequence (new[] {
+			"ldc.i4.0",
+			"stloc.0",
+			"ldloca.s",
+			"initobj",
+			"ldc.i4.0",
+			"ldloca.s",
+			"ldloca.s",
+			"ldstr",
+			"call",
+			"pop",
+			"call",
+			"ret",
+		})]
 		static void TestMethodWithMultipleRefParams ()
 		{
 			int p = 0;
@@ -160,7 +266,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept] static void MethodWithMultipleRefParams_Reached1 () { }
-		[Kept] static void MethodWithMultipleRefParams_Reached2 () { }
+		static void MethodWithMultipleRefParams_Reached2 () { }
 
 		[Kept]
 		static bool IsEnabledWithValueParamAndConstReturn_NoSubstitutions (int param)
@@ -169,10 +275,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"ldc.i4.0",
+			"call",
+			"pop",
+			"call",
+			"ret",
+		})]
 		static void TestMethodWithValueParamAndConstReturn_NoSubstitutions ()
 		{
-			// The return value inlining for methods with params only works on explicitly substituted methods.
-			// Linker will not do this implicitly.
 			if (IsEnabledWithValueParamAndConstReturn_NoSubstitutions (0))
 				MethodWithValueParamAndConstReturn_NoSubstitutions_Reached1 ();
 			else
@@ -180,7 +291,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept] static void MethodWithValueParamAndConstReturn_NoSubstitutions_Reached1 () { }
-		[Kept] static void MethodWithValueParamAndConstReturn_NoSubstitutions_Reached2 () { }
+		static void MethodWithValueParamAndConstReturn_NoSubstitutions_Reached2 () { }
 
 
 		static bool _isEnabledWithVarArgsField;
