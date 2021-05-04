@@ -217,7 +217,28 @@ namespace System.IO.Pipelines
                 var isCanceled = false;
                 try
                 {
-                    await ReadAsyncInternal(tokenSource.Token).ConfigureAwait(false);
+                    // This optimization only makes sense if we don't have anything buffered
+                    if (UseZeroByteReads && _bufferedBytes == 0)
+                    {
+                        // Wait for data by doing 0 byte read before
+                        await InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
+                    }
+
+                    AllocateReadTail();
+
+                    Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
+
+                    int length = await InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
+
+                    Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
+
+                    _readTail.End += length;
+                    _bufferedBytes += length;
+
+                    if (length == 0)
+                    {
+                        _isStreamCompleted = true;
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -236,32 +257,6 @@ namespace System.IO.Pipelines
                 }
 
                 return new ReadResult(GetCurrentReadOnlySequence(), isCanceled, _isStreamCompleted);
-            }
-        }
-
-        private async Task ReadAsyncInternal(CancellationToken cancellationToken, int? minimumSize = null)
-        {
-            // This optimization only makes sense if we don't have anything buffered
-            if (UseZeroByteReads && _bufferedBytes == 0)
-            {
-                // Wait for data by doing 0 byte read before
-                await InnerStream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
-            }
-
-            AllocateReadTail(minimumSize);
-
-            Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
-
-            int length = await InnerStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
-
-            _readTail.End += length;
-            _bufferedBytes += length;
-
-            if (length == 0)
-            {
-                _isStreamCompleted = true;
             }
         }
 
@@ -298,7 +293,28 @@ namespace System.IO.Pipelines
                 {
                     while (_bufferedBytes < minimumSize && !_isStreamCompleted)
                     {
-                        await ReadAsyncInternal(tokenSource.Token, minimumSize).ConfigureAwait(false);
+                        // This optimization only makes sense if we don't have anything buffered
+                        if (UseZeroByteReads && _bufferedBytes == 0)
+                        {
+                            // Wait for data by doing 0 byte read before
+                            await InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
+                        }
+
+                        AllocateReadTail(minimumSize);
+
+                        Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
+
+                        int length = await InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
+
+                        Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
+
+                        _readTail.End += length;
+                        _bufferedBytes += length;
+
+                        if (length == 0)
+                        {
+                            _isStreamCompleted = true;
+                        }
                     }
                 }
                 catch (OperationCanceledException)

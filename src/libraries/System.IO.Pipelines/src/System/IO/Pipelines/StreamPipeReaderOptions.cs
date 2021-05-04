@@ -9,7 +9,7 @@ namespace System.IO.Pipelines
     public class StreamPipeReaderOptions
     {
         private const int DefaultBufferSize = 4096;
-        private const int DefaultMaxBufferSize = 4096 * 1024;
+        private const int DefaultMaxBufferSize = 2048 * 1024;
         private const int DefaultMinimumReadSize = 1024;
 
         internal static readonly StreamPipeReaderOptions s_default = new StreamPipeReaderOptions();
