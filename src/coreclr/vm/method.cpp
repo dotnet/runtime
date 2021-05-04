@@ -5036,6 +5036,25 @@ void MethodDesc::ResetCodeEntryPoint()
     }
 }
 
+void MethodDesc::ResetCodeEntryPointForEnC()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsVersionable());
+    _ASSERTE(!IsVersionableWithPrecode());
+    _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
+
+    if (HasPrecode())
+    {
+        GetPrecode()->ResetTargetInterlocked();
+    }
+
+    if (HasNativeCodeSlot())
+    {
+        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
+        pRelPtr->SetValueMaybeNull(NULL);
+    }
+}
+
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************

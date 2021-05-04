@@ -1010,30 +1010,31 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 
     return pUnwindInfo;
 
-#elif defined(TARGET_ARM)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 
     // if this function uses packed unwind data then at least one of the two least significant bits
     // will be non-zero.  if this is the case then there will be no xdata record to enumerate.
     _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
 
     // compute the size of the unwind info
-    PTR_ULONG xdata = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
+    PTR_DWORD xdata = dac_cast<PTR_DWORD>(pRuntimeFunction->UnwindData + moduleBase);
+    int size = 4;
 
-    ULONG epilogScopes = 0;
-    ULONG unwindWords = 0;
-    ULONG size = 0;
+#if defined(TARGET_ARM)
+    // See https://docs.microsoft.com/en-us/cpp/build/arm-exception-handling
+    int unwindWords = xdata[0] >> 28;
+    int epilogScopes = (xdata[0] >> 23) & 0x1f;
+#else
+    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    int unwindWords = xdata[0] >> 27;
+    int epilogScopes = (xdata[0] >> 22) & 0x1f;
+#endif
 
-    if ((xdata[0] >> 23) != 0)
+    if (unwindWords == 0 && epilogScopes == 0)
     {
-        size = 4;
-        epilogScopes = (xdata[0] >> 23) & 0x1f;
-        unwindWords = (xdata[0] >> 28) & 0x0f;
-    }
-    else
-    {
-        size = 8;
-        epilogScopes = xdata[1] & 0xffff;
+        size += 4;
         unwindWords = (xdata[1] >> 16) & 0xff;
+        epilogScopes = xdata[1] & 0xffff;
     }
 
     if (!(xdata[0] & (1 << 21)))
@@ -1046,45 +1047,6 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 
     *pSize = size;
     return xdata;
-
-#elif defined(TARGET_ARM64)
-	// if this function uses packed unwind data then at least one of the two least significant bits
-	// will be non-zero.  if this is the case then there will be no xdata record to enumerate.
-	_ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
-
-    // compute the size of the unwind info
-    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
-    ULONG epilogScopes = 0;
-    ULONG unwindWords  = 0;
-    ULONG size = 0;
-
-    //If both Epilog Count and Code Word is not zero
-    //Info of Epilog and Unwind scopes are given by 1 word header
-    //Otherwise this info is given by a 2 word header
-    if ((xdata[0] >> 27) != 0)
-    {
-        size = 4;
-        epilogScopes = (xdata[0] >> 22) & 0x1f;
-        unwindWords = (xdata[0] >> 27) & 0x0f;
-    }
-    else
-    {
-        size = 8;
-        epilogScopes = xdata[1] & 0xffff;
-        unwindWords = (xdata[1] >> 16) & 0xff;
-    }
-
-    if (!(xdata[0] & (1 << 21)))
-        size += 4 * epilogScopes;
-
-    size += 4 * unwindWords;
-
-    _ASSERTE(xdata[0] & (1 << 20)); // personality routine should be always present
-    size += 4;                      // exception handler RVA
-
-    *pSize = size;
-    return xdata;
-
 
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");

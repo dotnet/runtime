@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="ModuleCore">
+    <type fullname="OLEDB.Test.ModuleCore.XmlInlineDataDiscoverer">
+      <method signature="System.Void .ctor()" />
+    </type>
+  </assembly>
+</linker>

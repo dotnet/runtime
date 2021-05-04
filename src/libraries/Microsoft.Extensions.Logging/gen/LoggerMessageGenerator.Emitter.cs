@@ -16,11 +16,12 @@ namespace Microsoft.Extensions.Logging.Generators
             private const int MaxLoggerMessageDefineArguments = 6;
             private const int DefaultStringBuilderCapacity = 1024;
 
-            private readonly string _generatedCodeAttribute =
+            private static readonly string s_generatedCodeAttribute =
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
                 $"\"{typeof(Emitter).Assembly.GetName().Name}\", " +
                 $"\"{typeof(Emitter).Assembly.GetName().Version}\")";
             private readonly StringBuilder _builder = new StringBuilder(DefaultStringBuilderCapacity);
+            private bool _needEnumerationHelper;
 
             public string Emit(IReadOnlyList<LoggerClass> logClasses, CancellationToken cancellationToken)
             {
@@ -34,6 +35,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     GenType(lc);
                 }
 
+                GenEnumerationHelper();
                 return _builder.ToString();
             }
 
@@ -47,10 +49,10 @@ namespace Microsoft.Extensions.Logging.Generators
                 if (result)
                 {
                     // make sure the order of the templates matches the order of the logging method parameter
-                    int count = 0;
-                    foreach (string t in lm.TemplateList)
+                    for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
-                        if (!t.Equals(lm.TemplateParameters[count].Name, StringComparison.OrdinalIgnoreCase))
+                        string t = lm.TemplateList[i];
+                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -84,8 +86,6 @@ namespace {lc.Namespace}
                     GenLogMethod(lm);
                 }
 
-                GenEnumerationHelper(lc);
-
                 _builder.Append($@"
     }}");
 
@@ -99,7 +99,7 @@ namespace {lc.Namespace}
             private void GenStruct(LoggerMethod lm)
             {
                 _builder.AppendLine($@"
-        [{_generatedCodeAttribute}]
+        [{s_generatedCodeAttribute}]
         private readonly struct __{lm.Name}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {{");
                 GenFields(lm);
@@ -193,7 +193,9 @@ namespace {lc.Namespace}
                         if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                var {t.Key} = "
-                                + $"__Enumerate((global::System.Collections.IEnumerable ?)this._{lm.TemplateParameters[index].Name});");
+                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this._{lm.TemplateParameters[index].Name});");
+
+                            _needEnumerationHelper = true;
                         }
                         else
                         {
@@ -237,7 +239,7 @@ namespace {lc.Namespace}
                 }
                 if (brackets)
                 {
-                    _builder.Append("<");
+                    _builder.Append('<');
                 }
 
                 bool firstItem = true;
@@ -257,7 +259,7 @@ namespace {lc.Namespace}
 
                 if (brackets)
                 {
-                    _builder.Append(">");
+                    _builder.Append('>');
                 }
                 else
                 {
@@ -322,7 +324,7 @@ namespace {lc.Namespace}
             private void GenLogMethod(LoggerMethod lm)
             {
                 string level = GetLogLevel(lm);
-                string extension = (lm.IsExtensionMethod ? "this " : string.Empty);
+                string extension = lm.IsExtensionMethod ? "this " : string.Empty;
                 string eventName = string.IsNullOrWhiteSpace(lm.EventName) ? $"nameof({lm.Name})" : $"\"{lm.EventName}\"";
                 string exceptionArg = GetException(lm);
                 string logger = GetLogger(lm);
@@ -330,7 +332,7 @@ namespace {lc.Namespace}
                 if (UseLoggerMessageDefine(lm))
                 {
                     _builder.Append($@"
-        [{_generatedCodeAttribute}]
+        [{s_generatedCodeAttribute}]
         private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, ");
 
                     GenDefineTypes(lm, brackets: false);
@@ -345,7 +347,7 @@ namespace {lc.Namespace}
                 }
 
                 _builder.Append($@"
-        [{_generatedCodeAttribute}]
+        [{s_generatedCodeAttribute}]
         {lm.Modifiers} void {lm.Name}({extension}");
 
                 GenParameters(lm);
@@ -443,63 +445,56 @@ namespace {lc.Namespace}
                 }
             }
 
-            private void GenEnumerationHelper(LoggerClass lc)
+            private void GenEnumerationHelper()
             {
-                foreach (LoggerMethod lm in lc.Methods)
+                if (_needEnumerationHelper)
                 {
-                    if (UseLoggerMessageDefine(lm))
-                    {
-                        foreach (LoggerParameter p in lm.TemplateParameters)
-                        {
-                            if (p.IsEnumerable)
-                            {
                                 _builder.Append($@"
-        [{_generatedCodeAttribute}]
-        private static string __Enumerate(global::System.Collections.IEnumerable? enumerable)
+[{s_generatedCodeAttribute}]
+internal static class __LoggerMessageGenerator
+{{
+    public static string Enumerate(global::System.Collections.IEnumerable? enumerable)
+    {{
+        if (enumerable == null)
         {{
-            if (enumerable == null)
+            return ""(null)"";
+        }}
+
+        var sb = new global::System.Text.StringBuilder();
+        _ = sb.Append('[');
+
+        bool first = true;
+        foreach (object e in enumerable)
+        {{
+            if (!first)
             {{
-                return ""(null)"";
+                _ = sb.Append("", "");
             }}
 
-            var sb = new global::System.Text.StringBuilder();
-            _ = sb.Append('[');
-
-            bool first = true;
-            foreach (object e in enumerable)
+            if (e == null)
             {{
-                if (!first)
+                _ = sb.Append(""(null)"");
+            }}
+            else
+            {{
+                if (e is global::System.IFormattable fmt)
                 {{
-                    _ = sb.Append("", "");
-                }}
-
-                if (e == null)
-                {{
-                    _ = sb.Append(""(null)"");
+                    _ = sb.Append(fmt.ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));
                 }}
                 else
                 {{
-                    if (e is global::System.IFormattable fmt)
-                    {{
-                        _ = sb.Append(fmt.ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));
-                    }}
-                    else
-                    {{
-                        _ = sb.Append(e);
-                    }}
+                    _ = sb.Append(e);
                 }}
-
-                first = false;
             }}
 
-            _ = sb.Append(']');
-
-            return sb.ToString();
+            first = false;
         }}
-");
-                            }
-                        }
-                    }
+
+        _ = sb.Append(']');
+
+        return sb.ToString();
+    }}
+}}");
                 }
             }
         }

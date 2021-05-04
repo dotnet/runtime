@@ -65,7 +65,6 @@ namespace System.Net.Quic.Tests
             quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
             using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
-            listener.Start();
 
             QuicClientConnectionOptions options = new QuicClientConnectionOptions()
             {

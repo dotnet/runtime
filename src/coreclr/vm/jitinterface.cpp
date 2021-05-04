@@ -4384,6 +4384,12 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
     case ELEMENT_TYPE_R8:
         result = CORINFO_TYPE_DOUBLE;
         break;
+    case ELEMENT_TYPE_I:
+        result = CORINFO_TYPE_NATIVEINT;
+        break;
+    case ELEMENT_TYPE_U:
+        result = CORINFO_TYPE_NATIVEUINT;
+        break;
 
     default:
         // Error case, we will return CORINFO_TYPE_UNDEF
@@ -9901,21 +9907,21 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorInfoCallConvExtension callConvMaybe;
+            CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
 
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
-            if (hr == S_OK)
+            CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
+            if (callConvLocal == CallConvBuilder::UnsetValue)
             {
-                return callConvMaybe;
+                callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
             }
-            else
-            {
-                return MetaSig::GetDefaultUnmanagedCallingConvention();
-            }
+
+            *pSuppressGCTransition = builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
+            return callConvLocal;
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
             return CorInfoCallConvExtension::C;

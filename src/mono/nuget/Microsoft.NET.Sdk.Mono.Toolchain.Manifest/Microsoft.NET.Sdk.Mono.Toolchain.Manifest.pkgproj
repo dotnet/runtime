@@ -1,0 +1,31 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Internal toolchain package not meant for direct consumption. Please do not reference directly.</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <PropertyGroup>
+      <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
+      <PackagePathVersion>PackageVersion=$(PackageVersion);</PackagePathVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.json.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestPath)" />
+
+    <ItemGroup>
+      <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
+      <PackageFile Include="WorkloadManifest.targets" TargetPath="data" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

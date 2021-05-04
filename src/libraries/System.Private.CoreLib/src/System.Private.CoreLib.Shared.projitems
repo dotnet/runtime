@@ -76,7 +76,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArithmeticException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Array.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Array.Enumerators.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Array.Enumerators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArraySegment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArrayTypeMismatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventArgs.cs" />
@@ -684,7 +684,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsByRefLikeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsConst.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsReadOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InterpolatedStringBuilder.cs" />
@@ -1165,6 +1164,9 @@
     <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\IsExternalInit.cs">
+      <Link>Common\System\Runtime\CompilerServices\IsExternalInit.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
@@ -1383,6 +1385,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLastError.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetLastError.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs</Link>
     </Compile>
@@ -1520,6 +1525,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetLastError.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetLastError.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
@@ -1739,6 +1747,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
@@ -2020,9 +2031,6 @@
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetLastError.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetLastError.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
       <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
     </Compile>

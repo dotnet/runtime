@@ -212,7 +212,8 @@ void HandleTerminationRequest(int terminationExitCode)
     {
         SetLatchedExitCode(terminationExitCode);
 
-        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
+        DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableDumpOnSigTerm);
+        ForceEEShutdown(enabled == 1 ? SCA_TerminateProcessWhenShutdownComplete : SCA_ExitProcessWhenShutdownComplete);
     }
 }
 #endif
@@ -1188,9 +1189,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             RestoreSOToleranceState();
 #endif
 
-            ExceptionTracker::ResumeExecution(pContextRecord,
-                                              NULL
-                                              );
+            ExceptionTracker::ResumeExecution(pContextRecord);
             UNREACHABLE();
         }
     }
@@ -3936,10 +3935,7 @@ void ExceptionTracker::ResetLimitFrame()
 
 //
 // static
-void ExceptionTracker::ResumeExecution(
-    CONTEXT*            pContextRecord,
-    EXCEPTION_RECORD*   pExceptionRecord
-    )
+void ExceptionTracker::ResumeExecution(CONTEXT* pContextRecord)
 {
     //
     // This method never returns, so it will leave its
@@ -3958,7 +3954,7 @@ void ExceptionTracker::ResumeExecution(
     EH_LOG((LL_INFO100, "resuming execution at 0x%p\n", GetIP(pContextRecord)));
     EH_LOG((LL_INFO100, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
 
-    RtlRestoreContext(pContextRecord, pExceptionRecord);
+    ClrRestoreNonvolatileContext(pContextRecord);
 
     UNREACHABLE();
     //

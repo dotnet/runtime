@@ -335,8 +335,8 @@ static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
 	#define INTRINS_OVR(sym, ...) 0,
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) spec,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, spec) spec,
+	#define INTRINS_OVR_TAG(sym, _, arch, spec) spec,
+	#define INTRINS_OVR_TAG_KIND(sym, _, kind, arch, spec) spec,
 	#include "llvm-intrinsics.h"
 };
 
@@ -352,8 +352,8 @@ static const uint8_t intrin_kind [] = {
 	#define INTRINS_OVR(sym, ...) 0,
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) 0,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, spec) kind,
+	#define INTRINS_OVR_TAG(sym, _, arch, spec) 0,
+	#define INTRINS_OVR_TAG_KIND(sym, _, arch, kind, spec) kind,
 	#include "llvm-intrinsics.h"
 };
 
@@ -572,6 +572,13 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			return LLVMVectorType (LLVMInt64Type (), size / 8);
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+			return LLVMVectorType (LLVMInt64Type (), size / 8);
+#else
+			return LLVMVectorType (LLVMInt32Type (), size / 4);
+#endif
 		case MONO_TYPE_R4:
 			return LLVMVectorType (LLVMFloatType (), size / 4);
 		case MONO_TYPE_R8:
@@ -604,6 +611,13 @@ type_to_sse_type (int type)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 		return LLVMVectorType (LLVMInt64Type (), 2);
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return LLVMVectorType (LLVMInt64Type (), 2);
+#else
+		return LLVMVectorType (LLVMInt32Type (), 4);
+#endif
 	case MONO_TYPE_R8:
 		return LLVMVectorType (LLVMDoubleType (), 2);
 	case MONO_TYPE_R4:
@@ -774,6 +788,7 @@ primitive_type_is_unsigned (MonoTypeEnum t)
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
 		return TRUE;
 	default:
 		return FALSE;
@@ -12329,10 +12344,10 @@ add_intrinsic (LLVMModuleRef module, int id)
 
 	/* Register overloaded intrinsics */
 	switch (id) {
-	#define INTRINS(intrin_name, llvm_id)
-	#define INTRINS_OVR(intrin_name, llvm_id, llvm_type) case INTRINS_ ## intrin_name: intrins = add_intrins1(module, id, llvm_type); break;
-	#define INTRINS_OVR_2_ARG(intrin_name, llvm_id, llvm_type1, llvm_type2) case INTRINS_ ## intrin_name: intrins = add_intrins2(module, id, llvm_type1, llvm_type2); break;
-	#define INTRINS_OVR_3_ARG(intrin_name, llvm_id, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3); break;
+	#define INTRINS(intrin_name, llvm_id, arch)
+	#define INTRINS_OVR(intrin_name, llvm_id, arch, llvm_type) case INTRINS_ ## intrin_name: intrins = add_intrins1(module, id, llvm_type); break;
+	#define INTRINS_OVR_2_ARG(intrin_name, llvm_id, arch, llvm_type1, llvm_type2) case INTRINS_ ## intrin_name: intrins = add_intrins2(module, id, llvm_type1, llvm_type2); break;
+	#define INTRINS_OVR_3_ARG(intrin_name, llvm_id, arch, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3); break;
 	#define INTRINS_OVR_TAG(...)
 	#define INTRINS_OVR_TAG_KIND(...)
 	#include "llvm-intrinsics.h"

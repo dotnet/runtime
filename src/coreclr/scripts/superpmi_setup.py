@@ -35,6 +35,7 @@
 
 import argparse
 import shutil
+import stat
 import subprocess
 import tempfile
 
@@ -304,13 +305,20 @@ def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda pa
         if os.path.isdir(src_item):
             copy_directory(src_item, dst_item, verbose_output, match_func)
         else:
-            if match_func(src_item):
+            try:
+                if match_func(src_item):
+                    if verbose_output:
+                        print("> copy {0} => {1}".format(src_item, dst_item))
+                    try:
+                        shutil.copy2(src_item, dst_item)
+                    except PermissionError as pe_error:
+                        print('Ignoring PermissionError: {0}'.format(pe_error))
+                else:
+                    if verbose_output:
+                        print("> skipping {0}".format(src_item))
+            except UnicodeEncodeError:
                 if verbose_output:
-                    print("> copy {0} => {1}".format(src_item, dst_item))
-                shutil.copy2(src_item, dst_item)
-            else:
-                if verbose_output:
-                    print("> skipping {0}".format(src_item))
+                    print("> Got UnicodeEncodeError")
 
 
 def copy_files(src_path, dst_path, file_names):
@@ -333,7 +341,10 @@ def copy_files(src_path, dst_path, file_names):
         dst_directory = path.dirname(dst_path_of_file)
         if not os.path.exists(dst_directory):
             os.makedirs(dst_directory)
-        shutil.copy2(f, dst_path_of_file)
+        try:
+            shutil.copy2(f, dst_path_of_file)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
 
 
 def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
@@ -381,7 +392,9 @@ def setup_microbenchmark(workitem_directory, arch):
             return
 
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory, "--verbose"])
+            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir",
+                                 dotnet_directory, "--verbose"])
+
 
 def get_python_name():
     """Gets the python name
@@ -441,11 +454,52 @@ def main(main_args):
     if is_windows:
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
-        # Need to accept files without any extension, which is how executable filesnames look.
+        # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
+
+    # Copy all the test files to CORE_ROOT
+    # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
+    # Reflection errors, just copy everything to CORE_ROOT so for all individual partitions, the
+    # references will be present in CORE_ROOT.
+    if coreclr_args.collection_name == "tests_libraries":
+        print('Copying {} -> {}'.format(coreclr_args.input_directory, superpmi_dst_directory))
+
+        def make_readable(folder_name):
+            """Make file executable by changing the permission
+
+            Args:
+                folder_name (string): folder to mark with 744
+            """
+            if is_windows:
+                return
+
+            print("Inside make_readable")
+            run_command(["ls", "-l", folder_name])
+            for file_path, dirs, files in walk(folder_name, topdown=True):
+                for d in dirs:
+                    os.chmod(os.path.join(file_path, d),
+                    # read+write+execute for owner
+                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                    # read for group
+                    (stat.S_IRGRP) |
+                    # read for other
+                    (stat.S_IROTH))
+
+                for f in files:
+                    os.chmod(os.path.join(file_path, f),
+                    # read+write+execute for owner
+                    (stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR) |
+                    # read for group
+                    (stat.S_IRGRP) |
+                    # read for other
+                    (stat.S_IROTH))
+            run_command(["ls", "-l", folder_name])
+
+        make_readable(coreclr_args.input_directory)
+        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
@@ -497,8 +551,16 @@ def main(main_args):
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
-            exclude_files += [ "Microsoft.Build.dll" ]
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
+            exclude_files += ["Microsoft.Build.dll"]
+
+        if coreclr_args.collection_name == "tests_libraries":
+            # tests_libraries artifacts contains files from core_root folder. Exclude them.
+            core_root_dir = coreclr_args.core_root_directory
+            exclude_files += [item for item in os.listdir(core_root_dir)
+                              if isfile(join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
+
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
+                        exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')
