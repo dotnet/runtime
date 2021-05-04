@@ -316,7 +316,10 @@ namespace System.Text.Json.Serialization
             }
 
             bool ignoreCyclesPopReference = false;
+
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                // .NET types that are parsed to JSON value types doesn't need to be tracked for cycle detection e.g: string.
+                ConverterStrategy != ConverterStrategy.Value &&
                 !IsValueType && !IsNull(value))
             {
                 Debug.Assert(value != null);
@@ -331,11 +334,9 @@ namespace System.Text.Json.Serialization
 
                 // For boxed reference types: do not push when boxed in order to avoid false positives
                 //   when we run the ContainsReferenceForCycleDetection check for the converter of the unboxed value.
-                if (!CanBePolymorphic)
-                {
-                    resolver.PushReferenceForCycleDetection(value);
-                    ignoreCyclesPopReference = true;
-                }
+                Debug.Assert(!CanBePolymorphic);
+                resolver.PushReferenceForCycleDetection(value);
+                ignoreCyclesPopReference = true;
             }
 
             if (CanBePolymorphic)
