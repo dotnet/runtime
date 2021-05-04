@@ -448,9 +448,22 @@
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
+
     <!-- configure -->
-    <Message Condition="'$(SkipMonoCrossJitConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(SkipMonoCrossJitConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <PropertyGroup>
+      <_MonoCMakeCmdLineUpToDate Condition="Exists('$(MonoObjDir)cmake_cmd_line.txt') and '$([System.IO.File]::ReadAllText($(MonoObjDir)cmake_cmd_line.txt).Trim())' == '$(_MonoCMakeConfigureCommand.Trim())'">true</_MonoCMakeCmdLineUpToDate>
+      <_MonoSkipCMakeConfigure>false</_MonoSkipCMakeConfigure>
+      <_MonoSkipCMakeConfigure Condition="'$(SkipMonoCrossJitConfigure)' == 'true' or '$(_MonoCMakeCmdLineUpToDate)' == 'true'">true</_MonoSkipCMakeConfigure>
+    </PropertyGroup>
+    <Message Condition="'$(_MonoSkipCMakeConfigure)' == 'true'" Text="The CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
+    <Message Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
+    <Exec Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <WriteLinesToFile
+      Condition="'$(_MonoSkipCMakeConfigure)' != 'true'"
+      File="$(MonoObjDir)cmake_cmd_line.txt"
+      Lines="$(_MonoCMakeConfigureCommand)"
+      Overwrite="true" />
+
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
@@ -605,14 +618,28 @@
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjCrossDir)" />
+
     <!-- offsets tool -->
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Out-of-tree offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)'))" />
     <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
     <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" />
+
     <!-- configure -->
-    <Message Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
-    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
+    <PropertyGroup>
+      <_MonoAotCMakeCmdLineUpToDate Condition="Exists('$(MonoObjCrossDir)cmake_cmd_line.txt') and '$([System.IO.File]::ReadAllText($(MonoObjCrossDir)cmake_cmd_line.txt).Trim())' == '$(_MonoAotCMakeConfigureCommand.Trim())'">true</_MonoAotCMakeCmdLineUpToDate>
+      <_MonoSkipAotCMakeConfigure>false</_MonoSkipAotCMakeConfigure>
+      <_MonoSkipAotCMakeConfigure Condition="'$(MonoGenerateOffsetsOSGroups)' != '' or '$(_MonoAotCMakeCmdLineUpToDate)' == 'true'">true</_MonoSkipAotCMakeConfigure>
+    </PropertyGroup>
+    <Message Condition="'$(_MonoSkipAotCMakeConfigure)' == 'true'" Text="The AOT Cross CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
+    <Message Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjCrossDir)'" Importance="High"/>
+    <Exec Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
+    <WriteLinesToFile
+      Condition="'$(_MonoSkipAotCMakeConfigure)' != 'true'"
+      File="$(MonoObjCrossDir)cmake_cmd_line.txt"
+      Lines="$(_MonoAotCMakeConfigureCommand)"
+      Overwrite="true" />
+
     <!-- build -->
     <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>

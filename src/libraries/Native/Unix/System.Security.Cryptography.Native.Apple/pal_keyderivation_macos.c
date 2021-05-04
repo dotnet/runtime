@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_keyderivation.h"
-
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#include "pal_keyderivation_macos.h"
 
 static int32_t PrfAlgorithmFromHashAlgorithm(PAL_HashAlgorithm hashAlgorithm, CCPseudoRandomAlgorithm* algorithm)
 {
@@ -80,4 +78,3 @@ int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
     *errorCode = result;
     return result == kCCSuccess ? 1 : 0;
 }
-#endif

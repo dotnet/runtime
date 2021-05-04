@@ -3478,7 +3478,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	MonoImage *image = m_class_get_image (caller_class);
 	g_assert (sig->pinvoke);
 	g_assert (!sig->hasthis && ! sig->explicit_this);
-	g_assert (!sig->is_inflated && !sig->has_type_parameters);
+	g_assert (!sig->has_type_parameters);
 
 #if 0
 	/*

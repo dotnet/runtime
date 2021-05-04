@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_keychain.h"
+#include "pal_keychain_macos.h"
 #include "pal_utilities.h"
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut)
 {
     if (pKeychainOut != NULL)
@@ -465,4 +464,3 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
     CFRelease(cert);
     return *pOSStatus == noErr;
 }
-#endif
