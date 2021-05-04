@@ -1,21 +1,4 @@
 <Project>
-  <!-- Invoke hotreload-delta-gen to apply the DeltaScript to the output assembly to
-       create the .dmeta, .dil and .dpdb files on the OutputPath -->
-  <!-- Have to be careful about AfterTargets. If we happen to go after a design-time target, we could get into an infinite loop. -->
-  <Target Name="CompileDiff" AfterTargets="Build" Condition="'$(DeltaScript)' != ''">
-    <PropertyGroup>
-      <HotreloadDeltaGenCommand>"$(DotNetTool)" hotreload-delta-gen</HotreloadDeltaGenCommand>
-      <HotreloadDeltaGenArgs>-msbuild:$(MSBuildProjectFullPath)</HotreloadDeltaGenArgs>
-      <!-- HACK: have to pass config and RID  so that this target works for a 'dotnet publish' run.
-           What other properties do  I need to pass? Maybe hotreload-delta-gen should just expose an MSBuild task so we can pass everything -->
-      <HotreloadDeltaGenArgs Condition="'$(Configuration)' != ''">$(HotreloadDeltaGenArgs) -p:Configuration=$(Configuration)</HotreloadDeltaGenArgs>
-      <HotreloadDeltaGenArgs Condition="'$(RuntimeIdentifier)' != ''">$(HotreloadDeltaGenArgs) -p:RuntimeIdentifier=$(RuntimeIdentifier)</HotreloadDeltaGenArgs>
-      <HotreloadDeltaGenArgs Condition="'$(BuiltRuntimeConfiguration)' != ''">$(HotreloadDeltaGenArgs) -p:BuiltRuntimeConfiguration=$(BuiltRuntimeConfiguration)</HotreloadDeltaGenArgs>
-      <HotreloadDeltaGenArgs>$(HotreloadDeltaGenArgs) -script:$(DeltaScript)</HotreloadDeltaGenArgs>
-    </PropertyGroup>
-    <Exec Command="$(HotreloadDeltaGenCommand) $(HotreloadDeltaGenArgs)"/>
-  </Target>
-
   <UsingTask TaskName="ComputeDeltaFileOutputNames" AssemblyFile="$(_generateHotReloadDeltaBuildTasks)" />
 
   <!-- Don't invoke hotreload-delta-gen, but compute the names of the artifacts that it would have produced. -->
