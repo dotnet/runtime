@@ -6,7 +6,6 @@
 #include "pal_digest.h"
 #include <Security/Security.h>
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Filled the derivedKey buffer with PBKDF2 derived data.
 
@@ -37,4 +36,3 @@ PALEXPORT int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
                                            uint8_t* derivedKey,
                                            uint32_t derivedKeyLen,
                                            int32_t* errorCode);
-#endif
