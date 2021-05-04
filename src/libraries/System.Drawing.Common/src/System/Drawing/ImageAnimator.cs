@@ -382,18 +382,16 @@ namespace System.Drawing
         private static void AnimateImages50ms()
         {
             Debug.Assert(s_imageInfoList != null, "Null images list");
-            DateTime animationStart = DateTime.Now;
-            double totalAnimationTime, totalAnimationTimeLastAnimation = 0;
-            int thisAnimationDuration;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             while (true)
             {
                 Thread.Sleep(50);
 
                 // Because Thread.Sleep is not accurate, capture how much time has actually elapsed during the animation
-                totalAnimationTime = (DateTime.Now - animationStart).TotalMilliseconds;
-                thisAnimationDuration = (int)(totalAnimationTime - totalAnimationTimeLastAnimation);
-                totalAnimationTimeLastAnimation = totalAnimationTime;
+                long timeElapsed = stopwatch.ElapsedMilliseconds;
+                stopwatch.Restart();
 
                 // Acquire reader-lock to access imageInfoList, elements in the list can be modified w/o needing a writer-lock.
                 // Observe that we don't need to check if the thread is waiting or a writer lock here since the thread this
@@ -407,7 +405,7 @@ namespace System.Drawing
 
                         if (imageInfo.Animated)
                         {
-                            imageInfo.AdvanceAnimationBy(thisAnimationDuration);
+                            imageInfo.AdvanceAnimationBy(timeElapsed);
 
                             if (imageInfo.FrameDirty)
                             {

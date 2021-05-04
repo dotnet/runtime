@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -18,14 +19,11 @@ namespace System.Drawing.Tests
         // set the `MANUAL_TESTS` environment variable to any non-empty value, and run
         // `dotnet test --filter "ImageAnimatorManualTests"
 
-        [ConditionalTheory(nameof(ManualTestsEnabled))] // Performs GIF animation and captures frames for visual verification
-        [InlineData("animated-timer-1fps-repeat-2.gif")]
-        [InlineData("animated-timer-10fps-repeat-2.gif")]
-        [InlineData("animated-timer-100fps-repeat-2.gif")]
-        public void AnimateAndCaptureFrames(string imageName)
+        [ConditionalFact(nameof(ManualTestsEnabled), Timeout = 75_000)]
+        public void AnimateAndCaptureFrames()
         {
-            // This test animates the test gifs that we have and waits 30 seconds
-            // for the animation to progress. As the frame change events occur, we
+            // This test animates the test gifs that we have and waits 60 seconds
+            // for the animations to progress. As the frame change events occur, we
             // capture PNG snapshots of the current frame, essentially extracting
             // the frames from the GIF.
 
@@ -36,29 +34,52 @@ namespace System.Drawing.Tests
             // The captured frames are stored in the artifacts/bin/System.Drawing.Common.Tests
             // folder for each configuration, and then under an `ImageAnimatorManualTests` folder
             // with a timestamped folder under that. Each animated gif then gets its own folder too.
-            string testOutputFolder = Path.Combine(OutputFolder, Path.GetFileNameWithoutExtension(imageName));
-            Directory.CreateDirectory(testOutputFolder);
 
-            DateTime startTime = DateTime.Now;
-            int frameIndex = 0;
-
-            EventHandler frameChangedHandler = new EventHandler(new Action<object, EventArgs>((object o, EventArgs e) =>
+            string[] images = new string[]
             {
-                Bitmap animation = (Bitmap)o;
-                ImageAnimator.UpdateFrames(animation);
+                "animated-timer-1fps-repeat-2.gif",
+                "animated-timer-1fps-repeat-infinite.gif",
+                "animated-timer-10fps-repeat-2.gif",
+                "animated-timer-10fps-repeat-infinite.gif",
+                "animated-timer-100fps-repeat-2.gif",
+                "animated-timer-100fps-repeat-infinite.gif",
+            };
 
-                // We save captures using jpg so that:
-                // a) The images don't get saved as animated gifs again, and just a single frame is saved
-                // b) Saving pngs in this test on Linux was leading to sporadic GDI+ errors; Jpeg is more reliable
-                string timestamp = (DateTime.Now - startTime).TotalMilliseconds.ToString("000000");
-                animation.Save(Path.Combine(testOutputFolder, $"{frameIndex++}_{timestamp}.jpg"), ImageFormat.Jpeg);
-            }));
+            Dictionary<string, EventHandler> handlers = new();
+            Dictionary<string, int> frameIndexes = new();
+            Dictionary<string, Bitmap> bitmaps = new();
 
-            using (Bitmap image = new(Helpers.GetTestBitmapPath(imageName)))
+            Stopwatch stopwatch = new();
+
+            foreach (var imageName in images)
             {
-                ImageAnimator.Animate(image, frameChangedHandler);
-                Thread.Sleep(30_000);
-                ImageAnimator.StopAnimate(image, frameChangedHandler);
+                string testOutputFolder = Path.Combine(OutputFolder, Path.GetFileNameWithoutExtension(imageName));
+                Directory.CreateDirectory(testOutputFolder);
+                frameIndexes[imageName] = 0;
+
+                handlers[imageName] = new EventHandler(new Action<object, EventArgs>((object o, EventArgs e) =>
+                {
+                    Bitmap animation = (Bitmap)o;
+                    ImageAnimator.UpdateFrames(animation);
+
+                    // We save captures using jpg so that:
+                    // a) The images don't get saved as animated gifs again, and just a single frame is saved
+                    // b) Saving pngs in this test on Linux was leading to sporadic GDI+ errors; Jpeg is more reliable
+                    string timestamp = stopwatch.ElapsedMilliseconds.ToString("000000");
+                    animation.Save(Path.Combine(testOutputFolder, $"{++frameIndexes[imageName]}_{timestamp}.jpg"), ImageFormat.Jpeg);
+                }));
+
+                bitmaps[imageName] = new(Helpers.GetTestBitmapPath(imageName));
+                ImageAnimator.Animate(bitmaps[imageName], handlers[imageName]);
+            }
+
+            stopwatch.Start();
+            Thread.Sleep(60_000);
+
+            foreach (var imageName in images)
+            {
+                ImageAnimator.StopAnimate(bitmaps[imageName], handlers[imageName]);
+                bitmaps[imageName].Dispose();
             }
         }
     }
