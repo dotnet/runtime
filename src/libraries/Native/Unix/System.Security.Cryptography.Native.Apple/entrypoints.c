@@ -53,7 +53,6 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_RsaEncryptOaep)
     DllImportEntry(AppleCryptoNative_RsaEncryptPkcs)
     DllImportEntry(AppleCryptoNative_RsaSignaturePrimitive)
-    DllImportEntry(AppleCryptoNative_RsaDecryptionPrimitive)
     DllImportEntry(AppleCryptoNative_RsaEncryptionPrimitive)
     DllImportEntry(AppleCryptoNative_RsaVerificationPrimitive)
     DllImportEntry(AppleCryptoNative_SecCopyErrorMessageString)

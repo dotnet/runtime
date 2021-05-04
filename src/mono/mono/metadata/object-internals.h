@@ -1647,6 +1647,9 @@ mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
+guint8*
+mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field);
+
 MonoMethod*
 mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method, MonoError *error);
 

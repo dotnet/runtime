@@ -10,6 +10,7 @@ using Microsoft.Win32.SafeHandles;
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
 using FSEventStreamRef = System.IntPtr;
+using CFIndex = System.IntPtr;
 using size_t = System.IntPtr;
 using FSEventStreamEventId = System.UInt64;
 using CFTimeInterval = System.Double;
@@ -72,30 +73,22 @@ internal static partial class Interop
             kFSEventStreamCreateFlagFileEvents  = 0x00000010
         }
 
-        /// <summary>
-        /// The EventStream callback that will be called for every event batch.
-        /// </summary>
-        /// <param name="streamReference">The stream that was created for this callback.</param>
-        /// <param name="clientCallBackInfo">A pointer to optional context info; otherwise, IntPtr.Zero.</param>
-        /// <param name="numEvents">The number of paths, events, and IDs. Path[2] corresponds to Event[2] and ID[2], etc.</param>
-        /// <param name="eventPaths">The paths that have changed somehow, according to their corresponding event.</param>
-        /// <param name="eventFlags">The events for the corresponding path.</param>
-        /// <param name="eventIds">The machine-and-disk-drive-unique Event ID for the specific event.</param>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal unsafe delegate void FSEventStreamCallback(
-            FSEventStreamRef streamReference,
-            IntPtr clientCallBackInfo,
-            size_t numEvents,
-            byte** eventPaths,
-            FSEventStreamEventFlags* eventFlags,
-            FSEventStreamEventId* eventIds);
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct FSEventStreamContext
+        {
+            public CFIndex version;
+            public IntPtr info;
+            public IntPtr retainFunc;
+            public IntPtr releaseFunc;
+            public IntPtr copyDescription;
+        }
 
         /// <summary>
         /// Internal wrapper to create a new EventStream to listen to events from the core OS (such as File System events).
         /// </summary>
         /// <param name="allocator">Should be IntPtr.Zero</param>
         /// <param name="callback">A callback instance that will be called for every event batch.</param>
-        /// <param name="context">Should be IntPtr.Zero</param>
+        /// <param name="context">FSEventStreamContext structure to associate with this stream.</param>
         /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
         /// <param name="sinceWhen">
         /// The start point to receive events from. This can be to retrieve historical events or only new events.
@@ -107,10 +100,10 @@ internal static partial class Interop
         /// <returns>On success, returns a pointer to an FSEventStream object; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
         [DllImport(Interop.Libraries.CoreServicesLibrary, CharSet = CharSet.Ansi)]
-        internal static extern SafeEventStreamHandle FSEventStreamCreate(
+        internal static extern unsafe SafeEventStreamHandle FSEventStreamCreate(
             IntPtr                      allocator,
-            FSEventStreamCallback       callback,
-            IntPtr                      context,
+            delegate* unmanaged<FSEventStreamRef, IntPtr, size_t, byte**, FSEventStreamEventFlags*, FSEventStreamEventId*, void> callback,
+            FSEventStreamContext*       context,
             SafeCreateHandle            pathsToWatch,
             FSEventStreamEventId        sinceWhen,
             CFTimeInterval              latency,

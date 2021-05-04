@@ -117,9 +117,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->Vector128ULongHandle;
             case CORINFO_TYPE_NATIVEINT:
-                break;
+                return m_simdHandleCache->Vector128NIntHandle;
             case CORINFO_TYPE_NATIVEUINT:
-                break;
+                return m_simdHandleCache->Vector128NUIntHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -150,9 +150,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->Vector256ULongHandle;
             case CORINFO_TYPE_NATIVEINT:
-                break;
+                return m_simdHandleCache->Vector256NIntHandle;
             case CORINFO_TYPE_NATIVEUINT:
-                break;
+                return m_simdHandleCache->Vector256NUIntHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -184,9 +184,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->Vector64ULongHandle;
             case CORINFO_TYPE_NATIVEINT:
-                break;
+                return m_simdHandleCache->Vector64NIntHandle;
             case CORINFO_TYPE_NATIVEUINT:
-                break;
+                return m_simdHandleCache->Vector64NUIntHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -663,6 +663,12 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 {
     if (baseJitType == CORINFO_TYPE_UNDEF)
     {
+        return false;
+    }
+
+    if ((baseJitType == CORINFO_TYPE_NATIVEINT) || (baseJitType == CORINFO_TYPE_NATIVEUINT))
+    {
+        // We don't want to support the general purpose helpers for nint/nuint until after they go through API review.
         return false;
     }
 

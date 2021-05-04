@@ -50,6 +50,76 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(buffer.End);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CanWriteAndReadAtLeast(bool baseImplementation)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var reader = baseImplementation ? new BasePipeReader(_pipe.Reader) : _pipe.Reader;
+
+            await _pipe.Writer.WriteAsync(bytes);
+            ReadResult result = await reader.ReadAtLeastAsync(11);
+            ReadOnlySequence<byte> buffer = result.Buffer;
+
+            Assert.Equal(11, buffer.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(buffer.ToArray()));
+
+            reader.AdvanceTo(buffer.End);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAtLeastShouldNotCompleteIfWriterWroteLessThanMinimum(bool baseImplementation)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var reader = baseImplementation ? new BasePipeReader(_pipe.Reader) : _pipe.Reader;
+
+            await _pipe.Writer.WriteAsync(bytes.AsMemory(0, 5));
+            ValueTask<ReadResult> task = reader.ReadAtLeastAsync(11);
+
+            Assert.False(task.IsCompleted);
+
+            await _pipe.Writer.WriteAsync(bytes.AsMemory(5));
+
+            ReadResult result = await task;
+
+            ReadOnlySequence<byte> buffer = result.Buffer;
+
+            Assert.Equal(11, buffer.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(buffer.ToArray()));
+
+            reader.AdvanceTo(buffer.End);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CanAlternateReadAtLeastAndRead(bool baseImplementation)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var reader = baseImplementation ? new BasePipeReader(_pipe.Reader) : _pipe.Reader;
+
+            await _pipe.Writer.WriteAsync(bytes.AsMemory(0, 5));
+            ReadResult result = await reader.ReadAtLeastAsync(3);
+            ReadOnlySequence<byte> buffer = result.Buffer;
+
+            Assert.Equal(5, buffer.Length);
+            Assert.Equal("Hello", Encoding.ASCII.GetString(buffer.ToArray()));
+
+            reader.AdvanceTo(buffer.End);
+
+            await _pipe.Writer.WriteAsync(bytes.AsMemory(5));
+            result = await reader.ReadAsync();
+            buffer = result.Buffer;
+
+            Assert.Equal(6, buffer.Length);
+            Assert.Equal(" World", Encoding.ASCII.GetString(buffer.ToArray()));
+
+            reader.AdvanceTo(buffer.End);
+        }
+
         [Fact]
         public async Task AdvanceResetsCommitHeadIndex()
         {
@@ -591,6 +661,26 @@ namespace System.IO.Pipelines.Tests
             Assert.True(result.IsCompleted);
 
             _pipe.Reader.AdvanceTo(result.Buffer.End);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAtLeastReturnsIfCompleted(bool baseImplementation)
+        {
+            var reader = baseImplementation ? new BasePipeReader(_pipe.Reader) : _pipe.Reader;
+
+            _pipe.Writer.Complete();
+
+            // Make sure we get the same results (state transitions are working)
+            for (int i = 0; i < 3; i++)
+            {
+                ReadResult result = await reader.ReadAtLeastAsync(100);
+
+                Assert.True(result.IsCompleted);
+
+                reader.AdvanceTo(result.Buffer.End);
+            }
         }
 
         [Fact]
