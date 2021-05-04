@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-iOSSimulator;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-tvOSSimulator;$(NetCoreAppCurrent)-Android;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android;</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- When we replace implementations with PNSE, need to suppress some "field is never assigned to" warnings. -->
     <NoWarn Condition="'$(TargetsMobile)' == 'true'">$(NoWarn);CS0649</NoWarn>
@@ -10,7 +10,7 @@
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.NonBrowser.xml" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.NonMobile.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
