@@ -928,8 +928,9 @@ LOCAL_LABEL(CallCppHelper3):
     .endm
 
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
-        .word \name
-        .word \name\()_End
+1:
+        .word \name-1b
+        .word \name\()_End-1b
         .word __\name\()__g_lowest_address_offset
         .word __\name\()__g_highest_address_offset
         .word __\name\()__g_ephemeral_low_offset
