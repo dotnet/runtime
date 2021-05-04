@@ -191,6 +191,7 @@
       <!-- RID-specific framework packs. -->
       <RuntimeNupkgFile
         Include="
+          $(DownloadDirectory)**\Microsoft.NET.Sdk.Mono.Toolchain.Manifest.*.nupkg;
           $(DownloadDirectory)**\Microsoft.*.Runtime.*.nupkg;
           $(DownloadDirectory)**\Microsoft.*.App.Host.*.nupkg;
           $(DownloadDirectory)**\Microsoft.*.App.Crossgen2.*.nupkg"
