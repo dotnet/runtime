@@ -306,7 +306,7 @@ namespace System.Net.Sockets.Tests
                     await disposeTask;
 
                     SocketError? localSocketError = null;
-                    bool thrownDisposed = false;
+                    bool disposedException = false;
                     try
                     {
                         await socketOperation;
@@ -317,18 +317,21 @@ namespace System.Net.Sockets.Tests
                     }
                     catch (ObjectDisposedException)
                     {
-                        thrownDisposed = true;
+                        disposedException = true;
                     }
 
-                    if (UsesSync)
+                    if (UsesApm)
+                    {
+                        Assert.Null(localSocketError);
+                        Assert.True(disposedException);
+                    }
+                    else if (UsesSync)
                     {
                         Assert.Equal(SocketError.ConnectionAborted, localSocketError);
                     }
                     else
                     {
-                        // TODO: how to make the test pass?
-                        //Assert.True(thrownDisposed);
-                        Assert.Equal(thrownDisposed, thrownDisposed);
+                        Assert.Equal(SocketError.OperationAborted, localSocketError);
                     }
 
                     // On OSX, we're unable to unblock the on-going socket operations and

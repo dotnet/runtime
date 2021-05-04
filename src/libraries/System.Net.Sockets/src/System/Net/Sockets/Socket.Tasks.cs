@@ -1098,6 +1098,7 @@ namespace System.Net.Sockets
             {
                 Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
 
+                // TODO: Support cancellation by passing cancellationToken down through SendPacketsAsync, etc.
                 if (socket.SendPacketsAsync(this))
                 {
                     _cancellationToken = cancellationToken;
