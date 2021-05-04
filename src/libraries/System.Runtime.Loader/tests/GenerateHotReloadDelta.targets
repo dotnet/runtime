@@ -20,8 +20,7 @@
 
   <!-- Don't invoke hotreload-delta-gen, but compute the names of the artifacts that it would have produced. -->
   <Target Name="ComputeDeltaFileOutputNames" Condition="'$(DeltaScript)' != ''">
-    <!-- FIXME: is AssemblyName the best property to get the output assembly? -->
-    <ComputeDeltaFileOutputNames BaseAssemblyName="$(OutputPath)\$(AssemblyName).dll" DeltaScript="$(DeltaScript)">
+    <ComputeDeltaFileOutputNames BaseAssemblyName="$(TargetPath)" DeltaScript="$(DeltaScript)">
       <Output TaskParameter="DeltaOutputs" ItemName="_DeltaFileForAssignTargetPaths" />
     </ComputeDeltaFileOutputNames>
   </Target>
