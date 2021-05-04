@@ -678,18 +678,15 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
     public class AesCcmIsSupportedTests
     {
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "This test runs only on non-Browser.")]
-        public static void IsSupported_NotOnBrowser_ReturnsTrue()
+        public class AesGcmIsSupportedTests
         {
-            Assert.True(AesCcm.IsSupported);
-        }
+            [Fact]
+            public static void CheckIsSupported()
+            {
+                bool expectedIsSupported = !PlatformDetection.IsBrowser;
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Browser)]
-        public static void IsSupported_OnBrowser_ReturnsFalse()
-        {
-            Assert.False(AesCcm.IsSupported);
+                Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
+            }
         }
     }
 }

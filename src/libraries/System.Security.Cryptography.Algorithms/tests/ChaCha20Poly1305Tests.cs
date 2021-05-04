@@ -351,7 +351,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             new AEADTest
             {
                 Source = Rfc8439TestVectors,
-                CaseId = 1,
+                CaseId = 1, // RFC 8439, Sec. 2.8.2
                 Key = "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f".HexToByteArray(),
                 Nonce = "070000004041424344454647".HexToByteArray(),
                 Plaintext = (
@@ -378,7 +378,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             new AEADTest
             {
                 Source = Rfc8439TestVectors,
-                CaseId = 2,
+                CaseId = 2, // RFC 8439, Appendix A.5
                 Key = "1c9240a5eb55d38af333888604f6b5f0473917c1402b80099dca5cbc207075c0".HexToByteArray(),
                 Nonce = "000000000102030405060708".HexToByteArray(),
                 Plaintext = (
@@ -437,28 +437,18 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Browser)]
-        public static void IsSupported_OnBrowser_ReturnsFalse()
+        public static void CheckIsSupported()
         {
-            Assert.False(ChaCha20Poly1305.IsSupported);
-        }
+            bool expectedIsSupported = false; // assume not supported unless environment advertises support
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void IsSupported_OnWindows_QueriesOSSupport()
-        {
-            // Runtime uses a hardcoded OS version to determine support.
-            // The test queries the OS directly to ensure our version check is correct.
+            if (PlatformDetection.IsWindows)
+            {
+                // Runtime uses a hardcoded OS version to determine support.
+                // The test queries the OS directly to ensure our version check is correct.
+                expectedIsSupported = CngUtility.IsAlgorithmSupported("CHACHA20_POLY1305");
+            }
 
-            bool expected = CngUtility.IsAlgorithmSupported("CHACHA20_POLY1305");
-            Assert.Equal(expected, ChaCha20Poly1305.IsSupported);
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Windows, "We special-case Browser and Windows checks.")]
-        public static void IsSupported_OnOtherPlatforms_ReturnsFalse()
-        {
-            Assert.False(ChaCha20Poly1305.IsSupported);
+            Assert.Equal(expectedIsSupported, ChaCha20Poly1305.IsSupported);
         }
     }
 }

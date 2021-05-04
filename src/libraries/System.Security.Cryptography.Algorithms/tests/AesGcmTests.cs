@@ -840,17 +840,11 @@ namespace System.Security.Cryptography.Algorithms.Tests
     public class AesGcmIsSupportedTests
     {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "This test runs only on non-Browser.")]
-        public static void IsSupported_NotOnBrowser_ReturnsTrue()
+        public static void CheckIsSupported()
         {
-            Assert.True(AesGcm.IsSupported);
-        }
+            bool expectedIsSupported = !PlatformDetection.IsBrowser;
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Browser)]
-        public static void IsSupported_OnBrowser_ReturnsFalse()
-        {
-            Assert.False(AesGcm.IsSupported);
+            Assert.Equal(expectedIsSupported, AesGcm.IsSupported);
         }
     }
 }

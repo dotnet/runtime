@@ -9,8 +9,9 @@ namespace System.Security.Cryptography.Algorithms.Tests
     internal static class CngUtility
     {
         private const string BCRYPT_LIB = "bcrypt.dll";
+        private const string MS_PRIMITIVE_PROVIDER = "Microsoft Primitive Provider";
 
-        public static bool IsAlgorithmSupported(string algId, string implementation = null)
+        public static bool IsAlgorithmSupported(string algId, string implementation = MS_PRIMITIVE_PROVIDER)
         {
             Assert.True(PlatformDetection.IsWindows, "Caller should not invoke this method for non-Windows platforms.");
 
