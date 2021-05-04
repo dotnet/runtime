@@ -7,6 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.0-dev" />
+    <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion)" />
   </ItemGroup>
 </Project>
