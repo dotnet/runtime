@@ -561,13 +561,55 @@ namespace R2RDump
                     Count = group.Count()
                 }).OrderByDescending(x => x.Count);
 
-            _writer.WriteLine($"                      Fixup | Count");
+            /* Runtime Repo GH Issue #49249:
+             *
+             * In order to format the fixup counts results table, we need to
+             * know beforehand the size of each column. */
+
+            int longestFixupKind = 0;
+            int sortedFixupCountsTotal = sortedFixupCounts.Sum(x => x.Count);
+
+            /* First, we look at all the Fixup Kinds that will be printed. We
+             * then store the length of the longest one's name. */
+
             foreach (var fixupAndCount in sortedFixupCounts)
             {
-                _writer.WriteLine($"{fixupAndCount.FixupKind, 27} | {fixupAndCount.Count, 5}");
+                int kindLength = fixupAndCount.FixupKind.ToString().Length;
+
+                if (kindLength > longestFixupKind)
+                    longestFixupKind = kindLength;
             }
-            _writer.WriteLine("-----------------------------------");
-            _writer.WriteLine($"                      Total | {sortedFixupCounts.Sum(x => x.Count), 5}");
+
+            /* The padding is calculated in the two following lines:
+             *
+             * Fixup: Length of the longest Fixup Kind name, as explained above.
+             * Count: Since a total is always bigger than its operands, we set
+             *        the padding to the total's number of digits.
+             *
+             * The reason we are using 'Max()' here is because in the case of only
+             * getting values shorter than 5 digits (Length of "Fixup" and "Count"),
+             * the formatting could be messed up. The likelyhood of this happening
+             * is apparently 0%, but better safe than sorry.
+             */
+
+            int fixupPadding = Math.Max(longestFixupKind, 5);
+            int countPadding = Math.Max(sortedFixupCountsTotal.ToString().Length, 5);
+
+            _writer.WriteLine(
+                $"{"Fixup".PadLeft(fixupPadding)} | {"Count".PadLeft(countPadding)}"
+            );
+            foreach (var fixupAndCount in sortedFixupCounts)
+            {
+                _writer.WriteLine(
+                    $"{fixupAndCount.FixupKind.ToString().PadLeft(fixupPadding)} | {fixupAndCount.Count.ToString().PadLeft(countPadding)}"
+                );
+            }
+
+            // The +3 in this divider is to account for the " | " table division.
+            _writer.WriteLine(new string('-', fixupPadding + countPadding + 3));
+            _writer.WriteLine(
+                $"{"Total".PadLeft(fixupPadding)} | {sortedFixupCountsTotal.ToString().PadLeft(countPadding)}"
+            );
             SkipLine();
         }
     }
