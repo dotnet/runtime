@@ -4,6 +4,7 @@
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Net.Quic;
@@ -12,6 +13,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,24 +21,28 @@ using static System.Net.Test.Common.Configuration.Http;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class LargeFileBenchmark
+    public class LargeFileBenchmark : IDisposable
     {
         private const string HostName = "10.194.114.94";
 
         private readonly ITestOutputHelper _output;
+        private LogHttpEventListener _listener;
 
         public LargeFileBenchmark(ITestOutputHelper output)
         {
             _output = output;
+            _listener = new LogHttpEventListener(output);
         }
+
+        public void Dispose() => _listener.Dispose();
 
         [Fact]
         public Task Download11() => TestHandler("SocketsHttpHandler HTTP 1.1", false, 5);
 
         [Fact]
-        public Task Download20() => TestHandler("SocketsHttpHandler HTTP 2.0", true, 5);
+        public Task Download20() => TestHandler("SocketsHttpHandler HTTP 2.0", true, 0.1);
 
-        private async Task TestHandler(string info, bool http2, int lengthMb)
+        private async Task TestHandler(string info, bool http2, double lengthMb)
         {
             using var client = new HttpClient();
             var message = GenerateRequestMessage(HostName, http2, lengthMb);
@@ -48,7 +54,7 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine($"{info}: {response.StatusCode} in {elapsedMs} ms");
         }
 
-        static HttpRequestMessage GenerateRequestMessage(string hostName, bool http2, int lengthMb = 25)
+        static HttpRequestMessage GenerateRequestMessage(string hostName, bool http2, double lengthMb = 5)
         {
             string url = $"http://{hostName}:{(http2 ? "5001" : "5000")}?lengthMb={lengthMb}";
             var msg = new HttpRequestMessage(HttpMethod.Get, url)
@@ -1437,5 +1443,72 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientSendTest_Sync(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;
+    }
+
+
+    public sealed class LogHttpEventListener : EventListener
+    {
+        private Channel<string> _messagesChannel = Channel.CreateUnbounded<string>();
+        private Task _processMessages;
+        private CancellationTokenSource _stopProcessing;
+        private ITestOutputHelper _log;
+
+        public LogHttpEventListener(ITestOutputHelper log)
+        {
+            _log = log;
+            _messagesChannel = Channel.CreateUnbounded<string>();
+            _processMessages = ProcessMessagesAsync();
+            _stopProcessing = new CancellationTokenSource();
+        }
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Http")
+            {
+                EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+        }
+
+        private async Task ProcessMessagesAsync()
+        {
+            await Task.Yield();
+
+            try
+            {
+                await foreach (string message in _messagesChannel.Reader.ReadAllAsync(_stopProcessing.Token))
+                {
+                    _log.WriteLine(message);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+
+        protected override async void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            var sb = new StringBuilder().Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+            for (int i = 0; i < eventData.Payload?.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+                sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+            }
+            await _messagesChannel.Writer.WriteAsync(sb.ToString());
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (!_processMessages.Wait(TimeSpan.FromSeconds(10)))
+            {
+                _stopProcessing.Cancel();
+                _processMessages.Wait();
+            }
+        }
     }
 }
