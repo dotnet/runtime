@@ -363,4 +363,7 @@
   <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
     <value>The current platform does not support the specified feedback size.</value>
   </data>
+  <data name="Cryptography_OutputLength_OutOfRange" xml:space="preserve">
+    <value>The current platform does not support the specified feedback size.</value>
+  </data>
 </root>
