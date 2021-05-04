@@ -4,23 +4,23 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     public partial class JsonObject
     {
-        private KeyCollection? _keyCollection;
+        private ValueCollection? _valueCollection;
 
-        private KeyCollection GetKeyCollection(JsonObject jsonObject)
+        private ValueCollection GetValueCollection(JsonObject jsonObject)
         {
             CreateList();
-            return _keyCollection ??= new KeyCollection(jsonObject);
+            return _valueCollection ??= new ValueCollection(jsonObject);
         }
 
-        private sealed class KeyCollection : ICollection<string>
+        private sealed class ValueCollection : ICollection<JsonNode?>
         {
             private readonly JsonObject _jObject;
 
-            public KeyCollection(JsonObject jsonObject)
+            public ValueCollection(JsonObject jsonObject)
             {
                 _jObject = jsonObject;
             }
@@ -33,20 +33,19 @@ namespace System.Text.Json.Node
             {
                 foreach (KeyValuePair<string, JsonNode?> item in _jObject)
                 {
-                    yield return item.Key;
+                    yield return item.Value;
                 }
             }
 
-            public void Add(string propertyName) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            public void Add(JsonNode? jsonNode) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
 
 
             public void Clear() => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
 
 
-            public bool Contains(string propertyName) => _jObject.ContainsNode(propertyName);
+            public bool Contains(JsonNode? jsonNode) => _jObject.ContainsNode(jsonNode);
 
-
-            public void CopyTo(string[] propertyNameArray, int index)
+            public void CopyTo(JsonNode?[] nodeArray, int index)
             {
                 if (index < 0)
                 {
@@ -55,24 +54,24 @@ namespace System.Text.Json.Node
 
                 foreach (KeyValuePair<string, JsonNode?> item in _jObject)
                 {
-                    if (index >= propertyNameArray.Length)
+                    if (index >= nodeArray.Length)
                     {
-                        ThrowHelper.ThrowArgumentException_NodeArrayTooSmall(nameof(propertyNameArray));
+                        ThrowHelper.ThrowArgumentException_NodeArrayTooSmall(nameof(nodeArray));
                     }
 
-                    propertyNameArray[index++] = item.Key;
+                    nodeArray[index++] = item.Value;
                 }
             }
 
-            public IEnumerator<string> GetEnumerator()
+            public IEnumerator<JsonNode?> GetEnumerator()
             {
                 foreach (KeyValuePair<string, JsonNode?> item in _jObject)
                 {
-                    yield return item.Key;
+                    yield return item.Value;
                 }
             }
 
-            bool ICollection<string>.Remove(string propertyName) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            bool ICollection<JsonNode?>.Remove(JsonNode? node) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
         }
     }
 }

@@ -4,7 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     public sealed partial class JsonArray : JsonNode, IList<JsonNode?>
     {

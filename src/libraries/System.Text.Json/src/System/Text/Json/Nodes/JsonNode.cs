@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     /// <summary>
     ///   The base class that represents a single node within a mutable JSON document.

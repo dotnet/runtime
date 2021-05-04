@@ -5,7 +5,7 @@ using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     public partial class JsonNode : IDynamicMetaObjectProvider
     {

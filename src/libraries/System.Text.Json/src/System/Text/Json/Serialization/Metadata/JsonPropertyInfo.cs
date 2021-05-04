@@ -413,7 +413,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 // Avoid a type reference to JsonObject and its converter to support trimming.
-                Debug.Assert(propValue is Node.JsonObject);
+                Debug.Assert(propValue is Nodes.JsonObject);
 
                 ConverterBase.ReadElementAndSetProperty(propValue, state.Current.JsonPropertyNameAsString!, ref reader, Options, ref state);
             }
