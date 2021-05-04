@@ -785,6 +785,12 @@ namespace System.Net.Http
 
             if (frameHeader.StreamId == 0)
             {
+                if (amount > 2147000000)
+                {
+                    amount++;
+                    amount--;
+                }
+
                 _connectionWindow.AdjustCredit(amount);
             }
             else
