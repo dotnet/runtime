@@ -279,8 +279,14 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
     noway_assert(block != nullptr);
     noway_assert(blockPred != nullptr);
 
-    noway_assert(block->countOfInEdges() > 0);
-    block->bbRefs--;
+    if (block->countOfInEdges() > 0)
+    {
+        block->bbRefs--;
+    }
+    else if (fgComputePredsDone)
+    {
+        unreached();
+    }
 
     // Do nothing if we haven't calculated the predecessor list yet.
     // Yes, this does happen.
