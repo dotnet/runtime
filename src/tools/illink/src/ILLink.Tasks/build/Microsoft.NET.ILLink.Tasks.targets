@@ -1,9 +1,0 @@
-<!-- TODO: Remove this file after the SDK consumes a new ILLink.Tasks package and dotnet/runtime consumes that newer SDK. -->
-<Project>
-
-  <PropertyGroup>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net5.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\net472\ILLink.Tasks.dll</ILLinkTasksAssembly>
-  </PropertyGroup>
-
-</Project>

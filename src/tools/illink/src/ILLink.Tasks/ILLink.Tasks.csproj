@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <Content Include="sdk/Sdk.props" PackagePath="Sdk/" />
-    <Content Include="build/$(PackageId).*" PackagePath="build/" />
+    <Content Include="build/$(PackageId).props" PackagePath="build/" />
   </ItemGroup>
 
   <ItemGroup>
