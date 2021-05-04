@@ -385,7 +385,8 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-$__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="$(pwd)" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v
+mkdir -p /tmp/out
+$__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="/tmp/out" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully
