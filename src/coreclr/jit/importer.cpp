@@ -21130,52 +21130,62 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                 // locally, or was boxed locally but we were unable to remove the box for
                 // various reasons.
                 //
-                // We can still update the call to invoke the unboxed entry.
+                // We may still be able to update the call to invoke the unboxed entry.
                 //
                 if (requiresInstMethodTableArg)
                 {
-                    JITDUMP("revising call to invoke unboxed entry\n");
+                    const DWORD derivedClassAttribs = info.compCompHnd->getClassAttribs(derivedClass);
 
-                    // Update the 'this' pointer to refer to the box payload
-                    //
-                    GenTree* const thisArg       = call->gtCallThisArg->GetNode();
-                    GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                    GenTree* const boxPayload    = gtNewOperNode(GT_ADD, TYP_BYREF, thisArg, payloadOffset);
-
-                    call->gtCallThisArg = gtNewCallArgs(boxPayload);
-                    call->gtCallMethHnd = unboxedEntryMethod;
-                    call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
-
-                    // Method attributes will differ because unboxed entry point is shared
-                    //
-                    const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                    JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                            unboxedMethodAttribs);
-                    derivedMethod        = unboxedEntryMethod;
-                    derivedMethodAttribs = unboxedMethodAttribs;
-
-                    // Add the method table argument...note we know the value of the class handle
-                    // (we could also fetch this via indir off of the 'this' arg)
-                    //
-                    JITDUMP("call to unboxed entry requires inst method table arg -- adding\n");
-                    GenTree* const methodTableArg = gtNewIconEmbClsHndNode(derivedClass);
-
-                    // Prepend for R2L arg passing or empty L2R passing
-                    // Append for non-empty L2R
-                    //
-                    if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+                    if ((derivedClassAttribs & CORINFO_FLG_SHAREDINST) != 0)
                     {
-                        call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                        JITDUMP("unboxed entry needs MT arg, but the handle we have is shared. Deferring update.\n");
                     }
                     else
                     {
-                        GenTreeCall::Use* beforeArg = call->gtCallArgs;
-                        while (beforeArg->GetNext() != nullptr)
-                        {
-                            beforeArg = beforeArg->GetNext();
-                        }
+                        // See if the method table we have is a viable argument to the unboxed
+                        // entry point. It is, if it's not a shared MT.
+                        //
+                        GenTree* const thisArg        = call->gtCallThisArg->GetNode();
+                        GenTree* const methodTableArg = gtNewIconEmbClsHndNode(derivedClass);
 
-                        beforeArg->SetNext(gtNewCallArgs(methodTableArg));
+                        JITDUMP("revising call to invoke unboxed entry with additional known class handle arg\n");
+
+                        // Update the 'this' pointer to refer to the box payload
+                        //
+                        GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                        GenTree* const boxPayload    = gtNewOperNode(GT_ADD, TYP_BYREF, thisArg, payloadOffset);
+
+                        call->gtCallThisArg = gtNewCallArgs(boxPayload);
+                        call->gtCallMethHnd = unboxedEntryMethod;
+                        call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+
+                        // Method attributes will differ because unboxed entry point is shared
+                        //
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
+                        derivedMethod        = unboxedEntryMethod;
+                        derivedMethodAttribs = unboxedMethodAttribs;
+
+                        // Add the method table argument...
+                        //
+                        // Prepend for R2L arg passing or empty L2R passing
+                        // Append for non-empty L2R
+                        //
+                        if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+                        {
+                            call->gtCallArgs = gtPrependNewCallArg(methodTableArg, call->gtCallArgs);
+                        }
+                        else
+                        {
+                            GenTreeCall::Use* beforeArg = call->gtCallArgs;
+                            while (beforeArg->GetNext() != nullptr)
+                            {
+                                beforeArg = beforeArg->GetNext();
+                            }
+
+                            beforeArg->SetNext(gtNewCallArgs(methodTableArg));
+                        }
                     }
                 }
                 else
