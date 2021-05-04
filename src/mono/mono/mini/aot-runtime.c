@@ -83,10 +83,14 @@ extern void mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *
 
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-typedef struct {
-	int method_index;
+#define JIT_INFO_MAP_BUCKET_SIZE 32
+
+typedef struct _JitInfoMap JitInfoMap;
+struct _JitInfoMap {
 	MonoJitInfo *jinfo;
-} JitInfoMap;
+	JitInfoMap *next;
+	int method_index;
+};
 
 #define GOT_INITIALIZING 1
 #define GOT_INITIALIZED  2
@@ -164,7 +168,7 @@ struct MonoAotModule {
 	gpointer *globals;
 	MonoDl *sofile;
 
-	JitInfoMap *async_jit_info_table;
+	JitInfoMap **async_jit_info_table;
 	mono_mutex_t mutex;
 };
 
@@ -3450,7 +3454,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	int nmethods;
 	gpointer *methods;
 	guint8 *code1, *code2;
-	int methods_len, i;
+	int methods_len;
 	gboolean async;
 	gpointer orig_addr;
 
@@ -3512,14 +3516,17 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	/* In async mode, jinfo is not added to the normal jit info table, so have to cache it ourselves */
 	if (async) {
-		JitInfoMap *table = amodule->async_jit_info_table;
-		int len;
-
+		JitInfoMap **table = amodule->async_jit_info_table;
+		LOAD_ACQUIRE_FENCE;
 		if (table) {
-			len = table [0].method_index;
-			for (i = 1; i < len; ++i) {
-				if (table [i].method_index == method_index)
-					return table [i].jinfo;
+			int buckets = (amodule->info.nmethods / JIT_INFO_MAP_BUCKET_SIZE) + 1;
+			JitInfoMap *current_item = table [method_index % buckets];
+			LOAD_ACQUIRE_FENCE;
+			while (current_item) {
+				if (current_item->method_index == method_index)
+					return current_item->jinfo;
+				current_item = current_item->next;
+				LOAD_ACQUIRE_FENCE;
 			}
 		}
 	}
@@ -3605,29 +3612,32 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	if (async) {
 		/* Add it to the async JitInfo tables */
-		JitInfoMap *old_table, *new_table;
-		int len;
+		JitInfoMap **current_table, **new_table;
+		JitInfoMap *current_item, *new_item;
+		int buckets = (amodule->info.nmethods / JIT_INFO_MAP_BUCKET_SIZE) + 1;
 
-		/*
-		 * Use a simple inmutable table with linear search to cache async jit info entries.
-		 * This assumes that the number of entries is small.
-		 */
-		while (TRUE) {
-			/* Copy the table, adding a new entry at the end */
-			old_table = amodule->async_jit_info_table;
-			if (old_table)
-				len = old_table[0].method_index;
-			else
-				len = 1;
-			new_table = (JitInfoMap *)alloc0_jit_info_data (mem_manager, (len + 1) * sizeof (JitInfoMap), async);
-			if (old_table)
-				memcpy (new_table, old_table, len * sizeof (JitInfoMap));
-			new_table [0].method_index = len + 1;
-			new_table [len].method_index = method_index;
-			new_table [len].jinfo = jinfo;
-			/* Publish it */
-			mono_memory_barrier ();
-			if (mono_atomic_cas_ptr ((volatile gpointer *)&amodule->async_jit_info_table, new_table, old_table) == old_table)
+		for (;;) {
+			current_table = amodule->async_jit_info_table;
+			LOAD_ACQUIRE_FENCE;
+			if (current_table)
+				break;
+
+			new_table = alloc0_jit_info_data (mem_manager, buckets * sizeof (JitInfoMap*), async);
+			STORE_RELEASE_FENCE;
+			if (mono_atomic_cas_ptr ((volatile gpointer *)&amodule->async_jit_info_table, new_table, current_table) == current_table)
+				break;
+		}
+
+		new_item = alloc0_jit_info_data (mem_manager, sizeof (JitInfoMap), async);
+		new_item->method_index = method_index;
+		new_item->jinfo = jinfo;
+
+		for (;;) {
+			current_item = amodule->async_jit_info_table [method_index % buckets];
+			LOAD_ACQUIRE_FENCE;
+			new_item->next = current_item;
+			STORE_RELEASE_FENCE;
+			if (mono_atomic_cas_ptr ((volatile gpointer *)&amodule->async_jit_info_table [method_index % buckets], new_item, current_item) == current_item)
 				break;
 		}
 	} else {
