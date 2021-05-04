@@ -1,13 +1,13 @@
 <Project>
 
-  <Target Name="ILLinkTrimSharedFramework"
+  <Target Name="ILLinkTrimOOBAssemblies"
           AfterTargets="Build"
           DependsOnTargets="SetCommonILLinkArgs">
 
-    <Message Text="Trimming $(PackageRID) runtime pack assemblies with ILLinker..." Importance="high" />
+    <Message Text="Trimming $(PackageRID) OOB assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
-      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
+      <LibrariesTrimmedOOBArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-oobs'))</LibrariesTrimmedOOBArtifactsPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -46,22 +46,31 @@
       <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
     </MSBuild>
 
-    <PropertyGroup>
-      <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
-    </PropertyGroup>
-
     <ItemGroup>
       <!-- add references from the libraries directory -->
-      <_DependencyDirectories Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir.TrimEnd('\'))" />
+      <_DependencyDirectories Include="$(NetCoreAppCurrentRuntimePath.TrimEnd('\'))" />
     </ItemGroup>
 
     <ItemGroup>
-      <_LibrariesToLink Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
-      <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
+      <_OOBsToLink Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
+      <_RuntimePackLinkedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <_OOBsToFileName Include="@(_OOBsToLink -> '%(FileName)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_OOBsToFileName>
+      <_RuntimePackAssembliesToFileName Include="@(_RuntimePackLinkedAssemblies -> '%(FileName)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_RuntimePackAssembliesToFileName>
 
-      <RootAssemblies Include="@(_LibrariesToLink)">
+      <_FinalOOBsFileName Include="@(_OOBsToFileName)" Exclude="@(_RuntimePackAssembliesToFileName)" />
+      <_FinalOOBReferences Include="@(_OOBsToFileName)" Exclude="@(_FinalOOBsFileName)" />
+      <_FinalOOBs Include="@(_FinalOOBsFileName -> '%(OriginalIdentity)')" />
+      <_FinalReferences Include="@(_FinalOOBReferences -> '%(OriginalIdentity)')" />
+      <_FinalReferences Include="$(SystemPrivateCoreLibPath)" />
+
+
+      <OOBRootAssemblies Include="@(_FinalOOBs)">
         <RootMode>library</RootMode>
-      </RootAssemblies>
+      </OOBRootAssemblies>
     </ItemGroup>
 
     <PropertyGroup>
@@ -70,15 +79,10 @@
 
     <ItemGroup>
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <_SuppressionsXmls Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
-
-      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
-      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
-      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
+      <_SuppressionsXmls Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
     </ItemGroup>
 
-    <PropertyGroup>
+   <PropertyGroup>
       <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes &quot;@(_SuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</ILLinkArgs>
     </PropertyGroup>
 
@@ -91,12 +95,11 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths=""
-        RootAssemblyNames="@(RootAssemblies)"
-        OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
+        RootAssemblyNames="@(OOBRootAssemblies)"
+        ReferenceAssemblyPaths="@(_FinalReferences)"
+        OutputDirectory="$(LibrariesTrimmedOOBArtifactsPath)"
         ExtraArgs="$(ILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
   </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
 </Project>

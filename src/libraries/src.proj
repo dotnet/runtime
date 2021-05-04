@@ -54,6 +54,9 @@
   <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
           Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
 
+  <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
+          Project="$(MSBuildThisFileDirectory)\illink-oob.targets" />
+
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"
           AfterTargets="BuildManualShims">
