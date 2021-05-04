@@ -612,9 +612,15 @@ namespace System.Net.Sockets
                 packetsCount++;
             }
 
-            SendPacketsElement[] sendPacketsElements = new SendPacketsElement[packetsCount];
-            int index = 0;
+            AwaitableSocketAsyncEventArgs saea =
+                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
+                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
 
+            SendPacketsElement[] sendPacketsElements = saea.SendPacketsElements?.Length == packetsCount
+                ? saea.SendPacketsElements
+                : new SendPacketsElement[packetsCount];
+
+            int index = 0;
             if (!preBuffer.IsEmpty)
             {
                 sendPacketsElements[index++] = new SendPacketsElement(preBuffer, endOfPacket: index == packetsCount);
@@ -631,10 +637,6 @@ namespace System.Net.Sockets
             }
 
             Debug.Assert(index == packetsCount);
-
-            AwaitableSocketAsyncEventArgs saea =
-                Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
-                new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
 
             saea.SendPacketsFlags = flags;
             saea.SendPacketsElements = sendPacketsElements;
