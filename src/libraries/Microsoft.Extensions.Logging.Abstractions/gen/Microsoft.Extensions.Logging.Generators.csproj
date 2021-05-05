@@ -7,17 +7,9 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
+    <IsPackable>false</IsPackable>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageDestination Include="analyzers\dotnet\cs" />
-  </ItemGroup>
-
-  <Target Name="IncludeSatteliteResourceInPackage" BeforeTargets="GetFilesToPackage" DependsOnTargets="SatelliteDllsProjectOutputGroup">
-    <ItemGroup>
-      <AdditionalFileToPackage Include="%(SatelliteDllsProjectOutputGroupOutput.FullPath)" SubFolder="/%(SatelliteDllsProjectOutputGroupOutput.Culture)" />
-    </ItemGroup>
-  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
