@@ -4,3 +4,4 @@
 #pragma once
 
 #cmakedefine HAVE_PROCESS_VM_READV
+#cmakedefine HAVE_PTRACE_ENUM_ARGUMENT

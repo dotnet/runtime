@@ -3,6 +3,12 @@
 
 #include "createdump.h"
 
+#if HAVE_PTRACE_ENUM_ARGUMENT
+typedef __ptrace_request ptrace_arg_t;
+#else
+typedef int ptrace_arg_t;
+#endif
+
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
@@ -33,7 +39,7 @@ CrashInfo::CleanupAndResumeProcess()
     // Resume all the threads suspended in EnumerateAndSuspendThreads
     for (ThreadInfo* thread : m_threads)
     {
-        if (ptrace((enum __ptrace_request)PTRACE_DETACH, thread->Tid(), nullptr, nullptr) != -1)
+        if (ptrace((ptrace_arg_t)PTRACE_DETACH, thread->Tid(), nullptr, nullptr) != -1)
         {
             int waitStatus;
             waitpid(thread->Tid(), &waitStatus, __WALL);
@@ -69,7 +75,7 @@ CrashInfo::EnumerateAndSuspendThreads()
         if (tid != 0)
         {
             //  Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
-            if (ptrace((enum __ptrace_request)PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
+            if (ptrace((ptrace_arg_t)PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
             {
                 int waitStatus;
                 waitpid(tid, &waitStatus, __WALL);
