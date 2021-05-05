@@ -387,5 +387,21 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
+
+#if (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
+        [UnmanagedCallersOnly]
+        private static void CallDrain(IntPtr p)
+            => Interop.Sys.DrainAutoreleasePool(p);
+
+        internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
+        {
+            drainFunc = IntPtr.Zero;
+            if (!ThreadOSX.EnableAutoreleasePool)
+                return IntPtr.Zero;
+
+            drainFunc = (IntPtr)(delegate* unmanaged<IntPtr, void>)&CallDrain;
+            return Interop.Sys.CreateAutoreleasePool();
+        }
+#endif // (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
     }
 }

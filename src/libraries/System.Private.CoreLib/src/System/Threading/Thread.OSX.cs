@@ -23,21 +23,4 @@ namespace System.Threading
 
         public static bool EnableAutoreleasePool { get; } = CheckEnableAutoreleasePool();
     }
-
-    public sealed partial class Thread
-    {
-        [UnmanagedCallersOnly]
-        private static void CallDrain(IntPtr p)
-            => Interop.Sys.DrainAutoreleasePool(p);
-
-        internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
-        {
-            drainFunc = IntPtr.Zero;
-            if (!ThreadOSX.EnableAutoreleasePool)
-                return IntPtr.Zero;
-
-            drainFunc = (IntPtr)(delegate* unmanaged<IntPtr, void>)&CallDrain;
-            return Interop.Sys.CreateAutoreleasePool();
-        }
-    }
 }
