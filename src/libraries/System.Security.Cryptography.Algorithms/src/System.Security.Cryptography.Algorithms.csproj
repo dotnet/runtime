@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
@@ -16,6 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\CryptoConfig.Common.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
