@@ -7441,9 +7441,6 @@ void Compiler::compJitStats()
 
 void Compiler::compCallArgStats()
 {
-    GenTree* args = nullptr;
-    GenTree* argx = nullptr;
-
     unsigned argNum;
 
     unsigned argDWordNum;
