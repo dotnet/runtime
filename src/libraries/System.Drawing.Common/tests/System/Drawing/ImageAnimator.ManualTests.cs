@@ -24,16 +24,16 @@ namespace System.Drawing.Tests
         {
             // This test animates the test gifs that we have and waits 60 seconds
             // for the animations to progress. As the frame change events occur, we
-            // capture PNG snapshots of the current frame, essentially extracting
-            // the frames from the GIF.
+            // capture snapshots of the current frame, essentially extracting the
+            // frames from the GIF.
 
             // The animation should progress at the expected pace to stay synchronized
             // with the wall clock, and the animated timer images show the time duration
             // within the image itself, so this can be manually verified for accuracy.
 
-            // The captured frames are stored in the artifacts/bin/System.Drawing.Common.Tests
+            // The captured frames are stored in the `artifacts/bin/System.Drawing.Common.Tests`
             // folder for each configuration, and then under an `ImageAnimatorManualTests` folder
-            // with a timestamped folder under that. Each animated gif then gets its own folder too.
+            // with a timestamped folder under that. Each animation image gets its own folder too.
 
             string[] images = new string[]
             {
