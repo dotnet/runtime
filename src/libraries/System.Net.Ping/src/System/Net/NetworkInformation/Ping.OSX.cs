@@ -15,6 +15,9 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
+        private static bool SendIpHeader => true;
+        private static bool NeedsConnect => false;
+
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
             => SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options);
 

@@ -15,6 +15,9 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
+        private static bool SendIpHeader => false;
+        private static bool NeedsConnect => OperatingSystem.IsLinux();
+
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             PingReply reply = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
