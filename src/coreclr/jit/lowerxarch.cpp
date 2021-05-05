@@ -140,16 +140,18 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 
         if (node->TypeIs(TYP_FLOAT))
         {
-            float fltCns = static_cast<float>(dblCns); // should be a save round-trip
+            float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
             intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
             type         = TYP_UINT;
         }
-        else if (TARGET_POINTER_SIZE == 8)
+#ifdef TARGET_AMD64
+        else
         {
             assert(node->TypeIs(TYP_DOUBLE));
             intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
-            type   = TYP_ULONG;
+            type = TYP_ULONG;
         }
+#endif
 
         if (type != TYP_UNKNOWN)
         {
