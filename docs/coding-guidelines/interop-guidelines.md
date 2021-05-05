@@ -17,7 +17,7 @@ We have the following goals related to interop code being used in dotnet/runtime
 
 Interop code implicitly defines the native platform dependencies that .NET has. These dependencies are tracked and modeled according to the [Tracking Platform Dependencies design](https://github.com/dotnet/designs/blob/main/accepted/2021/platform-dependencies/platform-dependencies.md). Whenever a PR is submitted that changes interop code, it needs to be reviewed to determine whether a change to the platform dependencies model is required.
 
-**When submitting a change to interop code, mention or add @dotnet/platform-deps-team as a reviewer.** If necessary, update the corresponding `https://github.com/dotnet/core/blob/main/release-notes/<product-version>/runtime-deps.json` file to reflect the dependency change. The scope of dependencies is at the file/package level, not individual functions, so not all interop changes require an update to the model.
+By default, any change to `src/libraries/Common/src/Interop` folder will add @dotnet/platform-deps-team as a reviewer. If necessary, update the corresponding `https://github.com/dotnet/core/blob/main/release-notes/<product-version>/runtime-deps.json` file to reflect the dependency change. The scope of dependencies is at the file/package level, not individual functions, so not all interop changes require an update to the model.
 
 ## Approach
 
