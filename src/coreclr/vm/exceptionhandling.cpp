@@ -1191,7 +1191,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 #ifdef TARGET_AMD64
             // OSes older than Win8 have a bug where RtlUnwindEx passes meaningless ContextFlags to the personality routine in
             // some cases.
-            pContextRecord->ContextFlags |= CONTEXT_FULL;
+            pContextRecord->ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 #endif
 
             ExceptionTracker::ResumeExecution(pContextRecord);
