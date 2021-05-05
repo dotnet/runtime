@@ -4095,7 +4095,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         ssize_t intCon = shiftBy->AsIntConCommon()->IconValue();
-        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && (intCon == 1 || intCon == 2 || intCon == 3))
+        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && 
+           (intCon == 1 || intCon == 2 || intCon == 3))
         {
             switch (intCon)
             {
