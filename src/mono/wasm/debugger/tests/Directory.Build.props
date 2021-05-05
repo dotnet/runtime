@@ -5,7 +5,7 @@
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration>Release</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>219</NoWarn>
@@ -16,4 +16,9 @@
 
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfiguration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(RuntimeConfiguration)'=='Debug'">
+    <WasmDebugLevel>5</WasmDebugLevel>
+  </PropertyGroup>
+
 </Project>
