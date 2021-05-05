@@ -49,8 +49,6 @@ Abstract:
 #define PROC_STATM_FILENAME "/proc/self/statm"
 #define CGROUP1_MEMORY_LIMIT_FILENAME "/memory.limit_in_bytes"
 #define CGROUP2_MEMORY_LIMIT_FILENAME "/memory.max"
-#define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
-#define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
 #define CGROUP_MEMORY_STAT_FILENAME "/memory.stat"
 #define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
 #define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
@@ -65,25 +63,43 @@ class CGroup
 
     static char *s_memory_cgroup_path;
     static char *s_cpu_cgroup_path;
-    static const char *s_active_file_key_name;
-    static const char *s_inactive_file_key_name;
-    static const char *s_dirty_file_key_name;
-    static size_t s_active_file_key_length;
-    static size_t s_inactive_file_key_length;
-    static size_t s_dirty_file_key_length;
 
+    static const char **s_mem_stat_key_names;
+    static size_t *s_mem_stat_key_lengths;
+    static size_t s_mem_stat_n_keys;
+    
 public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
         s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
         s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
-        s_active_file_key_name = s_cgroup_version == 1 ? "total_active_file " : "active_file ";
-        s_inactive_file_key_name = s_cgroup_version == 1 ? "total_inactive_file " : "inactive_file ";
-        s_dirty_file_key_name = s_cgroup_version == 1 ? "total_dirty " : "file_dirty ";
-        s_active_file_key_length = strlen(s_active_file_key_name);
-        s_inactive_file_key_length = strlen(s_inactive_file_key_name);
-        s_dirty_file_key_length = strlen(s_dirty_file_key_name);
+        
+        if (s_cgroup_version == 1)
+        {
+            s_mem_stat_n_keys = 4;
+            s_mem_stat_key_names = new const char*[s_mem_stat_n_keys];
+            s_mem_stat_key_names[0] = "total_inactive_anon ";
+            s_mem_stat_key_names[1] = "total_active_anon ";
+            s_mem_stat_key_names[2] = "total_dirty ";
+            s_mem_stat_key_names[3] = "total_unevictable ";
+        }
+        else
+        {
+            s_mem_stat_n_keys = 4;
+            s_mem_stat_key_names = new const char*[s_mem_stat_n_keys];
+            s_mem_stat_key_names[0] = "inactive_anon ";
+            s_mem_stat_key_names[1] = "active_anon ";
+            s_mem_stat_key_names[2] = "file_dirty ";
+            s_mem_stat_key_names[3] = "unevictable ";
+        }
+        
+        s_mem_stat_key_lengths = new size_t[s_mem_stat_n_keys];
+        
+        for (size_t i = 0; i < s_mem_stat_n_keys; i++)
+        {
+            s_mem_stat_key_lengths[i] = strlen(s_mem_stat_key_names[i]);
+        }
     }
 
     static void Cleanup()
@@ -112,9 +128,9 @@ public:
         if (s_cgroup_version == 0)
             return false;
         else if (s_cgroup_version == 1)
-            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME);
+            return GetCGroupMemoryUsage(val);
         else if (s_cgroup_version == 2)
-            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME);
+            return GetCGroupMemoryUsage(val);
         else
         {
             assert(!"Unknown cgroup version.");
@@ -264,7 +280,7 @@ private:
 
             // See man page of proc to get format for /proc/self/mountinfo file
             int sscanfRet = sscanf(separatorChar,
-                                   " - %s %*s %s",
+                                     " - %s %*s %s",
                                    filesystemType,
                                    options);
             if (sscanfRet != 2)
@@ -289,23 +305,23 @@ private:
                 if (isSubsystemMatch)
                 {
                         mountpath = (char*)malloc(lineLen+1);
-                        if (mountpath == nullptr)
-                            goto done;
+                    if (mountpath == nullptr)
+                        goto done;
                         mountroot = (char*)malloc(lineLen+1);
-                        if (mountroot == nullptr)
-                            goto done;
+                    if (mountroot == nullptr)
+                        goto done;
 
                         sscanfRet = sscanf(line,
-                                           "%*s %*s %*s %s %s ",
+                                        "%*s %*s %*s %s %s ",
                                            mountroot,
                                            mountpath);
-                        if (sscanfRet != 2)
+                    if (sscanfRet != 2)
                             assert(!"Failed to parse mount info file contents with sscanf.");
 
-                        // assign the output arguments and clear the locals so we don't free them.
-                        *pmountpath = mountpath;
-                        *pmountroot = mountroot;
-                        mountpath = mountroot = nullptr;
+                    // assign the output arguments and clear the locals so we don't free them.
+                    *pmountpath = mountpath;
+                    *pmountroot = mountroot;
+                    mountpath = mountroot = nullptr;
                 }
             }
         }
@@ -353,7 +369,7 @@ private:
             {
                 // See man page of proc to get format for /proc/self/cgroup file
                 int sscanfRet = sscanf(line,
-                                       "%*[^:]:%[^:]:%s",
+                                         "%*[^:]:%[^:]:%s",
                                        subsystem_list,
                                        cgroup_path);
                 if (sscanfRet != 2)
@@ -379,7 +395,7 @@ private:
                 // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
                 // Look for a "0::/some/path"
                 int sscanfRet = sscanf(line,
-                                       "0::%s",
+                                         "0::%s",
                                        cgroup_path);
                 if (sscanfRet == 1)
                 {
@@ -418,21 +434,10 @@ private:
         free(mem_limit_filename);
         return result;
     }
-
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename)
+    
+    static bool GetCGroupMemoryUsage(size_t *val)
     {
         if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        char* mem_usage_filename = nullptr;
-        if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        uint64_t usage = 0;
-        bool success = ReadMemoryValueFromFile(mem_usage_filename, &usage);
-        free(mem_usage_filename);
-
-        if (!success)
             return false;
 
         char* stat_filename = nullptr;
@@ -447,63 +452,31 @@ private:
         char *line = nullptr;
         size_t lineLen = 0;
         size_t readValues = 0;
-        size_t active_file = 0;
-        size_t inactive_file = 0;
-        size_t dirty_file = 0;
         char* endptr;
 
+        *val = 0;
         while (getline(&line, &lineLen, stat_file) != -1)
         {
-            if (strncmp(line, s_active_file_key_name, s_active_file_key_length) == 0)
+            for (size_t i = 0; i < s_mem_stat_n_keys; i++)
             {
-                errno = 0;
-                const char* startptr = line + s_active_file_key_length;
-                active_file = strtoll(startptr, &endptr, 10);
-                if (endptr == startptr || errno != 0)
-                    continue;
-
-                readValues++;
-            }
-            else if (strncmp(line, s_inactive_file_key_name, s_inactive_file_key_length) == 0)
-            {
-                errno = 0;
-                const char* startptr = line + s_inactive_file_key_length;
-                inactive_file = strtoll(startptr, &endptr, 10);
-                if (endptr == startptr || errno != 0)
-                    continue;
-
-                readValues++;
-            }
-            else if (strncmp(line, s_dirty_file_key_name, s_dirty_file_key_length) == 0)
-            {
-                errno = 0;
-                const char* startptr = line + s_dirty_file_key_length;
-                dirty_file = strtoll(startptr, &endptr, 10);
-                if (endptr == startptr || errno != 0)
-                    continue;
-
-                readValues++;
+                if (strncmp(line, s_mem_stat_key_names[i], s_mem_stat_key_lengths[i]) == 0)
+                {
+                    errno = 0;
+                    const char* startptr = line + s_mem_stat_key_lengths[i];
+                    *val += strtoll(startptr, &endptr, 10);
+                    if (endptr != startptr && errno == 0)
+                        readValues++;
+                        
+                    break;
+                }
             }
         }
 
         fclose(stat_file);
         free(line);
 
-        if (readValues == 3)
-        {
-            if (usage > std::numeric_limits<size_t>::max())
-            {
-                *val = std::numeric_limits<size_t>::max();
-            }
-            else
-            {
-                // Since file cache pages can be easily evicted and re-used
-                // they should not be considered as used memory.
-                *val = (size_t)usage - (active_file + inactive_file - dirty_file);
-            }
-
+        if (readValues == s_mem_stat_n_keys)
             return true;
-        }
 
         return false;
     }
@@ -625,7 +598,7 @@ private:
         result = ReadLongLongValueFromFile(filename, &val);
         free(filename);
         if (!result)
-             return -1;
+            return -1;
 
         return val;
     }
@@ -665,12 +638,9 @@ int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_cpu_cgroup_path = nullptr;
 
-const char *CGroup::s_active_file_key_name = nullptr;
-const char *CGroup::s_inactive_file_key_name = nullptr;
-const char *CGroup::s_dirty_file_key_name = nullptr;
-size_t CGroup::s_active_file_key_length = 0;
-size_t CGroup::s_inactive_file_key_length = 0;
-size_t CGroup::s_dirty_file_key_length = 0;
+const char **CGroup::s_mem_stat_key_names = nullptr;
+size_t *CGroup::s_mem_stat_key_lengths = nullptr;
+size_t CGroup::s_mem_stat_n_keys = 0;
 
 void InitializeCGroup()
 {
@@ -754,15 +724,15 @@ bool GetPhysicalMemoryUsed(size_t* val)
 
         errno = 0;
         *val = strtoull(strTok, nullptr, 0);
-        if (errno == 0)
+        if(errno == 0)
         {
             long pageSize = sysconf(_SC_PAGE_SIZE);
             if (pageSize != -1)
             {
                 *val = *val * pageSize;
-                result = true;
-            }
+            result = true;
         }
+    }
     }
 
     if (file)
