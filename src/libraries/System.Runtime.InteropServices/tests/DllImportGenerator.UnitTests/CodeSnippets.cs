@@ -843,6 +843,15 @@ partial class Test
         {byRefKind} {typeName} p);
 }}";
 
+        public static string BasicParameterByValue(string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        {typeName} p);
+}}";
+
         public static string BasicReturnType(string typeName) => @$"
 using System.Runtime.InteropServices;
 partial class Test

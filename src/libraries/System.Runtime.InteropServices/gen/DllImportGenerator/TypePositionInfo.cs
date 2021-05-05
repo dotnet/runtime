@@ -312,11 +312,10 @@ namespace Microsoft.Interop
                 var conversion = compilation.ClassifyCommonConversion(type, compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
                 if (conversion.Exists 
                     && conversion.IsImplicit 
-                    && conversion.IsReference 
-                    && !type.IsAbstract)
+                    && (conversion.IsReference || conversion.IsIdentity))
                 {
                     bool hasAccessibleDefaultConstructor = false;
-                    if (type is INamedTypeSymbol named && named.InstanceConstructors.Length > 0)
+                    if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
                     {
                         foreach (var ctor in named.InstanceConstructors)
                         {

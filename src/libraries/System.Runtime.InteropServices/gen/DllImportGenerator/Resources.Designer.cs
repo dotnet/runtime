@@ -484,6 +484,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to An abstract type derived from &apos;SafeHandle&apos; cannot be marshalled by reference. The provided type must be concrete..
+        /// </summary>
+        internal static string SafeHandleByRefMustBeConcrete {
+            get {
+                return ResourceManager.GetString("SafeHandleByRefMustBeConcrete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named StackBufferSize to provide the size of the stack-allocated buffer..
         /// </summary>
         internal static string StackallocConstructorMustHaveStackBufferSizeConstantDescription {

@@ -259,6 +259,9 @@
   <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
     <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
   </data>
+  <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
+    <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
+  </data>
   <data name="StackallocConstructorMustHaveStackBufferSizeConstantDescription" xml:space="preserve">
     <value>When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named StackBufferSize to provide the size of the stack-allocated buffer.</value>
   </data>
