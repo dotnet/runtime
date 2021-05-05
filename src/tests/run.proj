@@ -780,7 +780,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildiOSApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <ItemGroup>
+      <RunProj Include="$(MSBuildProjectFile)">
+        <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
+      </RunProj>
+    </ItemGroup>
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildiOSApp"
+      BuildInParallel="true"
+      />
   </Target>
 
   <Target Name="GetListOfTestCmds">
