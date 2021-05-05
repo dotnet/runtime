@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     // The bulk of this code was pulled from src/libraries/System.Linq.Expressions/src/System/Dynamic/DynamicObject.cs
     // and then refactored.

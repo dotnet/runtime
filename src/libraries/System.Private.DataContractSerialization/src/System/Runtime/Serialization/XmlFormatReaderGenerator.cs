@@ -139,6 +139,12 @@ namespace System.Runtime.Serialization
                             _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetMethod);
                             _ilg.ConvertValue(Globals.TypeOfDateTimeOffset, _ilg.CurrentMethod.ReturnType);
                         }
+                        else if (classContract.UnderlyingType == Globals.TypeOfMemoryStreamAdapter)
+                        {
+                            _ilg.ConvertValue(_objectLocal.LocalType, Globals.TypeOfMemoryStreamAdapter);
+                            _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamMethod);
+                            _ilg.ConvertValue(Globals.TypeOfMemoryStream, _ilg.CurrentMethod.ReturnType);
+                        }
                         //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>.
                         else if (classContract.IsKeyValuePairAdapter)
                         {

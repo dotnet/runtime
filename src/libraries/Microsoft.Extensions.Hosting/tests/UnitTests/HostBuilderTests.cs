@@ -340,6 +340,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithOptionsOverload(
             BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
@@ -363,6 +364,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithContenxtAndOptionsOverload(
             BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
@@ -620,6 +622,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostBuilderConfigureDefaultsInterleavesMissingConfigValues()
         {
             IHostBuilder hostBuilder = new HostBuilder();
