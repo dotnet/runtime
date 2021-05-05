@@ -2557,7 +2557,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(pToken, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(GetModule(), Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;
@@ -5008,7 +5008,7 @@ MethodTableBuilder::ValidateMethods()
                 pMemberSignature = it.GetSig(&cMemberSignature);
             }
 
-            if (MetaSig::IsVarArg(pModule, Signature(pMemberSignature, cMemberSignature)))
+            if (MetaSig::IsVarArg(Signature(pMemberSignature, cMemberSignature)))
             {
                 BuildMethodTableThrowException(BFA_GENCODE_NOT_BE_VARARG);
             }
