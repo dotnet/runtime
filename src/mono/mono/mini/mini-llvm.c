@@ -4474,6 +4474,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
 			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
+
+#ifdef TARGET_WASM
+		if (ainfo && ainfo->storage == LLVMArgVtypeByRef)
+			/* This causes llvm to make a copy of the value which is what we need */
+			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, param_types [ainfo->pindex]);
+#endif
 	}
 
 	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
@@ -11714,6 +11720,13 @@ emit_method_inner (EmitContext *ctx)
 			/* For OP_LDADDR */
 			cfg->args [i + sig->hasthis]->opcode = OP_VTARG_ADDR;
 		}
+
+#ifdef TARGET_WASM
+		if (ainfo->storage == LLVMArgVtypeByRef) {
+			/* This causes llvm to make a copy of the value which is what we need */
+			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMTypeOf (LLVMGetParam (method, pindex)));
+		}
+#endif
 	}
 	g_free (names);
 
