@@ -73,8 +73,6 @@ namespace InteropLib
             if (mow == nullptr)
                 return E_INVALIDARG;
 
-            (void)mow->AddRef();
-
             *object = mow->Target;
             return S_OK;
         }

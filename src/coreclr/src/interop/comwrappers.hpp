@@ -47,6 +47,7 @@ private:
 
     LONGLONG _refCount;
     Volatile<CreateComInterfaceFlagsEx> _flags;
+    const ABI::ComInterfaceDispatch* _refTrackerDispatch;
 
 public: // static
     // Get the implementation for IUnknown.
@@ -101,6 +102,9 @@ public:
     // Indicate if the wrapper should be considered a GC root.
     bool IsRooted() const;
 
+    // Check if the wrapper has been marked to be destroyed.
+    bool IsMarkedToDestroy() const;
+
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
     ULONG ReleaseFromReferenceTracker();
@@ -109,6 +113,7 @@ public: // IReferenceTrackerTarget
 
 public: // Lifetime
     HRESULT QueryInterface(
+        _In_ const ABI::ComInterfaceDispatch* dispatch,
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR * __RPC_FAR * ppvObject);
     ULONG AddRef(void);

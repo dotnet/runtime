@@ -50,6 +50,176 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         [Fact]
+        public void ComponentWithNoDependenciesCaseChangedOnAsm()
+        {
+            // Scenario: change the case of the first letter of component.AppDll file name
+
+            // Changing the casing of the first letter of a dependent assembly have different behavior in the 3 platforms
+            // Wisely the product code stays out of casing on dependent assemblies choosing the 1st assembly
+            // Linux: we fail
+            // Windows and Mac, probing succeeds but
+            // Windows: probing returns the original name
+            // Mac: probing return the new name including 2 assembly probing with the same new name and the changed deps file
+
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // Change the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+            // on mac, hostpolicy returns the changed name for deps file as well
+            string changeDepsFile = Path.Combine(Path.GetDirectoryName(component.DepsJson), (nameWOExtensionCaseChanged + ".deps" + Path.GetExtension(component.DepsJson)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
+                    .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
+            }
+            else
+            {
+                // OSPlatform.Linux
+                // We expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+        }
+
+        [Fact]
+        public void ComponentWithNoDependenciesCaseChangedOnDepsAndAsm()
+        {
+
+            // Scenario: change the case of the first letter of component.AppDll and component.DepsJson file names
+
+            // Changing the casing of the first letter of a dependent assembly have different behavior in the 3 platforms
+            // Wisely the product code stays out of casing on dependent assemblies choosing the 1st assembly
+            // Linux: we fail
+            // Windows and Mac, probing succeeds but
+            // Windows: probing returns the original name
+            // Mac: probing return the new name including 2 assembly probing with the same new name and the changed deps file
+
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // Change the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+
+            string changeDepsFile = Path.Combine(Path.GetDirectoryName(component.DepsJson), (nameWOExtensionCaseChanged + ".deps" + Path.GetExtension(component.DepsJson)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+            File.Move(component.DepsJson, changeDepsFile);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
+                    .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
+            }
+            else
+            {
+                // OSPlatform.Linux
+                // We expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+        }
+
+        [Fact]
+        public void ComponentWithNoDependenciesNoDepsCaseChangedOnAsm()
+        {
+
+            // Scenario: change the case of the first letter of component.AppDll file name and delete component.DepsJson file
+
+            // Changing the casing of the first letter of a dependent assembly have different behavior in the 3 platforms
+            // Wisely the product code stays out of casing on dependent assemblies choosing the 1st assembly
+            // Linux: we fail
+            // Windows and Mac, probing succeeds but
+            // Windows: probing returns the original name
+            // Mac: probing return the new name including assembly probing with the new name and the changed deps file
+
+            var component = sharedTestState.ComponentWithNoDependencies.Copy();
+
+            // Change the case of the first letter of AppDll
+            string fileName = component.AppDll;
+            string nameWOExtension = Path.GetFileNameWithoutExtension(fileName);
+            string nameWOExtensionCaseChanged = (Char.IsUpper(nameWOExtension[0]) ? nameWOExtension[0].ToString().ToLower() : nameWOExtension[0].ToString().ToUpper()) + nameWOExtension.Substring(1);
+            string changeFile = Path.Combine(Path.GetDirectoryName(fileName), (nameWOExtensionCaseChanged + Path.GetExtension(fileName)));
+            // on mac, hostpolicy returns the changed name for deps file as well
+            string changeDepsFile = Path.Combine(Path.GetDirectoryName(component.DepsJson), (nameWOExtensionCaseChanged + ".deps" + Path.GetExtension(component.DepsJson)));
+
+            // Rename
+            File.Move(fileName, changeFile);
+            // Delete deps
+            File.Delete(component.DepsJson);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
+                    .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
+                    .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
+                    .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
+            }
+            else
+            {
+                // OSPlatform.Linux
+                // We expect the test to fail due to the the case change of AppDll
+                sharedTestState.RunComponentResolutionTest(component)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
+            }
+        }
+
+        [Fact]
         public void ComponentWithNoDependencies()
         {
             sharedTestState.RunComponentResolutionTest(sharedTestState.ComponentWithNoDependencies)
