@@ -232,6 +232,7 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
