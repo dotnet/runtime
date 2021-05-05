@@ -280,6 +280,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class TripleDESCryptoServiceProvider : System.Security.Cryptography.TripleDES
     {
