@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
         public void AddIniFile_ThrowsIfFileDoesNotExistAtPath()
         {
             // Arrange
