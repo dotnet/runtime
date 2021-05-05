@@ -11631,6 +11631,14 @@ emit_method_inner (EmitContext *ctx)
 		return;
 	}
 
+#ifdef TARGET_WASM
+	if (ctx->module->interp && cfg->header->code_size > 100000) {
+		/* Large methods slow down llvm too much */
+		set_failure (ctx, "il code too large.");
+		return;
+	}
+#endif
+
 	header = cfg->header;
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
