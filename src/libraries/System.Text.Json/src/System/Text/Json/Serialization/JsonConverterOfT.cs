@@ -447,7 +447,7 @@ namespace System.Text.Json.Serialization
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.
-                Debug.Assert(TypeToConvert == typeof(Node.JsonObject));
+                Debug.Assert(TypeToConvert == typeof(Nodes.JsonObject));
                 return TryWrite(writer, value, options, ref state);
             }
 
