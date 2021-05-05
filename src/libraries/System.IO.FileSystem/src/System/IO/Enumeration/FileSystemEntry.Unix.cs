@@ -45,15 +45,15 @@ namespace System.IO.Enumeration
             // directory.
             if (isSymlink || isUnknown)
             {
-                // DT_LNK: stat to it to see if we can resolve it to a directory
-                entry._status.TryRefreshSymbolicLinkCache(entry.FullPath);
-                isDirectory = entry._status.HasDirectoryFlag;
+                // DT_LNK and DT_UNKNOWN: stat to it to see if we can resolve it to a directory
+                isDirectory = entry._status.IsDirectory(entry.FullPath);
             }
 
+            // Same idea as the directory check, just repeated for (and tweaked due to the
+            // nature of) symlinks.
             if (isUnknown)
             {
-                entry._status.TryRefreshFileCache(entry.FullPath);
-                isSymlink = entry._status.HasSymbolicLinkFlag;
+                isSymlink = entry._status.IsSymbolicLink(entry.FullPath);
             }
 
             entry._status.InitiallyDirectory = isDirectory;
@@ -63,10 +63,9 @@ namespace System.IO.Enumeration
                 attributes |= FileAttributes.ReparsePoint;
             if (isDirectory)
                 attributes |= FileAttributes.Directory;
-            if ((directoryEntry.NameLength > 0 && directoryEntry.Name[0] == '.') ||
-                (entry._status.IsFileCacheInitialized && entry._status.HasHiddenFlag)) // soft retrieval
+            if ((directoryEntry.NameLength > 0 && directoryEntry.Name[0] == '.') || entry._status.HasHiddenFlag) // soft retrieval
                 attributes |= FileAttributes.Hidden;
-            if (entry._status.IsFileCacheInitialized && entry._status.HasReadOnlyFlag) // soft retrieval
+            if (entry._status.HasReadOnlyFlag) // soft retrieval
                 attributes |= FileAttributes.ReadOnly;
 
             return attributes;

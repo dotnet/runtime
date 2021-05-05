@@ -39,10 +39,10 @@ namespace System.IO
         // Exists as of the last refresh
         private bool _exists;
 
-        internal bool IsFileCacheInitialized => _initializedFileCache == 0;
-        internal bool IsSymlinkCacheInitialized => _initializedSymlinkCache == 0;
+        private bool IsFileCacheInitialized    => _initializedFileCache == 0;
+        private bool IsSymlinkCacheInitialized => _initializedSymlinkCache == 0;
 
-        internal bool AreCachesInitialized =>
+        private bool AreCachesInitialized =>
             // The file cache should always be successfully refreshed
             _initializedFileCache == 0 &&
             // The symbolic link cache only gets refreshed when the path is detected
@@ -56,7 +56,8 @@ namespace System.IO
             get
             {
                 Debug.Assert(IsFileCacheInitialized);
-                return (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
+                return IsFileCacheInitialized &&
+                       (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
             }
         }
 
@@ -67,6 +68,10 @@ namespace System.IO
             get
             {
                 Debug.Assert(IsFileCacheInitialized);
+                if (!IsFileCacheInitialized)
+                {
+                    return false;
+                }
 #if TARGET_BROWSER
                 const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
                 const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
@@ -93,8 +98,8 @@ namespace System.IO
                 }
 #endif
 
-                return ((_fileCache.Mode & (int)readBit) != 0 && // has read permission
-                    (_fileCache.Mode & (int)writeBit) == 0);     // but not write permission
+                return (_fileCache.Mode & (int)readBit)  != 0 && // has read permission
+                       (_fileCache.Mode & (int)writeBit) == 0;   // but not write permission
             }
         }
 
@@ -105,7 +110,8 @@ namespace System.IO
             get
             {
                 Debug.Assert(IsFileCacheInitialized);
-                return (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                return IsFileCacheInitialized &&
+                       (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
         }
 
@@ -175,7 +181,7 @@ namespace System.IO
             return HasSymbolicLinkFlag;
         }
 
-        public FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
+        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
         {
             EnsureCachesInitialized(path);
 
@@ -199,7 +205,7 @@ namespace System.IO
             return attributes != default ? attributes : FileAttributes.Normal;
         }
 
-        public void SetAttributes(string path, FileAttributes attributes)
+        internal void SetAttributes(string path, FileAttributes attributes)
         {
             // Validate that only flags from the attribute are being provided.  This is an
             // approximation for the validation done by the Win32 function.
@@ -368,7 +374,7 @@ namespace System.IO
 
         // Tries to refresh the lstat cache (_fileCache) and, if the file is pointing to a symbolic link, then also the stat cache (_symlinkCache)
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
-        public void RefreshCaches(ReadOnlySpan<char> path)
+        internal void RefreshCaches(ReadOnlySpan<char> path)
         {
             _isDirectory = false;
             path = Path.TrimEndingDirectorySeparator(path);
@@ -436,10 +442,10 @@ namespace System.IO
             }
         }
 
-        internal bool TryRefreshFileCache(ReadOnlySpan<char> path, bool verify = true) =>
+        private bool TryRefreshFileCache(ReadOnlySpan<char> path) =>
             VerifyStatCall(Interop.Sys.LStat(path, out _fileCache), out _initializedFileCache);
 
-        internal bool TryRefreshSymbolicLinkCache(ReadOnlySpan<char> path, bool verify = true) =>
+        private bool TryRefreshSymbolicLinkCache(ReadOnlySpan<char> path) =>
             VerifyStatCall(Interop.Sys.Stat(path, out _symlinkCache), out _initializedSymlinkCache);
 
         // Receives the return value of a stat or lstat call.
