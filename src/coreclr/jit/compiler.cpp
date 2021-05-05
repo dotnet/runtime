@@ -7440,9 +7440,6 @@ void Compiler::compJitStats()
 
 void Compiler::compCallArgStats()
 {
-    GenTree* args;
-    GenTree* argx;
-
     unsigned argNum;
 
     unsigned argDWordNum;
@@ -7501,7 +7498,7 @@ void Compiler::compCallArgStats()
                     regArgDeferred++;
                     argTotalObjPtr++;
 
-                    if (call->IsVirtual())
+                    if (call->AsCall()->IsVirtual())
                     {
                         /* virtual function */
                         argVirtualCalls++;

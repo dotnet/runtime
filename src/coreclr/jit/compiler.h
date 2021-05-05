@@ -9482,7 +9482,7 @@ public:
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-        // Method hash is logcally const, but computed
+        // Method hash is logically const, but computed
         // on first demand.
         mutable unsigned compMethodHashPrivate;
         unsigned         compMethodHash() const;
