@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.Build.Framework;
 
 public class ApkBuilder
@@ -24,6 +25,8 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public bool InvariantGlobalization { get; set; }
+    public bool EnableRuntimeLogging { get; set; }
     public string? StaticLinkedComponentNames { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
@@ -243,17 +246,27 @@ public class ApkBuilder
             .Replace("%AotSources%", aotSources)
             .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
 
-        string defines = "";
+        var defines = new StringBuilder();
         if (ForceInterpreter)
         {
-            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
         else if (ForceAOT)
         {
-            defines = "add_definitions(-DFORCE_AOT=1)";
+            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }
 
-        cmakeLists = cmakeLists.Replace("%Defines%", defines);
+        if (InvariantGlobalization)
+        {
+            defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
+        }
+
+        if (EnableRuntimeLogging)
+        {
+            defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 

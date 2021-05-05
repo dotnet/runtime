@@ -69,6 +69,16 @@ public class AndroidAppBuilderTask : Task
 
     public bool ForceInterpreter { get; set; }
 
+    /// <summary>
+    /// Forces the runtime to use the invariant mode
+    /// </summary>
+    public bool InvariantGlobalization { get; set; }
+
+    /// <summary>
+    /// Enables detailed runtime logging
+    /// </summary>
+    public bool EnableRuntimeLogging { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -95,6 +105,8 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
+        apkBuilder.InvariantGlobalization = InvariantGlobalization;
+        apkBuilder.EnableRuntimeLogging = EnableRuntimeLogging;
         apkBuilder.StaticLinkedComponentNames = StaticLinkedComponentNames;
         apkBuilder.Assemblies = Assemblies;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
