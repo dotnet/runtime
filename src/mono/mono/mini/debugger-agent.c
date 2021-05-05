@@ -109,8 +109,7 @@
 #define DISABLE_SOCKET_TRANSPORT
 #endif
 
-#ifndef DISABLE_SDB
-
+#if !defined (DISABLE_SDB) || defined(TARGET_WASM)
 #include <mono/utils/mono-os-mutex.h>
 
 #include <fcntl.h>
@@ -460,6 +459,7 @@ static void objrefs_init (void);
 static void objrefs_cleanup (void);
 
 static void ids_init (void);
+
 static void ids_cleanup (void);
 
 static void suspend_init (void);
@@ -490,6 +490,13 @@ static void ss_args_destroy (SingleStepArgs *ss_args);
 static int handle_multiple_ss_requests (void);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
+
+void mono_init_debugger_agent_for_wasm (int log_level_parm)
+{
+	ids_init();
+	log_level = log_level;
+	event_requests = g_ptr_array_new ();
+}
 
 #ifndef DISABLE_SOCKET_TRANSPORT
 static void
@@ -4161,8 +4168,11 @@ begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *ji, g
 	 * Skip the instruction causing the breakpoint signal.
 	 */
 	if (from_signal)
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_skip_breakpoint (ctx, ji);
-
+#else
+		NOT_IMPLEMENTED;
+#endif
 	if (tls->disable_breakpoints)
 		return FALSE;
 	return TRUE;
@@ -4332,7 +4342,11 @@ static void
 begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
 {
 	if (from_signal)
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_skip_single_step (ctx);
+#else
+		NOT_IMPLEMENTED;
+#endif
 }
 
 static void
@@ -4364,7 +4378,11 @@ debugger_agent_single_step_event (void *sigctx)
 		MonoContext ctx;
 
 		mono_sigctx_to_monoctx (sigctx, &ctx);
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_skip_single_step (&ctx);
+#else
+		NOT_IMPLEMENTED;
+#endif
 		mono_monoctx_to_sigctx (&ctx, sigctx);
 		return;
 	}
@@ -6932,6 +6950,34 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		int size = decode_int (p, &p, end);
 		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
+		break;
+	}
+	case MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME: {
+		int i;
+		char* assembly_name = decode_string (p, &p, end);
+		//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
+		char *lookup_name = g_strdup (assembly_name);
+		for (i = strlen (lookup_name) - 1; i >= 0; --i) {
+			if (lookup_name [i] == '.') {
+				lookup_name [i] = 0;
+				break;
+			}
+		}
+
+		//resolve the assembly
+		MonoImageOpenStatus status;
+		MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
+		MonoAssemblyByNameRequest byname_req;
+		mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
+		g_free (lookup_name);
+		if (!assembly) {
+			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+			buffer_add_int(buf, -1);
+			break;
+		}
+		mono_assembly_name_free_internal (aname);
+		buffer_add_assemblyid (buf, mono_get_root_domain (), assembly);
 		break;
 	}
 	default:
@@ -9897,6 +9943,62 @@ wait_for_attach (void)
 	return TRUE;
 }
 
+ErrorCode
+mono_process_dbg_packet (int id, CommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, Buffer *buf)
+{
+	ErrorCode err;
+	/* Process the request */
+	switch (command_set) {
+	case CMD_SET_VM:
+		err = vm_commands (command, id, p, end, buf);
+		if (err == ERR_NONE && command == CMD_VM_INVOKE_METHOD)
+			/* Sent after the invoke is complete */
+			*no_reply = TRUE;
+		break;
+	case CMD_SET_EVENT_REQUEST:
+		err = event_commands (command, p, end, buf);
+		break;
+	case CMD_SET_APPDOMAIN:
+		err = domain_commands (command, p, end, buf);
+		break;
+	case CMD_SET_ASSEMBLY:
+		err = assembly_commands (command, p, end, buf);
+		break;
+	case CMD_SET_MODULE:
+		err = module_commands (command, p, end, buf);
+		break;
+	case CMD_SET_FIELD:
+		err = field_commands (command, p, end, buf);
+		break;
+	case CMD_SET_TYPE:
+		err = type_commands (command, p, end, buf);
+		break;
+	case CMD_SET_METHOD:
+		err = method_commands (command, p, end, buf);
+		break;
+	case CMD_SET_THREAD:
+		err = thread_commands (command, p, end, buf);
+		break;
+	case CMD_SET_STACK_FRAME:
+		err = frame_commands (command, p, end, buf);
+		break;
+	case CMD_SET_ARRAY_REF:
+		err = array_commands (command, p, end, buf);
+		break;
+	case CMD_SET_STRING_REF:
+		err = string_commands (command, p, end, buf);
+		break;
+	case CMD_SET_POINTER:
+		err = pointer_commands (command, p, end, buf);
+		break;
+	case CMD_SET_OBJECT_REF:
+		err = object_commands (command, p, end, buf);
+		break;
+	default:
+		err = ERR_NOT_IMPLEMENTED;
+	}
+	return err;
+}
 /*
  * debugger_thread:
  *
@@ -9992,57 +10094,7 @@ debugger_thread (void *arg)
 
 		err = ERR_NONE;
 		no_reply = FALSE;
-
-		/* Process the request */
-		switch (command_set) {
-		case CMD_SET_VM:
-			err = vm_commands (command, id, p, end, &buf);
-			if (err == ERR_NONE && command == CMD_VM_INVOKE_METHOD)
-				/* Sent after the invoke is complete */
-				no_reply = TRUE;
-			break;
-		case CMD_SET_EVENT_REQUEST:
-			err = event_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_APPDOMAIN:
-			err = domain_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_ASSEMBLY:
-			err = assembly_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_MODULE:
-			err = module_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_FIELD:
-			err = field_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_TYPE:
-			err = type_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_METHOD:
-			err = method_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_THREAD:
-			err = thread_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_STACK_FRAME:
-			err = frame_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_ARRAY_REF:
-			err = array_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_STRING_REF:
-			err = string_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_POINTER:
-			err = pointer_commands (command, p, end, &buf);
-			break;
-		case CMD_SET_OBJECT_REF:
-			err = object_commands (command, p, end, &buf);
-			break;
-		default:
-			err = ERR_NOT_IMPLEMENTED;
-		}		
+		err = mono_process_dbg_packet (id, command_set, command, &no_reply, p, end, &buf);	
 
 		if (command_set == CMD_SET_VM && command == CMD_VM_START_BUFFERING) {
 			buffer_replies = TRUE;

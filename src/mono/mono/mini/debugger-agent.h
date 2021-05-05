@@ -6,6 +6,8 @@
 #define __MONO_DEBUGGER_AGENT_H__
 
 #include "mini.h"
+#include "debugger-protocol.h"
+
 #include <mono/utils/mono-stack-unwinding.h>
 
 #define MONO_DBG_CALLBACKS_VERSION (4)
@@ -45,5 +47,11 @@ mono_debugger_agent_stub_init (void);
 
 MONO_API MONO_RT_EXTERNAL_ONLY gboolean
 mono_debugger_agent_transport_handshake (void);
+
+MdbgProtErrorCode
+mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
+
+void
+mono_init_debugger_agent_for_wasm (int log_level);
 
 #endif

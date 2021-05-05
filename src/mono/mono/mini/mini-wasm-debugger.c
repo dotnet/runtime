@@ -11,6 +11,8 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/debugger-engine.h>
+#include <mono/mini/debugger-protocol.h>
+#include <mono/mini/debugger-agent.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -55,6 +57,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, M
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_value_on_object (int object_id, const char* name, const char* value);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -449,6 +452,9 @@ mono_wasm_debugger_init (void)
 
 	mini_get_dbg_callbacks ()->handle_exception = handle_exception;
 	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
+
+//debugger-agent initialization	
+	mono_init_debugger_agent_for_wasm (log_level);
 }
 
 MONO_API void
@@ -577,7 +583,6 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 
 	if (error_message != NULL)
 		g_free (error_message);
-	
 	PRINT_DEBUG_MSG (2, "handle exception - done\n");
 }
 
@@ -1931,11 +1936,18 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 	}
 }
 
-// Functions required by debugger-state-machine.
-gsize
-mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData)
+EMSCRIPTEN_KEEPALIVE gboolean 
+mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
-	return 1;
+	MdbgProtBuffer buf;
+	buffer_init (&buf, 128);
+	gboolean no_reply;
+	mono_process_dbg_packet(id, command_set, command, &no_reply, data, data + size, &buf);
+
+	EM_ASM ({
+		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2);
+	}, id, buf.buf, buf.p-buf.buf);
+	return TRUE;
 }
 
 #else // HOST_WASM

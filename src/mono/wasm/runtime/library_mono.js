@@ -832,7 +832,24 @@ var MonoSupportLib = {
 			return vars;
 		},
 
-		//
+		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
+		{
+			console.log(`mono_wasm_send_dbg_command ${id} - ${command_set} - ${command} - ${command_parameters.length}`);
+
+			const dataPtr = Module._malloc (command_parameters.length);
+			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
+			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
+
+			let res_ok = this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
+			Module._free (dataHeap.byteOffset);
+
+			let res = MONO.commands_received;
+			if (res_ok) {
+				return { res_ok, res };
+			}
+			MONO.commands_received = null;
+		},
+
 		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
 		mono_wasm_get_variables: function(scope, var_list) {
 			const numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
@@ -1428,7 +1445,8 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          	'bool', [ 'number', 'number', 'number']);
 			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     	'bool', [ 'number', 'number']);
 			this._register_c_fn     ('mono_wasm_set_value_on_object',     	'bool', [ 'number', 'string', 'string' ]);
-			this._register_c_fn     ('mono_wasm_set_variable_on_frame', 'bool', [ 'number', 'number', 'string', 'string']);
+			this._register_c_fn     ('mono_wasm_set_variable_on_frame',   	'bool', [ 'number', 'number', 'string', 'string']);
+			this._register_c_fn     ('mono_wasm_send_dbg_command',			'bool', [ 'number', 'number', 'number', 'number', 'number']);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;
@@ -2041,6 +2059,18 @@ var MonoSupportLib = {
 			}
 
 			return new Uint8Array (byteNumbers);
+		},
+
+		mono_wasm_add_dbg_command_received: function(id, buffer, buffer_len) {
+			console.log(`mono_wasm_add_dbg_command_received`);
+			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
+			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
+			//const base64String = btoa (String.fromCharCode (...new Uint8Array (Module.HEAPU8.buffer, buffer, buffer_len)));
+			const buffer_obj = {
+				id,
+				value: base64String
+			}
+			MONO.commands_received = buffer_obj;
 		},
 
 		_begin_value_type_var: function(className, args) {
