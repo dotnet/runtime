@@ -26,7 +26,6 @@ public class AutoReleaseTest
         {
             ValidateThreadPoolAutoRelease();
             ValidateNewManagedThreadAutoRelease();
-            ValidateNewNativeThreadAutoRelease();
         }
         catch (Exception e)
         {
@@ -85,25 +84,5 @@ public class AutoReleaseTest
             evt.WaitOne();
             thread.Join();
         }
-    }
-
-    [UnmanagedCallersOnly]
-    private static void NativeCallback(IntPtr art)
-    {
-        ObjectiveC.autoreleaseObject(art);
-    }
-
-    private static unsafe void ValidateNewNativeThreadAutoRelease()
-    {
-        Console.WriteLine($"Running {nameof(ValidateNewNativeThreadAutoRelease)}...");
-        int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
-        IntPtr obj = ObjectiveC.initObject();
-
-        // The P/Invoke will wait until the associated native thread is terminated
-        // prior to returning. This means the Objective-C runtime should have already
-        // drained any associated NSAutoreleasePool.
-        ObjectiveC.passAndCallOnNativeThread(obj, &NativeCallback);
-
-        Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
     }
 }

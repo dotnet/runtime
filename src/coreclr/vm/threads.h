@@ -546,6 +546,10 @@ enum ThreadpoolThreadType
 //
 //      Thread* GetThread()             - returns current Thread
 //      Thread* SetupThread()           - creates new Thread.
+//      Thread* SetupMainThread()       - creates the main Thread.
+//      Thread* SetupThreadNoThrow()    - creates a new Thread without throwing.
+//      Thread* SetupExternalThreadNoThrow() - creates a new Thread for an external OS thread without throwing.
+//                                      - The API is used for Reverse P/Invoke scenarios.
 //      Thread* SetupUnstartedThread()  - creates new unstarted Thread which
 //                                        (obviously) isn't in a TLS.
 //      void    DestroyThread()         - the underlying logical thread is going
@@ -581,6 +585,7 @@ enum ThreadpoolThreadType
 Thread* SetupThread();
 Thread* SetupMainThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
+Thread* SetupExternalThreadNoThrow(HRESULT *phresult);
 
 enum SetupUnstartedThreadFlags
 {
@@ -604,10 +609,10 @@ DWORD GetRuntimeId();
 
 EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
-#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+#define SETUP_EXTERNALTHREAD_IF_NULL_FAILFAST(__thread, __msg)          \
 {                                                                       \
     HRESULT __ctinffhr;                                                 \
-    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
+    __thread = SetupExternalThreadNoThrow(&__ctinffhr);                 \
     if (__thread == NULL)                                               \
     {                                                                   \
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \

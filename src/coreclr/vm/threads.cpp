@@ -631,7 +631,7 @@ static void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-static Thread* SetupThreadWorker(bool isMainThread)
+static Thread* SetupThreadWorker(bool performPlatformInit)
 {
     CONTRACTL {
         THROWS;
@@ -798,12 +798,8 @@ static Thread* SetupThreadWorker(bool isMainThread)
         FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
     }
 
-    // Initialize the thread for the platform as the final step. This cannot be
-    // done when it is the main thread since thread initialization occurs prior
-    // to loading managed code. Since it is desirable to use managed code for
-    // some platform initialization we need to defer this initialization and instead
-    // require the main thread to call this API at appropriate time.
-    if (!isMainThread)
+    // Initialize the thread for the platform as the final step.
+    if (performPlatformInit)
         pThread->InitPlatformContext();
 
 #ifdef FEATURE_EVENT_TRACE
@@ -816,7 +812,7 @@ static Thread* SetupThreadWorker(bool isMainThread)
 Thread* SetupThread()
 {
     WRAPPER_NO_CONTRACT;
-    return SetupThreadWorker(/* isMainThread */ false);
+    return SetupThreadWorker(/* performPlatformInit */ true);
 }
 
 Thread* SetupMainThread()
@@ -829,15 +825,15 @@ Thread* SetupMainThread()
     isCalled = true;
 #endif // DEBUG
 
-    return SetupThreadWorker(/* isMainThread */ true);
+    // Initializing the platform cannot be done at this point since main thread
+    // initialization occurs prior to loading managed code. Since it is desirable
+    // to use managed code for some platform initialization we need to defer this
+    // initialization and instead require the main thread to call InitPlatformContext()
+    // at an appropriate time.
+    return SetupThreadWorker(/* performPlatformInit */ false);
 }
 
-//-------------------------------------------------------------------------
-// Public function: SetupThreadNoThrow()
-// Creates Thread for current thread if not previously created.
-// Returns NULL for failure (usually due to out-of-memory.)
-//-------------------------------------------------------------------------
-Thread* SetupThreadNoThrow(HRESULT *pHR)
+static Thread* SetupThreadNoThrowWorker(HRESULT *pHR, bool performPlatformInit)
 {
     CONTRACTL {
         NOTHROW;
@@ -855,7 +851,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 
     EX_TRY
     {
-        pThread = SetupThread();
+        pThread = SetupThreadWorker(performPlatformInit);
     }
     EX_CATCH
     {
@@ -877,6 +873,34 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
     }
 
     return pThread;
+}
+
+//-------------------------------------------------------------------------
+// Public function: SetupThreadNoThrow()
+// Creates Thread for current thread if not previously created.
+// Returns NULL for failure (usually due to out-of-memory.)
+//-------------------------------------------------------------------------
+Thread* SetupThreadNoThrow(HRESULT *pHR)
+{
+    WRAPPER_NO_CONTRACT;
+    return SetupThreadNoThrowWorker(pHR, /* performPlatformInit */ true);
+}
+
+//-------------------------------------------------------------------------
+// Public function: SetupExternalThreadNoThrow()
+// Creates Thread for current external thread if not previously created.
+// Returns NULL for failure (usually due to out-of-memory.)
+//-------------------------------------------------------------------------
+Thread* SetupExternalThreadNoThrow(HRESULT *pHR)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // When a new thread enters the runtime through a Reverse P/Invoke
+    // skipping platform initialization is the preferred manner. The reasoning
+    // is based on the fact that users may have already initialized this thread
+    // for the platform in question. Attempting to re-initialize this thread is
+    // therefore imposing policy in a manner that may be undesirable.
+    return SetupThreadNoThrowWorker(pHR, /* performPlatformInit */ false);
 }
 
 //-------------------------------------------------------------------------

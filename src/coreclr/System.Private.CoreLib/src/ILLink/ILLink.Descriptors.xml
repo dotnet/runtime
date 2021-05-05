@@ -25,6 +25,9 @@
     <type fullname="System.SZArrayHelper">
       <method name=".ctor" />
     </type>
+    <type fullname="System.Threading.Thread">
+      <method name="CreateAutoreleasePool" />
+    </type>
   </assembly>
 
   <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->
