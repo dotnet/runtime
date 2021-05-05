@@ -2613,11 +2613,14 @@ void Compiler::optIdentifyLoopsForAlignment()
 // Updates the successors of `blk`: if `blk2` is a branch successor of `blk`, and there is a mapping
 // for `blk2->blk3` in `redirectMap`, change `blk` so that `blk3` is this branch successor.
 //
+// Note that fall-through successors are not modified, including predecessor lists.
+//
 // Arguments:
 //     blk          - block to redirect
 //     redirectMap  - block->block map specifying how the `blk` target will be redirected.
+//     updatePreds  - if `true`, update the predecessor lists to match.
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
+void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool updatePreds)
 {
     BasicBlock* newJumpDest = nullptr;
     switch (blk->bbJumpKind)
@@ -2638,6 +2641,11 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
             // All of these have a single jump destination to update.
             if (redirectMap->Lookup(blk->bbJumpDest, &newJumpDest))
             {
+                if (updatePreds)
+                {
+                    fgRemoveRefPred(blk->bbJumpDest, blk);
+                    fgAddRefPred(newJumpDest, blk);
+                }
                 blk->bbJumpDest = newJumpDest;
             }
             break;
@@ -2650,7 +2658,11 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
                 BasicBlock* switchDest = blk->bbJumpSwt->bbsDstTab[i];
                 if (redirectMap->Lookup(switchDest, &newJumpDest))
                 {
-                    switchDest                   = newJumpDest;
+                    if (updatePreds)
+                    {
+                        fgRemoveRefPred(switchDest, blk);
+                        fgAddRefPred(newJumpDest, blk);
+                    }
                     blk->bbJumpSwt->bbsDstTab[i] = newJumpDest;
                     redirected                   = true;
                 }
@@ -4411,7 +4423,12 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
 
     bool foundCondTree = false;
 
-    // Clone each statement in bTest and append to block.
+    // Create a new block after `block` to put the copied condition code.
+    block->bbJumpKind = BBJ_NONE;
+    block->bbJumpDest = nullptr;
+    BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
+
+    // Clone each statement in bTest and append to bNewCond.
     for (Statement* stmt : bTest->Statements())
     {
         GenTree* originalTree = stmt->GetRootNode();
@@ -4439,7 +4456,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
             gtReverseCond(clonedCompareTree);
         }
 
-        Statement* clonedStmt = fgNewStmtAtEnd(block, clonedTree);
+        Statement* clonedStmt = fgNewStmtAtEnd(bNewCond, clonedTree);
 
         if (opts.compDbgInfo)
         {
@@ -4456,24 +4473,59 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     // this is a conservative guess.
     if (auto copyFlags = bTest->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
     {
-        block->bbFlags |= copyFlags;
+        bNewCond->bbFlags |= copyFlags;
     }
 
-    /* Change the block to end with a conditional jump */
+    bNewCond->bbJumpDest = bTest->bbNext;
+    bNewCond->inheritWeight(block);
 
-    block->bbJumpKind = BBJ_COND;
-    block->bbJumpDest = bTest->bbNext;
+    // Update bbRefs and bbPreds for 'bNewCond', 'bNewCond->bbNext' 'bTest' and 'bTest->bbNext'.
 
-    /* Update bbRefs and bbPreds for 'block->bbNext' 'bTest' and 'bTest->bbNext' */
-
-    fgAddRefPred(block->bbNext, block);
+    fgAddRefPred(bNewCond, block);
+    fgAddRefPred(bNewCond->bbNext, bNewCond);
 
     fgRemoveRefPred(bTest, block);
-    fgAddRefPred(bTest->bbNext, block);
+    fgAddRefPred(bTest->bbNext, bNewCond);
+
+    // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
+    // block, not the existing condition block. The idea is that if we only move `block` to point to
+    // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
+    // recognize loops, the loop will appear to have multiple entries, which will prevent optimization.
+    // We don't have loops yet, but blocks should be in increasing lexical numbered order, so use that
+    // as the proxy for predecessors that are "in" versus "out" of the potential loop. Note that correctness
+    // is maintained no matter which condition block we point to, but we'll lose optimization potential
+    // (and create spaghetti code) if we get it wrong.
+
+    BlockToBlockMap blockMap(getAllocator(CMK_LoopOpt));
+    bool blockMapInitialized = false;
+
+    unsigned loopFirstNum  = bNewCond->bbNext->bbNum;
+    unsigned loopBottomNum = bTest->bbNum;
+    for (flowList* pred = bTest->bbPreds; pred != nullptr; pred = pred->flNext)
+    {
+        BasicBlock* predBlock = pred->getBlock();
+        unsigned bNum = predBlock->bbNum;
+        if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
+        {
+            // Looks like the predecessor is from within the potential loop; skip it.
+            continue;
+        }
+
+        if (!blockMapInitialized)
+        {
+            blockMapInitialized = true;
+            blockMap.Set(bTest, bNewCond);
+        }
+
+        // Redirect the predecessor to the new block.
+        JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB,
+            predBlock->bbNum, bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
+        optRedirectBlock(predBlock, &blockMap, /*updatePreds*/ true);
+    }
 
     // If we have profile data for all blocks and we know that we are cloning the
-    // bTest block into block and thus changing the control flow from block so
-    // that it no longer goes directly to bTest anymore, we have to adjust
+    // `bTest` block into `bNewCond` and thus changing the control flow from `block` so
+    // that it no longer goes directly to `bTest` anymore, we have to adjust
     // various weights.
     //
     if (allProfileWeightsAreValid)
@@ -4521,33 +4573,33 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         BasicBlock::weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         BasicBlock::weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        flowList* const edgeBlockToNext  = fgGetPredForBlock(block->bbNext, block);
-        flowList* const edgeBlockToAfter = fgGetPredForBlock(block->bbJumpDest, block);
+        flowList* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
+        flowList* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
 
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", block->bbNum,
-                block->bbNext->bbNum, blockToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", block->bbNum,
-                block->bbJumpDest->bbNum, blockToAfterWeight);
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
+                bNewCond->bbNext->bbNum, blockToNextWeight);
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
+                bNewCond->bbJumpDest->bbNum, blockToAfterWeight);
 
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, block->bbNext);
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, block->bbJumpDest);
+        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->bbNext);
+        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->bbJumpDest);
 
 #ifdef DEBUG
         // Verify profile for the two target blocks is consistent.
         //
-        fgDebugCheckIncomingProfileData(block->bbNext);
-        fgDebugCheckIncomingProfileData(block->bbJumpDest);
+        fgDebugCheckIncomingProfileData(bNewCond->bbNext);
+        fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
 #endif // DEBUG
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nDuplicated loop exit block at " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", block->bbNum,
-               block->bbNext->bbNum, bTest->bbNum);
+        printf("\nDuplicated loop exit block at " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", bNewCond->bbNum,
+               bNewCond->bbNext->bbNum, bTest->bbNum);
         printf("Estimated code size expansion is %d\n", estDupCostSz);
 
-        fgDumpBlock(block);
+        fgDumpBlock(bNewCond);
         fgDumpBlock(bTest);
     }
 #endif // DEBUG
