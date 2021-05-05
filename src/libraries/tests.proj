@@ -136,13 +136,11 @@
 
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
-    <!-- https://github.com/dotnet/runtime/issues/36878 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51414 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/38032 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread/tests/System.Threading.Thread.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/36897 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates/tests/System.Security.Cryptography.X509Certificates.Tests.csproj" />
 
     <!-- Failures -->
     <!-- https://github.com/dotnet/runtime/issues/51374 -->
@@ -151,8 +149,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51330 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs/tests/System.Security.Cryptography.Pkcs.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/36897 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates/tests/System.Security.Cryptography.X509Certificates.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51370 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml/tests/System.Security.Cryptography.Xml.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51334 -->
