@@ -88,6 +88,24 @@ HRESULT CordbAssembly::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[
             MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
             m_pAssemblyName = m_dbgprot_decode_string_with_len(pReply->p, &pReply->p, pReply->end, &m_nAssemblyNameLen);
+
+            char* c_mobile_symbols_path = getenv("MOBILE_SYMBOLS_PATH");
+            if (strlen(c_mobile_symbols_path) > 0) {
+
+                size_t size_path = strlen(m_pAssemblyName);
+                size_t pos_separator = 0;
+                for (pos_separator = size_path ; pos_separator > 0 ; pos_separator--) {
+                    if (m_pAssemblyName[pos_separator] == DIR_SEPARATOR)
+                        break;
+                }
+                m_nAssemblyNameLen = (int)(size_path + strlen(c_mobile_symbols_path));
+                char* symbols_full_path = (char*)malloc(m_nAssemblyNameLen);
+                sprintf_s(symbols_full_path, m_nAssemblyNameLen, "%s%s", c_mobile_symbols_path , m_pAssemblyName + pos_separator + 1);
+
+                free(m_pAssemblyName);
+                m_pAssemblyName = symbols_full_path;
+                m_nAssemblyNameLen = (int) strlen(m_pAssemblyName);
+            }
         }
 
         if (cchName < (ULONG32) m_nAssemblyNameLen + 1)
@@ -271,36 +289,7 @@ HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
 
 HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[])
 {
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        if (!m_pAssemblyName) {
-            LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetName - IMPLEMENTED\n"));
-            MdbgProtBuffer localbuf;
-            m_dbgprot_buffer_init(&localbuf, 128);
-            m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
-            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
-            m_dbgprot_buffer_free(&localbuf);
-
-            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-
-            m_pAssemblyName = m_dbgprot_decode_string_with_len(pReply->p, &pReply->p, pReply->end, &m_nAssemblyNameLen);
-        }
-
-        if (cchName < (ULONG32)m_nAssemblyNameLen + 1)
-        {
-            *pcchName = (ULONG32)m_nAssemblyNameLen + 1;
-        }
-        else
-        {
-            MultiByteToWideChar(CP_UTF8, 0, m_pAssemblyName, -1, szName, cchName);
-            *pcchName = (ULONG32)m_nAssemblyNameLen + 1;
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
+    return m_pAssembly->GetName(cchName, pcchName, szName);
 }
 
 HRESULT CordbModule::EnableJITDebugging(BOOL bTrackJITInfo, BOOL bAllowJitOpts)
@@ -392,8 +381,17 @@ HRESULT CordbModule::GetMetaDataInterface(REFIID riid, IUnknown** ppObj)
         full_path = (WCHAR*)malloc(sizeof(WCHAR) * pcchName);
         GetName(pcchName, &pcchName, full_path);
 
-        m_pStgdbRW->OpenForRead(full_path, NULL, 0, 0);
+        HRESULT ret = m_pStgdbRW->OpenForRead(full_path, NULL, 0, 0);
         free(full_path);
+
+        if (ret != S_OK)
+        {
+            delete m_pRegMeta;
+            delete m_pStgdbRW;
+            m_pRegMeta = NULL;
+            m_pStgdbRW = NULL;
+            return CORDBG_E_MISSING_METADATA;
+        }
 
         m_pRegMeta->InitWithStgdb((ICorDebugModule*)this, m_pStgdbRW);
     }
