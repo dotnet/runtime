@@ -131,7 +131,7 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
         }
     }
     else if (!node->HasIndex() && node->gtGetOp2()->OperIs(GT_CNS_DBL) &&
-             (node->gtGetOp2()->AsDblCon()->gtDconVal == 0.0))
+             (FloatingPointUtils::convertDoubleToUInt64(node->gtGetOp2()->AsDblCon()->gtDconVal) == 0))
     {
         // Replace *address = 0.0 with *address = 0 (integer) which is slightly more efficient.
         const var_types intType = node->TypeIs(TYP_FLOAT) ? TYP_INT : TYP_LONG;
