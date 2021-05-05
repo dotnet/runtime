@@ -388,7 +388,7 @@ namespace System.Threading
             }
         }
 
-#if (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
+#if FEATURE_NSAUTORELEASEPOOL
         [UnmanagedCallersOnly]
         private static void CallDrain(IntPtr p)
             => Interop.Sys.DrainAutoreleasePool(p);
@@ -406,6 +406,6 @@ namespace System.Threading
         // [TODO] Remove when https://github.com/dotnet/runtime/issues/51991 is fixed.
         internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
             => throw new PlatformNotSupportedException();
-#endif // !(TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
+#endif // !FEATURE_NSAUTORELEASEPOOL
     }
 }

@@ -14,8 +14,6 @@ internal static unsafe class ObjectiveC
     public static extern void autoreleaseObject(IntPtr art);
     [DllImport(nameof(ObjectiveC))]
     public static extern int getNumReleaseCalls();
-    [DllImport(nameof(ObjectiveC))]
-    public static extern void passAndCallOnNativeThread(IntPtr art, delegate* unmanaged<IntPtr, void> callback);
 }
 
 public class AutoReleaseTest
@@ -24,8 +22,8 @@ public class AutoReleaseTest
     {
         try
         {
-            ValidateThreadPoolAutoRelease();
             ValidateNewManagedThreadAutoRelease();
+            ValidateThreadPoolAutoRelease();
         }
         catch (Exception e)
         {
@@ -34,25 +32,6 @@ public class AutoReleaseTest
         }
 
         return 100;
-    }
-
-    private static void ValidateThreadPoolAutoRelease()
-    {
-        Console.WriteLine($"Running {nameof(ValidateThreadPoolAutoRelease)}...");
-        using (AutoResetEvent evt = new AutoResetEvent(false))
-        {
-            int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
-            IntPtr obj = ObjectiveC.initObject();
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                ObjectiveC.autoreleaseObject(obj);
-                evt.Set();
-            });
-            evt.WaitOne();
-            // Wait 60 ms after the signal to ensure that the thread has finished the work item and has drained the thread's autorelease pool.
-            Thread.Sleep(60);
-            Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
-        }
     }
 
     private static void ValidateNewManagedThreadAutoRelease()
@@ -83,6 +62,25 @@ public class AutoReleaseTest
 
             evt.WaitOne();
             thread.Join();
+        }
+    }
+
+    private static void ValidateThreadPoolAutoRelease()
+    {
+        Console.WriteLine($"Running {nameof(ValidateThreadPoolAutoRelease)}...");
+        using (AutoResetEvent evt = new AutoResetEvent(false))
+        {
+            int numReleaseCalls = ObjectiveC.getNumReleaseCalls();
+            IntPtr obj = ObjectiveC.initObject();
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                ObjectiveC.autoreleaseObject(obj);
+                evt.Set();
+            });
+            evt.WaitOne();
+            // Wait 60 ms after the signal to ensure that the thread has finished the work item and has drained the thread's autorelease pool.
+            Thread.Sleep(60);
+            Assert.AreEqual(numReleaseCalls + 1, ObjectiveC.getNumReleaseCalls());
         }
     }
 }

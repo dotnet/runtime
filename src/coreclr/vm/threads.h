@@ -4492,7 +4492,7 @@ public:
     inline void SetLastSTACtxCookie(LPVOID pCtxCookie, BOOL fNAContext);
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(FEATURE_NSAUTORELEASEPOOL)
 private:
     // The NSAutoreleasePool instance for the thread.
     void* m_autoReleasePool;
@@ -4500,8 +4500,7 @@ private:
     // Drain method for the NSAutoreleasePool instance.
     using DrainPoolCallback = void(*)(void*);
     DrainPoolCallback m_drainPoolCallback;
-
-#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#endif // defined(FEATURE_NSAUTORELEASEPOOL)
 
 private:
     // This duplicates the ThreadType_GC bit stored in TLS (t_ThreadType). It exists

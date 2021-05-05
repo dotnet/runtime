@@ -1639,6 +1639,11 @@ Thread::Thread()
     m_pLastSTACtxCookie = NULL;
 #endif // FEATURE_COMINTEROP
 
+#if defined(FEATURE_NSAUTORELEASEPOOL)
+    m_autoReleasePool = NULL;
+    m_drainPoolCallback = NULL;
+#endif // defined(FEATURE_NSAUTORELEASEPOOL)
+
     m_fGCSpecial = FALSE;
 
 #ifndef TARGET_UNIX
@@ -2943,11 +2948,11 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         CleanupCOMState();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(FEATURE_NSAUTORELEASEPOOL)
         // Drain method for the NSAutoreleasePool instance.
         if (m_drainPoolCallback && m_autoReleasePool)
             m_drainPoolCallback(m_autoReleasePool);
-#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#endif // defined(FEATURE_NSAUTORELEASEPOOL)
     }
 
     if (g_fEEShutDown != 0)
@@ -4786,7 +4791,7 @@ void Thread::InitPlatformContext()
     }
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(FEATURE_NSAUTORELEASEPOOL)
 
     void* pool = NULL;
     DrainPoolCallback drainLocal = NULL;
@@ -4802,7 +4807,7 @@ void Thread::InitPlatformContext()
     m_autoReleasePool = pool;
     m_drainPoolCallback = drainLocal;
 
-#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#endif // defined(FEATURE_NSAUTORELEASEPOOL)
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
