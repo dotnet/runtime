@@ -14070,7 +14070,7 @@ DONE_MORPHING_CHILDREN:
         case GT_OR:
         case GT_XOR:
         case GT_AND:
-            
+
             /* Commute any non-REF constants to the right */
 
             noway_assert(op1);
