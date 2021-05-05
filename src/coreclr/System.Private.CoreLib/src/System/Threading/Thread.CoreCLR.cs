@@ -402,6 +402,10 @@ namespace System.Threading
             drainFunc = (IntPtr)(delegate* unmanaged<IntPtr, void>)&CallDrain;
             return Interop.Sys.CreateAutoreleasePool();
         }
-#endif // (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
+#else
+        // [TODO] Remove when https://github.com/dotnet/runtime/issues/51991 is fixed.
+        internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
+            => throw new PlatformNotSupportedException();
+#endif // !(TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
     }
 }
