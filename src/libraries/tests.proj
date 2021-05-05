@@ -100,15 +100,12 @@
 
     <!-- https://github.com/dotnet/runtime/issues/51016 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InvariantCultureOnlyMode\Android.Device_Emulator.InvariantCultureOnlyMode.Test.csproj" />
-<<<<<<< HEAD
-=======
 
     <!-- PSNE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives/tests/FunctionalTests/System.Net.Primitives.Functional.Tests.csproj" />
 
->>>>>>> mdh1418/skip_android_library_tests
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'arm64'">
@@ -116,11 +113,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Xml\tests\Microsoft.Extensions.Configuration.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\FunctionalTests\Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\DI.Common\Common\tests\Microsoft.Extensions.Logging.Testing.Tests.csproj" />
-<<<<<<< HEAD
-=======
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.Runtime\tests\System.Composition.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Asn1\tests\System.Formats.Asn1.Tests.csproj" />
->>>>>>> mdh1418/skip_android_library_tests
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.ResourceManager\tests\System.Resources.ResourceManager.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
