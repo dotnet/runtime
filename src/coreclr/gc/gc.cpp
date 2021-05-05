@@ -11671,20 +11671,26 @@ bool allocate_initial_regions(int number_of_heaps)
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
-        bool succeed = global_region_allocator.allocate_large_region(&initial_regions[i][poh_generation][0], &initial_regions[i][poh_generation][1], allocate_forward);
+        bool succeed = global_region_allocator.allocate_large_region(
+            &initial_regions[i][poh_generation][0],
+            &initial_regions[i][poh_generation][1], allocate_forward);
         assert(succeed);
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
         for (int gen = max_generation; gen >= 0; gen--)
         {
-            bool succeed = global_region_allocator.allocate_basic_region(&initial_regions[i][gen][0], &initial_regions[i][gen][1]);
+            bool succeed = global_region_allocator.allocate_basic_region(
+                &initial_regions[i][gen][0],
+                &initial_regions[i][gen][1]);
             assert(succeed);
         }
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
-        bool succeed = global_region_allocator.allocate_large_region(&initial_regions[i][loh_generation][0], &initial_regions[i][loh_generation][1], allocate_forward);
+        bool succeed = global_region_allocator.allocate_large_region(
+            &initial_regions[i][loh_generation][0],
+            &initial_regions[i][loh_generation][1], allocate_forward);
         assert(succeed);
     }
     return true;
