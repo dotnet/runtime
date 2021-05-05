@@ -31,12 +31,24 @@ namespace System.Net.NetworkInformation
             {
                 if (File.Exists(NetworkFiles.Ipv4RouteFile))
                 {
-                    IPv4Routes = File.ReadAllLines(NetworkFiles.Ipv4RouteFile);
+                    try
+                    {
+                        IPv4Routes = File.ReadAllLines(NetworkFiles.Ipv4RouteFile);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                    }
                 }
 
                 if (File.Exists(NetworkFiles.Ipv6RouteFile))
                 {
-                    IPv6Routes = File.ReadAllLines(NetworkFiles.Ipv6RouteFile);
+                    try
+                    {
+                        IPv6Routes = File.ReadAllLines(NetworkFiles.Ipv6RouteFile);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                    }
                 }
 
                 try
