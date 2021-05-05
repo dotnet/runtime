@@ -40,6 +40,7 @@ namespace System.Security.Cryptography
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null) { }
         public void Encrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.Span<byte> tag, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class AesManaged : System.Security.Cryptography.Aes
@@ -808,6 +809,7 @@ namespace System.Security.Cryptography
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1Managed : System.Security.Cryptography.SHA1
     {
@@ -830,6 +832,7 @@ namespace System.Security.Cryptography
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA256Managed : System.Security.Cryptography.SHA256
     {
@@ -852,6 +855,7 @@ namespace System.Security.Cryptography
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA384Managed : System.Security.Cryptography.SHA384
     {
@@ -874,6 +878,7 @@ namespace System.Security.Cryptography
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512Managed : System.Security.Cryptography.SHA512
     {
