@@ -543,12 +543,12 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 #if NETCOREAPP
             AssertExtensions.Throws<ArgumentException>("values", () =>
             {
-                var _ = new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(new AsnEncodedData(new byte[] { 1, 2, 3 })));
+                new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(new AsnEncodedData(new byte[] { 1, 2, 3 })));
             });
 #else
             Assert.Throws<NullReferenceException>(() =>
             {
-                var _ = new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(new AsnEncodedData(new byte[] { 1, 2, 3 })));
+                new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(new AsnEncodedData(new byte[] { 1, 2, 3 })));
             });
 #endif
         }
