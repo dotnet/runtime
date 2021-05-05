@@ -1,13 +1,9 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Text.Encodings.Web.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj">
       <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <HarvestIncludePaths Include="lib/netstandard1.0" />
     <!-- Since UAP and .NETCoreApp are package based we still want to enable
      OOBing libraries that happen to overlap with their framework package.
      This avoids us having to lock the API in our NuGet packages just 
@@ -16,11 +12,8 @@
     <ValidatePackageSuppression Include="TreatAsOutOfBox">
       <Value>.NETCoreApp;UAP</Value>
     </ValidatePackageSuppression>
+    <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
+    <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore45;netcore451;netcore50;uap10.0;net45;net451;net46;wp8;wpa81" />
   </ItemGroup>
-  <PropertyGroup>
-    <!-- Excluding the reference assets on the package so that RAR will see the run-time conflicts at build time in order to
-    generate the right binding redirects when targeting Desktop. https://github.com/dotnet/runtime/issues/27470 -->
-    <ExcludeReferenceAssets>true</ExcludeReferenceAssets>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

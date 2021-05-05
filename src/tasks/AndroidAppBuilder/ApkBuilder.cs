@@ -24,6 +24,7 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public string? StaticLinkedComponentNames { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     public (string apk, string packageId) BuildApk(
@@ -171,6 +172,7 @@ public class ApkBuilder
 
         // 1. Build libmonodroid.so` via cmake
 
+        string nativeLibraries = "";
         string monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
         if (!File.Exists(monoRuntimeLib))
         {
@@ -178,8 +180,55 @@ public class ApkBuilder
         }
         else
         {
-            monoRuntimeLib = $"    {monoRuntimeLib}{Environment.NewLine}";
+            nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
         }
+
+        string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
+        bool staticLinkAllComponents = false;
+        string[] componentNames = Array.Empty<string>();
+
+        if (!string.IsNullOrEmpty(StaticLinkedComponentNames) && StaticLinkedComponentNames.Equals("*", StringComparison.OrdinalIgnoreCase))
+            staticLinkAllComponents = true;
+        else if (!string.IsNullOrEmpty(StaticLinkedComponentNames))
+            componentNames = StaticLinkedComponentNames.Split(";");
+
+        // by default, component stubs will be linked and depending on how mono runtime has been build,
+        // stubs can disable or dynamic load components.
+        foreach (string staticComponentStubLib in staticComponentStubLibs)
+        {
+            string componentLibToLink = staticComponentStubLib;
+            if (staticLinkAllComponents)
+            {
+                // static link component.
+                componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                foreach (string componentName in componentNames)
+                {
+                    if (componentLibToLink.Contains(componentName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // static link component.
+                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                        break;
+                    }
+                }
+            }
+
+            // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+            if (!File.Exists(componentLibToLink))
+            {
+                Utils.LogInfo($"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                componentLibToLink = staticComponentStubLib;
+            }
+
+            nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
+        }
+
+        // There's a circular dependecy between static mono runtime lib and static component libraries.
+        // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
+        // due to circular dependecy.
+        nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
 
         string aotSources = "";
         foreach (string asm in assemblerFiles)
@@ -190,7 +239,7 @@ public class ApkBuilder
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
             .Replace("%MonoInclude%", monoRuntimeHeaders)
-            .Replace("%NativeLibrariesToLink%", monoRuntimeLib)
+            .Replace("%NativeLibrariesToLink%", nativeLibraries)
             .Replace("%AotSources%", aotSources)
             .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
 

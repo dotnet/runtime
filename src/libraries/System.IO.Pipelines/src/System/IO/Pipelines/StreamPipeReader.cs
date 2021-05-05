@@ -259,6 +259,132 @@ namespace System.IO.Pipelines
             }
         }
 
+        /// <inheritdoc />
+        public override async Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
+        {
+            ThrowIfCompleted();
+
+            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
+            CancellationTokenSource tokenSource = InternalTokenSource;
+            if (tokenSource.IsCancellationRequested)
+            {
+                ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+            }
+
+            CancellationTokenRegistration reg = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+            }
+
+            using (reg)
+            {
+                try
+                {
+                    BufferSegment? segment = _readHead;
+                    try
+                    {
+                        while (segment != null)
+                        {
+                            FlushResult flushResult = await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+
+                            if (flushResult.IsCanceled)
+                            {
+                                ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                            }
+
+                            segment = segment.NextSegment;
+
+                            if (flushResult.IsCompleted)
+                            {
+                                return;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        // Advance even if WriteAsync throws so the PipeReader is not left in the
+                        // currently reading state
+                        if (segment != null)
+                        {
+                            AdvanceTo(segment, segment.End, segment, segment.End);
+                        }
+                    }
+
+                    if (_isStreamCompleted)
+                    {
+                        return;
+                    }
+
+                    await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    ClearCancellationToken();
+
+                    throw;
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override async Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
+        {
+            ThrowIfCompleted();
+
+            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
+            CancellationTokenSource tokenSource = InternalTokenSource;
+            if (tokenSource.IsCancellationRequested)
+            {
+                ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+            }
+
+            CancellationTokenRegistration reg = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+            }
+
+            using (reg)
+            {
+                try
+                {
+                    BufferSegment? segment = _readHead;
+                    try
+                    {
+                        while (segment != null)
+                        {
+                            await destination.WriteAsync(segment.Memory, tokenSource.Token).ConfigureAwait(false);
+
+                            segment = segment.NextSegment;
+                        }
+                    }
+                    finally
+                    {
+                        // Advance even if WriteAsync throws so the PipeReader is not left in the
+                        // currently reading state
+                        if (segment != null)
+                        {
+                            AdvanceTo(segment, segment.End, segment, segment.End);
+                        }
+                    }
+
+                    if (_isStreamCompleted)
+                    {
+                        return;
+                    }
+
+                    await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    ClearCancellationToken();
+
+                    throw;
+                }
+            }
+        }
+
         private void ClearCancellationToken()
         {
             lock (_lock)

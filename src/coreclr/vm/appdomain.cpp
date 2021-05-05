@@ -679,8 +679,6 @@ void BaseDomain::Init()
     m_DomainCacheCrst.Init(CrstAppDomainCache);
     m_DomainLocalBlockCrst.Init(CrstDomainLocalBlock);
 
-    m_InteropDataCrst.Init(CrstInteropData, CRST_REENTRANCY);
-
     // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
     // If you remove this flag, we will switch to preemptive mode when entering
     // m_FileLoadLock, which means all functions that enter it will become
@@ -715,12 +713,6 @@ void BaseDomain::Init()
     // Allocate the managed standard interfaces information.
     m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
 #endif // FEATURE_COMINTEROP
-
-    // Init the COM Interop data hash
-    {
-        LockOwner lock = {&m_InteropDataCrst, IsOwnerOfCrst};
-        m_interopDataHash.Init(0, NULL, false, &lock);
-    }
 
     m_dwSizedRefHandles = 0;
     if (!m_iNumberOfProcessors)
@@ -2210,9 +2202,8 @@ void AppDomain::Init()
 
     BaseDomain::Init();
 
-// Set up the binding caches
+    // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
-    m_UnmanagedCache.InitializeTable(this, &m_DomainCacheCrst);
 
     m_MemoryPressure = 0;
 
@@ -3105,10 +3096,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     {
         AssemblySpec spec;
         spec.InitializeSpec(result->GetFile());
-        if (spec.CanUseWithBindingCache() && result->CanUseWithBindingCache())
-            GetAppDomain()->AddAssemblyToCache(&spec, result);
+        GetAppDomain()->AddAssemblyToCache(&spec, result);
     }
-    else if (pIdentity->CanUseWithBindingCache() && result->CanUseWithBindingCache())
+    else
     {
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
@@ -3707,9 +3697,6 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAll
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
-        // Hosted fusion binder makes an exception here, so we cannot assert.
-        //PRECONDITION(pSpec->CanUseWithBindingCache());
-        //PRECONDITION(pFile->CanUseWithBindingCache());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -3740,8 +3727,6 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembl
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
         PRECONDITION(CheckPointer(pAssembly));
-        PRECONDITION(pSpec->CanUseWithBindingCache());
-        PRECONDITION(pAssembly->CanUseWithBindingCache());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -3760,7 +3745,6 @@ BOOL AppDomain::AddExceptionToCache(AssemblySpec* pSpec, Exception *ex)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pSpec));
-        PRECONDITION(pSpec->CanUseWithBindingCache());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -3778,39 +3762,50 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(libraryName));
+        PRECONDITION(CheckPointer(hMod));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    if (libraryName)
-    {
-        AssemblySpec spec;
-        spec.SetCodeBase(libraryName);
-        m_UnmanagedCache.InsertEntry(&spec, hMod);
-    }
-    return ;
-}
 
+    CrstHolder lock(&m_DomainCacheCrst);
+
+    const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
+    if (existingEntry != NULL)
+    {
+        _ASSERTE(existingEntry->Handle == hMod);
+        return;
+    }
+
+    size_t len = (wcslen(libraryName) + 1) * sizeof(WCHAR);
+    AllocMemHolder<WCHAR> copiedName(GetLowFrequencyHeap()->AllocMem(S_SIZE_T(len)));
+    memcpy(copiedName, libraryName, len);
+
+    m_unmanagedCache.Add(UnmanagedImageCacheEntry{ copiedName, hMod });
+    copiedName.SuppressRelease();
+}
 
 NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
 {
     CONTRACT(NATIVE_LIBRARY_HANDLE)
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckPointer(libraryName,NULL_OK));
+        PRECONDITION(CheckPointer(libraryName));
         POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
-    if(libraryName == NULL) RETURN NULL;
 
-    AssemblySpec spec;
-    spec.SetCodeBase(libraryName);
-    RETURN (NATIVE_LIBRARY_HANDLE) m_UnmanagedCache.LookupEntry(&spec, 0);
+    CrstHolder lock(&m_DomainCacheCrst);
+    const UnmanagedImageCacheEntry *existingEntry = m_unmanagedCache.LookupPtr(libraryName);
+    if (existingEntry == NULL)
+        RETURN NULL;
+
+    RETURN existingEntry->Handle;
 }
 
 BOOL AppDomain::RemoveFileFromCache(PEAssembly *pFile)
@@ -3862,12 +3857,6 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
         return TRUE;
 
     return m_AssemblyCache.Contains(pSpec);
-}
-
-void AppDomain::GetCacheAssemblyList(SetSHash<PTR_DomainAssembly>& assemblyList)
-{
-    CrstHolder holder(&m_DomainCacheCrst);
-    m_AssemblyCache.GetAllAssemblies(assemblyList);
 }
 
 PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
@@ -3922,7 +3911,7 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
     {
         result = TryResolveAssemblyUsingEvent(*ppFailedSpec);
 
-        if (result != NULL && pPrePolicySpec->CanUseWithBindingCache() && result->CanUseWithBindingCache())
+        if (result != NULL)
         {
             fFailure = FALSE;
 
@@ -3934,7 +3923,7 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
             // original binding spec and therefore will not cause inconsistency here.
             // For the purposes of the resolve event, failure to add to the cache still is a success.
             AddFileToCache(pPrePolicySpec, result, TRUE /* fAllowFailure */);
-            if (*ppFailedSpec != pPrePolicySpec && pPostPolicySpec->CanUseWithBindingCache())
+            if (*ppFailedSpec != pPrePolicySpec)
             {
                 AddFileToCache(pPostPolicySpec, result, TRUE /* fAllowFailure */ );
             }
@@ -3961,188 +3950,170 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     BinderTracing::AssemblyBindOperation bindOperation(pSpec);
 
-    if (pSpec->HasUniqueIdentity())
+    HRESULT hrBindResult = S_OK;
+    PEAssemblyHolder result;
+
+    bool isCached = false;
+    EX_TRY
     {
-        HRESULT hrBindResult = S_OK;
-        PEAssemblyHolder result;
-
-        bool isCached = false;
-        EX_TRY
+        isCached = IsCached(pSpec);
+        if (!isCached)
         {
-            isCached = IsCached(pSpec);
-            if (!isCached)
+
             {
+                // Use CoreClr's fusion alternative
+                CoreBindResult bindResult;
 
+                pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
+                hrBindResult = bindResult.GetHRBindResult();
+
+                if (bindResult.Found())
                 {
-                    // Use CoreClr's fusion alternative
-                    CoreBindResult bindResult;
-
-                    pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
-                    hrBindResult = bindResult.GetHRBindResult();
-
-                    if (bindResult.Found())
+                    if (SystemDomain::SystemFile() && bindResult.IsCoreLib())
                     {
-                        if (SystemDomain::SystemFile() && bindResult.IsCoreLib())
-                        {
-                            // Avoid rebinding to another copy of CoreLib
-                            result = SystemDomain::SystemFile();
-                            result.SuppressRelease(); // Didn't get a refcount
-                        }
-                        else
-                        {
-                            // IsSystem on the PEFile should be false, even for CoreLib satellites
-                            result = PEAssembly::Open(&bindResult,
-                                                      FALSE);
-                        }
-
-                        // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                        ICLRPrivBinder* pBinder = result->GetBindingContext();
-                        _ASSERTE(pBinder != NULL);
-                        pSpec->SetBindingContext(pBinder);
-
-                        if (pSpec->CanUseWithBindingCache() && result->CanUseWithBindingCache())
-                        {
-                            // Failure to add simply means someone else beat us to it. In that case
-                            // the FindCachedFile call below (after catch block) will update result
-                            // to the cached value.
-                            AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
-                        }
+                        // Avoid rebinding to another copy of CoreLib
+                        result = SystemDomain::SystemFile();
+                        result.SuppressRelease(); // Didn't get a refcount
                     }
                     else
                     {
-                        // Don't trigger the resolve event for the CoreLib satellite assembly. A misbehaving resolve event may
-                        // return an assembly that does not match, and this can cause recursive resource lookups during error
-                        // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
-                        // AssemblySpec::Bind().
-                        if (!pSpec->IsCoreLibSatellite())
+                        // IsSystem on the PEFile should be false, even for CoreLib satellites
+                        result = PEAssembly::Open(&bindResult,
+                                                    FALSE);
+                    }
+
+                    // Setup the reference to the binder, which performed the bind, into the AssemblySpec
+                    ICLRPrivBinder* pBinder = result->GetBindingContext();
+                    _ASSERTE(pBinder != NULL);
+                    pSpec->SetBindingContext(pBinder);
+
+                    // Failure to add simply means someone else beat us to it. In that case
+                    // the FindCachedFile call below (after catch block) will update result
+                    // to the cached value.
+                    AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
+                }
+                else
+                {
+                    // Don't trigger the resolve event for the CoreLib satellite assembly. A misbehaving resolve event may
+                    // return an assembly that does not match, and this can cause recursive resource lookups during error
+                    // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
+                    // AssemblySpec::Bind().
+                    if (!pSpec->IsCoreLibSatellite())
+                    {
+                        // Trigger the resolve event also for non-throw situation.
+                        AssemblySpec NewSpec(this);
+                        AssemblySpec *pFailedSpec = NULL;
+
+                        fForceReThrow = TRUE; // Managed resolve event handler can throw
+
+                        BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+
+                        if (fFailure && fThrowOnFileNotFound)
                         {
-                            // Trigger the resolve event also for non-throw situation.
-                            AssemblySpec NewSpec(this);
-                            AssemblySpec *pFailedSpec = NULL;
-
-                            fForceReThrow = TRUE; // Managed resolve event handler can throw
-
-                            BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
-
-                            if (fFailure && fThrowOnFileNotFound)
-                            {
-                                EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
-                            }
+                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
                         }
                     }
                 }
             }
         }
-        EX_CATCH
+    }
+    EX_CATCH
+    {
+        Exception *ex = GET_EXCEPTION();
+
+        AssemblySpec NewSpec(this);
+        AssemblySpec *pFailedSpec = NULL;
+
+        // Let transient exceptions or managed resolve event handler exceptions propagate
+        if (ex->IsTransient() || fForceReThrow)
         {
-            Exception *ex = GET_EXCEPTION();
+            EX_RETHROW;
+        }
 
-            AssemblySpec NewSpec(this);
-            AssemblySpec *pFailedSpec = NULL;
-
-            // Let transient exceptions or managed resolve event handler exceptions propagate
-            if (ex->IsTransient() || fForceReThrow)
+        {
+            BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, ex->GetHR(), &pFailedSpec);
+            if (fFailure)
             {
-                EX_RETHROW;
-            }
+                BOOL bFileNotFoundException =
+                    (EEFileLoadException::GetFileLoadKind(ex->GetHR()) == kFileNotFoundException);
 
-            {
-                BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, ex->GetHR(), &pFailedSpec);
+                if (!bFileNotFoundException)
+                {
+                    fFailure = AddExceptionToCache(pFailedSpec, ex);
+                } // else, fFailure stays TRUE
+                // Effectively, fFailure == bFileNotFoundException || AddExceptionToCache(pFailedSpec, ex)
+
+                // Only throw this exception if we are the first in the cache
                 if (fFailure)
                 {
-                    BOOL bFileNotFoundException =
-                        (EEFileLoadException::GetFileLoadKind(ex->GetHR()) == kFileNotFoundException);
-
-                    if (!bFileNotFoundException)
-                    {
-                        fFailure = AddExceptionToCache(pFailedSpec, ex);
-                    } // else, fFailure stays TRUE
-                    // Effectively, fFailure == bFileNotFoundException || AddExceptionToCache(pFailedSpec, ex)
-
-                    // Only throw this exception if we are the first in the cache
-                    if (fFailure)
-                    {
-                        // Store the failure information for DAC to read
-                        if (IsDebuggerAttached()) {
-                            FailedAssembly *pFailed = new FailedAssembly();
-                            pFailed->Initialize(pFailedSpec, ex);
-                            IfFailThrow(m_failedAssemblies.Append(pFailed));
-                        }
-
-                        if (!bFileNotFoundException || fThrowOnFileNotFound)
-                        {
-                            // V1.1 App-compatibility workaround. See VSW530166 if you want to whine about it.
-                            //
-                            // In Everett, if we failed to download an assembly because of a broken network cable,
-                            // we returned a FileNotFoundException with a COR_E_FILENOTFOUND hr embedded inside
-                            // (which would be exposed when marshaled to native.)
-                            //
-                            // In Whidbey, we now set the more appropriate INET_E_RESOURCE_NOT_FOUND hr. But
-                            // the online/offline switch code in VSTO for Everett hardcoded a check for
-                            // COR_E_FILENOTFOUND.
-                            //
-                            // So now, to keep that code from breaking, we have to remap INET_E_RESOURCE_NOT_FOUND
-                            // back to COR_E_FILENOTFOUND. We're doing it here rather down in Fusion so as to affect
-                            // the least number of callers.
-
-                            if (ex->GetHR() == INET_E_RESOURCE_NOT_FOUND)
-                            {
-                                EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, ex);
-                            }
-
-                            if (EEFileLoadException::CheckType(ex))
-                            {
-                                if (pFailedSpec == pSpec)
-                                {
-                                    EX_RETHROW; //preserve the information
-                                }
-                                else
-                                {
-                                    StackSString exceptionDisplayName, failedSpecDisplayName;
-
-                                    ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
-                                    pFailedSpec->GetFileOrDisplayName(0, failedSpecDisplayName);
-
-                                    if (exceptionDisplayName.CompareCaseInsensitive(failedSpecDisplayName) == 0)
-                                    {
-                                        EX_RETHROW; // Throw the original exception. Otherwise, we'd throw an exception that contains the same message twice.
-                                    }
-                                }
-                            }
-
-                            EEFileLoadException::Throw(pFailedSpec, ex->GetHR(), ex);
-                        }
-
+                    // Store the failure information for DAC to read
+                    if (IsDebuggerAttached()) {
+                        FailedAssembly *pFailed = new FailedAssembly();
+                        pFailed->Initialize(pFailedSpec, ex);
+                        IfFailThrow(m_failedAssemblies.Append(pFailed));
                     }
+
+                    if (!bFileNotFoundException || fThrowOnFileNotFound)
+                    {
+                        // V1.1 App-compatibility workaround. See VSW530166 if you want to whine about it.
+                        //
+                        // In Everett, if we failed to download an assembly because of a broken network cable,
+                        // we returned a FileNotFoundException with a COR_E_FILENOTFOUND hr embedded inside
+                        // (which would be exposed when marshaled to native.)
+                        //
+                        // In Whidbey, we now set the more appropriate INET_E_RESOURCE_NOT_FOUND hr. But
+                        // the online/offline switch code in VSTO for Everett hardcoded a check for
+                        // COR_E_FILENOTFOUND.
+                        //
+                        // So now, to keep that code from breaking, we have to remap INET_E_RESOURCE_NOT_FOUND
+                        // back to COR_E_FILENOTFOUND. We're doing it here rather down in Fusion so as to affect
+                        // the least number of callers.
+
+                        if (ex->GetHR() == INET_E_RESOURCE_NOT_FOUND)
+                        {
+                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, ex);
+                        }
+
+                        if (EEFileLoadException::CheckType(ex))
+                        {
+                            if (pFailedSpec == pSpec)
+                            {
+                                EX_RETHROW; //preserve the information
+                            }
+                            else
+                            {
+                                StackSString exceptionDisplayName, failedSpecDisplayName;
+
+                                ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
+                                pFailedSpec->GetFileOrDisplayName(0, failedSpecDisplayName);
+
+                                if (exceptionDisplayName.CompareCaseInsensitive(failedSpecDisplayName) == 0)
+                                {
+                                    EX_RETHROW; // Throw the original exception. Otherwise, we'd throw an exception that contains the same message twice.
+                                }
+                            }
+                        }
+
+                        EEFileLoadException::Throw(pFailedSpec, ex->GetHR(), ex);
+                    }
+
                 }
             }
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
-
-        // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
-        // thread to store our result.  Note that we may throw from here, if there is a cached exception.
-        // This will release the refcount of the current result holder (if any), and will replace
-        // it with a non-addref'ed result
-        if (pSpec->CanUseWithBindingCache() && (result== NULL || result->CanUseWithBindingCache()))
-        {
-            result = FindCachedFile(pSpec);
-
-            if (result != NULL)
-                result->AddRef();
-        }
-
-        bindOperation.SetResult(result.GetValue(), isCached);
-        return result.Extract();
     }
-    else
-    {
-        // Unsupported content type
-        if (fThrowOnFileNotFound)
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        return nullptr;
-    }
+    EX_END_CATCH(RethrowTerminalExceptions);
+
+    // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
+    // thread to store our result.  Note that we may throw from here, if there is a cached exception.
+    // This will release the refcount of the current result holder (if any), and will replace
+    // it with a non-addref'ed result
+    result = FindCachedFile(pSpec);
+
+    if (result != NULL)
+        result->AddRef();
+
+    bindOperation.SetResult(result.GetValue(), isCached);
+    return result.Extract();
 } // AppDomain::BindAssemblySpec
 
 

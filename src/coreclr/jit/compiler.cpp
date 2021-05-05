@@ -1830,7 +1830,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     bRangeAllowStress = false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
@@ -1852,7 +1852,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     info.compMethodHashPrivate = 0;
@@ -5027,11 +5027,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
-#if FEATURE_ANYCSE
             // Remove common sub-expressions
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
-#endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
@@ -5181,6 +5179,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
+
+#if TRACK_LSRA_STATS
+    if (JitConfig.DisplayLsraStats() == 2)
+    {
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+    }
+#endif // TRACK_LSRA_STATS
 
     // We're done -- set the active phase to the last phase
     // (which isn't really a phase)
@@ -5867,24 +5872,6 @@ void Compiler::compCompileFinish()
         // mdMethodDef __stdcall CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-        unsigned profCallCount = 0;
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
-        {
-            bool foundEntrypointBasicBlockCount = false;
-            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
-            {
-                if ((fgPgoSchema[iSchema].InstrumentationKind ==
-                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-                    (fgPgoSchema[iSchema].ILOffset == 0))
-                {
-                    foundEntrypointBasicBlockCount = true;
-                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
-                    break;
-                }
-            }
-            assert(foundEntrypointBasicBlockCount);
-        }
-
         static bool headerPrinted = false;
         if (!headerPrinted)
         {
@@ -5901,17 +5888,17 @@ void Compiler::compCompileFinish()
 
         if (fgHaveProfileData())
         {
-            if (profCallCount <= 9999)
+            if (fgCalledCount < 1000)
             {
-                printf("%4d | ", profCallCount);
+                printf("%4.0f | ", fgCalledCount);
             }
-            else if (profCallCount <= 999500)
+            else if (fgCalledCount < 1000000)
             {
-                printf("%3dK | ", (profCallCount + 500) / 1000);
+                printf("%3.0fK | ", fgCalledCount / 1000);
             }
             else
             {
-                printf("%3dM | ", (profCallCount + 500000) / 1000000);
+                printf("%3.0fM | ", fgCalledCount / 1000000);
             }
         }
         else
@@ -5997,11 +5984,7 @@ void Compiler::compCompileFinish()
         else
         {
             printf(" %3d |", optAssertionCount);
-#if FEATURE_ANYCSE
             printf(" %3d |", optCSEcount);
-#else
-            printf(" %3d |", 0);
-#endif // FEATURE_ANYCSE
         }
 
         if (info.compPerfScore < 9999.995)
