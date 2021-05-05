@@ -129,11 +129,11 @@ public class WasmAppBuilder : Task
             Log.LogError($"File MainJS='{MainJS}' doesn't exist.");
             return false;
         }
-        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDictionary))
-        {
-            Log.LogError("IcuDictionary property shouldn't be empty if InvariantGlobalization=false");
-            return false;
-        }
+        // if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDictionary))
+        // {
+        //     Log.LogError("IcuDictionary property shouldn't be empty if InvariantGlobalization=false");
+        //     return false;
+        // }
 
         if (Assemblies?.Length == 0)
         {
@@ -252,15 +252,22 @@ public class WasmAppBuilder : Task
 
         if (!InvariantGlobalization)
         {
-            try
+            if (!string.IsNullOrEmpty(IcuDictionary!))
             {
-                string? icuDictionary = File.ReadAllText(IcuDictionary!);
-                config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
+                try
+                {
+                    string? icuDictionary = File.ReadAllText(IcuDictionary!);
+                    config.Extra["icu_dictionary"] = JsonSerializer.Deserialize<Dictionary<string, object>>(icuDictionary!);
+                }
+                catch (Exception e)
+                {
+                    Log.LogError($"Error with opening ICU Dictionary {e.Message}");
+                    return false;
+                }
             }
-            catch (Exception e)
+            else
             {
-                Log.LogError($"Error with opening ICU Dictionary {e.Message}");
-                return false;
+                config.Assets.Add(new IcuData("icudt.dat") { LoadRemote = RemoteSources?.Length > 0 });
             }
         }
 
