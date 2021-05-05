@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <AdditionalProjectReferences>Microsoft.Extensions.Hosting.Abstractions;Microsoft.Extensions.DependencyInjection</AdditionalProjectReferences>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   
   <ItemGroup>

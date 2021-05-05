@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <AdditionalProjectReferences>Microsoft.Extensions.Http</AdditionalProjectReferences>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   
   <ItemGroup>
