@@ -132,27 +132,32 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
     }
     else if (!node->HasIndex() && node->gtGetOp2()->OperIs(GT_CNS_DBL))
     {
-        // Optimize *x = DCON to *x = ICON which is sligtly faster on xarch
-        double         dblCns = node->gtGetOp2()->AsDblCon()->gtDconVal;
-        GenTreeIntCon* intCns = nullptr;
+        // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
+        GenTree*  op2    = node->gtGetOp2();
+        double    dblCns = op2->AsDblCon()->gtDconVal;
+        UINT64    intCns = 0;
+        var_types type   = TYP_UNKNOWN;
+
         if (node->TypeIs(TYP_FLOAT))
         {
-            float fltCns = (float)dblCns;
-            intCns = comp->gtNewIconNode(*reinterpret_cast<UINT32*>(&fltCns), TYP_UINT);
+            float fltCns = static_cast<float>(dblCns); // should be a save round-trip
+            intCns       = static_cast<ssize_t>(*reinterpret_cast<UINT32*>(&fltCns));
+            type         = TYP_UINT;
         }
         else if (TARGET_POINTER_SIZE == 8)
         {
             assert(node->TypeIs(TYP_DOUBLE));
-            intCns = comp->gtNewIconNode(*reinterpret_cast<UINT64*>(&dblCns), TYP_ULONG);
+            intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
+            type   = TYP_ULONG;
         }
 
-        if (intCns != nullptr)
+        if (type != TYP_UNKNOWN)
         {
-            intCns->SetContained();
-            BlockRange().InsertBefore(node->gtGetOp2(), intCns);
-            BlockRange().Remove(node->gtGetOp2());
-            node->gtOp2 = intCns;
-            node->ChangeType(intCns->TypeGet());
+            op2->SetContained();
+            op2->ChangeOperConst(GT_CNS_INT);
+            op2->AsIntCon()->gtIconVal = intCns;
+            op2->ChangeType(type);
+            node->ChangeType(type);
         }
     }
     ContainCheckStoreIndir(node);
