@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.Diagnostics
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -19,6 +20,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Sub New()
         End Sub
 
+        <RequiresUnreferencedCode("Calls Object.GetType which cannot be statically analyzed.")>
         Friend Shared Function EnumerateUDT(ByVal oStruct As ValueType, ByVal intfRecEnum As IRecordEnum, ByVal fGet As Boolean) As System.Object
             Dim fi() As System.Reflection.FieldInfo
             Dim iLowerBound As Integer
@@ -64,6 +66,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return Nothing
         End Function
 
+        <RequiresUnreferencedCode("Calls EnumerateUDT which is unsafe.")>
         Friend Shared Function GetRecordLength(ByVal o As Object, Optional ByVal PackSize As Integer = -1) As Integer
             If o Is Nothing Then
                 Return 0

@@ -70,7 +70,7 @@ char*     mono_process_get_name (gpointer pid, char *buf, int len);
 gint64    mono_process_get_data (gpointer pid, MonoProcessData data);
 gint64    mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error);
 
-int       mono_process_current_pid (void);
+MONO_COMPONENT_API int       mono_process_current_pid (void);
 
 MONO_API int       mono_cpu_count    (void);
 gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error);

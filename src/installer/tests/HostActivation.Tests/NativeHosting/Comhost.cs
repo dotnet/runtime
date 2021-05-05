@@ -156,8 +156,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             public string ComHostPath { get; }
 
-            public string ClsidString = "{438968CE-5950-4FBC-90B0-E64691350DF5}";
+            public string ClsidString { get; } = "{438968CE-5950-4FBC-90B0-E64691350DF5}";
             public TestProjectFixture ComLibraryFixture { get; }
+
+            public string ClsidMapPath { get; }
+
+            public IReadOnlyDictionary<int, string> TypeLibraries { get; }
 
             public SharedTestState()
             {
@@ -172,14 +176,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .BuildProject();
 
                 // Create a .clsidmap from the assembly
-                string clsidMapPath = Path.Combine(BaseDirectory, $"{ ComLibraryFixture.TestProject.AssemblyName }.clsidmap");
+                ClsidMapPath = Path.Combine(BaseDirectory, $"{ ComLibraryFixture.TestProject.AssemblyName }.clsidmap");
                 using (var assemblyStream = new FileStream(ComLibraryFixture.TestProject.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
                 using (var peReader = new System.Reflection.PortableExecutable.PEReader(assemblyStream))
                 {
                     if (peReader.HasMetadata)
                     {
                         MetadataReader reader = peReader.GetMetadataReader();
-                        ClsidMap.Create(reader, clsidMapPath);
+                        ClsidMap.Create(reader, ClsidMapPath);
                     }
                 }
 
@@ -189,7 +193,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     $"{ ComLibraryFixture.TestProject.AssemblyName }.comhost.dll");
 
                 // Include the test type libraries in the ComHost tests.
-                var typeLibraries = new Dictionary<int, string>
+                TypeLibraries = new Dictionary<int, string>
                 {
                     { 1, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Server.tlb") },
                     { 2, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Nested.tlb") }
@@ -198,8 +202,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 ComHost.Create(
                     Path.Combine(RepoDirectories.HostArtifacts, "comhost.dll"),
                     ComHostPath,
-                    clsidMapPath,
-                    typeLibraries);
+                    ClsidMapPath,
+                    TypeLibraries);
+
             }
 
             protected override void Dispose(bool disposing)

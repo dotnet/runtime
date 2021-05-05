@@ -81,6 +81,9 @@ namespace System.Reflection.Tests
         [Fact]
         public void FullyQualifiedName()
         {
+#if SINGLE_FILE_TEST_RUNNER
+            Assert.Equal("<Unknown>", Module.FullyQualifiedName);
+#else
             var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
 
             // Browser will include the path (/), so strip it
@@ -90,12 +93,17 @@ namespace System.Reflection.Tests
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);
+#endif
         }
 
         [Fact]
         public void Name()
         {
+#if SINGLE_FILE_TEST_RUNNER
+            Assert.Equal("<Unknown>", Module.Name, ignoreCase: true);
+#else
             Assert.Equal("system.runtime.tests.dll", Module.Name, ignoreCase: true);
+#endif
         }
 
         [Fact]
@@ -197,6 +205,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void GetMethod_AmbiguousMatch()
         {
             var ex = Assert.Throws<AmbiguousMatchException>(() => TestModule.GetMethod("TestMethodFoo"));
@@ -205,6 +214,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void GetMethod()
         {
             var method = TestModule.GetMethod("TestMethodFoo", Type.EmptyTypes);
@@ -221,6 +231,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void GetMethods()
         {
             var methodNames = TestModule.GetMethods().Select(m => m.Name).ToArray();

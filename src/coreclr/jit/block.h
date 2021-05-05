@@ -411,7 +411,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_LOOP_CALL1          MAKE_BBFLAG(15) // BB starts a loop that will always     call
 
 #define BBF_HAS_LABEL           MAKE_BBFLAG(16) // BB needs a label
-#define BBF_JMP_TARGET          MAKE_BBFLAG(17) // BB is a target of an implicit/explicit jump
+// Unused                       MAKE_BBFLAG(17)
 #define BBF_HAS_JMP             MAKE_BBFLAG(18) // BB executes a JMP instruction (instead of return)
 #define BBF_GC_SAFE_POINT       MAKE_BBFLAG(19) // BB has a GC safe point (a call).  More abstractly, BB does not require a
                                                 // (further) poll -- this may be because this BB has a call, or, in some
@@ -501,9 +501,8 @@ struct BasicBlock : private LIR::Range
 // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
 #define BBF_SPLIT_GAINED                                                                                               \
-    (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
-     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
-     BBF_HAS_CLASS_PROFILE)
+    (BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY | BBF_PROF_WEIGHT |        \
+     BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_CLASS_PROFILE)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);

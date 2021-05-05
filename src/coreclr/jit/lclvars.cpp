@@ -467,13 +467,13 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
 #ifdef FEATURE_SIMD
             if (supportSIMDTypes())
             {
-                var_types simdBaseType = TYP_UNKNOWN;
-                var_types type         = impNormStructType(info.compClassHnd, &simdBaseType);
-                if (simdBaseType != TYP_UNKNOWN)
+                CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+                var_types   type            = impNormStructType(info.compClassHnd, &simdBaseJitType);
+                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
                 {
                     assert(varTypeIsSIMD(type));
-                    varDsc->lvSIMDType  = true;
-                    varDsc->lvBaseType  = simdBaseType;
+                    varDsc->lvSIMDType = true;
+                    varDsc->SetSimdBaseJitType(simdBaseJitType);
                     varDsc->lvExactSize = genTypeSize(type);
                 }
             }
@@ -578,9 +578,12 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         else if (supportSIMDTypes() && varTypeIsSIMD(info.compRetType))
         {
             varDsc->lvSIMDType = true;
-            varDsc->lvBaseType =
-                getBaseTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
-            assert(varDsc->lvBaseType != TYP_UNKNOWN);
+
+            CorInfoType simdBaseJitType =
+                getBaseJitTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
+            varDsc->SetSimdBaseJitType(simdBaseJitType);
+
+            assert(varDsc->GetSimdBaseType() != TYP_UNKNOWN);
         }
 #endif // FEATURE_SIMD
 
@@ -2171,10 +2174,10 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
     // we have encountered any SIMD intrinsics.
     if (compiler->usesSIMDTypes() && (fieldInfo.fldSize == 0) && compiler->isSIMDorHWSIMDClass(fieldInfo.fldTypeHnd))
     {
-        unsigned  simdSize;
-        var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
+        unsigned    simdSize;
+        CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
         // We will only promote fields of SIMD types that fit into a SIMD register.
-        if (simdBaseType != TYP_UNKNOWN)
+        if (simdBaseJitType != CORINFO_TYPE_UNDEF)
         {
             if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
             {
@@ -2789,8 +2792,8 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 
         if (layout->IsValueClass())
         {
-            var_types simdBaseType = TYP_UNKNOWN;
-            varDsc->lvType         = impNormStructType(typeHnd, &simdBaseType);
+            CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+            varDsc->lvType              = impNormStructType(typeHnd, &simdBaseJitType);
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             // Mark implicit byref struct parameters
@@ -2808,11 +2811,11 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #if FEATURE_SIMD
-            if (simdBaseType != TYP_UNKNOWN)
+            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
                 assert(varTypeIsSIMD(varDsc));
                 varDsc->lvSIMDType = true;
-                varDsc->lvBaseType = simdBaseType;
+                varDsc->SetSimdBaseJitType(simdBaseJitType);
             }
 #endif // FEATURE_SIMD
             if (GlobalJitOptions::compFeatureHfa)
@@ -2840,7 +2843,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     else
     {
 #if FEATURE_SIMD
-        assert(!varTypeIsSIMD(varDsc) || (varDsc->lvBaseType != TYP_UNKNOWN));
+        assert(!varTypeIsSIMD(varDsc) || (varDsc->GetSimdBaseType() != TYP_UNKNOWN));
 #endif // FEATURE_SIMD
         ClassLayout* layout = typGetObjLayout(typeHnd);
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
@@ -3697,6 +3700,19 @@ void LclVarDsc::lvaDisqualifyVar()
 }
 #endif // ASSERTION_PROP
 
+#ifdef FEATURE_SIMD
+var_types LclVarDsc::GetSimdBaseType() const
+{
+    CorInfoType simdBaseJitType = GetSimdBaseJitType();
+
+    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+    {
+        return TYP_UNKNOWN;
+    }
+    return JitType2PreciseVarType(simdBaseJitType);
+}
+#endif // FEATURE_SIMD
+
 unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
 {
     // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
@@ -3827,6 +3843,74 @@ var_types LclVarDsc::lvaArgType()
 #endif // TARGET_AMD64
 
     return type;
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Arguments:
+//    tree - node that uses the local, its type is checked first.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
+{
+    var_types targetType = tree->gtType;
+    var_types lclVarType = TypeGet();
+
+    if (targetType == TYP_STRUCT)
+    {
+        if (lclVarType == TYP_STRUCT)
+        {
+            lclVarType = GetLayout()->GetRegisterType();
+        }
+        targetType = lclVarType;
+    }
+
+#ifdef DEBUG
+    if ((targetType != TYP_UNDEF) && tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+    {
+        const bool phiStore = (tree->gtGetOp1()->OperIsNonPhiLocal() == false);
+        // Ensure that the lclVar node is typed correctly,
+        // does not apply to phi-stores because they do not produce code in the merge block.
+        assert(phiStore || targetType == genActualType(lclVarType));
+    }
+#endif
+    return targetType;
+}
+
+//------------------------------------------------------------------------
+// GetRegisterType: Determine register type for this local var.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//
+var_types LclVarDsc::GetRegisterType() const
+{
+    if (TypeGet() != TYP_STRUCT)
+    {
+#if !defined(TARGET_64BIT)
+        if (TypeGet() == TYP_LONG)
+        {
+            return TYP_UNDEF;
+        }
+#endif
+        return TypeGet();
+    }
+    assert(m_layout != nullptr);
+    return m_layout->GetRegisterType();
+}
+
+//------------------------------------------------------------------------
+// GetActualRegisterType: Determine an actual register type for this local var.
+//
+// Return Value:
+//    TYP_UNDEF if the layout is not enregistrable, the register type otherwise.
+//
+var_types LclVarDsc::GetActualRegisterType() const
+{
+    return genActualType(GetRegisterType());
 }
 
 //----------------------------------------------------------------------------------------------

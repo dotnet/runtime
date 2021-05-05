@@ -19,8 +19,9 @@ set(SKIP_VERSIONING 1)
 include_directories(..)
 include_directories(../../json)
 
+include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
 if(NOT CLR_CMAKE_TARGET_WIN32)
-    include_directories(../../../../libraries/Native/Unix/Common)
+    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
 endif()
 
 set(SOURCES

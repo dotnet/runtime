@@ -14070,7 +14070,15 @@ DONE_MORPHING_CHILDREN:
         case GT_OR:
         case GT_XOR:
         case GT_AND:
-            
+            /*if (op2->OperIs(GT_NEG) && op1->IsLocal() && varTypeIsIntOrI(op1->TypeGet()))
+            {
+                if (tree->Compare(op1, op2->gtGetOp1()))
+                {
+                    tree->SetOper(GT_CNS_INT);
+                    tree->AsIntCon()->gtIconVal = 1;
+                    return tree;
+                }
+            }*/
 
             /* Commute any non-REF constants to the right */
 
