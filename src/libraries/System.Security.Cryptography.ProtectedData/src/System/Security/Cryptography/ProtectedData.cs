@@ -63,11 +63,7 @@ namespace System.Security.Cryptography
                             Interop.Crypt32.CryptUnprotectData(ref userDataBlob, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob);
                         if (!success)
                         {
-#if NET6_0
-                            int lastWin32Error = Marshal.GetLastPInvokeError();
-#else
                             int lastWin32Error = Marshal.GetLastWin32Error();
-#endif
                             if (protect && ErrorMayBeCausedByUnloadedProfile(lastWin32Error))
                                 throw new CryptographicException(SR.Cryptography_DpApi_ProfileMayNotBeLoaded);
                             else

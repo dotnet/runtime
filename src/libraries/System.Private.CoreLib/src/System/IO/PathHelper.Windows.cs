@@ -83,11 +83,7 @@ namespace System.IO
             if (result == 0)
             {
                 // Failure, get the error and throw
-#if NET6_0
-                int errorCode = Marshal.GetLastPInvokeError();
-#else
                 int errorCode = Marshal.GetLastWin32Error();
-#endif
                 if (errorCode == 0)
                     errorCode = Interop.Errors.ERROR_BAD_PATHNAME;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, path.ToString());
@@ -189,11 +185,7 @@ namespace System.IO
                 if (result == 0)
                 {
                     // Look to see if we couldn't find the file
-#if NET6_0
-                    int error = Marshal.GetLastPInvokeError();
-#else
                     int error = Marshal.GetLastWin32Error();
-#endif
                     if (error != Interop.Errors.ERROR_FILE_NOT_FOUND && error != Interop.Errors.ERROR_PATH_NOT_FOUND)
                     {
                         // Some other failure, give up

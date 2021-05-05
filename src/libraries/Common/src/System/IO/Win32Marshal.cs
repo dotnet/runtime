@@ -15,13 +15,9 @@ namespace System.IO
         /// Converts, resetting it, the last Win32 error into a corresponding <see cref="Exception"/> object, optionally
         /// including the specified path in the error message.
         /// </summary>
-#if NET6_0
         internal static Exception GetExceptionForLastWin32Error(string? path = "")
-            => GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), path);
-#else
-         internal static Exception GetExceptionForLastWin32Error(string? path = "")
             => GetExceptionForWin32Error(Marshal.GetLastWin32Error(), path);
-#endif
+
         /// <summary>
         /// Converts the specified Win32 error into a corresponding <see cref="Exception"/> object, optionally
         /// including the specified path in the error message.
