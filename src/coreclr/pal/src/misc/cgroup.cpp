@@ -53,14 +53,13 @@ class CGroup
     static const char **s_mem_stat_key_names;
     static size_t *s_mem_stat_key_lengths;
     static size_t s_mem_stat_n_keys;
-    
 public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
         s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
         s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
-        
+
         if (s_cgroup_version == 1)
         {
             s_mem_stat_n_keys = 4;
@@ -79,9 +78,9 @@ public:
             s_mem_stat_key_names[2] = "file_dirty ";
             s_mem_stat_key_names[3] = "unevictable ";
         }
-        
+
         s_mem_stat_key_lengths = new size_t[s_mem_stat_n_keys];
-        
+
         for (size_t i = 0; i < s_mem_stat_n_keys; i++)
         {
             s_mem_stat_key_lengths[i] = strlen(s_mem_stat_key_names[i]);
@@ -453,7 +452,7 @@ private:
                     *val += strtoll(startptr, &endptr, 10);
                     if (endptr != startptr && errno == 0)
                         readValues++;
-                        
+
                     break;
                 }
             }
