@@ -540,8 +540,8 @@ process_protocol_helper_get_process_info_2 (
 	ep_char16_t *command_line = NULL;
 	ep_char16_t *os_info = NULL;
 	ep_char16_t *arch_info = NULL;
-	const ep_char16_t *managed_entrypoint_assembly_path_ref = ep_rt_entrypoint_assembly_path_get_ref_utf16 ();
-	const ep_char16_t *clr_product_version_ref = ep_rt_runtime_version_get_ref_utf16 ();
+	const ep_char16_t *managed_entrypoint_assembly_path_ref = ep_rt_entrypoint_assembly_path_get_utf16 ();
+	const ep_char16_t *clr_product_version_ref = ep_rt_runtime_version_get_utf16 ();
 	DiagnosticsProcessInfo2Payload payload;
 	DiagnosticsProcessInfo2Payload *process_info_2_payload = NULL;
 
