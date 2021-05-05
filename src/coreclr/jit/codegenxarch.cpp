@@ -4098,7 +4098,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         // Optimize "X<<3" to "lea [reg*8]"
         ssize_t intCon = shiftBy->AsIntConCommon()->IconValue();
         if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() &&
-           (intCon == 1 || intCon == 2 || intCon == 3))
+            (intCon == 1 || intCon == 2 || intCon == 3))
         {
             switch (intCon)
             {
