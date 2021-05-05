@@ -1000,7 +1000,7 @@ namespace System.Collections
                         }
                     }
                 }
-                else if (AdvSimd.IsSupported)
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<byte> ones = Vector128.Create((byte)1);
                     fixed (bool* destination = &boolArray[index])
@@ -1030,12 +1030,12 @@ namespace System.Collections
                             Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
                             Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, s_bitMask128);
                             Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
-                            AdvSimd.Store((byte*)destination + i, normalizedLower);
 
                             Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
                             Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, s_bitMask128);
                             Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
-                            AdvSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
+
+                            AdvSimd.Arm64.StorePair((byte*)destination + i, normalizedLower, normalizedHigher);
                         }
                     }
                 }
