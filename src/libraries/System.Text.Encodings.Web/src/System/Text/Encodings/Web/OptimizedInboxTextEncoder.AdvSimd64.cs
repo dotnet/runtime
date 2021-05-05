@@ -166,9 +166,10 @@ namespace System.Text.Encodings.Web
                     // Read 16 chars at a time into 2x 128-bit vectors, then pack into a single 128-bit vector.
                     // We turn 16 chars (256 bits) into 16 nibbles (64 bits) during this process.
 
+                    (Vector128<short> lowerVector, Vector128<short> upperVector) = AdvSimd.Arm64.LoadPairVector128((/* unaligned */ short*)(pData + i));
                     Vector128<byte> packed = AdvSimd.ExtractNarrowingSaturateUnsignedUpper(
-                        AdvSimd.ExtractNarrowingSaturateUnsignedLower(AdvSimd.LoadVector128((/* unaligned */ short*)(pData + i))),
-                        AdvSimd.LoadVector128((/* unaligned */ short*)(pData + 8 + i)));
+                        AdvSimd.ExtractNarrowingSaturateUnsignedLower(lowerVector),
+                        upperVector);
                     var allowedCodePointsShuffled = AdvSimd.Arm64.VectorTableLookup(allowedCodePoints, AdvSimd.And(packed, vec0xF));
                     var vecPowersOfTwoShuffled = AdvSimd.Arm64.VectorTableLookup(vecPowersOfTwo, AdvSimd.ShiftRightArithmetic(packed.AsSByte(), 4).AsByte());
                     var result = AdvSimd.CompareTest(allowedCodePointsShuffled, vecPowersOfTwoShuffled);
