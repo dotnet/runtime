@@ -4094,6 +4094,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         emitAttr size = emitTypeSize(tree);
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
+        // Optimize "X<<2" to "lea [reg*4]"
+        // Optimize "X<<3" to "lea [reg*8]"
         ssize_t intCon = shiftBy->AsIntConCommon()->IconValue();
         if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() &&
            (intCon == 1 || intCon == 2 || intCon == 3))
@@ -4110,11 +4112,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
                         GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
                     }
                     break;
-                // Optimize "X<<2" to "lea [reg*4]"
                 case 2:
                     GetEmitter()->emitIns_R_AX(INS_lea, size, tree->GetRegNum(), operandReg, 4, 0);
                     break;
-                // Optimize "X<<3" to "lea [reg*8]"
                 case 3:
                     GetEmitter()->emitIns_R_AX(INS_lea, size, tree->GetRegNum(), operandReg, 8, 0);
                     break;
