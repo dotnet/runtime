@@ -25,7 +25,7 @@ namespace Internal.Runtime.InteropServices
         {
 #if TARGET_WINDOWS
             if (!IsSupported)
-                return;
+                throw new NotSupportedException("This API is not enabled in trimmed scenarios. see https://aka.ms/dotnet-illink/nativehost for more details");
 
             string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
             if (assemblyPathString == null)

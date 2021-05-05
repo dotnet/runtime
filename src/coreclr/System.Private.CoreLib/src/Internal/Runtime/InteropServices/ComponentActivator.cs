@@ -15,6 +15,10 @@ namespace Internal.Runtime.InteropServices
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
 
+        // Use a value defined in https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
+        // To indicate the specific error when IsSupported is false
+        private const int HostFeatureDisabled = -2147450713;
+
         private static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("Internal.Runtime.InteropServices.ComponentActivator.IsSupported", out bool isSupported) ? isSupported : true;
@@ -40,6 +44,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
+        [RequiresUnreferencedCode("Native hosting is not trim compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnmanagedCallersOnly]
         public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                                    IntPtr typeNameNative,
@@ -49,7 +54,7 @@ namespace Internal.Runtime.InteropServices
                                                                    IntPtr functionHandle)
         {
             if (!IsSupported)
-                return -1;
+                return HostFeatureDisabled;
 
             try
             {
@@ -100,7 +105,7 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr functionHandle)
         {
             if (!IsSupported)
-                return -1;
+                return HostFeatureDisabled;
 
             try
             {
@@ -134,7 +139,7 @@ namespace Internal.Runtime.InteropServices
             return 0;
         }
 
-        [RequiresUnreferencedCode("The trimmer might remove methods")]
+        [RequiresUnreferencedCode("Native hosting is not trim compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
             IsolatedComponentLoadContext? alc;
@@ -151,7 +156,7 @@ namespace Internal.Runtime.InteropServices
             return alc;
         }
 
-        [RequiresUnreferencedCode("The trimmer might remove methods")]
+        [RequiresUnreferencedCode("Native hosting is not trim compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
                                                          string methodName,

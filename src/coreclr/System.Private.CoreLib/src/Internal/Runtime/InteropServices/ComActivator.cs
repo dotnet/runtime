@@ -461,7 +461,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 #endif
         }
 
-        [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this method")]
+        [RequiresUnreferencedCode("The trimmer might remove types which are needed by the assemblies loaded in this method.")]
         private static AssemblyLoadContext GetALC(string assemblyPath)
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
