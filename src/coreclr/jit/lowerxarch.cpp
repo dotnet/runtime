@@ -130,12 +130,12 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
-    else if (!node->HasIndex() && node->gtGetOp2()->OperIs(GT_CNS_DBL))
+    else if (node->AsStoreInd()->Data()->OperIs(GT_CNS_DBL))
     {
         // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
-        GenTree*  op2    = node->gtGetOp2();
-        double    dblCns = op2->AsDblCon()->gtDconVal;
-        UINT64    intCns = 0;
+        GenTree*  data   = node->AsStoreInd()->Data();
+        double    dblCns = data->AsDblCon()->gtDconVal;
+        ssize_t   intCns = 0;
         var_types type   = TYP_UNKNOWN;
 
         if (node->TypeIs(TYP_FLOAT))
@@ -153,10 +153,10 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 
         if (type != TYP_UNKNOWN)
         {
-            op2->SetContained();
-            op2->ChangeOperConst(GT_CNS_INT);
-            op2->AsIntCon()->gtIconVal = intCns;
-            op2->ChangeType(type);
+            data->SetContained();
+            data->ChangeOperConst(GT_CNS_INT);
+            data->AsIntCon()->gtIconVal = intCns;
+            data->ChangeType(type);
             node->ChangeType(type);
         }
     }
