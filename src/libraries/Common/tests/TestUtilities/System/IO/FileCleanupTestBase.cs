@@ -104,7 +104,7 @@ namespace System.IO
                     // Take a chunk out of the middle as perhaps it's the least interesting part of the name
                     int halfMemberNameLength = (int)Math.Floor((double)memberName.Length / 2);
                     int halfExcessLength = (int)Math.Floor((double)excessLength / 2);
-                    memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength + 1);
+                    memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength);
 
                     testFileName = GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
