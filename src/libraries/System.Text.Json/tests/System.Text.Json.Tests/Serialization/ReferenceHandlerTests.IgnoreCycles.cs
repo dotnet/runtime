@@ -345,12 +345,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact] // https://github.com/dotnet/runtime/issues/51837
         public async void IgnoreCycles_StringShouldNotBeIgnored()
         {
+            var stringReference = "John";
+            
             var root = new Person
             {
-                Name = "John",
+                Name = stringReference,
                 Parent = new Person
                 {
-                    Name = "John",
+                    Name = stringReference,
                 }
             };
 
