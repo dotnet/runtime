@@ -205,15 +205,12 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 int
 mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
 {
-#if INVARIANT_GLOBALIZATION
-    LOG_INFO("Invariant mode set");
-    setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", true);
-#endif
-
-#if ENABLE_RUNTIME_LOGGING
-    setenv ("MONO_LOG_LEVEL", "debug", true);
-    setenv ("MONO_LOG_MASK", "all", true);
-#endif
+    // uncomment for debug output:
+    //
+    //setenv ("XUNIT_VERBOSE", "true", true);
+    //setenv ("MONO_LOG_LEVEL", "debug", true);
+    //setenv ("MONO_LOG_MASK", "all", true);
+    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
 
     bool wait_for_debugger = false;
     chdir (bundle_path);

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Microsoft.Build.Framework;
 
 public class ApkBuilder
@@ -246,27 +245,17 @@ public class ApkBuilder
             .Replace("%AotSources%", aotSources)
             .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
 
-        var defines = new StringBuilder();
+        string defines = "";
         if (ForceInterpreter)
         {
-            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
+            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
         }
         else if (ForceAOT)
         {
-            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
+            defines = "add_definitions(-DFORCE_AOT=1)";
         }
 
-        if (InvariantGlobalization)
-        {
-            defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
-        }
-
-        if (EnableRuntimeLogging)
-        {
-            defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
-        }
-
-        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
+        cmakeLists = cmakeLists.Replace("%Defines%", defines);
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
