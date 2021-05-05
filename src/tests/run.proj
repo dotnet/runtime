@@ -718,13 +718,11 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
       <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
+      <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
     </PropertyGroup>
 
     <PropertyGroup>
       <AssemblyName>$(Category)</AssemblyName>
-      <!--
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)/$(Configuration)/runtimes/ios-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
-      -->
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.iossimulator-$(TargetArchitecture)/$(Configuration)/runtimes/iossimulator-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
     </PropertyGroup>
@@ -745,7 +743,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MakeDir Directories="$(BuildDir)" />
 
     <ItemGroup>
-      <Hobert Include="$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a" />
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
     </ItemGroup>
     <RemoveDir Directories="$(BundleDir)" />
@@ -777,6 +774,17 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
+
+    <!-- Apparently MSBuild cannot move directories and recursively copying a
+         a directory requires writing some sort of recursive traversal
+         logic yourself. -->
+    <ItemGroup>
+      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(FinalPath)" />
+    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <RemoveDir Directories="$(AppBundlePath)" />
+    <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
