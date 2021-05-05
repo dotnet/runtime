@@ -823,8 +823,13 @@ namespace System.Net.Security
             {
                 while (true)
                 {
-                    if (_decryptedBytesCount != 0 && !renegotiation)
+                    if (_decryptedBytesCount != 0)
                     {
+                        if (renegotiation)
+                        {
+                            throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
+                        }
+
                         return CopyDecryptedData(buffer);
                     }
 
