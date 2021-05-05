@@ -137,7 +137,8 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
         GenTreeIntCon* intCns = nullptr;
         if (node->TypeIs(TYP_FLOAT))
         {
-            intCns = comp->gtNewIconNode(*reinterpret_cast<UINT32*>(&dblCns), TYP_UINT);
+            float fltCns = (float)dblCns;
+            intCns = comp->gtNewIconNode(*reinterpret_cast<UINT32*>(&fltCns), TYP_UINT);
         }
         else if (TARGET_POINTER_SIZE == 8)
         {
