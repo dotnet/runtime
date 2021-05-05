@@ -16584,7 +16584,7 @@ bool GenTree::IsPhiDefn()
 //    comp      - the Compiler object.
 //
 // Return Value:
-//    Returns "true" if 'this' is a GT_LCL_FLD or GT_STORE_LCL_FLD on which the type
+//    Returns "true" iff 'this' is a GT_LCL_FLD or GT_STORE_LCL_FLD on which the type
 //    is not the same size as the type of the GT_LCL_VAR
 
 bool GenTree::IsPartialLclFld(Compiler* comp)
