@@ -11229,7 +11229,6 @@ extern size_t   gcHeaderISize;
 extern size_t   gcPtrMapISize;
 extern size_t   gcHeaderNSize;
 extern size_t   gcPtrMapNSize;
-extern size_t   dataSize;
 
 #endif // DISPLAY_SIZES
 
