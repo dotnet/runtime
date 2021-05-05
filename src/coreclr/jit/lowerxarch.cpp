@@ -130,6 +130,21 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
+    else if (!node->HasIndex() && node->gtGetOp2()->OperIs(GT_CNS_DBL) &&
+             (node->gtGetOp2()->AsDblCon()->gtDconVal == 0.0))
+    {
+        // Replace *address = 0.0 with *address = 0 (integer) which is slightly more efficient.
+        const var_types intType = node->TypeIs(TYP_FLOAT) ? TYP_INT : TYP_LONG;
+        if (genTypeSize(intType) <= TARGET_POINTER_SIZE)
+        {
+            GenTreeIntCon* intCns = comp->gtNewIconNode(0, intType);
+            intCns->SetContained();
+            BlockRange().InsertBefore(node->gtGetOp2(), intCns);
+            BlockRange().Remove(node->gtGetOp2());
+            node->gtOp2 = intCns;
+            node->ChangeType(intType);
+        }
+    }
     ContainCheckStoreIndir(node);
 }
 
