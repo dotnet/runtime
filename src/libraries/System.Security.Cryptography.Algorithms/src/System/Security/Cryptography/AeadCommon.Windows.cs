@@ -5,13 +5,14 @@ using Internal.Cryptography;
 using Internal.NativeCrypto;
 using static Interop.BCrypt;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class AesAEAD
+    internal static partial class AeadCommon
     {
         public static unsafe void Encrypt(
-            SafeAlgorithmHandle algorithm,
             SafeKeyHandle keyHandle,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> associatedData,
@@ -19,11 +20,12 @@ namespace System.Security.Cryptography
             Span<byte> ciphertext,
             Span<byte> tag)
         {
-            fixed (byte* plaintextBytes = plaintext)
-            fixed (byte* nonceBytes = nonce)
-            fixed (byte* ciphertextBytes = ciphertext)
-            fixed (byte* tagBytes = tag)
-            fixed (byte* associatedDataBytes = associatedData)
+            // bcrypt sometimes misbehaves when given nullptr buffers; ensure non-nullptr
+            fixed (byte* plaintextBytes = &GetNonNullPinnableReference(plaintext))
+            fixed (byte* nonceBytes = &GetNonNullPinnableReference(nonce))
+            fixed (byte* ciphertextBytes = &GetNonNullPinnableReference(ciphertext))
+            fixed (byte* tagBytes = &GetNonNullPinnableReference(tag))
+            fixed (byte* associatedDataBytes = &GetNonNullPinnableReference(associatedData))
             {
                 BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO.Create();
                 authInfo.pbNonce = nonceBytes;
@@ -55,7 +57,6 @@ namespace System.Security.Cryptography
         }
 
         public static unsafe void Decrypt(
-            SafeAlgorithmHandle algorithm,
             SafeKeyHandle keyHandle,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> associatedData,
@@ -64,11 +65,12 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             bool clearPlaintextOnFailure)
         {
-            fixed (byte* plaintextBytes = plaintext)
-            fixed (byte* nonceBytes = nonce)
-            fixed (byte* ciphertextBytes = ciphertext)
-            fixed (byte* tagBytes = tag)
-            fixed (byte* associatedDataBytes = associatedData)
+            // bcrypt sometimes misbehaves when given nullptr buffers; ensure non-nullptr
+            fixed (byte* plaintextBytes = &GetNonNullPinnableReference(plaintext))
+            fixed (byte* nonceBytes = &GetNonNullPinnableReference(nonce))
+            fixed (byte* ciphertextBytes = &GetNonNullPinnableReference(ciphertext))
+            fixed (byte* tagBytes = &GetNonNullPinnableReference(tag))
+            fixed (byte* associatedDataBytes = &GetNonNullPinnableReference(associatedData))
             {
                 BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo = BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO.Create();
                 authInfo.pbNonce = nonceBytes;
@@ -108,5 +110,15 @@ namespace System.Security.Cryptography
                 }
             }
         }
+
+        // Implementations below based on internal MemoryMarshal.GetNonNullPinnableReference methods.
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe ref readonly byte GetNonNullPinnableReference(ReadOnlySpan<byte> buffer)
+            => ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe ref byte GetNonNullPinnableReference(Span<byte> buffer)
+            => ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
     }
 }

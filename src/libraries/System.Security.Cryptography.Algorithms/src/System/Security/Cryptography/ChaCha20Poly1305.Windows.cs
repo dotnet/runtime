@@ -7,14 +7,16 @@ using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
-    public partial class AesGcm
+    public partial class ChaCha20Poly1305
     {
         private SafeKeyHandle _keyHandle;
+
+        public static bool IsSupported => BCryptAeadHandleCache.IsChaCha20Poly1305Supported;
 
         [MemberNotNull(nameof(_keyHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = Interop.BCrypt.BCryptImportKey(BCryptAeadHandleCache.AesGcm, key);
+            _keyHandle = Interop.BCrypt.BCryptImportKey(BCryptAeadHandleCache.ChaCha20Poly1305, key);
         }
 
         private void EncryptCore(
