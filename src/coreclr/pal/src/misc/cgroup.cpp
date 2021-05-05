@@ -50,8 +50,8 @@ class CGroup
     static char *s_memory_cgroup_path;
     static char *s_cpu_cgroup_path;
 
-    static const char **s_mem_stat_key_names;
-    static size_t *s_mem_stat_key_lengths;
+    static const char *s_mem_stat_key_names[];
+    static size_t s_mem_stat_key_lengths[];
     static size_t s_mem_stat_n_keys;
 public:
     static void Initialize()
@@ -63,7 +63,6 @@ public:
         if (s_cgroup_version == 1)
         {
             s_mem_stat_n_keys = 4;
-            s_mem_stat_key_names = new const char*[s_mem_stat_n_keys];
             s_mem_stat_key_names[0] = "total_inactive_anon ";
             s_mem_stat_key_names[1] = "total_active_anon ";
             s_mem_stat_key_names[2] = "total_dirty ";
@@ -72,14 +71,11 @@ public:
         else
         {
             s_mem_stat_n_keys = 4;
-            s_mem_stat_key_names = new const char*[s_mem_stat_n_keys];
             s_mem_stat_key_names[0] = "inactive_anon ";
             s_mem_stat_key_names[1] = "active_anon ";
             s_mem_stat_key_names[2] = "file_dirty ";
             s_mem_stat_key_names[3] = "unevictable ";
         }
-
-        s_mem_stat_key_lengths = new size_t[s_mem_stat_n_keys];
 
         for (size_t i = 0; i < s_mem_stat_n_keys; i++)
         {
@@ -629,8 +625,8 @@ int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_cpu_cgroup_path = nullptr;
 
-const char **CGroup::s_mem_stat_key_names = nullptr;
-size_t *CGroup::s_mem_stat_key_lengths = nullptr;
+const char *CGroup::s_mem_stat_key_names[4] = {};
+size_t CGroup::s_mem_stat_key_lengths[4] = {};
 size_t CGroup::s_mem_stat_n_keys = 0;
 
 void InitializeCGroup()
