@@ -157,7 +157,7 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
         {
             data->SetContained();
             data->ChangeOperConst(GT_CNS_INT);
-            data->AsIntCon()->gtIconVal = intCns;
+            data->AsIntCon()->SetIconValue(intCns);
             data->ChangeType(type);
             node->ChangeType(type);
         }
