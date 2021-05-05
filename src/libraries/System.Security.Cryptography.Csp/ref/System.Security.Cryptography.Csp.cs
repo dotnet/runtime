@@ -130,6 +130,7 @@ namespace System.Security.Cryptography
         Exchange = 1,
         Signature = 2,
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class MD5CryptoServiceProvider : System.Security.Cryptography.MD5
     {
