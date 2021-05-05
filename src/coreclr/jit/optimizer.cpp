@@ -4424,8 +4424,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    block->bbJumpKind = BBJ_NONE;
-    block->bbJumpDest = nullptr;
+    block->bbJumpKind    = BBJ_NONE;
+    block->bbJumpDest    = nullptr;
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
 
     // Clone each statement in bTest and append to bNewCond.
@@ -4497,14 +4497,14 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     // (and create spaghetti code) if we get it wrong.
 
     BlockToBlockMap blockMap(getAllocator(CMK_LoopOpt));
-    bool blockMapInitialized = false;
+    bool            blockMapInitialized = false;
 
     unsigned loopFirstNum  = bNewCond->bbNext->bbNum;
     unsigned loopBottomNum = bTest->bbNum;
     for (flowList* pred = bTest->bbPreds; pred != nullptr; pred = pred->flNext)
     {
         BasicBlock* predBlock = pred->getBlock();
-        unsigned bNum = predBlock->bbNum;
+        unsigned    bNum      = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
         {
             // Looks like the predecessor is from within the potential loop; skip it.
@@ -4518,8 +4518,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         }
 
         // Redirect the predecessor to the new block.
-        JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB,
-            predBlock->bbNum, bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
+        JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB, predBlock->bbNum, bTest->bbNum,
+                predBlock->bbNum, bNewCond->bbNum);
         optRedirectBlock(predBlock, &blockMap, /*updatePreds*/ true);
     }
 
