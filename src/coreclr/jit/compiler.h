@@ -1014,33 +1014,15 @@ public:
         return lvPerSsaData.GetSsaDef(ssaNum);
     }
 
-    //------------------------------------------------------------------------
-    // GetRegisterType: Determine register type for that local var.
-    //
-    // Arguments:
-    //    tree - node that uses the local, its type is checked first.
-    //
-    // Return Value:
-    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
-    //
-    var_types GetRegisterType(const GenTreeLclVarCommon* tree) const
+    var_types GetRegisterType(const GenTreeLclVarCommon* tree) const;
+
+    var_types GetRegisterType() const;
+
+    var_types GetActualRegisterType() const;
+
+    bool IsEnregisterable() const
     {
-        var_types targetType = tree->gtType;
-
-#ifdef DEBUG
-        // Ensure that lclVar nodes are typed correctly.
-        if (tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
-        {
-            // TODO: update that assert to work with TypeGet() == TYP_STRUCT case.
-            // assert(targetType == genActualType(TypeGet()));
-        }
-#endif
-
-        if (targetType != TYP_STRUCT)
-        {
-            return targetType;
-        }
-        return GetLayout()->GetRegisterType();
+        return GetRegisterType() != TYP_UNDEF;
     }
 
     bool CanBeReplacedWithItsField(Compiler* comp) const;
@@ -9682,6 +9664,11 @@ public:
         return false;
 
 #endif // FEATURE_MULTIREG_RET
+    }
+
+    bool compEnregStructLocals()
+    {
+        return (JitConfig.JitEnregStructLocals() != 0);
     }
 
     // Returns true if the method returns a value in more than one return register,
