@@ -591,7 +591,7 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                SocketException soex = new((int)SocketError.NotConnected);
+                var soex = new SocketException((int)SocketError.NotConnected);
                 return ValueTask.FromException(soex);
             }
 
