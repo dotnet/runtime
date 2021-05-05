@@ -19,7 +19,7 @@ namespace System.Drawing.Tests
         // set the `MANUAL_TESTS` environment variable to any non-empty value, and run
         // `dotnet test --filter "ImageAnimatorManualTests"
 
-        [ConditionalFact(nameof(ManualTestsEnabled), Timeout = 75_000)]
+        [ConditionalFact(Helpers.IsDrawingSupported, nameof(ManualTestsEnabled), Timeout = 75_000)]
         public void AnimateAndCaptureFrames()
         {
             // This test animates the test gifs that we have and waits 60 seconds
