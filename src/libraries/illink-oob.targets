@@ -29,14 +29,14 @@
       <_OOBsToIgnore Include="System.Configuration.ConfigurationManager" />
       <_OOBsToIgnore Include="System.Speech" />
 
-      <_OOBsToLink Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
-      <_RuntimePackLinkedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <_OOBsToTrim Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
+      <_RuntimePackTrimmedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
 
       <!-- Move previous items to FileName so that we can subtract them -->
-      <_OOBsToFileName Include="@(_OOBsToLink -> '%(FileName)')">
+      <_OOBsToFileName Include="@(_OOBsToTrim -> '%(FileName)')">
         <OriginalIdentity>%(Identity)</OriginalIdentity>
       </_OOBsToFileName>
-      <_RuntimePackAssembliesToFileName Include="@(_RuntimePackLinkedAssemblies -> '%(FileName)')">
+      <_RuntimePackAssembliesToFileName Include="@(_RuntimePackTrimmedAssemblies -> '%(FileName)')">
         <OriginalIdentity>%(Identity)</OriginalIdentity>
       </_RuntimePackAssembliesToFileName>
 
