@@ -683,7 +683,6 @@ class MetaSig
         // defines in cor.h) - throws.
         //----------------------------------------------------------
         static BYTE GetCallingConvention(
-            Module          *pModule,
             const Signature &signature)
         {
             CONTRACTL
@@ -710,7 +709,6 @@ class MetaSig
         //----------------------------------------------------------
         __checkReturn
         static HRESULT GetCallingConvention_NoThrow(
-            Module          *pModule,
             const Signature &signature,
             BYTE            *pbCallingConvention)
         {
@@ -798,7 +796,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is vararg?
         //----------------------------------------------------------
-        static BOOL IsVarArg(Module *pModule, const Signature &signature)
+        static BOOL IsVarArg(const Signature &signature)
         {
             CONTRACTL
             {
@@ -812,7 +810,7 @@ class MetaSig
             HRESULT hr;
             BYTE    nCallingConvention;
 
-            hr = GetCallingConvention_NoThrow(pModule, signature, &nCallingConvention);
+            hr = GetCallingConvention_NoThrow(signature, &nCallingConvention);
             if (FAILED(hr))
             {   // Invalid signatures are not VarArg
                 return FALSE;

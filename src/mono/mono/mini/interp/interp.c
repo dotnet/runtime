@@ -1050,6 +1050,22 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		}									\
 	} while (0)
 
+// Reduce duplicate code in interp_exec_method
+static void
+do_safepoint (InterpFrame *frame, ThreadContext *context)
+{
+	context_set_safepoint_frame (context, frame);
+	/* Poll safepoint */
+	mono_threads_safepoint ();
+	context_clear_safepoint_frame (context);
+}
+
+#define SAFEPOINT \
+	do {						\
+		if (G_UNLIKELY (mono_polling_required)) \
+			do_safepoint (frame, context);	\
+	} while (0)
+
 static MonoObject*
 ves_array_create (MonoClass *klass, int param_count, stackval *values, MonoError *error)
 {
@@ -4164,6 +4180,79 @@ call:
 			CONDBR(mono_isunordered (d1, d2) || d1 < d2)
 			MINT_IN_BREAK;
 		}
+
+#define ZEROP_SP(datatype, op) \
+	if (LOCAL_VAR (ip [1], datatype) op 0) { \
+		gint16 br_offset = (gint16) ip [2]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		SAFEPOINT; \
+		ip += br_offset; \
+	} else \
+		ip += 3;
+
+MINT_IN_CASE(MINT_BRFALSE_I4_SP) ZEROP_SP(gint32, ==); MINT_IN_BREAK;
+MINT_IN_CASE(MINT_BRFALSE_I8_SP) ZEROP_SP(gint64, ==); MINT_IN_BREAK;
+MINT_IN_CASE(MINT_BRTRUE_I4_SP) ZEROP_SP(gint32, !=); MINT_IN_BREAK;
+MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
+
+#define CONDBR_SP(cond) \
+	if (cond) { \
+		gint16 br_offset = (gint16) ip [3]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		SAFEPOINT; \
+		ip += br_offset; \
+	} else \
+		ip += 4;
+#define BRELOP_SP(datatype, op) \
+	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
+
+		MINT_IN_CASE(MINT_BEQ_I4_SP) BRELOP_SP(gint32, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BEQ_I8_SP) BRELOP_SP(gint64, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I4_SP) BRELOP_SP(gint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I8_SP) BRELOP_SP(gint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I4_SP) BRELOP_SP(gint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I8_SP) BRELOP_SP(gint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I4_SP) BRELOP_SP(gint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I8_SP) BRELOP_SP(gint64, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I4_SP) BRELOP_SP(gint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I8_SP) BRELOP_SP(gint64, <=); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_BNE_UN_I4_SP) BRELOP_SP(guint32, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BNE_UN_I8_SP) BRELOP_SP(guint64, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I4_SP) BRELOP_SP(guint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I8_SP) BRELOP_SP(guint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I4_SP) BRELOP_SP(guint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I8_SP) BRELOP_SP(guint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I4_SP) BRELOP_SP(guint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I8_SP) BRELOP_SP(guint64, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I4_SP) BRELOP_SP(guint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I8_SP) BRELOP_SP(guint64, <); MINT_IN_BREAK;
+
+#define BRELOP_IMM_SP(datatype, op) \
+	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op (datatype)(gint16)ip [2])
+
+		MINT_IN_CASE(MINT_BEQ_I4_IMM_SP) BRELOP_IMM_SP(gint32, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BEQ_I8_IMM_SP) BRELOP_IMM_SP(gint64, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I4_IMM_SP) BRELOP_IMM_SP(gint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I8_IMM_SP) BRELOP_IMM_SP(gint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I4_IMM_SP) BRELOP_IMM_SP(gint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I8_IMM_SP) BRELOP_IMM_SP(gint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I4_IMM_SP) BRELOP_IMM_SP(gint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I8_IMM_SP) BRELOP_IMM_SP(gint64, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I4_IMM_SP) BRELOP_IMM_SP(gint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I8_IMM_SP) BRELOP_IMM_SP(gint64, <=); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_BNE_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BNE_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, <); MINT_IN_BREAK;
+
 		MINT_IN_CASE(MINT_SWITCH) {
 			guint32 val = LOCAL_VAR (ip [1], guint32);
 			guint32 n = READ32 (ip + 2);
@@ -5117,20 +5206,8 @@ call:
 			THROW_EX (ex, ip);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CHECKPOINT)
-			/* Do synchronous checking of abort requests */
-			EXCEPTION_CHECKPOINT;
-			++ip;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SAFEPOINT)
-			/* Do synchronous checking of abort requests */
-			EXCEPTION_CHECKPOINT;
-			if (G_UNLIKELY (mono_polling_required)) {
-				context_set_safepoint_frame (context, frame);
-				/* Poll safepoint */
-				mono_threads_safepoint ();
-				context_clear_safepoint_frame (context);
-			}
+			SAFEPOINT;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE) {
@@ -5150,35 +5227,6 @@ call:
 			NULL_CHECK (o);
 			LOCAL_VAR (ip [1], MonoObject*) = o;
 			ip += 3;
-			MINT_IN_BREAK;
-		}
-
-// FIXME squash to load directly field type, LDFLD_VT is just a LDLOC
-#define LDFLD_VT_UNALIGNED(datatype, fieldtype, unaligned) do { \
-	if (unaligned) \
-		memcpy (locals + ip [1], (char *)locals + ip [2] + ip [3], sizeof (fieldtype)); \
-	else \
-		LOCAL_VAR (ip [1], datatype) = LOCAL_VAR (ip [2] + ip [3], fieldtype); \
-	ip += 4; \
-} while (0)
-
-#define LDFLD_VT(datatype, fieldtype) LDFLD_VT_UNALIGNED(datatype, fieldtype, FALSE)
-
-		MINT_IN_CASE(MINT_LDFLD_VT_I1) LDFLD_VT(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_U1) LDFLD_VT(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I2) LDFLD_VT(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_U2) LDFLD_VT(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I4) LDFLD_VT(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I8) LDFLD_VT(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R4) LDFLD_VT(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R8) LDFLD_VT(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_O) LDFLD_VT(gpointer, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I8_UNALIGNED) LDFLD_VT_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R8_UNALIGNED) LDFLD_VT_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_LDFLD_VT_VT) {
-			memmove (locals + ip [1], locals + ip [2] + ip [3], ip [4]);
-			ip += 5;
 			MINT_IN_BREAK;
 		}
 
@@ -5269,9 +5317,10 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDSSFLDA) {
-			guint32 offset = READ32(ip + 2);
-			LOCAL_VAR (ip [1], gpointer) = mono_get_special_static_data (offset);
+		MINT_IN_CASE(MINT_LDTSFLDA) {
+			MonoInternalThread *thread = mono_thread_internal_current ();
+			guint32 offset = READ32 (ip + 2);
+			LOCAL_VAR (ip [1], gpointer) = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -5306,38 +5355,6 @@ call:
 			MINT_IN_BREAK;
 		}
 
-#define LDTSFLD(datatype, fieldtype) { \
-	MonoInternalThread *thread = mono_thread_internal_current (); \
-	guint32 offset = READ32 (ip + 2); \
-	gpointer addr = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6); \
-	LOCAL_VAR (ip [1], datatype) = *(fieldtype*)addr; \
-	ip += 4; \
-	}
-		MINT_IN_CASE(MINT_LDTSFLD_I1) LDTSFLD(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_U1) LDTSFLD(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_I2) LDTSFLD(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_U2) LDTSFLD(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_I4) LDTSFLD(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_I8) LDTSFLD(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_R4) LDTSFLD(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_R8) LDTSFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_O) LDTSFLD(gpointer, gpointer); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_LDSSFLD) {
-			guint32 offset = READ32(ip + 3);
-			gpointer addr = mono_get_special_static_data (offset);
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [2]];
-			stackval_from_data (field->type, (stackval*)(locals + ip [1]), addr, FALSE);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDSSFLD_VT) {
-			guint32 offset = READ32(ip + 2);
-			gpointer addr = mono_get_special_static_data (offset);
-			memcpy (locals + ip [1], addr, ip [4]);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
 #define STSFLD(datatype, fieldtype) { \
 	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]]; \
 	INIT_VTABLE (vtable); \
@@ -5359,40 +5376,6 @@ call:
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]];
 			INIT_VTABLE (vtable);
 			gpointer addr = frame->imethod->data_items [ip [3]];
-			memcpy (addr, locals + ip [1], ip [4]);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
-
-#define STTSFLD(datatype, fieldtype) { \
-	MonoInternalThread *thread = mono_thread_internal_current (); \
-	guint32 offset = READ32 (ip + 2); \
-	gpointer addr = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6); \
-	*(fieldtype*)addr = LOCAL_VAR (ip [1], datatype); \
-	ip += 4; \
-	}
-
-		MINT_IN_CASE(MINT_STTSFLD_I1) STTSFLD(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_U1) STTSFLD(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_I2) STTSFLD(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_U2) STTSFLD(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_I4) STTSFLD(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_I8) STTSFLD(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_R4) STTSFLD(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_R8) STTSFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_O) STTSFLD(gpointer, gpointer); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_STSSFLD) {
-			guint32 offset = READ32(ip + 3);
-			gpointer addr = mono_get_special_static_data (offset);
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [2]];
-			stackval_to_data (field->type, (stackval*)(locals + ip [1]), addr, FALSE);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STSSFLD_VT) {
-			guint32 offset = READ32(ip + 2);
-			gpointer addr = mono_get_special_static_data (offset);
 			memcpy (addr, locals + ip [1], ip [4]);
 			ip += 5;
 			MINT_IN_BREAK;
@@ -6171,12 +6154,7 @@ call:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_START_ABORT_PROT)
-			mono_threads_begin_abort_protected_block ();
-			ip ++;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY) {
-			mono_threads_end_abort_protected_block ();
 			guint16 clause_index = *(ip + 1);
 
 			guint16 *ret_ip = *(guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]);
@@ -6216,9 +6194,6 @@ call:
 
 			gboolean const short_offset = opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK;
 			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
-			// Check for any abort requests, once all finally blocks were invoked
-			if (!check)
-				EXCEPTION_CHECKPOINT;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_ICALL_V_V) 
@@ -6574,6 +6549,10 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 
+		MINT_IN_CASE(MINT_MOV_OFF)
+			// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
 
 #define MOV(argtype1,argtype2) \
 	LOCAL_VAR (ip [1], argtype1) = LOCAL_VAR (ip [2], argtype2); \

@@ -33,8 +33,6 @@ set(utils_common_sources
     mono-logger.c
     mono-logger-internals.h
     mono-codeman.c
-    write-protect.c
-    write-protect.h
     mono-counters.c
     mono-compiler.h
     mono-dl.c
