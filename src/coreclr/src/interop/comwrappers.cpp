@@ -4,6 +4,7 @@
 #include "comwrappers.hpp"
 #include <interoplibabi.h>
 #include <interoplibimports.h>
+#include <corerror.h>
 
 #include <new> // placement new
 
@@ -188,7 +189,7 @@ HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
 {
     ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-    return wrapper->QueryInterface(riid, ppvObject);
+    return wrapper->QueryInterface(disp, riid, ppvObject);
 }
 
 namespace
@@ -236,6 +237,11 @@ namespace
     constexpr ULONG GetComCount(_In_ ULONGLONG c)
     {
         return static_cast<ULONG>(c & ComRefCountMask);
+    }
+
+    constexpr bool IsMarkedToDestroy(_In_ ULONGLONG c)
+    {
+        return (c & DestroySentinel) != 0;
     }
 
     ULONG STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTracker(_In_ ABI::ComInterfaceDispatch* disp)
@@ -458,9 +464,14 @@ ManagedObjectWrapper::ManagedObjectWrapper(
     , _dispatches{ dispatches }
     , _refCount{ 1 }
     , _flags{ flags }
+    , _refTrackerDispatch{ nullptr }
 {
     bool wasSet = TrySetObjectHandle(objectHandle);
     _ASSERTE(wasSet);
+
+    // Retain the dispatch entry for the IReferenceTrackerTarget so we
+    // can branch quickly during a QI from that interface.
+    _refTrackerDispatch = (const ABI::ComInterfaceDispatch*)AsRuntimeDefined(__uuidof(IReferenceTrackerTarget));
 }
 
 ManagedObjectWrapper::~ManagedObjectWrapper()
@@ -542,6 +553,11 @@ bool ManagedObjectWrapper::IsRooted() const
     return rooted;
 }
 
+bool ManagedObjectWrapper::IsMarkedToDestroy() const
+{
+    return ::IsMarkedToDestroy(_refCount);
+}
+
 ULONG ManagedObjectWrapper::AddRefFromReferenceTracker()
 {
     LONGLONG prev;
@@ -574,10 +590,7 @@ ULONG ManagedObjectWrapper::ReleaseFromReferenceTracker()
     // If we observe the destroy sentinel, then this release
     // must destroy the wrapper.
     if (refCount == DestroySentinel)
-    {
-        _ASSERTE(!IsSet(CreateComInterfaceFlagsEx::IsPegged));
         Destroy(this);
-    }
 
     return GetTrackerCount(refCount);
 }
@@ -595,11 +608,36 @@ HRESULT ManagedObjectWrapper::Unpeg()
 }
 
 HRESULT ManagedObjectWrapper::QueryInterface(
+    _In_ const ABI::ComInterfaceDispatch* dispatch,
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
 {
     if (ppvObject == nullptr)
         return E_POINTER;
+
+    // Check if this is a QI from an IReferenceTrackerTarget.
+    ComHolder<ManagedObjectWrapper> releaseMaybe;
+    if (dispatch == _refTrackerDispatch)
+    {
+        // AddRef to keep the managed object alive.
+        // AddRef is "safe" at this point because if it is a MOW with outstanding
+        // Reference Tracker reference, we know for sure the MOW is not claimed yet
+        // but the managed object could be.
+        AddRef();
+
+        // We are taking an extra AddRef() that now must be released.
+        releaseMaybe.Attach(this);
+
+        // For MOWs that have outstanding Reference Tracker reference, they could be either:
+        //  1. Marked to Destroy - in this case it is unsafe to touch wrapper.
+        //  2. Object Handle target has been NULLed out by GC.
+        if (IsMarkedToDestroy() || !InteropLibImports::HasValidTarget(Target))
+        {
+            // It is unsafe to proceed with a QueryInterface call. The MOW has been
+            // marked destroyed or the associated managed object has been collected.
+            return COR_E_ACCESSING_CCW;
+        }
+    }
 
     // Find target interface
     *ppvObject = AsRuntimeDefined(riid);
@@ -653,13 +691,11 @@ HRESULT ManagedObjectWrapper::QueryInterface(
 
 ULONG ManagedObjectWrapper::AddRef(void)
 {
-    _ASSERTE((_refCount & DestroySentinel) == 0);
     return GetComCount(::InterlockedIncrement64(&_refCount));
 }
 
 ULONG ManagedObjectWrapper::Release(void)
 {
-    _ASSERTE((_refCount & DestroySentinel) == 0);
     if (GetComCount(_refCount) == 0)
     {
         _ASSERTE(!"Over release of MOW - COM");
