@@ -2377,11 +2377,7 @@ void CodeGen::genEmitMachineCode()
 
     compiler->unwindReserve();
 
-#if DISPLAY_SIZES
 
-    size_t dataSize = GetEmitter()->emitDataSize();
-
-#endif // DISPLAY_SIZES
 
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
@@ -2602,6 +2598,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
 #if DISPLAY_SIZES
 
+    size_t dataSize = GetEmitter()->emitDataSize();
     grossVMsize += compiler->info.compILCodeSize;
     totalNCsize += codeSize + dataSize + compiler->compInfoBlkSize;
     grossNCsize += codeSize + dataSize;
@@ -4381,7 +4378,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             /* Register argument - hopefully it stays in the same register */
             regNumber destRegNum  = REG_NA;
-            var_types destMemType = varDsc->GetRegisterType();
+            var_types destMemType = varDsc->TypeGet();
 
             if (regArgTab[argNum].slot == 1)
             {
@@ -4657,6 +4654,8 @@ void CodeGen::genEnregisterIncomingStackArgs()
             continue;
         }
 
+        var_types type = genActualType(varDsc->TypeGet());
+
         /* Is the variable dead on entry */
 
         if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
@@ -4671,9 +4670,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
         regNumber regNum = varDsc->GetArgInitReg();
         assert(regNum != REG_STK);
 
-        var_types regType = varDsc->GetActualRegisterType();
-
-        GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
+        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), regNum, varNum, 0);
         regSet.verifyRegUsed(regNum);
 #ifdef USING_SCOPE_INFO
         psiMoveToReg(varNum);

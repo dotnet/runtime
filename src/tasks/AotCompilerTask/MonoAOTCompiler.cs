@@ -126,6 +126,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? DedupAssembly { get; set; }
 
+    /// Debug option in llvm aot mode
+    /// defaults to "nodebug" since some targes can't generate debug info
+    /// </summary>
+    public string? LLVMDebug { get; set; } = "nodebug";
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -185,7 +190,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!Enum.TryParse(Mode, true, out parsedAotMode))
         {
-            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(',', Enum.GetNames(typeof(MonoAotMode)))}");
+            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(",", Enum.GetNames(typeof(MonoAotMode)))}");
             return false;
         }
 
@@ -217,7 +222,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         string? monoPaths = null;
         if (AdditionalAssemblySearchPaths != null)
-            monoPaths = string.Join(Path.PathSeparator, AdditionalAssemblySearchPaths);
+            monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         if (DisableParallelAot)
         {
@@ -252,13 +257,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(";", StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(";", StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly}");
@@ -270,7 +275,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             processArgs.Add("--llvm");
 
-            aotArgs.Add($"nodebug"); // can't use debug symbols with LLVM
+            if (!string.IsNullOrEmpty(LLVMDebug))
+                aotArgs.Add(LLVMDebug);
+
             aotArgs.Add($"llvm-path={LLVMPath}");
         }
         else

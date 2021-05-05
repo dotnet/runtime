@@ -20,6 +20,7 @@ class MarshalNative
 {
 public:
     static VOID QCALLTYPE Prelink(MethodDesc * pMD);
+    static BOOL QCALLTYPE IsComSupported();
 
     //====================================================================
     // These methods convert between an HR and and a managed exception.
@@ -30,8 +31,8 @@ public:
     static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);
 
     static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
-    static FCDECL0(int, GetLastWin32Error);
-    static FCDECL1(void, SetLastWin32Error, int error);
+    static FCDECL0(int, GetLastPInvokeError);
+    static FCDECL1(void, SetLastPInvokeError, int error);
 
     static FCDECL3(VOID, StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld);
     static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);
@@ -95,7 +96,7 @@ public:
     //====================================================================
     // Create an object and aggregate it, then return the inner unknown.
     //====================================================================
-    static FCDECL2(IUnknown*, CreateAggregatedObject, IUnknown* pOuter, Object* refObjUNSAFE);
+    static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
 
     //====================================================================
     // check if the object is classic COM component
@@ -123,9 +124,9 @@ public:
     //====================================================================
     // These methods convert OLE variants to and from objects.
     //====================================================================
-    static FCDECL2(void, GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
-    static FCDECL1(Object*, GetObjectForNativeVariant, LPVOID pSrcNativeVariant);
-    static FCDECL2(Object*, GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars);
+    static FCDECL2(void, GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
+    static FCDECL1(Object*, GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant);
+    static FCDECL2(Object*, GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars);
 
     //====================================================================
     // These methods are used to map COM slots to method info's.

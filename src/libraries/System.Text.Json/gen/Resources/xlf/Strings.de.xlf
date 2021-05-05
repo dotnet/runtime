@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="de" original="../Strings.resx">
+    <body>
+      <trans-unit id="DuplicateTypeNameMessageFormat">
+        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateTypeNameTitle">
+        <source>Duplicate type name.</source>
+        <target state="new">Duplicate type name.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageFormat">
+        <source>Did not generate serialization metadata for type '{0}'.</source>
+        <target state="new">Did not generate serialization metadata for type '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate serialization metadata for type.</source>
+        <target state="new">Did not generate serialization metadata for type.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

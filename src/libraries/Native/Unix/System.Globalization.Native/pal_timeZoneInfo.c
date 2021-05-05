@@ -21,13 +21,13 @@ static const UChar EXEMPLAR_CITY_PATTERN_UCHAR[] = {'V', 'V', 'V', '\0'};       
 /*
 Convert Windows Time Zone Id to IANA Id
 */
-int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, UChar* ianaId, int32_t ianaIdLength)
+int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, const char* region, UChar* ianaId, int32_t ianaIdLength)
 {
     UErrorCode status = U_ZERO_ERROR;
 
     if (ucal_getTimeZoneIDForWindowsID_ptr != NULL)
     {
-        int32_t ianaIdFilledLength = ucal_getTimeZoneIDForWindowsID(windowsId, -1, NULL, ianaId, ianaIdLength, &status);
+        int32_t ianaIdFilledLength = ucal_getTimeZoneIDForWindowsID(windowsId, -1, region, ianaId, ianaIdLength, &status);
         if (U_SUCCESS(status))
         {
             return ianaIdFilledLength;
@@ -91,7 +91,7 @@ static void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* 
     if (U_SUCCESS(*err))
     {
         udat_format(dateFormatter, timestamp, result, resultLength, NULL, err);
-        udat_close(dateFormatter);    
+        udat_close(dateFormatter);
     }
 }
 

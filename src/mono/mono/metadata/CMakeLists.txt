@@ -71,6 +71,8 @@ set(metadata_common_sources
     class-setup-vtable.c
     cominterop.c
     cominterop.h
+    components.h
+    components.c
     coree.c
     coree.h
     coree-internals.h

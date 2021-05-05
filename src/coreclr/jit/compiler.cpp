@@ -5181,6 +5181,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
+#if TRACK_LSRA_STATS
+    if (JitConfig.DisplayLsraStats() == 2)
+    {
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+    }
+#endif // TRACK_LSRA_STATS
+
     // We're done -- set the active phase to the last phase
     // (which isn't really a phase)
     mostRecentlyActivePhase = PHASE_POST_EMIT;
@@ -5866,24 +5873,6 @@ void Compiler::compCompileFinish()
         // mdMethodDef __stdcall CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-        unsigned profCallCount = 0;
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
-        {
-            bool foundEntrypointBasicBlockCount = false;
-            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
-            {
-                if ((fgPgoSchema[iSchema].InstrumentationKind ==
-                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
-                    (fgPgoSchema[iSchema].ILOffset == 0))
-                {
-                    foundEntrypointBasicBlockCount = true;
-                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
-                    break;
-                }
-            }
-            assert(foundEntrypointBasicBlockCount);
-        }
-
         static bool headerPrinted = false;
         if (!headerPrinted)
         {
@@ -5900,17 +5889,17 @@ void Compiler::compCompileFinish()
 
         if (fgHaveProfileData())
         {
-            if (profCallCount <= 9999)
+            if (fgCalledCount < 1000)
             {
-                printf("%4d | ", profCallCount);
+                printf("%4.0f | ", fgCalledCount);
             }
-            else if (profCallCount <= 999500)
+            else if (fgCalledCount < 1000000)
             {
-                printf("%3dK | ", (profCallCount + 500) / 1000);
+                printf("%3.0fK | ", fgCalledCount / 1000);
             }
             else
             {
-                printf("%3dM | ", (profCallCount + 500000) / 1000000);
+                printf("%3.0fM | ", fgCalledCount / 1000000);
             }
         }
         else

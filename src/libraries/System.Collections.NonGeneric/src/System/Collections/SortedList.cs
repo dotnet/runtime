@@ -70,9 +70,6 @@ namespace System.Collections
         private KeyList? keyList; // Do not rename (binary serialization)
         private ValueList? valueList; // Do not rename (binary serialization)
 
-        // Copy of Array.MaxArrayLength
-        internal const int MaxArrayLength = 0X7FEFFFFF;
-
         // Constructs a new sorted list. The sorted list is initially empty and has
         // a capacity of zero. Upon adding the first element to the sorted list the
         // capacity is increased to 16, and then increased in multiples of two as
@@ -378,7 +375,7 @@ namespace System.Collections
             int newCapacity = keys.Length == 0 ? 16 : keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
             if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }

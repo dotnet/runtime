@@ -43,7 +43,7 @@ namespace System
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct DateTime : IComparable, IFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable, ISpanFormattable
+    public readonly partial struct DateTime : IComparable, ISpanFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable
     {
         // Number of 100ns ticks per time unit
         private const long TicksPerMillisecond = 10000;
@@ -144,6 +144,8 @@ namespace System
         {
             this._dateData = dateData;
         }
+
+        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong) ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
@@ -609,6 +611,19 @@ namespace System
 
             int totalSeconds = hour * 3600 + minute * 60 + second;
             return (uint)totalSeconds * (ulong)TicksPerSecond;
+        }
+
+        internal static ulong TimeToTicks(int hour, int minute, int second, int millisecond)
+        {
+            ulong ticks = TimeToTicks(hour, minute, second);
+
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+
+            ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+
+            Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+
+            return ticks;
         }
 
         // Returns the number of days in the month given by the year and
