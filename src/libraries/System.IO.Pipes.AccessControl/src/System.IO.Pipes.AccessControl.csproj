@@ -1,26 +1,59 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net5.0-windows;net5.0;netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <OmitResources Condition="'$(TargetsWindows)' == 'true'">true</OmitResources>
-    <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true' and '$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
   </PropertyGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="System\IO\PipesAclExtensions.net461.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' and '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeSecurity.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeAccessRights.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeAccessRule.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipeAuditRule.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System\IO\Pipes\PipesAclExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Runtime" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <Reference Include="System.IO.Pipes" Condition="'$(TargetsWindows)' != 'true' or '$(TargetPlatformIdentifier)' == ''" />
   </ItemGroup>
-  <!-- Include src projects during restore as TargetsWindows isn't set. -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(MSBuildRestoreSessionId)' != ''">
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <!-- THIS IS THE WORST CODE I'VE WRITTEN IN A WHILE. We need to download the 3.1 microsoft.net.core.app.runtime pack for windows
+         as this library depends on an API only exposed in the System.IO.Pipes runtime assembly.
+         We need to come up with a better solution as this adds 30MB to a user's download and breaks sourcebuild. -->
+    <PackageDownload Include="Microsoft.NETCore.App.Runtime.win-x64" Version="[3.1.14]" />
+    <ReferencePath Include="$(NuGetPackageRoot)microsoft.netcore.app.runtime.win-x64\3.1.14\runtimes\win-x64\lib\netcoreapp3.1\System.IO.Pipes.dll" Condition="'$(TargetsWindows)' == 'true'" />
+
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)')) == '5.0'">
+    <!-- THIS IS THE WORST CODE I'VE WRITTEN IN A WHILE. We need to download the 5.0 microsoft.net.core.app.runtime pack for windows
+         as this library depends on an API only exposed in the System.IO.Pipes runtime assembly.
+         We need to come up with a better solution as this adds 30MB to a user's download and breaks sourcebuild. -->
+    <PackageDownload Include="Microsoft.NETCore.App.Runtime.win-x64" Version="[5.0.5]" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <ReferencePath Include="$(NuGetPackageRoot)microsoft.netcore.app.runtime.win-x64\5.0.5\runtimes\win-x64\lib\net5.0\System.IO.Pipes.dll" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" SkipUseReferenceAssembly="true" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" SkipUseReferenceAssembly="true" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
-    <!-- Referencing the ref project directly as the src project doesn't have a RID less configuration. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
-    <Reference Include="System.IO.Pipes" />
   </ItemGroup>
 </Project>
