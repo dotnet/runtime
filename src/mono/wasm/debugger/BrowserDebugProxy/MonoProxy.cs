@@ -1222,6 +1222,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task<BinaryReader> SendDebuggerAgentCommand(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
+            if (res.IsErr)
+                return null;
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["res"]?["value"]?.Value<string>());
             var ret_debugger_cmd = new MemoryStream(newBytes);
             var ret_debugger_cmd_reader = new BinaryReader(ret_debugger_cmd);
@@ -1241,16 +1243,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.VM, (int) CmdVM.GET_ASSEMBLY_BY_NAME, command_params, token);
             var assembly_id = ret_debugger_cmd_reader.ReadInt32();
 
-            Console.WriteLine("SendDebuggerAgentCommand - assembly_id - " + assembly_id);
-
             command_params = new MemoryStream();
             command_params_writer = new MonoBinaryWriter(command_params);
             command_params_writer.Write(assembly_id);
             command_params_writer.Write(method_token | (int)TokenType.mdtMethodDef);
             ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.ASSEMBLY, (int) CmdAssembly.GET_METHOD_FROM_TOKEN, command_params, token);
             var method_id = ret_debugger_cmd_reader.ReadInt32();
-
-            Console.WriteLine("SendDebuggerAgentCommand - method_id - " + method_id);
 
             command_params = new MemoryStream();
             command_params_writer = new MonoBinaryWriter(command_params);
@@ -1263,15 +1261,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.SET, command_params, token);
             var breakpoint_id = ret_debugger_cmd_reader.ReadInt32();
 
-            Console.WriteLine("SendDebuggerAgentCommand - breakpoint_id - " + breakpoint_id);
-
             if (breakpoint_id > 0)
             {
                 bp.RemoteId = breakpoint_id;
                 bp.State = BreakpointState.Active;
                 //Log ("verbose", $"BP local id {bp.LocalId} enabled with remote id {bp.RemoteId}");
             }
-
             return bp;
         }
 
@@ -1330,10 +1325,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
 
-            Result clear_result = await SendMonoCommand(sessionId, MonoCommands.ClearAllBreakpoints(), token);
-            if (clear_result.IsErr)
+            var command_params = new MemoryStream();
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.CLEAR_ALL_BREAKPOINTS, command_params, token);
+            if (ret_debugger_cmd_reader == null)
             {
-                Log("verbose", $"Failed to clear breakpoints due to {clear_result}");
+                Log("verbose", $"Failed to clear breakpoints");
             }
 
             DebugStore store = await LoadStore(sessionId, token);
@@ -1353,10 +1349,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (Breakpoint bp in breakpointRequest.Locations)
             {
-                Result res = await SendMonoCommand(msg_id, MonoCommands.RemoveBreakpoint(bp.RemoteId), token);
-                int? ret_code = res.Value?["result"]?["value"]?.Value<int>();
+                var command_params = new MemoryStream();
+                var command_params_writer = new MonoBinaryWriter(command_params);
+                command_params_writer.Write((byte)EventKind.BREAKPOINT);
+                command_params_writer.Write((int) bp.RemoteId);
 
-                if (ret_code.HasValue)
+                var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(msg_id, (int) CommandSet.EVENT_REQUEST, (int) CmdEventRequest.CLEAR, command_params, token);
+
+                if (ret_debugger_cmd_reader != null)
                 {
                     bp.RemoteId = -1;
                     bp.State = BreakpointState.Disabled;

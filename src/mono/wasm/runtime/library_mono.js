@@ -832,16 +832,25 @@ var MonoSupportLib = {
 			return vars;
 		},
 
+		mono_wasm_add_dbg_command_received: function(id, buffer, buffer_len) {
+			console.log(`mono_wasm_add_dbg_command_received`);
+			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
+			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
+			const buffer_obj = {
+				id,
+				value: base64String
+			}
+			MONO.commands_received = buffer_obj;
+		},
+
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
 			console.log(`mono_wasm_send_dbg_command ${id} - ${command_set} - ${command} - ${command_parameters.length}`);
 
-			const dataPtr = Module._malloc (command_parameters.length);
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
 			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
 
 			let res_ok = this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
-			Module._free (dataHeap.byteOffset);
 
 			let res = MONO.commands_received;
 			if (res_ok) {
@@ -1454,20 +1463,6 @@ var MonoSupportLib = {
 				console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 		},
 
-		mono_wasm_set_breakpoint: function (assembly, method_token, il_offset) {
-			if (!this.mono_wasm_set_bp)
-				this.mono_wasm_set_bp = Module.cwrap ('mono_wasm_set_breakpoint', 'number', ['string', 'number', 'number']);
-
-			return this.mono_wasm_set_bp (assembly, method_token, il_offset)
-		},
-
-		mono_wasm_remove_breakpoint: function (breakpoint_id) {
-			if (!this.mono_wasm_del_bp)
-				this.mono_wasm_del_bp = Module.cwrap ('mono_wasm_remove_breakpoint', 'number', ['number']);
-
-			return this.mono_wasm_del_bp (breakpoint_id);
-		},
-
 		// Set environment variable NAME to VALUE
 		// Should be called before mono_load_runtime_and_bcl () in most cases
 		mono_wasm_setenv: function (name, value) {
@@ -1978,13 +1973,6 @@ var MonoSupportLib = {
 			return MONO.loaded_assets;
 		},
 
-		mono_wasm_clear_all_breakpoints: function() {
-			if (!this.mono_clear_bps)
-				this.mono_clear_bps = Module.cwrap ('mono_wasm_clear_all_breakpoints', null);
-
-			this.mono_clear_bps ();
-		},
-
 		mono_wasm_add_null_var: function(className)
 		{
 			let fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));
@@ -2059,18 +2047,6 @@ var MonoSupportLib = {
 			}
 
 			return new Uint8Array (byteNumbers);
-		},
-
-		mono_wasm_add_dbg_command_received: function(id, buffer, buffer_len) {
-			console.log(`mono_wasm_add_dbg_command_received`);
-			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
-			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
-			//const base64String = btoa (String.fromCharCode (...new Uint8Array (Module.HEAPU8.buffer, buffer, buffer_len)));
-			const buffer_obj = {
-				id,
-				value: base64String
-			}
-			MONO.commands_received = buffer_obj;
 		},
 
 		_begin_value_type_var: function(className, args) {

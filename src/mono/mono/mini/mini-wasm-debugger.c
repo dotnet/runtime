@@ -41,12 +41,9 @@ enum {
 //functions exported to be used by JS
 G_BEGIN_DECLS
 
-EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_offset);
-EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_local_vars (int scope, int* pos, int len);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_object_properties (int object_id, int gpflags);
@@ -547,7 +544,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
 			MonoPPDBFile *ppdb = handle->ppdb;
-			if (!mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+			if (!mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
 				pdb_image = mono_ppdb_get_image (ppdb);
 				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
@@ -586,84 +583,6 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 	PRINT_DEBUG_MSG (2, "handle exception - done\n");
 }
 
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_clear_all_breakpoints (void)
-{
-	PRINT_DEBUG_MSG (1, "CLEAR BREAKPOINTS\n");
-	mono_de_clear_all_breakpoints ();
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_offset)
-{
-	int i;
-	ERROR_DECL (error);
-	PRINT_DEBUG_MSG (1, "SET BREAKPOINT: assembly %s method %x offset %x\n", assembly_name, method_token, il_offset);
-
-
-	//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
-	char *lookup_name = g_strdup (assembly_name);
-	for (i = strlen (lookup_name) - 1; i >= 0; --i) {
-		if (lookup_name [i] == '.') {
-			lookup_name [i] = 0;
-			break;
-		}
-	}
-
-	//resolve the assembly
-	MonoImageOpenStatus status;
-	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
-	MonoAssemblyByNameRequest byname_req;
-	mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
-	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
-	g_free (lookup_name);
-	if (!assembly) {
-		PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-		return -1;
-	}
-
-	mono_assembly_name_free_internal (aname);
-
-	MonoMethod *method = mono_get_method_checked (assembly->image, MONO_TOKEN_METHOD_DEF | method_token, NULL, NULL, error);
-	if (!method) {
-		//FIXME don't swallow the error
-		PRINT_DEBUG_MSG (1, "Could not find method due to %s\n", mono_error_get_message (error));
-		mono_error_cleanup (error);
-		return -1;
-	}
-
-	//FIXME right now none of the EventRequest fields are used by debugger-engine
-	EventRequest *req = g_new0 (EventRequest, 1);
-	req->id = ++event_request_id;
-	req->event_kind = EVENT_KIND_BREAKPOINT;
-	//DE doesn't care about suspend_policy
-	// req->suspend_policy = SUSPEND_POLICY_ALL;
-	req->nmodifiers = 0; //funny thing,
-
-	// BreakPointRequest *req = breakpoint_request_new (assembly, method, il_offset);
-	MonoBreakpoint *bp = mono_de_set_breakpoint (method, il_offset, req, error);
-
-	if (!bp) {
-		PRINT_DEBUG_MSG (1, "Could not set breakpoint to %s\n", mono_error_get_message (error));
-		mono_error_cleanup (error);
-		return 0;
-	}
-
-	PRINT_DEBUG_MSG (1, "NEW BP %p has id %d\n", req, req->id);
-	return req->id;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_remove_breakpoint (int bp_id)
-{
-	MonoBreakpoint *bp = mono_de_get_breakpoint_by_id (bp_id);
-	if (!bp)
-		return 0;
-
-	mono_de_clear_breakpoint (bp);
-	return 1;
-}
 
 void
 mono_wasm_single_step_hit (void)
