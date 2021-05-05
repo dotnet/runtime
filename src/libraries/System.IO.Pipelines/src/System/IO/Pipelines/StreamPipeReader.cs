@@ -536,17 +536,32 @@ namespace System.IO.Pipelines
         {
             BufferSegment nextSegment = CreateSegmentUnsynchronized();
 
-            var bufferSize = Math.Min(minimumSize ?? BufferSize, MaxBufferSize);
-            if (_options.IsDefaultSharedMemoryPool)
+            var bufferSize = minimumSize ?? BufferSize;
+            int maxSize = !_options.IsDefaultSharedMemoryPool ? _options.Pool.MaxBufferSize : - 1;
+
+            if (bufferSize <= maxSize)
             {
-                nextSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(bufferSize));
+                // Use the specified pool as it fits.
+                int sizeToRequest = GetSegmentSize(bufferSize, maxSize);
+                nextSegment.SetOwnedMemory(_options.Pool.Rent(sizeToRequest));
             }
             else
             {
-                nextSegment.SetOwnedMemory(Pool.Rent(bufferSize));
+                // Use the array pool
+                int sizeToRequest = GetSegmentSize(bufferSize, MaxBufferSize);
+                nextSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
             }
 
             return nextSegment;
+        }
+
+        private int GetSegmentSize(int sizeHint, int maxBufferSize)
+        {
+            // First we need to handle case where hint is smaller than minimum segment size
+            sizeHint = Math.Max(BufferSize, sizeHint);
+            // After that adjust it to fit into pools max buffer size
+            int adjustedToMaximumSize = Math.Min(maxBufferSize, sizeHint);
+            return adjustedToMaximumSize;
         }
 
         private BufferSegment CreateSegmentUnsynchronized()

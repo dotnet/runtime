@@ -58,7 +58,7 @@ namespace System.IO.Pipelines
 
         /// <summary>Gets the maximum buffer size to use when renting memory from the <see cref="System.IO.Pipelines.StreamPipeReaderOptions.Pool" />.</summary>
         /// <value>The maximum buffer size.</value>
-        internal int MaxBufferSize => !IsDefaultSharedMemoryPool ? Pool.MaxBufferSize : DefaultMaxBufferSize;
+        internal int MaxBufferSize { get; } = DefaultMaxBufferSize;
 
         /// <summary>Gets the threshold of remaining bytes in the buffer before a new buffer is allocated.</summary>
         /// <value>The minimum read size.</value>
