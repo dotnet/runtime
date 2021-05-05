@@ -11,6 +11,10 @@ namespace System.Text.Json.Node
     /// <summary>
     ///   Represents a mutable JSON array.
     /// </summary>
+    /// <remarks>
+    /// It is safe to perform multiple concurrent read operations on a <see cref="JsonArray"/>,
+    /// but issues can occur if the collection is modified while it's being read.
+    /// </remarks>
     [DebuggerDisplay("JsonArray[{List.Count}]")]
     [DebuggerTypeProxy(typeof(DebugView))]
     public sealed partial class JsonArray : JsonNode
@@ -258,7 +262,7 @@ namespace System.Text.Json.Node
 
                         if (Value is JsonObject jsonObject)
                         {
-                            return $"JsonObject[{jsonObject.Dictionary.Count}]";
+                            return $"JsonObject[{jsonObject.Count}]";
                         }
 
                         JsonArray jsonArray = (JsonArray)Value;

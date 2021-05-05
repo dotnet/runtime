@@ -72,6 +72,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 flags |= QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
             }
 
+            if (!OperatingSystem.IsWindows())
+            {
+                // Use certificate handles on Windows, fall-back to ASN1 otherwise.
+                flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
+            }
+
             Debug.Assert(!MsQuicApi.Api.Registration.IsInvalid);
 
             var settings = new QuicSettings

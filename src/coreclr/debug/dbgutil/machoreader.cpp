@@ -52,7 +52,7 @@ private:
 //
 // Main entry point to get an export symbol
 //
-bool
+extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     MachOReaderExport reader(dataTarget);
@@ -64,7 +64,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
     uint64_t symbolOffset;
     if (module.TryLookupSymbol(symbolName, &symbolOffset))
     {
-        *symbolAddress = baseAddress + symbolOffset;
+        *symbolAddress = symbolOffset;
         return true;
     }
     *symbolAddress = 0;
@@ -82,7 +82,7 @@ MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mac
     m_commands(nullptr),
     m_symtabCommand(nullptr),
     m_nlists(nullptr),
-    m_strtab(nullptr)
+    m_strtabAddress(0)
 {
     if (header != nullptr) {
         m_header = *header;
@@ -101,10 +101,6 @@ MachOModule::~MachOModule()
     if (m_nlists != nullptr) {
         free(m_nlists);
         m_nlists = nullptr;
-    }
-    if (m_strtab != nullptr) {
-        free(m_strtab);
-        m_strtab = nullptr;
     }
 }
 
@@ -128,14 +124,19 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
     if (ReadSymbolTable())
     {
         _ASSERTE(m_nlists != nullptr);
-        _ASSERTE(m_strtab != nullptr);
+        _ASSERTE(m_strtabAddress != 0);
 
-        for (int i = 0; i < m_symtabCommand->nsyms; i++)
+        for (int i = 0; i < m_dysymtabCommand->nextdefsym; i++)
         {
-            char* name = m_strtab + m_nlists[i].n_un.n_strx;
-            if (strcmp(name, symbolName) == 0)
+            std::string name = GetSymbolName(i);
+            // Skip the leading underscores to match Linux externs
+            if (name[0] == '_')
             {
-                *symbolValue = m_nlists[i].n_value;
+                name.erase(0, 1);
+            }
+            if (strcmp(name.c_str(), symbolName) == 0)
+            {
+                *symbolValue = m_loadBias + m_nlists[i].n_value;
                 return true;
             }
         }
@@ -197,6 +198,10 @@ MachOModule::ReadLoadCommands()
                 m_symtabCommand = (symtab_command*)command;
                 break;
 
+            case LC_DYSYMTAB:
+                m_dysymtabCommand = (dysymtab_command*)command;
+                break;
+
             case LC_SEGMENT_64:
                 segment_command_64* segment = (segment_command_64*)command;
                 m_segments.push_back(segment);
@@ -255,62 +260,72 @@ MachOModule::ReadSymbolTable()
             return false;
         }
         _ASSERTE(m_symtabCommand != nullptr);
-        _ASSERTE(m_strtab == nullptr);
+        _ASSERTE(m_strtabAddress == 0);
 
-        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d\n",
+        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d iext %d next %d\n",
             m_symtabCommand->symoff,
             m_symtabCommand->nsyms,
             m_symtabCommand->stroff,
-            m_symtabCommand->strsize);
+            m_symtabCommand->strsize,
+            m_dysymtabCommand->iextdefsym,
+            m_dysymtabCommand->nextdefsym);
 
-        // Read symbol table. An array of "nlist" structs.
-        void* symtabAddress = GetAddressFromFileOffset(m_symtabCommand->symoff);
-        size_t symtabSize = sizeof(nlist_64) * m_symtabCommand->nsyms;
-
+        // Read the external symbol part of symbol table. An array of "nlist" structs.
+        void* extSymbolTableAddress = (void*)(GetAddressFromFileOffset(m_symtabCommand->symoff) + (m_dysymtabCommand->iextdefsym * sizeof(nlist_64)));
+        size_t symtabSize = sizeof(nlist_64) * m_dysymtabCommand->nextdefsym;
         m_nlists = (nlist_64*)malloc(symtabSize);
         if (m_nlists == nullptr)
         {
-            m_reader.Trace("ERROR: Failed to allocate %zu byte symbol table\n", symtabSize);
+            m_reader.Trace("ERROR: Failed to allocate %zu byte external symbol table\n", symtabSize);
             return false;
         }
-        if (!m_reader.ReadMemory(symtabAddress, m_nlists, symtabSize))
+        if (!m_reader.ReadMemory(extSymbolTableAddress, m_nlists, symtabSize))
         {
-            m_reader.Trace("ERROR: Failed to read symtab at %p of %zu\n", symtabAddress, symtabSize);
+            m_reader.Trace("ERROR: Failed to read external symtab at %p of %zu\n", extSymbolTableAddress, symtabSize);
             return false;
         }
 
-        // Read the symbol string table.
-        void* strtabAddress = GetAddressFromFileOffset(m_symtabCommand->stroff);
-        size_t strtabSize = m_symtabCommand->strsize;
-
-        m_strtab = (char*)malloc(strtabSize);
-        if (m_strtab == nullptr)
-        {
-            m_reader.Trace("ERROR: Failed to allocate %zu byte symbol string table\n", strtabSize);
-            return false;
-        }
-        if (!m_reader.ReadMemory(strtabAddress, m_strtab, strtabSize))
-        {
-            m_reader.Trace("ERROR: Failed to read string table at %p of %zu\n", strtabAddress, strtabSize);
-            return false;
-        }
+        // Save the symbol string table address.
+        m_strtabAddress = GetAddressFromFileOffset(m_symtabCommand->stroff);
     }
     return true;
 }
 
-void*
+uint64_t
 MachOModule::GetAddressFromFileOffset(uint32_t offset)
 {
     _ASSERTE(!m_segments.empty());
-
     for (const segment_command_64* segment : m_segments)
     {
         if (offset >= segment->fileoff && offset < (segment->fileoff + segment->filesize))
         {
-            return (void*)(m_baseAddress + offset + segment->vmaddr - segment->fileoff);
+            return m_loadBias + offset + segment->vmaddr - segment->fileoff;
         }
     }
-    return (void*)(m_baseAddress + offset);
+    return m_loadBias + offset;
+}
+
+std::string
+MachOModule::GetSymbolName(int index)
+{
+    uint64_t symbolNameAddress = m_strtabAddress + m_nlists[index].n_un.n_strx;
+    std::string result;
+    while (true)
+    {
+        char c = 0;
+        if (!m_reader.ReadMemory((void*)symbolNameAddress, &c, sizeof(char)))
+        {
+            m_reader.Trace("ERROR: Failed to read string table at %p\n", (void*)symbolNameAddress);
+            break;
+        }
+        if (c == '\0')
+        {
+            break;
+        }
+        result.append(1, c);
+        symbolNameAddress++;
+    }
+    return result;
 }
 
 //--------------------------------------------------------------------
@@ -330,20 +345,19 @@ MachOReader::EnumerateModules(mach_vm_address_t address, mach_header_64* header)
     MachOModule dylinker(*this, address, header);
 
     // Search for symbol for the dyld image info cache
-    uint64_t dyldInfoOffset = 0;
-    if (!dylinker.TryLookupSymbol("_dyld_all_image_infos", &dyldInfoOffset))
+    uint64_t dyldInfoAddress = 0;
+    if (!dylinker.TryLookupSymbol("dyld_all_image_infos", &dyldInfoAddress))
     {
         Trace("ERROR: Can not find the _dyld_all_image_infos symbol\n");
         return false;
     }
 
     // Read the all image info from the dylinker image
-    void* dyldInfoAddress = (void*)(address + dyldInfoOffset);
     dyld_all_image_infos dyldInfo;
 
-    if (!ReadMemory(dyldInfoAddress, &dyldInfo, sizeof(dyld_all_image_infos)))
+    if (!ReadMemory((void*)dyldInfoAddress, &dyldInfo, sizeof(dyld_all_image_infos)))
     {
-        Trace("ERROR: Failed to read dyld_all_image_infos at %p\n", dyldInfoAddress);
+        Trace("ERROR: Failed to read dyld_all_image_infos at %p\n", (void*)dyldInfoAddress);
         return false;
     }
     std::string dylinkerPath;

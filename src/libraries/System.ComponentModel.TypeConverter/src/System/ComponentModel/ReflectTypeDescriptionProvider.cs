@@ -204,6 +204,15 @@ namespace System.ComponentModel
 
         private static Hashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new Hashtable());
 
+        /// <summary>Clear the global caches this maintains on top of reflection.</summary>
+        internal static void ClearReflectionCaches()
+        {
+            s_propertyCache = null;
+            s_eventCache = null;
+            s_attributeCache = null;
+            s_extendedPropertyCache = null;
+        }
+
         /// <summary>
         /// Adds an editor table for the given editor base type.
         /// Typically, editors are specified as metadata on an object. If no metadata for a
@@ -829,17 +838,22 @@ namespace System.ComponentModel
         {
             List<Type> typeList = new List<Type>();
 
-            // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
-            IDictionaryEnumerator e = _typeData.GetEnumerator();
-            while (e.MoveNext())
+            lock (s_internalSyncObject)
             {
-                DictionaryEntry de = e.Entry;
-                Type type = (Type)de.Key;
-                ReflectedTypeData typeData = (ReflectedTypeData)de.Value;
-
-                if (type.Module == module && typeData.IsPopulated)
+                Hashtable typeData = _typeData;
+                if (typeData != null)
                 {
-                    typeList.Add(type);
+                    // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                    IDictionaryEnumerator e = typeData.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        DictionaryEntry de = e.Entry;
+                        Type type = (Type)de.Key;
+                        if (type.Module == module && ((ReflectedTypeData)de.Value).IsPopulated)
+                        {
+                            typeList.Add(type);
+                        }
+                    }
                 }
             }
 

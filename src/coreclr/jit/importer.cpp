@@ -1703,9 +1703,9 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 // impNormStructType: Normalize the type of a (known to be) struct class handle.
 //
 // Arguments:
-//    structHnd       - The class handle for the struct type of interest.
-//    pSimdBaseType   - (optional, default nullptr) - if non-null, and the struct is a SIMD
-//                      type, set to the SIMD base type
+//    structHnd        - The class handle for the struct type of interest.
+//    pSimdBaseJitType - (optional, default nullptr) - if non-null, and the struct is a SIMD
+//                       type, set to the SIMD base JIT type
 //
 // Return Value:
 //    The JIT type for the struct (e.g. TYP_STRUCT, or TYP_SIMD*).
@@ -1717,7 +1717,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
 //    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
-var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
+var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* pSimdBaseJitType)
 {
     assert(structHnd != NO_CLASS_HANDLE);
 
@@ -1736,14 +1736,14 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
             if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
-                var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-                if (simdBaseType != TYP_UNKNOWN)
+                CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
                 {
                     assert(sizeBytes == originalSize);
                     structType = getSIMDTypeForSize(sizeBytes);
-                    if (pSimdBaseType != nullptr)
+                    if (pSimdBaseJitType != nullptr)
                     {
-                        *pSimdBaseType = simdBaseType;
+                        *pSimdBaseJitType = simdBaseJitType;
                     }
                     // Also indicate that we use floating point registers.
                     compFloatingPointUsed = true;
@@ -3776,7 +3776,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return retNode;
     }
 
-    var_types callType = JITtype2varType(sig->retType);
+    CorInfoType callJitType = sig->retType;
+    var_types   callType    = JITtype2varType(callJitType);
 
     /* First do the intrinsics which are always smaller than a call */
 
@@ -4315,7 +4316,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
-                    if (call->IsSpecialIntrinsic())
+                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
                     {
                         if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
                         {
@@ -4364,15 +4365,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //    ).ToScalar();
 
                     GenTree* op3 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
-                                                            NI_Vector128_CreateScalarUnsafe, callType, 16);
+                                                            NI_Vector128_CreateScalarUnsafe, callJitType, 16);
                     GenTree* op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
-                                                            NI_Vector128_CreateScalarUnsafe, callType, 16);
+                                                            NI_Vector128_CreateScalarUnsafe, callJitType, 16);
                     GenTree* op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, impPopStack().val,
-                                                            NI_Vector128_CreateScalarUnsafe, callType, 16);
+                                                            NI_Vector128_CreateScalarUnsafe, callJitType, 16);
                     GenTree* res =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callType, 16);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
@@ -4393,18 +4394,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     constexpr unsigned int simdSize = 8;
 
                     GenTree* op3 =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callJitType, simdSize);
                     GenTree* op2 =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callJitType, simdSize);
                     GenTree* op1 =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callType, simdSize);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD8, impPopStack().val, createVector64, callJitType, simdSize);
 
                     // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
                     // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
-                                                       callType, simdSize);
+                                                       callJitType, simdSize);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callType, simdSize);
+                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callJitType, simdSize);
                     break;
                 }
 #endif
@@ -6521,6 +6522,50 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                         return 1 + sizeof(mdToken);
                                     }
                                 }
+                                else if (boxHelper == CORINFO_HELP_BOX_NULLABLE)
+                                {
+                                    // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
+                                    // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
+                                    // the target type.
+                                    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+                                    impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                                    CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
+                                    CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
+
+                                    TypeCompareState castResult =
+                                        info.compCompHnd->compareTypesForCast(underlyingCls,
+                                                                              isInstResolvedToken.hClass);
+
+                                    if (castResult == TypeCompareState::Must)
+                                    {
+                                        const CORINFO_FIELD_HANDLE hasValueFldHnd =
+                                            info.compCompHnd->getFieldInClass(nullableCls, 0);
+
+                                        assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0);
+                                        assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
+                                                       "hasValue"));
+
+                                        GenTree* objToBox = impPopStack().val;
+
+                                        // Spill struct to get its address (to access hasValue field)
+                                        objToBox =
+                                            impGetStructAddr(objToBox, nullableCls, (unsigned)CHECK_SPILL_ALL, true);
+
+                                        impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
+                                                       typeInfo(TI_INT));
+
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
+                                        return 1 + sizeof(mdToken);
+                                    }
+                                    else if (castResult == TypeCompareState::MustNot)
+                                    {
+                                        impPopStack();
+                                        impPushOnStack(gtNewIconNode(0), typeInfo(TI_INT));
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
+                                        return 1 + sizeof(mdToken);
+                                    }
+                                }
                             }
                         }
                         break;
@@ -8417,7 +8462,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // Mark call if it's one of the ones we will maybe treat as an intrinsic
         if (isSpecialIntrinsic)
         {
-            call->AsCall()->SetIsSpecialIntrinsic();
+            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
         }
     }
     assert(sig);
@@ -9279,7 +9324,7 @@ DONE_CALL:
                     {
                         spillStack = false;
                     }
-                    else if (callNode->IsSpecialIntrinsic())
+                    else if ((callNode->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
                     {
                         spillStack = false;
                     }
@@ -11463,11 +11508,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDC_R4:
                 cval.dblVal = getR4LittleEndian(codeAddr);
                 JITDUMP(" %#.17g", cval.dblVal);
-                {
-                    GenTree* cnsOp = gtNewDconNode(cval.dblVal);
-                    cnsOp->gtType  = TYP_FLOAT;
-                    impPushOnStack(cnsOp, typeInfo(TI_DOUBLE));
-                }
+                impPushOnStack(gtNewDconNode(cval.dblVal, TYP_FLOAT), typeInfo(TI_DOUBLE));
                 break;
 
             case CEE_LDSTR:
@@ -15381,7 +15422,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (allocSize <= maxSize)
                             {
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
-                                JITDUMP("Converting stackalloc of %lld bytes to new local V%02u\n", allocSize,
+                                JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
@@ -21312,7 +21353,7 @@ void Compiler::considerGuardedDevirtualization(
     const char* callKind = isInterface ? "interface" : "virtual";
 #endif
 
-    JITDUMP("Considering guarded devirtualization\n");
+    JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
@@ -21325,11 +21366,12 @@ void Compiler::considerGuardedDevirtualization(
 
     // See if there's a likely guess for the class.
     //
-    const unsigned       likelihoodThreshold = isInterface ? 25 : 30;
-    unsigned             likelihood          = 0;
-    unsigned             numberOfClasses     = 0;
+    const unsigned likelihoodThreshold = isInterface ? 25 : 30;
+    unsigned       likelihood          = 0;
+    unsigned       numberOfClasses     = 0;
+
     CORINFO_CLASS_HANDLE likelyClass =
-        info.compCompHnd->getLikelyClass(info.compMethodHnd, baseClass, ilOffset, &likelihood, &numberOfClasses);
+        getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
 
     if (likelyClass == NO_CLASS_HANDLE)
     {

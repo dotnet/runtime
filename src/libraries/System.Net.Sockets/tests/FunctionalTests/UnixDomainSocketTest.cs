@@ -295,7 +295,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 Assert.Equal(writeBuffer.Length, readData.Length);
-                Assert.Equal(writeBuffer, readData.ToArray());
+                AssertExtensions.SequenceEqual(writeBuffer, readData.ToArray());
             }
             finally
             {
@@ -345,7 +345,7 @@ namespace System.Net.Sockets.Tests
                 }
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData.OrderBy(i => i), receiveData.OrderBy(i => i));
+                AssertExtensions.SequenceEqual(sendData.OrderBy(i => i).ToArray(), receiveData.OrderBy(i => i).ToArray());
             }
         }
 
@@ -383,7 +383,7 @@ namespace System.Net.Sockets.Tests
 
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData, receiveData);
+                AssertExtensions.SequenceEqual(sendData, receiveData);
             }
         }
 

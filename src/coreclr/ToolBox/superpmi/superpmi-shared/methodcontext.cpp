@@ -180,24 +180,24 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 // (and sets *ppmc with new MethodContext), false on failure.
 //
 // static
-bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
-    mc->index         = loadedCount;
+    mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(loadedCount, buff, size);
+    return mc->Initialize(mcIndex, buff, size);
 }
 
 // static
-bool MethodContext::Initialize(int loadedCount, HANDLE hFile, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
-    mc->index         = loadedCount;
+    mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(loadedCount, hFile);
+    return mc->Initialize(mcIndex, hFile);
 }
 
-bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size)
+bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
 {
     bool result = true;
 
@@ -217,7 +217,7 @@ bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size)
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
-        LogError("Method %d is of low integrity.", loadedCount);
+        LogError("Method %d is of low integrity.", mcIndex);
         result = false;
     }
     PAL_ENDTRY
@@ -225,7 +225,7 @@ bool MethodContext::Initialize(int loadedCount, unsigned char* buff, DWORD size)
     return result;
 }
 
-bool MethodContext::Initialize(int loadedCount, HANDLE hFile)
+bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
 {
     bool result = true;
 
@@ -243,7 +243,7 @@ bool MethodContext::Initialize(int loadedCount, HANDLE hFile)
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
-        LogError("Method %d is of low integrity.", loadedCount);
+        LogError("Method %d is of low integrity.", mcIndex);
         result = false;
     }
     PAL_ENDTRY
@@ -5486,8 +5486,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     size_t maxOffset = 0;
     for (UINT32 i = 0; i < (*pCountSchemaItems); i++)
     {
-        if (pInSchema[i].Offset > maxOffset)
-            maxOffset = pInSchema[i].Offset;
+        maxOffset = max(maxOffset, pInSchema[i].Offset + pInSchema[i].Count * sizeof(uintptr_t));
 
         agnosticSchema[i].Offset              = (DWORDLONG)pInSchema[i].Offset;
         agnosticSchema[i].InstrumentationKind = (DWORD)pInSchema[i].InstrumentationKind;
@@ -5498,11 +5497,8 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     value.schema_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
     free(agnosticSchema);
 
-    // This isn't strictly accurate, but I think it'll do
-    size_t bufSize = maxOffset + 16;
-
-    value.data_index    = GetPgoInstrumentationResults->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)bufSize);
-    value.dataByteCount = (unsigned)bufSize;
+    value.data_index    = GetPgoInstrumentationResults->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)maxOffset);
+    value.dataByteCount = (unsigned)maxOffset;
     value.result        = (DWORD)result;
 
     GetPgoInstrumentationResults->Add(CastHandle(ftnHnd), value);
@@ -5517,14 +5513,52 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
         Agnostic_PgoInstrumentationSchema* pBuf =
             (Agnostic_PgoInstrumentationSchema*)GetPgoInstrumentationResults->GetBuffer(value.schema_index);
 
+        BYTE* pInstrumentationData = (BYTE*)GetPgoInstrumentationResults->GetBuffer(value.data_index);
+
         printf("\n");
         for (DWORD i = 0; i < value.countSchemaItems; i++)
         {
-            printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
+            printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u Data ",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
+
+            switch((ICorJitInfo::PgoInstrumentationKind)pBuf[i].InstrumentationKind)
+            {
+                case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                    printf("B %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
+                    printf("B %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+                    printf("E %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
+                    printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                    printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
+                    for (unsigned int j = 0; j < pBuf[i].Count; j++)
+                    {
+                        printf("[%u] %016llX ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
+                    }
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
+                    {
+                        // (N)umber, (L)ikelihood, (C)lass
+                        printf("N %u L %u C %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                    }
+                    break;
+                default:
+                    printf("?");
+                    break;
+            }
+
+            printf("}\n");
         }
     }
-    printf("} data_index-%u [TODO, dump actual count data]", value.data_index);
+    printf("} data_index-%u", value.data_index);
 }
 HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
                                                        ICorJitInfo::PgoInstrumentationSchema** pSchema,
@@ -5556,48 +5590,6 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
 
     HRESULT result = (HRESULT)tempValue.result;
     return result;
-}
-
-void MethodContext::recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE result, UINT32* pLikelihood, UINT32* pNumberOfClasses)
-{
-    if (GetLikelyClass == nullptr)
-        GetLikelyClass = new LightWeightMap<Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult>();
-
-    Agnostic_GetLikelyClass key;
-    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
-
-    key.ftnHnd = CastHandle(ftnHnd);
-    key.baseHnd = CastHandle(baseHnd);
-    key.ilOffset = (DWORD) ilOffset;
-
-    Agnostic_GetLikelyClassResult value;
-    ZeroMemory(&value, sizeof(Agnostic_GetLikelyClassResult));
-    value.classHnd = CastHandle(result);
-    value.likelihood = *pLikelihood;
-    value.numberOfClasses = *pNumberOfClasses;
-
-    GetLikelyClass->Add(key, value);
-    DEBUG_REC(dmpGetLikelyClass(key, value));
-}
-void MethodContext::dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value)
-{
-    printf("GetLikelyClass key ftn-%016llX base-%016llX il-%u, class-%016llX likelihood-%u numberOfClasses-%u",
-        key.ftnHnd, key.baseHnd, key.ilOffset, value.classHnd, value.likelihood, value.numberOfClasses);
-}
-CORINFO_CLASS_HANDLE MethodContext::repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
-{
-    Agnostic_GetLikelyClass key;
-    ZeroMemory(&key, sizeof(Agnostic_GetLikelyClass));
-    key.ftnHnd = CastHandle(ftnHnd);
-    key.baseHnd = CastHandle(baseHnd);
-    key.ilOffset = (DWORD) ilOffset;
-
-    Agnostic_GetLikelyClassResult value = GetLikelyClass->Get(key);
-    DEBUG_REP(dmpGetLikelyClass(key, value));
-
-    *pLikelihood = value.likelihood;
-    *pNumberOfClasses = value.numberOfClasses;
-    return (CORINFO_CLASS_HANDLE) value.classHnd;
 }
 
 void MethodContext::recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result)
@@ -6718,28 +6710,40 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
 
         size_t minOffset = (size_t) ~0;
         size_t maxOffset = 0;
-        uint32_t totalCount = 0;
+        uint64_t totalCount = 0;
 
         if (SUCCEEDED(pgoHR))
         {
-            // Locate the range of the counter data.
+            // Locate the range of the data.
             //
             for (UINT32 i = 0; i < schemaCount; i++)
             {
-                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
-                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+                size_t start = schema[i].Offset;
+                size_t end;
+                switch (schema[i].InstrumentationKind)
                 {
-                    if (schema[i].Offset < minOffset)
-                    {
-                        minOffset = schema[i].Offset;
-                    }
+                    case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                    case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
+                        totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                        end = start + 4;
+                        break;
+                    case ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount:
+                    case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
+                        totalCount += *(uint64_t*)(schemaData + schema[i].Offset);
+                        end = start + 8;
+                        break;
+                    default:
+                        continue;
+                }
 
-                    if (schema[i].Offset > maxOffset)
-                    {
-                        maxOffset = schema[i].Offset;
-                    }
+                if (start < minOffset)
+                {
+                    minOffset = start;
+                }
 
-                    totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                if (end > maxOffset)
+                {
+                    maxOffset = end;
                 }
             }
 
@@ -6748,10 +6752,10 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
             if (minOffset < maxOffset)
             {
                 char pgoHash[MD5_HASH_BUFFER_SIZE];
-                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset + sizeof(int) - minOffset), pgoHash,
+                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset - minOffset), pgoHash,
                                     MD5_HASH_BUFFER_SIZE);
 
-                t = sprintf_s(buff, len, " Pgo Counters %u, Count %u, Hash: %s", schemaCount, totalCount, pgoHash);
+                t = sprintf_s(buff, len, " Pgo Counters %u, Count %llu, Hash: %s", schemaCount, totalCount, pgoHash);
                 buff += t;
                 len -= t;
             }
@@ -6790,10 +6794,11 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
+    hasLikelyClass = false;
 
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
@@ -6813,9 +6818,11 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
             for (UINT32 i = 0; i < schemaCount; i++)
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
+                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
                 hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+                hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
-                if (hasEdgeProfile && hasClassProfile)
+                if (hasEdgeProfile && hasClassProfile && hasLikelyClass)
                 {
                     break;
                 }

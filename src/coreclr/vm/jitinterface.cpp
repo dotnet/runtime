@@ -4384,6 +4384,12 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
     case ELEMENT_TYPE_R8:
         result = CORINFO_TYPE_DOUBLE;
         break;
+    case ELEMENT_TYPE_I:
+        result = CORINFO_TYPE_NATIVEINT;
+        break;
+    case ELEMENT_TYPE_U:
+        result = CORINFO_TYPE_NATIVEUINT;
+        break;
 
     default:
         // Error case, we will return CORINFO_TYPE_UNDEF
@@ -9901,21 +9907,21 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorInfoCallConvExtension callConvMaybe;
+            CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
 
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
-            if (hr == S_OK)
+            CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
+            if (callConvLocal == CallConvBuilder::UnsetValue)
             {
-                return callConvMaybe;
+                callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
             }
-            else
-            {
-                return MetaSig::GetDefaultUnmanagedCallingConvention();
-            }
+
+            *pSuppressGCTransition = builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
+            return callConvLocal;
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
             return CorInfoCallConvExtension::C;
@@ -12134,54 +12140,6 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     EE_TO_JIT_TRANSITION();
 
     return hr;
-}
-
-CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
-                     CORINFO_METHOD_HANDLE ftnHnd,
-                     CORINFO_CLASS_HANDLE  baseHnd,
-                     uint32_t              ilOffset,
-                     uint32_t *            pLikelihood,
-                     uint32_t *            pNumberOfClasses
-)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-    *pLikelihood = 0;
-    *pNumberOfClasses = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-#ifdef FEATURE_PGO
-
-    // Query the PGO manager's per call site class profile.
-    //
-    MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    unsigned codeSize = 0;
-    if (pMD->IsDynamicMethod())
-    {
-        unsigned stackSize, ehSize;
-        CorInfoOptions options;
-        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-    }
-    else if (pMD->HasILHeader())
-    {
-        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
-        codeSize = decoder.GetCodeSize();
-    }
-
-    result = PgoManager::getLikelyClass(pMD, codeSize, ilOffset, pLikelihood, pNumberOfClasses);
-
-#endif
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 void CEEJitInfo::allocMem (
@@ -14428,18 +14386,6 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
             )
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_RET();      // only called on derived class.
-}
-
-CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
-                     CORINFO_METHOD_HANDLE ftnHnd,
-                     CORINFO_CLASS_HANDLE  baseHnd,
-                     uint32_t              ilOffset,
-                     uint32_t*             pLikelihood,
-                     uint32_t*             pNumberOfCases
-)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.

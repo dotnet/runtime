@@ -406,7 +406,7 @@
     <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http' scheme is allowed for proxies.</value>
+    <value>Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>
@@ -579,9 +579,6 @@
   <data name="net_http_upgrade_not_enabled_sync" xml:space="preserve">
     <value>HTTP request version upgrade is not enabled for synchronous '{0}'. Do not use '{1}' version policy for synchronous HTTP methods.</value>
   </data>
-  <data name="net_http_requested_version_not_enabled" xml:space="preserve">
-    <value>Requesting HTTP version {0} with version policy {1} while HTTP/{2} is not enabled.</value>
-  </data>
   <data name="net_http_requested_version_cannot_establish" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.</value>
   </data>
@@ -605,6 +602,33 @@
   </data>
   <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
     <value>Synchronous reads are not supported, use ReadAsync instead.</value>
+  </data>
+  <data name="net_socks_auth_failed" xml:space="preserve">
+    <value>Failed to authenticate with the SOCKS server.</value>
+  </data>
+  <data name="net_socks_bad_address_type" xml:space="preserve">
+    <value>SOCKS server returned an unknown address type.</value>
+  </data>
+  <data name="net_socks_connection_failed" xml:space="preserve">
+    <value>SOCKS server failed to connect to the destination.</value>
+  </data>
+  <data name="net_socks_ipv6_notsupported" xml:space="preserve">
+    <value>SOCKS4 does not support IPv6 addresses.</value>
+  </data>
+  <data name="net_socks_no_auth_method" xml:space="preserve">
+    <value>SOCKS server did not return a suitable authentication method.</value>
+  </data>
+  <data name="net_socks_no_ipv4_address" xml:space="preserve">
+    <value>Failed to resolve the destination host to an IPv4 address.</value>
+  </data>
+  <data name="net_socks_unexpected_version" xml:space="preserve">
+    <value>Unexpected SOCKS protocol version. Required {0}, got {1}.</value>
+  </data>
+  <data name="net_socks_string_too_long" xml:space="preserve">
+    <value>Encoding the {0} took more than the maximum of 255 bytes.</value>
+  </data>
+  <data name="net_socks_auth_required" xml:space="preserve">
+    <value>SOCKS server requested username &amp; password authentication.</value>
   </data>
   <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
     <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>

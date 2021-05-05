@@ -32,6 +32,23 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task CanReadAtLeast()
+        {
+            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var reader = PipeReader.Create(stream);
+
+            ReadResult readResult = await reader.ReadAtLeastAsync(10);
+            ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+            Assert.Equal(11, buffer.Length);
+            Assert.True(buffer.IsSingleSegment);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(buffer.ToArray()));
+
+            reader.AdvanceTo(buffer.End);
+            reader.Complete();
+        }
+
+        [Fact]
         public async Task TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything()
         {
             var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));

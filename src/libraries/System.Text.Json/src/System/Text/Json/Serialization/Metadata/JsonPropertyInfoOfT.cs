@@ -124,49 +124,31 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition ignoreCondition,
             JsonNumberHandling numberHandling,
             string propertyName,
-            JsonEncodedText jsonPropertyName)
+            string? jsonPropertyName)
         {
             Options = options;
             ClrName = propertyName;
 
-            byte[] encodedName = jsonPropertyName._utf8Value;
-            string encodedNameAsStr = jsonPropertyName._value;
-
             // Property name settings.
-            if (encodedName != null && options.PropertyNamingPolicy == null && options.Encoder == null)
+            if (jsonPropertyName != null)
             {
-                NameAsString = encodedNameAsStr;
-                NameAsUtf8Bytes = encodedName;
-
-                int nameLength = encodedName.Length;
-                EscapedNameSection = new byte[nameLength + 3];
-                EscapedNameSection[0] = (byte)'"';
-                encodedName.CopyTo(EscapedNameSection, 1);
-                EscapedNameSection[nameLength - 2] = (byte)'"';
-                EscapedNameSection[nameLength - 1] = (byte)':';
+                NameAsString = jsonPropertyName;
+            }
+            else if (options.PropertyNamingPolicy == null)
+            {
+                NameAsString = ClrName;
             }
             else
             {
-                if (encodedNameAsStr != null)
+                NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
+                if (NameAsString == null)
                 {
-                    NameAsString = encodedNameAsStr;
+                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
                 }
-                else if (options.PropertyNamingPolicy == null)
-                {
-                    NameAsString = ClrName;
-                }
-                else
-                {
-                    NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
-                    if (NameAsString == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
-                    }
-                }
-
-                NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
-                EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
             }
+
+            NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
+            EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
 
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
@@ -203,27 +185,25 @@ namespace System.Text.Json.Serialization.Metadata
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
         /// See <seealso cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
         /// </summary>
-        internal static JsonPropertyInfo CreateForSourceGenTypeInfo(
-            Type declaredPropertyType,
+        internal override void InitializeForTypeInfo(
+            Type declaredType,
             JsonTypeInfo runtimeTypeInfo,
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
-            jsonPropertyInfo.DeclaredPropertyType = declaredPropertyType;
-            jsonPropertyInfo.RuntimePropertyType = declaredPropertyType;
-            jsonPropertyInfo.ConverterStrategy = converter.ConverterStrategy;
-            jsonPropertyInfo.RuntimeTypeInfo = runtimeTypeInfo;
-            jsonPropertyInfo.ConverterBase = converter;
-            jsonPropertyInfo.Options = options;
-            jsonPropertyInfo.IsForTypeInfo = true;
-            jsonPropertyInfo.HasGetter = true;
-            jsonPropertyInfo.HasSetter = true;
+            DeclaredPropertyType = declaredType;
+            RuntimePropertyType = declaredType;
+            ConverterStrategy = converter.ConverterStrategy;
+            RuntimeTypeInfo = runtimeTypeInfo;
+            ConverterBase = converter;
+            Options = options;
+            IsForTypeInfo = true;
+            HasGetter = true;
+            HasSetter = true;
             // TODO (perf): can we pre-compute some of these values during source gen?
-            jsonPropertyInfo._converterIsExternalAndPolymorphic = !converter.IsInternalConverter && declaredPropertyType != converter.TypeToConvert;
-            jsonPropertyInfo.PropertyTypeCanBeNull = declaredPropertyType.CanBeNull();
-            jsonPropertyInfo._propertyTypeEqualsTypeToConvert = typeof(T) == declaredPropertyType;
-            return jsonPropertyInfo;
+            _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && declaredType != converter.TypeToConvert;
+            PropertyTypeCanBeNull = declaredType.CanBeNull();
+            _propertyTypeEqualsTypeToConvert = typeof(T) == declaredType;
         }
 
         internal override JsonConverter ConverterBase

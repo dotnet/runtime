@@ -1535,7 +1535,6 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF     _cultureInfo;
     OBJECTREF     _codeBase;
     OBJECTREF     _version;
-    OBJECTREF     _strongNameKeyPair;
     DWORD         _hashAlgorithm;
     DWORD         _versionCompatibility;
     DWORD         _flags;
@@ -1548,7 +1547,6 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF GetSimpleName() { LIMITED_METHOD_CONTRACT; return _name; }
     U1ARRAYREF GetPublicKey() { LIMITED_METHOD_CONTRACT; return _publicKey; }
     U1ARRAYREF GetPublicKeyToken() { LIMITED_METHOD_CONTRACT; return _publicKeyToken; }
-    OBJECTREF GetStrongNameKeyPair() { LIMITED_METHOD_CONTRACT; return _strongNameKeyPair; }
     OBJECTREF GetCultureInfo() { LIMITED_METHOD_CONTRACT; return _cultureInfo; }
     OBJECTREF GetAssemblyCodeBase() { LIMITED_METHOD_CONTRACT; return _codeBase; }
     OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return _version; }

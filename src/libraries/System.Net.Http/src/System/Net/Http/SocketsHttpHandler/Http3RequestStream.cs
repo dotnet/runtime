@@ -269,7 +269,7 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
             catch (Http3ConnectionException ex)
@@ -312,7 +312,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Expected HEADERS as first response frame; recieved {frameType}.");
+                        Trace($"Expected HEADERS as first response frame; received {frameType}.");
                     }
                     throw new HttpRequestException(SR.net_http_invalid_response);
                 }

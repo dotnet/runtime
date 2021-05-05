@@ -98,7 +98,6 @@ namespace System.Buffers.Tests
         [OuterLoop]
         public void GetMemory_ExceedMaximumBufferSize()
         {
-            const int MaxArrayLength = 0X7FEFFFFF;
             int initialCapacity = int.MaxValue / 2 + 1;
 
             try
@@ -111,8 +110,8 @@ namespace System.Buffers.Tests
                 memory = output.GetMemory(1);
 
                 // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
-                // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
-                Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
+                // between 1GB and 2GB. The current implementation maxes out the buffer size to Array.MaxLength.
+                Assert.Equal(Array.MaxLength - initialCapacity, memory.Length);
                 Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
             }
             catch (OutOfMemoryException)

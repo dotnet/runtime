@@ -710,11 +710,12 @@ namespace Microsoft.Extensions.Hosting.Internal
             var wasStoppingCalled = false;
             lifetime.ApplicationStopping.Register(() =>
             {
-                otherTcs.SetResult(true);
                 wasStoppingCalled = true;
+                otherTcs.SetResult(true);
             });
 
-            await host.StartAsync();
+            // Ensure all completions have been signaled before continuing
+            await Task.WhenAll(host.StartAsync(), throwingTcs.Task, otherTcs.Task);
 
             Assert.True(wasStartedCalled);
             Assert.True(wasStoppingCalled);
