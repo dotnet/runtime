@@ -2377,8 +2377,6 @@ void CodeGen::genEmitMachineCode()
 
     compiler->unwindReserve();
 
-
-
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
