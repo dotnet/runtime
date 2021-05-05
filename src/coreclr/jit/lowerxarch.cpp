@@ -149,7 +149,7 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
         {
             assert(node->TypeIs(TYP_DOUBLE));
             intCns = static_cast<ssize_t>(*reinterpret_cast<UINT64*>(&dblCns));
-            type = TYP_ULONG;
+            type   = TYP_ULONG;
         }
 #endif
 
