@@ -15,34 +15,34 @@ terminology.
 | BBT | Microsoft internal early version of C/C++ PGO. See https://www.microsoft.com/windows/cse/bit_projects.mspx. |
 | BOTR | Book Of The Runtime. |
 | BCL | Base Class Library. A set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. |
-| CIL | Common Intermediate Language. Equivalent to IL, also equivalent to [MSIL](https://docs.microsoft.com/en-us/dotnet/standard/managed-execution-process#compiling-to-msil). |
+| CIL | Common Intermediate Language. Equivalent to IL, also equivalent to [MSIL](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | CLI | Command Line Interface, or Common Language Infastructure. |
-| CLR | [Common Language Runtime](https://docs.microsoft.com/en-us/dotnet/standard/clr). |
-| COMPlus | An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx). |
+| CLR | [Common Language Runtime](https://docs.microsoft.com/dotnet/standard/clr). |
+| COMPlus | An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/library/windows/desktop/ms685978.aspx). |
 | COR | [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET. |
 | CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/main/src/libraries) |
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
-| EE | [Execution Engine](https://docs.microsoft.com/en-us/dotnet/standard/managed-execution-process#running_code). |
+| EE | [Execution Engine](https://docs.microsoft.com/dotnet/standard/managed-execution-process#running_code). |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
 | IPC | Inter-Process Communication. |
-| IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://docs.microsoft.com/en-us/dotnet/standard/managed-execution-process#compiling-to-msil). |
+| IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
 | LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
-| MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/en-us/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
-| MSIL | [Microsoft Intermediate Language](https://docs.microsoft.com/en-us/dotnet/standard/managed-execution-process#compiling-to-msil).Common Intermediate Language. Equivalent to IL, also equivalent to CIL. |
+| MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
+| MSIL | [Microsoft Intermediate Language](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil).Common Intermediate Language. Equivalent to IL, also equivalent to CIL. |
 | NGen | Native Image Generator. |
 | NYI | Not Yet Implemented. |
 | PAL | [Platform Adaptation Layer](http://archive.oreilly.com/pub/a/dotnet/2002/03/04/rotor.html). Provides an abstraction layer between the runtime and the operating system. |
 | PE | Portable Executable. |
 | PGO | Profile Guided Optimization - see [details](https://blogs.msdn.microsoft.com/vcblog/2008/11/12/pogo/). |
 | POGO | Profile Guided Optimization - see [details](https://blogs.msdn.microsoft.com/vcblog/2008/11/12/pogo/). |
-| ProjectN | Codename for the first version of [.NET Native for UWP](https://msdn.microsoft.com/en-us/vstudio/dotnetnative.aspx). |
+| ProjectN | Codename for the first version of [.NET Native for UWP](https://msdn.microsoft.com/vstudio/dotnetnative.aspx). |
 | R2R | Ready-to-Run. A flavor of native images - command line switch of [crossgen](../workflow/building/coreclr/crossgen.md). |
 | Redhawk | Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/). |
-| SDK | Software Development Kit. The [.NET SDK](https://docs.microsoft.com/en-us/dotnet/core/sdk) contains the .NET CLI, .NET libraries and runtime, and the dotnet driver. |
+| SDK | Software Development Kit. The [.NET SDK](https://docs.microsoft.com/dotnet/core/sdk) contains the .NET CLI, .NET libraries and runtime, and the dotnet driver. |
 | SEH | [Structured Exception Handling](https://docs.microsoft.com/windows/win32/debug/structured-exception-handling). Unified mechanism for handling hardware and software exceptions on Windows. |
-| SOS | [Son of Strike](https://docs.microsoft.com/en-us/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
+| SOS | [Son of Strike](https://docs.microsoft.com/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
 | SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/main/src/coreclr/ToolBox/superpmi/readme.txt). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
 | TFM | [Target Framework Moniker](https://docs.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |
