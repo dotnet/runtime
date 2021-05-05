@@ -71,15 +71,13 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public DataColumn? GetDataColumnBySchemaAction(DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
+        public DataColumn? GetDataColumnBySchemaAction(DataTable dataTable, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? dataType, MissingSchemaAction schemaAction)
         {
             return GetDataColumnBySchemaAction(SourceColumn, DataSetColumn, dataTable, dataType, schemaAction);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public static DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
+        public static DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? dataType, MissingSchemaAction schemaAction)
         {
             if (null == dataTable)
             {
@@ -114,8 +112,7 @@ namespace System.Data.Common
             return CreateDataColumnBySchemaAction(sourceColumn, dataSetColumn, dataTable, dataType, schemaAction);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal static DataColumn? CreateDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
+        internal static DataColumn? CreateDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? dataType, MissingSchemaAction schemaAction)
         {
             Debug.Assert(dataTable != null, "Should not call with a null DataTable");
             if (string.IsNullOrEmpty(dataSetColumn))

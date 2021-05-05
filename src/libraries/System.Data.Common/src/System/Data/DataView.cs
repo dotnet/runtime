@@ -1248,8 +1248,7 @@ namespace System.Data
             return string.Empty;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+        [RequiresUnreferencedCode("Members of property types might be trimmed if not referenced directly")]
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
             if (_table != null)

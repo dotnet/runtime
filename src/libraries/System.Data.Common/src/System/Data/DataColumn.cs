@@ -96,8 +96,9 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name and data type.
         /// </summary>
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public DataColumn(string? columnName, Type dataType) : this(columnName, dataType, null, MappingType.Element)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Not using expression. `dataType` is marked so that it's safe.")]
+        public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType) : this(columnName, dataType, null, MappingType.Element)
         {
         }
 
@@ -356,7 +357,6 @@ namespace System.Data
         public string ColumnName
         {
             get { return _columnName; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_ColumnName|API> {0}, '{1}'", ObjectID, value);

@@ -282,8 +282,7 @@ namespace System.Data
             return string.Empty;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "We cannot get into unsafe code path without getting a warning first. Constructors are either marked as unsafe or dataSet is null which will end with exception.")]
+        [RequiresUnreferencedCode("Members of property types might be trimmed if not referenced directly")]
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
             DataSet? dataSet = DataSet;

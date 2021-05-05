@@ -7,13 +7,6 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.ColumnTypeConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object,System.Type)</property>
     </attribute>
-    <!--
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.FunctionNode.GetDataType(System.Data.ExpressionNode)</property>
-    </attribute>-->
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2060</argument>

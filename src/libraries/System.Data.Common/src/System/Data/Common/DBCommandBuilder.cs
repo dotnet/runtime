@@ -1392,7 +1392,6 @@ namespace System.Data.Common
             return value;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataColumn? GetDataColumn(string columnName, DataTableMapping tablemapping, DataRow row)
         {
             DataColumn? column = null;

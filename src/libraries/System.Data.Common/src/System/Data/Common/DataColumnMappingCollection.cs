@@ -442,8 +442,7 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
+        public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
             if (null != columnMappings)
             {

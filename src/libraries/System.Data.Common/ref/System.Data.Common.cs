@@ -100,8 +100,7 @@ namespace System.Data
     {
         public DataColumn() { }
         public DataColumn(string? columnName) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public DataColumn(string? columnName, System.Type dataType) { }
+        public DataColumn(string? columnName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type dataType) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataColumn(string? columnName, System.Type dataType, string? expr) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
@@ -122,7 +121,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string ColumnName { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }
+        public string ColumnName { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataSetDateTime.UnspecifiedLocal)]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public System.Data.DataSetDateTime DateTimeMode { get { throw null; } set { } }
@@ -174,17 +173,15 @@ namespace System.Data
         public System.Data.DataColumn? this[string name] { get { throw null; } }
         protected override System.Collections.ArrayList List { get { throw null; } }
         public event System.ComponentModel.CollectionChangeEventHandler? CollectionChanged { add { } remove { } }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn Add() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some column data types.")]
         public void Add(System.Data.DataColumn column) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataColumn Add(string? columnName) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some column data types.")]
         public System.Data.DataColumn Add(string? columnName, System.Type type) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some data types or expressions.")]
         public System.Data.DataColumn Add(string? columnName, System.Type type, string expression) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some column data types.")]
         public void AddRange(System.Data.DataColumn[] columns) { }
         public bool CanRemove(System.Data.DataColumn? column) { throw null; }
         public void Clear() { }
@@ -192,11 +189,11 @@ namespace System.Data
         public void CopyTo(System.Data.DataColumn[] array, int index) { }
         public int IndexOf(System.Data.DataColumn? column) { throw null; }
         public int IndexOf(string? columnName) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some column data types.")]
         public void Remove(System.Data.DataColumn column) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some column data types.")]
         public void Remove(string name) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some column data types.")]
         public void RemoveAt(int index) { }
     }
     public partial class DataException : System.SystemException
@@ -1924,11 +1921,9 @@ namespace System.Data.Common
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string SourceColumn { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public static System.Data.DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public static System.Data.DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -1963,8 +1958,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Data.Common.DataColumnMapping? GetColumnMappingBySchemaAction(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public static System.Data.DataColumn? GetDataColumn(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public static System.Data.DataColumn? GetDataColumn(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int IndexOf(object? value) { throw null; }
         public int IndexOf(string? sourceColumn) { throw null; }
@@ -1996,7 +1990,7 @@ namespace System.Data.Common
         public System.Data.Common.DataColumnMapping? GetColumnMappingBySchemaAction(string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
-        public System.Data.DataColumn? GetDataColumn(string sourceColumn, System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public System.Data.DataColumn? GetDataColumn(string sourceColumn, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public System.Data.DataTable? GetDataTableBySchemaAction(System.Data.DataSet dataSet, System.Data.MissingSchemaAction schemaAction) { throw null; }
