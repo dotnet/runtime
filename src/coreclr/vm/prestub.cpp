@@ -602,6 +602,24 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
         }
     }
 #endif
+
+#ifdef FEATURE_MULTICOREJIT
+    if (pCode != NULL && pConfig->NeedsMulticoreJitNotification())
+    {
+        _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+        _ASSERTE(!pConfig->IsForMulticoreJit());
+
+        MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+        if (mcJitManager.IsRecorderActive())
+        {
+            if (MulticoreJitManager::IsMethodSupported(this))
+            {
+                mcJitManager.RecordMethodLoad(this); // Tell multi-core JIT manager to record method on successful load from R2R
+            }
+        }
+    }
+#endif
+
     return pCode;
 }
 

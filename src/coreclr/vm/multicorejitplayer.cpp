@@ -865,7 +865,7 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
         FALSE); // Don't throw on FileNotFound.
 }
 
-HRESULT MulticoreJitProfilePlayer::HandleNonGenericMethodInfoRecord(unsigned moduleIndex, unsigned token)
+HRESULT MulticoreJitProfilePlayer::HandleNonGenericMethodInfoRecord(unsigned moduleIndex, unsigned token, bool dojit)
 {
     STANDARD_VM_CONTRACT;
 
@@ -891,7 +891,14 @@ HRESULT MulticoreJitProfilePlayer::HandleNonGenericMethodInfoRecord(unsigned mod
             // except it calls GetMethodDescFromMemberDefOrRefOrSpec with strictMetadataChecks=FALSE to allow generic instantiation
             MethodDesc * pMethod = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(pModule, token, NULL, FALSE, FALSE);
 
-            CompileMethodInfoRecord(pModule, pMethod, false);
+            if (dojit)
+            {
+                CompileMethodInfoRecord(pModule, pMethod, false);
+            }
+            else
+            {
+                m_stats.m_nNoJitCount++;
+            }
         }
         else
         {
@@ -911,7 +918,7 @@ HRESULT MulticoreJitProfilePlayer::HandleNonGenericMethodInfoRecord(unsigned mod
     return hr;
 }
 
-HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length)
+HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned moduleIndex, BYTE * signature, unsigned length, bool dojit)
 {
     STANDARD_VM_CONTRACT;
 
@@ -945,7 +952,14 @@ HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned module
             }
             EX_END_CATCH(SwallowAllExceptions);
 
-            CompileMethodInfoRecord(pModule, pMethod, true);
+            if (dojit)
+            {
+                CompileMethodInfoRecord(pModule, pMethod, true);
+            }
+            else
+            {
+                m_stats.m_nNoJitCount++;
+            }
         }
         else
         {
@@ -1017,8 +1031,9 @@ void MulticoreJitProfilePlayer::TraceSummary()
 
     unsigned compiled =   curStorage.GetStored();
 
-    MulticoreJitTrace(("PlayerSummary: %d total: %d no mod, %d filtered out, %d had code, %d other, %d tried, %d compiled, %d returned, %d%% efficiency, %d mod loaded, %d ms delay(%d)",
+    MulticoreJitTrace(("PlayerSummary: %d total, %d no jit: %d no mod, %d filtered out, %d had code, %d other, %d tried, %d compiled, %d returned, %d%% efficiency, %d mod loaded, %d ms delay(%d)",
         m_stats.m_nTotalMethod,
+        m_stats.m_nNoJitCount,
         m_stats.m_nMissingModuleSkip,
         m_stats.m_nFilteredMethods,
         m_stats.m_nHasNativeCode,
@@ -1026,7 +1041,7 @@ void MulticoreJitProfilePlayer::TraceSummary()
         m_stats.m_nTryCompiling,
         compiled,
         returned,
-        (m_stats.m_nTotalMethod == 0) ? 100 : returned * 100 / m_stats.m_nTotalMethod,
+        (m_stats.m_nTotalMethod == 0) ? 100 : returned * 100 / (m_stats.m_nTotalMethod - m_stats.m_nNoJitCount),
         m_nLoadedModuleCount,
         m_stats.m_nTotalDelay,
         m_stats.m_nDelayCount
@@ -1293,12 +1308,13 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 unsigned currcdTyp = curdata1 >> RECORD_TYPE_OFFSET;
                 unsigned curmoduleIndex = curdata1 & MODULE_MASK;
                 unsigned curflags = curdata1 & METHOD_FLAGS_MASK;
+                bool dojit = (curflags & NO_JIT_TAG) == 0;
 
                 if (currcdTyp == MULTICOREJIT_METHOD_RECORD_ID)
                 {
                     unsigned token = * (((const unsigned *) pCurBuf) + 1);
 
-                    hr = HandleNonGenericMethodInfoRecord(curmoduleIndex, token);
+                    hr = HandleNonGenericMethodInfoRecord(curmoduleIndex, token, dojit);
                 }
                 else
                 {
@@ -1306,7 +1322,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
                     unsigned cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
 
-                    hr = HandleGenericMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) + sizeof(unsigned short)), cursignatureLength);
+                    hr = HandleGenericMethodInfoRecord(curmoduleIndex, (BYTE *) (pCurBuf + sizeof(unsigned) + sizeof(unsigned short)), cursignatureLength, dojit);
                 }
 
                 if (SUCCEEDED(hr) && ShouldAbort(false))
