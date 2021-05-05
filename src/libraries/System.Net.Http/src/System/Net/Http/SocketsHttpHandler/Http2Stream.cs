@@ -85,7 +85,7 @@ namespace System.Net.Http
 
             private int _headerBudgetRemaining;
 
-            private const int StreamWindowSize = DefaultInitialWindowSize;
+            private const int StreamWindowSize = DefaultInitialStreamWindowSize;
 
             // See comment on ConnectionWindowThreshold.
             private const int StreamWindowThreshold = StreamWindowSize / WindowUpdateRatio;

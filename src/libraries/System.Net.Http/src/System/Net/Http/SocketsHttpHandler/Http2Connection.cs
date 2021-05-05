@@ -79,8 +79,13 @@ namespace System.Net.Http
 #else
         private const int InitialConnectionBufferSize = 4096;
 #endif
-
-        private const int DefaultInitialWindowSize = 2 * 65535;
+        // According to https://httpwg.org/specs/rfc7540.html#rfc.section.6.9.2:
+        // "The connection flow-control window can only be changed using WINDOW_UPDATE frames."
+        // We need to initialize _connectionWindow with the value 65535, since
+        // higher values may violate the protocol, and lead to overflows,
+        // when the server (or an intermediate proxy) sens a very high connection WINDOW_UPDATE increment.
+        private const int DefaultInitialConnectionWindowSize = 65535;
+        private const int DefaultInitialStreamWindowSize = 4 * 65535;
         private const int WindowUpdateRatio = 8;
 
         // We don't really care about limiting control flow at the connection level.
@@ -130,13 +135,13 @@ namespace System.Net.Http
 
             _httpStreams = new Dictionary<int, Http2Stream>();
 
-            _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
+            _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialConnectionWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
-            _initialWindowSize = DefaultInitialWindowSize;
+            _initialWindowSize = DefaultInitialStreamWindowSize;
 
             _maxConcurrentStreams = InitialMaxConcurrentStreams;
             _pendingWindowUpdate = 0;
@@ -181,7 +186,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
                 // Send SETTINGS frame.  Disable push promise & set initial window size.
-#if false
+#if true
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2*FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
@@ -190,7 +195,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(4);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
                 _outgoingBuffer.Commit(2);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, DefaultInitialWindowSize);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, DefaultInitialStreamWindowSize);
                 _outgoingBuffer.Commit(4);
 #else
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
@@ -202,9 +207,11 @@ namespace System.Net.Http
 #endif
 
                 // Send initial connection-level WINDOW_UPDATE
+                uint windowUpdateAmount = ConnectionWindowSize - DefaultInitialStreamWindowSize;
+                if (NetEventSource.Log.IsEnabled()) Trace($"Initial connection-level WINDOW_UPDATE, windowUpdateAmount={windowUpdateAmount}");
                 FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
-                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, ConnectionWindowSize - DefaultInitialWindowSize);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);

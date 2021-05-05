@@ -37,12 +37,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
-        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, 1);
+        public Task Download11(string hostName) => TestHandler("SocketsHttpHandler HTTP 1.1", hostName, false, 5);
 
         [Theory]
         [InlineData("172.19.78.199")]
         [InlineData("10.194.114.94")]
-        public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 1);
+        public Task Download20(string hostName) => TestHandler("SocketsHttpHandler HTTP 2.0", hostName, true, 5);
 
         private async Task TestHandler(string info, string hostName, bool http2, int lengthMb)
         {
