@@ -2607,7 +2607,7 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName)
+    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2712,7 +2712,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     ReportErrors();
 }
 
-void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Out_ LPCUTF8 *ppLibName, _Out_ LPCUTF8 *ppEntryPointName)
+void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName, _Outptr_opt_ LPCUTF8 *ppEntryPointName)
 {
     CONTRACTL
     {
@@ -4173,6 +4173,13 @@ namespace
 {
     void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_z_ LPCUTF8 libName, _In_z_ LPCUTF8 entryPointName)
     {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(pNMD != NULL);
+        }
+        CONTRACTL_END;
+
         WORD ndirectflags = 0;
         if (pNMD->MethodDesc::IsVarArg())
             ndirectflags |= NDirectMethodDesc::kVarArgs;
