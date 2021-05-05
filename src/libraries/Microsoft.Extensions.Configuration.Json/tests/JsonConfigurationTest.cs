@@ -200,6 +200,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void JsonConfiguration_Throws_On_Missing_Configuration_File()
         {
             var config = new ConfigurationBuilder().AddJsonFile("NotExistingConfig.json", optional: false);

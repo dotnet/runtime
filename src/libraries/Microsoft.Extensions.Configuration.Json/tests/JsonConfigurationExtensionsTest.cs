@@ -25,6 +25,7 @@ namespace Microsoft.Extensions.Configuration.Json
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void AddJsonFile_ThrowsIfFileDoesNotExistAtPath()
         {
             // Arrange
