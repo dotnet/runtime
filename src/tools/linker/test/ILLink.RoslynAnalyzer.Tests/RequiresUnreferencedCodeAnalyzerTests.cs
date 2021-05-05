@@ -29,22 +29,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 			DiagnosticResult[] fixedExpected,
 			int? numberOfIterations = null)
 		{
-			const string rucDef = @"
-#nullable enable
-namespace System.Diagnostics.CodeAnalysis
-{
-	[AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, Inherited = false)]
-	public sealed class RequiresUnreferencedCodeAttribute : Attribute
-	{
-		public RequiresUnreferencedCodeAttribute(string message) { Message = message; }
-		public string Message { get; }
-		public string? Url { get; set; }
-	}
-}
-";
 			var test = new VerifyCS.Test {
-				TestCode = source + rucDef,
-				FixedCode = fixedSource + rucDef,
+				TestCode = source,
+				FixedCode = fixedSource,
+				ReferenceAssemblies = ReferenceAssemblies.Net.Net50,
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (

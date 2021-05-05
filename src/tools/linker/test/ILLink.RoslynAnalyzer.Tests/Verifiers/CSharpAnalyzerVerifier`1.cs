@@ -42,12 +42,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 			SyntaxTree src,
 			(string, string)[]? globalAnalyzerOptions = null)
 		{
+			var mdRef = MetadataReference.CreateFromFile (typeof (Mono.Linker.Tests.Cases.Expectations.Metadata.BaseMetadataAttribute).Assembly.Location);
+
 			var comp = CSharpCompilation.Create (
 				assemblyName: Guid.NewGuid ().ToString ("N"),
 				syntaxTrees: new SyntaxTree[] { src },
-				references: await Task.Run (() => new List<MetadataReference> {
-					MetadataReference.CreateFromFile (typeof (int).Assembly.Location)
-				}),
+				references: (await ReferenceAssemblies.Net.Net50.ResolveAsync (null, default)).Add (mdRef),
 				new CSharpCompilationOptions (OutputKind.DynamicallyLinkedLibrary));
 
 			var analyzerOptions = new AnalyzerOptions (

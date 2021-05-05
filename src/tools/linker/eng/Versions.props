@@ -22,8 +22,8 @@
     <MicrosoftBuildUtilitiesCoreVersion>16.10.0-preview-21112-04</MicrosoftBuildUtilitiesCoreVersion>
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21230.2</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21105.12</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.9.0</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisVersion>3.9.0</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.21203.6</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisVersion>3.10.0-2.21203.6</MicrosoftCodeAnalysisVersion>
     <MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion>1.0.1-beta1.*</MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion>
     <!-- This controls the version of the cecil package, or the version of cecil in the project graph
          when we build the cecil submodule. The reference assembly package will depend on this version of cecil.
