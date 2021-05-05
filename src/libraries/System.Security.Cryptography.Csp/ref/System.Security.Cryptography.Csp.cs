@@ -74,6 +74,7 @@ namespace System.Security.Cryptography
         NoPrompt = 64,
         CreateEphemeralKey = 128,
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DESCryptoServiceProvider : System.Security.Cryptography.DES
     {
