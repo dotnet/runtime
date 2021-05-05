@@ -11,11 +11,9 @@
 
 class CordbRegisterSet : public CordbBaseMono, public ICorDebugRegisterSet
 {
-    uint8_t* m_pCtx;
-    uint32_t m_ctxLen;
-
+    int64_t m_nSp;
 public:
-    CordbRegisterSet(Connection* conn, uint8_t* ctx, uint32_t ctx_len);
+    CordbRegisterSet(Connection* conn, int64_t sp);
     ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());

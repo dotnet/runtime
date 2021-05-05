@@ -19,12 +19,8 @@
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <!--
-      The NETStandard.Library targeting pack uses this patch version, which does not match the
-      runtime's. After publishing a new version of the NETStandard targeting pack in a servicing
-      release, increase this number by one.
-    -->
-    <NETStandardPatchVersion>0</NETStandardPatchVersion>
+    <MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>6.0.0-preview.4.21212.1</MicrosoftNETRuntimeEmscripten2012Nodewinx64Version>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2012Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
@@ -101,7 +97,6 @@
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
     <SystemSecurityCryptographyAlgorithmsVersion>4.3.1</SystemSecurityCryptographyAlgorithmsVersion>
     <SystemSecurityCryptographyCngVersion>4.7.0</SystemSecurityCryptographyCngVersion>
-    <SystemSecurityCryptographyPkcsVersion>4.7.0</SystemSecurityCryptographyPkcsVersion>
     <SystemSecurityCryptographyOpenSslVersion>4.7.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemTextJsonVersion>6.0.0-preview.5.21226.1</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0-preview.5.21226.1</SystemRuntimeCompilerServicesUnsafeVersion>
@@ -161,7 +156,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21226.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.5.21253.3</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.5.21226.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
