@@ -342,7 +342,6 @@ size_t gcHeaderISize; // GC header      size: interruptible methods
 size_t gcPtrMapISize; // GC pointer map size: interruptible methods
 size_t gcHeaderNSize; // GC header      size: non-interruptible methods
 size_t gcPtrMapNSize; // GC pointer map size: non-interruptible methods
-size_t dataSize;
 
 #endif // DISPLAY_SIZES
 
@@ -7441,6 +7440,9 @@ void Compiler::compJitStats()
 
 void Compiler::compCallArgStats()
 {
+    GenTree* args;
+    GenTree* argx;
+    
     unsigned argNum;
 
     unsigned argDWordNum;
@@ -7499,7 +7501,7 @@ void Compiler::compCallArgStats()
                     regArgDeferred++;
                     argTotalObjPtr++;
 
-                    if (call->AsCall()->IsVirtual())
+                    if (call->IsVirtual())
                     {
                         /* virtual function */
                         argVirtualCalls++;
