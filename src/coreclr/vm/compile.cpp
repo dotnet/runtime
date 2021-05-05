@@ -5735,7 +5735,7 @@ void CEEPreloader::GenerateMethodStubs(
         {
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
             PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
+            NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
             pStubMD = NDirect::GetILStubMethodDesc((NDirectMethodDesc*)pMD, &sigInfo, dwNGenStubFlags);
         }
 #ifdef FEATURE_COMINTEROP

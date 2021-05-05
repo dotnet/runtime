@@ -4,7 +4,7 @@
 using System.IO;
 using System.Text.Json.Serialization.Converters;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
     {

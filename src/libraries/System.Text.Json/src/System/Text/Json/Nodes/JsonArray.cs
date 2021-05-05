@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 
-namespace System.Text.Json.Node
+namespace System.Text.Json.Nodes
 {
     /// <summary>
     ///   Represents a mutable JSON array.
