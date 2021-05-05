@@ -7442,7 +7442,7 @@ void Compiler::compCallArgStats()
 {
     GenTree* args;
     GenTree* argx;
-    
+
     unsigned argNum;
 
     unsigned argDWordNum;
