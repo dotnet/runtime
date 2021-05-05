@@ -259,7 +259,7 @@ namespace System.Drawing
                     //
                     if (s_animationThread == null)
                     {
-                        s_animationThread = new Thread(new ThreadStart(AnimateImages50ms));
+                        s_animationThread = new Thread(new ThreadStart(AnimateImages));
                         s_animationThread.Name = nameof(ImageAnimator);
                         s_animationThread.IsBackground = true;
                         s_animationThread.Start();
@@ -379,7 +379,7 @@ namespace System.Drawing
         ///     WARNING: Also, this is the only place where ImageInfo objects (not the contained image object) are modified,
         ///     so no access synchronization is required to modify them.
         /// </summary>
-        private static void AnimateImages50ms()
+        private static void AnimateImages()
         {
             Debug.Assert(s_imageInfoList != null, "Null images list");
             Stopwatch stopwatch = new Stopwatch();
@@ -387,7 +387,7 @@ namespace System.Drawing
 
             while (true)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(40);
 
                 // Because Thread.Sleep is not accurate, capture how much time has actually elapsed during the animation
                 long timeElapsed = stopwatch.ElapsedMilliseconds;
