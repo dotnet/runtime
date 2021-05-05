@@ -100,9 +100,8 @@
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <!-- TODO: Remove condition when all libraries migrated from pkgprojs to NuGet's Pack Task. -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
-    <IsPackable Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">true</IsPackable>
+    <IsPackable Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) and '$(IsSourceProject)' != 'true'">true</IsPackable>
   </PropertyGroup>
-
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
     <!-- We can't generate an apphost without restoring the targeting pack. -->

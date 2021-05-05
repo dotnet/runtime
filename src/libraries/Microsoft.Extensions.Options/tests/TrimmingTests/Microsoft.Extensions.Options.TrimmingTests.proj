@@ -6,7 +6,6 @@
       Microsoft.Extensions.Options;
       Microsoft.Extensions.DependencyInjection
     </AdditionalProjectReferences>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
   
   <ItemGroup>
