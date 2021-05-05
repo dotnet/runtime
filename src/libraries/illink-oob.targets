@@ -11,11 +11,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- add references from the libraries directory -->
-      <_DependencyDirectories Include="$(NetCoreAppCurrentRuntimePath.TrimEnd('\'))" />
-    </ItemGroup>
-
-    <ItemGroup>
 
       <!-- The following is the list of all the OOBs we will ignore for now -->
       <_OOBsToIgnore Include="System.CodeDom" />
@@ -53,18 +48,19 @@
 
     <ItemGroup>
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <_SuppressionsXmls Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
+      <_OOBSuppressionsXmls Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
     </ItemGroup>
 
    <PropertyGroup>
-      <ILLinkArgs Condition="'@(_SuppressionsXmls)' != ''" >$(ILLinkArgs) --link-attributes &quot;@(_SuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</ILLinkArgs>
+      <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(_OOBSuppressionsXmls)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(_OOBSuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
     </PropertyGroup>
 
     <ILLink AssemblyPaths=""
         RootAssemblyNames="@(OOBRootAssemblies)"
         ReferenceAssemblyPaths="@(_FinalReferences)"
         OutputDirectory="$(LibrariesTrimmedOOBArtifactsPath)"
-        ExtraArgs="$(ILLinkArgs)"
+        ExtraArgs="$(OOBILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
   </Target>
