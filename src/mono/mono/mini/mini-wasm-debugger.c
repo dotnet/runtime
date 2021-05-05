@@ -19,6 +19,8 @@
 
 #include <emscripten.h>
 
+#ifndef DISABLE_WASM_DEBUGGER
+
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/debug-mono-ppdb.h"
 
@@ -1937,6 +1939,47 @@ mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData)
 {
 	return 1;
 }
+
+#else // DISABLE_WASM_DEBUGGER
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_offset) { return 0; }
+EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id) { return 0; }
+EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void) { return 0; }
+EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void) { }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_local_vars (int scope, int* pos, int len) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void) { }
+EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind) { return 0; }
+EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state) { return 0; }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_object_properties (int object_id, int gpflags) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int start_idx, int count, int gpflags) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached) { }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value) { return FALSE; }
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_value_on_object (int object_id, const char* name, const char* value) { return FALSE; }
+
+void
+mono_wasm_single_step_hit (void)
+{
+}
+
+void
+mono_wasm_breakpoint_hit (void)
+{
+}
+
+void
+mono_wasm_debugger_init (void)
+{
+}
+
+MONO_API void
+mono_wasm_enable_debugging (int debug_level)
+{
+}
+
+#endif // !DISABLE_WASM_DEBUGGER
 
 #else // HOST_WASM
 

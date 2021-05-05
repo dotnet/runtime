@@ -41,6 +41,7 @@ option (DISABLE_ICALL_TABLES "Enable separate icall table library")
 option (DISABLE_QCALLS "Disable support for QCalls")
 option (DISABLE_PERF_COUNTERS "Disable support for perf counters")
 option (DISABLE_LOG_DEST "Disable MONO_LOG_DEST support")
+option (DISABLE_WASM_DEBUGGER "Disable WebAssembly debugger support")
 option (ENABLE_ICALL_EXPORT "Export icall functions")
 option (ENABLE_ICALL_SYMBOL_MAP "Generate tables which map icall functions to their C symbols")
 option (ENABLE_PERFTRACING "Enables support for eventpipe library")
@@ -63,4 +64,3 @@ set (ENABLE_MINIMAL "" CACHE STRING "Set many DISABLE_ options at once. Comma-se
 set (AOT_TARGET_TRIPLE "" CACHE STRING "Target triple for AOT cross compiler")
 set (AOT_OFFSETS_FILE "" CACHE STRING "Offsets file for AOT cross compiler")
 set (LLVM_PREFIX "" CACHE STRING "Enable LLVM support with LLVM installed at <LLVM_PREFIX>.")
-

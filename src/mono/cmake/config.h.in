@@ -1074,4 +1074,7 @@
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
 #endif
 
+/* Disable WASM debugger support */
+#cmakedefine DISABLE_WASM_DEBUGGER 1
+
 #endif

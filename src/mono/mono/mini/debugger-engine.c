@@ -12,7 +12,7 @@
 #include <config.h>
 #include "mini-runtime.h"
 
-#if !defined (DISABLE_SDB) || defined(TARGET_WASM)
+#if !defined (DISABLE_SDB) || (defined(TARGET_WASM) && !defined(DISABLE_WASM_DEBUGGER))
 
 #include <glib.h>
 #include "seq-points.h"
