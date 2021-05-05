@@ -8753,17 +8753,9 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
     }
     else
     {
-        switch (intrinsic->gtIntrinsicName)
-        {
-            case NI_System_Object_GetType:
-                intrinsic->gtVNPair =
-                    vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP),
-                                        arg0VNPx);
-                break;
-
-            default:
-                unreached();
-        }
+        assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
+        intrinsic->gtVNPair =
+            vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP), arg0VNPx);
     }
 }
 

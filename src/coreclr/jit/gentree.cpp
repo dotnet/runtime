@@ -11734,108 +11734,99 @@ void Compiler::gtDispTree(GenTree*     tree,
         {
             GenTreeIntrinsic* intrinsic = tree->AsIntrinsic();
 
-            if (intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Illegal)
+            assert(intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Illegal);
+            assert(intrinsic->gtIntrinsicName != NI_Illegal);
+
+            switch (intrinsic->gtIntrinsicName)
             {
-                // named intrinsic
-                assert(intrinsic->gtIntrinsicName != NI_Illegal);
+                case NI_System_Math_Abs:
+                    printf(" abs");
+                    break;
+                case NI_System_Math_Acos:
+                    printf(" acos");
+                    break;
+                case NI_System_Math_Acosh:
+                    printf(" acosh");
+                    break;
+                case NI_System_Math_Asin:
+                    printf(" asin");
+                    break;
+                case NI_System_Math_Asinh:
+                    printf(" asinh");
+                    break;
+                case NI_System_Math_Atan:
+                    printf(" atan");
+                    break;
+                case NI_System_Math_Atanh:
+                    printf(" atanh");
+                    break;
+                case NI_System_Math_Atan2:
+                    printf(" atan2");
+                    break;
+                case NI_System_Math_Cbrt:
+                    printf(" cbrt");
+                    break;
+                case NI_System_Math_Ceiling:
+                    printf(" ceiling");
+                    break;
+                case NI_System_Math_Cos:
+                    printf(" cos");
+                    break;
+                case NI_System_Math_Cosh:
+                    printf(" cosh");
+                    break;
+                case NI_System_Math_Exp:
+                    printf(" exp");
+                    break;
+                case NI_System_Math_Floor:
+                    printf(" floor");
+                    break;
+                case NI_System_Math_FMod:
+                    printf(" fmod");
+                    break;
+                case NI_System_Math_FusedMultiplyAdd:
+                    printf(" fma");
+                    break;
+                case NI_System_Math_ILogB:
+                    printf(" ilogb");
+                    break;
+                case NI_System_Math_Log:
+                    printf(" log");
+                    break;
+                case NI_System_Math_Log2:
+                    printf(" log2");
+                    break;
+                case NI_System_Math_Log10:
+                    printf(" log10");
+                    break;
+                case NI_System_Math_Pow:
+                    printf(" pow");
+                    break;
+                case NI_System_Math_Round:
+                    printf(" round");
+                    break;
+                case NI_System_Math_Sin:
+                    printf(" sin");
+                    break;
+                case NI_System_Math_Sinh:
+                    printf(" sinh");
+                    break;
+                case NI_System_Math_Sqrt:
+                    printf(" sqrt");
+                    break;
+                case NI_System_Math_Tan:
+                    printf(" tan");
+                    break;
+                case NI_System_Math_Tanh:
+                    printf(" tanh");
+                    break;
 
-                switch (intrinsic->gtIntrinsicName)
-                {
-                    case NI_System_Math_Abs:
-                        printf(" abs");
-                        break;
-                    case NI_System_Math_Acos:
-                        printf(" acos");
-                        break;
-                    case NI_System_Math_Acosh:
-                        printf(" acosh");
-                        break;
-                    case NI_System_Math_Asin:
-                        printf(" asin");
-                        break;
-                    case NI_System_Math_Asinh:
-                        printf(" asinh");
-                        break;
-                    case NI_System_Math_Atan:
-                        printf(" atan");
-                        break;
-                    case NI_System_Math_Atanh:
-                        printf(" atanh");
-                        break;
-                    case NI_System_Math_Atan2:
-                        printf(" atan2");
-                        break;
-                    case NI_System_Math_Cbrt:
-                        printf(" cbrt");
-                        break;
-                    case NI_System_Math_Ceiling:
-                        printf(" ceiling");
-                        break;
-                    case NI_System_Math_Cos:
-                        printf(" cos");
-                        break;
-                    case NI_System_Math_Cosh:
-                        printf(" cosh");
-                        break;
-                    case NI_System_Math_Exp:
-                        printf(" exp");
-                        break;
-                    case NI_System_Math_Floor:
-                        printf(" floor");
-                        break;
-                    case NI_System_Math_FMod:
-                        printf(" fmod");
-                        break;
-                    case NI_System_Math_FusedMultiplyAdd:
-                        printf(" fma");
-                        break;
-                    case NI_System_Math_ILogB:
-                        printf(" ilogb");
-                        break;
-                    case NI_System_Math_Log:
-                        printf(" log");
-                        break;
-                    case NI_System_Math_Log2:
-                        printf(" log2");
-                        break;
-                    case NI_System_Math_Log10:
-                        printf(" log10");
-                        break;
-                    case NI_System_Math_Pow:
-                        printf(" pow");
-                        break;
-                    case NI_System_Math_Round:
-                        printf(" round");
-                        break;
-                    case NI_System_Math_Sin:
-                        printf(" sin");
-                        break;
-                    case NI_System_Math_Sinh:
-                        printf(" sinh");
-                        break;
-                    case NI_System_Math_Sqrt:
-                        printf(" sqrt");
-                        break;
-                    case NI_System_Math_Tan:
-                        printf(" tan");
-                        break;
-                    case NI_System_Math_Tanh:
-                        printf(" tanh");
-                        break;
+                case NI_System_Object_GetType:
+                    printf(" objGetType");
+                    break;
 
-                    case NI_System_Object_GetType:
-                        printf(" objGetType");
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-            else
-            {
-                // old style intrinsic
-                assert(intrinsic->gtIntrinsicName == NI_Illegal);
-                unreached();
+                default:
+                    unreached();
             }
         }
 
