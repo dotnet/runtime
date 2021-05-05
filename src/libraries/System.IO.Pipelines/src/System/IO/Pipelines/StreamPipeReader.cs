@@ -291,15 +291,15 @@ namespace System.IO.Pipelines
                 var isCanceled = false;
                 try
                 {
-                    while (_bufferedBytes < minimumSize && !_isStreamCompleted)
+                    // This optimization only makes sense if we don't have anything buffered
+                    if (UseZeroByteReads && _bufferedBytes == 0)
                     {
-                        // This optimization only makes sense if we don't have anything buffered
-                        if (UseZeroByteReads && _bufferedBytes == 0)
-                        {
-                            // Wait for data by doing 0 byte read before
-                            await InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
-                        }
+                        // Wait for data by doing 0 byte read before
+                        await InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
+                    }
 
+                    while (_bufferedBytes < minimumSize)
+                    {
                         AllocateReadTail(minimumSize);
 
                         Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
@@ -314,6 +314,7 @@ namespace System.IO.Pipelines
                         if (length == 0)
                         {
                             _isStreamCompleted = true;
+                            break;
                         }
                     }
                 }
@@ -537,7 +538,7 @@ namespace System.IO.Pipelines
             BufferSegment nextSegment = CreateSegmentUnsynchronized();
 
             var bufferSize = minimumSize ?? BufferSize;
-            int maxSize = !_options.IsDefaultSharedMemoryPool ? _options.Pool.MaxBufferSize : - 1;
+            int maxSize = !_options.IsDefaultSharedMemoryPool ? _options.Pool.MaxBufferSize : -1;
 
             if (bufferSize <= maxSize)
             {
