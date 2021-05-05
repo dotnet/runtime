@@ -22,9 +22,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>b7279bb45342c948ab46fea2d08ec17ae2f2a1bf</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenFacades" Version="6.0.0-beta.21253.4">
+    <Dependency Name="Microsoft.DotNet.GenFacades" Version="6.0.0-beta.21222.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>60da6418083a4109443890472eb9e20ed65598c6</Sha>
+      <Sha>b7279bb45342c948ab46fea2d08ec17ae2f2a1bf</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="6.0.0-beta.21222.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
