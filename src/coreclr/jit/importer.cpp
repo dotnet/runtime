@@ -21230,13 +21230,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
     }
 
+// To update info for explicit tail calls and ready to run,
+// we also need to create a resolved token.
+
 #ifdef FEATURE_READYTORUN_COMPILER
-    if (opts.IsReadyToRun())
+    const bool needResolvedToken = isExplicitTailCall || opts.IsReadyToRun();
+#else
+    const bool needResolvedToken = isExplicitTailCall;
+#endif
+
+    if (needResolvedToken)
     {
-        // For R2R, getCallInfo triggers bookkeeping on the zap
-        // side so we need to call it here.
-        //
-        // First, cons up a suitable resolved token.
         CORINFO_RESOLVED_TOKEN derivedResolvedToken = {};
 
         derivedResolvedToken.tokenScope   = info.compCompHnd->getMethodModule(derivedMethod);
@@ -21246,16 +21250,36 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         derivedResolvedToken.hClass       = derivedClass;
         derivedResolvedToken.hMethod      = derivedMethod;
 
-        // Look up the new call info.
-        CORINFO_CALL_INFO derivedCallInfo;
-        eeGetCallInfo(&derivedResolvedToken, nullptr, addVerifyFlag(CORINFO_CALLINFO_ALLOWINSTPARAM), &derivedCallInfo);
+        // If this call is an explicit tail call, update the tail call info.
+        //
+        if (isExplicitTailCall)
+        {
+            TailCallSiteInfo* const tailCallInfo = call->tailCallInfo;
+            assert(tailCallInfo != nullptr);
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(derivedMethod, &sig);
+            tailCallInfo->SetCall(&sig, &derivedResolvedToken);
+        }
 
-        // Update the call.
-        call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
-        call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
-    }
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (opts.IsReadyToRun())
+        {
+            // For R2R, getCallInfo triggers bookkeeping on the zap
+            // side so we need to call it here.
+            //
+            // Look up the new call info.
+            CORINFO_CALL_INFO derivedCallInfo;
+            eeGetCallInfo(&derivedResolvedToken, nullptr, addVerifyFlag(CORINFO_CALLINFO_ALLOWINSTPARAM),
+                          &derivedCallInfo);
+
+            // Update the call.
+            //
+            call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+            call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
+            call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
+        }
 #endif // FEATURE_READYTORUN_COMPILER
+    }
 }
 
 //------------------------------------------------------------------------
