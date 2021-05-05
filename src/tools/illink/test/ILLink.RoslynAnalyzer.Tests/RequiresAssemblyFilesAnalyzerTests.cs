@@ -11,6 +11,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		static Task VerifyRequiresAssemblyFilesAnalyzer (string source, params DiagnosticResult[] expected)
 		{
+			var attributeDefinition = @"
+namespace System.Diagnostics.CodeAnalysis
+{
+#nullable enable
+    [AttributeUsage(AttributeTargets.Constructor |
+                    AttributeTargets.Event |
+                    AttributeTargets.Method |
+                    AttributeTargets.Property,
+                    Inherited = false,
+                    AllowMultiple = false)]
+    public sealed class RequiresAssemblyFilesAttribute : Attribute
+    {
+			public RequiresAssemblyFilesAttribute() { }
+			public string? Message { get; set; }
+			public string? Url { get; set; }
+	}
+}";
+			source = source + attributeDefinition;
 			return VerifyCS.VerifyAnalyzerAsync (source,
 				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer),
 				expected);
