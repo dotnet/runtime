@@ -96,7 +96,7 @@ namespace System.Drawing
         /// </summary>
         public static void UpdateFrames(Image image)
         {
-            if (!s_anyFrameDirty || image == null || s_imageInfoList == null)
+            if (image == null || s_imageInfoList == null)
             {
                 return;
             }
@@ -130,10 +130,10 @@ namespace System.Drawing
                                 imageInfo.UpdateFrame();
                             }
                         }
+
                         foundImage = true;
                     }
-
-                    if (imageInfo.FrameDirty)
+                    else if (imageInfo.FrameDirty)
                     {
                         foundDirty = true;
                     }
@@ -161,6 +161,7 @@ namespace System.Drawing
             {
                 return;
             }
+
             if (t_threadWriterLockWaitCount > 0)
             {
                 // Cannot acquire reader lock at this time, frames update will be missed.
@@ -179,6 +180,7 @@ namespace System.Drawing
                         imageInfo.UpdateFrame();
                     }
                 }
+
                 s_anyFrameDirty = false;
             }
             finally
@@ -257,7 +259,7 @@ namespace System.Drawing
                     //
                     if (s_animationThread == null)
                     {
-                        s_animationThread = new Thread(new ThreadStart(AnimateImages50ms));
+                        s_animationThread = new Thread(new ThreadStart(AnimateImages));
                         s_animationThread.Name = nameof(ImageAnimator);
                         s_animationThread.IsBackground = true;
                         s_animationThread.Start();
@@ -370,7 +372,6 @@ namespace System.Drawing
             }
         }
 
-
         /// <summary>
         ///     Worker thread procedure which implements the main animation loop.
         ///     NOTE: This is the ONLY code the worker thread executes, keeping it in one method helps better understand
@@ -378,13 +379,21 @@ namespace System.Drawing
         ///     WARNING: Also, this is the only place where ImageInfo objects (not the contained image object) are modified,
         ///     so no access synchronization is required to modify them.
         /// </summary>
-        private static void AnimateImages50ms()
+        private static void AnimateImages()
         {
             Debug.Assert(s_imageInfoList != null, "Null images list");
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             while (true)
             {
-                // Acquire reader-lock to access imageInfoList, elemens in the list can be modified w/o needing a writer-lock.
+                Thread.Sleep(40);
+
+                // Because Thread.Sleep is not accurate, capture how much time has actually elapsed during the animation
+                long timeElapsed = stopwatch.ElapsedMilliseconds;
+                stopwatch.Restart();
+
+                // Acquire reader-lock to access imageInfoList, elements in the list can be modified w/o needing a writer-lock.
                 // Observe that we don't need to check if the thread is waiting or a writer lock here since the thread this
                 // method runs in never acquires a writer lock.
                 s_rwImgListLock.AcquireReaderLock(Timeout.Infinite);
@@ -394,24 +403,9 @@ namespace System.Drawing
                     {
                         ImageInfo imageInfo = s_imageInfoList[i];
 
-                        // Frame delay is measured in 1/100ths of a second. This thread
-                        // sleeps for 50 ms = 5/100ths of a second between frame updates,
-                        // so we increase the frame delay count 5/100ths of a second
-                        // at a time.
-                        //
-                        imageInfo.FrameTimer += 5;
-                        if (imageInfo.FrameTimer >= imageInfo.FrameDelay(imageInfo.Frame))
+                        if (imageInfo.Animated)
                         {
-                            imageInfo.FrameTimer = 0;
-
-                            if (imageInfo.Frame + 1 < imageInfo.FrameCount)
-                            {
-                                imageInfo.Frame++;
-                            }
-                            else
-                            {
-                                imageInfo.Frame = 0;
-                            }
+                            imageInfo.AdvanceAnimationBy(timeElapsed);
 
                             if (imageInfo.FrameDirty)
                             {
@@ -424,8 +418,6 @@ namespace System.Drawing
                 {
                     s_rwImgListLock.ReleaseReaderLock();
                 }
-
-                Thread.Sleep(50);
             }
         }
     }
