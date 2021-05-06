@@ -4368,7 +4368,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 	} else {
 		thread->apartment_state = ThreadApartmentState_MTA;
 	}
-	mono_thread_init_apartment_state ();
+	mono_thread_init_platform_state ();
 
 }
 

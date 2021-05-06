@@ -908,7 +908,7 @@ static void
 init_finalizer_thread (void)
 {
 	ERROR_DECL (error);
-	gc_thread = mono_thread_create_internal ((MonoThreadStart)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	gc_thread = mono_thread_create_internal ((MonoThreadStart)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEFER_PLATFORM_INIT, error);
 	mono_error_assert_ok (error);
 }
 

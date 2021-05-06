@@ -533,8 +533,9 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoStackFrame);
 
 typedef enum {
-	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
-	MONO_THREAD_FLAG_NAME_SET = 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_DONT_MANAGE	= 1, // Don't wait for or abort this thread
+	MONO_THREAD_FLAG_NAME_SET		= 2, // Thread name set from managed code
+	MONO_THREAD_FLAG_PLATFORM_INIT	= 4, // The platform has been initialized for this thread
 } MonoThreadFlags;
 
 struct _MonoThreadInfo;

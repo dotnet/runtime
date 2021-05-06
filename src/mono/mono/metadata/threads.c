@@ -1083,6 +1083,7 @@ typedef struct {
 	MonoThreadStart start_func;
 	gpointer start_func_arg;
 	gboolean force_attach;
+	gboolean init_platform;
 	gboolean failed;
 	MonoCoopSem registered;
 } StartInfo;
@@ -1162,7 +1163,8 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	if (internal->apartment_state == ThreadApartmentState_Unknown)
 		internal->apartment_state = ThreadApartmentState_MTA;
 
-	mono_thread_init_apartment_state ();
+	if (start_info->init_platform)
+		mono_thread_init_platform_state ();
 
 	/* Let the thread that called Start() know we're ready */
 	mono_coop_sem_post (&start_info->registered);
@@ -1234,13 +1236,13 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper terminating", __func__, mono_native_thread_id_get ()));
 
-	/* Do any cleanup needed for apartment state. This
+	/* Do any cleanup needed for platform state. This
 	 * cannot be done in mono_thread_detach_internal since
-	 * mono_thread_detach_internal could be  called for a
+	 * mono_thread_detach_internal could be called for a
 	 * thread other than the current thread.
-	 * mono_thread_cleanup_apartment_state cleans up apartment
+	 * mono_thread_cleanup_platform_state cleans up platform state
 	 * for the current thead */
-	mono_thread_cleanup_apartment_state ();
+	mono_thread_cleanup_platform_state ();
 
 	mono_thread_detach_internal (internal);
 
@@ -1350,6 +1352,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	start_info->start_func = start_func;
 	start_info->start_func_arg = start_func_arg;
 	start_info->force_attach = flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE;
+	start_info->init_platform = !(flags & MONO_THREAD_CREATE_FLAGS_DEFER_PLATFORM_INIT);
 	start_info->failed = FALSE;
 	mono_coop_sem_init (&start_info->registered, 0);
 
@@ -3895,11 +3898,11 @@ mono_set_pending_exception_handle (MonoExceptionHandle exc)
 }
 
 void 
-mono_thread_init_apartment_state (void)
+mono_thread_init_platform_state (void)
 {
-#ifdef HOST_WIN32
 	MonoInternalThread* thread = mono_thread_internal_current ();
 
+#ifdef HOST_WIN32
 	/* Positive return value indicates success, either
 	 * S_OK if this is first CoInitialize call, or
 	 * S_FALSE if CoInitialize already called, but with same
@@ -3912,17 +3915,57 @@ mono_thread_init_apartment_state (void)
 		thread->apartment_state = ThreadApartmentState_Unknown;
 	}
 #endif
+
+#if TARGET_OSX || HOST_MACCAT || TARGET_IOS || TARGET_TVOS
+
+	ERROR_DECL (error);
+	MONO_STATIC_POINTER_INIT (MonoMethod, create_autoreleasepool)
+
+		create_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "CreateAutoreleasePool", 0, 0, error);
+		mono_error_assert_ok (error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, create_autoreleasepool)
+
+	if (mono_runtime_get_no_exec ())
+		return;
+
+	mono_runtime_try_invoke_handle (create_autoreleasepool, NULL_HANDLE, NULL, error);
+	mono_error_cleanup (error);
+
+#endif
+
+	thread->flags |= MONO_THREAD_FLAG_PLATFORM_INIT;
 }
 
 void 
-mono_thread_cleanup_apartment_state (void)
+mono_thread_cleanup_platform_state (void)
 {
-#ifdef HOST_WIN32
 	MonoInternalThread* thread = mono_thread_internal_current ();
+	if (!(thread->flags & MONO_THREAD_FLAG_PLATFORM_INIT))
+		return;
 
+#ifdef HOST_WIN32
 	if (thread && thread->apartment_state != ThreadApartmentState_Unknown) {
 		CoUninitialize ();
 	}
+#endif
+
+#if TARGET_OSX || HOST_MACCAT || TARGET_IOS || TARGET_TVOS
+
+	ERROR_DECL (error);
+	MONO_STATIC_POINTER_INIT (MonoMethod, drain_autoreleasepool)
+
+		drain_autoreleasepool = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "DrainAutoreleasePool", 0, 0, error);
+		mono_error_assert_ok (error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, drain_autoreleasepool)
+
+	if (mono_runtime_get_no_exec ())
+		return;
+
+	mono_runtime_try_invoke_handle (drain_autoreleasepool, NULL_HANDLE, NULL, error);
+	mono_error_cleanup (error);
+
 #endif
 }
 

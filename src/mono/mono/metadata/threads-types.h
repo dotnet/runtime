@@ -73,11 +73,12 @@ void
 mono_thread_callbacks_init (void);
 
 typedef enum {
-	MONO_THREAD_CREATE_FLAGS_NONE         = 0x0,
-	MONO_THREAD_CREATE_FLAGS_THREADPOOL   = 0x1,
-	MONO_THREAD_CREATE_FLAGS_DEBUGGER     = 0x2,
-	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE = 0x4,
-	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
+	MONO_THREAD_CREATE_FLAGS_NONE					= 0x00,
+	MONO_THREAD_CREATE_FLAGS_THREADPOOL				= 0x01,
+	MONO_THREAD_CREATE_FLAGS_DEBUGGER				= 0x02,
+	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE			= 0x04,
+	MONO_THREAD_CREATE_FLAGS_SMALL_STACK			= 0x08,
+	MONO_THREAD_CREATE_FLAGS_DEFER_PLATFORM_INIT	= 0x10,
 } MonoThreadCreateFlags;
 
 MonoInternalThread*
@@ -213,8 +214,8 @@ gboolean mono_thread_test_state (MonoInternalThread *thread, MonoThreadState tes
 gboolean mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set);
 void mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadState clear, MonoThreadState set);
 
-void mono_thread_init_apartment_state (void);
-void mono_thread_cleanup_apartment_state (void);
+void mono_thread_init_platform_state (void);
+void mono_thread_cleanup_platform_state (void);
 
 void mono_threads_set_shutting_down (void);
 

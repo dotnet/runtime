@@ -246,6 +246,10 @@ namespace System.Threading
 
         [DynamicDependency(nameof(StartCallback))]
         [DynamicDependency(nameof(ThrowThreadStartException))]
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+        [DynamicDependency(nameof(CreateAutoreleasePool))]
+        [DynamicDependency(nameof(DrainAutoreleasePool))]
+#endif
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtimeThread, int stackSize);
 
