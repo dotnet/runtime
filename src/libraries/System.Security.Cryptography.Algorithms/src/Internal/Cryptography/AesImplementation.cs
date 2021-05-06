@@ -8,6 +8,7 @@ namespace Internal.Cryptography
 {
     internal sealed partial class AesImplementation : Aes
     {
+
         public sealed override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);
@@ -41,6 +42,28 @@ namespace Internal.Cryptography
         protected sealed override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+        }
+
+        protected override bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                paddingSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
         }
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)

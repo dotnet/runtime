@@ -56,6 +56,9 @@ namespace Internal.Cryptography
             return buffer;
         }
 
+        public override bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten) =>
+            throw new NotImplementedException();
+
         private int GetCiphertextLength(int plaintextLength)
         {
             Debug.Assert(plaintextLength >= 0);

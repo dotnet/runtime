@@ -17,7 +17,7 @@ namespace Internal.Cryptography
     //
     internal abstract class UniversalCryptoTransform : ICryptoTransform
     {
-        public static ICryptoTransform Create(
+        public static UniversalCryptoTransform Create(
             PaddingMode paddingMode,
             BasicSymmetricCipher cipher,
             bool encrypting)
@@ -107,6 +107,8 @@ namespace Internal.Cryptography
             byte[] output = UncheckedTransformFinalBlock(inputBuffer, inputOffset, inputCount);
             return output;
         }
+
+        public abstract bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten);
 
         protected virtual void Dispose(bool disposing)
         {

@@ -177,6 +177,61 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
+        public override unsafe bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten)
+        {
+            // If we're decrypting and the destination is large enough to hold a padded value
+            // regardless of mode, decrypt directly to the output buffer.
+            if (output.Length >= input.Length)
+            {
+                bytesWritten = BasicSymmetricCipher.TransformFinal(input, output);
+                return true;
+            }
+
+            if (!DepaddingRequired)
+            {
+                // If no padding is going to be removed, we know the buffer is too small and we can bail out.
+                bytesWritten = 0;
+                return false;
+            }
+
+#if NET5_0_OR_GREATER
+                Span<byte> buffer = GC.AllocateUninitializedArray<byte>(input.Length);
+#else
+                Span<byte> buffer = new byte[input.Length];
+#endif
+
+            fixed (byte* pBuffer = buffer)
+            {
+                int written = BasicSymmetricCipher.TransformFinal(input, buffer);
+
+                try
+                {
+                    Span<byte> decrypted = buffer.Slice(0, written);
+                    int unpaddedLength = GetPaddingLength(decrypted); // validates padding
+
+                    if (unpaddedLength == 0)
+                    {
+                        bytesWritten = 0;
+                        return true;
+                    }
+                    if (unpaddedLength > output.Length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    decrypted.Slice(0, unpaddedLength).CopyTo(output);
+                    bytesWritten = unpaddedLength;
+                    return true;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(buffer);
+                    Reset();
+                }
+            }
+        }
+
         private void Reset()
         {
             if (_heldoverCipher != null)
