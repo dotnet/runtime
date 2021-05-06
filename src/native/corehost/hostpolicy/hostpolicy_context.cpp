@@ -75,7 +75,7 @@ namespace
             return SystemResolveDllImport(entrypointName);
         }
 
-        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
+        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Android") == 0)
         {
             return CryptoResolveDllImport(entrypointName);
         }

@@ -46,9 +46,9 @@
     <_pastShimFiles Include="System.Net.Security.Native.so" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.Apple.a" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
-    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.a" />
-    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
-    <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.Android.a" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.Android.dylib" />
+    <_pastShimFiles Include="System.Security.Cryptography.Native.Android.so" />
     <_pastShimFiles Include="clrcompression.dll" />
     <PlatformManifestFileEntry Include="@(_pastShimFiles)" IsNative="true" />
   </ItemGroup>
@@ -91,9 +91,9 @@
     <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
