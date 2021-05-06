@@ -10,6 +10,8 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true' and '$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
+    <!-- API Compat will fail for these since we use a fake System.IO.Pipes to forward to. -->
+    <RunApiCompat Condition="'$(IsPartialFacadeAssembly)' == 'true' and '$(TargetFramework)' != '$(NetCoreAppCurrent)-windows'">false</RunApiCompat>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -30,30 +32,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Runtime" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <Reference Include="System.IO.Pipes" Condition="'$(TargetsWindows)' != 'true' or '$(TargetPlatformIdentifier)' == ''" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <!-- THIS IS THE WORST CODE I'VE WRITTEN IN A WHILE. We need to download the 3.1 microsoft.net.core.app.runtime pack for windows
-         as this library depends on an API only exposed in the System.IO.Pipes runtime assembly.
-         We need to come up with a better solution as this adds 30MB to a user's download and breaks sourcebuild. -->
-    <PackageDownload Include="Microsoft.NETCore.App.Runtime.win-x64" Version="[3.1.14]" />
-    <ReferencePath Include="$(NuGetPackageRoot)microsoft.netcore.app.runtime.win-x64\3.1.14\runtimes\win-x64\lib\netcoreapp3.1\System.IO.Pipes.dll" Condition="'$(TargetsWindows)' == 'true'" />
-
-    <Reference Include="System.Resources.ResourceManager" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)')) == '5.0'">
-    <!-- THIS IS THE WORST CODE I'VE WRITTEN IN A WHILE. We need to download the 5.0 microsoft.net.core.app.runtime pack for windows
-         as this library depends on an API only exposed in the System.IO.Pipes runtime assembly.
-         We need to come up with a better solution as this adds 30MB to a user's download and breaks sourcebuild. -->
-    <PackageDownload Include="Microsoft.NETCore.App.Runtime.win-x64" Version="[5.0.5]" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <ReferencePath Include="$(NuGetPackageRoot)microsoft.netcore.app.runtime.win-x64\5.0.5\runtimes\win-x64\lib\net5.0\System.IO.Pipes.dll" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" SkipUseReferenceAssembly="true" />
+    <!-- Compile against the shipping reference assembly when not targeting Windows. -->
+    <Reference Include="System.IO.Pipes" Condition="'$(TargetsWindows)' != 'true'" />
+    <!-- Compile against the shipping implementation assembly when targeting NetCoreAppCurrent-Windows. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'" SkipUseReferenceAssembly="true" />
+    <!-- Compile against the non-shipping reference assembly when targeting Windows for older .NETCoreApp tfms. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\ref\System.IO.Pipes.csproj" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)-windows' and '$(TargetsWindows)' == 'true'" />
   </ItemGroup>
 </Project>
