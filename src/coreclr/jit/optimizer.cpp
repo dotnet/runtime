@@ -1157,7 +1157,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
 
     optLoopTable[loopInd].lpAsgVars = AllVarSetOps::UninitVal();
 
-    optLoopTable[loopInd].lpFlags = 0;
+    optLoopTable[loopInd].lpFlags = LPFLG_EMPTY;
 
     // We haven't yet recorded any side effects.
     for (MemoryKind memoryKind : allMemoryKinds())

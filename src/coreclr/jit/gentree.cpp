@@ -5530,7 +5530,6 @@ void GenTree::ReplaceOperand(GenTree** useEdge, GenTree* replacement)
 //    pointer to the child so that it can be modified.
 //
 // Arguments:
-
 //    parentChildPointer - A pointer to a GenTree** (yes, that's three
 //                         levels, i.e. GenTree ***), which if non-null,
 //                         will be set to point to the field in the parent
@@ -5562,6 +5561,44 @@ GenTree* GenTree::gtGetParent(GenTree*** parentChildPtrPtr) const
         *parentChildPtrPtr = parentChildPtr;
     }
     return parent;
+}
+
+//-------------------------------------------------------------------------
+// gtRetExprVal - walk back through GT_RET_EXPRs
+//
+// Arguments:
+//    pbbFlags - out-parameter that is set to the flags of the basic block
+//               containing the inlinee return value. The value is 0
+//               for unsuccessful inlines.
+//
+// Returns:
+//    tree representing return value from a successful inline,
+//    or original call for failed or yet to be determined inline.
+//
+// Notes:
+//    Multi-level inlines can form chains of GT_RET_EXPRs.
+//    This method walks back to the root of the chain.
+//
+GenTree* GenTree::gtRetExprVal(BasicBlockFlags* pbbFlags /* = nullptr */)
+{
+    GenTree*        retExprVal = this;
+    BasicBlockFlags bbFlags    = BBF_EMPTY;
+
+    assert(!retExprVal->OperIs(GT_PUTARG_TYPE));
+
+    while (retExprVal->OperIs(GT_RET_EXPR))
+    {
+        const GenTreeRetExpr* retExpr = retExprVal->AsRetExpr();
+        bbFlags                       = retExpr->bbFlags;
+        retExprVal                    = retExpr->gtInlineCandidate;
+    }
+
+    if (pbbFlags != nullptr)
+    {
+        *pbbFlags = bbFlags;
+    }
+
+    return retExprVal;
 }
 
 //------------------------------------------------------------------------------
@@ -6537,7 +6574,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags)
+GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 

@@ -153,6 +153,7 @@ enum TargetHandleType : BYTE
 /*****************************************************************************/
 
 struct BasicBlock;
+enum BasicBlockFlags : unsigned __int64;
 struct InlineCandidateInfo;
 struct GuardedDevirtualizationCandidateInfo;
 struct ClassProfileCandidateInfo;
@@ -1755,7 +1756,7 @@ public:
     inline GenTree* gtCommaAssignVal();
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
+    GenTree* gtRetExprVal(BasicBlockFlags* pbbFlags = nullptr);
 
     inline GenTree* gtSkipPutArgType();
 
@@ -5782,7 +5783,7 @@ struct GenTreeRetExpr : public GenTree
 {
     GenTree* gtInlineCandidate;
 
-    unsigned __int64 bbFlags;
+    BasicBlockFlags bbFlags;
 
     CORINFO_CLASS_HANDLE gtRetClsHnd;
 
@@ -7265,44 +7266,6 @@ inline GenTree* GenTree::gtCommaAssignVal()
     }
 
     return result;
-}
-
-//-------------------------------------------------------------------------
-// gtRetExprVal - walk back through GT_RET_EXPRs
-//
-// Arguments:
-//    pbbFlags - out-parameter that is set to the flags of the basic block
-//               containing the inlinee return value. The value is 0
-//               for unsuccessful inlines.
-//
-// Returns:
-//    tree representing return value from a successful inline,
-//    or original call for failed or yet to be determined inline.
-//
-// Notes:
-//    Multi-level inlines can form chains of GT_RET_EXPRs.
-//    This method walks back to the root of the chain.
-
-inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags /* = nullptr */)
-{
-    GenTree*         retExprVal = this;
-    unsigned __int64 bbFlags    = 0;
-
-    assert(!retExprVal->OperIs(GT_PUTARG_TYPE));
-
-    while (retExprVal->OperIs(GT_RET_EXPR))
-    {
-        const GenTreeRetExpr* retExpr = retExprVal->AsRetExpr();
-        bbFlags                       = retExpr->bbFlags;
-        retExprVal                    = retExpr->gtInlineCandidate;
-    }
-
-    if (pbbFlags != nullptr)
-    {
-        *pbbFlags = bbFlags;
-    }
-
-    return retExprVal;
 }
 
 //-------------------------------------------------------------------------
