@@ -544,3 +544,9 @@ void win32_debugger_log(FILE *stream, const gchar *format, ...);
 #define PRINT_ERROR_MSG(...) g_printerr (__VA_ARGS__)
 #define PRINT_MSG(...) g_print (__VA_ARGS__)
 #endif
+
+int 
+mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
+
+void
+mono_ss_args_destroy (SingleStepArgs *ss_args);

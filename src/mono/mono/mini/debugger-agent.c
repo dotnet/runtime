@@ -301,21 +301,12 @@ typedef struct {
 #define CHECK_ICORDBG(status) \
 	(protocol_version_set && using_icordbg == status)
 
-#ifndef TARGET_WASM
-#define GET_TLS_DATA(thread) \
-	mono_loader_lock(); \
-	tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread); \
-	mono_loader_unlock();
-#else
-#define GET_TLS_DATA(thread) \
-	DebuggerTlsData local_data;\
-	memset(&local_data, 0, sizeof(DebuggerTlsData)); \
-	tls = &local_data;
-#endif
 /*
  * Globals
  */
-
+#ifdef TARGET_WASM
+static DebuggerTlsData debugger_wasm_thread;
+#endif
 static AgentConfig agent_config;
 
 /* 
@@ -397,6 +388,18 @@ static gint32 suspend_count;
 
 /* Whenever to buffer reply messages and send them together */
 static gboolean buffer_replies;
+
+
+#ifndef TARGET_WASM
+#define GET_TLS_DATA(thread) \
+	mono_loader_lock(); \
+	tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread); \
+	mono_loader_unlock();
+#else
+#define GET_TLS_DATA(thread) \
+	tls = &debugger_wasm_thread;
+#endif
+
 
 #define dbg_lock mono_de_lock
 #define dbg_unlock mono_de_unlock
@@ -485,8 +488,6 @@ static void ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force
 static gboolean ensure_jit (DbgEngineStackFrame* the_frame);
 static int ensure_runtime_is_suspended (void);
 static int get_this_async_id (DbgEngineStackFrame *frame);
-static int ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
-static void ss_args_destroy (SingleStepArgs *ss_args);
 static int handle_multiple_ss_requests (void);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
@@ -720,8 +721,8 @@ debugger_agent_init (void)
 	cbs.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method;
 	cbs.create_breakpoint_events = mono_dbg_create_breakpoint_events;
 	cbs.process_breakpoint_events = mono_dbg_process_breakpoint_events;
-	cbs.ss_create_init_args = ss_create_init_args;
-	cbs.ss_args_destroy = ss_args_destroy;
+	cbs.ss_create_init_args = mono_ss_create_init_args;
+	cbs.ss_args_destroy = mono_ss_args_destroy;
 	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
 	mono_de_init (&cbs);
@@ -1601,6 +1602,7 @@ void mono_init_debugger_agent_for_wasm (int log_level_parm)
 		return;
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
+	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
 }
 
 
@@ -2188,6 +2190,14 @@ save_thread_context (MonoContext *ctx)
 	else
 		mono_thread_state_init_from_current (&tls->context);
 }
+
+#ifdef TARGET_WASM
+void
+mono_wasm_save_thread_context (void) 
+{
+	mono_thread_state_init_from_current (&debugger_wasm_thread.context);
+}
+#endif
 
 static MonoCoopMutex suspend_mutex;
 
@@ -3028,7 +3038,9 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 	} else if (tls->context.valid) {
 		mono_walk_stack_with_state (process_frame, &tls->context, opts, &user_data);
 	} else {
-		mono_walk_stack_with_ctx (process_frame, NULL, opts, &user_data);
+		// FIXME:
+		tls->frame_count = 0;
+		return;
 	}
 
 	new_frame_count = g_slist_length (user_data.frames);
@@ -4471,8 +4483,8 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	if (MONO_CONTEXT_GET_IP (ctx) == orig_ip - 1)
 		MONO_CONTEXT_SET_IP (ctx, orig_ip);
 }
-static void
-ss_args_destroy (SingleStepArgs *ss_args)
+void
+mono_ss_args_destroy (SingleStepArgs *ss_args)
 {
 	if (ss_args->frames)
 		free_frames ((StackFrame**)ss_args->frames, ss_args->nframes);
@@ -4497,8 +4509,8 @@ ensure_runtime_is_suspended (void)
 	return ERR_NONE;
 }
 
-static int
-ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
+int
+mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 {
 	MonoSeqPointInfo *info = NULL;
 	gboolean found_sp;
@@ -4508,12 +4520,13 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	gboolean set_ip = FALSE;
 	StackFrame **frames = NULL;
 	int nframes = 0;
-
-	mono_loader_lock ();
-	DebuggerTlsData *tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, ss_req->thread);
-	mono_loader_unlock ();
+	
+	DebuggerTlsData *tls;
+	GET_TLS_DATA(ss_req->thread);
+	
 	g_assert (tls);
 	if (!tls->context.valid) {
+		printf("Received a single step request on a thread with no managed frames.\n");
 		PRINT_DEBUG_MSG (1, "Received a single step request on a thread with no managed frames.\n");
 		return ERR_INVALID_ARGUMENT;
 	}

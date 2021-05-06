@@ -80,8 +80,6 @@ static gboolean debugger_enabled;
 
 static gboolean has_pending_lazy_loaded_assemblies;
 
-static int event_request_id;
-static int current_bp_id;
 static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
@@ -328,36 +326,6 @@ typedef struct {
 	gboolean is_ss; //do I need this?
 } BpEvents;
 
-static void*
-create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
-{
-	PRINT_DEBUG_MSG (1, "ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
-	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len)) {
-		EventRequest *req = NULL;
-		if ((bp_reqs && bp_reqs->len))
-			req = (EventRequest *)g_ptr_array_index (bp_reqs, 0);
-		if ((ss_reqs && ss_reqs->len))
-			req = (EventRequest *)g_ptr_array_index (ss_reqs, 0);
-		current_bp_id = req->id;
-		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
-		evts->is_ss = (ss_reqs && ss_reqs->len);
-		return evts;
-	}
-	return NULL;
-}
-
-static void
-process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offsets)
-{
-	BpEvents *evts = (BpEvents*)_evts;
-	if (evts) {
-		if (evts->is_ss)
-			mono_de_cancel_all_ss ();
-		mono_wasm_fire_bp ();
-		g_free (evts);
-	}
-}
-
 static void
 no_seq_points_found (MonoMethod *method, int offset)
 {
@@ -368,41 +336,6 @@ no_seq_points_found (MonoMethod *method, int offset)
 }
 
 #define DBG_NOT_SUSPENDED 1
-
-static int
-ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
-{
-	PRINT_DEBUG_MSG (1, "ss_create_init_args\n");
-	int dummy = 0;
-	ss_req->start_sp = ss_req->last_sp = &dummy;
-	compute_frames ();
-	memset (ss_args, 0, sizeof (*ss_args));
-
-	// This shouldn't happen - maybe should assert here ?
-	if (frames->len == 0) {
-		PRINT_DEBUG_MSG (1, "SINGLE STEPPING FOUND NO FRAMES");
-		return DBG_NOT_SUSPENDED;
-	}
-
-	DbgEngineStackFrame *frame = (DbgEngineStackFrame*)g_ptr_array_index (frames, 0);
-	ss_req->start_method = ss_args->method = frame->method;
-	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
-	if (!found_sp)
-		no_seq_points_found (frame->method, frame->native_offset);
-	g_assert (found_sp);
-
-	ss_args->frames = (DbgEngineStackFrame**)frames->pdata;
-	ss_args->nframes = frames->len;
-	//XXX do sp
-
-	return DE_ERR_NONE;
-}
-
-static void
-ss_args_destroy (SingleStepArgs *ss_args)
-{
-	//nothing to do	
-}
 
 static int
 handle_multiple_ss_requests (void) {
@@ -430,14 +363,14 @@ mono_wasm_debugger_init (void)
 		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
 		.create_breakpoint_events = mono_dbg_create_breakpoint_events,
 		.process_breakpoint_events = mono_dbg_process_breakpoint_events,
-		.ss_create_init_args = ss_create_init_args,
-		.ss_args_destroy = ss_args_destroy,
+		.ss_create_init_args = mono_ss_create_init_args,
+		.ss_args_destroy = mono_ss_args_destroy,
 		.handle_multiple_ss_requests = handle_multiple_ss_requests,
 	};
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mono_de_init (&cbs);
-	mono_de_set_log_level (10, stdout);
+	mono_de_set_log_level (log_level, stdout);
 
 	mini_debug_options.gen_sdb_seq_points = TRUE;
 	mini_debug_options.mdb_optimizations = TRUE;
@@ -462,7 +395,7 @@ mono_wasm_debugger_init (void)
 	trans.send = receive_debugger_agent_message;
 
 	mono_debugger_agent_register_transport (&trans);
-	mono_init_debugger_agent_for_wasm (10);
+	mono_init_debugger_agent_for_wasm (log_level);
 }
 
 MONO_API void
@@ -543,12 +476,14 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 void
 mono_wasm_single_step_hit (void)
 {
+	mono_wasm_save_thread_context();
 	mono_de_process_single_step (NULL, FALSE);
 }
 
 void
 mono_wasm_breakpoint_hit (void)
 {
+	mono_wasm_save_thread_context();
 	mono_de_process_breakpoint (NULL, FALSE);
 	// mono_wasm_fire_bp ();
 }

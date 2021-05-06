@@ -72,4 +72,7 @@ mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJ
 void
 mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
 
+void
+mono_wasm_save_thread_context (void);
+
 #endif
