@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     // Remove the matching item
                     items.Remove(descriptor);
 
-                    // Remove the first occurence of the descriptor with matching service type
+                    // Remove the first occurrence of the descriptor with matching service type
                     _descriptors.RemoveAt(i);
                     break;
                 }
@@ -191,14 +191,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal void RemoveAll(Type serviceType)
         {
-            _serviceTypes.Remove(serviceType);
-
-            for (int i = _descriptors.Count - 1; i >= 0; i--)
+            if (_serviceTypes.Remove(serviceType))
             {
-                ServiceDescriptor descriptor = _descriptors[i];
-                if (descriptor.ServiceType == serviceType)
+                for (int i = _descriptors.Count - 1; i >= 0; i--)
                 {
-                    _descriptors.RemoveAt(i);
+                    ServiceDescriptor descriptor = _descriptors[i];
+                    if (descriptor.ServiceType == serviceType)
+                    {
+                        _descriptors.RemoveAt(i);
+                    }
                 }
             }
         }
