@@ -342,7 +342,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // Arrange
             var collection = new ServiceCollection();
 
-            AssertExtensions.ThrowsContains<ArgumentException>(() => collection.TryAddEnumerable(descriptor), 
+            AssertExtensions.ThrowsContains<ArgumentException>(() => collection.TryAddEnumerable(descriptor),
                 string.Format(@"Implementation type cannot be '{0}' because it is indistinguishable from other services registered for '{1}'.", implementationType, serviceType));
         }
 
@@ -414,5 +414,91 @@ namespace Microsoft.Extensions.DependencyInjection
             // Assert
             Assert.Equal(new[] { descriptor }, collection);
         }
+
+        [Fact]
+        public void IndexerWorks()
+        {
+            // Arrange
+            var descriptor = new ServiceDescriptor(typeof(IFakeServiceInstance), typeof(FakeService), ServiceLifetime.Transient);
+            var collection = new ServiceCollection
+            {
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient)
+            };
+
+            var existing = collection[1];
+
+            // Act
+            collection[1] = descriptor;
+
+            // Assert
+            Assert.False(collection.Contains(existing));
+            Assert.Same(collection[1], descriptor);
+        }
+
+        [Fact]
+        public void RemoveAtWorks()
+        {
+            // Arrange
+            var descriptor = new ServiceDescriptor(typeof(IFakeServiceInstance), typeof(FakeService), ServiceLifetime.Transient);
+            var collection = new ServiceCollection
+            {
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                descriptor,
+            };
+
+            var existing = collection[1];
+
+            // Act
+            collection.RemoveAt(1);
+
+            // Assert
+            Assert.False(collection.Contains(existing));
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public void InsertAtWorks()
+        {
+            // Arrange
+            var descriptor = new ServiceDescriptor(typeof(IFakeServiceInstance), typeof(FakeService), ServiceLifetime.Transient);
+            var collection = new ServiceCollection
+            {
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient)
+            };
+
+            // Act
+            collection.Insert(0, descriptor);
+
+            // Assert
+            Assert.Same(descriptor, collection[0]);
+            Assert.Equal(0, collection.IndexOf(descriptor));
+        }
+
+        [Fact]
+        public void InsertAtFollowedByReplaceWorks()
+        {
+            // Arrange
+            var aDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(A), ServiceLifetime.Transient);
+            var bDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(B), ServiceLifetime.Transient);
+            var cDescriptor = new ServiceDescriptor(typeof(IFakeService), typeof(C), ServiceLifetime.Transient);
+
+            var collection = new ServiceCollection
+            {
+                bDescriptor
+            };
+
+            // Act
+            collection.Insert(0, aDescriptor);
+            collection.Replace(cDescriptor);
+
+            // Assert
+            Assert.Equal(new[] { bDescriptor, cDescriptor }, collection);
+            Assert.False(collection.Contains(aDescriptor));
+        }
+
+        class A : IFakeService { }
+        class B : IFakeService { }
+        class C : IFakeService { }
     }
 }
