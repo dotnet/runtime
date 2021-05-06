@@ -24,26 +24,22 @@
       <_OOBsToIgnore Include="System.Configuration.ConfigurationManager" />
       <_OOBsToIgnore Include="System.Speech" />
 
-      <_OOBsToTrim Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
+      <_NetCoreAppRuntimeAssemblies Include="$(NetCoreAppCurrentRuntimePath)*.dll" Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;$(NetCoreAppCurrentRuntimePath)*.Native.dll" />
       <_RuntimePackTrimmedAssemblies Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
 
       <!-- Move previous items to FileName so that we can subtract them -->
-      <_OOBsToFileName Include="@(_OOBsToTrim -> '%(FileName)')">
+      <_NetCoreAppRuntimeAssembliesToFileName Include="@(_NetCoreAppRuntimeAssemblies -> '%(FileName)')">
         <OriginalIdentity>%(Identity)</OriginalIdentity>
-      </_OOBsToFileName>
+      </_NetCoreAppRuntimeAssembliesToFileName>
       <_RuntimePackAssembliesToFileName Include="@(_RuntimePackTrimmedAssemblies -> '%(FileName)')">
         <OriginalIdentity>%(Identity)</OriginalIdentity>
       </_RuntimePackAssembliesToFileName>
 
-      <_FinalOOBsFileName Include="@(_OOBsToFileName)" Exclude="@(_RuntimePackAssembliesToFileName);@(_OOBsToIgnore)" />
-      <_FinalOOBReferences Include="@(_OOBsToFileName)" Exclude="@(_FinalOOBsFileName)" />
-      <_FinalOOBs Include="@(_FinalOOBsFileName -> '%(OriginalIdentity)')" />
-      <_FinalReferences Include="@(_FinalOOBReferences -> '%(OriginalIdentity)')" />
-      <_FinalReferences Include="$(SystemPrivateCoreLibPath)" />
-
-      <OOBRootAssemblies Include="@(_FinalOOBs)">
-        <RootMode>library</RootMode>
-      </OOBRootAssemblies>
+      <_OOBsToTrimFileName Include="@(_NetCoreAppRuntimeAssembliesToFileName)" Exclude="@(_RuntimePackAssembliesToFileName);@(_OOBsToIgnore)" />
+      <_OOBReferencesFileName Include="@(_NetCoreAppRuntimeAssembliesToFileName)" Exclude="@(_OOBsToTrimFileName)" />
+      <_OOBsToTrim Include="@(_OOBsToTrimFileName -> '%(OriginalIdentity)')" />
+      <_OOBReferences Include="@(_OOBReferencesFileName -> '%(OriginalIdentity)')" />
+      <_OOBReferences Include="$(SystemPrivateCoreLibPath)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -57,8 +53,8 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths=""
-        RootAssemblyNames="@(OOBRootAssemblies)"
-        ReferenceAssemblyPaths="@(_FinalReferences)"
+        RootAssemblyNames="@(_OOBsToTrim)"
+        ReferenceAssemblyPaths="@(_OOBReferences)"
         OutputDirectory="$(LibrariesTrimmedOOBArtifactsPath)"
         ExtraArgs="$(OOBILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
