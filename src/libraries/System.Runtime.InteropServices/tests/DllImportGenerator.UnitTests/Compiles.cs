@@ -253,14 +253,10 @@ namespace DllImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
         {
-            // SetLastError
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
-
-            // SafeHandle
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
+            yield break;
         }
 
-        [Theory]
+        [Theory(Skip = "No current scenarios to test.")]
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
         public async Task ValidateSnippetsWithMarshalType(string source)
         {
