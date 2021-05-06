@@ -121,7 +121,6 @@ unsigned genLog2(unsigned value);
 unsigned genLog2(unsigned __int64 value);
 
 var_types genActualType(var_types type);
-var_types genSignedType(var_types type);
 
 unsigned ReinterpretHexAsDecimal(unsigned in);
 
@@ -5116,7 +5115,7 @@ public:
         else
         {
             assert(elemTyp != TYP_STRUCT);
-            elemTyp = varTypeUnsignedToSigned(elemTyp);
+            elemTyp = varTypeToSigned(elemTyp);
             return CORINFO_CLASS_HANDLE(size_t(elemTyp) << 1 | 0x1);
         }
     }

@@ -615,28 +615,6 @@ inline var_types genActualType(var_types type)
     return (var_types)genActualTypes[type];
 }
 
-/*****************************************************************************/
-
-inline var_types genSignedType(var_types type)
-{
-    /* Force non-small unsigned type into corresponding signed type */
-    /* Note that we leave the small types alone */
-
-    switch (type)
-    {
-        case TYP_UINT:
-            type = TYP_INT;
-            break;
-        case TYP_ULONG:
-            type = TYP_LONG;
-            break;
-        default:
-            break;
-    }
-
-    return type;
-}
-
 /*****************************************************************************
  *  Can this type be passed as a parameter in a register?
  */
