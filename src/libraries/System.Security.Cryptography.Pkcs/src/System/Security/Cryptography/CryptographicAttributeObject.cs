@@ -34,7 +34,6 @@ namespace System.Security.Cryptography
                         throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(values));
                     }
 
-
                     if (!string.Equals(asn.Oid.Value, oid.Value, StringComparison.Ordinal))
                     {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_WrongOidInAsnCollection, oid.Value, asn.Oid.Value));
