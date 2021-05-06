@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)DataContractSerializerStressTests.cs" />
