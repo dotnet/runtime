@@ -4176,7 +4176,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	log_profiler.startup_time = current_time ();
 }
 
-MONO_API void
+MONO_API_EXPORT void
 mono_profiler_init_log (const char *desc);
 
 void

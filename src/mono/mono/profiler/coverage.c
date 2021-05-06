@@ -1128,7 +1128,7 @@ usage (void)
 	exit (0);
 }
 
-MONO_API void
+MONO_API_EXPORT void
 mono_profiler_init_coverage (const char *desc);
 
 void

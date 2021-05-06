@@ -341,7 +341,7 @@ runtime_initialized (MonoProfiler *profiler)
 		start_helper_thread ();
 }
 
-MONO_API void
+MONO_API_EXPORT void
 mono_profiler_init_aot (const char *desc);
 
 /**
