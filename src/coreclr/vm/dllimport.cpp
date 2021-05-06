@@ -18,6 +18,7 @@
 #include "dllimport.h"
 #include "method.hpp"
 #include "siginfo.hpp"
+#include "callconvbuilder.hpp"
 #include "comdelegate.h"
 #include "ceeload.h"
 #include "mlinfo.h"
@@ -2960,7 +2961,7 @@ void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
-    return bIsVarArg ? CorInfoCallConvExtension::C : MetaSig::GetDefaultUnmanagedCallingConvention();
+    return bIsVarArg ? CorInfoCallConvExtension::C : CallConv::GetDefaultUnmanagedCallingConvention();
 }
 
 void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg)
@@ -2969,7 +2970,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
 
     CallConvBuilder builder;
     UINT errorResID;
-    HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
+    HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
     if (FAILED(hr))
     {
         // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
@@ -3069,7 +3070,7 @@ BOOL NDirect::MarshalingRequired(
     // point name suffix and affects alignment thunk generation on the Mac). If this method returns
     // TRUE, the stack size will be set when building the marshaling IL stub.
     DWORD dwStackSize = 0;
-    CorInfoCallConvExtension callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+    CorInfoCallConvExtension callConv = CallConv::GetDefaultUnmanagedCallingConvention();
 
     if (pMD != NULL)
     {
@@ -3456,7 +3457,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
     {
         _ASSERTE(0 == nlType);
         _ASSERTE(0 == nlFlags);
-        _ASSERTE(MetaSig::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
+        _ASSERTE(CallConv::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
     }
     else
     {
@@ -4082,7 +4083,7 @@ static void CreateNDirectStubAccessMetadata(
 
     if (SF_IsCOMStub(*pdwStubFlags))
     {
-        _ASSERTE(MetaSig::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
+        _ASSERTE(CallConv::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
     }
     else
     {
@@ -4923,7 +4924,7 @@ namespace
             {
                 NDirectMethodDesc *pTargetNMD = (NDirectMethodDesc *)pTargetMD;
 
-                pTargetNMD->SetStackArgumentSize(cbStackArgSize, MetaSig::GetDefaultUnmanagedCallingConvention());
+                pTargetNMD->SetStackArgumentSize(cbStackArgSize, CallConv::GetDefaultUnmanagedCallingConvention());
             }
 #ifdef FEATURE_COMINTEROP
             else
@@ -5079,7 +5080,7 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
                 &sigDesc,
                 (CorNativeLinkType)0,
                 (CorNativeLinkFlags)0,
-                MetaSig::GetDefaultUnmanagedCallingConvention(),
+                CallConv::GetDefaultUnmanagedCallingConvention(),
                 numParamTokens,
                 pParamTokenArray,
                 -1);
@@ -5685,7 +5686,7 @@ void CreateCLRToDispatchCOMStub(
     mdParamDef* pParamTokenArray = NULL;
 
     CreateNDirectStubAccessMetadata(&sigDesc,
-                                    MetaSig::GetDefaultUnmanagedCallingConvention(),
+                                    CallConv::GetDefaultUnmanagedCallingConvention(),
                                     &dwStubFlags,
                                     &iLCIDArg,
                                     &numArgs);
@@ -5700,7 +5701,7 @@ void CreateCLRToDispatchCOMStub(
                             &sigDesc,
                             (CorNativeLinkType)0,
                             (CorNativeLinkFlags)0,
-                            MetaSig::GetDefaultUnmanagedCallingConvention(),
+                            CallConv::GetDefaultUnmanagedCallingConvention(),
                             dwStubFlags | NDIRECTSTUB_FL_COM,
                             pMD,
                             pParamTokenArray,
@@ -5971,14 +5972,14 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         {
             CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
+            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
             unmgdCallConv = builder.GetCurrentCallConv();
             if (unmgdCallConv == CallConvBuilder::UnsetValue)
             {
-                unmgdCallConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+                unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
             }
 
             if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
