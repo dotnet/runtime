@@ -76,15 +76,15 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            // the debugger is working in locale of the debugged application. For example Datetime.ToString()
+            // we want the test to mach it. We are also starting chrome with --lang=en-US
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+
             insp = new Inspector();
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
 
             startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
-
-            // the debugger is working in locale of the debugged application. For example Datetime.ToString()
-            // we want the test to mach it. We are also starting chrome with --lang=en-US
-            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
         }
 
         public virtual async Task InitializeAsync()
