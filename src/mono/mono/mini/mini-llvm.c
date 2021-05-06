@@ -4478,7 +4478,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #ifdef TARGET_WASM
 		if (ainfo && ainfo->storage == LLVMArgVtypeByRef)
 			/* This causes llvm to make a copy of the value which is what we need */
-			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, param_types [ainfo->pindex]);
+			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
 #endif
 	}
 
@@ -11732,7 +11732,7 @@ emit_method_inner (EmitContext *ctx)
 #ifdef TARGET_WASM
 		if (ainfo->storage == LLVMArgVtypeByRef) {
 			/* This causes llvm to make a copy of the value which is what we need */
-			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMTypeOf (LLVMGetParam (method, pindex)));
+			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
 		}
 #endif
 	}
