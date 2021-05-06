@@ -386,7 +386,11 @@ else
 fi
 
 mkdir -p /tmp/out
-$__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="/tmp/out" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v
+xcode_path="$(dirname "$(dirname "$(xcode-select -p)")")"
+simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
+open -a "$simulator_app"
+helix_runner_uid="$(id -u)"
+sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="/tmp/out" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v --targets ios-simulator-64
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully
