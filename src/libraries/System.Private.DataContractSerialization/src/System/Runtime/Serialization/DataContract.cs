@@ -593,6 +593,10 @@ namespace System.Runtime.Serialization
                 {
                     return Globals.TypeOfDateTimeOffsetAdapter;
                 }
+                if (type == Globals.TypeOfMemoryStream)
+                {
+                    return Globals.TypeOfMemoryStreamAdapter;
+                }
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
                 {
                     return Globals.TypeOfKeyValuePairAdapter.MakeGenericType(type.GetGenericArguments());
@@ -608,6 +612,10 @@ namespace System.Runtime.Serialization
                 {
                     return Globals.TypeOfDateTimeOffset;
                 }
+                if (type == Globals.TypeOfMemoryStreamAdapter)
+                {
+                    return Globals.TypeOfMemoryStream;
+                }
                 return type;
             }
             private static RuntimeTypeHandle GetDataContractAdapterTypeHandle(RuntimeTypeHandle typeHandle)
@@ -615,6 +623,10 @@ namespace System.Runtime.Serialization
                 if (Globals.TypeOfDateTimeOffset.TypeHandle.Equals(typeHandle))
                 {
                     return Globals.TypeOfDateTimeOffsetAdapter.TypeHandle;
+                }
+                if (Globals.TypeOfMemoryStream.TypeHandle.Equals(typeHandle))
+                {
+                    return Globals.TypeOfMemoryStreamAdapter.TypeHandle;
                 }
                 return typeHandle;
             }

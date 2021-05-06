@@ -5845,6 +5845,7 @@ var_types GenTreeLclVar::GetFieldTypeByIndex(Compiler* compiler, unsigned idx)
     assert(IsMultiReg());
     LclVarDsc* varDsc      = compiler->lvaGetDesc(GetLclNum());
     LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + idx);
+    assert(fieldVarDsc->TypeGet() != TYP_STRUCT); // Don't expect struct fields.
     return fieldVarDsc->TypeGet();
 }
 

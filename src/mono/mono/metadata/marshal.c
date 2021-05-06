@@ -2504,6 +2504,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		info = mono_wrapper_info_create (mb, virtual_ ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
 		info->d.runtime_invoke.method = method;
 		res = mono_mb_create_and_cache_full (method_cache, method_key, mb, csig, sig->param_count + 16, info, NULL);
+		((MonoMethodWrapper*)res)->mem_manager = m_method_get_mem_manager (method);
 	} else {
 		MonoWrapperSignatureCacheKey *sig_key = g_new0 (MonoWrapperSignatureCacheKey, 1);
 		sig_key->signature = callsig;
@@ -2521,6 +2522,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		if (!res) {
 			MonoMethod *newm;
 			newm = mono_mb_create (mb, csig, sig->param_count + 16, info);
+			((MonoMethodWrapper*)newm)->mem_manager = m_method_get_mem_manager (method);
 
 			mono_marshal_lock ();
 			res = (MonoMethod *)g_hash_table_lookup (sig_cache, sig_key);
@@ -3476,7 +3478,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	MonoImage *image = m_class_get_image (caller_class);
 	g_assert (sig->pinvoke);
 	g_assert (!sig->hasthis && ! sig->explicit_this);
-	g_assert (!sig->is_inflated && !sig->has_type_parameters);
+	g_assert (!sig->has_type_parameters);
 
 #if 0
 	/*

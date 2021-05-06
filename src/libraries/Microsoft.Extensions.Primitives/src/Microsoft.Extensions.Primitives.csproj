@@ -6,6 +6,12 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
+    <PackageDescription>Primitives shared by framework extensions. Commonly used types include:
+
+Commonly Used Types:
+Microsoft.Extensions.Primitives.IChangeToken
+Microsoft.Extensions.Primitives.StringValues
+Microsoft.Extensions.Primitives.StringSegment</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

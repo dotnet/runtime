@@ -193,7 +193,6 @@
   </Target>
 
   <PropertyGroup>
-    <LiveRuntimeIdentifierGraphPath>$(RuntimeIdGraphDefinitionFile)</LiveRuntimeIdentifierGraphPath>
-    <BundledRuntimeIdentifierGraphFile>$(LiveRuntimeIdentifierGraphPath)</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile>$(RuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
 </Project>

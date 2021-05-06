@@ -18,6 +18,7 @@
 #include "dllimport.h"
 #include "method.hpp"
 #include "siginfo.hpp"
+#include "callconvbuilder.hpp"
 #include "comdelegate.h"
 #include "ceeload.h"
 #include "mlinfo.h"
@@ -90,46 +91,30 @@ namespace
     }
 }
 
-StubSigDesc::StubSigDesc(MethodDesc *pMD, PInvokeStaticSigInfo* pSigInfo /*= NULL*/)
+StubSigDesc::StubSigDesc(MethodDesc *pMD)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
+        PRECONDITION(pMD != NULL);
     }
     CONTRACTL_END;
 
     m_pMD = pMD;
     m_pMT = nullptr;
-    if (pSigInfo != NULL)
-    {
-        m_sig           = pSigInfo->GetSignature();
-        m_pModule       = pSigInfo->GetModule();
-    }
-    else
-    {
-        _ASSERTE(pMD != NULL);
-        m_sig           = pMD->GetSignature();
-        m_pModule       = pMD->GetModule();         // Used for token resolution.
-    }
+    m_sig           = pMD->GetSignature();
+    m_pModule       = pMD->GetModule();         // Used for token resolution.
 
-    if (pMD != NULL)
-    {
-        m_tkMethodDef = pMD->GetMemberDef();
-        SigTypeContext::InitTypeContext(pMD, &m_typeContext);
-        m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
-    }
-    else
-    {
-        m_tkMethodDef = mdMethodDefNil;
-        m_pLoaderModule = m_pModule;
-    }
+    m_tkMethodDef = pMD->GetMemberDef();
+    SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+    m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodDesc* pMD, Signature sig, Module* pModule)
+StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -161,7 +146,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, Signature sig, Module* pModule)
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodTable* pMT, Signature sig, Module* pModule)
+StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -193,7 +178,7 @@ StubSigDesc::StubSigDesc(MethodTable* pMT, Signature sig, Module* pModule)
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(std::nullptr_t, Signature sig, Module* pModule)
+StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
 {
     CONTRACTL
     {
@@ -2531,7 +2516,7 @@ namespace
     }
 
     // Convert a CorNativeLinkType into an unambiguous usable value.
-    bool TryRemapLinkType(_In_ CorNativeLinkType value, _Out_ CorNativeLinkType* nlt)
+    HRESULT RemapLinkType(_In_ CorNativeLinkType value, _Out_ CorNativeLinkType* nlt)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(nlt != NULL);
@@ -2556,12 +2541,12 @@ namespace
 #endif
             break;
         default:
-            return false;
+            return E_INVALIDARG;
         }
 
         // Validate we remapped to a usable value.
         _ASSERTE(*nlt == nltAnsi || *nlt == nltUnicode);
-        return true;
+        return S_OK;
     }
 }
 
@@ -2623,7 +2608,7 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName)
+    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2659,9 +2644,9 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
     LONG cData = 0;
     CorPinvokeMap callConv = (CorPinvokeMap)0;
 
-    HRESULT hRESULT = pMT->GetCustomAttribute(
+    hr = pMT->GetCustomAttribute(
         WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
-    IfFailThrow(hRESULT);
+    IfFailThrow(hr);
     if (cData != 0)
     {
         CustomAttributeParser ca(pData, cData);
@@ -2670,6 +2655,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
         args[0].InitEnum(SERIALIZATION_TYPE_I4, (ULONG)m_callConv);
 
         IfFailGo(ParseKnownCaArgs(ca, args, lengthof(args)));
+        callConv = (CorPinvokeMap)(args[0].val.u4 << 8);
 
         enum UnmanagedFunctionPointerNamedArgs
         {
@@ -2688,14 +2674,8 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
 
         IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
 
-        callConv = (CorPinvokeMap)(args[0].val.u4 << 8);
-
         CorNativeLinkType nlt;
-        if (!TryRemapLinkType((CorNativeLinkType)namedArgs[MDA_CharSet].val.u4, &nlt))
-        {
-            hr = E_FAIL;
-            goto ErrExit;
-        }
+        IfFailGo(RemapLinkType((CorNativeLinkType)namedArgs[MDA_CharSet].val.u4, &nlt));
 
         SetCharSet ( nlt );
         SetBestFitMapping (namedArgs[MDA_BestFitMapping].val.u1);
@@ -2704,11 +2684,11 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
             SetLinkFlags ((CorNativeLinkFlags)(nlfLastError | GetLinkFlags()));
     }
 
-ErrExit:
-    if (hr != S_OK)
-        SetError(IDS_EE_NDIRECT_BADNATL);
-
     InitCallConv(GetCallConvValueForPInvokeCallConv(callConv), pMD->IsVarArg());
+
+ErrExit:
+    if (FAILED(hr))
+        SetError(IDS_EE_NDIRECT_BADNATL);
 
     if (throwOnError)
         ReportErrors();
@@ -2727,13 +2707,13 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 
     PreInit(pModule, NULL);
     m_sig = sig;
-    SetIsStatic (!(MetaSig::GetCallingConvention(pModule, sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
+    SetIsStatic(!(MetaSig::GetCallingConvention(sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv(CallConvWinApiSentinel, FALSE);
 
     ReportErrors();
 }
 
-void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LPCUTF8 *ppEntryPointName)
+void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName, _Outptr_opt_ LPCUTF8 *ppEntryPointName)
 {
     CONTRACTL
     {
@@ -2803,7 +2783,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     else if (unmappableMask == pmThrowOnUnmappableCharDisabled)
         SetThrowOnUnmappableChar (FALSE);
 
-    // inkFlags : CorPinvoke -> CorNativeLinkFlags
+    // linkFlags : CorPinvoke -> CorNativeLinkFlags
     if (mappingFlags & pmSupportsLastError)
         SetLinkFlags ((CorNativeLinkFlags)(GetLinkFlags() | nlfLastError));
     if (mappingFlags & pmNoMangle)
@@ -2829,7 +2809,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
             break;
     }
 
-    if (TryRemapLinkType(nlt, &nlt))
+    if (SUCCEEDED(RemapLinkType(nlt, &nlt)))
     {
         SetCharSet(nlt);
     }
@@ -2981,7 +2961,7 @@ void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
-    return bIsVarArg ? CorInfoCallConvExtension::C : MetaSig::GetDefaultUnmanagedCallingConvention();
+    return bIsVarArg ? CorInfoCallConvExtension::C : CallConv::GetDefaultUnmanagedCallingConvention();
 }
 
 void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg)
@@ -2990,7 +2970,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
 
     CallConvBuilder builder;
     UINT errorResID;
-    HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
+    HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &builder, &errorResID);
     if (FAILED(hr))
     {
         // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
@@ -3090,7 +3070,7 @@ BOOL NDirect::MarshalingRequired(
     // point name suffix and affects alignment thunk generation on the Mac). If this method returns
     // TRUE, the stack size will be set when building the marshaling IL stub.
     DWORD dwStackSize = 0;
-    CorInfoCallConvExtension callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+    CorInfoCallConvExtension callConv = CallConv::GetDefaultUnmanagedCallingConvention();
 
     if (pMD != NULL)
     {
@@ -3477,7 +3457,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
     {
         _ASSERTE(0 == nlType);
         _ASSERTE(0 == nlFlags);
-        _ASSERTE(MetaSig::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
+        _ASSERTE(CallConv::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
     }
     else
     {
@@ -4103,7 +4083,7 @@ static void CreateNDirectStubAccessMetadata(
 
     if (SF_IsCOMStub(*pdwStubFlags))
     {
-        _ASSERTE(MetaSig::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
+        _ASSERTE(CallConv::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
     }
     else
     {
@@ -4190,46 +4170,86 @@ static void CreateNDirectStubAccessMetadata(
     }
 }
 
-void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo)
+namespace
 {
+    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_z_ LPCUTF8 libName, _In_z_ LPCUTF8 entryPointName)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(pNMD != NULL);
+        }
+        CONTRACTL_END;
+
+        WORD ndirectflags = 0;
+        if (pNMD->MethodDesc::IsVarArg())
+            ndirectflags |= NDirectMethodDesc::kVarArgs;
+
+        if (sigInfo.GetCharSet() == nltAnsi)
+            ndirectflags |= NDirectMethodDesc::kNativeAnsi;
+
+        CorNativeLinkFlags linkflags = sigInfo.GetLinkFlags();
+        if (linkflags & nlfLastError)
+            ndirectflags |= NDirectMethodDesc::kLastError;
+        if (linkflags & nlfNoMangle)
+            ndirectflags |= NDirectMethodDesc::kNativeNoMangle;
+
+        CorInfoCallConvExtension callConv = sigInfo.GetCallConv();
+        if (callConv == CorInfoCallConvExtension::Stdcall)
+            ndirectflags |= NDirectMethodDesc::kStdCall;
+        if (callConv == CorInfoCallConvExtension::Thiscall)
+            ndirectflags |= NDirectMethodDesc::kThisCall;
+
+        if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(libName, "QCall") == 0))
+        {
+            ndirectflags |= NDirectMethodDesc::kIsQCall;
+        }
+        else
+        {
+            pNMD->ndirect.m_pszLibName.SetValueMaybeNull(libName);
+            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(entryPointName);
+        }
+
+        // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
+        // or you will introduce a race condition.
+        pNMD->InterlockedSetNDirectFlags(ndirectflags);
+    }
+}
+
+void NDirect::PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pNMD));
+    }
+    CONTRACTL_END;
+
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    WORD ndirectflags = 0;
-    if (pNMD->MethodDesc::IsVarArg())
-        ndirectflags |= NDirectMethodDesc::kVarArgs;
+    LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
+    PInvokeStaticSigInfo sigInfo(pNMD, &szLibName, &szEntryPointName);
+    PopulateNDirectMethodDescImpl(pNMD, sigInfo, szLibName, szEntryPointName);
+}
+
+void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pNMD));
+        PRECONDITION(CheckPointer(pSigInfo));
+    }
+    CONTRACTL_END;
+
+    if (pNMD->IsSynchronized())
+        COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
     new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
 
-    if (pSigInfo->GetCharSet() == nltAnsi)
-        ndirectflags |= NDirectMethodDesc::kNativeAnsi;
-
-    CorNativeLinkFlags linkflags = pSigInfo->GetLinkFlags();
-    if (linkflags & nlfLastError)
-        ndirectflags |= NDirectMethodDesc::kLastError;
-    if (linkflags & nlfNoMangle)
-        ndirectflags |= NDirectMethodDesc::kNativeNoMangle;
-
-    CorInfoCallConvExtension callConv = pSigInfo->GetCallConv();
-    if (callConv == CorInfoCallConvExtension::Stdcall)
-        ndirectflags |= NDirectMethodDesc::kStdCall;
-    if (callConv == CorInfoCallConvExtension::Thiscall)
-        ndirectflags |= NDirectMethodDesc::kThisCall;
-
-    if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(szLibName, "QCall") == 0))
-    {
-        ndirectflags |= NDirectMethodDesc::kIsQCall;
-    }
-    else
-    {
-        pNMD->ndirect.m_pszLibName.SetValueMaybeNull(szLibName);
-        pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(szEntryPointName);
-    }
-
-    // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
-    // or you will introduce a race condition.
-    pNMD->InterlockedSetNDirectFlags(ndirectflags);
+    PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName, szEntryPointName);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -4904,7 +4924,7 @@ namespace
             {
                 NDirectMethodDesc *pTargetNMD = (NDirectMethodDesc *)pTargetMD;
 
-                pTargetNMD->SetStackArgumentSize(cbStackArgSize, MetaSig::GetDefaultUnmanagedCallingConvention());
+                pTargetNMD->SetStackArgumentSize(cbStackArgSize, CallConv::GetDefaultUnmanagedCallingConvention());
             }
 #ifdef FEATURE_COMINTEROP
             else
@@ -5044,7 +5064,7 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
     sigBuilder.AppendBlob((const PVOID)(szMetaSig + 1), cbMetaSigSize - 1);
     szMetaSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbMetaSigSize);
 
-    StubSigDesc sigDesc(nullptr, Signature(szMetaSig, cbMetaSigSize), pModule);
+    StubSigDesc sigDesc(Signature(szMetaSig, cbMetaSigSize), pModule);
 
 #ifdef _DEBUG
     sigDesc.m_pDebugName = pFD->GetDebugName();
@@ -5060,7 +5080,7 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
                 &sigDesc,
                 (CorNativeLinkType)0,
                 (CorNativeLinkFlags)0,
-                MetaSig::GetDefaultUnmanagedCallingConvention(),
+                CallConv::GetDefaultUnmanagedCallingConvention(),
                 numParamTokens,
                 pParamTokenArray,
                 -1);
@@ -5199,9 +5219,14 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                          DWORD dwStubFlags,
                          MethodDesc* pMD)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pSigInfo != NULL);
+    }
+    CONTRACTL_END;
 
-    StubSigDesc sigDesc(pMD, pSigInfo);
+    StubSigDesc sigDesc(pMD, pSigInfo->GetSignature(), pSigInfo->GetModule());
 
     return CreateCLRToNativeILStub(&sigDesc,
                                     pSigInfo->GetCharSet(),
@@ -5212,7 +5237,12 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
 
 MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pNMD != NULL);
+    }
+    CONTRACTL_END;
 
     MethodDesc* pStubMD = NULL;
 
@@ -5417,7 +5447,7 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
     if (NULL == *ppStubMD)
     {
         PInvokeStaticSigInfo sigInfo;
-        NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
+        NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
 
         *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
     }
@@ -5656,7 +5686,7 @@ void CreateCLRToDispatchCOMStub(
     mdParamDef* pParamTokenArray = NULL;
 
     CreateNDirectStubAccessMetadata(&sigDesc,
-                                    MetaSig::GetDefaultUnmanagedCallingConvention(),
+                                    CallConv::GetDefaultUnmanagedCallingConvention(),
                                     &dwStubFlags,
                                     &iLCIDArg,
                                     &numArgs);
@@ -5671,7 +5701,7 @@ void CreateCLRToDispatchCOMStub(
                             &sigDesc,
                             (CorNativeLinkType)0,
                             (CorNativeLinkFlags)0,
-                            MetaSig::GetDefaultUnmanagedCallingConvention(),
+                            CallConv::GetDefaultUnmanagedCallingConvention(),
                             dwStubFlags | NDIRECTSTUB_FL_COM,
                             pMD,
                             pParamTokenArray,
@@ -5782,8 +5812,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         {
             // we need the MD to be populated in case we decide to build an intercept
             // stub to wrap the target in InitEarlyBoundNDirectTarget
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pMD, &sigInfo);
+            NDirect::PopulateNDirectMethodDesc(pMD);
         }
 
         pMD->InitEarlyBoundNDirectTarget();
@@ -5805,8 +5834,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
             if (!pMD->IsZapped())
             {
-                PInvokeStaticSigInfo sigInfo;
-                NDirect::PopulateNDirectMethodDesc(pMD, &sigInfo);
+                NDirect::PopulateNDirectMethodDesc(pMD);
             }
             else
             {
@@ -5933,7 +5961,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         dwStubFlags |= NDIRECTSTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
-        BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
+        BYTE callConv = MetaSig::GetCallingConvention(signature);
 
         // Unmanaged calling convention indicates modopt should be read
         if (callConv != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
@@ -5944,14 +5972,14 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         {
             CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
+            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &builder, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
             unmgdCallConv = builder.GetCurrentCallConv();
             if (unmgdCallConv == CallConvBuilder::UnsetValue)
             {
-                unmgdCallConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+                unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
             }
 
             if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))

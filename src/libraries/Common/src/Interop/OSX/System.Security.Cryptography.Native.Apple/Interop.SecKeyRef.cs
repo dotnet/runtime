@@ -16,6 +16,13 @@ internal static partial class Interop
         private const int kErrorSeeError = -2;
         private const int kPlatformNotSupported = -5;
 
+        internal enum PAL_KeyAlgorithm : uint
+        {
+            Unknown = 0,
+            EC = 1,
+            RSA = 2,
+        }
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
 
@@ -82,6 +89,88 @@ internal static partial class Interop
                 return (int)(keySizeInBytes * 8);
             }
         }
+
+        internal static unsafe SafeSecKeyRefHandle CreateDataKey(
+            ReadOnlySpan<byte> keyData,
+            PAL_KeyAlgorithm keyAlgorithm,
+            bool isPublic)
+        {
+            fixed (byte* pKey = keyData)
+            {
+                int result = AppleCryptoNative_SecKeyCreateWithData(
+                    pKey,
+                    keyData.Length,
+                    keyAlgorithm,
+                    isPublic ? 1 : 0,
+                    out SafeSecKeyRefHandle dataKey,
+                    out SafeCFErrorHandle errorHandle);
+
+                using (errorHandle)
+                {
+                    switch (result)
+                    {
+                        case kSuccess:
+                            return dataKey;
+                        case kErrorSeeError:
+                            throw CreateExceptionForCFError(errorHandle);
+                        default:
+                            Debug.Fail($"SecKeyCreateWithData returned {result}");
+                            throw new CryptographicException();
+                    }
+                }
+            }
+        }
+
+        internal static bool TrySecKeyCopyExternalRepresentation(
+            SafeSecKeyRefHandle key,
+            out byte[] externalRepresentation)
+        {
+            const int errSecPassphraseRequired = -25260;
+
+            int result = AppleCryptoNative_SecKeyCopyExternalRepresentation(
+                key,
+                out SafeCFDataHandle data,
+                out SafeCFErrorHandle errorHandle);
+
+            using (errorHandle)
+            using (data)
+            {
+                switch (result)
+                {
+                    case kSuccess:
+                        externalRepresentation = CoreFoundation.CFGetData(data);
+                        return true;
+                    case kErrorSeeError:
+                        if (Interop.CoreFoundation.GetErrorCode(errorHandle) == errSecPassphraseRequired)
+                        {
+                            externalRepresentation = Array.Empty<byte>();
+                            return false;
+                        }
+                        throw CreateExceptionForCFError(errorHandle);
+                    default:
+                        Debug.Fail($"SecKeyCopyExternalRepresentation returned {result}");
+                        throw new CryptographicException();
+                }
+            }
+        }
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static unsafe extern int AppleCryptoNative_SecKeyCreateWithData(
+            byte* pKey,
+            int cbKey,
+            PAL_KeyAlgorithm keyAlgorithm,
+            int isPublic,
+            out SafeSecKeyRefHandle pDataKey,
+            out SafeCFErrorHandle pErrorOut);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static unsafe extern int AppleCryptoNative_SecKeyCopyExternalRepresentation(
+            SafeSecKeyRefHandle key,
+            out SafeCFDataHandle pDataOut,
+            out SafeCFErrorHandle pErrorOut);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeyCopyPublicKey")]
+        internal static unsafe extern SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
     }
 }
 
