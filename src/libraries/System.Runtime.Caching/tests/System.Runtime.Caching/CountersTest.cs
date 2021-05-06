@@ -27,6 +27,7 @@ namespace MonoTests.System.Runtime.Caching
     public class CountersTest
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Wasm is single-threaded, which makes TestEventListener ineffective.")]
         public async void Basic_Counters()
         {
             string cacheName = "Basic_Counters_Test";
@@ -89,7 +90,7 @@ namespace MonoTests.System.Runtime.Caching
 
             // Take the first value since this is an explicit "poll" method. We want to know
             // what the values are when we poll. (Also, 'incrementing' counters like turnover rate
-            // will only return something meaninful in the first position.
+            // will only return something meaninful in the first position.)
             Assert.True(eventCounters.TryGetValue("entries", out double[] entries));
             counters.Entries = (int)entries[0];
             Assert.True(eventCounters.TryGetValue("hits", out double[] hits));
