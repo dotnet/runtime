@@ -10,7 +10,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 |-|-|-|
 | CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
 | DebuggerSupport | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
-| EnableCPlusPlusCLIHostActivation | Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported | Enabling an C++/CLI host to load managed code is disabled when set to false and related functionality can be trimmed. |
+| EnableCPlusPlusCLIHostActivation | Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported | C++/CLI host activation code is disabled when set to false and related functionality can be trimmed. |
 | EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
 | EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding | Insecure UTF-7 encoding is trimmed when set to false |
 | EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
