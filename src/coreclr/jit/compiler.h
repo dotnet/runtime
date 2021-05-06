@@ -124,7 +124,7 @@ var_types genActualType(var_types type);
 var_types genUnsignedType(var_types type);
 var_types genSignedType(var_types type);
 
-unsigned ReinterpretHexAsDecimal(unsigned);
+unsigned ReinterpretHexAsDecimal(unsigned in);
 
 /*****************************************************************************/
 
