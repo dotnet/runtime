@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
                     DnsSuffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(resolverConfig);
                     DnsAddresses = new InternalIPAddressCollection(StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(resolverConfig));
                 }
-                catch (FileNotFoundException)
+                catch (Exception e) when (e is FileNotFoundException || e is UnauthorizedAccessException)
                 {
                 }
             }
