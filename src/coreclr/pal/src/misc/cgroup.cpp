@@ -70,11 +70,10 @@ public:
         }
         else
         {
-            s_mem_stat_n_keys = 4;
-            s_mem_stat_key_names[0] = "inactive_anon ";
-            s_mem_stat_key_names[1] = "active_anon ";
-            s_mem_stat_key_names[2] = "file_dirty ";
-            s_mem_stat_key_names[3] = "unevictable ";
+            s_mem_stat_n_keys = 3;
+            s_mem_stat_key_names[0] = "anon ";
+            s_mem_stat_key_names[1] = "file_dirty ";
+            s_mem_stat_key_names[2] = "unevictable ";
         }
 
         for (size_t i = 0; i < s_mem_stat_n_keys; i++)
@@ -437,7 +436,7 @@ private:
         char* endptr;
 
         *val = 0;
-        while (getline(&line, &lineLen, stat_file) != -1)
+        while (getline(&line, &lineLen, stat_file) != -1 && readValues < s_mem_stat_n_keys)
         {
             for (size_t i = 0; i < s_mem_stat_n_keys; i++)
             {
