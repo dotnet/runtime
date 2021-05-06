@@ -22,7 +22,7 @@ namespace System.IO.Pipes.Tests
         public TestAccountImpersonator()
         {
             string testAccountPassword;
-            using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 var randomBytes = new byte[33];
                 rng.GetBytes(randomBytes);
