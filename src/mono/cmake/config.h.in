@@ -342,6 +342,9 @@
 /* Disable support for .mdb symbol files. */
 #cmakedefine DISABLE_MDB 1
 
+/* Disable support for .pdb files and embedded PDB data. */
+#cmakedefine DISABLE_PPDB 1
+
 /* Disable assertion messages. */
 #cmakedefine DISABLE_ASSERT_MESSAGES 1
 

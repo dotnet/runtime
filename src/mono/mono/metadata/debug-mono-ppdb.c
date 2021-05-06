@@ -29,6 +29,8 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-logger-internals.h>
 
+#ifndef DISABLE_PPDB
+
 #if HOST_WIN32 || HOST_WASM
 #include "../zlib/zlib.h"
 #elif HAVE_SYS_ZLIB
@@ -844,3 +846,64 @@ mono_ppdb_get_sourcelink (MonoDebugHandle *handle)
 	res [blob_len] = '\0';
 	return res;
 }
+
+#else /* !DISABLE_PPDB */
+
+MonoPPDBFile*
+mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
+{
+        return NULL;
+}
+
+void
+mono_ppdb_close (MonoDebugHandle *handle) { }
+
+MonoDebugMethodInfo *
+mono_ppdb_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
+{
+        return NULL;
+}
+
+MonoDebugSourceLocation *
+mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
+{
+        return NULL;
+}
+
+void
+mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
+{
+	g_assert_not_reached ();
+}
+
+MonoDebugLocalsInfo*
+mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
+{
+        return NULL;
+}
+
+MonoDebugMethodAsyncInfo*
+mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo)
+{
+        return NULL;
+}
+
+MonoImage *
+mono_ppdb_get_image (MonoPPDBFile *ppdb)
+{
+        return NULL;
+}
+
+char *
+mono_ppdb_get_sourcelink (MonoDebugHandle *handle)
+{
+        return NULL;
+}
+
+gboolean 
+mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
+{
+        return FALSE;
+}
+
+#endif /* DISABLE_PPDB */
