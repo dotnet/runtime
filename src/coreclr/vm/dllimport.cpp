@@ -2702,7 +2702,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
 
 ErrExit:
     if (FAILED(hr))
-        ReportError(IDS_EE_NDIRECT_BADNATL);
+        ThrowError(IDS_EE_NDIRECT_BADNATL);
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
@@ -2760,7 +2760,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     {
         if (FAILED(pInternalImport->GetModuleRefProps(modref, ppLibName)))
         {
-            ReportError(IDS_CLASSLOAD_BADFORMAT);
+            ThrowError(IDS_CLASSLOAD_BADFORMAT);
         }
     }
 
@@ -2808,7 +2808,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     }
 
     if (FAILED(RemapLinkType(nlt, &nlt)))
-        ReportError(IDS_EE_NDIRECT_BADNATL);
+        ThrowError(IDS_EE_NDIRECT_BADNATL);
 
     SetCharSet(nlt);
 }
@@ -2931,7 +2931,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     if (FAILED(hr))
     {
         // Use an error message specific to P/Invokes or UnmanagedFunction for bad format.
-        ReportError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
+        ThrowError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
 
     CorInfoCallConvExtension sigCallConv = builder.GetCurrentCallConv();
@@ -2941,7 +2941,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     // If no calling convention is provided, then use the default calling convention for the platform.
 
     if (callConv != CallConvWinApiSentinel && sigCallConv != CallConvWinApiSentinel && callConv != sigCallConv)
-        ReportError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
+        ThrowError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
 
     if (callConv == CallConvWinApiSentinel && sigCallConv == CallConvWinApiSentinel)
         m_callConv = GetDefaultCallConv(bIsVarArg);
@@ -2951,23 +2951,23 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
         m_callConv = sigCallConv;
 
     if (bIsVarArg && m_callConv != CorInfoCallConvExtension::C)
-        ReportError(IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV);
+        ThrowError(IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV);
 
     _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
-void PInvokeStaticSigInfo::ReportError(WORD error)
+void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(error != 0);
+        PRECONDITION(errorResourceID != 0);
     }
     CONTRACTL_END;
 
-    COMPlusThrow(kTypeLoadException, error);
+    COMPlusThrow(kTypeLoadException, errorResourceID);
 }
 
 CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD)
@@ -2980,7 +2980,7 @@ CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodD
     }
     CONTRACTL_END;
 
-    // This method explicitly does not check that any calling convention specified through
+    // This method intentionally does not check that any calling convention specified through
     // attributes match that in the signature. We just return once a non-sentinel calling
     // convention is found.
     CorInfoCallConvExtension callConv;
