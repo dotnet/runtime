@@ -322,7 +322,13 @@ namespace System.Text.Json.Serialization
                 ConverterStrategy != ConverterStrategy.Value &&
                 !IsValueType && !IsNull(value))
             {
+                // Custom (user) converters shall not track references
+                //  it is responsibility of the user to break cycles in case there's any
+                //  if we compare against Preserve, objects don't get preserved when a custom converter exists
+                //  given that the custom converter executes prior to the preserve logic.
+                Debug.Assert(IsInternalConverter);
                 Debug.Assert(value != null);
+
                 ReferenceResolver resolver = state.ReferenceResolver;
 
                 // Write null to break reference cycles.
