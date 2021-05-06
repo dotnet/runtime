@@ -387,25 +387,5 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-
-#if FEATURE_NSAUTORELEASEPOOL
-        [UnmanagedCallersOnly]
-        private static void CallDrain(IntPtr p)
-            => Interop.Sys.DrainAutoreleasePool(p);
-
-        internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
-        {
-            drainFunc = IntPtr.Zero;
-            if (!ThreadOSX.EnableAutoreleasePool)
-                return IntPtr.Zero;
-
-            drainFunc = (IntPtr)(delegate* unmanaged<IntPtr, void>)&CallDrain;
-            return Interop.Sys.CreateAutoreleasePool();
-        }
-#else
-        // [TODO] Remove when https://github.com/dotnet/runtime/issues/51991 is fixed.
-        internal static unsafe IntPtr CreateAutoreleasePool(out IntPtr drainFunc)
-            => throw new PlatformNotSupportedException();
-#endif // !FEATURE_NSAUTORELEASEPOOL
     }
 }

@@ -1639,11 +1639,6 @@ Thread::Thread()
     m_pLastSTACtxCookie = NULL;
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_NSAUTORELEASEPOOL)
-    m_autoReleasePool = NULL;
-    m_drainPoolCallback = NULL;
-#endif // defined(FEATURE_NSAUTORELEASEPOOL)
-
     m_fGCSpecial = FALSE;
 
 #ifndef TARGET_UNIX
@@ -2948,11 +2943,14 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         CleanupCOMState();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#if defined(FEATURE_NSAUTORELEASEPOOL)
-        // Drain method for the NSAutoreleasePool instance.
-        if (m_drainPoolCallback && m_autoReleasePool)
-            m_drainPoolCallback(m_autoReleasePool);
-#endif // defined(FEATURE_NSAUTORELEASEPOOL)
+#ifdef FEATURE_NSAUTORELEASEPOOL
+        {
+            GCX_COOP_THREAD_EXISTS(this);
+            PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__DRAINAUTORELEASEPOOL);
+            DECLARE_ARGHOLDER_ARRAY(args, 0);
+            CALL_MANAGED_METHOD_NORET(args);
+        }
+#endif // FEATURE_NSAUTORELEASEPOOL
     }
 
     if (g_fEEShutDown != 0)
@@ -4791,23 +4789,14 @@ void Thread::InitPlatformContext()
     }
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_NSAUTORELEASEPOOL)
-
-    void* pool = NULL;
-    DrainPoolCallback drainLocal = NULL;
+#ifdef FEATURE_NSAUTORELEASEPOOL
     {
         GCX_COOP_THREAD_EXISTS(this);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__CREATEAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(&drainLocal);
-        CALL_MANAGED_METHOD(pool, void*, args);
+        DECLARE_ARGHOLDER_ARRAY(args, 0);
+        CALL_MANAGED_METHOD_NORET(args);
     }
-    // Both are non-null or both are null.
-    _ASSERTE((pool != NULL && drainLocal != NULL) || (pool == NULL && drainLocal == NULL));
-    m_autoReleasePool = pool;
-    m_drainPoolCallback = drainLocal;
-
-#endif // defined(FEATURE_NSAUTORELEASEPOOL)
+#endif // FEATURE_NSAUTORELEASEPOOL
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

@@ -881,9 +881,10 @@ DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
-#if defined(FEATURE_NSAUTORELEASEPOOL)
-DEFINE_METHOD(THREAD,               CREATEAUTORELEASEPOOL,          CreateAutoreleasePool,          SM_RefIntPtr_RetIntPtr)
-#endif // defined(FEATURE_NSAUTORELEASEPOOL)
+#ifdef FEATURE_NSAUTORELEASEPOOL
+DEFINE_METHOD(THREAD,               CREATEAUTORELEASEPOOL,          CreateAutoreleasePool,          SM_RetVoid)
+DEFINE_METHOD(THREAD,               DRAINAUTORELEASEPOOL,           DrainAutoreleasePool,           SM_RetVoid)
+#endif // FEATURE_NSAUTORELEASEPOOL
 
 DEFINE_CLASS(IOCB_HELPER,              Threading,            _IOCompletionCallback)
 DEFINE_METHOD(IOCB_HELPER,             PERFORM_IOCOMPLETION_CALLBACK,        PerformIOCompletionCallback,          SM_UInt_UInt_PtrNativeOverlapped_RetVoid)

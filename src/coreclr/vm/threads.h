@@ -4492,16 +4492,6 @@ public:
     inline void SetLastSTACtxCookie(LPVOID pCtxCookie, BOOL fNAContext);
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_NSAUTORELEASEPOOL)
-private:
-    // The NSAutoreleasePool instance for the thread.
-    void* m_autoReleasePool;
-
-    // Drain method for the NSAutoreleasePool instance.
-    using DrainPoolCallback = void(*)(void*);
-    DrainPoolCallback m_drainPoolCallback;
-#endif // defined(FEATURE_NSAUTORELEASEPOOL)
-
 private:
     // This duplicates the ThreadType_GC bit stored in TLS (t_ThreadType). It exists
     // so that any thread can query whether any other thread is a "GC Special" thread.
