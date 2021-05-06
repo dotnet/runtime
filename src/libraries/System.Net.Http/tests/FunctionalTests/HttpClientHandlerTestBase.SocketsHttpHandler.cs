@@ -33,6 +33,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHttpHandler.QuicImplementationProvider = quicImplementationProvider;
+                socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
             }
 
             return handler;
