@@ -57,7 +57,6 @@ The runtime has many features, so it is useful to categorize them as follows:
     1. Garbage Collection
     2. Memory Safety and Type Safety
     3. Common Intermediate Language to support multiple programming languages
-    4. Just-in-time compiler
 2. **Secondary features** – Features enabled by the fundamental features that may not be required by many useful programs:
     1. Program isolation with AppDomains
     2. Program Security and sandboxing
