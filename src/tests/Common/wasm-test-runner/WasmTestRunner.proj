@@ -8,7 +8,7 @@
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(TestBinDir)/WasmApp/</AppDir>
+    <AppDir>$(TestBinDir)/publish/</AppDir>
     <PackageRID>browser-wasm</PackageRID>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
     <IsWasmProject>true</IsWasmProject>
@@ -33,15 +33,11 @@
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
     </PropertyGroup>
 
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
-      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native\*.dll" />
-      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\**\*.dll" />
-      <!-- <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" /> -->
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
-      <WasmAssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
-      <WasmAssemblySearchPaths Include="$(TestBinDir)" />
+    <Message Text="!!!naricc_debug!!!: WasmTestRunner: TestBinDir: $(TestBinDir): Corelib: $(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" Importance="high" />
+
+    <ItemGroup>      
+      <WasmAssembliesToBundle Include="$(TestBinDir)\publish\*.dll" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" />
     </ItemGroup>
 
     <Message Importance="High" Text="AppDir: $(AppDir)" />

@@ -409,6 +409,21 @@
 
   </Target>
 
+  <!-- TODO: I don't know why some of these conditions are required/a more principled way-->
+  <Target Name="PublishAfterBuild" AfterTargets="Build"  Condition=" '$(CLRTestKind)' == 'BuildAndRun' and '$(CLRTestPriority)' == '0' and '$(MSBuildProjectName)' != 'build' " >
+
+      <ItemGroup>
+        <TrimmerRootAssembly Include="$(MSBuildProjectName)" />
+        <TrimmerRootAssembly Include="System.Private.Corelib" />
+      </ItemGroup>
+
+      <Message Text="!!!naricc_debug!!! PublishAfterBuild: $(MSBuildProjectFullPath) priority: $(CLRTestPriority) TrimmerRootAssembly: @(TrimmerRootAssembly)" Importance="High" />
+      <MSBuild Targets="Publish"
+              Projects="$(MSBuildProjectFullPath)"
+              BuildInParallel="true"
+              ContinueOnError="ErrorAndContinue" />
+  </Target> 
+
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
 
