@@ -1633,6 +1633,7 @@ Thread::Thread()
 #endif
     contextHolder.SuppressRelease();
 
+    m_platformContextInitialized = false;
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
     m_fInitializeSpyRegistered = false;
@@ -2934,7 +2935,9 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-    if (!IsAtProcessExit() && this == GetThreadNULLOk())
+    if (m_platformContextInitialized
+        && !IsAtProcessExit()
+        && this == GetThreadNULLOk())
     {
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         // If the currently running thread is the thread that died and it is an STA thread, then we
@@ -4797,6 +4800,8 @@ void Thread::InitPlatformContext()
         CALL_MANAGED_METHOD_NORET(args);
     }
 #endif // FEATURE_NSAUTORELEASEPOOL
+
+    m_platformContextInitialized = true;
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

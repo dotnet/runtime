@@ -1802,6 +1802,9 @@ public:
     void InitThread();
     BOOL AllocHandles();
 
+private:
+    bool m_platformContextInitialized;
+public:
     // When the thread starts running, prepare the thread's platform context.
     void InitPlatformContext();
 
