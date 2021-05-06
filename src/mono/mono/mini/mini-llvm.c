@@ -12197,15 +12197,16 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		cfg->exception_message = g_strdup ("varargs");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
 	call->cinfo = get_llvm_call_info (cfg, sig);
 
 	if (cfg->disable_llvm)
 		return;
-
-	if (sig->call_convention == MONO_CALL_VARARG) {
-		cfg->exception_message = g_strdup ("varargs");
-		cfg->disable_llvm = TRUE;
-	}
 
 	for (i = 0; i < n; ++i) {
 		MonoInst *ins;
