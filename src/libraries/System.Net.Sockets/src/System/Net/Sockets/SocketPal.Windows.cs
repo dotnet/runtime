@@ -1074,30 +1074,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
-        {
-            asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
-            try
-            {
-                bool success = TransmitFileHelper(
-                    handle,
-                    fileStream?.SafeFileHandle,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    preBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0) : IntPtr.Zero,
-                    preBuffer?.Length ?? 0,
-                    postBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0) : IntPtr.Zero,
-                    postBuffer?.Length ?? 0,
-                    flags);
-
-                return asyncResult.ProcessOverlappedResult(success, 0);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
         public static void CheckDualModeReceiveSupport(Socket socket)
         {
             // Dual-mode sockets support received packet info on Windows.
