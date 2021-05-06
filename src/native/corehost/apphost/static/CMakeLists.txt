@@ -141,7 +141,7 @@ else()
         System.IO.Compression.Native-Static
         System.Net.Security.Native-Static
         System.Native-Static
-        System.Security.Cryptography.Native.Android-Static
+        System.Security.Cryptography.Native.OpenSsl-Static
 
         palrt
         coreclrpal
@@ -161,7 +161,7 @@ else()
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    # Additional requirements for System.Security.Cryptography.Native.Android
+    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
     append_extra_cryptography_libs(NATIVE_LIBS)
 
