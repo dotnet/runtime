@@ -179,18 +179,25 @@ namespace Internal.Cryptography
 
         public override unsafe bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten)
         {
-            // If we're decrypting and the destination is large enough to hold a padded value
-            // regardless of mode, decrypt directly to the output buffer.
-            if (output.Length >= input.Length)
-            {
-                int written = BasicSymmetricCipher.TransformFinal(input, output);
-                Span<byte> decrypted = output.Slice(0, written);
-                bytesWritten = GetPaddingLength(decrypted); // validates padding
-                return true;
-            }
+            if (input.Length % PaddingSizeBytes != 0)
+                throw new CryptographicException(SR.Cryptography_PartialBlock);
 
+            // If there is no padding that needs to be removed, and the output buffer is large enough to hold
+            // the resulting plaintext, we can decrypt directly in to the output buffer.
+            // We do not do this for modes that require padding removal.
+            //
+            // This is not done for padded ciphertexts because we don't know if the padding is valid
+            // until it's been decrypted. We don't want to decrypt in to a user-supplied buffer and then throw
+            // a padding exception after we've already filled the user buffer with plaintext. We should only
+            // release the plaintext to the caller once we know the padding is valid.
             if (!DepaddingRequired)
             {
+                if (output.Length >= input.Length)
+                {
+                    bytesWritten = BasicSymmetricCipher.TransformFinal(input, output);
+                    return true;
+                }
+
                 // If no padding is going to be removed, we know the buffer is too small and we can bail out.
                 bytesWritten = 0;
                 return false;
