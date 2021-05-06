@@ -386,10 +386,10 @@ else
 fi
 
 mkdir -p /tmp/out
-xcode_path="$(dirname "$(dirname "$(xcode-select -p)")")"
+xcode_path="%24(dirname "%24(dirname "%24(xcode-select -p)")")"
 simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
 open -a "$simulator_app"
-helix_runner_uid="$(id -u)"
+helix_runner_uid="%24(id -u)"
 sudo launchctl asuser "$helix_runner_uid" $__Command $HARNESS_RUNNER apple run --app="$__TestBinaryBase/$__Category.app" --output-directory="/tmp/out" --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName).dll" --expected-exit-code=100 -v --targets ios-simulator-64
 CLRTestExitCode=$?
 
