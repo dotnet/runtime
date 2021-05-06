@@ -16,7 +16,8 @@ void DumpMapHeader()
     printf("index,");
     // printf("process name,");
     printf("method name,");
-    printf("full signature\n");
+    printf("full signature,");
+    printf("jit flags\n");
 }
 
 void DumpMap(int index, MethodContext* mc)
