@@ -5626,7 +5626,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
         else
         {
-            index = gtNewCastNode(TYP_I_IMPL, index, false, TYP_I_IMPL);
+            // Mark cast as unsigned since index should never be negative
+            // at this point (handled by GT_ARR_BOUNDS_CHECK)
+            index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
         }
     }
 #endif // TARGET_64BIT
