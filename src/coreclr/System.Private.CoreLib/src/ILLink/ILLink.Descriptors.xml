@@ -27,7 +27,7 @@
     </type>
 
     <!-- Native hosting accesses managed methods in the ComponentActivator class. -->
-    <type fullname="Internal.Runtime.InteropServices.ComponentActivator" featurevalue="true" featuredefault="true">
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator" feature="Internal.Runtime.InteropServices.ComponentActivator.IsSupported" featurevalue="true" featuredefault="true">
       <method name="LoadAssemblyAndGetFunctionPointer" />
       <method name="GetFunctionPointer" />
     </type>
