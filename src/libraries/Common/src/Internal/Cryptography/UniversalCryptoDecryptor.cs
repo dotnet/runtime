@@ -183,7 +183,9 @@ namespace Internal.Cryptography
             // regardless of mode, decrypt directly to the output buffer.
             if (output.Length >= input.Length)
             {
-                bytesWritten = BasicSymmetricCipher.TransformFinal(input, output);
+                int written = BasicSymmetricCipher.TransformFinal(input, output);
+                Span<byte> decrypted = output.Slice(0, written);
+                bytesWritten = GetPaddingLength(decrypted); // validates padding
                 return true;
             }
 

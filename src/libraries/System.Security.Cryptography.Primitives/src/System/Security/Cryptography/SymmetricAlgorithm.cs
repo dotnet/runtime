@@ -456,7 +456,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            if (written == ciphertext.Length)
+            if (written == decryptBuffer.Length)
             {
                 return decryptBuffer;
             }

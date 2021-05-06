@@ -1066,6 +1066,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             int? feedbackSize = default)
         {
             byte[] decryptedBytes;
+            byte[] oneShotDecryptedBytes = null;
 
             using (Aes aes = AesFactory.Create())
             {
@@ -1088,6 +1089,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     cryptoStream.CopyTo(output);
                     decryptedBytes = output.ToArray();
+                }
+
+                if (mode == CipherMode.ECB)
+                {
+                    oneShotDecryptedBytes = aes.DecryptEcb(encryptedBytes, aes.Padding);
                 }
             }
 
