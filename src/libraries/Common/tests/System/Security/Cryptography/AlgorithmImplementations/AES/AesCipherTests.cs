@@ -1106,6 +1106,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveOneShotDecryptBytes = null;
 
             using (Aes aes = AesFactory.Create())
             {
@@ -1119,10 +1120,21 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 liveEncryptBytes = AesEncryptDirectKey(aes, key, iv, plainBytes);
                 liveDecryptBytes = AesDecryptDirectKey(aes, key, iv, cipherBytes);
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    aes.Key = key;
+                    liveOneShotDecryptBytes = aes.DecryptEcb(cipherBytes, paddingMode);
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);
             Assert.Equal(plainBytes, liveDecryptBytes);
+
+            if (liveOneShotDecryptBytes is not null)
+            {
+                Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+            }
         }
 
         private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes)
