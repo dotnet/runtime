@@ -252,7 +252,7 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/51676 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51960 -->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/52393 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51961 -->
