@@ -695,7 +695,6 @@
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Browser.cs" />
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
