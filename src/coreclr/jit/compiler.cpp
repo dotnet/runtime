@@ -5658,6 +5658,29 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             (void)info.compCompHnd->getAssemblyName(
                 info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
         }
+
+        // Fetch class names for the method's generic parameters.
+        //
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+
+        const unsigned classInst = sig.sigInst.classInstCount;
+        if (classInst > 0)
+        {
+            for (unsigned i = 0; i < classInst; i++)
+            {
+                eeGetClassName(sig.sigInst.classInst[i]);
+            }
+        }
+
+        const unsigned methodInst = sig.sigInst.methInstCount;
+        if (methodInst > 0)
+        {
+            for (unsigned i = 0; i < methodInst; i++)
+            {
+                eeGetClassName(sig.sigInst.methInst[i]);
+            }
+        }
     }
 #endif // DEBUG
 
