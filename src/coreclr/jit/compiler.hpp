@@ -569,11 +569,11 @@ inline bool genSmallTypeCanRepresentValue(var_types type, ssize_t value)
 extern const BYTE genTypeSizes[TYP_COUNT];
 
 template <class T>
-inline unsigned genTypeSize(T type)
+inline unsigned genTypeSize(T value)
 {
-    assert((unsigned)TypeGet(type) < _countof(genTypeSizes));
+    assert((unsigned)TypeGet(value) < _countof(genTypeSizes));
 
-    return genTypeSizes[TypeGet(type)];
+    return genTypeSizes[TypeGet(value)];
 }
 
 /*****************************************************************************
@@ -584,11 +584,12 @@ inline unsigned genTypeSize(T type)
 
 extern const BYTE genTypeStSzs[TYP_COUNT];
 
-inline unsigned genTypeStSz(var_types type)
+template <class T>
+inline unsigned genTypeStSz(T value)
 {
-    assert((unsigned)type < _countof(genTypeStSzs));
+    assert((unsigned)TypeGet(value) < _countof(genTypeStSzs));
 
-    return genTypeStSzs[type];
+    return genTypeStSzs[TypeGet(value)];
 }
 
 /*****************************************************************************
