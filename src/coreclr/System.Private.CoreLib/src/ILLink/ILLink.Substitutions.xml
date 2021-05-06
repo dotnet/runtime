@@ -3,7 +3,7 @@
     <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
-    <type fullname="System.Runtime.InteropServices.Marshal" feature="System.Runtime.InteropServices.Marshal.IsBuiltInComSupported" featurevalue="false">
+    <type fullname="System.Runtime.InteropServices.Marshal" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsBuiltInComSupported()" body="stub" value="false" />
     </type>
   </assembly>
