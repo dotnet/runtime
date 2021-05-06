@@ -3,12 +3,9 @@
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <DeltaScript>deltascript.json</DeltaScript>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MethodBody1.cs" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <DeltaScript>deltascript.json</DeltaScript>
-  </PropertyGroup>
 </Project>

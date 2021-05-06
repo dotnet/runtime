@@ -89,12 +89,12 @@ namespace System.Reflection.Metadata
             string basename = assm.Location;
             if (basename == "")
                 basename = assm.GetName().Name + ".dll";
-            Console.Error.WriteLine ($"Apply Delta Update for {basename}, revision {count}");
+            Console.Error.WriteLine($"Apply Delta Update for {basename}, revision {count}");
 
             string dmeta_name = $"{basename}.{count}.dmeta";
             string dil_name = $"{basename}.{count}.dil";
-            byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);
-            byte[] dil_data = System.IO.File.ReadAllBytes (dil_name);
+            byte[] dmeta_data = System.IO.File.ReadAllBytes(dmeta_name);
+            byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
             byte[] dpdb_data = null; // TODO also use the dpdb data
 
             AssemblyExtensions.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
@@ -117,10 +117,10 @@ namespace System.Reflection.Metadata
         {
             if (UseRemoteExecutor) {
                 Console.Error.WriteLine ($"Running test using RemoteExecutor");
-                AddRemoteInvokeOptions (ref options);
+                AddRemoteInvokeOptions(ref options);
                 RemoteExecutor.Invoke(testBody, options).Dispose();
             } else {
-                Console.Error.WriteLine ($"Running test using direct invoke");
+                Console.Error.WriteLine($"Running test using direct invoke");
                 testBody();
             }
         }
@@ -134,10 +134,13 @@ namespace System.Reflection.Metadata
                                     string arg1,
                                     RemoteInvokeOptions options = null)
         {
-            if (UseRemoteExecutor) {
-                AddRemoteInvokeOptions (ref options);
+            if (UseRemoteExecutor)
+            {
+                AddRemoteInvokeOptions(ref options);
                 RemoteExecutor.Invoke(testBody, arg1, options).Dispose();
-            } else {
+            }
+            else
+            {
                 testBody(arg1);
             }
         }

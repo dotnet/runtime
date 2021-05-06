@@ -1,9 +1,15 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 public class DeltaScriptParser
 {
@@ -19,7 +25,8 @@ public class DeltaScriptParser
         return json;
     }
 
-    public class Script {
+    public class Script
+    {
         [JsonPropertyName("changes")]
         public Change[] Changes {get; set; }
 
@@ -29,7 +36,8 @@ public class DeltaScriptParser
     }
 
 
-    public class Change {
+    public class Change
+    {
         [JsonPropertyName("document")]
         public string Document {get; set;}
         [JsonPropertyName("update")]

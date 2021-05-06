@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -5,7 +8,8 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class ComputeDeltaFileOutputNames : Microsoft.Build.Utilities.Task {
+public class ComputeDeltaFileOutputNames : Microsoft.Build.Utilities.Task
+{
     [Required]
     public string BaseAssemblyName { get; set; }
     [Required]
@@ -16,21 +20,26 @@ public class ComputeDeltaFileOutputNames : Microsoft.Build.Utilities.Task {
 
     public override bool Execute()
     {
-        if (!System.IO.File.Exists (DeltaScript)) {
+        if (!System.IO.File.Exists(DeltaScript))
+        {
             Log.LogError("Hot reload delta script {0} does not exist", DeltaScript);
             return false;
         }
         string baseAssemblyName = BaseAssemblyName;
         int count;
-        try {
-            var json = DeltaScriptParser.Parse (DeltaScript).Result;
+        try
+        {
+            var json = DeltaScriptParser.Parse(DeltaScript).Result;
             count = json.Changes.Length;
-        } catch (System.Text.Json.JsonException exn) {
-            Log.LogErrorFromException (exn, showStackTrace: true);
+        }
+        catch (System.Text.Json.JsonException exn)
+        {
+            Log.LogErrorFromException(exn, showStackTrace: true);
             return false;
         }
         ITaskItem[] result = new TaskItem[3*count];
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < count; ++i)
+        {
             int rev = 1+i;
             string dmeta = baseAssemblyName + $".{rev}.dmeta";
             string dil = baseAssemblyName + $".{rev}.dil";

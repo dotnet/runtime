@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
     /// Each test Foo has a corresponding assembly under
     /// System.Reflection.Metadata.ApplyUpate.Test.Foo The Foo.csproj has a delta
     /// script that applies one or more updates to Foo.dll The ApplyUpdateTest
-    /// testusuite runs each test in sequence, loading the corresponding
+    /// testsuite runs each test in sequence, loading the corresponding
     /// assembly, applying an update to it and observing the results.
     [Collection(nameof(ApplyUpdateUtil.NoParallelTests))]
     [ConditionalClass(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
