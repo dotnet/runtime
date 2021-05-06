@@ -323,16 +323,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        internal override QuicStreamProvider OpenUnidirectionalStream()
+        internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            // Todo: actual open, wait for the stream start complete event
+            return new ValueTask<QuicStreamProvider>(new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL));
         }
 
-        internal override QuicStreamProvider OpenBidirectionalStream()
+        internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
+            // Todo: actual open, wait for the stream start complete event
+            return new ValueTask<QuicStreamProvider>(new MsQuicStream(_state.Handle,  QUIC_STREAM_OPEN_FLAGS.NONE));
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()

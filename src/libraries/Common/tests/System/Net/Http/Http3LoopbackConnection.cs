@@ -62,14 +62,14 @@ namespace System.Net.Test.Common
             _closed = true;
         }
 
-        public Http3LoopbackStream OpenUnidirectionalStream()
+        public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(_connection.OpenUnidirectionalStream());
+            return new Http3LoopbackStream(await _connection.OpenUnidirectionalStreamAsync().ConfigureAwait(false));
         }
 
-        public Http3LoopbackStream OpenBidirectionalStream()
+        public async ValueTask<Http3LoopbackStream> OpenBidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(_connection.OpenBidirectionalStream());
+            return new Http3LoopbackStream(await _connection.OpenBidirectionalStreamAsync().ConfigureAwait(false));
         }
 
         public static int GetRequestId(QuicStream stream)

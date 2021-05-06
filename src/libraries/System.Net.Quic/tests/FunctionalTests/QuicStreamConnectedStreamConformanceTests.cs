@@ -92,7 +92,7 @@ namespace System.Net.Quic.Tests
                 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
             };
         }
-        
+
         protected abstract QuicImplementationProvider Provider { get; }
 
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
@@ -121,7 +121,7 @@ namespace System.Net.Quic.Tests
                         listener.ListenEndPoint,
                         new SslClientAuthenticationOptions() { ApplicationProtocols = new List<SslApplicationProtocol>() { protocol } });
                     await connection2.ConnectAsync();
-                    stream2 = connection2.OpenBidirectionalStream();
+                    stream2 = await connection2.OpenBidirectionalStreamAsync();
                 }));
 
             var result = new StreamPairWithOtherDisposables(stream1, stream2);

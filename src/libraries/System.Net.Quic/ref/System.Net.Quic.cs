@@ -29,8 +29,8 @@ namespace System.Net.Quic
         public void Dispose() { }
         public long GetRemoteAvailableBidirectionalStreamCount() { throw null; }
         public long GetRemoteAvailableUnidirectionalStreamCount() { throw null; }
-        public System.Net.Quic.QuicStream OpenBidirectionalStream() { throw null; }
-        public System.Net.Quic.QuicStream OpenUnidirectionalStream() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenBidirectionalStreamAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenUnidirectionalStreamAsync() { throw null; }
     }
     public partial class QuicConnectionAbortedException : System.Net.Quic.QuicException
     {

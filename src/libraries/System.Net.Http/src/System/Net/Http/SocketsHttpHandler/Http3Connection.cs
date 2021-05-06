@@ -197,11 +197,14 @@ namespace System.Net.Http
 
             try
             {
+                if (_connection != null)
+                {
+                    quicStream = await _connection.OpenBidirectionalStreamAsync().ConfigureAwait(false);
+                }
                 lock (SyncObj)
                 {
-                    if (_connection != null)
+                    if (quicStream != null)
                     {
-                        quicStream = _connection.OpenBidirectionalStream();
                         requestStream = new Http3RequestStream(request, this, quicStream);
                         _activeRequests.Add(quicStream, requestStream);
                     }
@@ -438,7 +441,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = _connection!.OpenUnidirectionalStream();
+                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
