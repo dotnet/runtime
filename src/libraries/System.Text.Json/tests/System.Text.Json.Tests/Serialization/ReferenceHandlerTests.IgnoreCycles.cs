@@ -315,6 +315,28 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task AlreadySeenInstance_ShouldNotBeIgnoredOnSiblingBranch_Converter()
+        {
+            var opts = new JsonSerializerOptions(s_optionsIgnoreCycles);
+            // This converter turns the object into a string.
+            opts.Converters.Add(new PersonConverter());
+
+            var person = new Person { Name = "John" };
+
+            await Test_Serialize_And_SerializeAsync(new { Person1 = person, Person2 = person },
+                expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
+
+            await Test_Serialize_And_SerializeAsync(new { Person1 = (object)person, Person2 = (object)person },
+                expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
+
+            await Test_Serialize_And_SerializeAsync(new List<Person> { person, person },
+                expected: @"[""John"",""John""]", opts);
+
+            await Test_Serialize_And_SerializeAsync(new List<object> { person, person },
+                expected: @"[""John"",""John""]", opts);
+        }
+
+        [Fact]
         public async Task IgnoreCycles_WhenWritingNull()
         {
             var opts = new JsonSerializerOptions
@@ -513,6 +535,15 @@ namespace System.Text.Json.Serialization.Tests
             public string Name { get; set; }
             public object DayOfBirth { get; set; }
             public Person Parent { get; set; }
+        }
+
+        class PersonConverter : JsonConverter<Person>
+        {
+            public override Person? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, Person value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value.Name);
         }
     }
 }
