@@ -305,25 +305,20 @@ enum ETW_IL_STUB_FLAGS
 struct PInvokeStaticSigInfo
 {
 public:
-    enum ThrowOnError { THROW_ON_ERROR = TRUE, NO_THROW_ON_ERROR = FALSE };
-
-public:
     PInvokeStaticSigInfo() { LIMITED_METHOD_CONTRACT; }
 
-    PInvokeStaticSigInfo(Signature sig, Module* pModule);
+    PInvokeStaticSigInfo(_In_ const Signature& sig, _In_ Module* pModule);
 
-    PInvokeStaticSigInfo(MethodDesc* pMdDelegate, ThrowOnError throwOnError = THROW_ON_ERROR);
+    PInvokeStaticSigInfo(_In_ MethodDesc* pMdDelegate);
 
     PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
 
 private:
-    void ReportErrors();
+    void ReportError(WORD error);
     void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
     void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
     void PreInit(Module* pModule, MethodTable *pClass);
     void PreInit(MethodDesc* pMD);
-    void SetError(WORD error) { if (!m_error) m_error = error; }
-    void BestGuessNDirectDefaults(MethodDesc* pMD);
 
 private:
     enum
@@ -416,7 +411,6 @@ private:
     Module* m_pModule;
     Signature m_sig;
     CorInfoCallConvExtension m_callConv;
-    WORD m_error;
     WORD m_wFlags;
 };
 
