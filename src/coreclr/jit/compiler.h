@@ -121,7 +121,6 @@ unsigned genLog2(unsigned value);
 unsigned genLog2(unsigned __int64 value);
 
 var_types genActualType(var_types type);
-var_types genUnsignedType(var_types type);
 var_types genSignedType(var_types type);
 
 unsigned ReinterpretHexAsDecimal(unsigned in);

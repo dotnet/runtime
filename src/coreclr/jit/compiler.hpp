@@ -617,33 +617,6 @@ inline var_types genActualType(var_types type)
 
 /*****************************************************************************/
 
-inline var_types genUnsignedType(var_types type)
-{
-    /* Force signed types into corresponding unsigned type */
-
-    switch (type)
-    {
-        case TYP_BYTE:
-            type = TYP_UBYTE;
-            break;
-        case TYP_SHORT:
-            type = TYP_USHORT;
-            break;
-        case TYP_INT:
-            type = TYP_UINT;
-            break;
-        case TYP_LONG:
-            type = TYP_ULONG;
-            break;
-        default:
-            break;
-    }
-
-    return type;
-}
-
-/*****************************************************************************/
-
 inline var_types genSignedType(var_types type)
 {
     /* Force non-small unsigned type into corresponding signed type */

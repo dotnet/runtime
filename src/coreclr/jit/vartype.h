@@ -145,29 +145,25 @@ inline var_types varTypeUnsignedToSigned(var_types vt)
     }
 }
 
-// If "vt" is a signed integral type, returns the corresponding unsigned integral type, otherwise
-// return "vt".
-inline var_types varTypeSignedToUnsigned(var_types vt)
+// If "vt" represents a signed integral type, returns the corresponding unsigned integral type,
+// otherwise returns the original type.
+template <class T>
+inline var_types varTypeToUnsigned(T vt)
 {
-    if (varTypeIsSigned(vt))
+    // Force signed types into corresponding unsigned type.
+    var_types type = TypeGet(vt);
+    switch (type)
     {
-        switch (vt)
-        {
-            case TYP_BYTE:
-                return TYP_UBYTE;
-            case TYP_SHORT:
-                return TYP_USHORT;
-            case TYP_INT:
-                return TYP_UINT;
-            case TYP_LONG:
-                return TYP_ULONG;
-            default:
-                unreached();
-        }
-    }
-    else
-    {
-        return vt;
+        case TYP_BYTE:
+            return TYP_UBYTE;
+        case TYP_SHORT:
+            return TYP_USHORT;
+        case TYP_INT:
+            return TYP_UINT;
+        case TYP_LONG:
+            return TYP_ULONG;
+        default:
+            return type;
     }
 }
 
