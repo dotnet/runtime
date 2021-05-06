@@ -187,7 +187,7 @@ namespace DebuggerTests
         {
             await InspectAssignmentDuringSteppingIn("MONO_TYPE_GENERICINST",
                 (locals) => CheckObject(locals, "r", "System.Func<int>", is_null: true),
-                (locals) => CheckObject(locals, "r", "System.Func<int>", description: "int OuterMethod ()")
+                (locals) => CheckObject(locals, "r", "System.Func<int>", description: "int Prepare ()")
                 );
         }
 
@@ -211,10 +211,11 @@ namespace DebuggerTests
 
         private async Task InspectAssignmentDuringSteppingIn(string clazz, Action<JToken> checkDefault, Action<JToken> checkValue)
         {
-            await SetBreakpointInMethod("debugger-test", "DebuggerTests." + clazz, "OuterMethod", 2);
-            await EvaluateAndCheck("window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests." + clazz + ":OuterMethod'); })", null, -1, -1, "OuterMethod");
+            await SetBreakpointInMethod("debugger-test", "DebuggerTests." + clazz, "Prepare", 2);
+            await EvaluateAndCheck("window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests." + clazz + ":Prepare'); })", null, -1, -1, "Prepare");
 
-            await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-stepping-test.cs", -1, -1, "InnerMethod",
+            // 1) check un-assigned variables
+            await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, "TestedMethod",
                 locals_fn: (locals) =>
                 {
                     Console.WriteLine(locals);
@@ -222,7 +223,9 @@ namespace DebuggerTests
                     checkDefault(locals);
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-stepping-test.cs", -1, -1, "InnerMethod", times: 3,
+
+            // 2) check assigned variables
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-assignment-test.cs", -1, -1, "TestedMethod", times: 3,
                 locals_fn: (locals) =>
                 {
                     Console.WriteLine(locals);

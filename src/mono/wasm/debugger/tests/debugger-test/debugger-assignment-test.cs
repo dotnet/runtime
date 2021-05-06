@@ -8,205 +8,207 @@ using System.Text;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
-    public struct StepInTest<T>
+    public class StepInTest<T>
     {
-        public static int InnerMethod(T value)
+        public static int TestedMethod(T value)
         {
+            // 1) break here and check un-assigned variables
             T r;
             r = value;
+            // 2) break here and check assigned variables
             return 0;
         }
     }
 
     public class MONO_TYPE_OBJECT
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             var value = new object();
-            return StepInTest<object>.InnerMethod(value);
+            return StepInTest<object>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_CLASS
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             var value = new MONO_TYPE_CLASS();
-            return StepInTest<MONO_TYPE_CLASS>.InnerMethod(value);
+            return StepInTest<MONO_TYPE_CLASS>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_BOOLEAN
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             var value = true;
-            return StepInTest<bool>.InnerMethod(value);
+            return StepInTest<bool>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_CHAR
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             var value = 'a';
-            return StepInTest<char>.InnerMethod(value);
+            return StepInTest<char>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_I1
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             sbyte value = -1;
-            return StepInTest<sbyte>.InnerMethod(value);
+            return StepInTest<sbyte>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_I2
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             short value = -1;
-            return StepInTest<short>.InnerMethod(value);
+            return StepInTest<short>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_I4
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             int value = -1;
-            return StepInTest<int>.InnerMethod(value);
+            return StepInTest<int>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_I8
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             long value = -1;
-            return StepInTest<long>.InnerMethod(value);
+            return StepInTest<long>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_U1
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             byte value = 1;
-            return StepInTest<byte>.InnerMethod(value);
+            return StepInTest<byte>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_U2
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             ushort value = 1;
-            return StepInTest<ushort>.InnerMethod(value);
+            return StepInTest<ushort>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_U4
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             uint value = 1;
-            return StepInTest<uint>.InnerMethod(value);
+            return StepInTest<uint>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_U8
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             ulong value = 1;
-            return StepInTest<ulong>.InnerMethod(value);
+            return StepInTest<ulong>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_R4
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             float value = 3.1415F;
-            return StepInTest<float>.InnerMethod(value);
+            return StepInTest<float>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_R8
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             double value = 3.1415D;
-            return StepInTest<double>.InnerMethod(value);
+            return StepInTest<double>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_STRING
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             string value = "hello";
-            return StepInTest<string>.InnerMethod(value);
+            return StepInTest<string>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_ENUM
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             RGB value = RGB.Blue;
-            return StepInTest<RGB>.InnerMethod(value);
+            return StepInTest<RGB>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_ARRAY
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             byte[] value = new byte[2] { 1, 2 };
-            return StepInTest<byte[]>.InnerMethod(value);
+            return StepInTest<byte[]>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_VALUETYPE
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             Point value = new Point();
-            return StepInTest<Point>.InnerMethod(value);
+            return StepInTest<Point>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_VALUETYPE2
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
             Decimal value = 1.1m;
-            return StepInTest<Decimal>.InnerMethod(value);
+            return StepInTest<Decimal>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_GENERICINST
     {
-        public static int OuterMethod()
+        public static int Prepare()
         {
-            Func<int> value = MONO_TYPE_GENERICINST.OuterMethod;
-            return StepInTest<Func<int>>.InnerMethod(value);
+            Func<int> value = MONO_TYPE_GENERICINST.Prepare;
+            return StepInTest<Func<int>>.TestedMethod(value);
         }
     }
 
     public class MONO_TYPE_FNPTR
     {
-        public unsafe static int OuterMethod()
+        public unsafe static int Prepare()
         {
-            delegate*<int> value = &MONO_TYPE_FNPTR.OuterMethod;
-            return InnerMethod(value);
+            delegate*<int> value = &MONO_TYPE_FNPTR.Prepare;
+            return TestedMethod(value);
         }
 
-        public unsafe static int InnerMethod(delegate*<int> value)
+        public unsafe static int TestedMethod(delegate*<int> value)
         {
             delegate*<int> r;
             r = value;
@@ -216,13 +218,13 @@ namespace DebuggerTests
 
     public class MONO_TYPE_PTR
     {
-        public unsafe static int OuterMethod()
+        public unsafe static int Prepare()
         {
             int a = 1; int* value = &a;
-            return InnerMethod(value);
+            return TestedMethod(value);
         }
 
-        public unsafe static int InnerMethod(int* value)
+        public unsafe static int TestedMethod(int* value)
         {
             int* r;
             r = value;
