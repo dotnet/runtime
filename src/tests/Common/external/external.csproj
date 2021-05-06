@@ -65,6 +65,7 @@
     <PackageToInclude Include="Microsoft.CodeAnalysis.Common"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Compilers"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
+    <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp.Workspaces"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
     <PackageToInclude Include="CommandLineParser"/>
 
