@@ -540,17 +540,12 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static void CryptographicAttributeObjectAsnOidNull()
         {
             var oid = new Oid(Oids.Sha1);
-#if NETCOREAPP
-            AssertExtensions.Throws<ArgumentException>("values", () =>
+            var asnEncodedData = new AsnEncodedData(new byte[] { 1, 2, 3 });
+
+            AssertExtensions.Throws<ArgumentException, NullReferenceException>("values", () =>
             {
-                new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(new AsnEncodedData(new byte[] { 1, 2, 3 })));
+                new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(asnEncodedData));
             });
-#else
-            Assert.Throws<NullReferenceException>(() =>
-            {
-                new CryptographicAttributeObject(oid, new AsnEncodedDataCollection(new AsnEncodedData(new byte[] { 1, 2, 3 })));
-            });
-#endif
         }
 
         [Fact]
