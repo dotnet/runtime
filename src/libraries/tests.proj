@@ -240,9 +240,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/50957 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51673 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
-
     <!-- Issue: https://github.com/dotnet/runtime/issues/51680 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
 
