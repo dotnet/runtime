@@ -163,6 +163,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/50589 -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\AOT\tvOS.Simulator.Aot.Test.csproj" />
+  <ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
