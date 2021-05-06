@@ -855,6 +855,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\PlatformAttributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceExposureAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceScope.cs" />
