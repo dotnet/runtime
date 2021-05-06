@@ -172,6 +172,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Resources;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1692,150 +1693,178 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes);
         }
 
-        private static unsafe object? DecodeObject(Type dataType, ref EventData* data)
+        private static unsafe void DecodeObjects(object?[] decodedObjects, ParameterInfo[] parameters, EventData* data)
         {
-            // TODO FIX : We use reflection which in turn uses EventSource, right now we carefully avoid
-            // the recursion, but can we do this in a robust way?
+            for (int i = 0; i < decodedObjects.Length; i++, data++)
+            {
+                IntPtr dataPointer = data->DataPointer;
+                Type dataType = parameters[i].ParameterType;
+                object? decoded;
 
-            IntPtr dataPointer = data->DataPointer;
-            Debug.Assert(dataPointer != IntPtr.Zero || data->Size == 0);
+                if (dataType == typeof(string))
+                {
+                    goto String;
+                }
+                else if (dataType == typeof(int))
+                {
+                    Debug.Assert(data->Size == 4);
+                    decoded = *(int*)dataPointer;
+                }
+                else
+                {
+                    TypeCode typeCode = Type.GetTypeCode(dataType);
+                    int size = data->Size;
 
-            if (dataType == typeof(string))
-            {
-                goto String;
-            }
-            else if (dataType == typeof(int))
-            {
-                Debug.Assert(data->Size == 4);
-                return *(int*)dataPointer;
-            }
+                    if (size == 4)
+                    {
+                        if ((uint)(typeCode - TypeCode.SByte) <= TypeCode.Int32 - TypeCode.SByte)
+                        {
+                            Debug.Assert(dataType.IsEnum);
+                            // Enums less than 4 bytes in size should be treated as int.
+                            decoded = *(int*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.UInt32)
+                        {
+                            decoded = *(uint*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Single)
+                        {
+                            decoded = *(float*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Boolean)
+                        {
+                            // The manifest defines a bool as a 32bit type (WIN32 BOOL), not 1 bit as CLR Does.
+                            decoded = *(int*)dataPointer == 1;
+                        }
+                        else if (dataType == typeof(byte[]))
+                        {
+                            // byte[] are written to EventData* as an int followed by a blob
+                            Debug.Assert(*(int*)dataPointer == (data + 1)->Size);
+                            data++;
+                            dataPointer = data->DataPointer;
+                            goto BytePtr;
+                        }
+                        else if (IntPtr.Size == 4 && dataType == typeof(IntPtr))
+                        {
+                            decoded = *(IntPtr*)dataPointer;
+                        }
+                        else
+                        {
+                            goto Unknown;
+                        }
+                    }
+                    else if (size <= 2)
+                    {
+                        Debug.Assert(!dataType.IsEnum);
+                        if (typeCode == TypeCode.Byte)
+                        {
+                            Debug.Assert(size == 1);
+                            decoded = *(byte*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.SByte)
+                        {
+                            Debug.Assert(size == 1);
+                            decoded = *(sbyte*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Int16)
+                        {
+                            Debug.Assert(size == 2);
+                            decoded = *(short*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.UInt16)
+                        {
+                            Debug.Assert(size == 2);
+                            decoded = *(ushort*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Char)
+                        {
+                            Debug.Assert(size == 2);
+                            decoded = *(char*)dataPointer;
+                        }
+                        else
+                        {
+                            goto Unknown;
+                        }
+                    }
+                    else if (size == 8)
+                    {
+                        if (typeCode == TypeCode.Int64)
+                        {
+                            decoded = *(long*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.UInt64)
+                        {
+                            decoded = *(ulong*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.Double)
+                        {
+                            decoded = *(double*)dataPointer;
+                        }
+                        else if (typeCode == TypeCode.DateTime)
+                        {
+                            decoded = *(DateTime*)dataPointer;
+                        }
+                        else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
+                        {
+                            decoded = *(IntPtr*)dataPointer;
+                        }
+                        else
+                        {
+                            goto Unknown;
+                        }
+                    }
+                    else if (typeCode == TypeCode.Decimal)
+                    {
+                        Debug.Assert(size == 16);
+                        decoded = *(decimal*)dataPointer;
+                    }
+                    else if (dataType == typeof(Guid))
+                    {
+                        Debug.Assert(size == 16);
+                        decoded = *(Guid*)dataPointer;
+                    }
+                    else
+                    {
+                        goto Unknown;
+                    }
+                }
 
-            TypeCode typeCode = Type.GetTypeCode(dataType);
-            int size = data->Size;
+                goto Store;
 
-            if (size == 4)
-            {
-                if ((uint)(typeCode - TypeCode.SByte) <= TypeCode.Int32 - TypeCode.SByte)
+            Unknown:
+                if (dataType != typeof(byte*))
                 {
-                    Debug.Assert(dataType.IsEnum);
-                    // Enums less than 4 bytes in size should be treated as int.
-                    return *(int*)dataPointer;
+                    // Everything else is marshaled as a string.
+                    goto String;
                 }
-                else if (typeCode == TypeCode.UInt32)
-                {
-                    return *(uint*)dataPointer;
-                }
-                else if (typeCode == TypeCode.Single)
-                {
-                    return *(float*)dataPointer;
-                }
-                else if (typeCode == TypeCode.Boolean)
-                {
-                    // The manifest defines a bool as a 32bit type (WIN32 BOOL), not 1 bit as CLR Does.
-                    return *(int*)dataPointer == 1;
-                }
-                else if (dataType == typeof(byte[]))
-                {
-                    // byte[] are written to EventData* as an int followed by a blob
-                    Debug.Assert(*(int*)dataPointer == (data + 1)->Size);
-                    data++;
-                    dataPointer = data->DataPointer;
-                    goto BytePtr;
-                }
-                else if (IntPtr.Size == 4 && dataType == typeof(IntPtr))
-                {
-                    return *(IntPtr*)dataPointer;
-                }
-            }
-            else if (size <= 2)
-            {
-                Debug.Assert(!dataType.IsEnum);
-                if (typeCode == TypeCode.Byte)
-                {
-                    Debug.Assert(size == 1);
-                    return *(byte*)dataPointer;
-                }
-                else if (typeCode == TypeCode.SByte)
-                {
-                    Debug.Assert(size == 1);
-                    return *(sbyte*)dataPointer;
-                }
-                else if (typeCode == TypeCode.Int16)
-                {
-                    Debug.Assert(size == 2);
-                    return *(short*)dataPointer;
-                }
-                else if (typeCode == TypeCode.UInt16)
-                {
-                    Debug.Assert(size == 2);
-                    return *(ushort*)dataPointer;
-                }
-                else if (typeCode == TypeCode.Char)
-                {
-                    Debug.Assert(size == 2);
-                    return *(char*)dataPointer;
-                }
-            }
-            else if (size == 8)
-            {
-                if (typeCode == TypeCode.Int64)
-                {
-                    return *(long*)dataPointer;
-                }
-                else if (typeCode == TypeCode.UInt64)
-                {
-                    return *(ulong*)dataPointer;
-                }
-                else if (typeCode == TypeCode.Double)
-                {
-                    return *(double*)dataPointer;
-                }
-                else if (typeCode == TypeCode.DateTime)
-                {
-                    return *(DateTime*)dataPointer;
-                }
-                else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
-                {
-                    return *(IntPtr*)dataPointer;
-                }
-            }
-            else
-            {
-                if (typeCode == TypeCode.Decimal)
-                {
-                    Debug.Assert(size == 16);
-                    return *(decimal*)dataPointer;
-                }
-                else if (dataType == typeof(Guid))
-                {
-                    Debug.Assert(size == 16);
-                    return *(Guid*)dataPointer;
-                }
-            }
 
-            if (dataType != typeof(byte*))
-            {
-                goto String;
-            }
+            BytePtr:
+                var blob = new byte[data->Size];
+                Marshal.Copy(dataPointer, blob, 0, blob.Length);
+                decoded = blob;
+                goto Store;
 
-        BytePtr:
-            byte[] blob = new byte[data->Size];
-            for (int i = 0; i < blob.Length; i++)
-            {
-                blob[i] = *((byte*)dataPointer + i);
-            }
-            return blob;
+            String:
+                // ETW strings are NULL-terminated, so marshal everything up to the first null in the string.
+                AssertValidString(data);
+                decoded = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
 
-        String:
-            // Everything else is marshaled as a string.
-            // ETW strings are NULL-terminated, so marshal everything up to the first
-            // null in the string.
-#if DEBUG
-            Debug.Assert(data->Size % 2 == 0, "String size should be even");
-            for (int i = 0; i < data->Size / 2 - 1; i++) Debug.Assert(*((char*)dataPointer + i) != 0, "String may not contain null chars");
-            Debug.Assert(*((char*)dataPointer + data->Size / 2 - 1) == 0, "String must be null terminated");
-#endif
-            return dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+            Store:
+                decodedObjects[i] = decoded;
+            }
+        }
+
+        [Conditional("DEBUG")]
+        private static unsafe void AssertValidString(EventData* data)
+        {
+            Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
+            char* charPointer = (char*)data->DataPointer;
+            int charLength = data->Size / 2 - 1;
+            for (int i = 0; i < charLength; i++)
+            {
+                Debug.Assert(*(charPointer + i) != 0, "String may not contain null chars");
+            }
+            Debug.Assert(*(charPointer + charLength) == 0, "String must be null terminated");
         }
 
         // Finds the Dispatcher (which holds the filtering state), for a given dispatcher for the current
@@ -2066,12 +2095,8 @@ namespace System.Diagnostics.Tracing
                 {
                     for (int i = 0; i < args.Length; i++, data++)
                     {
+                        AssertValidString(data);
                         IntPtr dataPointer = data->DataPointer;
-#if DEBUG
-                        Debug.Assert(data->Size % 2 == 0, "String size should be even");
-                        for (int j = 0; j < data->Size / 2 - 1; j++) Debug.Assert(*((char*)dataPointer + j) != 0, "String may not contain null chars");
-                        Debug.Assert(*((char*)dataPointer + data->Size / 2 - 1) == 0, "String must be null terminated");
-#endif
                         args[i] = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
                     }
                 }
@@ -2085,10 +2110,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    for (int i = 0; i < args.Length; i++, data++)
-                    {
-                        args[i] = DecodeObject(parameters[i].ParameterType, ref data);
-                    }
+                    DecodeObjects(args, parameters, data);
                 }
             }
 
