@@ -72,7 +72,7 @@ namespace System
         internal const string JsonSerializerOptionsIgnoreNullValuesMessage = "JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.";
         internal const string JsonSerializerOptionsIgnoreNullValuesDiagId = "SYSLIB0020";
 
-        internal const string DerivedCryptographicTypesMessage = "Derived cryptographic types are obsolete.";
+        internal const string DerivedCryptographicTypesMessage = "Derived cryptographic types are obsolete. Use the Create method on the underlying type instead.";
         internal const string DerivedCryptographicTypesDiagId = "SYSLIB0021";
     }
 }
