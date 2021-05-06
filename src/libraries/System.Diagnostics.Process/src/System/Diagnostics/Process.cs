@@ -1246,7 +1246,7 @@ namespace System.Diagnostics
         {
             // the underlying Start method can only return null on Windows platforms,
             // when the ProcessStartInfo.UseShellExecute property is set to true.
-            // We can thus safely assert non-nullability for tihs overload.
+            // We can thus safely assert non-nullability for this overload.
             return Start(new ProcessStartInfo(fileName))!;
         }
 
@@ -1264,7 +1264,7 @@ namespace System.Diagnostics
         {
             // the underlying Start method can only return null on Windows platforms,
             // when the ProcessStartInfo.UseShellExecute property is set to true.
-            // We can thus safely assert non-nullability for tihs overload.
+            // We can thus safely assert non-nullability for this overload.
             return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
