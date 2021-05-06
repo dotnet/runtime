@@ -56,6 +56,15 @@ public:
 class NDirect
 {
 public:
+    // Get the calling convention for a method by checking:
+    //   - For delegates: UnmanagedFunctionPointer attribute
+    //   - For non-delegates: P/Invoke metadata
+    //   - Any modopts encoded in the method signature
+    // If no calling convention is specified, the default calling convention is returned
+    // This function ignores any errors when reading attributes/metadata, treating them as
+    // if no calling convention was specified through that mechanism.
+    static CorInfoCallConvExtension GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD);
+
     //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
     //

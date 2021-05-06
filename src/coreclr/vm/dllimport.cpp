@@ -2548,6 +2548,22 @@ namespace
         _ASSERTE(*nlt == nltAnsi || *nlt == nltUnicode);
         return S_OK;
     }
+
+    HRESULT ParseCallingConventionFromAttributeConstructor(_Inout_ CustomAttributeParser& ca, _Out_ CorInfoCallConvExtension* callConv)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(callConv != NULL);
+
+        CaArg callConvArg;
+        callConvArg.InitEnum(SERIALIZATION_TYPE_I4, (ULONG)0);
+        HRESULT hr = ParseKnownCaArgs(ca, &callConvArg, 1);
+        if (FAILED(hr))
+            return hr;
+
+        *callConv = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(callConvArg.val.u4 << 8));
+        return S_OK;
+    }
+
 }
 
 void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
@@ -2642,20 +2658,16 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
     // System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute
     BYTE* pData = NULL;
     LONG cData = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
-
     hr = pMT->GetCustomAttribute(
         WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
     IfFailThrow(hr);
+
+    CorInfoCallConvExtension callConv = CallConvWinApiSentinel;
     if (cData != 0)
     {
         CustomAttributeParser ca(pData, cData);
 
-        CaArg args[1];
-        args[0].InitEnum(SERIALIZATION_TYPE_I4, (ULONG)m_callConv);
-
-        IfFailGo(ParseKnownCaArgs(ca, args, lengthof(args)));
-        callConv = (CorPinvokeMap)(args[0].val.u4 << 8);
+        IfFailGo(ParseCallingConventionFromAttributeConstructor(ca, &callConv));
 
         enum UnmanagedFunctionPointerNamedArgs
         {
@@ -2684,7 +2696,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
             SetLinkFlags ((CorNativeLinkFlags)(nlfLastError | GetLinkFlags()));
     }
 
-    InitCallConv(GetCallConvValueForPInvokeCallConv(callConv), pMD->IsVarArg());
+    InitCallConv(callConv, pMD->IsVarArg());
 
 ErrExit:
     if (FAILED(hr))
@@ -3013,6 +3025,64 @@ void PInvokeStaticSigInfo::ReportErrors()
         COMPlusThrow(kTypeLoadException, m_error);
 }
 
+CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMD != NULL);
+        PRECONDITION(pMD->IsNDirect());
+    }
+    CONTRACTL_END;
+
+    // This method explicitly does not check that any calling convention specified through
+    // attributes match that in the signature, so we just return once a non-sentinel calling
+    // convention is found.
+    CorInfoCallConvExtension callConv;
+    MethodTable* pMT = pMD->GetMethodTable();
+    if (pMT->IsDelegate())
+    {
+        // System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute
+        BYTE* pData = NULL;
+        LONG cData = 0;
+        HRESULT hr = pMT->GetCustomAttribute(
+            WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
+        if (hr == S_OK)
+        {
+            _ASSERTE(cData > 0);
+            CustomAttributeParser ca(pData, cData);
+            hr = ParseCallingConventionFromAttributeConstructor(ca, &callConv);
+            if (SUCCEEDED(hr) && callConv != CallConvWinApiSentinel)
+                return callConv;
+        }
+    }
+    else
+    {
+        // P/Invoke metadata
+        IMDInternalImport* pInternalImport = pMD->GetMDImport();
+        CorPinvokeMap mappingFlags = pmMaxValue;
+        HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
+        if (SUCCEEDED(hr))
+        {
+            callConv = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask));
+            if (callConv != CallConvWinApiSentinel)
+                return callConv;
+        }
+    }
+
+    const Signature& sig = pMD->GetSignature();
+    Module* module = pMD->GetModule();
+
+    // modopts
+    CallConvBuilder builder;
+    UINT errorResID;
+    (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
+    callConv = builder.GetCurrentCallConv();
+    if (callConv != CallConvWinApiSentinel)
+        return callConv;
+
+    return GetDefaultCallConv(pMD->IsVarArg());
+}
 
 //---------------------------------------------------------
 // Does a class or method have a NAT_L CustomAttribute?
