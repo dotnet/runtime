@@ -621,7 +621,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var frame_count = ret_debugger_cmd_reader.ReadInt32();
                         for (int j = 0; j < frame_count; j++) {
                             var frame_id = ret_debugger_cmd_reader.ReadInt32();
-                            frame_id = j+1;
                             method_id = ret_debugger_cmd_reader.ReadInt32();
                             var il_pos = ret_debugger_cmd_reader.ReadInt32();
                             var flags = ret_debugger_cmd_reader.ReadByte();
@@ -715,7 +714,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             data,
                             hitBreakpoints = bp_list,
                         });
-                        Console.WriteLine(o);
                         SendEvent(sessionId, "Debugger.paused", o, token);
                         break;
                     }
@@ -942,24 +940,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return Result.Err(JObject.FromObject(new { message = $"Could not find scope with id #{scope_id}" }));
 
                 VarInfo[] var_ids = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
-                Result res = await SendMonoCommand(msg_id, MonoCommands.GetScopeVariables(scope.Id, var_ids), token);
 
-                //if we fail we just buble that to the IDE (and let it panic over it)
-                if (res.IsErr)
-                    return res;
-
-                JObject[] values = res.Value?["result"]?["value"]?.Values<JObject>().ToArray();
-
-                if (values == null || values.Length == 0)
-                    return Result.OkFromObject(new { result = Array.Empty<object>() });
-
-                PerScopeCache frameCache = ctx.GetCacheForScope(scope_id);
-                foreach (JObject value in values)
+                var values = await sdbHelper.StackFrameGetValues(msg_id, scope.Method, ctx.ThreadId, scope_id, var_ids, token);
+                if (values != null)
                 {
-                    frameCache.Locals[value["name"]?.Value<string>()] = value;
-                }
+                    if (values == null || values.Count == 0)
+                        return Result.OkFromObject(new { result = Array.Empty<object>() });
 
-                return Result.OkFromObject(new { result = values });
+                    PerScopeCache frameCache = ctx.GetCacheForScope(scope_id);
+                    foreach (JObject value in values)
+                    {
+                        frameCache.Locals[value["name"]?.Value<string>()] = value;
+                    }
+                    return Result.OkFromObject(new { result = values });
+                }
+                return Result.OkFromObject(new { result = Array.Empty<object>() });
             }
             catch (Exception exception)
             {

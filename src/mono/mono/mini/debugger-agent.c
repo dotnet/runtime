@@ -2195,6 +2195,7 @@ save_thread_context (MonoContext *ctx)
 void
 mono_wasm_save_thread_context (void) 
 {
+	debugger_wasm_thread.really_suspended = TRUE;
 	mono_thread_state_init_from_current (&debugger_wasm_thread.context);
 }
 #endif
@@ -9066,9 +9067,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	id = decode_id (p, &p, end);
 
-	mono_loader_lock ();
-	tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
-	mono_loader_unlock ();
+	GET_TLS_DATA(thread);
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {
@@ -9079,7 +9078,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return ERR_INVALID_FRAMEID;
 
 	/* The thread is still running native code, can't get frame variables info */
-	if (!tls->really_suspended && !tls->async_state.valid) 
+	if (!tls->really_suspended && !tls->async_state.valid)
 		return ERR_NOT_SUSPENDED;
 	frame_idx = i;
 	frame = tls->frames [frame_idx];

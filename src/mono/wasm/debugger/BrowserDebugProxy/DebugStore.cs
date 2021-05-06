@@ -325,7 +325,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceLocation EndLocation { get; }
         public AssemblyInfo Assembly { get; }
         public int Token { get; }
-
+        public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type)
         {
             this.Assembly = assembly;

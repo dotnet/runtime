@@ -125,6 +125,16 @@ namespace Microsoft.WebAssembly.Diagnostics
         GET_ASSEMBLY_BY_NAME = 18
     }
 
+    internal enum CmdFrame {
+        GET_VALUES = 1,
+        GET_THIS = 2,
+        SET_VALUES = 3,
+        GET_DOMAIN = 4,
+        SET_THIS = 5,
+        GET_ARGUMENT = 6,
+        GET_ARGUMENTS = 7
+    }
+
     internal enum CmdEvent {
         COMPOSITE = 100
     }
@@ -222,6 +232,72 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal enum CmdField {
         GET_INFO = 1
+    }
+
+    internal enum CmdString {
+        GET_VALUE = 1,
+        GET_LENGTH = 2,
+        GET_CHARS = 3
+    }
+
+    internal enum CmdObject {
+        REF_GET_TYPE = 1,
+        REF_GET_VALUES = 2,
+        REF_IS_COLLECTED = 3,
+        REF_GET_ADDRESS = 4,
+        REF_GET_DOMAIN = 5,
+        REF_SET_VALUES = 6,
+        REF_GET_INFO = 7,
+        GET_VALUES_ICORDBG = 8
+    }
+
+    internal enum ElementType {
+        End             = 0x00,
+        Void            = 0x01,
+        Boolean         = 0x02,
+        Char            = 0x03,
+        I1              = 0x04,
+        U1              = 0x05,
+        I2              = 0x06,
+        U2              = 0x07,
+        I4              = 0x08,
+        U4              = 0x09,
+        I8              = 0x0a,
+        U8              = 0x0b,
+        R4              = 0x0c,
+        R8              = 0x0d,
+        String          = 0x0e,
+        Ptr             = 0x0f,
+        ByRef           = 0x10,
+        ValueType       = 0x11,
+        Class           = 0x12,
+        Var             = 0x13,
+        Array           = 0x14,
+        GenericInst     = 0x15,
+        TypedByRef      = 0x16,
+        I               = 0x18,
+        U               = 0x19,
+        FnPtr           = 0x1b,
+        Object          = 0x1c,
+        SzArray         = 0x1d,
+        MVar            = 0x1e,
+        CModReqD        = 0x1f,
+        CModOpt         = 0x20,
+        Internal        = 0x21,
+        Modifier        = 0x40,
+        Sentinel        = 0x41,
+        Pinned          = 0x45,
+
+        Type            = 0x50,
+        Boxed           = 0x51,
+        Enum            = 0x55
+    }
+
+    internal enum ValueTypeId {
+        VALUE_TYPE_ID_NULL = 0xf0,
+        VALUE_TYPE_ID_TYPE = 0xf1,
+        VALUE_TYPE_ID_PARENT_VTYPE = 0xf2,
+        VALUE_TYPE_ID_FIXED_ARRAY = 0xf3
     }
 
     internal class MonoBinaryWriter : BinaryWriter
@@ -387,5 +463,207 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
+        public async Task<string> GetTypeName(SessionId sessionId, int type_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(type_id);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.TYPE, (int) CmdType.GET_INFO, command_params, token);
+
+            var namespaceLen = ret_debugger_cmd_reader.ReadInt32();
+            char[] namespaceValue = new char[namespaceLen];
+            ret_debugger_cmd_reader.Read(namespaceValue, 0, namespaceLen);
+
+            var classLen = ret_debugger_cmd_reader.ReadInt32();
+            char[] classValue = new char[classLen];
+            ret_debugger_cmd_reader.Read(classValue, 0, classLen);
+
+            var classFullNameLen = ret_debugger_cmd_reader.ReadInt32();
+            char[] classFullName = new char[classFullNameLen];
+            ret_debugger_cmd_reader.Read(classFullName, 0, classFullNameLen);
+
+            string className = new string(classFullName);
+            className = className.Replace("+", ".");
+            return className;
+        }
+
+        public async Task<string> GetStringValue(SessionId sessionId, int string_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(string_id);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STRING_REF, (int) CmdString.GET_VALUE, command_params, token);
+            var stringSize = ret_debugger_cmd_reader.ReadInt32();
+            char[] memoryData = new char[stringSize];
+            ret_debugger_cmd_reader.Read(memoryData, 0, stringSize);
+            return new string(memoryData);
+        }
+
+        public async Task<string> GetClassNameFromObject(SessionId sessionId, int object_id, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(object_id);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.OBJECT_REF, (int) CmdObject.REF_GET_TYPE, command_params, token);
+            var type_id = ret_debugger_cmd_reader.ReadInt32();
+
+            return await GetTypeName(sessionId, type_id, token);
+        }
+
+        public async Task<JObject> CreateJObjectForVariableValue(SessionId sessionId, BinaryReader ret_debugger_cmd_reader, string name, CancellationToken token)
+        {
+            ElementType etype = (ElementType)ret_debugger_cmd_reader.ReadByte();
+            switch (etype) {
+                case ElementType.Void:
+                    return new JObject{{"Type", "void"}};
+                case ElementType.Boolean:
+                {
+                    var value = ret_debugger_cmd_reader.ReadInt32();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "boolean",
+                                value = value == 0 ? false : true,
+                                description = value == 0 ? "false" : "true"
+                            },
+                            writable = true,
+                            name
+                        });
+                }
+                case ElementType.I1:
+                case ElementType.U1:
+                case ElementType.I2:
+                case ElementType.U2:
+                case ElementType.I4:
+                case ElementType.U4:
+                {
+                    var value = ret_debugger_cmd_reader.ReadInt32();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "number",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
+                case ElementType.Char:
+                {
+                    var value = ret_debugger_cmd_reader.ReadInt32();
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "char",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = true,
+                            name
+                        });
+                }
+                case ElementType.I8:
+                    return new JObject{{"Type", "number"}};
+                case ElementType.U8:
+                    return new JObject{{"Type", "number"}};
+                case ElementType.R4:
+                    return new JObject{{"Type", "void"}};
+                case ElementType.R8:
+                    return new JObject{{"Type", "void"}};
+                case ElementType.I:
+                case ElementType.U:
+                    // FIXME: The client and the debuggee might have different word sizes
+                    return new JObject{{"Type", "void"}};
+                case ElementType.Ptr:
+                    return new JObject{{"Type", "void"}};
+                case ElementType.String:
+                {
+                    var string_id = ret_debugger_cmd_reader.ReadInt32();
+                    var value = await GetStringValue(sessionId, string_id, token);
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "string",
+                                value,
+                                description = value.ToString()
+                            },
+                            writable = false,
+                            name
+                        });
+                }
+                case ElementType.SzArray:
+                case ElementType.Array:
+                    return new JObject{{"Type", "void"}};
+                case ElementType.Class:
+                case ElementType.Object:
+                {
+                    var objectId = ret_debugger_cmd_reader.ReadInt32();
+                    var value = await GetClassNameFromObject(sessionId, objectId, token);
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "object",
+                                objectId = "dotnet:object:" + objectId,
+                                description = value.ToString(),
+                                className = value.ToString(),
+                            },
+                            name
+                        });
+                }
+                case ElementType.ValueType:
+                    return new JObject{{"Type", "void"}};
+                case (ElementType)ValueTypeId.VALUE_TYPE_ID_NULL:
+                {
+                    return JObject.FromObject(new {
+                            value = new
+                            {
+                                type = "object",
+                                subtype = "null",
+                                className = "string" //TODO get classname of null
+                            },
+                            name
+                        });
+                }
+                case (ElementType)ValueTypeId.VALUE_TYPE_ID_TYPE:
+                    return new JObject{{"Type", "void"}};
+                case (ElementType)ValueTypeId.VALUE_TYPE_ID_PARENT_VTYPE:
+                    return new JObject{{"Type", "void"}};
+                case (ElementType)ValueTypeId.VALUE_TYPE_ID_FIXED_ARRAY:
+                    return new JObject{{"Type", "void"}};
+            }
+            return null;
+        }
+        public async Task<JArray> StackFrameGetValues(SessionId sessionId, MethodInfo method, int thread_id, int frame_id, VarInfo[] var_ids, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(thread_id);
+            command_params_writer.Write(frame_id);
+            command_params_writer.Write(var_ids.Length);
+            foreach (var var in var_ids)
+            {
+                command_params_writer.Write(var.Index);
+            }
+            JArray array = new JArray();
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_VALUES, command_params, token);
+            foreach (var var in var_ids)
+            {
+                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, var.Name, token);
+                array.Add(var_json);
+            }
+            if (!method.IsStatic())
+            {
+                ret_debugger_cmd_reader = await SendDebuggerAgentCommand(sessionId, (int) CommandSet.STACK_FRAME, (int) CmdFrame.GET_THIS, command_params, token);
+                var var_json = await CreateJObjectForVariableValue(sessionId, ret_debugger_cmd_reader, "this", token);
+                var_json.Add("fieldOffset", -1);
+                array.Add(var_json);
+            }
+            return array;
+
+        }
     }
 }
