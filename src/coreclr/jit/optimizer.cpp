@@ -4200,18 +4200,11 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     assert(opts.OptimizationEnabled());
     assert(compCodeOpt() != SMALL_CODE);
 
-    /* Does the BB end with an unconditional jump? */
+    // Does the BB end with an unconditional jump?
 
     if (block->bbJumpKind != BBJ_ALWAYS || (block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
     {
         // It can't be one of the ones we use for our exception magic
-        return;
-    }
-
-    // block can't be the scratch bb, since we prefer to keep flow
-    // out of the scratch bb as BBJ_ALWAYS or BBJ_NONE.
-    if (fgBBisScratch(block))
-    {
         return;
     }
 
@@ -4233,14 +4226,16 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     // Since test is a BBJ_COND it will have a bbNext
     noway_assert(bTest->bbNext != nullptr);
 
-    // 'block' must be in the same try region as the condition, since we're going to insert
-    // a duplicated condition in 'block', and the condition might include exception throwing code.
-    if (!BasicBlock::sameTryRegion(block, bTest))
+    // 'block' must be in the same try region as the condition, since we're going to insert a duplicated condition
+    // in a new block after 'block', and the condition might include exception throwing code.
+    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
+    // be considered as the head of a loop, so also disallow different handler regions.
+    if (!BasicBlock::sameEHRegion(block, bTest))
     {
         return;
     }
 
-    // We're going to change 'block' to branch to bTest->bbNext, so that also better be in the
+    // The duplicated condition block will branch to bTest->bbNext, so that also better be in the
     // same try region (or no try region) to avoid generating illegal flow.
     BasicBlock* bTestNext = bTest->bbNext;
     if (bTestNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bTestNext))
@@ -4518,8 +4513,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         }
 
         // Redirect the predecessor to the new block.
-        JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB, predBlock->bbNum, bTest->bbNum,
-                predBlock->bbNum, bNewCond->bbNum);
+        JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
+                bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
         optRedirectBlock(predBlock, &blockMap, /*updatePreds*/ true);
     }
 
@@ -4635,7 +4630,7 @@ PhaseStatus Compiler::optInvertLoops()
         //
         if (block->bbWeight == BB_ZERO_WEIGHT)
         {
-            /* Zero weighted block can't have a LOOP_HEAD flag */
+            // Zero weighted block can't have a LOOP_HEAD flag
             noway_assert(block->isLoopHead() == false);
             continue;
         }
