@@ -41,10 +41,7 @@ enum {
 //functions exported to be used by JS
 G_BEGIN_DECLS
 
-EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_local_vars (int scope, int* pos, int len);
-EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_pause_on_exceptions (int state);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_object_properties (int object_id, int gpflags);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int start_idx, int count, int gpflags);
@@ -59,6 +56,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command (int id, MdbgProtComman
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
 extern void mono_wasm_fire_bp (void);
+extern void mono_wasm_fire_debugger_agent_message (void);
 extern void mono_wasm_fire_exception (int exception_obj_id, const char* message, const char* class_name, gboolean uncaught);
 extern void mono_wasm_add_obj_var (const char*, const char*, guint64);
 extern void mono_wasm_add_enum_var (const char*, const char*, guint64);
@@ -73,6 +71,7 @@ G_END_DECLS
 
 static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags);
 static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
+static gboolean receive_debugger_agent_message (void *data, int len);
 static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 static MonoObject* mono_runtime_try_invoke_internal (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError* error);
 
@@ -82,6 +81,7 @@ static gboolean debugger_enabled;
 static gboolean has_pending_lazy_loaded_assemblies;
 
 static int event_request_id;
+static int current_bp_id;
 static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
@@ -333,6 +333,12 @@ create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *j
 {
 	PRINT_DEBUG_MSG (1, "ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
 	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len)) {
+		EventRequest *req = NULL;
+		if ((bp_reqs && bp_reqs->len))
+			req = (EventRequest *)g_ptr_array_index (bp_reqs, 0);
+		if ((ss_reqs && ss_reqs->len))
+			req = (EventRequest *)g_ptr_array_index (ss_reqs, 0);
+		current_bp_id = req->id;
 		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
 		evts->is_ss = (ss_reqs && ss_reqs->len);
 		return evts;
@@ -422,8 +428,8 @@ mono_wasm_debugger_init (void)
 		.get_this_async_id = get_this_async_id,
 		.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag,
 		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
-		.create_breakpoint_events = create_breakpoint_events,
-		.process_breakpoint_events = process_breakpoint_events,
+		.create_breakpoint_events = mono_dbg_create_breakpoint_events,
+		.process_breakpoint_events = mono_dbg_process_breakpoint_events,
 		.ss_create_init_args = ss_create_init_args,
 		.ss_args_destroy = ss_args_destroy,
 		.handle_multiple_ss_requests = handle_multiple_ss_requests,
@@ -431,7 +437,7 @@ mono_wasm_debugger_init (void)
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mono_de_init (&cbs);
-	mono_de_set_log_level (log_level, stdout);
+	mono_de_set_log_level (10, stdout);
 
 	mini_debug_options.gen_sdb_seq_points = TRUE;
 	mini_debug_options.mdb_optimizations = TRUE;
@@ -451,7 +457,12 @@ mono_wasm_debugger_init (void)
 	mini_get_dbg_callbacks ()->user_break = mono_wasm_user_break;
 
 //debugger-agent initialization	
-	mono_init_debugger_agent_for_wasm (log_level);
+	DebuggerTransport trans;
+	trans.name = "buffer-wasm-communication";
+	trans.send = receive_debugger_agent_message;
+
+	mono_debugger_agent_register_transport (&trans);
+	mono_init_debugger_agent_for_wasm (10);
 }
 
 MONO_API void
@@ -468,61 +479,6 @@ mono_wasm_pause_on_exceptions (int state)
 	pause_on_exc = state;
 	PRINT_DEBUG_MSG (1, "setting pause on exception: %d\n", pause_on_exc);
 	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_setup_single_step (int kind)
-{
-	int nmodifiers = 1;
-
-	PRINT_DEBUG_MSG (2, ">>>> mono_wasm_setup_single_step %d\n", kind);
-	EventRequest *req = (EventRequest *)g_malloc0 (sizeof (EventRequest) + (nmodifiers * sizeof (Modifier)));
-	req->id = ++event_request_id;
-	req->event_kind = EVENT_KIND_STEP;
-	// DE doesn't care about suspend_policy
-	// req->suspend_policy = SUSPEND_POLICY_ALL;
-	req->nmodifiers = nmodifiers;
-
-	StepSize size = STEP_SIZE_MIN;
-
-	//FIXME I DON'T KNOW WHAT I'M DOING!!!!! filter all the things.
-	StepFilter filter = (StepFilter)(STEP_FILTER_STATIC_CTOR | STEP_FILTER_DEBUGGER_HIDDEN | STEP_FILTER_DEBUGGER_STEP_THROUGH | STEP_FILTER_DEBUGGER_NON_USER_CODE);
-	req->modifiers [0].data.filter = filter;
-
-	StepDepth depth;
-	switch (kind) {
-	case 0: //into
-		depth = STEP_DEPTH_INTO;
-		break;
-	case 1: //out
-		depth = STEP_DEPTH_OUT;
-		break;
-	case 2: //over
-		depth = STEP_DEPTH_OVER;
-		break;
-	default:
-		g_error ("[dbg] unknown step kind %d", kind);
-	}
-
-	DbgEngineErrorCode err = mono_de_ss_create (THREAD_TO_INTERNAL (mono_thread_current ()), size, depth, filter, req);
-	if (err != DE_ERR_NONE) {
-		PRINT_DEBUG_MSG (1, "[dbg] Failed to setup single step request");
-	}
-	PRINT_DEBUG_MSG (1, "[dbg] single step is in place, now what?\n");
-	SingleStepReq *ss_req = req->info;
-	int isBPOnNativeCode = 0;
-	if (ss_req && ss_req->bps) {
-		GSList *l;
-
-		for (l = ss_req->bps; l; l = l->next) {
-			if (((MonoBreakpoint *)l->data)->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
-				isBPOnNativeCode = 1;
-		}
-	}
-	if (!isBPOnNativeCode) {
-		mono_de_cancel_all_ss ();
-	}
-	return isBPOnNativeCode;
 }
 
 static void
@@ -603,54 +559,6 @@ mono_wasm_user_break (void)
 	mono_wasm_fire_bp ();
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_current_bp_id (void)
-{
-	PRINT_DEBUG_MSG (2, "COMPUTING breakpoint ID\n");
-	//FIXME handle compiled case
-
-	/* Interpreter */
-	MonoLMF *lmf = mono_get_lmf ();
-
-	g_assert (((guint64)lmf->previous_lmf) & 2);
-	MonoLMFExt *ext = (MonoLMFExt*)lmf;
-
-	g_assert (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX);
-	MonoInterpFrameHandle *frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
-	MonoJitInfo *ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
-	guint8 *ip = (guint8*)mini_get_interp_callbacks ()->frame_get_ip (frame);
-
-	g_assert (ji && !ji->is_trampoline);
-	MonoMethod *method = jinfo_get_method (ji);
-
-	/* Compute the native offset of the breakpoint from the ip */
-	guint32 native_offset = ip - (guint8*)ji->code_start;
-
-	MonoSeqPointInfo *info = NULL;
-	SeqPoint sp;
-	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (method, native_offset, &info, &sp);
-	if (!found_sp)
-		PRINT_DEBUG_MSG (1, "Could not find SP\n");
-
-
-	GPtrArray *bp_reqs = g_ptr_array_new ();
-	mono_de_collect_breakpoints_by_sp (&sp, ji, NULL, bp_reqs);
-
-	if (bp_reqs->len == 0) {
-		PRINT_DEBUG_MSG (1, "BP NOT FOUND for method %s JI %p il_offset %d\n", method->name, ji, sp.il_offset);
-		return -1;
-	}
-
-	if (bp_reqs->len > 1)
-		PRINT_DEBUG_MSG (1, "Multiple breakpoints (%d) at the same location, returning the first one.", bp_reqs->len);
-
-	EventRequest *evt = (EventRequest *)g_ptr_array_index (bp_reqs, 0);
-	g_ptr_array_free (bp_reqs, TRUE);
-
-	PRINT_DEBUG_MSG (1, "Found BP %p with id %d\n", evt, evt->id);
-	return evt->id;
-}
-
 static MonoObject*
 get_object_from_id (int objectId)
 {
@@ -665,55 +573,6 @@ get_object_from_id (int objectId)
 		PRINT_DEBUG_MSG (2, "get_object_from_id !obj: %d\n", objectId);
 
 	return obj;
-}
-
-static gboolean
-list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
-{
-	SeqPoint sp;
-	MonoMethod *method;
-	char *method_full_name;
-
-	int* frame_id_p = (int*)data;
-	(*frame_id_p)++;
-
-	//skip wrappers
-	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP)
-		return FALSE;
-
-	if (info->ji)
-		method = jinfo_get_method (info->ji);
-	else
-		method = info->method;
-
-	if (!method || method->wrapper_type != MONO_WRAPPER_NONE)
-		return FALSE;
-
-	PRINT_DEBUG_MSG (2, "list_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
-
-	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
-		PRINT_DEBUG_MSG (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
-
-	method_full_name = mono_method_full_name (method, FALSE);
-	while (method->is_inflated)
-		method = ((MonoMethodInflated*)method)->declaring;
-
-	char *assembly_name = g_strdup (m_class_get_image (method->klass)->module_name);
-	inplace_tolower (assembly_name);
-
-	PRINT_DEBUG_MSG (2, "adding off %d token %d assembly name %s\n", sp.il_offset, mono_metadata_token_index (method->token), assembly_name);
-	mono_wasm_add_frame (sp.il_offset, mono_metadata_token_index (method->token), *frame_id_p, assembly_name, method_full_name);
-
-	g_free (assembly_name);
-
-	return FALSE;
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_enum_frames (void)
-{
-	int frame_id = -1;
-	mono_walk_stack_with_ctx (list_frames, NULL, MONO_UNWIND_NONE, &frame_id);
 }
 
 static char*
@@ -1866,8 +1725,22 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2);
 	}, id, buf.buf, buf.p-buf.buf);
+	
+	buffer_free (&buf);
 	return TRUE;
 }
+
+static gboolean 
+receive_debugger_agent_message (void *data, int len)
+{
+	PRINT_DEBUG_MSG (1, "receive_debugger_agent_message - %d\n", len);
+	EM_ASM ({
+		MONO.mono_wasm_add_dbg_command_received (-1, $0, $1);
+	}, data, len);
+	mono_wasm_fire_debugger_agent_message ();	
+	return FALSE;
+}
+
 
 #else // HOST_WASM
 

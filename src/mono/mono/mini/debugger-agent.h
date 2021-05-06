@@ -14,6 +14,15 @@
 // 2. debug_log parameters changed from MonoString* to MonoStringHandle
 // 3. debug_log parameters changed from MonoStringHandle back to MonoString*
 
+typedef struct {
+	const char *name;
+	void (*connect) (const char *address);
+	void (*close1) (void);
+	void (*close2) (void);
+	gboolean (*send) (void *buf, int len);
+	int (*recv) (void *buf, int len);
+} DebuggerTransport;
+
 struct _MonoDebuggerCallbacks {
 	int version;
 	void (*parse_options) (char *options);
@@ -48,10 +57,19 @@ mono_debugger_agent_stub_init (void);
 MONO_API MONO_RT_EXTERNAL_ONLY gboolean
 mono_debugger_agent_transport_handshake (void);
 
+MONO_API void
+mono_debugger_agent_register_transport (DebuggerTransport *trans);
+
 MdbgProtErrorCode
 mono_process_dbg_packet (int id, MdbgProtCommandSet command_set, int command, gboolean *no_reply, guint8 *p, guint8 *end, MdbgProtBuffer *buf);
 
 void
 mono_init_debugger_agent_for_wasm (int log_level);
+
+void*
+mono_dbg_create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, MdbgProtEventKind kind);
+
+void
+mono_dbg_process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
 
 #endif

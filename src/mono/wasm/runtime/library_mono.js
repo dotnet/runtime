@@ -531,24 +531,6 @@ var MonoSupportLib = {
 			return exception_obj ;
 		},
 
-		mono_wasm_get_call_stack: function() {
-			if (!this.mono_wasm_current_bp_id)
-				this.mono_wasm_current_bp_id = Module.cwrap ("mono_wasm_current_bp_id", 'number');
-			if (!this.mono_wasm_enum_frames)
-				this.mono_wasm_enum_frames = Module.cwrap ("mono_wasm_enum_frames", null);
-
-			var bp_id = this.mono_wasm_current_bp_id ();
-			this.active_frames = [];
-			this.mono_wasm_enum_frames ();
-
-			var the_frames = this.active_frames;
-			this.active_frames = [];
-			return {
-				"breakpoint_id": bp_id,
-				"frames": the_frames,
-			};
-		},
-
 		_fixup_name_value_objects: function (var_list) {
 			let out_list = [];
 
@@ -833,7 +815,6 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_add_dbg_command_received: function(id, buffer, buffer_len) {
-			console.log(`mono_wasm_add_dbg_command_received`);
 			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
 			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
 			const buffer_obj = {
@@ -845,21 +826,26 @@ var MonoSupportLib = {
 
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
-			console.log(`mono_wasm_send_dbg_command ${id} - ${command_set} - ${command} - ${command_parameters.length}`);
-
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
 			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
 
 			let res_ok = this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
 
 			let res = MONO.commands_received;
+			MONO.commands_received = null;
 			if (res_ok) {
 				return { res_ok, res };
 			}
-			MONO.commands_received = null;
 		},
 
-		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
+		mono_wasm_get_dbg_command_info: function ()
+		{
+			let res = MONO.commands_received;
+			MONO.commands_received = null;
+			return { res };
+		},
+
+ 		// @var_list: [ { index: <var_id>, name: <var_name> }, .. ]
 		mono_wasm_get_variables: function(scope, var_list) {
 			const numBytes = var_list.length * Int32Array.BYTES_PER_ELEMENT;
 			const ptr = Module._malloc(numBytes);
@@ -1369,16 +1355,6 @@ var MonoSupportLib = {
 
 		mono_wasm_debugger_resume: function () {
 			this._clear_per_step_state ();
-		},
-
-		mono_wasm_start_single_stepping: function (kind) {
-			console.debug (">> mono_wasm_start_single_stepping " + kind);
-			if (!this.mono_wasm_setup_single_step)
-				this.mono_wasm_setup_single_step = Module.cwrap ("mono_wasm_setup_single_step", 'number', [ 'number']);
-
-			this._clear_per_step_state ();
-
-			return this.mono_wasm_setup_single_step (kind);
 		},
 
 		mono_wasm_set_pause_on_exceptions: function (state) {
@@ -2491,6 +2467,11 @@ var MonoSupportLib = {
 			class_name  : Module.UTF8ToString (class_name),
 			uncaught    : uncaught
 		};
+		debugger;
+	},
+
+	mono_wasm_fire_debugger_agent_message: function () {
+		// eslint-disable-next-line no-debugger
 		debugger;
 	},
 

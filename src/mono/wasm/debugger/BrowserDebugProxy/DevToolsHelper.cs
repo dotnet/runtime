@@ -172,13 +172,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public MonoCommands(string expression) => this.expression = expression;
 
-        public static MonoCommands GetCallStack() => new MonoCommands("MONO.mono_wasm_get_call_stack()");
-
         public static MonoCommands GetExceptionObject() => new MonoCommands("MONO.mono_wasm_get_exception_object()");
 
-        public static MonoCommands IsRuntimeReady() => new MonoCommands("MONO.mono_wasm_runtime_is_ready");
+        public static MonoCommands GetDebuggerAgentBufferReceived() => new MonoCommands("MONO.mono_wasm_get_dbg_command_info()");
 
-        public static MonoCommands StartSingleStepping(StepKind kind) => new MonoCommands($"MONO.mono_wasm_start_single_stepping ({(int)kind})");
+        public static MonoCommands IsRuntimeReady() => new MonoCommands("MONO.mono_wasm_runtime_is_ready");
 
         public static MonoCommands GetLoadedFiles() => new MonoCommands("MONO.mono_wasm_get_loaded_files()");
 
@@ -279,8 +277,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal enum StepKind
     {
         Into,
-        Out,
-        Over
+        Over,
+        Out
     }
 
     internal class ExecutionContext
@@ -291,6 +289,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
 
+        public int ThreadId { get; set; }
         public int Id { get; set; }
         public object AuxData { get; set; }
 
