@@ -70,21 +70,24 @@ namespace System.Net.NetworkInformation
                 socket.DualMode = false;
             }
 
-            if (socketConfig.Options != null && socketConfig.Options.Ttl > 0)
+            if (socketConfig.Options != null)
             {
-                socket.Ttl = (short)socketConfig.Options.Ttl;
-            }
-
-            if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
-            {
-                if (SendIpHeader)
+                if (socketConfig.Options.Ttl > 0)
                 {
-                    // some platforms like OSX don't support DontFragment so we construct IP header instead.
-                    socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
+                    socket.Ttl = (short)socketConfig.Options.Ttl;
                 }
-                else
+
+                if (addrFamily == AddressFamily.InterNetwork)
                 {
-                    socket.DontFragment = socketConfig.Options.DontFragment;
+                    if (SendIpHeader)
+                    {
+                        // some platforms like OSX don't support DontFragment so we construct IP header instead.
+                        socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
+                    }
+                    else
+                    {
+                        socket.DontFragment = socketConfig.Options.DontFragment;
+                    }
                 }
             }
 
@@ -158,40 +161,31 @@ namespace System.Net.NetworkInformation
                 try
                 {
                     socket.SendTo(socketConfig.SendBuffer, SocketFlags.None, socketConfig.EndPoint);
+
+                    byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
+
+                    long elapsed;
+                    Stopwatch sw = Stopwatch.StartNew();
+                    // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
+                    // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
+                    // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
+                    while ((elapsed = sw.ElapsedMilliseconds) < timeout)
+                    {
+                        int bytesReceived = socket.ReceiveFrom(receiveBuffer, SocketFlags.None, ref socketConfig.EndPoint);
+
+                        if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
+                        {
+                            continue; // Not enough bytes to reconstruct IP header + ICMP header.
+                        }
+
+                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
+                        {
+                            return reply;
+                        }
+                    }
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
                 {
-                    return CreateTimedOutPingReply();
-                }
-
-                byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
-
-                long elapsed;
-                Stopwatch sw = Stopwatch.StartNew();
-                // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
-                // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
-                // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
-                while ((elapsed = sw.ElapsedMilliseconds) < timeout)
-                {
-                    int bytesReceived;
-                    try
-                    {
-                        bytesReceived = socket.ReceiveFrom(receiveBuffer, SocketFlags.None, ref socketConfig.EndPoint);
-                    }
-                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
-                    {
-                        return CreateTimedOutPingReply();
-                    }
-
-                    if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
-                    {
-                        continue; // Not enough bytes to reconstruct IP header + ICMP header.
-                    }
-
-                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
-                    {
-                        return reply;
-                    }
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
@@ -205,46 +199,50 @@ namespace System.Net.NetworkInformation
             using (Socket socket = GetRawSocket(socketConfig))
             {
                 int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
+                CancellationTokenSource timeoutTokenSource = new CancellationTokenSource();
 
-                await socket.SendToAsync(
-                    new ArraySegment<byte>(socketConfig.SendBuffer),
-                    SocketFlags.None, socketConfig.EndPoint)
-                    .ConfigureAwait(false);
+                timeoutTokenSource.CancelAfter(timeout);
 
-                byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
-
-                long elapsed;
-                Stopwatch sw = Stopwatch.StartNew();
-                // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
-                // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
-                // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
-                while ((elapsed = sw.ElapsedMilliseconds) < timeout)
+                try
                 {
-                    Task<SocketReceiveFromResult> receiveTask = socket.ReceiveFromAsync(
-                        new ArraySegment<byte>(receiveBuffer),
-                        SocketFlags.None,
-                        socketConfig.EndPoint);
+                    await socket.SendToAsync(
+                        new ArraySegment<byte>(socketConfig.SendBuffer),
+                        SocketFlags.None, socketConfig.EndPoint,
+                        timeoutTokenSource.Token)
+                        .ConfigureAwait(false);
 
-                    try
-                    {
-                        await receiveTask.WaitAsync(TimeSpan.FromMilliseconds(timeout - (int)elapsed)).ConfigureAwait(false);
-                    }
-                    catch (TimeoutException)
-                    {
-                        return CreateTimedOutPingReply();
-                    }
+                    byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
 
-                    SocketReceiveFromResult receiveResult = receiveTask.GetAwaiter().GetResult();
-                    int bytesReceived = receiveResult.ReceivedBytes;
-                    if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
+                    Stopwatch sw = Stopwatch.StartNew();
+                    // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
+                    // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
+                    // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
+                    while (!timeoutTokenSource.IsCancellationRequested)
                     {
-                        continue; // Not enough bytes to reconstruct IP header + ICMP header.
-                    }
+                        SocketReceiveFromResult receiveResult = await socket.ReceiveFromAsync(
+                            new ArraySegment<byte>(receiveBuffer),
+                            SocketFlags.None,
+                            socketConfig.EndPoint,
+                            timeoutTokenSource.Token)
+                            .ConfigureAwait(false);
 
-                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
-                    {
-                        return reply;
+                        int bytesReceived = receiveResult.ReceivedBytes;
+                        if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
+                        {
+                            continue; // Not enough bytes to reconstruct IP header + ICMP header.
+                        }
+
+                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
+                        {
+                            return reply;
+                        }
                     }
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+                {
+                }
+                catch (OperationCanceledException)
+                {
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
@@ -252,7 +250,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private PingReply CreateTimedOutPingReply()
+        private static PingReply CreateTimedOutPingReply()
         {
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
