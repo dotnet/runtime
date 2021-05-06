@@ -766,6 +766,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
 		else if (!strcmp (cmethod->name, "GetRawSzArrayData") || !strcmp (cmethod->name, "GetRawArrayData")) {
 			int dreg = alloc_preg (cfg);
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}

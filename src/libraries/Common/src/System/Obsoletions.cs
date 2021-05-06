@@ -74,5 +74,8 @@ namespace System
 
         internal const string DerivedCryptographicTypesMessage = "Derived cryptographic types are obsolete. Use the Create method on the underlying type instead.";
         internal const string DerivedCryptographicTypesDiagId = "SYSLIB0021";
+
+        internal const string RijndaelMessage = "The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.";
+        internal const string RijndaelDiagId = "SYSLIB0022";
     }
 }

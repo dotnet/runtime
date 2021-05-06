@@ -4474,6 +4474,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
 			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
+
+#ifdef TARGET_WASM
+		if (ainfo && ainfo->storage == LLVMArgVtypeByRef)
+			/* This causes llvm to make a copy of the value which is what we need */
+			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
+#endif
 	}
 
 	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
@@ -11625,6 +11631,14 @@ emit_method_inner (EmitContext *ctx)
 		return;
 	}
 
+#ifdef TARGET_WASM
+	if (ctx->module->interp && cfg->header->code_size > 100000) {
+		/* Large methods slow down llvm too much */
+		set_failure (ctx, "il code too large.");
+		return;
+	}
+#endif
+
 	header = cfg->header;
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
@@ -11714,6 +11728,13 @@ emit_method_inner (EmitContext *ctx)
 			/* For OP_LDADDR */
 			cfg->args [i + sig->hasthis]->opcode = OP_VTARG_ADDR;
 		}
+
+#ifdef TARGET_WASM
+		if (ainfo->storage == LLVMArgVtypeByRef) {
+			/* This causes llvm to make a copy of the value which is what we need */
+			mono_llvm_add_param_byval_attr (LLVMGetParam (method, pindex), LLVMGetElementType (LLVMTypeOf (LLVMGetParam (method, pindex))));
+		}
+#endif
 	}
 	g_free (names);
 
@@ -12176,15 +12197,16 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		cfg->exception_message = g_strdup ("varargs");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
 	call->cinfo = get_llvm_call_info (cfg, sig);
 
 	if (cfg->disable_llvm)
 		return;
-
-	if (sig->call_convention == MONO_CALL_VARARG) {
-		cfg->exception_message = g_strdup ("varargs");
-		cfg->disable_llvm = TRUE;
-	}
 
 	for (i = 0; i < n; ++i) {
 		MonoInst *ins;
