@@ -604,15 +604,16 @@ inline unsigned genTypeStSz(var_types type)
 
 extern const BYTE genActualTypes[TYP_COUNT];
 
-inline var_types genActualType(var_types type)
+template <class T>
+inline var_types genActualType(T value)
 {
     /* Spot check to make certain the table is in synch with the enum */
-
     assert(genActualTypes[TYP_DOUBLE] == TYP_DOUBLE);
     assert(genActualTypes[TYP_REF] == TYP_REF);
 
-    assert((unsigned)type < sizeof(genActualTypes));
-    return (var_types)genActualTypes[type];
+    assert((unsigned)TypeGet(value) < sizeof(genActualTypes));
+
+    return (var_types)genActualTypes[TypeGet(value)];
 }
 
 /*****************************************************************************
