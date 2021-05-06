@@ -51,10 +51,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Buffers to hold during a call to send.
             public MemoryHandle[] BufferArrays = new MemoryHandle[1];
-            public QuicBuffer[] SendQuicBuffers = new QuicBuffer[1];
-
-            // Handle to pinned SendQuicBuffers.
-            public GCHandle SendHandle;
+            public SafeMsQuicBufferHandle SendBufferHandle = new SafeMsQuicBufferHandle(1);
+            public int SendBufferCount;
 
             // Resettable completions to be used for multiple calls to send, start, and shutdown.
             public readonly ResettableCompletionSource<uint> SendResettableCompletionSource = new ResettableCompletionSource<uint>();
@@ -176,14 +174,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
-
             HandleWriteCompletedState();
         }
 
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
@@ -212,7 +208,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 bool shouldComplete = false;
                 lock (state)
                 {
-                    if (state.SendState == SendState.None)
+                    if (state.SendState == SendState.None || state.SendState == SendState.Pending)
                     {
                         state.SendState = SendState.Aborted;
                         shouldComplete = true;
@@ -240,7 +236,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             lock (_state)
             {
-                if (_state.SendState == SendState.Finished)
+                if (_state.SendState == SendState.Finished || _state.SendState == SendState.Aborted)
                 {
                     _state.SendState = SendState.None;
                 }
@@ -501,11 +497,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            _disposed = true;
             _state.Handle.Dispose();
+            _state.SendBufferHandle.Dispose();
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             CleanupSendState(_state);
-
-            _disposed = true;
         }
 
         private void EnableReceive()
@@ -602,7 +598,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool shouldComplete = false;
             lock (state)
             {
-                if (state.SendState == SendState.None)
+                if (state.SendState == SendState.None || state.SendState == SendState.Pending)
                 {
                     shouldComplete = true;
                 }
@@ -761,7 +757,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (state)
             {
-                if (state.SendState == SendState.None)
+                if (state.SendState == SendState.Pending)
                 {
                     state.SendState = SendState.Finished;
                     complete = true;
@@ -771,7 +767,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (complete)
             {
                 CleanupSendState(state);
-
                 // TODO throw if a write was canceled.
                 state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
             }
@@ -781,15 +776,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static void CleanupSendState(State state)
         {
-            if (state.SendHandle.IsAllocated)
-            {
-                state.SendHandle.Free();
-            }
+            lock (state) {
+                Debug.Assert(state.SendState != SendState.Pending);
+                Debug.Assert(state.SendBufferCount <= state.BufferArrays.Length);
 
-            // Callings dispose twice on a memory handle should be okay
-            foreach (MemoryHandle buffer in state.BufferArrays)
-            {
-                buffer.Dispose();
+                for (int i = 0; i < state.SendBufferCount; i++)
+                {
+                    state.BufferArrays[i].Dispose();
+                }
             }
         }
 
@@ -798,6 +792,12 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAGS flags)
         {
+            lock (_state)
+            {
+                Debug.Assert(_state.SendState != SendState.Pending);
+                _state.SendState = buffer.IsEmpty ? SendState.Finished : SendState.Pending;
+            }
+
             if (buffer.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -809,18 +809,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             MemoryHandle handle = buffer.Pin();
-            _state.SendQuicBuffers[0].Length = (uint)buffer.Length;
-            _state.SendQuicBuffers[0].Buffer = (byte*)handle.Pointer;
+            QuicBuffer* quicBuffer = (QuicBuffer*)_state.SendBufferHandle.DangerousGetHandle();
+
+            quicBuffer->Length = (uint)buffer.Length;
+            quicBuffer->Buffer = (byte*)handle.Pointer;
 
             _state.BufferArrays[0] = handle;
-
-            _state.SendHandle = GCHandle.Alloc(_state.SendQuicBuffers, GCHandleType.Pinned);
-
-            var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(_state.SendQuicBuffers, 0);
+            _state.SendBufferCount = 1;
 
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
-                quicBufferPointer,
+                _state.SendBufferHandle,
                 bufferCount: 1,
                 flags,
                 IntPtr.Zero);
@@ -841,6 +840,13 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAGS flags)
         {
+
+            lock (_state)
+            {
+                Debug.Assert(_state.SendState != SendState.Pending);
+                _state.SendState = buffers.IsEmpty ? SendState.Finished : SendState.Pending;
+            }
+
             if (buffers.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -851,38 +857,37 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return default;
             }
 
-            uint count = 0;
+            int count = 0;
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
             {
                 ++count;
             }
 
-            if (_state.SendQuicBuffers.Length < count)
+            if (_state.SendBufferHandle.Count < count)
             {
-                _state.SendQuicBuffers = new QuicBuffer[count];
+                _state.SendBufferHandle.Dispose();
+                _state.SendBufferHandle = new SafeMsQuicBufferHandle(count);
                 _state.BufferArrays = new MemoryHandle[count];
             }
 
+            _state.SendBufferCount = count;
             count = 0;
 
+            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendBufferHandle.DangerousGetHandle();
             foreach (ReadOnlyMemory<byte> buffer in buffers)
             {
                 MemoryHandle handle = buffer.Pin();
-                _state.SendQuicBuffers[count].Length = (uint)buffer.Length;
-                _state.SendQuicBuffers[count].Buffer = (byte*)handle.Pointer;
+                quicBuffers[count].Length = (uint)buffer.Length;
+                quicBuffers[count].Buffer = (byte*)handle.Pointer;
                 _state.BufferArrays[count] = handle;
                 ++count;
             }
 
-            _state.SendHandle = GCHandle.Alloc(_state.SendQuicBuffers, GCHandleType.Pinned);
-
-            var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(_state.SendQuicBuffers, 0);
-
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
-                quicBufferPointer,
-                count,
+                _state.SendBufferHandle,
+                (uint)count,
                 flags,
                 IntPtr.Zero);
 
@@ -902,6 +907,12 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<ReadOnlyMemory<byte>> buffers,
            QUIC_SEND_FLAGS flags)
         {
+            lock (_state)
+            {
+                Debug.Assert(_state.SendState != SendState.Pending);
+                _state.SendState = buffers.IsEmpty ? SendState.Finished : SendState.Pending;
+            }
+
             if (buffers.IsEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
@@ -916,28 +927,29 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             uint length = (uint)array.Length;
 
-            if (_state.SendQuicBuffers.Length < length)
+            if (_state.SendBufferHandle.Count < array.Length)
             {
-                _state.SendQuicBuffers = new QuicBuffer[length];
-                _state.BufferArrays = new MemoryHandle[length];
+                _state.SendBufferHandle.Dispose();
+                _state.SendBufferHandle = new SafeMsQuicBufferHandle(array.Length);
+                _state.BufferArrays = new MemoryHandle[array.Length];
             }
 
+            _state.SendBufferCount = array.Length;
+            QuicBuffer* quicBuffers = (QuicBuffer*)_state.SendBufferHandle.DangerousGetHandle();
             for (int i = 0; i < length; i++)
             {
                 ReadOnlyMemory<byte> buffer = array[i];
                 MemoryHandle handle = buffer.Pin();
-                _state.SendQuicBuffers[i].Length = (uint)buffer.Length;
-                _state.SendQuicBuffers[i].Buffer = (byte*)handle.Pointer;
+
+                quicBuffers[i].Length = (uint)buffer.Length;
+                quicBuffers[i].Buffer = (byte*)handle.Pointer;
+
                 _state.BufferArrays[i] = handle;
             }
 
-            _state.SendHandle = GCHandle.Alloc(_state.SendQuicBuffers, GCHandleType.Pinned);
-
-            var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(_state.SendQuicBuffers, 0);
-
             uint status = MsQuicApi.Api.StreamSendDelegate(
                 _state.Handle,
-                quicBufferPointer,
+                _state.SendBufferHandle,
                 length,
                 flags,
                 IntPtr.Zero);
@@ -1014,6 +1026,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private enum SendState
         {
             None,
+            Pending,
             Aborted,
             Finished
         }

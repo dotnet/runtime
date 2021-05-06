@@ -675,7 +675,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamSendDelegate(
             SafeMsQuicStreamHandle stream,
-            QuicBuffer* buffers,
+            SafeMsQuicBufferHandle buffers,
             uint bufferCount,
             QUIC_SEND_FLAGS flags,
             IntPtr clientSendContext);
