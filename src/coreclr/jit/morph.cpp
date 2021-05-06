@@ -5620,8 +5620,16 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // Widen 'index' on 64-bit targets
     if (index->TypeGet() != TYP_I_IMPL)
     {
-        // We don't need any casts here since index is known to be never negative at this point.
-        index->ChangeType(TYP_I_IMPL);
+        if (index->OperGet() == GT_CNS_INT)
+        {
+            index->gtType = TYP_I_IMPL;
+        }
+        else
+        {
+            // Mark cast as unsigned since index should never be negative
+            // at this point (handled by GT_ARR_BOUNDS_CHECK)
+            index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+        }
     }
 #endif // TARGET_64BIT
 
