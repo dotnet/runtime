@@ -57,6 +57,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [MemberData(nameof(EcbTestCases))]
         public static void TryDecryptEcb_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
+            if (plaintext.Length == 0)
+            {
+                // Can't have a ciphertext length shorter than zero.
+                return;
+            }
+
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
@@ -73,6 +79,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [MemberData(nameof(EcbTestCases))]
         public static void TryEncryptEcb_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
+            if (ciphertext.Length == 0)
+            {
+                // Can't have a too small buffer for zero.
+                return;
+            }
+
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
@@ -246,7 +258,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     else
                     {
                         Assert.Equal(plaintext, destinationBuffer.ToArray());
-                        Assert.True(destinationBuffer.Overlaps(ciphertextBuffer));
+                        Assert.True(destinationBuffer.Overlaps(ciphertextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
                     }
                 }
             }
@@ -285,6 +297,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     else
                     {
                         Assert.Equal(ciphertext, destinationBuffer.ToArray());
+                        Assert.True(destinationBuffer.Overlaps(plaintextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
                     }
                 }
             }
@@ -313,6 +326,27 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(EcbTestCases))]
+        public static void EncryptEcb_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+                byte[] encrypted = aes.EncryptEcb(plaintext.AsSpan(), padding);
+
+                if (padding == PaddingMode.ISO10126)
+                {
+                    int blockSizeBytes = aes.BlockSize / 8;
+                    Assert.Equal(ciphertext[..^blockSizeBytes], encrypted[..^blockSizeBytes]);
+                }
+                else
+                {
+                    Assert.Equal(ciphertext, encrypted);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
         public static void DecryptEcb_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
             using (Aes aes = AesFactory.Create())
@@ -328,6 +362,27 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 else
                 {
                     Assert.Equal(plaintext, decrypted);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
+        public static void EncryptEcb_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+                byte[] encrypted = aes.EncryptEcb(plaintext, padding);
+
+                if (padding == PaddingMode.ISO10126)
+                {
+                    int blockSizeBytes = aes.BlockSize / 8;
+                    Assert.Equal(ciphertext[..^blockSizeBytes], encrypted[..^blockSizeBytes]);
+                }
+                else
+                {
+                    Assert.Equal(ciphertext, encrypted);
                 }
             }
         }
@@ -533,6 +588,43 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ISO10126,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    Array.Empty<byte>(),
+
+                    PaddingMode.Zeros,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    Array.Empty<byte>(),
+
+                    PaddingMode.None,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x6D, 0xE5, 0xF6, 0x07, 0xAB, 0x7E, 0xB8, 0x20,
+                        0x2F, 0x39, 0x57, 0x70, 0x3B, 0x04, 0xE8, 0xB5,
+                    },
+
+                    PaddingMode.PKCS7,
                 };
             }
         }
