@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ProjectReference Include="Microsoft.NET.Sdk.Mono.Toolchain.Manifest\Microsoft.NET.Sdk.Mono.Toolchain.Manifest.pkgproj" />
+    <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.RuntimeConfigParser.Task\Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj" />
   </ItemGroup>
