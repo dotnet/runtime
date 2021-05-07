@@ -11,10 +11,10 @@ int32_t AndroidCryptoNative_SignWithSignatureObject(JNIEnv* env,
                                                     uint8_t* sig,
                                                     int32_t* siglen)
 {
-    assert(dgst);
-    assert(sig);
-    assert(signatureObject);
-    assert(privateKey);
+    abort_if_invalid_pointer_argument (dgst);
+    abort_if_invalid_pointer_argument (sig);
+    abort_if_invalid_pointer_argument (signatureObject);
+    abort_if_invalid_pointer_argument (privateKey);
     if (!siglen)
     {
         return FAIL;
@@ -49,10 +49,10 @@ int32_t AndroidCryptoNative_VerifyWithSignatureObject(JNIEnv* env,
                                                       const uint8_t* sig,
                                                       int32_t siglen)
 {
-    assert(dgst);
-    assert(sig);
-    assert(signatureObject);
-    assert(publicKey);
+    abort_if_invalid_pointer_argument (dgst);
+    abort_if_invalid_pointer_argument (sig);
+    abort_if_invalid_pointer_argument (signatureObject);
+    abort_if_invalid_pointer_argument (publicKey);
 
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitVerify, publicKey);
     ON_EXCEPTION_PRINT_AND_GOTO(error);

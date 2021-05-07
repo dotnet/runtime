@@ -89,8 +89,9 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
                                                     jobject /*X509Certificate*/ cert,
                                                     const char* hashString)
 {
-    assert(store != NULL);
-    assert(cert != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cert);
+    abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -124,9 +125,10 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
                                                                   PAL_KeyAlgorithm algorithm,
                                                                   const char* hashString)
 {
-    assert(store != NULL);
-    assert(cert != NULL);
-    assert(key != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cert);
+    abort_if_invalid_pointer_argument (key);
+    abort_if_invalid_pointer_argument (hashString);
 
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
@@ -212,8 +214,9 @@ bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store
                                                       jobject /*X509Certificate*/ cert,
                                                       const char* hashString)
 {
-    assert(store != NULL);
-    assert(cert != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cert);
+    abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
     jstring alias = JSTRING(hashString);
@@ -319,8 +322,8 @@ int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ 
                                                            EnumCertificatesCallback cb,
                                                            void* context)
 {
-    assert(store != NULL);
-    assert(cb != NULL);
+    abort_if_invalid_pointer_argument (store);
+    abort_if_invalid_pointer_argument (cb);
 
     JNIEnv* env = GetJNIEnv();
     return EnumerateCertificates(env, store, cb, context);
@@ -391,7 +394,7 @@ int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool systemOnl
                                                                   EnumTrustedCertificatesCallback cb,
                                                                   void* context)
 {
-    assert(cb != NULL);
+    abort_if_invalid_pointer_argument (cb);
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
@@ -435,7 +438,7 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
                                                        jobject /*X509Certificate*/ cert,
                                                        const char* hashString)
 {
-    assert(store != NULL);
+    abort_if_invalid_pointer_argument (store);
 
     JNIEnv* env = GetJNIEnv();
 

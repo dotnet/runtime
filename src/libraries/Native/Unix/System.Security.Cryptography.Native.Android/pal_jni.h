@@ -5,7 +5,6 @@
 
 #include <jni.h>
 #include <android/log.h>
-#include <assert.h>
 #include <stdlib.h>
 #include "pal_safecrt.h"
 
@@ -469,7 +468,9 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 // Logging helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define LOG_WARN(fmt, ...) ((void)__android_log_print(ANDROID_LOG_WARN, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define LOG_FATAL(fmt, ...) ((void)__android_log_print(ANDROID_LOG_FATAL, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 
 // JNI helpers - assume there is a JNIEnv* variable named env
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
