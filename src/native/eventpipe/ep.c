@@ -787,7 +787,6 @@ enable_default_session_via_env_variables (void)
 	ep_char8_t *ep_config_output_path = NULL;
 	uint32_t ep_circular_mb = 0;
 	const ep_char8_t *output_path = NULL;
-	bool output_streaming = false;
 
 	if (ep_rt_config_value_get_enable ()) {
 		ep_config = ep_rt_config_value_get_config ();
