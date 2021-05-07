@@ -47,12 +47,11 @@ namespace System.IO.Enumeration
                 isSymlink = entry._status.IsSymbolicLink(entry.FullPath);
                 isDirectory = entry._status.IsDirectory(entry.FullPath);
             }
-
             // Same idea as the directory check, just repeated for (and tweaked due to the
             // nature of) symlinks.
             // Whether we had the dirent structure or not, we treat a symlink to a directory as a directory,
             // so we need to reflect that in our isDirectory variable.
-            if (isSymlink)
+            else if (isSymlink)
             {
                 isDirectory = entry._status.IsDirectory(entry.FullPath);
             }
