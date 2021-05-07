@@ -611,7 +611,7 @@ write_event (
 	EP_ASSERT (payload != NULL);
 
 	// We can't proceed if tracing is not initialized.
-	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
+	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () >= EP_STATE_INITIALIZED);
 
 	// Exit early if the event is not enabled.
 	ep_return_void_if_nok (ep_event_is_enabled (ep_event));
@@ -649,7 +649,7 @@ write_event_2 (
 	EP_ASSERT (payload != NULL);
 
 	// We can't proceed if tracing is not initialized.
-	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
+	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () >= EP_STATE_INITIALIZED);
 
 	EventPipeThread *const current_thread = ep_thread_get_or_create ();
 	if (!current_thread) {
