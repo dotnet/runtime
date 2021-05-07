@@ -39,6 +39,13 @@ namespace System.IO
         // Exists as of the last refresh
         private bool _exists;
 
+#if !TARGET_BROWSER
+        // Caching the euid/egid to avoid extra p/invokes
+        // Should get reset on refresh
+        private uint? _euid;
+        private uint? _egid;
+#endif
+
         private bool IsFileCacheInitialized    => _initializedFileCache == 0;
         private bool IsSymlinkCacheInitialized => _initializedSymlinkCache == 0;
 
@@ -80,23 +87,36 @@ namespace System.IO
 #else
                 Interop.Sys.Permissions readBit, writeBit;
 
-                if (_fileCache.Uid == Interop.Sys.GetEUid())
+                if (_euid == null)
+                {
+                    _euid = Interop.Sys.GetEUid();
+                }
+
+                if (_fileCache.Uid == _euid)
                 {
                     // User effectively owns the file
                     readBit = Interop.Sys.Permissions.S_IRUSR;
                     writeBit = Interop.Sys.Permissions.S_IWUSR;
                 }
-                else if (_fileCache.Gid == Interop.Sys.GetEGid())
-                {
-                    // User belongs to a group that effectively owns the file
-                    readBit = Interop.Sys.Permissions.S_IRGRP;
-                    writeBit = Interop.Sys.Permissions.S_IWGRP;
-                }
                 else
                 {
-                    // Others permissions
-                    readBit = Interop.Sys.Permissions.S_IROTH;
-                    writeBit = Interop.Sys.Permissions.S_IWOTH;
+                    if (_egid == null)
+                    {
+                        _egid = Interop.Sys.GetEGid();
+                    }
+
+                    if (_fileCache.Gid == _egid)
+                    {
+                        // User belongs to a group that effectively owns the file
+                        readBit = Interop.Sys.Permissions.S_IRGRP;
+                        writeBit = Interop.Sys.Permissions.S_IWGRP;
+                    }
+                    else
+                    {
+                        // Others permissions
+                        readBit = Interop.Sys.Permissions.S_IROTH;
+                        writeBit = Interop.Sys.Permissions.S_IWOTH;
+                    }
                 }
 #endif
 
@@ -380,6 +400,12 @@ namespace System.IO
                 // and check again if the symlink path is a directory
                 _isDirectory = CacheHasDirectoryFlag(_symlinkCache);
             }
+
+#if !TARGET_BROWSER
+            // These are cached and used when retrieving the read-only attribute
+            _euid = null;
+            _egid = null;
+#endif
 
             _exists = true;
         }
