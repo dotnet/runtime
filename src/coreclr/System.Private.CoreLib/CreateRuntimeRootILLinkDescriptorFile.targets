@@ -14,7 +14,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
+    <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Common.xml" />
+    <_ILLinkDescriptorsFilePaths Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
   </ItemGroup>
 
