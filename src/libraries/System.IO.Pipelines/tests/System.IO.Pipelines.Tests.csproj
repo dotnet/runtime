@@ -16,6 +16,7 @@
     <Compile Include="Infrastructure\CancelledReadsStream.cs" />
     <Compile Include="BackpressureTests.cs" />
     <Compile Include="Infrastructure\ObserveDisposeStream.cs" />
+    <Compile Include="PipeReaderReadAtLeastAsyncTests.cs" />
     <Compile Include="PipeReaderCopyToAsyncTests.cs" />
     <Compile Include="FlushAsyncCancellationTests.cs" />
     <Compile Include="FlushAsyncCompletionTests.cs" />
@@ -34,6 +35,8 @@
     <Compile Include="ReadResultTests.cs" />
     <Compile Include="SchedulerFacts.cs" />
     <Compile Include="SequencePipeReaderTests.cs" />
+    <Compile Include="BasePipeReaderReadAtLeastAsyncTests.cs" />
+    <Compile Include="StreamPipeReaderReadAtLeastAsyncTests.cs" />
     <Compile Include="StreamPipeReaderCopyToAsyncTests.cs" />
     <Compile Include="StreamPipeReaderTests.cs" />
     <Compile Include="Infrastructure\TestMemoryPool.cs" />
