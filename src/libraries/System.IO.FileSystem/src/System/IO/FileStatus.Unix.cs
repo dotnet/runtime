@@ -162,8 +162,13 @@ namespace System.IO
 
         internal bool IsHidden(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
+            // Avoid disk hit first
+            if (IsNameHidden(fileName))
+            {
+                return true;
+            }
             EnsureCachesInitialized(path, continueOnError);
-            return IsNameHidden(fileName) || HasHiddenFlag;
+            return HasHiddenFlag;
         }
 
         internal bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
