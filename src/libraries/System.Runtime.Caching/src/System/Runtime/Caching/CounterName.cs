@@ -5,7 +5,7 @@ using System;
 
 namespace System.Runtime.Caching
 {
-    internal enum PerfCounterName
+    internal enum CounterName
     {
         Entries = 0,
         Hits,
