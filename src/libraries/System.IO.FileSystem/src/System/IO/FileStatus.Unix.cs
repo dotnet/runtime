@@ -46,15 +46,7 @@ namespace System.IO
         private uint? _egid;
 #endif
 
-        private bool IsFileCacheInitialized    => _initializedFileCache == 0;
-        private bool IsSymlinkCacheInitialized => _initializedSymlinkCache == 0;
-
-        private bool AreCachesInitialized =>
-            // The file cache should always be successfully refreshed
-            _initializedFileCache == 0 &&
-            // The symbolic link cache only gets refreshed when the path is detected
-            // to be a symlink, so -1 is also acceptable
-            _initializedSymlinkCache <= 0;
+        private bool IsFileCacheInitialized => _initializedFileCache == 0;
 
         // Check if the main path (without following symlinks) has the hidden attribute set
         // Ideally, use this if Refresh has been successfully called at least once.
@@ -420,7 +412,10 @@ namespace System.IO
         // If stat or lstat failed, and continueOnError is set to true, this method will throw.
         internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            if (!AreCachesInitialized)
+            // The file cache should always be successfully refreshed (0)
+            // The symbolic link cache only gets refreshed when the path is detected
+            // to be a symlink, so -1 (meaning 'uninitialized') is also acceptable
+            if (_initializedFileCache != 0 || _initializedSymlinkCache > 0)
             {
                 RefreshCaches(path);
 
