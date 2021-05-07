@@ -187,8 +187,14 @@ namespace Microsoft.NET.Build.Tasks
 
                 if (!File.Exists(_inputAssembly))
                 {
-                    Log.LogError(Strings.InputAssemblyNotFound, _inputAssembly);
-                    return false;
+                    string compositeImageWithoutSourceMetadata = CompilationEntry.GetMetadata(MetadataKeys.EmitSymbols);
+                    bool compositeImageWithoutSource = !string.IsNullOrEmpty(compositeImageWithoutSourceMetadata) && bool.Parse(compositeImageWithoutSourceMetadata);
+
+                    if (!compositeImageWithoutSource)
+                    {
+                        Log.LogError(Strings.InputAssemblyNotFound, _inputAssembly);
+                        return false;
+                    }
                 }
 
                 if (string.IsNullOrEmpty(_outputR2RImage))

@@ -353,7 +353,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       and do not replace them. IL PDBs are still required for debugging. Native PDBs emitted by the R2R compiler are
       only used for profiling purposes.
       -->
-      <ResolvedFileToPublish Remove="@(_ReadyToRunImplementationAssemblies)" Condition="'$(PublishReadyToRunComposite)' == 'true'"/>
+      <ResolvedFileToPublish Remove="%(_ReadyToRunImplementationAssemblies.Identity)" Condition="'$(PublishReadyToRunComposite)' == 'true' and '%(_ReadyToRunImplementationAssemblies.IsNative)'==''"/>
       <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList)" />
       <ResolvedFileToPublish Include="@(_ReadyToRunFilesToPublish)" />
     </ItemGroup>

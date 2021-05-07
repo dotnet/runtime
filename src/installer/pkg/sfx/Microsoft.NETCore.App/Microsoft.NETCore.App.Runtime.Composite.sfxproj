@@ -17,5 +17,51 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Composite.r2r.dll" IsNative="true" />
+  </ItemGroup>
+
+ <ItemGroup>
+    <!-- Exclude the composite image from the closure check as it includes references to already excluded shim assemblies -->
+    <ExcludeFromClosure Include="Microsoft.NETCore.App.Composite.r2r" />
+ </ItemGroup>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <Target Name="_GenerateFrameworkList"
+          DependsOnTargets="GetFilesToPackage"
+          Condition="'$(PlatformPackageType)' == 'TargetingPack' or '$(PlatformPackageType)' == 'RuntimePack'">
+    <ItemGroup>
+      <_FrameworkRuntimeList Include="$(IntermediateOutputPath)FrameworkList.xml"
+                             Condition="'$(PlatformPackageType)' == 'TargetingPack'" />
+      <_FrameworkRuntimeList Include="$(IntermediateOutputPath)RuntimeList.xml"
+                             Condition="'$(PlatformPackageType)' == 'RuntimePack'" />
+      <_FrameworkRuntimeList>
+        <TargetPath>data</TargetPath>
+      </_FrameworkRuntimeList>
+
+      <_FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(TargetFrameworkIdentifier)" />
+      <_FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(TargetFrameworkVersion.TrimStart('vV'))" />
+      <_FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
+      <_FrameworkListRootAttribute Include="Name" Value="$(SharedFrameworkFriendlyName)" />
+      <_FrameworkListTargetFilePrefix Include="ref/;runtimes/" />
+      <FilesToPackage2 Include="@(FilesToPackage)" />
+      <FilesToPackage2 Remove="%(FilesToPackage2.Identity)" Condition="'%(Filename)%(Extension)' == 'Microsoft.NETCore.App.Composite.r2r.dll'" />
+    </ItemGroup>
+
+    <Message Text="FilesToPackage @(FilesToPackage)" Importance="high"/>
+    <Message Text="FilesToPackage2 @(FilesToPackage2)" Importance="high"/>
+
+    <CreateFrameworkListFile
+      Files="@(FilesToPackage2)"
+      FileClassifications="@(FrameworkListFileClass)"
+      TargetFile="@(_FrameworkRuntimeList)"
+      TargetFilePrefixes="@(_FrameworkListTargetFilePrefix)"
+      SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)"
+      RootAttributes="@(_FrameworkListRootAttribute)" />
+    <ItemGroup>
+      <FileWrites Include="@(_FrameworkRuntimeList)" />
+      <FilesToPackage Include="@(_FrameworkRuntimeList)" />
+    </ItemGroup>
+  </Target>
 </Project>
