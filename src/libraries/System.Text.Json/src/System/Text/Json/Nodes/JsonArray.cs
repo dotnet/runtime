@@ -164,6 +164,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
+                CreateNodes();
                 Debug.Assert(_list != null);
 
                 options ??= JsonSerializerOptions.s_defaultOptions;
@@ -198,7 +199,9 @@ namespace System.Text.Json.Nodes
 
                     foreach (JsonElement element in jElement.EnumerateArray())
                     {
-                        list.Add(JsonNodeConverter.Create(element, Options));
+                        JsonNode? node = JsonNodeConverter.Create(element, Options);
+                        node?.AssignParent(this);
+                        list.Add(node);
                     }
 
                     // Clear since no longer needed.
