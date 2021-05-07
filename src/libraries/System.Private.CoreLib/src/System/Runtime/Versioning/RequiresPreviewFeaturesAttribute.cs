@@ -12,7 +12,7 @@ namespace System.Runtime.Versioning
                 AttributeTargets.Method |
                 AttributeTargets.Property |
                 AttributeTargets.Field |
-                AttributeTargets.Event, AllowMultiple = true, Inherited = false)]
+                AttributeTargets.Event, Inherited = false)]
     public sealed class RequiresPreviewFeaturesAttribute : Attribute
     {
         public RequiresPreviewFeaturesAttribute() { }
