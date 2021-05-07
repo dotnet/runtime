@@ -136,10 +136,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"pop",
 			"call",
-			"leave.s",
+			"leave.s il_16",
 			"pop",
 			"call",
-			"leave.s",
+			"leave.s il_15",
 			"ret",
 			"ret"
 			})]
@@ -168,12 +168,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.1",
 			"conv.i8",
 			"stloc.0",
-			"leave.s",
+			"leave.s il_16",
 			"pop",
 			"ldc.i4.2",
 			"conv.i8",
 			"stloc.0",
-			"leave.s",
+			"leave.s il_16",
 			"ldloc.0",
 			"ret"
 			})]
@@ -200,11 +200,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"ldc.i4.1",
 			"stloc.1",
-			"leave.s",
+			"leave.s il_1c",
 			"pop",
 			"ldloc.0",
 			"call",
-			"leave.s",
+			"leave.s il_1a",
 			"ldc.i4.3",
 			"ret",
 			"ldloc.1",
@@ -254,9 +254,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"pop",
 			"call",
-			"leave.s",
+			"leave.s il_10",
 			"pop",
-			"leave.s",
+			"leave.s il_10",
 			"ret"
 		})]
 		static void Test9 ()

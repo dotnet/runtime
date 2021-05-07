@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 		[ExpectedInstructionSequence (new[] {
 			"ldarg.0",
 			"dup",
-			"brtrue.s",
+			"brtrue.s il_6",
 			"pop",
 			"ldarg.1",
 			"pop",
@@ -76,7 +76,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 			"ldarg.0",
 			"pop",
 			"ldnull",
-			"brfalse.s",
+			"brfalse.s il_6",
 			"ret",
 			"call",
 			"ret"

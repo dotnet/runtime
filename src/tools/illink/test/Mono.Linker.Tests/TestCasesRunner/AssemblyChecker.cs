@@ -386,6 +386,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public static string FormatInstruction (Instruction instr)
 		{
+			switch (instr.OpCode.FlowControl) {
+			case FlowControl.Branch:
+			case FlowControl.Cond_Branch:
+				if (instr.Operand is Instruction target)
+					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("X")}";
+
+				break;
+			}
+
 			switch (instr.OpCode.Code) {
 			case Code.Ldc_I4:
 				if (instr.Operand is int ivalue)

@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"call",
 			"ldc.i4.3",
-			"beq.s",
+			"beq.s il_8",
 			"ret"
 			})]
 		static void TestProperty_int_1 ()
@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.3",
 			"call",
-			"beq.s",
+			"beq.s il_8",
 			"ret"
 			})]
 		static void TestProperty_int_2 ()
@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"call",
 			"ldc.i4.5",
-			"ble.s",
+			"ble.s il_8",
 			"ldc.i4.0",
 			"ret"
 			})]
@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"ret"
 			})]
 		static void TestProperty_bool_1 ()
@@ -106,7 +106,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"ret"
 			})]
 		static void TestProperty_bool_2 ()
@@ -120,7 +120,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"call",
 			"call",
-			"beq.s",
+			"beq.s il_c",
 			"ret"
 			})]
 		static void TestProperty_bool_3 ()
@@ -132,7 +132,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"br.s",
+			"br.s il_2",
 			"call",
 			"pop",
 			"ret"
@@ -147,7 +147,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"ret"
 			})]
 		static void TestProperty_null_1 ()

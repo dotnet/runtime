@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"call",
 			"ldc.i4.3",
-			"beq.s",
+			"beq.s il_8",
 			"ret"
 		})]
 		static void TestSimpleTry ()
