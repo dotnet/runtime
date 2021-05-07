@@ -413,7 +413,7 @@
 
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
-      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_LISTEN_PORTS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" />
     </ItemGroup>
 

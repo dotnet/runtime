@@ -14,7 +14,6 @@ namespace System.Reflection.Tests
     public static partial class CustomAttributeTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51958", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void CustomAttributeTest1()
         {
             Type t = typeof(AttributeHolder1);  // Intentionally not projected. We're reflecting on this (and Invoking it) to get the validation baseline data.
