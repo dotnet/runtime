@@ -30,7 +30,7 @@
 // earlier because those builds only support C++11 constexpr,  which doesn't allow the
 // use of 'if' statements within the body of a constexpr function.  Later builds support
 // C++14 constexpr.
-#if defined(_DEBUG) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
+#if defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 
 // Code to generate a compile-time error if return statements appear where they
 // shouldn't.
