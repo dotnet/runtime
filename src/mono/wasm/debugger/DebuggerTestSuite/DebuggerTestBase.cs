@@ -259,6 +259,13 @@ namespace DebuggerTests
             return l;
         }
 
+        internal JToken Check(JToken locals, string name, JObject expected)
+        {
+            var l = GetAndAssertObjectWithName(locals, name);
+            CheckValue(l["value"], expected, name).Wait();
+            return l;
+        }
+
         internal JToken CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false, string description = null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
@@ -932,6 +939,9 @@ namespace DebuggerTests
 
         internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
+
+        internal static JObject TNumber(string value) =>
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>
             JObject.FromObject(new { type = "object", isValueType = true, className = className, description = description ?? className });

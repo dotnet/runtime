@@ -36,8 +36,6 @@
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
-
-      <WasmExtraConfig Condition="'$(RuntimeConfiguration)'=='Debug'" Include="environment_variables" Value="{ &quot;MONO_LOG_LEVEL&quot;: &quot;debug&quot;, &quot;MONO_LOG_MASK&quot; : &quot;all&quot; }"/>
     </ItemGroup>
   </Target>
 
