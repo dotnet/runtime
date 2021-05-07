@@ -22,14 +22,10 @@ namespace System.IO.Pipes.Tests
         public TestAccountImpersonator()
         {
             string testAccountPassword;
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                var randomBytes = new byte[33];
-                rng.GetBytes(randomBytes);
+            var randomBytes = RandomNumberGenerator.GetBytes(33);
 
-                // Add special chars to ensure it satisfies password requirements.
-                testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
-            }
+            // Add special chars to ensure it satisfies password requirements.
+            testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
 
             DateTime accountExpirationDate = DateTime.UtcNow + TimeSpan.FromMinutes(2);
             using (var principalCtx = new PrincipalContext(ContextType.Machine))
