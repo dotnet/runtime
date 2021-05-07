@@ -44,7 +44,7 @@ namespace System.IO.Enumeration
             // symlink or a directory.
             if (isUnknown)
             {
-                isSymlink = entry._status.IsSymbolicLink(entry.FullPath);
+                isSymlink = entry.IsSymbolicLink;
                 isDirectory = entry._status.IsDirectory(entry.FullPath);
             }
             // Same idea as the directory check, just repeated for (and tweaked due to the
