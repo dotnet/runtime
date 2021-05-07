@@ -20,6 +20,8 @@ namespace Mono.Linker
 		public int SourceColumn { get; }
 		public int? ILOffset { get; }
 
+		const int HiddenLineNumber = 0xfeefee;
+
 		public MessageOrigin (string fileName, int sourceLine = 0, int sourceColumn = 0)
 		{
 			FileName = fileName;
@@ -47,6 +49,14 @@ namespace Mono.Linker
 				var offset = ILOffset ?? 0;
 				SequencePoint correspondingSequencePoint = method.DebugInformation.SequencePoints
 					.Where (s => s.Offset <= offset)?.Last ();
+
+				// If the warning comes from hidden line (compiler generated code typically)
+				// search for any sequence point with non-hidden line number and report that as a best effort.
+				if (correspondingSequencePoint.StartLine == HiddenLineNumber) {
+					correspondingSequencePoint = method.DebugInformation.SequencePoints
+						.Where (s => s.StartLine != HiddenLineNumber)?.FirstOrDefault ();
+				}
+
 				if (correspondingSequencePoint != null) {
 					fileName = correspondingSequencePoint.Document.Url;
 					sourceLine = correspondingSequencePoint.StartLine;
