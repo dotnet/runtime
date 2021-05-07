@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Ldap
     {
-        private const int ber_default_successful_return_code = 0;
+        public const int ber_default_successful_return_code = 0;
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_alloc_t", CharSet = CharSet.Ansi)]
         public static extern IntPtr ber_alloc(int option);
@@ -60,14 +60,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_null", CharSet = CharSet.Ansi)]
         public static extern int ber_put_null(SafeBerHandle berElement, nuint tag);
-
-
-        public static int ber_printf_tag(SafeBerHandle berElement, string format, nuint tag)
-        {
-            // Ber Linux tags are passed with the values that they affect, like `ber_printf_int(.., tag)`.
-            // So this function does nothing on Linux.
-            return ber_default_successful_return_code;
-        }
 
         public static int ber_printf_int(SafeBerHandle berElement, string format, int value, nuint tag)
         {

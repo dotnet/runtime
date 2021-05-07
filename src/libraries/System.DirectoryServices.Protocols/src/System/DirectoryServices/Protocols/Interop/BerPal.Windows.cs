@@ -15,15 +15,15 @@ namespace System.DirectoryServices.Protocols
 
         internal static int FlattenBerElement(SafeBerHandle berElement, ref IntPtr flattenptr) => Interop.Ldap.ber_flatten(berElement, ref flattenptr);
 
-        internal static int PrintBerArray(SafeBerHandle berElement, string format, IntPtr value, nuint tag) => Interop.Ldap.ber_printf(berElement, format, __arglist(value));
+        internal static int PrintBerArray(SafeBerHandle berElement, string format, IntPtr value, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist(value));
 
-        internal static int PrintByteArray(SafeBerHandle berElement, string format, HGlobalMemHandle value, uint length, nuint tag) => Interop.Ldap.ber_printf(berElement, format, __arglist(value, length));
+        internal static int PrintByteArray(SafeBerHandle berElement, string format, HGlobalMemHandle value, uint length, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist(value, length));
 
-        internal static int PrintEmptyArgument(SafeBerHandle berElement, string format, nuint tag) => Interop.Ldap.ber_printf(berElement, format, __arglist());
+        internal static int PrintEmptyArgument(SafeBerHandle berElement, string format, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist());
 
-        internal static int PrintInt(SafeBerHandle berElement, string format, int value, nuint tag) => Interop.Ldap.ber_printf(berElement, format, __arglist(value));
+        internal static int PrintInt(SafeBerHandle berElement, string format, int value, nuint _) => Interop.Ldap.ber_printf(berElement, format, __arglist(value));
 
-        internal static int PrintTag(SafeBerHandle berElement, string format, nuint tag) => Interop.Ldap.ber_printf(berElement, format, __arglist(tag));
+        internal static int PrintTag(SafeBerHandle berElement, string format, nuint tag) => Interop.Ldap.ber_printf(berElement, format, __arglist((uint)tag));
 
         internal static int ScanNext(SafeBerHandle berElement, string format) => Interop.Ldap.ber_scanf(berElement, format, __arglist());
 

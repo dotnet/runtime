@@ -21,7 +21,12 @@ namespace System.DirectoryServices.Protocols
 
         internal static int PrintInt(SafeBerHandle berElement, string format, int value, nuint tag) => Interop.Ldap.ber_printf_int(berElement, format, value, tag);
 
-        internal static int PrintTag(SafeBerHandle berElement, string format, nuint tag) => Interop.Ldap.ber_printf_tag(berElement, format, tag);
+        internal static int PrintTag(SafeBerHandle _1, string _2, nuint _3)
+        {
+            // Ber Linux tags are passed with the values that they affect, like `ber_printf_int(.., tag)`.
+            // So this function does nothing on Linux.
+            return Interop.Ldap.ber_default_successful_return_code;
+        }
 
         internal static int ScanNext(SafeBerHandle berElement, string format) => Interop.Ldap.ber_scanf_emptyarg(berElement, format);
 
