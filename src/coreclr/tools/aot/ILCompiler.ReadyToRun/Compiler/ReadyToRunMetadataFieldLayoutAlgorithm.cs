@@ -813,8 +813,6 @@ namespace ILCompiler
             }
         }
 
-        protected override bool IsBlittableOrManagedSequential(TypeDesc type) => MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type);
-
         /// <summary>
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
         /// base class layout changes.
