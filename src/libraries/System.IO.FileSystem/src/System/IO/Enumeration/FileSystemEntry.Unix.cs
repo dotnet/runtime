@@ -63,10 +63,6 @@ namespace System.IO.Enumeration
                 attributes |= FileAttributes.ReparsePoint;
             if (isDirectory)
                 attributes |= FileAttributes.Directory;
-            if ((directoryEntry.NameLength > 0 && directoryEntry.Name[0] == '.') || entry._status.HasHiddenFlag) // soft retrieval
-                attributes |= FileAttributes.Hidden;
-            if (entry._status.HasReadOnlyFlag) // soft retrieval
-                attributes |= FileAttributes.ReadOnly;
 
             return attributes;
         }
