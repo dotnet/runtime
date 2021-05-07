@@ -1345,12 +1345,6 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_PERFTRACING
                             )
                     {
-                        TraceLoggingEventTypes? tlet = metadata.TraceLoggingEventTypes;
-                        if (tlet == null)
-                        {
-                            tlet = new TraceLoggingEventTypes(metadata.Name, metadata.Tags, metadata.Parameters);
-                            Interlocked.CompareExchange(ref metadata.TraceLoggingEventTypes, tlet, null);
-                        }
                         EventSourceOptions opt = new EventSourceOptions
                         {
                             Keywords = (EventKeywords)metadata.Descriptor.Keywords,
@@ -1358,7 +1352,7 @@ namespace System.Diagnostics.Tracing
                             Opcode = (EventOpcode)metadata.Descriptor.Opcode
                         };
 
-                        WriteMultiMerge(metadata.Name, ref opt, tlet, pActivityId, relatedActivityId, data);
+                        WriteMultiMerge(metadata.Name, ref opt, metadata.TraceLoggingEventTypes, pActivityId, relatedActivityId, data);
                     }
 #endif // FEATURE_MANAGED_ETW
 
@@ -1894,6 +1888,8 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
+                    ref EventMetadata metadata = ref m_eventData[eventId];
+
                     if (childActivityID != null)
                     {
                         // If you use WriteEventWithRelatedActivityID you MUST declare the first argument to be a GUID
@@ -1904,7 +1900,7 @@ namespace System.Diagnostics.Tracing
                         // we can end up in a state where the ParameterInfo[] doesn't have its first parameter stripped,
                         // and this leads to a mismatch between the number of arguments and the number of ParameterInfos,
                         // which would cause a cryptic IndexOutOfRangeException later if we don't catch it here.
-                        if (!m_eventData[eventId].HasRelatedActivityID)
+                        if (!metadata.HasRelatedActivityID)
                         {
                             throw new ArgumentException(SR.EventSource_NoRelatedActivityId);
                         }
@@ -1915,19 +1911,19 @@ namespace System.Diagnostics.Tracing
                     Guid* pActivityId = null;
                     Guid activityId = Guid.Empty;
                     Guid relatedActivityId = Guid.Empty;
-                    EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
-                    EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
+                    EventOpcode opcode = (EventOpcode)metadata.Descriptor.Opcode;
+                    EventActivityOptions activityOptions = metadata.ActivityOptions;
 
                     if (childActivityID == null &&
                        ((activityOptions & EventActivityOptions.Disable) == 0))
                     {
                         if (opcode == EventOpcode.Start)
                         {
-                            m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relatedActivityId, m_eventData[eventId].ActivityOptions);
+                            m_activityTracker.OnStart(m_name, metadata.Name, metadata.Descriptor.Task, ref activityId, ref relatedActivityId, metadata.ActivityOptions);
                         }
                         else if (opcode == EventOpcode.Stop)
                         {
-                            m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
+                            m_activityTracker.OnStop(m_name, metadata.Name, metadata.Descriptor.Task, ref activityId);
                         }
 
                         if (activityId != Guid.Empty)
@@ -1937,44 +1933,36 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_MANAGED_ETW
-                    if (m_eventData[eventId].EnabledForETW
+                    if (metadata.EnabledForETW
 #if FEATURE_PERFTRACING
-                            || m_eventData[eventId].EnabledForEventPipe
+                            || metadata.EnabledForEventPipe
 #endif // FEATURE_PERFTRACING
                         )
                     {
                         if (!SelfDescribingEvents)
                         {
-                            if (!m_etwProvider.WriteEvent(ref m_eventData[eventId].Descriptor, m_eventData[eventId].EventHandle, pActivityId, childActivityID, args))
-                                ThrowEventSourceException(m_eventData[eventId].Name);
+                            if (!m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
+                                ThrowEventSourceException(metadata.Name);
 #if FEATURE_PERFTRACING
-                            if (!m_eventPipeProvider.WriteEvent(ref m_eventData[eventId].Descriptor, m_eventData[eventId].EventHandle, pActivityId, childActivityID, args))
-                                ThrowEventSourceException(m_eventData[eventId].Name);
+                            if (!m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
+                                ThrowEventSourceException(metadata.Name);
 #endif // FEATURE_PERFTRACING
                         }
                         else
                         {
-                            TraceLoggingEventTypes? tlet = m_eventData[eventId].TraceLoggingEventTypes;
-                            if (tlet == null)
-                            {
-                                tlet = new TraceLoggingEventTypes(m_eventData[eventId].Name,
-                                                                    EventTags.None,
-                                                                    m_eventData[eventId].Parameters);
-                                Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, tlet, null);
-                            }
                             // TODO: activity ID support
                             EventSourceOptions opt = new EventSourceOptions
                             {
-                                Keywords = (EventKeywords)m_eventData[eventId].Descriptor.Keywords,
-                                Level = (EventLevel)m_eventData[eventId].Descriptor.Level,
-                                Opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode
+                                Keywords = (EventKeywords)metadata.Descriptor.Keywords,
+                                Level = (EventLevel)metadata.Descriptor.Level,
+                                Opcode = (EventOpcode)metadata.Descriptor.Opcode
                             };
 
-                            WriteMultiMerge(m_eventData[eventId].Name, ref opt, tlet, pActivityId, childActivityID, args);
+                            WriteMultiMerge(metadata.Name, ref opt, metadata.TraceLoggingEventTypes, pActivityId, childActivityID, args);
                         }
                     }
 #endif // FEATURE_MANAGED_ETW
-                    if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
+                    if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
 #if !ES_BUILD_STANDALONE
                         // Maintain old behavior - object identity is preserved
@@ -2008,14 +1996,7 @@ namespace System.Diagnostics.Tracing
         private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
-            TraceLoggingEventTypes? eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
-            if (eventTypes == null)
-            {
-                eventTypes = new TraceLoggingEventTypes(m_eventData[eventId].Name,
-                                                        EventTags.None,
-                                                        m_eventData[eventId].Parameters);
-                Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, eventTypes, null);
-            }
+            TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
             int paramCount = Math.Min(eventTypes.typeInfos.Length, args.Length); // parameter count mismatch get logged in LogEventArgsMismatches
             var eventData = new object?[eventTypes.typeInfos.Length];
             for (int i = 0; i < paramCount; i++)
@@ -2466,8 +2447,21 @@ namespace System.Diagnostics.Tracing
             public bool AllParametersAreString;
             public bool AllParametersAreInt32;
 
-            public TraceLoggingEventTypes? TraceLoggingEventTypes;
             public EventActivityOptions ActivityOptions;
+
+            private TraceLoggingEventTypes _traceLoggingEventTypes;
+            public TraceLoggingEventTypes TraceLoggingEventTypes
+            {
+                get
+                {
+                    if (_traceLoggingEventTypes is null)
+                    {
+                        var tlet = new TraceLoggingEventTypes(Name, Tags, Parameters);
+                        Interlocked.CompareExchange(ref _traceLoggingEventTypes, tlet, null);
+                    }
+                    return _traceLoggingEventTypes;
+                }
+            }
 
             private ReadOnlyCollection<string>? _parameterNames;
             public ReadOnlyCollection<string> ParameterNames => _parameterNames ??= GetParameterNames();
