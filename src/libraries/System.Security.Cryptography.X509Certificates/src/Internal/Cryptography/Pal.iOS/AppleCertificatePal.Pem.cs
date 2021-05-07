@@ -13,6 +13,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
+        // Byte representation of "-----BEGIN "
         private static byte[] pemBegin = new byte[] { 0x2D, 0x2D, 0x2D, 0x2D, 0x2D, 0x42, 0x45, 0x47, 0x49, 0x4E, 0x20 };
 
         internal delegate bool DerCallback(ReadOnlySpan<byte> derData);
@@ -26,6 +27,9 @@ namespace Internal.Cryptography.Pal
                 return false;
             }
 
+            // Look for the PEM marker. This doesn't guarantee it will be a valid PEM since we don't check whether
+            // the marker is at the beginning of line or whether the line is a complete marker. It's just a quick
+            // check to avoid conversion from bytes to characters if the content is DER encoded.
             if (rawData.IndexOf(pemBegin) < 0)
             {
                 return false;
