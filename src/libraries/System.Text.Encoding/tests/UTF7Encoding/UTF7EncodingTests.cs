@@ -55,7 +55,7 @@ namespace System.Text.Tests
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void WebName(UTF7Encoding encoding)
         {
             Assert.Equal("utf-7", encoding.WebName);
@@ -64,7 +64,7 @@ namespace System.Text.Tests
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void CodePage(UTF7Encoding encoding)
         {
             Assert.Equal(65000, encoding.CodePage);
@@ -73,7 +73,7 @@ namespace System.Text.Tests
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void EncodingName(UTF7Encoding encoding)
         {
             Assert.NotEmpty(encoding.EncodingName); // Unicode (UTF-7) in en-US
@@ -82,7 +82,7 @@ namespace System.Text.Tests
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsSingleByte(UTF7Encoding encoding)
         {
             Assert.False(encoding.IsSingleByte);
@@ -91,7 +91,7 @@ namespace System.Text.Tests
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Clone(UTF7Encoding encoding)
         {
             UTF7Encoding clone = (UTF7Encoding)encoding.Clone();
@@ -126,7 +126,7 @@ namespace System.Text.Tests
         [Theory]
         [MemberData(nameof(Equals_TestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void EqualsTest(UTF7Encoding encoding, object value, bool expected)
         {
             Assert.Equal(expected, encoding.Equals(value));

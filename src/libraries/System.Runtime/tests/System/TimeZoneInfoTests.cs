@@ -124,7 +124,7 @@ namespace System.Tests
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalTheory(nameof(IsEnglishUILanguage))]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
         {
             // Edge case - Optionally allow some characters to be absent in the display name.
@@ -2622,7 +2622,7 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Argentina/Catamarca")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
             if (PlatformDetection.ICUVersion.Major >= 52)
@@ -2643,7 +2643,7 @@ namespace System.Tests
         public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
 
         [ConditionalFact(nameof(SupportIanaNamesConversion))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
@@ -2673,7 +2673,7 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Buenos_Aires")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IdsConversionsTest(string windowsId, string ianaId)
         {
             Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
@@ -2695,7 +2695,7 @@ namespace System.Tests
         [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
         [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
         [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
         {
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
