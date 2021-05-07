@@ -84,6 +84,50 @@ namespace Internal.Cryptography
             return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, this.GetPaddingSize(), FeedbackSize / BitsPerByte, encrypting);
         }
 
+        protected override bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                paddingSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                paddingSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // only 8bits/64bits feedback would be valid.

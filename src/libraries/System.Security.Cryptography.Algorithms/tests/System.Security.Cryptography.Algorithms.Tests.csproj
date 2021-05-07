@@ -65,6 +65,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.OneShot.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.OneShot.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs"
