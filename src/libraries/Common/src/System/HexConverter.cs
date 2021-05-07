@@ -292,36 +292,27 @@ namespace System
         {
             if (sizeof(IntPtr) == 8)
             {
-                // Same logic as BitHelper.HasLookupFlag in Microsoft.Toolkit.HighPerformance.
-                // First, the input value is scaled down by '0' (48), which is the offset used
-                // to populate the bitmask. This avoids wasting 48 bits set to 0 at the start of
-                // the mask, and lets all the necessary range (from '0' to 'f' to fit in 64 bits).
-                // We then do a range check (the clt.un comparison will push 0/1, so the bool will
-                // be normalized) and use the result to compute a bitwise flag of either 0xFFFFFFFF
-                // if the input is accepted, or all 0 otherwise. The target bit is then extracted,
-                // (the mask has a 1 bit for "0123456789ABCDEFabcdef" chars left shifted by '0')
-                // and this value is combined with the previous mask. This is done so that
-                // if the shift was performed with a value that was too high, which has an
-                // undefined behavior and could produce a non-0 value, the mask will reset
-                // the final value anyway. This result is then unchecked-cast to a byte (as
-                // it is guaranteed to always be either 1 or 0), and than to a bool to return.
-                // We only use this logic on 64-bit systems, as using 64 bit values would otherwise
-                // be much slower than just using the lookup table anyway (no hardware support).
                 // This code path, when used, has no branches and doesn't depend on cache hits,
                 // so it's faster and does not vary in speed depending on input data distribution.
-                // It also gets JITted to just a constant when the input is a constant as well.
-                int i = c - '0';
-                bool isInRange = (uint)i < 64u;
-                byte byteFlag = *(byte*)&isInRange;
-                int
-                    negativeFlag = byteFlag - 1,
-                    mask = ~negativeFlag,
-                    shift = unchecked((int)((35465847073801215UL >> i) & 1)),
-                    and = shift & mask;
-                byte result = unchecked((byte)and);
-                bool valid = *(bool*)&result;
+                // We only use this logic on 64-bit systems, as using 64 bit values would otherwise
+                // be much slower than just using the lookup table anyway (no hardware support).
+                // The magic constant 18428868213665201664 is a 64 bit value containing 1s at the
+                // indices corresponding to all the valid hex characters (ie. "0123456789ABCDEFabcdef")
+                // minus 48 (ie. '0'), and backwards (so from the most significant bit and downwards).
+                // The offset of 48 for each bit is necessary so that the entire range fits in 64 bits.
+                // First, we subtract '0' to the input digit (after casting to uint to account for any
+                // negative inputs). Note that even if this subtraction underflows, this happens before
+                // the result is zero-extended to ulong, meaning that `i` will always have upper 32 bits
+                // equal to 0. We then left shift the constant with this offset, and apply a bitmask that
+                // has the highest bit set (the sign bit) if and only if `c` is in the ['0', '0' + 64) range.
+                // Then we only need to check whether this final result is less than 0: this will only be
+                // the case if both `i` was in fact the index of a set bit in the magic constant, and also
+                // `c` was in the allowed range (this ensures that false positive bit shifts are ignored).
+                ulong i = (uint)c - '0';
+                ulong shift = 18428868213665201664UL << (int)i;
+                ulong mask = i - 64;
 
-                return valid;
+                return (long)(shift & mask) < 0 ? true : false;
             }
 
             return FromChar(c) != 0xFF;
