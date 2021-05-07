@@ -107,7 +107,7 @@ typedef __SafeToReturn __ReturnOK;
 #define DEBUG_OK_TO_RETURN_BEGIN(arg) { typedef __SafeToReturn __ReturnOK; if (0 && __ReturnOK::used()) { } else {
 #define DEBUG_OK_TO_RETURN_END(arg) } }
 
-#else // defined(_DEBUG) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
+#else // defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 
 #define DEBUG_ASSURE_SAFE_TO_RETURN TRUE
 
@@ -117,7 +117,7 @@ typedef __SafeToReturn __ReturnOK;
 #define DEBUG_OK_TO_RETURN_BEGIN(arg) {
 #define DEBUG_OK_TO_RETURN_END(arg) }
 
-#endif // defined(_DEBUG) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
+#endif // defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 
 #endif // !_PREFAST_
 
