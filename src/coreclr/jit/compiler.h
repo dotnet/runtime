@@ -6560,7 +6560,7 @@ protected:
 
     static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
 
-    void optInvertWhileLoop(BasicBlock* block);
+    bool optInvertWhileLoop(BasicBlock* block);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);

@@ -4158,6 +4158,9 @@ Compiler::fgWalkResult Compiler::optInvertCountTreeInfo(GenTree** pTree, fgWalkD
 // Arguments:
 //   block -- block that may be the predecessor of the un-rotated loop's test block.
 //
+// Returns:
+//   true if any IR changes possibly made (used to determine phase return status)
+//
 // Notes:
 //   Uses a simple lexical screen to detect likely loops.
 //
@@ -4195,7 +4198,7 @@ Compiler::fgWalkResult Compiler::optInvertCountTreeInfo(GenTree** pTree, fgWalkD
 //  May not modify a loop if profile is unfavorable, if the cost of duplicating
 //  code is large (factoring in potential CSEs).
 //
-void Compiler::optInvertWhileLoop(BasicBlock* block)
+bool Compiler::optInvertWhileLoop(BasicBlock* block)
 {
     assert(opts.OptimizationEnabled());
     assert(compCodeOpt() != SMALL_CODE);
@@ -4205,7 +4208,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     if (block->bbJumpKind != BBJ_ALWAYS || (block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
     {
         // It can't be one of the ones we use for our exception magic
-        return;
+        return false;
     }
 
     // Get hold of the jump target
@@ -4214,13 +4217,13 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     // Does the block consist of 'jtrue(cond) block' ?
     if (bTest->bbJumpKind != BBJ_COND)
     {
-        return;
+        return false;
     }
 
     // bTest must be a backwards jump to block->bbNext
     if (bTest->bbJumpDest != block->bbNext)
     {
-        return;
+        return false;
     }
 
     // Since test is a BBJ_COND it will have a bbNext
@@ -4232,7 +4235,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     // be considered as the head of a loop, so also disallow different handler regions.
     if (!BasicBlock::sameEHRegion(block, bTest))
     {
-        return;
+        return false;
     }
 
     // The duplicated condition block will branch to bTest->bbNext, so that also better be in the
@@ -4240,7 +4243,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     BasicBlock* bTestNext = bTest->bbNext;
     if (bTestNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bTestNext))
     {
-        return;
+        return false;
     }
 
     // It has to be a forward jump. Defer this check until after all the cheap checks
@@ -4249,7 +4252,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     if (!fgIsForwardBranch(block))
     {
-        return;
+        return false;
     }
 
     // Find the loop termination test at the bottom of the loop.
@@ -4260,7 +4263,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     noway_assert(condTree->gtOper == GT_JTRUE);
     if (!condTree->AsOp()->gtOp1->OperIsCompare())
     {
-        return;
+        return false;
     }
 
     // Estimate the cost of cloning the entire test block.
@@ -4273,6 +4276,9 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     // We might consider flagging blocks with hoistable helper calls
     // during importation, so we can avoid the helper search and
     // implement an early bail out for large blocks with no helper calls.
+    //
+    // Note that gtPrepareCost can cause operand swapping, so we must
+    // return `true` (possible IR change) from here on.
 
     unsigned estDupCostSz = 0;
 
@@ -4301,7 +4307,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
             //
             if (weightNext == BB_ZERO_WEIGHT)
             {
-                return;
+                return true;
             }
 
             // We generally expect weightTest == weightNext + weightBlock.
@@ -4413,7 +4419,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
 
     if (costIsTooHigh)
     {
-        return;
+        return true;
     }
 
     bool foundCondTree = false;
@@ -4598,6 +4604,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         fgDumpBlock(bTest);
     }
 #endif // DEBUG
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -4624,6 +4632,7 @@ PhaseStatus Compiler::optInvertLoops()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    bool madeChanges = false; // Assume no changes made
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
         // Make sure the appropriate fields are initialized
@@ -4635,26 +4644,18 @@ PhaseStatus Compiler::optInvertLoops()
             continue;
         }
 
-        optInvertWhileLoop(block);
+        if (optInvertWhileLoop(block))
+        {
+            madeChanges = true;
+        }
     }
 
-    bool madeChanges = fgModified;
-
-    if (madeChanges)
+    if (fgModified)
     {
         // Reset fgModified here as we've done a consistent set of edits.
         //
         fgModified = false;
     }
-
-    // optInvertWhileLoop can cause IR changes even if it does not modify
-    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
-    // Work around this for now.
-    //
-    // Note phase status only impacts dumping and checking done post-phase,
-    // it has no impact on a release build.
-    //
-    madeChanges = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
