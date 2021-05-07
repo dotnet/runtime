@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"call",
 			"ldc.i4.6",
-			"beq.s",
+			"beq.s il_8",
 			"ldc.i4.3",
 			"ret"
 		})]

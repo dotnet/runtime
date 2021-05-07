@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		"TestProperty()",
 		new string[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"ret"
 		})]
 	[Kept]

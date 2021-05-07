@@ -58,9 +58,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"ldc.i4.1",
-			"ret",
+			"ret"
 		})]
 		int TestCallOnInstanceMulti ()
 		{
@@ -153,10 +153,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"ldarg.0",
 			"call",
-			"ret",
+			"ret"
 		})]
 		void TestStaticPropagation ()
 		{

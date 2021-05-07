@@ -17,16 +17,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"brfalse.s",
+			"brfalse.s il_7",
 			"call",
-			"leave.s",
+			"leave.s il_1c",
 			"pop",
 			"call",
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
 			"pop",
-			"leave.s",
+			"leave.s il_1c",
 			"ldc.i4.2",
 			"ret"
 		})]
@@ -47,16 +47,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"call",
-			"leave.s",
+			"leave.s il_18",
 			"pop",
 			"call",
-			"brfalse.s",
+			"brfalse.s il_f",
 			"ldc.i4.0",
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
 			"pop",
-			"leave.s",
+			"leave.s il_18",
 			"ldc.i4.3",
 			"ret"
 		})]
