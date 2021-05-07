@@ -122,17 +122,6 @@ namespace System.IO
             }
         }
 
-        // Checks if the specified cache (lstat=_fileCache, stat=_symlinkCache) has the directory attribute set
-        // Only call if Refresh has been successfully called at least once, and you're
-        // certain the passed-in cache was successfully retrieved
-        private bool CacheHasDirectoryFlag(Interop.Sys.FileStatus cache) => (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-
-        internal static void Initialize(ref FileStatus status, bool initiallyDirectory)
-        {
-            status.InitiallyDirectory = initiallyDirectory;
-            status.InvalidateCaches();
-        }
-
         // Sets the cache initialization flags to -1, which means the caches are now uninitialized
         internal void InvalidateCaches()
         {
@@ -399,6 +388,12 @@ namespace System.IO
 #endif
 
             _exists = true;
+
+            // Checks if the specified cache (lstat=_fileCache, stat=_symlinkCache) has the directory attribute set
+            // Only call if Refresh has been successfully called at least once, and you're
+            // certain the passed-in cache was successfully retrieved
+            static bool CacheHasDirectoryFlag(Interop.Sys.FileStatus cache) =>
+                (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
         }
 
         // Checks if the file cache is set to -1 and refreshes it's value.

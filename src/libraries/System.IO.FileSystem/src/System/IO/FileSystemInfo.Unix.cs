@@ -11,7 +11,8 @@ namespace System.IO
 
         protected FileSystemInfo()
         {
-            FileStatus.Initialize(ref _fileStatus, this is DirectoryInfo);
+            _fileStatus.InitiallyDirectory = this is DirectoryInfo;
+            _fileStatus.InvalidateCaches();
         }
 
         internal static FileSystemInfo Create(string fullPath, string fileName, ref FileStatus fileStatus)
