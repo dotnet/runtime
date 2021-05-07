@@ -52,14 +52,8 @@ namespace System.IO
         // Ideally, use this if Refresh has been successfully called at least once.
         // But since it is also used for soft retrieval during FileSystemEntry initialization,
         // we return false early if the cache has not been initialized
-        internal bool HasHiddenFlag
-        {
-            get
-            {
-                return IsFileCacheInitialized &&
-                       (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
-            }
-        }
+        internal bool HasHiddenFlag => IsFileCacheInitialized &&
+            (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
 
         // Checks if the main path (without following symlinks) has the read-only attribute set
         // Ideally, use this if Refresh has been successfully called at least once.
