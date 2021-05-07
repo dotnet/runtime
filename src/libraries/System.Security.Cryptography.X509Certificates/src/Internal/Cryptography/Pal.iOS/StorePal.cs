@@ -21,20 +21,20 @@ namespace Internal.Cryptography.Pal
 
         public static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            List<ICertificatePal>? pemCerts = null;
+            List<ICertificatePal>? certificateList = null;
 
             AppleCertificatePal.TryDecodePem(
                 rawData,
                 derData =>
                 {
-                    pemCerts = pemCerts ?? new List<ICertificatePal>();
-                    pemCerts.Add(AppleCertificatePal.FromBlob(derData, password, keyStorageFlags));
+                    certificateList = certificateList ?? new List<ICertificatePal>();
+                    certificateList.Add(AppleCertificatePal.FromBlob(derData, password, keyStorageFlags));
                     return true;
                 });
 
-            if (pemCerts != null)
+            if (certificateList != null)
             {
-                return new ApplePemCertLoader(pemCerts);
+                return new CertCollectionLoader(certificateList);
             }
 
             X509ContentType contentType = AppleCertificatePal.GetDerCertContentType(rawData);
@@ -67,7 +67,34 @@ namespace Internal.Cryptography.Pal
                 contentType,
                 password);
 
-            return new AppleCertLoader(certs);
+            using (certs)
+            {
+                long longCount = Interop.CoreFoundation.CFArrayGetCount(certs);
+
+                if (longCount > int.MaxValue)
+                    throw new CryptographicException();
+
+                int count = (int)longCount;
+
+                // Apple returns things in the opposite order from Windows, so read backwards.
+                certificateList = new List<ICertificatePal>(count);
+                for (int i = count - 1; i >= 0; i--)
+                {
+                    IntPtr handle = Interop.CoreFoundation.CFArrayGetValueAtIndex(certs, i);
+
+                    if (handle != IntPtr.Zero)
+                    {
+                        ICertificatePal? certPal = CertificatePal.FromHandle(handle, throwOnFail: false);
+
+                        if (certPal != null)
+                        {
+                            certificateList.Add(certPal);
+                        }
+                    }
+                }
+            }
+
+            return new CertCollectionLoader(certificateList);
         }
 
         public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)

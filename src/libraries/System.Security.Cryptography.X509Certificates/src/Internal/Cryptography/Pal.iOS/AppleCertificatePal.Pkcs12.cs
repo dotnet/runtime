@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
@@ -10,6 +11,7 @@ using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -35,7 +37,7 @@ namespace Internal.Cryptography.Pal
 
             if (certAndKey.Key != null)
             {
-                Pkcs12SmallExport exporter = new Pkcs12SmallExport(new TempExportPal(pal), certAndKey.Key);
+                AppleCertificateExporter exporter = new AppleCertificateExporter(new TempExportPal(pal, certAndKey.Key));
                 byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, s_passwordExportHandle)!;
 
                 SafeSecIdentityHandle identityHandle;
@@ -58,34 +60,23 @@ namespace Internal.Cryptography.Pal
             return pal;
         }
 
-        private sealed class Pkcs12SmallExport : UnixExportProvider
+        private sealed class TempExportPal : ICertificatePal
         {
+            private readonly ICertificatePal _realPal;
             private readonly AsymmetricAlgorithm _privateKey;
 
-            internal Pkcs12SmallExport(ICertificatePalCore cert, AsymmetricAlgorithm privateKey)
-                : base(cert)
+            internal TempExportPal(AppleCertificatePal realPal, AsymmetricAlgorithm privateKey)
             {
+                Debug.Assert(privateKey != null);
+                _realPal = realPal;
                 _privateKey = privateKey;
             }
 
-            protected override byte[] ExportPkcs7() => throw new NotImplementedException();
-
-            protected override byte[] ExportPkcs8(ICertificatePalCore certificatePal, ReadOnlySpan<char> password)
-            {
-                return _privateKey.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
-            }
-        }
-
-        private sealed class TempExportPal : ICertificatePalCore
-        {
-            private readonly ICertificatePal _realPal;
-
-            internal TempExportPal(AppleCertificatePal realPal)
-            {
-                _realPal = realPal;
-            }
-
             public bool HasPrivateKey => true;
+            public RSA? GetRSAPrivateKey() => _privateKey as RSA;
+            public DSA? GetDSAPrivateKey() => _privateKey as DSA;
+            public ECDsa? GetECDsaPrivateKey() => _privateKey as ECDsa;
+            public ECDiffieHellman? GetECDiffieHellmanPrivateKey() => _privateKey as ECDiffieHellman;
 
             public void Dispose()
             {
@@ -109,6 +100,20 @@ namespace Internal.Cryptography.Pal
             public byte[] RawData => _realPal.RawData;
             public byte[] Export(X509ContentType contentType, SafePasswordHandle password) =>
                 _realPal.Export(contentType, password);
+
+            public int Version => _realPal.Version;
+            public bool Archived { get => _realPal.Archived; set => _realPal.Archived = value; }
+            public string FriendlyName { get => _realPal.FriendlyName; set => _realPal.FriendlyName = value; }
+            public X500DistinguishedName SubjectName => _realPal.SubjectName;
+            public X500DistinguishedName IssuerName => _realPal.IssuerName;
+            public IEnumerable<X509Extension> Extensions => _realPal.Extensions;
+            public string GetNameInfo(X509NameType nameType, bool forIssuer) => _realPal.GetNameInfo(nameType, forIssuer);
+            public void AppendPrivateKeyInfo(StringBuilder sb) => _realPal.AppendPrivateKeyInfo(sb);
+            public ICertificatePal CopyWithPrivateKey(DSA privateKey) => _realPal.CopyWithPrivateKey(privateKey);
+            public ICertificatePal CopyWithPrivateKey(ECDsa privateKey) => _realPal.CopyWithPrivateKey(privateKey);
+            public ICertificatePal CopyWithPrivateKey(RSA privateKey) => _realPal.CopyWithPrivateKey(privateKey);
+            public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey) => _realPal.CopyWithPrivateKey(privateKey);
+            public PolicyData GetPolicyData() => _realPal.GetPolicyData();
         }
     }
 }
