@@ -4764,7 +4764,7 @@ namespace System.Diagnostics.Tracing
 
             if (pChildActivityID != null)
             {
-                MoreInfo.ActivityId = *pChildActivityID;
+                MoreInfo.RelatedActivityId = *pChildActivityID;
             }
         }
 
