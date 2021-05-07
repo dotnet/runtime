@@ -226,14 +226,6 @@ monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int p
 
 	return 0;
 }
-/*typedef struct {
-	MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
-	MonoCoreLookupPaths *app_paths;
-	MonoCoreLookupPaths *app_ni_paths;
-	MonoCoreLookupPaths *platform_resource_roots;
-	MonoCoreLookupPaths *native_dll_search_directories;
-	PInvokeOverrideFn *pinvoke_override;
-} MonoCoreRuntimeProperties;*/
 
 // Initialize monovm with properties set by runtimeconfig.json. Primarily used by mobile targets.
 int

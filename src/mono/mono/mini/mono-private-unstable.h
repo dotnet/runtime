@@ -67,7 +67,7 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 MONO_API int 
 monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data);
 
-// The wrapper MonoCoreRuntimeProperties struct can be stack-allocated or freed, but any of the structs inside it will *not* be copied and need to be heap-allocated
+// The wrapper MonoCoreRuntimeProperties struct can be stack-allocated or freed, but the structs inside it _must_ be heap-allocated and never freed, as they are not copied to avoid extra allocations
 MONO_API int
 monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int propertyCount, const char **propertyKeys, const char **propertyValues);
 
