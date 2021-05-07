@@ -143,8 +143,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates/tests/System.Security.Cryptography.X509Certificates.Tests.csproj" />
 
     <!-- Failures -->
-    <!-- https://github.com/dotnet/runtime/issues/51374 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression/tests/System.IO.Compression.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51335 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51330 -->
