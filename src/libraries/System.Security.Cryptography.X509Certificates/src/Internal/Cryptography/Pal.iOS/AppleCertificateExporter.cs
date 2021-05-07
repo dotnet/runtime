@@ -11,9 +11,17 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class AppleCertificateExporter : UnixExportProvider
     {
+        private AsymmetricAlgorithm? _privateKey;
+
         public AppleCertificateExporter(ICertificatePalCore cert)
             : base(cert)
         {
+        }
+
+        public AppleCertificateExporter(ICertificatePalCore cert, AsymmetricAlgorithm privateKey)
+            : base(cert)
+        {
+            _privateKey = privateKey;
         }
 
         public AppleCertificateExporter(X509Certificate2Collection certs)
@@ -30,6 +38,11 @@ namespace Internal.Cryptography.Pal
 
         protected override byte[] ExportPkcs8(ICertificatePalCore certificatePal, ReadOnlySpan<char> password)
         {
+            if (_privateKey != null)
+            {
+                return _privateKey.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
+            }
+
             Debug.Assert(certificatePal.HasPrivateKey);
             ICertificatePal pal = (ICertificatePal)certificatePal;
             AsymmetricAlgorithm algorithm;
