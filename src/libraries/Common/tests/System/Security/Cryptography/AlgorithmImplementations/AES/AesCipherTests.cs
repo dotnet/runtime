@@ -1099,6 +1099,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
             Assert.NotEqual(encryptedBytes, decryptedBytes);
             Assert.Equal(expectedAnswer, decryptedBytes);
+
+            if (oneShotDecryptedBytes is not null)
+            {
+                Assert.Equal(expectedAnswer, oneShotDecryptedBytes);
+            }
         }
 
         private static void TestAesTransformDirectKey(
@@ -1113,6 +1118,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
             byte[] liveOneShotDecryptBytes = null;
+            byte[] liveOneShotEncryptBytes = null;
 
             using (Aes aes = AesFactory.Create())
             {
@@ -1131,6 +1137,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     aes.Key = key;
                     liveOneShotDecryptBytes = aes.DecryptEcb(cipherBytes, paddingMode);
+                    liveOneShotEncryptBytes = aes.EncryptEcb(plainBytes, paddingMode);
                 }
             }
 
@@ -1140,6 +1147,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             if (liveOneShotDecryptBytes is not null)
             {
                 Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+            }
+
+            if (liveOneShotEncryptBytes is not null)
+            {
+                Assert.Equal(cipherBytes, liveOneShotEncryptBytes);
             }
         }
 
