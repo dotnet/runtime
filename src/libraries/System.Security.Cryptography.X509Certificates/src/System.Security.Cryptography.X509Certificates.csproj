@@ -573,6 +573,13 @@
       <DependentUpon>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</DependentUpon>
     </Compile>
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.TempExportPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ECKey.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.X500Name.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs"
@@ -591,23 +598,16 @@
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.ImportExport.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Keys.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.TempExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ECKey.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.X500Name.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' AND '$(TargetsOSX)' != 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs"
@@ -619,22 +619,15 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.iOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.iOS.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificateExporter.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.ImportExport.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Keys.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pkcs12.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pem.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.TempExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12CertLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.AppleKeychainStore.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\X509Pal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ECKey.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.X500Name.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertCollectionLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
   </ItemGroup>
