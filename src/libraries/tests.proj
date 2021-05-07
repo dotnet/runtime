@@ -151,8 +151,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs/tests/System.Security.Cryptography.Pkcs.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51370 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml/tests/System.Security.Cryptography.Xml.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/51334 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaSet/System.Xml.XmlSchemaSet.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/51338 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaValidatorApi/System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
 
