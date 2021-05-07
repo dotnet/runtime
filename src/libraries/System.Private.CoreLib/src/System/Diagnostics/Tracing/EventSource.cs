@@ -2464,17 +2464,22 @@ namespace System.Diagnostics.Tracing
             }
 
             private ReadOnlyCollection<string>? _parameterNames;
-            public ReadOnlyCollection<string> ParameterNames => _parameterNames ??= GetParameterNames();
-
-            private ReadOnlyCollection<string> GetParameterNames()
+            public ReadOnlyCollection<string> ParameterNames
             {
-                ParameterInfo[] parameters = Parameters;
-                var names = new string[parameters.Length];
-                for (int i = 0; i < names.Length; i++)
+                get
                 {
-                    names[i] = parameters[i].Name!;
+                    if (_parameterNames is null)
+                    {
+                        ParameterInfo[] parameters = Parameters;
+                        var names = new string[parameters.Length];
+                        for (int i = 0; i < names.Length; i++)
+                        {
+                            names[i] = parameters[i].Name!;
+                        }
+                        _parameterNames = new ReadOnlyCollection<string>(names);
+                    }
+                    return _parameterNames;
                 }
-                return new ReadOnlyCollection<string>(names);
             }
         }
 
