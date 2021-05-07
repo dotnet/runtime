@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -135,6 +136,12 @@ namespace System.IO.Pipelines.Tests
 
             PipeReader.AdvanceTo(buffer.End);
             PipeReader.Complete();
+        }
+
+        [Fact]
+        public Task ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken()
+        {
+            return Assert.ThrowsAsync<OperationCanceledException>(async () => await PipeReader.ReadAtLeastAsync(0, new CancellationToken(true)));
         }
     }
 }
