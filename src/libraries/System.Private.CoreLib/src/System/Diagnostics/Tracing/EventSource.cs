@@ -2489,9 +2489,6 @@ namespace System.Diagnostics.Tracing
 #endif
 
             public bool HasRelatedActivityID;       // Set if the event method's first parameter is a Guid named 'relatedActivityId'
-#pragma warning disable 0649
-            public byte TriggersActivityTracking;   // count of listeners that marked this event as trigger for start of activity logging.
-#pragma warning restore 0649
             public string Name;                     // the name of the event
             public string? Message;                  // If the event has a message associated with it, this is it.
             public ParameterInfo[] Parameters;      // TODO can we remove?
