@@ -2778,13 +2778,13 @@ public:
 
     GenTree* gtNewJmpTableNode();
 
-    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, unsigned iconFlags, bool isInvariant);
+    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, GenTreeFlags iconFlags, bool isInvariant);
 
-    GenTree* gtNewIconHandleNode(size_t value, unsigned flags, FieldSeqNode* fields = nullptr);
+    GenTree* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields = nullptr);
 
-    unsigned gtTokenToIconFlags(unsigned token);
+    GenTreeFlags gtTokenToIconFlags(unsigned token);
 
-    GenTree* gtNewIconEmbHndNode(void* value, void* pValue, unsigned flags, void* compileTimeHandle);
+    GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
     GenTree* gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);
@@ -3035,11 +3035,14 @@ public:
     // create a copy of `tree`, adding specified flags, replacing uses of lclVar `deepVarNum` with
     // IntCnses with value `deepVarVal`.
     GenTree* gtCloneExpr(
-        GenTree* tree, unsigned addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal);
+        GenTree* tree, GenTreeFlags addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal);
 
     // Create a copy of `tree`, optionally adding specifed flags, and optionally mapping uses of local
     // `varNum` to int constants with value `varVal`.
-    GenTree* gtCloneExpr(GenTree* tree, unsigned addFlags = 0, unsigned varNum = BAD_VAR_NUM, int varVal = 0)
+    GenTree* gtCloneExpr(GenTree*     tree,
+                         GenTreeFlags addFlags = GTF_EMPTY,
+                         unsigned     varNum   = BAD_VAR_NUM,
+                         int          varVal   = 0)
     {
         return gtCloneExpr(tree, addFlags, varNum, varVal, varNum, varVal);
     }
@@ -3052,7 +3055,7 @@ public:
 
     // Internal helper for cloning a call
     GenTreeCall* gtCloneExprCallHelper(GenTreeCall* call,
-                                       unsigned     addFlags   = 0,
+                                       GenTreeFlags addFlags   = GTF_EMPTY,
                                        unsigned     deepVarNum = BAD_VAR_NUM,
                                        int          deepVarVal = 0);
 
@@ -4228,7 +4231,7 @@ public:
 
     GenTree* impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              CORINFO_LOOKUP*         pLookup,
-                             unsigned                flags,
+                             GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
@@ -4237,7 +4240,7 @@ public:
                                     CORINFO_LOOKUP*         pLookup,
                                     void*                   compileTimeHandle);
 
-    GenTree* impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup, unsigned flags, void* compileTimeHandle);
+    GenTree* impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
@@ -5596,8 +5599,8 @@ public:
     void fgDebugCheckLoopTable();
 
     void fgDebugCheckFlags(GenTree* tree);
-    void fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags);
-    void fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags);
+    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
+    void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileData();
     bool fgDebugCheckIncomingProfileData(BasicBlock* block);
@@ -5932,7 +5935,7 @@ private:
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
     GenTree* getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            CORINFO_LOOKUP*         pLookup,
-                           unsigned                handleFlags,
+                           GenTreeFlags            handleFlags,
                            void*                   compileTimeHandle);
     GenTree* getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                   CORINFO_LOOKUP*         pLookup,
@@ -7116,9 +7119,9 @@ public:
             ValueNum   vn;
             struct IntVal
             {
-                ssize_t  iconVal;   // integer
-                unsigned padding;   // unused; ensures iconFlags does not overlap lconVal
-                unsigned iconFlags; // gtFlags
+                ssize_t      iconVal;   // integer
+                unsigned     padding;   // unused; ensures iconFlags does not overlap lconVal
+                GenTreeFlags iconFlags; // gtFlags
             };
             struct Range // integer subrange
             {
@@ -7350,7 +7353,7 @@ public:
     // Assertion prop data flow functions.
     void       optAssertionPropMain();
     Statement* optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
-    bool optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, unsigned* pIconFlags);
+    bool optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP* optInitAssertionDataflowFlags();
     ASSERT_TP* optComputeAssertionGen();
 

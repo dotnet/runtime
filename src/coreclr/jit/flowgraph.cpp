@@ -812,8 +812,8 @@ GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
-    bool     bNeedClassID = true;
-    unsigned callFlags    = 0;
+    bool         bNeedClassID = true;
+    GenTreeFlags callFlags    = GTF_EMPTY;
 
     var_types type = TYP_BYREF;
 
