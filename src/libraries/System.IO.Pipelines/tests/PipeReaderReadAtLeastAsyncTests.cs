@@ -1,13 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.IO.Pipelines.Tests.Infrastructure;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -25,9 +21,9 @@ namespace System.IO.Pipelines.Tests
             Pipe = new Pipe(s_testOptions);
         }
 
-        protected virtual void SetPipeReaderOptions(int bufferSize)
+        protected virtual void SetPipeReaderOptions(MemoryPool<byte>? pool = null, int bufferSize = -1)
         {
-            PipeOptions options = new PipeOptions(readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false , minimumSegmentSize: bufferSize);
+            PipeOptions options = new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false , minimumSegmentSize: bufferSize);
             Pipe = new Pipe(options);
         }
 
