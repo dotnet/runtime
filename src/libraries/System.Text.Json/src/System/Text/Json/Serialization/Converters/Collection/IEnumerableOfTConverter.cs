@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -20,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            if (!TypeToConvert.IsAssignableFrom(RuntimeType))
+            if (!TypeToConvert.IsAssignableFrom(typeof(List<TElement>)))
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
@@ -67,6 +68,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType => typeof(List<TElement>);
+        internal override JsonTypeInfo.ConstructorDelegate? ConstructorDelegate =>
+            MemberAccessor.CreateConstructor<List<TElement>>(TypeToConvert);
     }
 }

@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
-                if (!TypeToConvert.IsAssignableFrom(RuntimeType))
+                if (!TypeToConvert.IsAssignableFrom(typeof(List<object?>)))
                 {
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
             int index = state.Current.EnumeratorIndex;
             JsonConverter<object?> elementConverter = GetElementConverter(ref state);
 
-            if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            if (GetElementTypeInfo(ref state).CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 // Fast path that avoids validation and extra indirection.
                 for (; index < list.Count; index++)
@@ -91,17 +91,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType
-        {
-            get
-            {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(List<object?>);
-                }
-
-                return TypeToConvert;
-            }
-        }
+        internal override JsonTypeInfo.ConstructorDelegate? ConstructorDelegate =>
+            MemberAccessor.CreateConstructor<List<object?>>(TypeToConvert);
     }
 }

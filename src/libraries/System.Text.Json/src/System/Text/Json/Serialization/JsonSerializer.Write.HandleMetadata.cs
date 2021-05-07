@@ -12,77 +12,128 @@ namespace System.Text.Json
         internal static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
         internal static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
         internal static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+        internal static readonly JsonEncodedText s_metadataType = JsonEncodedText.Encode("$type", encoder: null);
 
-        internal static MetadataPropertyName WriteReferenceForObject(
+        internal static MetadataPropertyName WriteMetadataForObject(
             JsonConverter jsonConverter,
             object currentValue,
             ref WriteStack state,
-            Utf8JsonWriter writer)
+            Utf8JsonWriter writer,
+            ReferenceHandlingStrategy referenceHandlingStrategy)
         {
+            Debug.Assert(referenceHandlingStrategy == ReferenceHandlingStrategy.Preserve || state.PolymorphicTypeDiscriminator is not null);
             MetadataPropertyName writtenMetadataName;
 
-            // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
-            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
+            if (referenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
-                writtenMetadataName = MetadataPropertyName.NoMetadata;
-            }
-            else
-            {
-                string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
-                Debug.Assert(referenceId != null);
-
-                if (alreadyExists)
+                // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
+                if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
                 {
-                    writer.WriteString(s_metadataRef, referenceId);
-                    writer.WriteEndObject();
-                    writtenMetadataName = MetadataPropertyName.Ref;
+                    writtenMetadataName = MetadataPropertyName.NoMetadata;
                 }
                 else
                 {
-                    writer.WriteString(s_metadataId, referenceId);
-                    writtenMetadataName = MetadataPropertyName.Id;
+                    string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+                    Debug.Assert(referenceId != null);
+
+                    if (alreadyExists)
+                    {
+                        writer.WriteString(s_metadataRef, referenceId);
+                        writer.WriteEndObject();
+                        writtenMetadataName = MetadataPropertyName.Ref;
+                    }
+                    else
+                    {
+                        writtenMetadataName = MetadataPropertyName.Id;
+
+                        // write the typeId ahead of the referenceId
+                        if (state.PolymorphicTypeDiscriminator is string typeId)
+                        {
+                            writer.WriteString(s_TypeIdPropertyName, typeId);
+                            writtenMetadataName |= MetadataPropertyName.Type;
+                            state.PolymorphicTypeDiscriminator = null;
+                        }
+
+                        writer.WriteString(s_metadataId, referenceId);
+                    }
                 }
+            }
+            else
+            {
+                Debug.Assert(state.PolymorphicTypeDiscriminator is not null);
+                writer.WriteString(s_TypeIdPropertyName, state.PolymorphicTypeDiscriminator);
+                writtenMetadataName = MetadataPropertyName.Type;
+                state.PolymorphicTypeDiscriminator = null;
             }
 
             return writtenMetadataName;
         }
 
-        internal static MetadataPropertyName WriteReferenceForCollection(
+        internal static MetadataPropertyName WriteMetadataForCollection(
             JsonConverter jsonConverter,
             object currentValue,
             ref WriteStack state,
-            Utf8JsonWriter writer)
+            Utf8JsonWriter writer,
+            ReferenceHandlingStrategy referenceHandlingStrategy)
         {
+            Debug.Assert(referenceHandlingStrategy == ReferenceHandlingStrategy.Preserve || state.PolymorphicTypeDiscriminator is not null);
             MetadataPropertyName writtenMetadataName;
 
-            // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
-            if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
+            if (referenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
-                writer.WriteStartArray();
-                writtenMetadataName = MetadataPropertyName.NoMetadata;
-            }
-            else
-            {
-                string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
-                Debug.Assert(referenceId != null);
-
-                if (alreadyExists)
+                // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
+                if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
                 {
-                    writer.WriteStartObject();
-                    writer.WriteString(s_metadataRef, referenceId);
-                    writer.WriteEndObject();
-                    writtenMetadataName = MetadataPropertyName.Ref;
+                    writer.WriteStartArray();
+                    writtenMetadataName = MetadataPropertyName.NoMetadata;
                 }
                 else
                 {
-                    writer.WriteStartObject();
-                    writer.WriteString(s_metadataId, referenceId);
-                    writer.WriteStartArray(s_metadataValues);
-                    writtenMetadataName = MetadataPropertyName.Id;
+                    string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+                    Debug.Assert(referenceId != null);
+
+                    if (alreadyExists)
+                    {
+                        writer.WriteStartObject();
+                        writer.WriteString(s_metadataRef, referenceId);
+                        writer.WriteEndObject();
+                        writtenMetadataName = MetadataPropertyName.Ref;
+                    }
+                    else
+                    {
+                        writtenMetadataName = MetadataPropertyName.Id;
+                        writer.WriteStartObject();
+
+                        // write the typeId ahead of the referenceId
+                        if (state.PolymorphicTypeDiscriminator is string typeId)
+                        {
+                            writer.WriteString(s_TypeIdPropertyName, typeId);
+                            writtenMetadataName |= MetadataPropertyName.Type;
+                            state.PolymorphicTypeDiscriminator = null;
+                        }
+
+                        writer.WriteString(s_metadataId, referenceId);
+                        writer.WriteStartArray(s_metadataValues);
+                    }
                 }
+            }
+            else
+            {
+                Debug.Assert(state.PolymorphicTypeDiscriminator is not null);
+
+                writer.WriteStartObject();
+                writer.WriteString(s_TypeIdPropertyName, state.PolymorphicTypeDiscriminator);
+                writer.WriteStartArray(s_metadataValues);
+                state.PolymorphicTypeDiscriminator = null;
+                writtenMetadataName = MetadataPropertyName.Type;
             }
 
             return writtenMetadataName;
+        }
+
+        internal static void WriteTypeMetata(Utf8JsonWriter writer, string typeId)
+        {
+            writer.WriteString(s_metadataType, typeId);
         }
     }
 }

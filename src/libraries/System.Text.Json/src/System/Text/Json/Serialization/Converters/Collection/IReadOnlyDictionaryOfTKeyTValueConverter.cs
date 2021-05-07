@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            if (!TypeToConvert.IsAssignableFrom(RuntimeType))
+            if (!TypeToConvert.IsAssignableFrom(typeof(Dictionary<TKey, TValue>)))
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
@@ -77,6 +77,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType => typeof(Dictionary<TKey, TValue>);
+        internal override JsonTypeInfo.ConstructorDelegate? ConstructorDelegate =>
+            MemberAccessor.CreateConstructor<Dictionary<TKey, TValue>>(TypeToConvert);
     }
 }

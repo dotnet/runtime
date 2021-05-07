@@ -33,6 +33,14 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
+        protected static JsonTypeInfo GetElementTypeInfo(ref WriteStack state)
+        {
+            JsonTypeInfo typeInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeTypeInfo;
+            Debug.Assert(typeInfo != null); // It should not be possible to have a null JsonTypeInfo
+
+            return typeInfo;
+        }
+
         internal override bool OnTryRead(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -42,7 +50,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo elementTypeInfo = state.Current.JsonTypeInfo.ElementTypeInfo!;
 
-            if (state.UseFastPath)
+            if (state.UseFastPath && !state.CanContainPolymorphismMetadata)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -54,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
                 CreateCollection(ref reader, ref state, options);
 
                 JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
-                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (elementTypeInfo.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // Fast path that avoids validation and extra indirection.
                     while (true)
@@ -89,16 +97,18 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                // Slower path that supports continuation and preserved references.
+                // Slower path that supports continuation and metadata reads
+                bool canContainMetadata =
+                    options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve ||
+                    state.CanContainPolymorphismMetadata;
 
-                bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
                     if (reader.TokenType == JsonTokenType.StartArray)
                     {
                         state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                     }
-                    else if (preserveReferences)
+                    else if (canContainMetadata)
                     {
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
@@ -114,7 +124,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (canContainMetadata && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadataForJsonArray<TCollection>(ref reader, ref state, options))
                     {
@@ -237,9 +247,9 @@ namespace System.Text.Json.Serialization.Converters
                 if (!state.Current.ProcessedStartToken)
                 {
                     state.Current.ProcessedStartToken = true;
-                    if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+                    if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve || state.PolymorphicTypeDiscriminator is not null)
                     {
-                        MetadataPropertyName metadata = JsonSerializer.WriteReferenceForCollection(this, value, ref state, writer);
+                        MetadataPropertyName metadata = JsonSerializer.WriteMetadataForCollection(this, value, ref state, writer, options.ReferenceHandlingStrategy);
                         if (metadata == MetadataPropertyName.Ref)
                         {
                             return true;
@@ -263,7 +273,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.ProcessedEndToken = true;
                         writer.WriteEndArray();
 
-                        if (state.Current.MetadataPropertyName == MetadataPropertyName.Id)
+                        if ((state.Current.MetadataPropertyName & (MetadataPropertyName.Id | MetadataPropertyName.Type)) != 0)
                         {
                             // Write the EndObject for $values.
                             writer.WriteEndObject();

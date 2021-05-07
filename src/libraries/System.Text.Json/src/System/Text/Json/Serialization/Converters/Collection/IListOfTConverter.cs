@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
-                if (!TypeToConvert.IsAssignableFrom(RuntimeType))
+                if (!TypeToConvert.IsAssignableFrom(typeof(List<TElement>)))
                 {
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
@@ -92,17 +92,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType
-        {
-            get
-            {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(List<TElement>);
-                }
-
-                return TypeToConvert;
-            }
-        }
+        internal override JsonTypeInfo.ConstructorDelegate? ConstructorDelegate =>
+            MemberAccessor.CreateConstructor<List<TElement>>(TypeToConvert);
     }
 }

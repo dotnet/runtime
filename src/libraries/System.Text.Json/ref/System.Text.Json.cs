@@ -267,10 +267,12 @@ namespace System.Text.Json
         public bool IncludeFields { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
+        public System.Func<Type, bool> SupportedPolymorphicTypes { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
+        public System.Collections.Generic.IList<System.Text.Json.Serialization.TypeDiscriminatorConfiguration> TypeDiscriminatorConfigurations { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.JsonSerializerContext, new() { }
@@ -796,6 +798,11 @@ namespace System.Text.Json.Serialization
         public JsonNumberHandlingAttribute(System.Text.Json.Serialization.JsonNumberHandling handling) { }
         public System.Text.Json.Serialization.JsonNumberHandling Handling { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+    public sealed partial class JsonPolymorphicTypeAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonPolymorphicTypeAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
     {
@@ -845,6 +852,27 @@ namespace System.Text.Json.Serialization
     {
         JsonElement = 0,
         JsonNode = 1,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
+    public partial class JsonKnownTypeAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonKnownTypeAttribute(System.Type subtype, string identifier) { }
+        public string Identifier { get { throw null; } }
+        public System.Type Subtype { get { throw null; } }
+    }
+    public partial class TypeDiscriminatorConfiguration : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.Type, string>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<System.Type, string>>, System.Collections.IEnumerable
+    {
+        public TypeDiscriminatorConfiguration(System.Type baseType) { }
+        public System.Type BaseType { get { throw null; } }
+        int System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<System.Type, string>>.Count { get { throw null; } }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<System.Type, string>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.Type, string>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public System.Text.Json.Serialization.TypeDiscriminatorConfiguration WithKnownType(System.Type derivedType, string identifier) { throw null; }
+    }
+    public partial class TypeDiscriminatorConfiguration<TBaseType> : System.Text.Json.Serialization.TypeDiscriminatorConfiguration where TBaseType : class
+    {
+        public TypeDiscriminatorConfiguration() : base(default(System.Type)) { }
+        public System.Text.Json.Serialization.TypeDiscriminatorConfiguration<TBaseType> WithKnownType<TDerivedType>(string identifier) where TDerivedType : TBaseType { throw null; }
     }
     public abstract partial class ReferenceHandler
     {

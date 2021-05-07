@@ -11,7 +11,13 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            if (IsValueType)
+            if (
+#if NET5_0_OR_GREATER
+                typeof(T).IsValueType // treated as a constant by recent versions of the JIT.
+#else
+                IsValueType
+#endif
+                )
             {
                 // Value types can never have a null except for Nullable<T>.
                 if (value == null && Nullable.GetUnderlyingType(TypeToConvert) == null)

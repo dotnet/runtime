@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -26,6 +27,11 @@ namespace System.Text.Json
         /// stored in the <see cref="WriteStack.PendingTask"/> property.
         /// </summary>
         public bool AsyncEnumeratorIsPendingCompletion;
+
+        /// <summary>
+        /// Flag indicating that the current value has been pushed for cycle detection.
+        /// </summary>
+        public bool IsCycleDetectionReferencePushed;
 
         /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.
@@ -78,7 +84,16 @@ namespace System.Text.Json
         /// For objects, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current property.
         /// For collections, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current element.
         /// </remarks>
-        private JsonPropertyInfo? PolymorphicJsonPropertyInfo;
+        private JsonPropertyInfo? CachedPolymorphicJsonPropertyInfo;
+
+        /// <summary>
+        /// Dictates how <see cref="CachedPolymorphicJsonPropertyInfo"/> is to be consumed.
+        /// </summary>
+        /// <remarks>
+        /// If true we are dispatching serialization to a polymorphic converter that should consume it.
+        /// If false it is simply a value we are caching for performance.
+        /// </remarks>
+        public PolymorphicSerializationState PolymorphicSerializationState;
 
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
@@ -92,8 +107,9 @@ namespace System.Text.Json
         {
             DeclaredJsonPropertyInfo = null!;
             JsonPropertyNameAsString = null;
-            PolymorphicJsonPropertyInfo = null;
+            CachedPolymorphicJsonPropertyInfo = null;
             PropertyState = StackFramePropertyState.None;
+            PolymorphicSerializationState = PolymorphicSerializationState.None;
         }
 
         /// <summary>
@@ -102,38 +118,55 @@ namespace System.Text.Json
         /// </summary>
         public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
-            return PolymorphicJsonPropertyInfo ?? DeclaredJsonPropertyInfo!;
+            return PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted ? CachedPolymorphicJsonPropertyInfo! : DeclaredJsonPropertyInfo!;
         }
 
         /// <summary>
         /// Initializes the state for polymorphic cases and returns the appropriate converter.
         /// </summary>
-        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options)
+        public JsonConverter InitializePolymorphicReEntry(Type type, JsonSerializerOptions options)
         {
+            Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.None);
+
             // For perf, avoid the dictionary lookup in GetOrAddClass() for every element of a collection
             // if the current element is the same type as the previous element.
-            if (PolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
+            if (CachedPolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
             {
                 JsonTypeInfo typeInfo = options.GetOrAddClass(type);
-                PolymorphicJsonPropertyInfo = typeInfo.PropertyInfoForTypeInfo;
+                CachedPolymorphicJsonPropertyInfo = typeInfo.PropertyInfoForTypeInfo;
             }
 
-            return PolymorphicJsonPropertyInfo.ConverterBase;
+            PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
+            return CachedPolymorphicJsonPropertyInfo.ConverterBase;
         }
 
-        public void Reset()
+        public JsonConverter ResumePolymorphicReEntry()
         {
-            CollectionEnumerator = null;
-            EnumeratorIndex = 0;
-            AsyncEnumerator = null;
-            AsyncEnumeratorIsPendingCompletion = false;
-            IgnoreDictionaryKeyPolicy = false;
-            JsonTypeInfo = null!;
-            OriginalDepth = 0;
-            ProcessedStartToken = false;
-            ProcessedEndToken = false;
+            Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
+            Debug.Assert(CachedPolymorphicJsonPropertyInfo is not null);
 
-            EndProperty();
+            PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
+            return CachedPolymorphicJsonPropertyInfo.ConverterBase;
         }
+
+        //public void Reset()
+        //{
+        //    CollectionEnumerator = null;
+        //    EnumeratorIndex = 0;
+        //    AsyncEnumerator = null;
+        //    AsyncEnumeratorIsPendingCompletion = false;
+        //    IgnoreDictionaryKeyPolicy = false;
+        //    JsonTypeInfo = null!;
+        //    OriginalDepth = 0;
+        //    ProcessedStartToken = false;
+        //    ProcessedEndToken = false;
+        //    IsCycleDetectionReferencePushed = false;
+        //    MetadataPropertyName = MetadataPropertyName.NoMetadata;
+        //    NumberHandling = null;
+
+        //    EndProperty();
+
+        //    Debug.Assert(EqualityComparer<WriteStackFrame>.Default.Equals(this, default));
+        //}
     }
 }

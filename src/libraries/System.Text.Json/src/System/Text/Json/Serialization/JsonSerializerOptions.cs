@@ -39,6 +39,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
+        private Func<Type, bool>? _supportedPolymorphicTypes;
         private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
@@ -60,7 +61,13 @@ namespace System.Text.Json
         /// </summary>
         public JsonSerializerOptions()
         {
-            Converters = new ConverterList(this);
+            Converters = new ConfigurationList<JsonConverter>(this);
+
+            TypeDiscriminatorConfigurations = new ConfigurationList<TypeDiscriminatorConfiguration>(this)
+            {
+                OnElementAdded = static config => { config.IsAssignedToOptionsInstance = true; }
+            };
+
             TrackOptionsInstance(this);
         }
 
@@ -83,6 +90,7 @@ namespace System.Text.Json
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
+            _supportedPolymorphicTypes = options._supportedPolymorphicTypes;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -98,7 +106,8 @@ namespace System.Text.Json
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
-            Converters = new ConverterList(this, (ConverterList)options.Converters);
+            Converters = new ConfigurationList<JsonConverter>(this, options.Converters);
+            TypeDiscriminatorConfigurations = new ConfigurationList<TypeDiscriminatorConfiguration>(this, options.TypeDiscriminatorConfigurations);
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
 
@@ -533,6 +542,20 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _writeIndented = value;
+            }
+        }
+
+        /// <summary>
+        /// Type predicate configuring what types should be serialized polymorphically.
+        /// Note that this abstraction only governs serialization and offses no support for deserialization.
+        /// </summary>
+        public Func<Type, bool> SupportedPolymorphicTypes
+        {
+            get => _supportedPolymorphicTypes ??= static type => type == JsonTypeInfo.ObjectType;
+            set
+            {
+                VerifyMutable();
+                _supportedPolymorphicTypes = value;
             }
         }
 

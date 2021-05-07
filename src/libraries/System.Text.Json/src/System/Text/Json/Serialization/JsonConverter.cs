@@ -23,16 +23,9 @@ namespace System.Text.Json.Serialization
         internal abstract ConverterStrategy ConverterStrategy { get; }
 
         /// <summary>
-        /// Can direct Read or Write methods be called (for performance).
-        /// </summary>
-        internal bool CanUseDirectReadOrWrite { get; set; }
-
-        /// <summary>
         /// Can the converter have $id metadata.
         /// </summary>
         internal virtual bool CanHaveIdMetadata => true;
-
-        internal bool CanBePolymorphic { get; set; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
@@ -83,8 +76,8 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
 
-        // For polymorphic cases, the concrete type to create.
-        internal virtual Type RuntimeType => TypeToConvert;
+        /// Overriden by converters of abstract types.
+        internal virtual JsonTypeInfo.ConstructorDelegate? ConstructorDelegate => null;
 
         internal bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {

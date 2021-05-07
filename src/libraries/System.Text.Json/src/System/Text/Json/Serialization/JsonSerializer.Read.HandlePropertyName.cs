@@ -83,7 +83,9 @@ namespace System.Text.Json
 
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
-                if (propertyName.Length > 0 && propertyName[0] == '$')
+                if (propertyName.Length > 0 && propertyName[0] == '$' &&
+                    // TODO replace with something more tenable
+                    !propertyName.SequenceEqual(s_TypeIdPropertyName))
                 {
                     ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                 }

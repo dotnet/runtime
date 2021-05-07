@@ -32,5 +32,19 @@ namespace System.Text.Json.Serialization.Metadata
         public abstract Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo);
 
         public abstract Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo);
+
+        /// <summary>
+        ///  Constructs a constructor delegate for declaring type using specified runtime type with default ctor.
+        /// </summary>
+        public static JsonTypeInfo.ConstructorDelegate? CreateConstructor<TRuntimeType>(Type declaringType)
+            where TRuntimeType : new()
+        {
+            if (!declaringType.IsAssignableFrom(typeof(TRuntimeType)))
+            {
+                return null;
+            }
+
+            return new JsonTypeInfo.ConstructorDelegate(() => new TRuntimeType());
+        }
     }
 }

@@ -18,8 +18,10 @@ namespace System.Text.Json
 
         ReadAheadIdValue, // Try to move the reader to the value for $id.
         ReadAheadRefValue, // Try to move the reader to the value for $ref.
+        ReadAheadTypeValue, // Try to move the reader to the value for $type.
         ReadIdValue, // Read value for $id.
         ReadRefValue, // Read value for $ref.
+        ReadTypeValue, // Read value for $type.
         ReadAheadRefEndObject, // Try to move the reader to the EndObject for $ref.
         ReadRefEndObject, // Read the EndObject for $ref.
 

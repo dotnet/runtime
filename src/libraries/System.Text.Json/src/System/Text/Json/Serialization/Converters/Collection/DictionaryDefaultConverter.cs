@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo elementTypeInfo = state.Current.JsonTypeInfo.ElementTypeInfo!;
 
-            if (state.UseFastPath)
+            if (state.UseFastPath && !state.CanContainPolymorphismMetadata)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
                 CreateCollection(ref reader, ref state);
 
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
-                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (elementTypeInfo.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // Process all elements.
                     while (true)
@@ -132,8 +132,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
-                if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                bool canContainMetadata =
+                    options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve ||
+                    state.CanContainPolymorphismMetadata;
+
+                if (canContainMetadata && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadataForJsonObject<TCollection>(ref reader, ref state, options))
                     {
@@ -188,7 +191,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
-                        if (preserveReferences)
+                        if (canContainMetadata)
                         {
                             ReadOnlySpan<byte> propertyName = reader.GetSpan();
                             if (propertyName.Length > 0 && propertyName[0] == '$')
@@ -278,9 +281,9 @@ namespace System.Text.Json.Serialization.Converters
             {
                 state.Current.ProcessedStartToken = true;
                 writer.WriteStartObject();
-                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve || state.PolymorphicTypeDiscriminator is not null)
                 {
-                    if (JsonSerializer.WriteReferenceForObject(this, dictionary, ref state, writer) == MetadataPropertyName.Ref)
+                    if (JsonSerializer.WriteMetadataForObject(this, dictionary, ref state, writer, options.ReferenceHandlingStrategy) == MetadataPropertyName.Ref)
                     {
                         return true;
                     }

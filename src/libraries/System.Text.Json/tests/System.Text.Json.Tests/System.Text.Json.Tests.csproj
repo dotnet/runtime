@@ -158,6 +158,7 @@
     <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\PolymorphicTypeDiscriminatorTests.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.Constructor.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.cs" />

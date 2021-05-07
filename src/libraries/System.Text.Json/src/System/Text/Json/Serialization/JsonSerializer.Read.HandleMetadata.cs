@@ -18,6 +18,9 @@ namespace System.Text.Json
         internal static readonly byte[] s_valuesPropertyName
             = new byte[] { (byte)'$', (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s' };
 
+        internal static readonly byte[] s_TypeIdPropertyName
+            = new byte[] { (byte)'$', (byte)'t', (byte)'y', (byte)'p', (byte)'e' };
+
         /// <summary>
         /// Returns true if successful, false is the reader ran out of buffer.
         /// Sets state.Current.ReturnValue to the reference target for $ref cases;
@@ -78,6 +81,11 @@ namespace System.Text.Json
                 {
                     ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
                 }
+                else if (metadata == MetadataPropertyName.Type)
+                {
+                    state.Current.JsonPropertyName = s_TypeIdPropertyName;
+                    state.Current.ObjectState = StackFrameObjectState.ReadAheadTypeValue;
+                }
                 else
                 {
                     Debug.Assert(metadata == MetadataPropertyName.NoMetadata);
@@ -99,6 +107,13 @@ namespace System.Text.Json
             else if (state.Current.ObjectState == StackFrameObjectState.ReadAheadIdValue)
             {
                 if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadIdValue))
+                {
+                    return false;
+                }
+            }
+            else if (state.Current.ObjectState == StackFrameObjectState.ReadAheadTypeValue)
+            {
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadTypeValue))
                 {
                     return false;
                 }
@@ -219,6 +234,11 @@ namespace System.Text.Json
                 {
                     ThrowHelper.ThrowJsonException_MetadataMissingIdBeforeValues(ref state, propertyName);
                 }
+                else if (metadata == MetadataPropertyName.Type)
+                {
+                    state.Current.JsonPropertyName = s_TypeIdPropertyName;
+                    state.Current.ObjectState = StackFrameObjectState.ReadAheadTypeValue;
+                }
                 else
                 {
                     Debug.Assert(metadata == MetadataPropertyName.NoMetadata);
@@ -238,6 +258,13 @@ namespace System.Text.Json
             else if (state.Current.ObjectState == StackFrameObjectState.ReadAheadIdValue)
             {
                 if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadIdValue))
+                {
+                    return false;
+                }
+            }
+            else if (state.Current.ObjectState == StackFrameObjectState.ReadAheadTypeValue)
+            {
+                if (!TryReadAheadMetadataAndSetState(ref reader, ref state, StackFrameObjectState.ReadTypeValue))
                 {
                     return false;
                 }
@@ -268,6 +295,13 @@ namespace System.Text.Json
 
                 string referenceId = reader.GetString()!;
                 state.ReferenceResolver.AddReference(referenceId, state.Current.ReturnValue!);
+
+                // Need to Read $values property name.
+                state.Current.ObjectState = StackFrameObjectState.ReadAheadValuesName;
+            }
+            else if (state.Current.ObjectState == StackFrameObjectState.ReadTypeValue)
+            {
+                converter.CreateInstanceForReferenceResolver(ref reader, ref state, options);
 
                 // Need to Read $values property name.
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadValuesName;
@@ -346,6 +380,66 @@ namespace System.Text.Json
             return true;
         }
 
+        /// <summary>
+        /// Attempts to read the type discriminator property from a JSON object.
+        /// The boolean return value indicates whether the JSON object is fully populated in the buffer,
+        /// and success of the read operation is reflected on the nullity of the typeId out parameter.
+        /// </summary>
+        internal static bool TryReadTypeDiscriminator(ref Utf8JsonReader reader, out string? typeId)
+        {
+            bool isReadSuccessful = true;
+            typeId = null;
+
+            if (reader.TokenType == JsonTokenType.StartObject)
+            {
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.EndObject)
+                    {
+                        goto Return;
+                    }
+
+                    Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+                    MetadataPropertyName propertyName = GetMetadataPropertyName(reader.GetSpan());
+                    if (propertyName == MetadataPropertyName.Type)
+                    {
+                        // Found the $type property
+
+                        if (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.String)
+                            {
+                                typeId = reader.GetString();
+                            }
+                        }
+                        else
+                        {
+                            isReadSuccessful = false;
+                        }
+
+                        goto Return;
+                    }
+                    else if (propertyName == MetadataPropertyName.NoMetadata)
+                    {
+                        // Stop looking once we encounter non-metadata properties
+                        goto Return;
+                    }
+
+                    // Skip the non-$type metadata value
+                    if (!reader.TrySkip())
+                    {
+                        isReadSuccessful = false;
+                        goto Return;
+                    }
+                }
+
+                isReadSuccessful = false;
+            }
+
+        Return:
+            return isReadSuccessful;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryReadAheadMetadataAndSetState(ref Utf8JsonReader reader, ref ReadStack state, StackFrameObjectState nextState)
         {
@@ -375,6 +469,16 @@ namespace System.Text.Json
                             propertyName[3] == 'f')
                         {
                             return MetadataPropertyName.Ref;
+                        }
+                        break;
+
+                    case 5:
+                        if (propertyName[1] == 't' &&
+                            propertyName[2] == 'y' &&
+                            propertyName[3] == 'p' &&
+                            propertyName[4] == 'e')
+                        {
+                            return MetadataPropertyName.Type;
                         }
                         break;
 

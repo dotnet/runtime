@@ -512,6 +512,273 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(Expected, json);
         }
 
+        [Fact]
+        public async Task ConcreteClass_RootValue_PolymorphismDisabled_ShouldSerializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => false };
+            ConcreteClass value = new DerivedClass { Boolean = true, Number = 42 };
+            string expectedJson = @"{""Boolean"":true}";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public async Task ConcreteClass_RootValue_PolymorphismEnabled_ShouldSerializePolymorphically()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(ConcreteClass) };
+            ConcreteClass value = new DerivedClass { Boolean = true, Number = 42 };
+            string expectedJson = @"{""Number"":42,""Boolean"":true}";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public void ConcreteClass_RootValue_PolymorphismEnabled_ShouldDeserializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(ConcreteClass) };
+            string json = @"{""Number"":42,""Boolean"":true}";
+
+            ConcreteClass result = JsonSerializer.Deserialize<ConcreteClass>(json, options);
+
+            Assert.IsType<ConcreteClass>(result);
+            Assert.True(result.Boolean);
+        }
+
+        [Fact]
+        public async Task ConcreteClass_NestedValue_PolymorphismDisabled_ShouldSerializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => false };
+            List<ConcreteClass> value = new() { new DerivedClass { Boolean = true, Number = 42 } };
+            string expectedJson = @"[{""Boolean"":true}]";
+
+            string actualJson = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public async Task ConcreteClass_NestedValue_PolymorphismEnabled_ShouldSerializePolymorphically()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(ConcreteClass) };
+            List<ConcreteClass> value = new() { new DerivedClass { Boolean = true, Number = 42 } };
+            string expectedJson = @"[{""Number"":42,""Boolean"":true}]";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public void ConcreteClass_NestedValue_PolymorphismEnabled_ShouldDeserializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(ConcreteClass) };
+            string json = @"[{""Number"":42,""Boolean"":true}]";
+
+            List<ConcreteClass> result = JsonSerializer.Deserialize<List<ConcreteClass>>(json, options);
+
+            Assert.Equal(1, result.Count);
+            Assert.IsType<ConcreteClass>(result[0]);
+            Assert.True(result[0].Boolean);
+        }
+
+        [Fact]
+        public async Task AbstractClass_RootValue_PolymorphismDisabled_ShouldSerializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => false };
+            AbstractClass value = new ConcreteClass { Boolean = true };
+            string expectedJson = @"{}";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public async Task AbstractClass_RootValue_PolymorphismEnabled_ShouldSerializePolymorphically()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(AbstractClass) };
+            AbstractClass value = new ConcreteClass { Boolean = true };
+            string expectedJson = @"{""Boolean"":true}";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public void AbstractClass_RootValue_PolymorphismEnabled_ShouldFailDeserialization()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(AbstractClass) };
+            string json = @"{""Boolean"":true}";
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<AbstractClass>(json, options));
+        }
+
+        [Fact]
+        public async Task AbstractClass_NestedValue_PolymorphismDisabled_ShouldSerializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => false };
+            List<AbstractClass> value = new() { new ConcreteClass { Boolean = true } };
+            string expectedJson = @"[{}]";
+
+            string actualJson = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public async Task AbstractClass_NestedValue_PolymorphismEnabled_ShouldSerializePolymorphically()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(AbstractClass) };
+            List<AbstractClass> value = new () { new ConcreteClass { Boolean = true } };
+            string expectedJson = @"[{""Boolean"":true}]";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public void AbstractClass_NestedValue_PolymorphismEnabled_ShouldFailDeserialization()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(AbstractClass) };
+            string json = @"[{""Boolean"":true}]";
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<List<AbstractClass>>(json, options));
+        }
+
+        [Fact]
+        public async Task Interface_RootValue_PolymorphismDisabled_ShouldSerializeAsBase()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => false };
+            IThing value = new MyOtherThing { Number = 42, OtherNumber = 24 };
+            string expectedJson = @"{""Number"":42}";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public async Task Interface_RootValue_PolymorphismEnabled_ShouldSerializePolymorphically()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(IThing) };
+            IThing value = new MyOtherThing { Number = 42, OtherNumber = 24 };
+            string expectedJson = @"{""Number"":42,""OtherNumber"":24}";
+
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetObjectsContainingNestedIThingValues))]
+        public async Task Interface_NestedValues_PolymorphismDisabled_ShouldSerializeAsBase<TValue>(TValue value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => false };
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            Assert.NotEqual(expectedJson, actualJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetObjectsContainingNestedIThingValues))]
+        public async Task Interface_NestedValues_PolymorphismEnabled_ShouldSerializePolymorphically<TValue>(TValue value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(IThing) };
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal(expectedJson, actualJson);
+        }
+
+        [Fact]
+        public void Interface_RootValue_PolymorphismEnabled_ShouldFailDeserialization()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(IThing) };
+            string json = @"{""Number"":42,""OtherNumber"":24}";
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<IThing>(json, options));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetObjectsContainingNestedIThingValues))]
+        public void Interface_NestedValues_PolymorphismEnabled_ShouldFailDeserialization<TValue>(TValue value, string json)
+        {
+            _ = value;
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = type => type == typeof(IThing) };
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<TValue>(json, options));
+        }
+
+        [Fact]
+        public async Task PolymorphismEnabledForAllTypes_ShouldSerializeAllValuesPolymorphically()
+        {
+            var options = new JsonSerializerOptions { SupportedPolymorphicTypes = _ => true };
+            object[] value = new object[]
+            {
+                42,
+                "string",
+                CreateList<IThing>(new MyOtherThing { Number = 42, OtherNumber = -1 }),
+                CreateList<AbstractClass>(new DerivedClass { Number = 42, Boolean = true }, new ConcreteClass { Boolean = false }),
+                CreateList<ConcreteClass>(new DerivedClass { Number = 42, Boolean = true }),
+            };
+
+            string expectedJson = @"[42,""string"",[{""Number"":42,""OtherNumber"":-1}],[{""Number"":42,""Boolean"":true},{""Boolean"":false}],[{""Number"":42,""Boolean"":true}]]";
+            string actualJson = await Serializer.SerializeWrapper(value, options);
+
+            Assert.Equal(expectedJson, actualJson);
+
+            static List<T> CreateList<T>(params T[] values) => new(values);
+        }
+
+        [Fact]
+        public async Task JsonPolymorphicTypeAttribute_Class()
+        {
+            PolymorphicAnnotatedClass value = new DerivedFromPolymorphicAnnotatedClass { A = 1, B = 2, C = 3 };
+            string expectedJson = @"{""A"":1,""B"":2,""C"":3}";
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+        }
+
+        [Fact]
+        public async Task JsonPolymorphicTypeAttribute_Interface()
+        {
+            IPolymorphicAnnotatedInterface value = new DerivedFromPolymorphicAnnotatedClass { A = 1, B = 2, C = 3 };
+            string expectedJson = @"{""A"":1,""B"":2,""C"":3}";
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+        }
+
+        [Fact]
+        public async Task JsonPolymorphicTypeAttribute_IsNotInheritedByDerivedTypes()
+        {
+            DerivedFromPolymorphicAnnotatedClass value = new DerivedFromDerivedFromPolymorphicAnnotatedClass { A = 1, B = 2, C = 3, D = 4 };
+            string expectedJson = @"{""A"":1,""B"":2,""C"":3}";
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+        }
+
+        public static IEnumerable<object[]> GetObjectsContainingNestedIThingValues()
+        {
+            yield return WrapArgs<MyThingCollection>(
+                new() { new MyThing { Number = -1 }, new MyOtherThing { Number = 42, OtherNumber = 24 } },
+                @"[{""Number"":-1},{""Number"":42,""OtherNumber"":24}]"
+            );
+
+            yield return WrapArgs<MyClass>(
+                new() { Value = "value", Thing = new MyOtherThing { Number = 42, OtherNumber = 24 } },
+                @"{""Value"":""value"",""Thing"":{""Number"":42,""OtherNumber"":24}}"
+            );
+
+            yield return WrapArgs<MyThingDictionary>(
+                new()
+                {
+                    ["key1"] = new MyOtherThing { Number = 42, OtherNumber = 24 },
+                    ["key2"] = new MyThing { Number = -1 }
+                },
+                @"{""key1"":{""Number"":42,""OtherNumber"":24},""key2"":{""Number"":-1}}"
+            );
+
+            static object[] WrapArgs<TValue>(TValue value, string expectedJson) => new object[] { value, expectedJson };
+        }
+
         class MyClass
         {
             public string Value { get; set; }
@@ -528,8 +795,51 @@ namespace System.Text.Json.Serialization.Tests
             public int Number { get; set; }
         }
 
+        class MyOtherThing : IThing
+        {
+            public int Number { get; set; }
+            public int OtherNumber { get; set; }
+        }
+
+        abstract class AbstractClass
+        {
+        }
+
+        class ConcreteClass : AbstractClass
+        {
+            public bool Boolean { get; set; }
+        }
+
+        class DerivedClass : ConcreteClass
+        {
+            public int Number { get; set; }
+        }
+
         class MyThingCollection : List<IThing> { }
 
         class MyThingDictionary : Dictionary<string, IThing> { }
+
+        [JsonPolymorphicType]
+        public class IPolymorphicAnnotatedInterface
+        {
+            int A { get; set; }
+        }
+
+        [JsonPolymorphicType]
+        public class PolymorphicAnnotatedClass : IPolymorphicAnnotatedInterface
+        {
+            public int A { get; set; }
+            public int B { get; set; }
+        }
+
+        public class DerivedFromPolymorphicAnnotatedClass : PolymorphicAnnotatedClass
+        {
+            public int C { get; set; }
+        }
+
+        public class DerivedFromDerivedFromPolymorphicAnnotatedClass : DerivedFromPolymorphicAnnotatedClass
+        {
+            public int D { get; set; }
+        }
     }
 }

@@ -22,7 +22,8 @@ namespace System.Text.Json.Serialization
             bool readAhead = state.ReadAhead && converterStrategy == ConverterStrategy.Value;
             if (!readAhead)
             {
-                return reader.Read();
+                // Do not advance the reader if converter was suspended due to a read-ahead operation
+                return state.NoReaderAdvanceOnContinuation || reader.Read();
             }
 
             return DoSingleValueReadWithReadAhead(ref reader, ref state);
@@ -35,7 +36,8 @@ namespace System.Text.Json.Serialization
             JsonReaderState initialReaderState = reader.CurrentState;
             long initialReaderBytesConsumed = reader.BytesConsumed;
 
-            if (!reader.Read())
+            // Do not advance the reader if converter was suspended due to a read-ahead operation
+            if (!state.NoReaderAdvanceOnContinuation && !reader.Read())
             {
                 return false;
             }
@@ -64,7 +66,12 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Success, requeue the reader to the start token.
-                reader.ReadWithVerify();
+                // Do not advance the reader if converter was suspended due to a read-ahead operation
+                if (!state.NoReaderAdvanceOnContinuation)
+                {
+                    reader.ReadWithVerify();
+                }
+
                 Debug.Assert(tokenType == reader.TokenType);
             }
 

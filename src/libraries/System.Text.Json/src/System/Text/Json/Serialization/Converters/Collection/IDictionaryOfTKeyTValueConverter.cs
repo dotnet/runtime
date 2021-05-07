@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
-                if (!TypeToConvert.IsAssignableFrom(RuntimeType))
+                if (!TypeToConvert.IsAssignableFrom(typeof(Dictionary<TKey, TValue>)))
                 {
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
@@ -110,17 +110,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType
-        {
-            get
-            {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(Dictionary<TKey, TValue>);
-                }
-
-                return TypeToConvert;
-            }
-        }
+        internal override JsonTypeInfo.ConstructorDelegate? ConstructorDelegate =>
+            MemberAccessor.CreateConstructor<Dictionary<TKey, TValue>>(TypeToConvert);
     }
 }

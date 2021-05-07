@@ -574,6 +574,13 @@ namespace System.Text.Json.Serialization.Tests
                     options.Converters.Add(new JsonStringEnumConverter());
                     options.Converters.Add(new ConverterForInt32());
                 }
+                else if (propertyType == typeof(IList<TypeDiscriminatorConfiguration>))
+                {
+                    options.TypeDiscriminatorConfigurations.Add(
+                        new TypeDiscriminatorConfiguration<ITestClass>()
+                            .WithKnownType<Point_With_Array>("point_with_array")
+                            .WithKnownType<Point_With_Dictionary>("point_with_dictionary"));
+                }
                 else if (propertyType == typeof(JavaScriptEncoder))
                 {
                     options.Encoder = JavaScriptEncoder.Default;
@@ -586,6 +593,10 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType == typeof(ReferenceHandler))
                 {
                     options.ReferenceHandler = ReferenceHandler.Preserve;
+                }
+                else if (propertyType == typeof(Func<Type, bool>))
+                {
+                    options.SupportedPolymorphicTypes = static type => type == typeof(object);
                 }
                 else if (propertyType.IsValueType)
                 {
@@ -619,10 +630,21 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     Assert.Equal((int)property.GetValue(options), (int)property.GetValue(newOptions));
                 }
-                else if (typeof(IEnumerable).IsAssignableFrom(propertyType))
+                else if (propertyType == typeof(IList<JsonConverter>))
                 {
                     var list1 = (IList<JsonConverter>)property.GetValue(options);
                     var list2 = (IList<JsonConverter>)property.GetValue(newOptions);
+
+                    Assert.Equal(list1.Count, list2.Count);
+                    for (int i = 0; i < list1.Count; i++)
+                    {
+                        Assert.Same(list1[i], list2[i]);
+                    }
+                }
+                else if (propertyType == typeof(IList<TypeDiscriminatorConfiguration>))
+                {
+                    var list1 = (IList<TypeDiscriminatorConfiguration>)property.GetValue(options);
+                    var list2 = (IList<TypeDiscriminatorConfiguration>)property.GetValue(newOptions);
 
                     Assert.Equal(list1.Count, list2.Count);
                     for (int i = 0; i < list1.Count; i++)
