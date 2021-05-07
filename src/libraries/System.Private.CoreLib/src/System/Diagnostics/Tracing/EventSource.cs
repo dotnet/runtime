@@ -2058,8 +2058,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                Type[] parameterTypes = metadata.ParameterTypes;
-                args = new object?[Math.Min(eventDataCount, parameterTypes.Length)];
+                args = new object?[Math.Min(eventDataCount, metadata.Parameters.Length)];
 
                 if (metadata.AllParametersAreString)
                 {
@@ -2080,7 +2079,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    DecodeObjects(args, parameterTypes, data);
+                    DecodeObjects(args, metadata.ParameterTypes, data);
                 }
 
                 eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(args);
