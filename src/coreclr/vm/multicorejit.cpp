@@ -387,14 +387,10 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
     HRESULT hr = S_OK;
 
     // Preprocessing Methods
-    // - Add ModuleDependency to JITInfo
-    // - Increment MethodCount in Module
     LONG skipped = 0;
 
     for (LONG i = 0 ; i < m_JitInfoCount; i++)
     {
-        SigBuilder sigBuilder;
-
         if (m_JitInfoArray[i].IsModuleInfo())
         {
             // Module records don't need preprocessing
@@ -405,6 +401,8 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
         if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
+            SigBuilder sigBuilder;
+
             BOOL fSuccess = false;
             EX_TRY
             {

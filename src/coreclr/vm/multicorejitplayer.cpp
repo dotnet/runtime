@@ -1161,7 +1161,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         unsigned data1 = * (const unsigned *) pBuffer;
         unsigned rcdTyp = data1 >> RECORD_TYPE_OFFSET;
         unsigned rcdLen = 0;
-        
+
         if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
         {
             rcdLen = data1 & 0xFFFFFF;    
@@ -1176,6 +1176,12 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         }
         else if (rcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID)
         {
+            if (nSize < sizeof(unsigned) + sizeof(unsigned short))
+            {
+                hr = COR_E_BADIMAGEFORMAT;
+                break;
+            }
+
             unsigned signatureLength = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
             DWORD dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
             dataSize = AlignUp(dataSize, sizeof(DWORD));
