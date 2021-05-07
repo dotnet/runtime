@@ -288,9 +288,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsHexChar(int c)
+        public static bool IsHexChar(int c)
         {
-            if (sizeof(IntPtr) == 8)
+            if (IntPtr.Size == 8)
             {
                 // This code path, when used, has no branches and doesn't depend on cache hits,
                 // so it's faster and does not vary in speed depending on input data distribution.
