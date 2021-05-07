@@ -361,8 +361,8 @@ namespace System.Diagnostics.Tracing
         public static Type? FindEnumerableElementType(
 #if !ES_BUILD_STANDALONE
             [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
-            Type type)
 #endif
+            Type type)
         {
             Type? elementType = null;
 
