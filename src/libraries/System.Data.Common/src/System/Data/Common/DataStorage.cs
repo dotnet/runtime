@@ -288,8 +288,7 @@ namespace System.Data.Common
             xmlWriter.WriteString(ConvertObjectToXml(value)); // should it be NO OP?
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public static DataStorage CreateStorage(DataColumn column, Type dataType, StorageType typeCode)
+        public static DataStorage CreateStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType, StorageType typeCode)
         {
             Debug.Assert(typeCode == GetStorageType(dataType), "Incorrect storage type specified");
             if ((StorageType.Empty == typeCode) && (null != dataType))

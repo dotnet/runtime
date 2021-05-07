@@ -220,7 +220,8 @@ namespace System.Xml
             set { _state = value; }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         internal void Foliate(ElementState newState)
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
@@ -241,8 +242,6 @@ namespace System.Xml
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlNode CloneNode(bool deep)
         {
             XmlDataDocument doc = (XmlDataDocument)(OwnerDocument);

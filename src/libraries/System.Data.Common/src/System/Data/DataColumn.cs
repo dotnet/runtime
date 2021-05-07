@@ -31,6 +31,7 @@ namespace System.Data
         private bool _allowNull = true;
         private string? _caption;
         private string _columnName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type _dataType = null!; // Always set in UpdateColumnType
         private StorageType _storageType;
         internal object _defaultValue = DBNull.Value; // DefaultValue Converter
@@ -97,7 +98,7 @@ namespace System.Data
         /// using the specified column name and data type.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Not using expression. `dataType` is marked so that it's safe.")]
+            Justification = "Expression is null and `dataType` is marked appropriately.")]
         public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type dataType) : this(columnName, dataType, null, MappingType.Element)
         {
         }
@@ -151,8 +152,7 @@ namespace System.Data
             _columnMapping = type;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void UpdateColumnType(Type type, StorageType typeCode)
+        private void UpdateColumnType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, StorageType typeCode)
         {
             TypeLimiter.EnsureTypeIsAllowed(type);
             _dataType = type;
@@ -491,11 +491,11 @@ namespace System.Data
         [DefaultValue(typeof(string))]
         [RefreshProperties(RefreshProperties.All)]
         [TypeConverter(typeof(ColumnTypeConverter))]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         [AllowNull]
         public Type DataType
         {
             get { return _dataType; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_dataType != value)
@@ -660,7 +660,6 @@ namespace System.Data
         [AllowNull]
         public object DefaultValue
         {
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             get
             {
                 Debug.Assert(_defaultValue != null, "It should not have been set to null.");
@@ -687,7 +686,6 @@ namespace System.Data
 
                 return _defaultValue;
             }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_DefaultValue|API> {0}", ObjectID);
@@ -1774,7 +1772,6 @@ namespace System.Data
             OnPropertyChanging(new PropertyChangedEventArgs(name));
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataStorage InsureStorage()
         {
             if (_storage == null)
@@ -1785,7 +1782,6 @@ namespace System.Data
             return _storage;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetCapacity(int capacity)
         {
             InsureStorage().SetCapacity(capacity);
@@ -1827,7 +1823,6 @@ namespace System.Data
             InsureStorage().ConvertObjectToXml(value, xmlWriter, xmlAttrib);
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal object GetEmptyColumnStore(int recordCount)
         {
             return InsureStorage().GetEmptyStorageInternal(recordCount);

@@ -324,7 +324,6 @@ namespace System.Data
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void AcceptChanges() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public void BeginEdit() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public void CancelEdit() { }
@@ -529,13 +528,11 @@ namespace System.Data
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataSetSchema")]
     public partial class DataSet : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataSet() { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context, bool ConstructSchema) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
         public DataSet(string dataSetName) { }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool CaseSensitive { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")] set { } }

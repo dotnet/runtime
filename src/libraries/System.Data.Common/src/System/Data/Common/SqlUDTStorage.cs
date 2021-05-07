@@ -22,8 +22,7 @@ namespace System.Data.Common
 
         private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public SqlUdtStorage(DataColumn column, Type type)
+        public SqlUdtStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         : this(column, type, GetStaticNullForUdtType(type))
         {
         }
@@ -36,8 +35,7 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal static object GetStaticNullForUdtType(Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(type));
+        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => s_typeToNull.GetOrAdd(type, t => GetStaticNullForUdtTypeCore(type));
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The only callsite is marked as unsafe. Workaround for https://github.com/mono/linker/issues/1981")]

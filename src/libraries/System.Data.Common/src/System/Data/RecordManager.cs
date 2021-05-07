@@ -27,7 +27,6 @@ namespace System.Data
             _table = table;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GrowRecordCapacity()
         {
             RecordCapacity = NewCapacity(_recordCapacity) < NormalizedMinimumCapacity(_minimumCapacity) ?
@@ -64,7 +63,6 @@ namespace System.Data
         internal int RecordCapacity
         {
             get { return _recordCapacity; }
-            [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (_recordCapacity != value)
@@ -98,7 +96,6 @@ namespace System.Data
             return (((capacity + 10) >> 10) + 1) << 10;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewRecordBase()
         {
             int record;

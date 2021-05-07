@@ -579,10 +579,8 @@ namespace System.Data
         /// Begins an edit operation on a <see cref='System.Data.DataRow'/>object.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void BeginEdit() => BeginEditInternal();
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private bool BeginEditInternal()
         {
             if (_inChangingEvent)

@@ -32,7 +32,7 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
-        internal const string RequiresUnreferencedCodeMessage = "Members from serialized types or types used in expressions may be trimmed if not referenced directly.";
+        internal const string RequiresUnreferencedCodeMessage = "Members from serialized types or types used in expressions may be trimmed if not referenced directly";
         private const string KEY_XMLSCHEMA = "XmlSchema";
         private const string KEY_XMLDIFFGRAM = "XmlDiffGram";
 
@@ -78,7 +78,6 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataSet'/> class.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataSet()
         {
             GC.SuppressFinalize(this);
@@ -94,7 +93,6 @@ namespace System.Data
         /// Initializes a new instance of a <see cref='System.Data.DataSet'/>
         /// class with the given name.
         /// </summary>
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public DataSet(string dataSetName) : this()
         {
             DataSetName = dataSetName;
@@ -269,8 +267,6 @@ namespace System.Data
             DeserializeDataSet(info, context, remotingFormat, schemaSerializationMode);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;

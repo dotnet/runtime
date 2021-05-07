@@ -3418,7 +3418,6 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewRecord() => NewRecord(-1);
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewUninitializedRecord()
         {
             return _recordManager.NewRecordBase();
@@ -3459,7 +3458,6 @@ namespace System.Data
             }
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal int NewRecord(int sourceRecord)
         {
             int record = _recordManager.NewRecordBase();
