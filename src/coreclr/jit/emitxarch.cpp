@@ -11733,19 +11733,19 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         regMaskTP regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
-                        // TODO-XArch-Bug: https://github.com/dotnet/runtime/issues/51728
-                        // There are various scenarios in which a pointer will be converted to a byref
-                        // If the register allocator decides this conversion occurs "in place" then we'll
-                        // end up with `dstReg == srcReg` and many places in codegen will currently elide
-                        // this from ever reaching emit. This means we will lose track of the GC liveness
-                        // update and the below assert will fail. It's not problematic in practice because
-                        // its a pointer, not an actual byref. However, the fix to actually track the liveness
-                        // for elided same register moves is expensive and fairly expansive.
+// TODO-XArch-Bug: https://github.com/dotnet/runtime/issues/51728
+// There are various scenarios in which a pointer will be converted to a byref
+// If the register allocator decides this conversion occurs "in place" then we'll
+// end up with `dstReg == srcReg` and many places in codegen will currently elide
+// this from ever reaching emit. This means we will lose track of the GC liveness
+// update and the below assert will fail. It's not problematic in practice because
+// its a pointer, not an actual byref. However, the fix to actually track the liveness
+// for elided same register moves is expensive and fairly expansive.
 
-                        // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                        //                            or BYREF+/-int=BYREF
-                        // assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
-                        //        ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
+// r1/r2 could have been a GCREF as GCREF + int=BYREF
+//                            or BYREF+/-int=BYREF
+// assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
+//        ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
 #endif
                         // Mark r1 as holding a byref
                         emitGCregLiveUpd(GCT_BYREF, reg1, dst);
