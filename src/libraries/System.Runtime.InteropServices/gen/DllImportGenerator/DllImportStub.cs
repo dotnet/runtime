@@ -75,6 +75,7 @@ namespace Microsoft.Interop
             PreserveSig = 1 << 5,
             SetLastError = 1 << 6,
             ThrowOnUnmappableChar = 1 << 7,
+            All = ~None
         }
 
         /// <summary>
