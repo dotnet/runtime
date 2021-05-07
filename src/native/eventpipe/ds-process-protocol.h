@@ -83,7 +83,7 @@ struct _DiagnosticsProcessInfo2Payload_Internal {
 	const ep_char16_t *os;
 	const ep_char16_t *arch;
 	uint8_t runtime_cookie [EP_GUID_SIZE];
-	const ep_char16_t *managed_entrypoint_assembly_path;
+	const ep_char16_t *managed_entrypoint_assembly_name;
 	const ep_char16_t *clr_product_version;
 
 };
@@ -102,7 +102,7 @@ ds_process_info_2_payload_init (
 	const ep_char16_t *arch,
 	uint32_t process_id,
 	const uint8_t *runtime_cookie,
-	const ep_char16_t *managed_entrypoint_assembly_path,
+	const ep_char16_t *managed_entrypoint_assembly_name,
 	const ep_char16_t *clr_product_version);
 
 void

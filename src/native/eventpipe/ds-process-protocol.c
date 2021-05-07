@@ -233,8 +233,8 @@ process_info_2_payload_get_size (DiagnosticsProcessInfo2Payload *payload)
 		(ep_rt_utf16_string_len (payload->arch) + 1) * sizeof(ep_char16_t) : 0;
 
 	size += sizeof(uint32_t);
-	size += (payload->managed_entrypoint_assembly_path != NULL) ?
-		(ep_rt_utf16_string_len (payload->managed_entrypoint_assembly_path) + 1) * sizeof(ep_char16_t) : 0;
+	size += (payload->managed_entrypoint_assembly_name != NULL) ?
+		(ep_rt_utf16_string_len (payload->managed_entrypoint_assembly_name) + 1) * sizeof(ep_char16_t) : 0;
 
 	size += sizeof(uint32_t);
 	size += (payload->clr_product_version != NULL) ?
@@ -285,9 +285,9 @@ process_info_2_payload_flatten (
 	if (success)
 		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->arch);
 
-	// LPCWSTR managed_entrypoint_assembly_path;
+	// LPCWSTR managed_entrypoint_assembly_name;
 	if (success)
-		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->managed_entrypoint_assembly_path);
+		success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, process_info->managed_entrypoint_assembly_name);
 
 	// LPCWSTR clr_product_version;
 	if (success)
@@ -307,7 +307,7 @@ ds_process_info_2_payload_init (
 	const ep_char16_t *arch,
 	uint32_t process_id,
 	const uint8_t *runtime_cookie,
-	const ep_char16_t *managed_entrypoint_assembly_path,
+	const ep_char16_t *managed_entrypoint_assembly_name,
 	const ep_char16_t *clr_product_version)
 {
 	ep_return_null_if_nok (payload != NULL);
@@ -316,7 +316,7 @@ ds_process_info_2_payload_init (
 	payload->os = os;
 	payload->arch = arch;
 	payload->process_id = process_id;
-	payload->managed_entrypoint_assembly_path = managed_entrypoint_assembly_path;
+	payload->managed_entrypoint_assembly_name = managed_entrypoint_assembly_name;
 	payload->clr_product_version = clr_product_version;
 
 	if (runtime_cookie)
@@ -540,8 +540,8 @@ process_protocol_helper_get_process_info_2 (
 	ep_char16_t *command_line = NULL;
 	ep_char16_t *os_info = NULL;
 	ep_char16_t *arch_info = NULL;
-	const ep_char16_t *managed_entrypoint_assembly_path_ref = ep_rt_entrypoint_assembly_path_get_utf16 ();
-	const ep_char16_t *clr_product_version_ref = ep_rt_runtime_version_get_utf16 ();
+	ep_char16_t *managed_entrypoint_assembly_name = NULL;
+	ep_char16_t *clr_product_version = NULL;
 	DiagnosticsProcessInfo2Payload payload;
 	DiagnosticsProcessInfo2Payload *process_info_2_payload = NULL;
 
@@ -554,9 +554,11 @@ process_protocol_helper_get_process_info_2 (
 	arch_info = ep_rt_utf8_to_utf16_string (ep_event_source_get_arch_info (), -1);
 	ep_raise_error_if_nok (arch_info != NULL);
 
-	ep_raise_error_if_nok (managed_entrypoint_assembly_path_ref != NULL);
+	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16_string (ep_rt_entrypoint_assembly_name_get_utf8 (), -1);
+	ep_raise_error_if_nok (managed_entrypoint_assembly_name != NULL);
 
-	ep_raise_error_if_nok (clr_product_version_ref != NULL);
+	clr_product_version = ep_rt_utf8_to_utf16_string (ep_rt_runtime_version_get_utf8 (), -1);
+	ep_raise_error_if_nok (clr_product_version != NULL);
 
 	process_info_2_payload = ds_process_info_2_payload_init (
 		&payload,
@@ -565,8 +567,8 @@ process_protocol_helper_get_process_info_2 (
 		arch_info,
 		ep_rt_current_process_get_id (),
 		ds_ipc_advertise_cookie_v1_get (),
-		managed_entrypoint_assembly_path_ref,
-		clr_product_version_ref);
+		managed_entrypoint_assembly_name,
+		clr_product_version);
 	ep_raise_error_if_nok (process_info_2_payload != NULL);
 
 	ep_raise_error_if_nok (ds_ipc_message_initialize_buffer (

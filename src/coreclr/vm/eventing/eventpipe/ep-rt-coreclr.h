@@ -1164,17 +1164,21 @@ ep_rt_coreclr_config_lock_get (void)
 
 static
 inline
-const ep_char16_t *
-ep_rt_entrypoint_assembly_path_get_utf16 (void)
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
-	return reinterpret_cast<const ep_char16_t*>(GetManagedEntrypointAssemblyPath());
+	STATIC_CONTRACT_NOTHROW;
+
+	return reinterpret_cast<const ep_char8_t*>(GetAppDomain ()->GetRootAssembly ()->GetSimpleName ());
 }
 
 static
-const ep_char16_t *
-ep_rt_runtime_version_get_utf16 (void)
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
 {
-	return reinterpret_cast<const ep_char16_t*>(CLR_PRODUCT_VERSION_L);
+	STATIC_CONTRACT_NOTHROW;
+
+	return reinterpret_cast<const ep_char8_t*>(CLR_PRODUCT_VERSION);
 }
 
 /*

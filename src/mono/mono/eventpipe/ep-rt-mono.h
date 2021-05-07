@@ -27,15 +27,6 @@
 #include <mono/metadata/metadata-internals.h>
 #include <runtime_version.h>
 
-#ifndef QUOTE_MACRO_L
-#define QUOTE_MACRO_L_HELPER(x)     L###x
-#define QUOTE_MACRO_L(x)            QUOTE_MACRO_L_HELPER(x)
-#endif // QUOTE_MACRO_L
-
-#ifndef PRODUCT_VERSION_L
-#define PRODUCT_VERSION_L QUOTE_MACRO_L(RuntimeProductVersion)
-#endif // PRODUCT_VERSION_L
-
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
 
@@ -446,54 +437,6 @@ managed_command_line_lazy_clean (void)
 {
 	g_free (*managed_command_line_get_ref ());
 	*managed_command_line_get_ref () = NULL;
-}
-
-static
-inline
-ep_char16_t *
-managed_entrypoint_assembly_path_get (void)
-{
-	const MonoAssembly *main_assembly = mono_assembly_get_main ();
-	if (main_assembly == NULL)
-		return NULL; // TODO: default value?
-	const ep_char8_t *assembly_path = (const ep_char8_t *)m_image_get_filename (main_assembly->image);
-	return ep_rt_utf8_to_utf16_string (assembly_path, strlen((const char *)assembly_path));
-}
-
-static
-inline
-ep_char16_t **
-managed_entrypoint_assembly_path_get_ref (void)
-{
-	extern ep_char16_t *_ep_rt_mono_managed_entrypoint_assembly_path;
-	return &_ep_rt_mono_managed_entrypoint_assembly_path;
-}
-
-static
-inline
-mono_lazy_init_t *
-managed_entrypoint_assembly_path_get_init (void)
-{
-	extern mono_lazy_init_t _ep_rt_mono_managed_entrypoint_assembly_path_init;
-	return &_ep_rt_mono_managed_entrypoint_assembly_path_init;
-}
-
-static
-inline
-void
-managed_entrypoint_assembly_path_lazy_init (void)
-{
-	if (!*managed_entrypoint_assembly_path_get_ref ())
-		*managed_entrypoint_assembly_path_get_ref () = managed_entrypoint_assembly_path_get ();
-}
-
-static
-inline
-void
-managed_entrypoint_assembly_path_lazy_clean (void)
-{
-	g_free (*managed_entrypoint_assembly_path_get_ref ());
-	*managed_entrypoint_assembly_path_get_ref () = NULL;
 }
 
 static
@@ -1881,26 +1824,17 @@ ep_rt_diagnostics_command_line_get (void)
 }
 
 static
-const ep_char16_t *
-ep_rt_entrypoint_assembly_path_get_utf16 (void)
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
-	if (!mono_lazy_is_initialized (managed_entrypoint_assembly_path_get_init ())) {
-		ep_char16_t *entrypoint_assembly_path = managed_entrypoint_assembly_path_get ();
-		if (!entrypoint_assembly_path)
-			return NULL;
-		g_free (entrypoint_assembly_path);
-	}
-
-	mono_lazy_initialize (managed_entrypoint_assembly_path_get_init (), managed_entrypoint_assembly_path_lazy_init);
-	EP_ASSERT (*managed_entrypoint_assembly_path_get_ref () != NULL);
-	return *managed_entrypoint_assembly_path_get_ref ();
+	return (const ep_char8_t *)m_image_get_assembly_name (mono_assembly_get_main ()->image);
 }
 
 static
-const ep_char16_t *
-ep_rt_runtime_version_get_utf16 (void)
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
 {
-	return (const ep_char16_t *)PRODUCT_VERSION_L;
+	return (const ep_char8_t *)EGLIB_TOSTRING (RuntimeProductVersion);
 }
 
 /*

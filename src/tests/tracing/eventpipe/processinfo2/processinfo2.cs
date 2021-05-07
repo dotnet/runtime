@@ -191,22 +191,22 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
 
-            // VALIDATE ManagedEntrypointAssemblyPath
+            // VALIDATE ManagedEntrypointAssemblyName
             start = end;
             end = start + 4 /* sizeof(uint32_t) */;
-            UInt32 managedEntrypointAssemblyPathSize = BitConverter.ToUInt32(response.Payload[start..end]);
-            Logger.logger.Log($"managedEntrypointAssemblyPathSize: {managedEntrypointAssemblyPathSize}");
+            UInt32 managedEntrypointAssemblyNameLength = BitConverter.ToUInt32(response.Payload[start..end]);
+            Logger.logger.Log($"managedEntrypointAssemblyNameLength: {managedEntrypointAssemblyNameLength}");
 
             start = end;
-            end = start + ((int)managedEntrypointAssemblyPathSize * sizeof(char));
-            Utils.Assert(end <= totalSize, $"String end can't exceed payload size. Expected: <{totalSize}, Received: {end} (decoded length: {managedEntrypointAssemblyPathSize})");
-            Logger.logger.Log($"ManagedEntrypointAssemblyPath bytes: [ {response.Payload[start..end].Select(b => b.ToString("X2") + " ").Aggregate(string.Concat)}]");
-            string managedEntrypointAssemblyPath = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
-            Logger.logger.Log($"ManagedEntrypointAssemblyPath: \"{managedEntrypointAssemblyPath}\"");
+            end = start + ((int)managedEntrypointAssemblyNameLength * sizeof(char));
+            Utils.Assert(end <= totalSize, $"String end can't exceed payload size. Expected: <{totalSize}, Received: {end} (decoded length: {managedEntrypointAssemblyNameLength})");
+            Logger.logger.Log($"ManagedEntrypointAssemblyName bytes: [ {response.Payload[start..end].Select(b => b.ToString("X2") + " ").Aggregate(string.Concat)}]");
+            string managedEntrypointAssemblyName = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
+            Logger.logger.Log($"ManagedEntrypointAssemblyName: \"{managedEntrypointAssemblyName}\"");
 
-            string expectedManagedEntrypointAssemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string expectedManagedEntrypointAssemblyName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
 
-            Utils.Assert(expectedManagedEntrypointAssemblyPath.Equals(managedEntrypointAssemblyPath), $"ManagedEntrypointAssemblyPath must match. Expected: \"{expectedManagedEntrypointAssemblyPath}\", received: \"{managedEntrypointAssemblyPath}\"");
+            Utils.Assert(expectedManagedEntrypointAssemblyName.Equals(managedEntrypointAssemblyName), $"ManagedEntrypointAssemblyName must match. Expected: \"{expectedManagedEntrypointAssemblyName}\", received: \"{managedEntrypointAssemblyName}\"");
 
             // VALIDATE ClrProductVersion
             start = end;
@@ -227,7 +227,7 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
-            Logger.logger.Log($"\n{{\n\tprocessId: {processId},\n\truntimeCookie: {runtimeCookie},\n\tcommandLine: {commandLine},\n\tOS: {OS},\n\tArch: {arch},\n\tManagedEntrypointAssemblyPath: {managedEntrypointAssemblyPath},\n\tClrProductVersion: {clrProductVersion}\n}}");
+            Logger.logger.Log($"\n{{\n\tprocessId: {processId},\n\truntimeCookie: {runtimeCookie},\n\tcommandLine: {commandLine},\n\tOS: {OS},\n\tArch: {arch},\n\tManagedEntrypointAssemblyName: {managedEntrypointAssemblyName},\n\tClrProductVersion: {clrProductVersion}\n}}");
 
             return 100;
         }
