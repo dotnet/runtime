@@ -2377,12 +2377,6 @@ void CodeGen::genEmitMachineCode()
 
     compiler->unwindReserve();
 
-#if DISPLAY_SIZES
-
-    size_t dataSize = GetEmitter()->emitDataSize();
-
-#endif // DISPLAY_SIZES
-
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -2602,6 +2596,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
 #if DISPLAY_SIZES
 
+    size_t dataSize = GetEmitter()->emitDataSize();
     grossVMsize += compiler->info.compILCodeSize;
     totalNCsize += codeSize + dataSize + compiler->compInfoBlkSize;
     grossNCsize += codeSize + dataSize;

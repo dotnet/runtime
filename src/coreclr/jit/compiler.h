@@ -6516,7 +6516,7 @@ protected:
     // loop nested in "loopInd" that shares the same head as "loopInd".
     void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
-    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap);
+    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool updatePreds = false);
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
@@ -6560,7 +6560,7 @@ protected:
 
     static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
 
-    void optInvertWhileLoop(BasicBlock* block);
+    bool optInvertWhileLoop(BasicBlock* block);
 
 private:
     static bool optIterSmallOverflow(int iterAtExit, var_types incrType);
@@ -9482,7 +9482,7 @@ public:
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-        // Method hash is logcally const, but computed
+        // Method hash is logically const, but computed
         // on first demand.
         mutable unsigned compMethodHashPrivate;
         unsigned         compMethodHash() const;
