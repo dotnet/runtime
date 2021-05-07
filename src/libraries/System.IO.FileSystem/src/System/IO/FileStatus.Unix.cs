@@ -50,24 +50,26 @@ namespace System.IO
             _initializedSymlinkCache <= 0;
 
         // Check if the main path (without following symlinks) has the hidden attribute set
-        // Only use this if Refresh has been successfully called at least once
+        // Ideally, use this if Refresh has been successfully called at least once.
+        // But since it is also used for soft retrieval during FileSystemEntry initialization,
+        // we return false early if the cache has not been initialized
         internal bool HasHiddenFlag
         {
             get
             {
-                Debug.Assert(IsFileCacheInitialized);
                 return IsFileCacheInitialized &&
                        (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
             }
         }
 
         // Checks if the main path (without following symlinks) has the read-only attribute set
-        // Only use this if Refresh has been successfully called at least once
+        // Ideally, use this if Refresh has been successfully called at least once.
+        // But since it is also used for soft retrieval during FileSystemEntry initialization,
+        // we return false early if the cache has not been initialized
         internal bool HasReadOnlyFlag
         {
             get
             {
-                Debug.Assert(IsFileCacheInitialized);
                 if (!IsFileCacheInitialized)
                 {
                     return false;
@@ -105,33 +107,12 @@ namespace System.IO
 
         // Checks if the main path is a symbolic link
         // Only call if Refresh has been successfully called at least once
-        internal bool HasSymbolicLinkFlag
+        private bool HasSymbolicLinkFlag
         {
             get
             {
                 Debug.Assert(IsFileCacheInitialized);
-                return IsFileCacheInitialized &&
-                       (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
-            }
-        }
-
-        // Checks if any of the caches has the directory attribute set
-        // Only call if Refresh has been successfully called at least once
-        internal bool HasDirectoryFlag
-        {
-            get
-            {
-                Debug.Assert(IsFileCacheInitialized || IsSymlinkCacheInitialized);
-                if (IsSymlinkCacheInitialized)
-                {
-                    return CacheHasDirectoryFlag(_symlinkCache);
-                }
-                else if (IsFileCacheInitialized)
-                {
-                    return CacheHasDirectoryFlag(_fileCache);
-                }
-
-                return false;
+                return (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
         }
 

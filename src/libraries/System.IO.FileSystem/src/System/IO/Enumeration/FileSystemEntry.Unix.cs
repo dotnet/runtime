@@ -33,7 +33,6 @@ namespace System.IO.Enumeration
             entry._fullPath = ReadOnlySpan<char>.Empty;
             entry._fileName = ReadOnlySpan<char>.Empty;
 
-            entry._status = default;
             entry._status.InvalidateCaches();
 
             bool isDirectory = directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR;
@@ -42,18 +41,20 @@ namespace System.IO.Enumeration
 
             // Some operating systems don't have the inode type in the dirent structure,
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
-            // directory.
-            if (isSymlink || isUnknown)
+            // symlink or a directory.
+            if (isUnknown)
             {
-                // DT_LNK and DT_UNKNOWN: stat to it to see if we can resolve it to a directory
+                isSymlink = entry._status.IsSymbolicLink(entry.FullPath);
                 isDirectory = entry._status.IsDirectory(entry.FullPath);
             }
 
             // Same idea as the directory check, just repeated for (and tweaked due to the
             // nature of) symlinks.
-            if (isUnknown)
+            // Whether we had the dirent structure or not, we treat a symlink to a directory as a directory,
+            // so we need to reflect that in our isDirectory variable.
+            if (isSymlink)
             {
-                isSymlink = entry._status.IsSymbolicLink(entry.FullPath);
+                isDirectory = entry._status.IsDirectory(entry.FullPath);
             }
 
             entry._status.InitiallyDirectory = isDirectory;

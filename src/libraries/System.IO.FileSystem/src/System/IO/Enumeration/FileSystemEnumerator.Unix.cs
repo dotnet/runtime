@@ -133,7 +133,7 @@ namespace System.IO.Enumeration
 
                         if (!isSpecialDirectory && _options.AttributesToSkip != 0)
                         {
-                            // IsSymbolicLink, IsHidden and IsReadOnly will hit the disk if
+                            // entry.IsSymbolicLink, entry.IsHidden and entry.IsReadOnly will hit the disk if
                             // caches had not been initialized yet and we could not soft-retrieve the attributes in Initialize
                             if ((ShouldSkip(FileAttributes.Directory) && isDirectory) ||
                                 (ShouldSkip(FileAttributes.ReparsePoint) && (isSymlink || entry.IsSymbolicLink)) ||
