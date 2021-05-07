@@ -140,6 +140,15 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters => _converters;
 
+        /// <summary>
+        /// The list of custom polymorphic type configurations.
+        /// </summary>
+        /// <remarks>
+        /// Once serialization or deserialization occurs, the list cannot be modified.
+        /// </remarks>
+        [System.Runtime.Versioning.RequiresPreviewFeatures("Polymorphic serialization is currently in preview.")]
+        public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
+
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;

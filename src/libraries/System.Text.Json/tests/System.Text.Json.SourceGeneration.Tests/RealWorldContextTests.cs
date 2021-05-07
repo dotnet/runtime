@@ -925,5 +925,40 @@ namespace System.Text.Json.SourceGeneration.Tests
             instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute);
             Assert.NotNull(instance);
         }
+
+        [Fact]
+        public void PolymorphicClass_Serialization()
+        {
+            PolymorphicClass value = new PolymorphicClass.DerivedClass { Number = 42, Boolean = true };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, DefaultContext.PolymorphicClass));
+            }
+            else
+            {
+                string expectedJson = @"{""$type"" : ""derivedClass"", ""Number"" : 42, ""Boolean"" : true }";
+                string actualJson = JsonSerializer.Serialize(value, DefaultContext.PolymorphicClass);
+                JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
+            }
+        }
+
+        [Fact]
+        public void PolymorphicClass_Deserialization()
+        {
+            string json = @"{""$type"" : ""derivedClass"", ""Number"" : 42, ""Boolean"" : true }";
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PolymorphicClass>(json, DefaultContext.PolymorphicClass));
+            }
+            else
+            {
+                PolymorphicClass result = JsonSerializer.Deserialize<PolymorphicClass>(json, DefaultContext.PolymorphicClass);
+                PolymorphicClass.DerivedClass derivedResult = Assert.IsType<PolymorphicClass.DerivedClass>(result);
+                Assert.Equal(42, derivedResult.Number);
+                Assert.True(derivedResult.Boolean);
+            }
+        }
     }
 }
