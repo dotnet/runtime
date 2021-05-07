@@ -52,19 +52,27 @@ DEFINE_CIPHER(Des3Cbc,      128, "DESede/CBC/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(Des3Cfb8,     128, "DESede/CFB8/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(Des3Cfb64,    128, "DESede/CFB/NoPadding", CIPHER_REQUIRES_IV)
 
-static bool HasTag(CipherInfo* type)
+//
+// We don't have to check whether `CipherInfo` arguments are valid pointers, as these functions will be called after the
+// context is created and the type stored in `CipherInfo` is asserted to be not NULL on creation time.  Managed code
+// cannot modify the context so it's fairly safe to assume that we're passed a valid pointer here.
+//
+// The entry functions (those that can be called by external code) take care to validate that the context passed to them
+// is a valid pointer and so we can assume the assertion from the preceding paragraph.
+//
+ARGS_NON_NULL_ALL static bool HasTag(CipherInfo* type)
 {
     return (type->flags & CIPHER_HAS_TAG) == CIPHER_HAS_TAG;
 }
 
-static bool RequiresIV(CipherInfo* type)
+ARGS_NON_NULL_ALL static bool RequiresIV(CipherInfo* type)
 {
     return (type->flags & CIPHER_REQUIRES_IV) == CIPHER_REQUIRES_IV;
 }
 
-static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
+ARGS_NON_NULL_ALL static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
 {
-    return JSTRING(type->name);
+    return make_java_string(env, type->name);
 }
 
 CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
@@ -84,7 +92,7 @@ CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
         return FAIL;
     }
 
-    CipherCtx* ctx = malloc(sizeof(CipherCtx));
+    CipherCtx* ctx = xmalloc(sizeof(CipherCtx));
     ctx->cipher = cipher;
     ctx->type = type;
     ctx->tagLength = TAG_MAX_LENGTH;
@@ -108,7 +116,7 @@ int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength
     return SUCCESS;
 }
 
-static int32_t ReinitializeCipher(CipherCtx* ctx)
+ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
 
@@ -121,14 +129,14 @@ static int32_t ReinitializeCipher(CipherCtx* ctx)
         return FAIL;
 
     int32_t keyLength = ctx->keySizeInBits / 8;
-    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength);
+    jbyteArray keyBytes = make_java_byte_array(env, keyLength);
     (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength, (jbyte*)ctx->key);
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, algName);
 
     jobject ivPsObj = NULL;
     if (RequiresIV(ctx->type))
     {
-        jbyteArray ivBytes = (*env)->NewByteArray(env, ctx->ivLength);
+        jbyteArray ivBytes = make_java_byte_array(env, ctx->ivLength);
         (*env)->SetByteArrayRegion(env, ivBytes, 0, ctx->ivLength, (jbyte*)ctx->iv);
         if (HasTag(ctx->type))
         {
@@ -216,7 +224,7 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
     abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
+    jbyteArray inDataBytes = make_java_byte_array(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
     (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
     (*env)->DeleteLocalRef(env, inDataBytes);
@@ -236,7 +244,7 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
     abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
+    jbyteArray inDataBytes = make_java_byte_array(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
 
     *outl = 0;

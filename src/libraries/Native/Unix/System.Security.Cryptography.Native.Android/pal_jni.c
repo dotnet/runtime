@@ -481,7 +481,7 @@ void ReleaseLRef(JNIEnv *env, jobject lref)
         (*env)->DeleteLocalRef(env, lref);
 }
 
-static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
+ARGS_NON_NULL_ALL static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
 {
     *out = NULL;
     LOG_DEBUG("Finding %s class", name);
@@ -505,7 +505,7 @@ jclass GetClassGRef(JNIEnv *env, const char* name)
     return klass;
 }
 
-static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
+ARGS_NON_NULL_ALL static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
 {
     jclass klass = NULL;
     if (!TryGetClassGRef(env, name, &klass))
@@ -562,7 +562,7 @@ void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
     {
         free(*dst);
     }
-    *dst = (uint8_t*)malloc(len * sizeof(uint8_t));
+    *dst = (uint8_t*)xmalloc(len * sizeof(uint8_t));
     memcpy(*dst, src, len);
 }
 

@@ -30,15 +30,15 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 {
     jobject mdName = NULL;
     if (type == CryptoNative_EvpSha1())
-        mdName = JSTRING("SHA-1");
+        mdName = make_java_string(env, "SHA-1");
     else if (type == CryptoNative_EvpSha256())
-        mdName = JSTRING("SHA-256");
+        mdName = make_java_string(env, "SHA-256");
     else if (type == CryptoNative_EvpSha384())
-        mdName = JSTRING("SHA-384");
+        mdName = make_java_string(env, "SHA-384");
     else if (type == CryptoNative_EvpSha512())
-        mdName = JSTRING("SHA-512");
+        mdName = make_java_string(env, "SHA-512");
     else if (type == CryptoNative_EvpMd5())
-        mdName = JSTRING("MD5");
+        mdName = make_java_string(env, "MD5");
     else
         return NULL;
 
@@ -61,7 +61,7 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     if (!mdObj)
         return FAIL;
 
-    jbyteArray bytes = (*env)->NewByteArray(env, sourceSize);
+    jbyteArray bytes = make_java_byte_array(env, sourceSize);
     (*env)->SetByteArrayRegion(env, bytes, 0, sourceSize, (jbyte*) source);
     jbyteArray hashedBytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestWithInputBytes, bytes);
     abort_unless(hashedBytes != NULL, "MessageDigest.digest(...) was not expected to return null");
@@ -100,7 +100,7 @@ int32_t CryptoNative_EvpDigestUpdate(jobject ctx, void* d, int32_t cnt)
         abort_if_invalid_pointer_argument (d);
     JNIEnv* env = GetJNIEnv();
 
-    jbyteArray bytes = (*env)->NewByteArray(env, cnt);
+    jbyteArray bytes = make_java_byte_array(env, cnt);
     (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
     (*env)->CallVoidMethod(env, ctx, g_mdUpdate, bytes);
     (*env)->DeleteLocalRef(env, bytes);
