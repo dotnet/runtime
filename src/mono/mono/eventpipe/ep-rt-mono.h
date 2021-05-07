@@ -880,6 +880,19 @@ ep_rt_config_value_get_circular_mb (void)
 static
 inline
 bool
+ep_rt_config_value_get_output_streaming (void)
+{
+	bool enable = false;
+	gchar *value = g_getenv ("COMPlus_EventPipeOutputStreaming");
+	if (value && atoi (value) == 1)
+		enable = true;
+	g_free (value);
+	return enable;
+}
+
+static
+inline
+bool
 ep_rt_config_value_get_use_portable_thread_pool (void)
 {
 	// Only supports portable thread pool.

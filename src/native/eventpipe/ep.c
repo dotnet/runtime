@@ -787,6 +787,7 @@ enable_default_session_via_env_variables (void)
 	ep_char8_t *ep_config_output_path = NULL;
 	uint32_t ep_circular_mb = 0;
 	const ep_char8_t *output_path = NULL;
+	bool output_streaming = false;
 
 	if (ep_rt_config_value_get_enable ()) {
 		ep_config = ep_rt_config_value_get_config ();
@@ -817,7 +818,7 @@ enable_default_session_via_env_variables (void)
 			output_path,
 			ep_circular_mb,
 			ep_config,
-			EP_SESSION_TYPE_FILE,
+			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 			true,
 			NULL,
@@ -880,7 +881,7 @@ ep_enable (
 	ep_requires_lock_not_held ();
 
 	// If the state or arguments are invalid, bail here.
-	if (session_type == EP_SESSION_TYPE_FILE && output_path == NULL)
+	if ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL)
 		return 0;
 	if (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL)
 		return 0;
