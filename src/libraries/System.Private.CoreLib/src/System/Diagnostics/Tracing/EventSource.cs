@@ -1370,7 +1370,10 @@ namespace System.Diagnostics.Tracing
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
 #endif // MONO && !TARGET_BROWSER
-                            WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
+                        {
+                            var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, relatedActivityId);
+                            WriteToAllListeners(eventCallbackArgs, eventDataCount, data);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1975,28 +1978,18 @@ namespace System.Diagnostics.Tracing
                     {
 #if !ES_BUILD_STANDALONE
                         // Maintain old behavior - object identity is preserved
-                        if (LocalAppContextSwitches.PreserveEventListnerObjectIdentity)
-                        {
-                            WriteToAllListeners(
-                                eventId: eventId,
-                                osThreadId: null,
-                                timeStamp: null,
-                                activityID: pActivityId,
-                                childActivityID: childActivityID,
-                                args: args);
-                        }
-                        else
+                        if (!LocalAppContextSwitches.PreserveEventListnerObjectIdentity)
 #endif // !ES_BUILD_STANDALONE
                         {
-                            object?[] serializedArgs = SerializeEventArgs(eventId, args);
-                            WriteToAllListeners(
-                                eventId: eventId,
-                                osThreadId: null,
-                                timeStamp: null,
-                                activityID: pActivityId,
-                                childActivityID: childActivityID,
-                                args: serializedArgs);
+                            args = SerializeEventArgs(eventId, args);
                         }
+
+                        var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, childActivityID)
+                        {
+                            Payload = new ReadOnlyCollection<object?>(args)
+                        };
+
+                        DispatchToAllListeners(eventId, eventCallbackArgs);
                     }
                 }
                 catch (Exception ex)
@@ -2070,21 +2063,20 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private unsafe void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
+        private unsafe void WriteToAllListeners(EventWrittenEventArgs eventCallbackArgs, int eventDataCount, EventData* data)
         {
             Debug.Assert(m_eventData != null);
-
-            ref EventMetadata metadata = ref m_eventData[eventId];
+            ref EventMetadata metadata = ref m_eventData[eventCallbackArgs.EventId];
 
             if (eventDataCount != metadata.EventListenerParameterCount)
             {
-                ReportOutOfBandMessage(SR.Format(SR.EventSource_EventParametersMismatch, eventId, eventDataCount, metadata.Parameters.Length));
+                ReportOutOfBandMessage(SR.Format(SR.EventSource_EventParametersMismatch, eventCallbackArgs.EventId, eventDataCount, metadata.Parameters.Length));
             }
 
             object?[] args;
             if (eventDataCount == 0)
             {
-                args = Array.Empty<object>();
+                eventCallbackArgs.Payload = EventWrittenEventArgs.EmptyPayload;
             }
             else
             {
@@ -2112,37 +2104,14 @@ namespace System.Diagnostics.Tracing
                 {
                     DecodeObjects(args, parameters, data);
                 }
+
+                eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(args);
             }
 
-            WriteToAllListeners(
-                eventId: eventId,
-                osThreadId: null,
-                timeStamp: null,
-                activityID: activityID,
-                childActivityID: childActivityID,
-                args: args);
+            DispatchToAllListeners(eventCallbackArgs.EventId, eventCallbackArgs);
         }
 
-        // helper for writing to all EventListeners attached the current eventSource.
-        internal unsafe void WriteToAllListeners(int eventId, uint* osThreadId, DateTime* timeStamp, Guid* activityID, Guid* childActivityID, object?[] args)
-        {
-            EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
-            eventCallbackArgs.EventId = eventId;
-            if (osThreadId != null)
-                eventCallbackArgs.OSThreadId = (int)*osThreadId;
-            if (timeStamp != null)
-                eventCallbackArgs.TimeStamp = *timeStamp;
-            if (activityID != null)
-                eventCallbackArgs.ActivityId = *activityID;
-            if (childActivityID != null)
-                eventCallbackArgs.RelatedActivityId = *childActivityID;
-
-            eventCallbackArgs.Payload = args.Length == 0 ? EventWrittenEventArgs.EmptyPayload : new ReadOnlyCollection<object?>(args);
-
-            DispatchToAllListeners(eventId, eventCallbackArgs);
-        }
-
-        private unsafe void DispatchToAllListeners(int eventId, EventWrittenEventArgs eventCallbackArgs)
+        internal unsafe void DispatchToAllListeners(int eventId, EventWrittenEventArgs eventCallbackArgs)
         {
             Exception? lastThrownException = null;
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -2281,12 +2250,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private void WriteStringToAllListeners(string eventName, string msg)
         {
-            EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
-            eventCallbackArgs.EventId = 0;
-            eventCallbackArgs.Message = msg;
-            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new object[] { msg });
-            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" });
-            eventCallbackArgs.EventName = eventName;
+            var eventCallbackArgs = new EventWrittenEventArgs(this, 0)
+            {
+                EventName = eventName,
+                Message = msg,
+                Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
+                PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" })
+            };
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {
@@ -2498,6 +2468,20 @@ namespace System.Diagnostics.Tracing
 
             public TraceLoggingEventTypes? TraceLoggingEventTypes;
             public EventActivityOptions ActivityOptions;
+
+            private ReadOnlyCollection<string>? _parameterNames;
+            public ReadOnlyCollection<string> ParameterNames => _parameterNames ??= GetParameterNames();
+
+            private ReadOnlyCollection<string> GetParameterNames()
+            {
+                ParameterInfo[] parameters = Parameters;
+                var names = new string[parameters.Length];
+                for (int i = 0; i < names.Length; i++)
+                {
+                    names[i] = parameters[i].Name!;
+                }
+                return new ReadOnlyCollection<string>(names);
+            }
         }
 
         // This is the internal entry point that code:EventListeners call when wanting to send a command to a
@@ -4601,30 +4585,21 @@ namespace System.Diagnostics.Tracing
     {
         internal static readonly ReadOnlyCollection<object?> EmptyPayload = new(Array.Empty<object>());
 
+        private ref EventSource.EventMetadata Metadata => ref EventSource.m_eventData![EventId];
+
         /// <summary>
         /// The name of the event.
         /// </summary>
         public string? EventName
         {
-            get
-            {
-                if (m_eventName != null || EventId < 0)      // TraceLogging convention EventID == -1
-                {
-                    return m_eventName;
-                }
-                else
-                {
-                    Debug.Assert(m_eventSource.m_eventData != null);
-                    return m_eventSource.m_eventData[EventId].Name;
-                }
-            }
-            internal set => m_eventName = value;
+            get => _moreInfo?.EventName ?? (EventId <= 0 ? null : Metadata.Name);
+            internal init => MoreInfo.EventName = value;
         }
 
         /// <summary>
         /// Gets the event ID for the event that was written.
         /// </summary>
-        public int EventId { get; internal set; }
+        public int EventId { get; }
 
         /// <summary>
         /// Gets the activity ID for the thread on which the event was written.
@@ -4633,25 +4608,19 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                Guid activityId = m_activityId;
-                if (activityId == Guid.Empty)
+                if (_moreInfo is MoreEventInfo moreInfo && moreInfo.ActivityId != Guid.Empty)
                 {
-                    activityId = EventSource.CurrentThreadActivityId;
+                    return moreInfo.ActivityId;
                 }
 
-                return activityId;
+                return EventSource.CurrentThreadActivityId;
             }
-            internal set => m_activityId = value;
         }
 
         /// <summary>
         /// Gets the related activity ID if one was specified when the event was written.
         /// </summary>
-        public Guid RelatedActivityId
-        {
-            get;
-            internal set;
-        }
+        public Guid RelatedActivityId => _moreInfo?.RelatedActivityId ?? default;
 
         /// <summary>
         /// Gets the payload for the event.
@@ -4663,49 +4632,22 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public ReadOnlyCollection<string>? PayloadNames
         {
-            get
-            {
-                // For contract based events we create the list lazily.
-                // You can have m_payloadNames be null in the TraceLogging case (EventID < 0) so only
-                // do the lazy init if you know it is contract based (EventID >= 0)
-                if (EventId >= 0 && m_payloadNames == null)
-                {
-                    Debug.Assert(m_eventSource.m_eventData != null);
-                    ParameterInfo[] parameters = m_eventSource.m_eventData[EventId].Parameters;
-
-                    string[] names = new string[parameters.Length];
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        names[i] = parameters[i].Name!;
-                    }
-
-                    m_payloadNames = new ReadOnlyCollection<string>(names);
-                }
-
-                return m_payloadNames;
-            }
-
-            internal set => m_payloadNames = value;
+            get => _moreInfo?.PayloadNames ?? (EventId <= 0 ? null : Metadata.ParameterNames);
+            internal set => MoreInfo.PayloadNames = value;
         }
 
         /// <summary>
         /// Gets the event source object.
         /// </summary>
-        public EventSource EventSource => m_eventSource;
+        public EventSource EventSource { get; }
 
         /// <summary>
         /// Gets the keywords for the event.
         /// </summary>
         public EventKeywords Keywords
         {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return m_keywords;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return (EventKeywords)m_eventSource.m_eventData[EventId].Descriptor.Keywords;
-            }
+            get => EventId <= 0 ? (_moreInfo?.Keywords ?? default) : (EventKeywords)Metadata.Descriptor.Keywords;
+            internal init => MoreInfo.Keywords = value;
         }
 
         /// <summary>
@@ -4713,44 +4655,22 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventOpcode Opcode
         {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return m_opcode;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return (EventOpcode)m_eventSource.m_eventData[EventId].Descriptor.Opcode;
-            }
+            get => EventId <= 0 ? (_moreInfo?.Opcode ?? default) : (EventOpcode)Metadata.Descriptor.Opcode;
+            internal init => MoreInfo.Opcode = value;
         }
 
         /// <summary>
         /// Gets the task for the event.
         /// </summary>
-        public EventTask Task
-        {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return EventTask.None;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return (EventTask)m_eventSource.m_eventData[EventId].Descriptor.Task;
-            }
-        }
+        public EventTask Task => EventId <= 0 ? EventTask.None : (EventTask)Metadata.Descriptor.Task;
 
         /// <summary>
         /// Any provider/user defined options associated with the event.
         /// </summary>
         public EventTags Tags
         {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return m_tags;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return m_eventSource.m_eventData[EventId].Tags;
-            }
+            get => EventId <= 0 ? (_moreInfo?.Tags ?? default) : Metadata.Tags;
+            internal init => MoreInfo.Tags = value;
         }
 
         /// <summary>
@@ -4758,66 +4678,29 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public string? Message
         {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                {
-                    return m_message;
-                }
-                else
-                {
-                    Debug.Assert(m_eventSource.m_eventData != null);
-                    return m_eventSource.m_eventData[EventId].Message;
-                }
-            }
-            internal set => m_message = value;
+            get => _moreInfo?.Message ?? (EventId <= 0 ? null : Metadata.Message);
+            internal init => MoreInfo.Message = value;
         }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
         /// <summary>
         /// Gets the channel for the event.
         /// </summary>
-        public EventChannel Channel
-        {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return EventChannel.None;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return (EventChannel)m_eventSource.m_eventData[EventId].Descriptor.Channel;
-            }
-        }
+        public EventChannel Channel => EventId <= 0 ? EventChannel.None : (EventChannel)Metadata.Descriptor.Channel;
 #endif
 
         /// <summary>
         /// Gets the version of the event.
         /// </summary>
-        public byte Version
-        {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return 0;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return m_eventSource.m_eventData[EventId].Descriptor.Version;
-            }
-        }
+        public byte Version => EventId <= 0 ? (byte)0 : Metadata.Descriptor.Version;
 
         /// <summary>
         /// Gets the level for the event.
         /// </summary>
         public EventLevel Level
         {
-            get
-            {
-                if (EventId <= 0)      // TraceLogging convention EventID == -1
-                    return m_level;
-
-                Debug.Assert(m_eventSource.m_eventData != null);
-                return (EventLevel)m_eventSource.m_eventData[EventId].Descriptor.Level;
-            }
+            get => EventId <= 0 ? (_moreInfo?.Level ?? default) : (EventLevel)Metadata.Descriptor.Level;
+            internal init => MoreInfo.Level = value;
         }
 
         /// <summary>
@@ -4827,46 +4710,63 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (!m_osThreadId.HasValue)
+                MoreEventInfo moreInfo = MoreInfo;
+                if (!moreInfo.OsThreadId.HasValue)
                 {
 #if ES_BUILD_STANDALONE
-                    m_osThreadId = (long)Interop.Kernel32.GetCurrentThreadId();
+                    moreInfo.OsThreadId = (long)Interop.Kernel32.GetCurrentThreadId();
 #else
-                    m_osThreadId = (long)Thread.CurrentOSThreadId;
+                    moreInfo.OsThreadId = (long)Thread.CurrentOSThreadId;
 #endif
                 }
 
-                return m_osThreadId.Value;
+                return moreInfo.OsThreadId.Value;
             }
-            internal set => m_osThreadId = value;
+            internal init => MoreInfo.OsThreadId = value;
         }
 
         /// <summary>
         /// Gets a UTC DateTime that specifies when the event was written.
         /// </summary>
-        public DateTime TimeStamp
-        {
-            get;
-            internal set;
-        }
+        public DateTime TimeStamp { get; internal init; }
 
-#region private
-        internal EventWrittenEventArgs(EventSource eventSource)
+        internal EventWrittenEventArgs(EventSource eventSource, int eventId)
         {
-            m_eventSource = eventSource;
+            EventSource = eventSource;
+            EventId = eventId;
             TimeStamp = DateTime.UtcNow;
         }
-        private string? m_message;
-        private string? m_eventName;
-        private readonly EventSource m_eventSource;
-        private ReadOnlyCollection<string>? m_payloadNames;
-        private Guid m_activityId;
-        private long? m_osThreadId;
-        internal EventTags m_tags;
-        internal EventOpcode m_opcode;
-        internal EventLevel m_level;
-        internal EventKeywords m_keywords;
-#endregion
+
+        internal unsafe EventWrittenEventArgs(EventSource eventSource, int eventId, Guid* pActivityID, Guid* pChildActivityID)
+            : this(eventSource, eventId)
+        {
+            if (pActivityID != null)
+            {
+                MoreInfo.ActivityId = *pActivityID;
+            }
+
+            if (pChildActivityID != null)
+            {
+                MoreInfo.ActivityId = *pChildActivityID;
+            }
+        }
+
+        private MoreEventInfo? _moreInfo;
+        private MoreEventInfo MoreInfo => _moreInfo ??= new MoreEventInfo();
+
+        private sealed class MoreEventInfo
+        {
+            public string? Message;
+            public string? EventName;
+            public ReadOnlyCollection<string>? PayloadNames;
+            public Guid ActivityId;
+            public Guid RelatedActivityId;
+            public long? OsThreadId;
+            public EventTags Tags;
+            public EventOpcode Opcode;
+            public EventLevel Level;
+            public EventKeywords Keywords;
+        }
     }
 
     /// <summary>
