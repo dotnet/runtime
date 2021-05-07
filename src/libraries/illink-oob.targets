@@ -7,7 +7,7 @@
     <Message Text="Trimming $(PackageRID) OOB assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
-      <LibrariesTrimmedOOBArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-oobs'))</LibrariesTrimmedOOBArtifactsPath>
+      <LibrariesTrimmedOOBArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</LibrariesTrimmedOOBArtifactsPath>
     </PropertyGroup>
 
     <ItemGroup>

@@ -7,7 +7,7 @@
     <Message Text="Trimming $(PackageRID) runtime pack assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
-      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
+      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -27,10 +27,6 @@
       <LinkerNoWarn Condition="'$(TargetOS)' != 'windows'">$(LinkerNoWarn);IL2008</LinkerNoWarn>
       <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
       <RuntimePackILLinkArgs>$(RuntimePackILLinkArgs) --nowarn $(LinkerNoWarn)</RuntimePackILLinkArgs>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_AssemblyPaths>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir);$(SystemPrivateCoreLibPath)</_AssemblyPaths>
     </PropertyGroup>
 
     <ItemGroup>
