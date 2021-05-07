@@ -103,7 +103,6 @@ namespace Internal.TypeSystem
                     type.Context.Target.GetWellKnownTypeSize(type),
                     type.Context.Target.GetWellKnownTypeAlignment(type),
                     0,
-                    alignUpInstanceByteSize: true,
                     out instanceByteSizeAndAlignment
                     );
 
@@ -305,8 +304,6 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected virtual bool IsBlittableOrManagedSequential(TypeDesc type) => false;
-
         protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
         {
             // Instance slice size is the total size of instance not including the base type.
@@ -373,7 +370,6 @@ namespace Internal.TypeSystem
                 instanceSize,
                 largestAlignmentRequired,
                 layoutMetadata.Size,
-                alignUpInstanceByteSize: IsBlittableOrManagedSequential(type),
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
@@ -435,7 +431,6 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos + offsetBias,
                 largestAlignmentRequirement,
                 layoutMetadata.Size,
-                alignUpInstanceByteSize: true,
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
@@ -722,7 +717,6 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos + offsetBias,
                 minAlign,
                 classLayoutSize: 0,
-                alignUpInstanceByteSize: true,
                 out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
@@ -848,7 +842,7 @@ namespace Internal.TypeSystem
                 return layoutMetadata.PackingSize;
         }
 
-        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, bool alignUpInstanceByteSize, out SizeAndAlignment byteCount)
+        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
 
@@ -876,9 +870,7 @@ namespace Internal.TypeSystem
             {
                 if (type.IsValueType)
                 {
-                    instanceSize = LayoutInt.AlignUp(instanceSize,
-                        alignUpInstanceByteSize ? alignment : LayoutInt.Min(alignment, target.LayoutPointerSize),
-                        target);
+                    instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 }
             }
 

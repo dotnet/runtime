@@ -2269,13 +2269,7 @@ namespace Internal.JitInterface
 
         private bool HasLayoutMetadata(TypeDesc type)
         {
-            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || ReadyToRunMetadataFieldLayoutAlgorithm.IsManagedSequentialType(type)))
-            {
-                // Sequential layout
-                return true;
-            }
-
-            return false;
+            return type is MetadataType metadataType && (metadataType.IsSequentialLayout || metadataType.IsExplicitLayout);
         }
 
         /// <summary>
