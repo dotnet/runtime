@@ -50,9 +50,6 @@ namespace Internal.Cryptography.Pal
                 case Oids.Rsa:
                     key = new RSAImplementation.RSASecurityTransforms();
                     break;
-                case Oids.Dsa:
-                    key = new DSAImplementation.DSASecurityTransforms();
-                    break;
                 case Oids.EcDiffieHellman:
                 case Oids.EcPublicKey:
                     key = new ECDsaImplementation.ECDsaSecurityTransforms();
