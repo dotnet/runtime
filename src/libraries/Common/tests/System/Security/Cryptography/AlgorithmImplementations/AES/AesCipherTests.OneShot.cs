@@ -71,6 +71,22 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(EcbTestCases))]
+        public static void TryEncryptEcb_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                Span<byte> destinationBuffer = new byte[ciphertext.Length - 1];
+
+                bool result = aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out int bytesWritten);
+                Assert.False(result, "TryDecryptEcb");
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
         public static void TryDecryptEcb_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
             using (Aes aes = AesFactory.Create())
@@ -163,6 +179,41 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(EcbTestCases))]
+        public static void TryEncryptEcb_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                Span<byte> largeBuffer = new byte[ciphertext.Length + 10];
+                Span<byte> destinationBuffer = largeBuffer.Slice(0, ciphertext.Length);
+                largeBuffer.Fill(0xCC);
+
+                bool result = aes.TryEncryptEcb(
+                    plaintext,
+                    destinationBuffer,
+                    padding,
+                    out int bytesWritten);
+
+                Assert.True(result, "TryEncryptEcb");
+                Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                if (padding == PaddingMode.ISO10126)
+                {
+                    int blockSizeBytes = aes.BlockSize / 8;
+                    Assert.Equal(ciphertext[..^blockSizeBytes], destinationBuffer[..^blockSizeBytes].ToArray());
+                }
+                else
+                {
+                    Assert.Equal(ciphertext, destinationBuffer.ToArray());
+                }
+
+                AssertFilledWith(0xCC, largeBuffer.Slice(ciphertext.Length));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
         public static void TryDecryptEcb_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
             (int plaintextOffset, int ciphertextOffset)[] offsets =
@@ -196,6 +247,44 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     {
                         Assert.Equal(plaintext, destinationBuffer.ToArray());
                         Assert.True(destinationBuffer.Overlaps(ciphertextBuffer));
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
+        public static void TryEncryptEcb_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            (int plaintextOffset, int ciphertextOffset)[] offsets =
+            {
+                (0, 0), (8, 0), (0, 8), (8, 8),
+            };
+
+            foreach ((int plaintextOffset, int ciphertextOffset) in offsets)
+            {
+                using (Aes aes = AesFactory.Create())
+                {
+                    aes.Key = s_aes128OneShotKey;
+
+                    int destinationSize = ciphertext.Length + Math.Max(plaintextOffset, ciphertextOffset);
+                    Span<byte> buffer = new byte[destinationSize];
+                    Span<byte> destinationBuffer = buffer.Slice(ciphertextOffset, ciphertext.Length);
+                    Span<byte> plaintextBuffer = buffer.Slice(plaintextOffset, plaintext.Length);
+                    plaintext.AsSpan().CopyTo(plaintextBuffer);
+
+                    bool result = aes.TryEncryptEcb(plaintextBuffer, destinationBuffer, padding, out int bytesWritten);
+                    Assert.True(result, "TryEncryptEcb");
+                    Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                    if (padding == PaddingMode.ISO10126)
+                    {
+                        int blockSizeBytes = aes.BlockSize / 8;
+                        Assert.Equal(ciphertext[..^blockSizeBytes], destinationBuffer[..^blockSizeBytes].ToArray());
+                    }
+                    else
+                    {
+                        Assert.Equal(ciphertext, destinationBuffer.ToArray());
                     }
                 }
             }
