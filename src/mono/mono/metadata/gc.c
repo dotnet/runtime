@@ -856,6 +856,7 @@ static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
 	gboolean wait = TRUE;
+	gboolean init_platform = TRUE;
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "Finalizer", MonoSetThreadNameFlag_None);
 
@@ -877,6 +878,15 @@ finalizer_thread (gpointer unused)
 		wait = TRUE;
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
+
+		/* The Finalizer thread doesn't initialize for the platform during start up
+			because base managed libraries may not be loaded yet. However, the first time
+			the Finalizer is to run managed finalizer, we can take this opportunity to
+			initialize the platform. */
+		if (init_platform) {
+			init_platform = FALSE;
+			mono_thread_init_platform_state ();
+		}
 
 		mono_runtime_do_background_work ();
 

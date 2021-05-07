@@ -3916,7 +3916,7 @@ mono_thread_init_platform_state (void)
 	}
 #endif
 
-#if TARGET_OSX || HOST_MACCAT || TARGET_IOS || TARGET_TVOS
+#if defined(HOST_DARWIN)
 
 	ERROR_DECL (error);
 	MONO_STATIC_POINTER_INIT (MonoMethod, create_autoreleasepool)
@@ -3926,10 +3926,7 @@ mono_thread_init_platform_state (void)
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, create_autoreleasepool)
 
-	if (mono_runtime_get_no_exec ())
-		return;
-
-	mono_runtime_try_invoke_handle (create_autoreleasepool, NULL_HANDLE, NULL, error);
+	mono_runtime_invoke_handle_void (create_autoreleasepool, NULL_HANDLE, NULL, error);
 	mono_error_cleanup (error);
 
 #endif
@@ -3950,7 +3947,7 @@ mono_thread_cleanup_platform_state (void)
 	}
 #endif
 
-#if TARGET_OSX || HOST_MACCAT || TARGET_IOS || TARGET_TVOS
+#if defined(HOST_DARWIN)
 
 	ERROR_DECL (error);
 	MONO_STATIC_POINTER_INIT (MonoMethod, drain_autoreleasepool)
@@ -3960,10 +3957,7 @@ mono_thread_cleanup_platform_state (void)
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, drain_autoreleasepool)
 
-	if (mono_runtime_get_no_exec ())
-		return;
-
-	mono_runtime_try_invoke_handle (drain_autoreleasepool, NULL_HANDLE, NULL, error);
+	mono_runtime_invoke_handle_void (drain_autoreleasepool, NULL_HANDLE, NULL, error);
 	mono_error_cleanup (error);
 
 #endif
