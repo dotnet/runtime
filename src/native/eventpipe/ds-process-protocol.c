@@ -213,6 +213,8 @@ process_info_2_payload_get_size (DiagnosticsProcessInfo2Payload *payload)
 	// LPCWSTR CommandLine; -> 4 bytes + strlen * sizeof(WCHAR)
 	// LPCWSTR OS;          -> 4 bytes + strlen * sizeof(WCHAR)
 	// LPCWSTR Arch;        -> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR managed_entrypoint_assembly_name;	-> 4 bytes + strlen * sizeof(WCHAR)
+	// LPCWSTR clr_product_version; 				-> 4 bytes + strlen * sizeof(WCHAR)
 
 	EP_ASSERT (payload != NULL);
 
