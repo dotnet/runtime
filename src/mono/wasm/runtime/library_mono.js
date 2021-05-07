@@ -304,7 +304,7 @@ var MonoSupportLib = {
 
 		_mono_wasm_claim_scratch_index: function () {
 			if (!this._scratch_root_buffer) {
-				const maxScratchRoots = 8192;
+				const maxScratchRoots = 4096;
 				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
 
 				this._scratch_root_free_indices = new Int32Array (maxScratchRoots);

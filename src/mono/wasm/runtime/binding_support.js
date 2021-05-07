@@ -1785,6 +1785,18 @@ var BindingSupportLib = {
 
 			this_arg = this_arg | 0;
 
+			if (!this._bound_method_cache)
+				this._bound_method_cache = new Map();
+
+			// We implement a simple lookup cache here to prevent repeated bind_method calls on the same target
+			//  from exhausting the set of available scratch roots. This is mostly useful for automated tests,
+			//  but it may also save some naive callers from rare runtime failures
+			var cacheKey = `m${method}_t${this_arg}_a${args_marshal}`;
+			if (this._bound_method_cache.has(cacheKey)) {
+				var cacheHit = this._bound_method_cache.get(cacheKey);
+				return cacheHit;
+			}
+
 			var converter = null;
 			if (typeof (args_marshal) === "string") {
 				var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
@@ -1934,7 +1946,14 @@ var BindingSupportLib = {
 			if (this_arg)
 				displayName += "_with_this_" + this_arg;
 
-			return this._create_named_function(displayName, argumentNames, bodyJs, closure);
+			var result = this._create_named_function(displayName, argumentNames, bodyJs, closure);
+
+			// HACK: If the bound method has a this-arg, we don't want to store it into the cache
+			//  since this indicates that the caller may be binding lots of methods onto instances
+			if (!this_arg)
+				this._bound_method_cache.set(cacheKey, result);
+
+			return result;
 		},
 
 		invoke_delegate: function (delegate_obj, js_args) {
