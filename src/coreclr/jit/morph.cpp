@@ -5626,7 +5626,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
         else
         {
-            // Mark cast as unsigned since index should never be negative
+            // Mark cast as unsigned since index is never negative
             // at this point (handled by GT_ARR_BOUNDS_CHECK)
             index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
         }
