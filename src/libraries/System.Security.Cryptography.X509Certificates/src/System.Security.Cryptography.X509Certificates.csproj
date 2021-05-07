@@ -592,7 +592,8 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Common.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.ImportExport.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Keys.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
@@ -616,10 +617,11 @@
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.iOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.iOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.iOS.cs" />
-    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.ImportExport.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Keys.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pkcs12.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pem.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Common.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.AppleKeychainStore.cs" />
