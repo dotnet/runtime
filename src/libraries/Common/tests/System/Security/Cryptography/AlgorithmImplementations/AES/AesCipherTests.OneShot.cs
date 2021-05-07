@@ -19,6 +19,42 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(EcbTestCases))]
+        public static void EcbRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                byte[] encrypted = aes.EncryptEcb(plaintext, padding);
+                byte[] decrypted = aes.DecryptEcb(encrypted, padding);
+
+                if (padding == PaddingMode.Zeros)
+                {
+                    Assert.Equal(plaintext, decrypted[..plaintext.Length]);
+                    AssertFilledWith(0, plaintext.AsSpan(plaintext.Length));
+                }
+                else
+                {
+                    Assert.Equal(plaintext, decrypted);
+                }
+
+                decrypted = aes.DecryptEcb(ciphertext, padding);
+                encrypted = aes.EncryptEcb(decrypted, padding);
+
+                if (padding == PaddingMode.ISO10126)
+                {
+                    int blockSizeBytes = aes.BlockSize / 8;
+                    Assert.Equal(ciphertext[..^blockSizeBytes], encrypted[..^blockSizeBytes]);
+                }
+                else
+                {
+                    Assert.Equal(ciphertext, encrypted);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
         public static void TryDecryptEcb_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
             using (Aes aes = AesFactory.Create())
@@ -56,6 +92,34 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 else
                 {
                     Assert.Equal(plaintext, destinationBuffer.ToArray());
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EcbTestCases))]
+        public static void TryEncryptEcb_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                int expectedCiphertextSize = aes.GetCiphertextLengthEcb(plaintext.Length, padding);
+                Span<byte> destinationBuffer = new byte[expectedCiphertextSize];
+
+                bool result = aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out int bytesWritten);
+                Assert.True(result, "TryEncryptEcb");
+                Assert.Equal(expectedCiphertextSize, bytesWritten);
+
+                if (padding == PaddingMode.ISO10126)
+                {
+                    int blockSizeBytes = aes.BlockSize / 8;
+                    // Padding is random so we can't validate the last block.
+                    Assert.Equal(ciphertext[..^blockSizeBytes], destinationBuffer[..^blockSizeBytes].ToArray());
+                }
+                else
+                {
+                    Assert.Equal(ciphertext, destinationBuffer.ToArray());
                 }
             }
         }

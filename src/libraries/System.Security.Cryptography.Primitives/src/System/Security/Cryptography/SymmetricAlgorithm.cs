@@ -439,8 +439,7 @@ namespace System.Security.Cryptography
 
         public byte[] DecryptEcb(ReadOnlySpan<byte> ciphertext, PaddingMode paddingMode)
         {
-            if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
-                throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
+            CheckPaddingMode(paddingMode);
 
             // This could get returned directly to the caller if we there was no padding
             // that needed to get removed, so don't rent from a pool.
@@ -474,8 +473,7 @@ namespace System.Security.Cryptography
 
         public int DecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode)
         {
-            if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
-                throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
+            CheckPaddingMode(paddingMode);
 
             if (!TryDecryptEcbCore(ciphertext, destination, paddingMode, out int written))
             {
@@ -487,10 +485,76 @@ namespace System.Security.Cryptography
 
         public bool TryDecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
         {
-            if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
-                throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
-
+            CheckPaddingMode(paddingMode);
             return TryDecryptEcbCore(ciphertext, destination, paddingMode, out bytesWritten);
+        }
+
+        public byte[] EncryptEcb(byte[] plaintext, PaddingMode paddingMode)
+        {
+            // paddingMode is validated by callee
+            if (plaintext is null)
+                throw new ArgumentNullException(nameof(plaintext));
+
+            return EncryptEcb(new ReadOnlySpan<byte>(plaintext), paddingMode);
+        }
+
+        public byte[] EncryptEcb(ReadOnlySpan<byte> plaintext, PaddingMode paddingMode)
+        {
+            CheckPaddingMode(paddingMode);
+
+            int ciphertextLength = GetCiphertextLengthEcb(plaintext.Length, paddingMode);
+
+            // We expect most if not all uses to encrypt to exactly the ciphertextLength
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
+
+            if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written))
+            {
+                // This means a user-derived imiplementation added more padding than we
+                // expected.
+                // TODO: better error message
+                throw new CryptographicException();
+            }
+
+            if (written != ciphertextLength)
+            {
+                // This should not happen, but could if a derived class's implementation of core
+                // did something non-standard (encrypt to a partial block). This can't happen for
+                // multiple padding blocks since the buffer would have been too small in the first
+                // place. It doesn't make sense to try and support partial block encryption, likely
+                // something went very wrong. So throw.
+
+                // TODO: better error message
+                throw new CryptographicException();
+            }
+
+            return buffer;
+        }
+
+        public int EncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode)
+        {
+            CheckPaddingMode(paddingMode);
+
+            if (!TryEncryptEcbCore(plaintext, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
+        public bool TryEncryptEcb( ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
+        {
+            CheckPaddingMode(paddingMode);
+            return TryEncryptEcbCore(plaintext, destination, paddingMode, out bytesWritten);
+        }
+
+        protected virtual bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotImplementedException();
         }
 
         protected virtual bool TryDecryptEcbCore(
@@ -500,6 +564,12 @@ namespace System.Security.Cryptography
             out int bytesWritten)
         {
             throw new NotImplementedException();
+        }
+
+        private static void CheckPaddingMode(PaddingMode paddingMode)
+        {
+            if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
+                throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
         }
 
         protected CipherMode ModeValue;

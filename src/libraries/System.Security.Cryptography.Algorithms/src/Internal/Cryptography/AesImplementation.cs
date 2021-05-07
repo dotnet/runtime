@@ -66,6 +66,28 @@ namespace Internal.Cryptography
             }
         }
 
+        protected override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                paddingSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
             // note: rbgIV is guaranteed to be cloned before this method, so no need to clone it again
