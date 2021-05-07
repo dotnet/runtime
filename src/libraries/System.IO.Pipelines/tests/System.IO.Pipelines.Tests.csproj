@@ -4,9 +4,12 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Infrastructure\BasePipeReader.cs" />
     <Compile Include="Infrastructure\HeapBufferPool.cs" />
     <Compile Include="Infrastructure\DisposeTrackingBufferPool.cs" />
     <Compile Include="Infrastructure\ReadOnlyStream.cs" />
+    <Compile Include="Infrastructure\TestPipeReader.cs" />
+    <Compile Include="Infrastructure\ThrowingStream.cs" />
     <Compile Include="Infrastructure\WriteCheckStream.cs" />
     <Compile Include="Infrastructure\WriteOnlyStream.cs" />
     <Compile Include="Infrastructure\CancelledWritesStream.cs" />
@@ -31,6 +34,7 @@
     <Compile Include="ReadResultTests.cs" />
     <Compile Include="SchedulerFacts.cs" />
     <Compile Include="SequencePipeReaderTests.cs" />
+    <Compile Include="StreamPipeReaderCopyToAsyncTests.cs" />
     <Compile Include="StreamPipeReaderTests.cs" />
     <Compile Include="Infrastructure\TestMemoryPool.cs" />
     <Compile Include="StreamPipeWriterTests.cs" />

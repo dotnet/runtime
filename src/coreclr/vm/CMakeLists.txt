@@ -111,7 +111,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     perfmap.cpp
     perfinfo.cpp
     pgo.cpp
-    pinvokeoverride.cpp
     precode.cpp
     prestub.cpp
     rejit.cpp
@@ -302,6 +301,7 @@ set(VM_SOURCES_WKS
     assemblyspec.cpp
     baseassemblyspec.cpp
     cachelinealloc.cpp
+    callconvbuilder.cpp
     callhelpers.cpp
     callsiteinspect.cpp
     clrconfignative.cpp
@@ -364,6 +364,7 @@ set(VM_SOURCES_WKS
     objectlist.cpp
     olevariant.cpp
     pendingload.cpp
+    pinvokeoverride.cpp
     profdetach.cpp
     profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
@@ -409,6 +410,7 @@ set(VM_HEADERS_WKS
     cachelinealloc.h
     callhelpers.h
     callsiteinspect.h
+    callconvbuilder.hpp
     ceemain.h
     clrconfignative.h
     clrex.h

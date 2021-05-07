@@ -209,10 +209,8 @@ namespace System.Reflection
         {
             get
             {
-                if (this.Name == null)
+                if (string.IsNullOrEmpty(this.Name))
                     return string.Empty;
-                if (this.Name == string.Empty)
-                    throw new System.IO.FileLoadException();
 
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
                 byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();

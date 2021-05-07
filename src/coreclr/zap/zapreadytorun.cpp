@@ -563,16 +563,23 @@ HRESULT EnumerateAllCustomAttributes(IMDInternalImport *pMDImport, Tlambda lambd
     return hr;
 }
 
-uint32_t xorshift128(uint32_t state[4])
-{
-    /* Algorithm "xor128" from p. 5 of Marsaglia, "Xorshift RNGs" */
-    uint32_t s, t = state[3];
-    state[3] = state[2];
-    state[2] = state[1];
-    state[1] = s = state[0];
-    t ^= t << 11;
-    t ^= t >> 8;
-    return state[0] = t ^ s ^ (s >> 19);
+static inline uint32_t RotateLeft(const uint32_t x, int k) {
+	return (x << k) | (x >> (32 - k));
+}
+
+uint32_t Xoshiro128StarStar(uint32_t s[]) {
+    const uint32_t result = RotateLeft(s[1] * 5, 7) * 9;
+    const uint32_t t = s[1] << 9;
+
+    s[2] ^= s[0];
+    s[3] ^= s[1];
+    s[1] ^= s[2];
+    s[0] ^= s[3];
+
+    s[2] ^= t;
+    s[3] = RotateLeft(s[3], 11);
+
+    return result;
 }
 
 HRESULT ZapImage::ComputeAttributePresenceTable(IMDInternalImport * pMDImport, SArray<UINT16> *table)
@@ -639,7 +646,7 @@ HRESULT ZapImage::ComputeAttributePresenceTable(IMDInternalImport * pMDImport, S
 
             _ASSERTE(bucketAIndex == (bucketBIndex ^ (NativeFormat::NativeCuckooFilter::ComputeFingerprintHash(fingerprint) % bucketCount)));
 
-            if (xorshift128(state) & 1) // Randomly choose which bucket to attempt to fill first
+            if (Xoshiro128StarStar(state) & 1) // Randomly choose which bucket to attempt to fill first
             {
                 UINT temp = bucketAIndex;
                 bucketAIndex = bucketBIndex;
@@ -701,7 +708,7 @@ HRESULT ZapImage::ComputeAttributePresenceTable(IMDInternalImport * pMDImport, S
             for (int n = 0; n < MaxNumKicks; n++)
             {
                 // Randomly swap an entry in bucket bucketAIndex with fingerprint
-                UINT entryIndexInBucket = xorshift128(state) & 0x7;
+                UINT entryIndexInBucket = Xoshiro128StarStar(state) & 0x7;
                 UINT16 temp = fingerprint;
                 fingerprint = (*table)[(bucketAIndex * 8) + entryIndexInBucket];
                 (*table)[(bucketAIndex * 8) + entryIndexInBucket] = temp;

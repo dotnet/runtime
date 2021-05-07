@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
     [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
     public partial class JsonTypeInfo
     {
-        internal const string JsonObjectTypeName = "System.Text.Json.Node.JsonObject";
+        internal const string JsonObjectTypeName = "System.Text.Json.Nodes.JsonObject";
 
         internal delegate object? ConstructorDelegate();
 
@@ -517,7 +517,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Avoid a reference to typeof(JsonNode) to support trimming.
                     (declaredPropertyType.FullName == JsonObjectTypeName && ReferenceEquals(declaredPropertyType.Assembly, GetType().Assembly)))
                 {
-                    converter = Options.GetConverter(declaredPropertyType);
+                    converter = Options.GetConverterInternal(declaredPropertyType);
                     Debug.Assert(converter != null);
                 }
 

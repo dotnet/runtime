@@ -36,6 +36,8 @@
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
+    <!-- Suppress linker warnings as these are tests -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -218,6 +220,13 @@
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
 
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(AppBundlePath)" />
+    <ItemGroup>
+      <_removeFiles Include="$(OutDir)*.*" />
+    </ItemGroup>
+
+    <Delete Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(OutDir)' != ''" Files="@(_removeFiles)" />
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(PublishDir)" />
   </Target>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this

@@ -246,8 +246,10 @@ namespace System.Net.Sockets.Tests
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
-        public override Task SendFileAsync(Socket s, string fileName) => throw new NotSupportedException();
-        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) => throw new NotSupportedException();
+        public override Task SendFileAsync(Socket s, string fileName) =>
+            s.SendFileAsync(fileName).AsTask();
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
+            s.SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask();
         public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
             s.DisconnectAsync(reuseSocket).AsTask();
     }
@@ -284,8 +286,10 @@ namespace System.Net.Sockets.Tests
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask() ;
-        public override Task SendFileAsync(Socket s, string fileName) => throw new NotSupportedException();
-        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) => throw new NotSupportedException();
+        public override Task SendFileAsync(Socket s, string fileName) =>
+            s.SendFileAsync(fileName, _cts.Token).AsTask();
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
+            s.SendFileAsync(fileName, preBuffer, postBuffer, flags, _cts.Token).AsTask();
         public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
             s.DisconnectAsync(reuseSocket, _cts.Token).AsTask();
     }

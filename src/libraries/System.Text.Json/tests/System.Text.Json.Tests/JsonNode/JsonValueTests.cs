@@ -5,7 +5,7 @@ using System.IO;
 using System.Text.Json.Serialization;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonValueTests
     {
