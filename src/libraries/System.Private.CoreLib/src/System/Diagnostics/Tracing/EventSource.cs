@@ -4610,7 +4610,7 @@ namespace System.Diagnostics.Tracing
         public string? EventName
         {
             get => _moreInfo?.EventName ?? (EventId <= 0 ? null : Metadata.Name);
-            internal init => MoreInfo.EventName = value;
+            internal set => MoreInfo.EventName = value;
         }
 
         /// <summary>
@@ -4664,7 +4664,7 @@ namespace System.Diagnostics.Tracing
         public EventKeywords Keywords
         {
             get => EventId <= 0 ? (_moreInfo?.Keywords ?? default) : (EventKeywords)Metadata.Descriptor.Keywords;
-            internal init => MoreInfo.Keywords = value;
+            internal set => MoreInfo.Keywords = value;
         }
 
         /// <summary>
@@ -4673,7 +4673,7 @@ namespace System.Diagnostics.Tracing
         public EventOpcode Opcode
         {
             get => EventId <= 0 ? (_moreInfo?.Opcode ?? default) : (EventOpcode)Metadata.Descriptor.Opcode;
-            internal init => MoreInfo.Opcode = value;
+            internal set => MoreInfo.Opcode = value;
         }
 
         /// <summary>
@@ -4687,7 +4687,7 @@ namespace System.Diagnostics.Tracing
         public EventTags Tags
         {
             get => EventId <= 0 ? (_moreInfo?.Tags ?? default) : Metadata.Tags;
-            internal init => MoreInfo.Tags = value;
+            internal set => MoreInfo.Tags = value;
         }
 
         /// <summary>
@@ -4696,7 +4696,7 @@ namespace System.Diagnostics.Tracing
         public string? Message
         {
             get => _moreInfo?.Message ?? (EventId <= 0 ? null : Metadata.Message);
-            internal init => MoreInfo.Message = value;
+            internal set => MoreInfo.Message = value;
         }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
@@ -4717,7 +4717,7 @@ namespace System.Diagnostics.Tracing
         public EventLevel Level
         {
             get => EventId <= 0 ? (_moreInfo?.Level ?? default) : (EventLevel)Metadata.Descriptor.Level;
-            internal init => MoreInfo.Level = value;
+            internal set => MoreInfo.Level = value;
         }
 
         /// <summary>
@@ -4739,13 +4739,13 @@ namespace System.Diagnostics.Tracing
 
                 return moreInfo.OsThreadId.Value;
             }
-            internal init => MoreInfo.OsThreadId = value;
+            internal set => MoreInfo.OsThreadId = value;
         }
 
         /// <summary>
         /// Gets a UTC DateTime that specifies when the event was written.
         /// </summary>
-        public DateTime TimeStamp { get; internal init; }
+        public DateTime TimeStamp { get; internal set; }
 
         internal EventWrittenEventArgs(EventSource eventSource, int eventId)
         {
