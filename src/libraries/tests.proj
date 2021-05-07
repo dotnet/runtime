@@ -163,6 +163,12 @@
                        Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT\**\*.Test.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="('$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
+    <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
     <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/50453 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.AsyncInterfaces\tests\Microsoft.Bcl.AsyncInterfaces.Tests.csproj" />
