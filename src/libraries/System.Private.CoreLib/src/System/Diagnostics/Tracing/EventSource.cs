@@ -1690,12 +1690,12 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes);
         }
 
-        private static unsafe void DecodeObjects(object?[] decodedObjects, ParameterInfo[] parameters, EventData* data)
+        private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
             {
                 IntPtr dataPointer = data->DataPointer;
-                Type dataType = parameters[i].ParameterType;
+                Type dataType = parameterTypes[i];
                 object? decoded;
 
                 if (dataType == typeof(string))
@@ -2058,8 +2058,8 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                ParameterInfo[] parameters = metadata.Parameters;
-                args = new object?[Math.Min(eventDataCount, parameters.Length)];
+                Type[] parameterTypes = metadata.ParameterTypes;
+                args = new object?[Math.Min(eventDataCount, parameterTypes.Length)];
 
                 if (metadata.AllParametersAreString)
                 {
@@ -2080,7 +2080,7 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    DecodeObjects(args, parameters, data);
+                    DecodeObjects(args, parameterTypes, data);
                 }
 
                 eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(args);
@@ -2476,6 +2476,25 @@ namespace System.Diagnostics.Tracing
                         _parameterNames = new ReadOnlyCollection<string>(names);
                     }
                     return _parameterNames;
+                }
+            }
+
+            private Type[]? _parameterTypes;
+            public Type[] ParameterTypes
+            {
+                get
+                {
+                    return _parameterTypes ??= GetParameterTypes(Parameters);
+
+                    static Type[] GetParameterTypes(ParameterInfo[] parameters)
+                    {
+                        var types = new Type[parameters.Length];
+                        for (int i = 0; i < types.Length; i++)
+                        {
+                            types[i] = parameters[i].ParameterType;
+                        }
+                        return types;
+                    }
                 }
             }
         }
