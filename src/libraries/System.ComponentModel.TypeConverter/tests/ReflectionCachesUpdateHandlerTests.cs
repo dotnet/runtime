@@ -18,9 +18,9 @@ namespace System.ComponentModel.Tests
             Assert.Equal(1, ac1.Count);
             Assert.Same(ac1[0], ac2[0]);
 
-            MethodInfo beforeUpdate = typeof(TypeDescriptionProvider).Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler", throwOnError: true).GetMethod("BeforeUpdate");
-            Assert.NotNull(beforeUpdate);
-            beforeUpdate.Invoke(null, new object[] { null });
+            MethodInfo clearCache = typeof(TypeDescriptionProvider).Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler", throwOnError: true).GetMethod("ClearCache");
+            Assert.NotNull(clearCache);
+            clearCache.Invoke(null, new object[] { null });
 
             AttributeCollection ac3 = TypeDescriptor.GetAttributes(typeof(ReflectionCachesUpdateHandlerTests));
             Assert.NotSame(ac1[0], ac3[0]);

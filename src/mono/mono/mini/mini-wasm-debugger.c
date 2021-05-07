@@ -541,7 +541,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
 			MonoPPDBFile *ppdb = handle->ppdb;
-			if (!mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
 				pdb_image = mono_ppdb_get_image (ppdb);
 				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
@@ -1023,6 +1023,10 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 
 		case MONO_TYPE_OBJECT: {
 			MonoObject *obj = *(MonoObject**)addr;
+			if (!obj) {
+				mono_wasm_add_obj_var ("object", NULL, 0);
+				break;
+			}
 			MonoClass *klass = obj->vtable->klass;
 			if (!klass) {
 				// boxed null
@@ -1070,6 +1074,12 @@ describe_value(MonoType * type, gpointer addr, int gpflags)
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
+			if (!obj) {
+				char *class_name = mono_type_full_name (type);
+				mono_wasm_add_func_var (class_name, NULL, 0);
+				g_free (class_name);
+				return TRUE;
+			}
 			MonoClass *klass = type->data.klass;
 
 			if (m_class_is_valuetype (mono_object_class (obj))) {
@@ -1523,7 +1533,7 @@ describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *hea
 		addr = mini_get_interp_callbacks ()->frame_get_local (frame, pos);
 	}
 
-	PRINT_DEBUG_MSG (2, "adding val %p type [%p] %s\n", addr, type, mono_type_full_name (type));
+	PRINT_DEBUG_MSG (2, "adding val %p type 0x%x %s\n", addr, type->type, mono_type_full_name (type));
 
 	return describe_value(type, addr, gpflags);
 }
