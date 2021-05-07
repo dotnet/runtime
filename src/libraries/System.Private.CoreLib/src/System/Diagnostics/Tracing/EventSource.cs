@@ -2448,6 +2448,9 @@ namespace System.Diagnostics.Tracing
             private TraceLoggingEventTypes _traceLoggingEventTypes;
             public TraceLoggingEventTypes TraceLoggingEventTypes
             {
+#if !ES_BUILD_STANDALONE
+                [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
+#endif
                 get
                 {
                     if (_traceLoggingEventTypes is null)
