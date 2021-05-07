@@ -86,10 +86,9 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
-            if (ipv6 && PlatformDetection.IsOSX)
+            if (ipv6 && PlatformDetection.IsOSXLike)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/47335")]
                 // accept() will create a (seemingly) DualMode socket on Mac,
