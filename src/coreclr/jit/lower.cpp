@@ -3179,27 +3179,19 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(regType))
             {
-                if (!varDsc->lvDoNotEnregister)
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
                 {
-                    CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
-                    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-                    {
-                        // Lie about the type if we don't know/have it.
-                        simdBaseJitType = CORINFO_TYPE_FLOAT;
-                    }
-                    GenTreeSIMD* simdTree =
-                        comp->gtNewSIMDNode(regType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
-                    BlockRange().InsertAfter(src, simdTree);
-                    src               = simdTree;
-                    lclStore->gtOp1   = src;
-                    convertToStoreObj = false;
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
                 }
-                else
-                {
-                    // the local is already known to be on stack, cheaper to initialize 0 there then use simd regs.
-                    // TODO-CQ: keep STORE_LCL and convert to non-simd after LSRA.
-                    convertToStoreObj = true;
-                }
+                GenTreeSIMD* simdTree =
+                    comp->gtNewSIMDNode(regType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
+                BlockRange().InsertAfter(src, simdTree);
+                LowerSIMD(simdTree);
+                src               = simdTree;
+                lclStore->gtOp1   = src;
+                convertToStoreObj = false;
             }
             else
 #endif // FEATURE_SIMD
