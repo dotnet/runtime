@@ -7,6 +7,7 @@ using Xunit;
 namespace System.ComponentModel.Tests
 {
     [SimpleUpdateTest]
+    [Collection("NoParallelTests")] // Clears the cache which disrupts concurrent tests
     public class ReflectionCachesUpdateHandlerTests
     {
         [Fact]
@@ -15,7 +16,7 @@ namespace System.ComponentModel.Tests
             AttributeCollection ac1 = TypeDescriptor.GetAttributes(typeof(ReflectionCachesUpdateHandlerTests));
             AttributeCollection ac2 = TypeDescriptor.GetAttributes(typeof(ReflectionCachesUpdateHandlerTests));
             Assert.Equal(ac1.Count, ac2.Count);
-            Assert.Equal(1, ac1.Count);
+            Assert.Equal(2, ac1.Count);
             Assert.Same(ac1[0], ac2[0]);
 
             MethodInfo beforeUpdate = typeof(TypeDescriptionProvider).Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler", throwOnError: true).GetMethod("BeforeUpdate");
