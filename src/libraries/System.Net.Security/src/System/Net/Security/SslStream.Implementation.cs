@@ -747,7 +747,7 @@ namespace System.Net.Security
             }
         }
 
-        private bool haveFullTlsFrame(ref int frameSize)
+        private bool HaveFullTlsFrame(out int frameSize)
         {
             if (_internalBufferCount < SecureChannel.ReadHeaderSize)
             {
@@ -759,21 +759,13 @@ namespace System.Net.Security
             return _internalBufferCount >= frameSize;
         }
 
-        private ValueTask<int> getFullFrameIfNeed<TIOAdapter>(TIOAdapter adapter)
+        private ValueTask<int> GetFullFrameIfNeed<TIOAdapter>(TIOAdapter adapter)
             where TIOAdapter : IReadWriteAdapter
         {
             int frameSize;
-            if (_internalBufferCount >= SecureChannel.ReadHeaderSize)
+            if (HaveFullTlsFrame(out frameSize))
             {
-                frameSize = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-                if (_internalBufferCount >= frameSize)
-                {
-                    return new ValueTask<int>(frameSize);
-                }
-            }
-            else
-            {
-                frameSize = int.MaxValue;
+                return new ValueTask<int>(frameSize);
             }
 
             // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
@@ -784,8 +776,9 @@ namespace System.Net.Security
             // _internalOffset is 0 after ResetReadBuffer and we use _internalBufferCount to determined where to read.
             while (_internalBufferCount < frameSize)
             {
-                // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
-                // done in this method both to better consolidate error handling logic (the first read is the special
+                // We don't have enough bytes buffered so we need to read more. Same logic applies to finishing frame
+                // as well as cases when we don't have enough data to even determine the size.
+                // This is done in this method both to better consolidate error handling logic (the first read is the special
                 // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
                 // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
                 // helper needs to yield and allocate a state machine.
@@ -854,6 +847,54 @@ namespace System.Net.Security
             }
         }
 
+        private SecurityStatusPal DecryptData(int frameSize, out int decryptedCount, out int decryptedOffset)
+        {
+            // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
+            // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
+            _decryptedBytesOffset = _internalOffset;
+            _decryptedBytesCount = frameSize;
+            SecurityStatusPal status;
+            lock (_handshakeLock)
+            {
+                ThrowIfExceptionalOrNotAuthenticated();
+                status = _context!.Decrypt(new ReadOnlySpan<byte>(_internalBuffer, _internalOffset, frameSize), _internalBuffer.AsSpan(_decryptedBytesOffset), out decryptedOffset, out decryptedCount);
+                _decryptedBytesCount = decryptedCount;
+                if (decryptedCount > 0)
+                {
+                    _decryptedBytesOffset = _internalOffset + decryptedOffset;
+                }
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                {
+                    // The status indicates that peer wants to renegotiate. (Windows only)
+                    // In practice, there can be some other reasons too - like TLS1.3 session creation
+                    // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
+                    // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
+
+                    // To handle this we call DecryptData() under lock and we create TCS waiter.
+                    // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
+                    // Instead it will wait synchronously or asynchronously and it will try again after the wait.
+                    // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
+                    // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
+                    // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
+
+
+                    if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13)
+                    {
+                        // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
+                        // Tls1.3 does not have renegotiation. However on Windows this error code is used
+                        // for session management e.g. anything lsass needs to see.
+                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                }
+            }
+
+            // Treat the bytes we just decrypted as consumed
+            ConsumeBufferedBytes(frameSize);
+
+            return status;
+        }
+
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -870,11 +911,10 @@ namespace System.Net.Security
 
             try
             {
-
                 if (_decryptedBytesCount != 0)
                 {
                     processedLength = CopyDecryptedData(buffer);
-                    if (_decryptedBytesCount != 0 || !haveFullTlsFrame(ref payloadBytes))
+                    if (processedLength == buffer.Length || !HaveFullTlsFrame(out payloadBytes))
                     {
                         // We either filled whole buffer or used all buffered frames.
                         return processedLength;
@@ -889,77 +929,31 @@ namespace System.Net.Security
                     return 0;
                 }
 
+                if (buffer.Length == 0 && _internalBuffer is null)
+                {
+                    // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                    // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                    // for reduced memory consumption when data is not immediately available.
+                    // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
+                    // until data is actually available from the underlying stream.
+                    // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
+                    // complete immediately and won't save any memory, but will still function correctly.
+                    await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+                }
+
                 Debug.Assert(_decryptedBytesCount == 0);
                 Debug.Assert(_decryptedBytesOffset == 0);
 
                 while (true)
                 {
-                    if (buffer.Length == 0 && _internalBuffer is null)
-                    {
-                        // User requested a zero-byte read, and we have no data available in the buffer for processing.
-                        // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
-                        // for reduced memory consumption when data is not immediately available.
-                        // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
-                        // until data is actually available from the underlying stream.
-                        // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
-                        // complete immediately and won't save any memory, but will still function correctly.
-                        await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
-                    }
-
-                    payloadBytes = await getFullFrameIfNeed(adapter).ConfigureAwait(false);
+                    payloadBytes = await GetFullFrameIfNeed(adapter).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
                         receivedEOF = true;
                         break;
                     }
 
-                    // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
-                    // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                    _decryptedBytesOffset = _internalOffset;
-                    _decryptedBytesCount = payloadBytes;
-                    int decryptedCount = 0;
-                    int decryptedOffset = 0;
-
-                    SecurityStatusPal status;
-                    lock (_handshakeLock)
-                    {
-                        ThrowIfExceptionalOrNotAuthenticated();
-                        status = _context!.Decrypt(new ReadOnlySpan<byte>(_internalBuffer, _internalOffset, payloadBytes), _internalBuffer.AsSpan(_decryptedBytesOffset), ref decryptedOffset, ref decryptedCount);
-                        _decryptedBytesCount = decryptedCount;
-                        if (decryptedCount > 0)
-                        {
-                            _decryptedBytesOffset = _internalOffset + decryptedOffset;
-                        }
-
-                        if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
-                        {
-                            // The status indicates that peer wants to renegotiate. (Windows only)
-                            // In practice, there can be some other reasons too - like TLS1.3 session creation
-                            // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
-                            // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
-
-                            // To handle this we call DecryptData() under lock and we create TCS waiter.
-                            // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
-                            // Instead it will wait synchronously or asynchronously and it will try again after the wait.
-                            // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
-                            // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
-                            // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
-
-
-                            if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13)
-                            {
-                                // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
-                                // Tls1.3 does not have renegotiation. However on Windows this error code is used
-                                // for session management e.g. anything lsass needs to see.
-                                _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                            }
-                        }
-                    }
-
-                    // Treat the bytes we just decrypted as consumed
-                    // Note, we won't do another buffer read until the decrypted bytes are processed
-                    ConsumeBufferedBytes(payloadBytes);
-
+                    SecurityStatusPal status = DecryptData(payloadBytes, out int decryptedCount, out int decryptedOffset);
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
@@ -996,45 +990,38 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
 
-                    if (_decryptedBytesCount == 0)
+                    if (decryptedCount > 0)
                     {
-                        // This may be service frame to update keys or renegotiation.
-                        // Keep waiting for real data.
-                        if (processedLength > 0 && !haveFullTlsFrame(ref payloadBytes))
+                        // This will either copy data from rented buffer or adjust final buffer as needed.
+                        // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.
+                        processedLength += CopyDecryptedData(buffer);
+                        if (_decryptedBytesCount > 0)
                         {
-                            // We have some data. Hand them to caller before going for another iteration.
+                            // We have more decrypted data after we filled provided buffer.
                             break;
                         }
 
+                        buffer = buffer.Slice(decryptedCount);
+                    }
+
+                    if (processedLength == 0)
+                    {
+                        // We did not get any real data so far.
                         continue;
                     }
 
-                    // This will either copy data from rented buffer or adjust final buffer as needed.
-                    // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.
-                    processedLength += CopyDecryptedData(buffer);
-
-                    if (_decryptedBytesCount > 0)
+                    if (!HaveFullTlsFrame(out payloadBytes))
                     {
-                        // We have more than enough to fill provided buffer.
+                        // We don't have anuther frame to process but we have some data to return to caller.
                         break;
                     }
 
-                    // Check if we have enough data to process next TLS frame
-                    if (haveFullTlsFrame(ref payloadBytes))
+                    TlsFrameHelper.TryGetFrameHeader(_internalBuffer.AsSpan(_internalOffset), ref _lastFrame.Header);
+                    if (_lastFrame.Header.Type != TlsContentType.AppData)
                     {
-                        TlsFrameHelper.TryGetFrameHeader(_internalBuffer.AsSpan(_internalOffset), ref _lastFrame.Header);
-                        // Process another frame if possible.
                         // Alerts, handshake and anything else will be processed separately.
-                        if (_lastFrame.Header.Type == TlsContentType.AppData)
-                        {
-                            // skip over the already written decrypted data.
-                            buffer = buffer.Slice(decryptedCount);
-                            Debug.Assert(_decryptedBytesOffset <= _internalOffset);
-                            continue;
-                        }
+                        break;
                     }
-
-                    break;
                 }
 
                 return processedLength;

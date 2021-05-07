@@ -109,9 +109,12 @@ namespace System.Net.Security
             SafeDeleteSslContext securityContext,
             ReadOnlySpan<byte> input,
             Span<byte> output,
-            ref int offset,
-            ref int count)
+            out int offset,
+            out int count)
         {
+            offset = 0;
+            count = 0;
+
             try
             {
                 SafeSslHandle sslHandle = securityContext.SslContext;

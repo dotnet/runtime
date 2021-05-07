@@ -894,9 +894,9 @@ namespace System.Net.Security
             return secStatus;
         }
 
-        internal SecurityStatusPal Decrypt(ReadOnlySpan<byte> input, Span<byte> output, ref int outputOffset, ref int outputCount)
+        internal SecurityStatusPal Decrypt(ReadOnlySpan<byte> input, Span<byte> output, out int outputOffset, out int outputCount)
         {
-            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, input, output, ref outputOffset, ref outputCount);
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, input, output, out outputOffset, out outputCount);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
                 NetEventSource.DumpBuffer(this, output.Slice(outputOffset, outputCount));

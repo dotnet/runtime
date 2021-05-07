@@ -46,14 +46,16 @@ namespace System.Net.Security
             return EncryptDecryptHelper(securityContext, input.Span, Span<byte>.Empty, encrypt: true, newBuffer: ref output, resultSize: out resultSize);
         }
 
-        public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, ref int outputOffset, ref int outputCount)
+        public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, out int outputOffset, out int outputCount)
         {
             byte[] buffer = Array.Empty<byte>();
+            outputOffset = 0;
+            outputCount = 0;
             SecurityStatusPal retVal = EncryptDecryptHelper(securityContext, input, output, encrypt: false, out int resultSize, ref buffer);
             if (retVal.ErrorCode == SecurityStatusPalErrorCode.OK ||
                 retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
             {
-                outputOffset = 0;
+           //     outputOffset = 0;
                 outputCount = resultSize;
             }
             return retVal;

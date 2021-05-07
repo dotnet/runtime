@@ -306,7 +306,7 @@ namespace System.Net.Security
             }
         }
 
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, ReadOnlySpan<byte> input, Span<byte> output, ref int outputOffset, ref int outputCount)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, ReadOnlySpan<byte> input, Span<byte> output, out int outputOffset, out int outputCount)
         {
             const int NumSecBuffers = 4; // data + empty + empty + empty
             fixed (byte* bufferPtr = input)
@@ -334,6 +334,7 @@ namespace System.Net.Security
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
                 outputCount = 0;
+                outputOffset = 0;
                 for (int i = 0; i < NumSecBuffers; i++)
                 {
                     // Successfully decoded data and placed it at the following position in the buffer,
