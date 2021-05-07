@@ -161,14 +161,14 @@ namespace System.Net.Http.Json
         // Workaround for https://github.com/mono/linker/issues/1416, extracting the offending call into a separate method
         // which can be annotated with suppressions.
         // Note that in this case it can't be a local function since that inherits a generic parameter from the parent method
-        // which causes a trimmer warning comming from compiler generated code, which is very hard to suppress.
+        // which causes a trimmer warning coming from compiler generated code, which is very hard to suppress.
         // Avoid that by declaring it a normal method which fully defines its own generic parameters.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
             Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-        private static Task<TInner?> ReadFromJsonAsyncHelper<TInner>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
-            => content.ReadFromJsonAsync<TInner>(options, cancellationToken);
+        private static Task<T?> ReadFromJsonAsyncHelper<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
+            => content.ReadFromJsonAsync<T>(options, cancellationToken);
 
         private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerContext context, CancellationToken cancellationToken)
         {
