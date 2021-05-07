@@ -2273,8 +2273,10 @@ var BindingSupportLib = {
 			result = false;
 			if (!createIfNotExist)
 			{
-				if (!requireObject.hasOwnProperty(property))
+				if (!requireObject.hasOwnProperty(property)) {
+					BINDING.mono_wasm_unwind_LMF();
 					return false;
+				}
 			}
             if (hasOwnProperty === true) {
                 if (requireObject.hasOwnProperty(property)) {
