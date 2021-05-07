@@ -2023,8 +2023,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            int i = 0;
-            while (i < args.Length)
+            for (int i = 0; i < args.Length; i++)
             {
                 Type pType = infos[i].ParameterType;
                 object? arg = args[i];
@@ -2039,8 +2038,6 @@ namespace System.Diagnostics.Tracing
                     ReportOutOfBandMessage(SR.Format(SR.EventSource_VarArgsParameterMismatch, eventId, infos[i].Name));
                     return;
                 }
-
-                ++i;
             }
         }
 
