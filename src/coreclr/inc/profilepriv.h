@@ -79,6 +79,10 @@ struct ProfControlBlock
     BOOL fGCInProgress;
     BOOL fBaseSystemClassesLoaded;
 
+    BOOL fIsStoredProfilerRegistered;
+    CLSID clsStoredProfilerGuid;
+    SString sStoredProfilerPath;
+
 #ifdef PROF_TEST_ONLY_FORCE_ELT_DATA
     // #TestOnlyELT This implements a test-only (and debug-only) hook that allows a test
     // profiler to ensure enter/leave/tailcall is enabled on startup even though no
