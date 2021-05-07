@@ -22,7 +22,7 @@ namespace System.IO.Pipes.Tests
         public TestAccountImpersonator()
         {
             string testAccountPassword;
-            var randomBytes = RandomNumberGenerator.GetBytes(33);
+            byte[] randomBytes = RandomNumberGenerator.GetBytes(33);
 
             // Add special chars to ensure it satisfies password requirements.
             testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
