@@ -378,6 +378,9 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
             Assert.Equal(orig.SendBufferSize, copy.SendBufferSize);
             Assert.Equal(orig.SendTimeout, copy.SendTimeout);
+#pragma warning disable 0618
+            Assert.Equal(orig.UseOnlyOverlappedIO, copy.UseOnlyOverlappedIO);
+#pragma warning restore 0618
         }
 
         [Theory]
