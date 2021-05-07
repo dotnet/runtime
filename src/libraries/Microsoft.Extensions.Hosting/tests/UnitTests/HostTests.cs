@@ -275,44 +275,53 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_SecretsDoesReload()
         {
-            var secretId = Assembly.GetExecutingAssembly().GetName().Name;
-            var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
-            var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
-            var secretFileInfo = new FileInfo(secretPath);
-
-            Directory.CreateDirectory(secretFileInfo.Directory.FullName);
-
-            static string SaveRandomSecret(string secretPath)
+            var originalValue = Environment.GetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER");
+            try
             {
-                var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
-                File.WriteAllText(secretPath, $"{{ \"Hello\": \"{newMessage}\" }}");
-                return newMessage;
-            }
+                Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "1");
+                var secretId = Assembly.GetExecutingAssembly().GetName().Name;
+                var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
+                var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
+                var secretFileInfo = new FileInfo(secretPath);
 
-            var dynamicSecretMessage1 = SaveRandomSecret(secretPath);
-            var host = Host.CreateDefaultBuilder(new[] { "environment=Development", $"applicationName={secretId}" })
-                .ConfigureHostConfiguration(builder =>
+                Directory.CreateDirectory(secretFileInfo.Directory.FullName);
+
+                static string SaveRandomSecret(string secretPath)
                 {
-                    builder.AddInMemoryCollection(reloadFlagConfig);
-                })
-                .Build();
+                    var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
+                    File.WriteAllText(secretPath, $"{{ \"Hello\": \"{newMessage}\" }}");
+                    return newMessage;
+                }
 
-            var config = host.Services.GetRequiredService<IConfiguration>();
-            Assert.Equal(dynamicSecretMessage1, config["Hello"]);
+                var dynamicSecretMessage1 = SaveRandomSecret(secretPath);
+                var host = Host.CreateDefaultBuilder(new[] { "environment=Development", $"applicationName={secretId}" })
+                    .ConfigureHostConfiguration(builder =>
+                    {
+                        builder.AddInMemoryCollection(reloadFlagConfig);
+                    })
+                    .Build();
 
-            using CancellationTokenSource configReloadedCancelTokenSource = new();
-            var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                Assert.Equal(dynamicSecretMessage1, config["Hello"]);
 
-            config.GetReloadToken().RegisterChangeCallback(
-                _ => configReloadedCancelTokenSource.Cancel(), null);
+                using CancellationTokenSource configReloadedCancelTokenSource = new();
+                var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
 
-            // Only update the secrets after we've registered the change callback
-            var dynamicSecretMessage2 = SaveRandomSecret(secretPath);
+                using IDisposable token = config.GetReloadToken().RegisterChangeCallback(
+                    _ => configReloadedCancelTokenSource.Cancel(), null);
 
-            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
-            Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
-            Assert.Equal(dynamicSecretMessage2, config["Hello"]);
+                // Only update the secrets after we've registered the change callback
+                var dynamicSecretMessage2 = SaveRandomSecret(secretPath);
+
+                // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+                await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+                Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
+                Assert.Equal(dynamicSecretMessage2, config["Hello"]);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", originalValue);
+            }
         }
 
         [Fact]
