@@ -2739,9 +2739,12 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        no such ref position, no register will be allocated.
 //
 
-regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPosition)
+regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regNumber foundReg = REG_NA;
+#ifdef DEBUG
+    *registerScore = NONE;
+#endif
 
     RegisterType regType = getRegisterType(currentInterval, refPosition);
 
@@ -2944,39 +2947,6 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 
     RegRecord* availablePhysRegRecord = nullptr;
 
-    // Each register will receive a score which takes into account the scoring criteria below.
-    // These were selected on the assumption that they will have an impact on the "goodness"
-    // of a register selection, and have been tuned to a certain extent by observing the impact
-    // of the ordering on asmDiffs.  However, there is much more room for tuning,
-    // and perhaps additional criteria.
-    //
-    enum RegisterScore
-    {
-        FREE = 0x10000, // It is not currently assigned to an *active* interval
-
-        // These are the original criteria for comparing registers that are free.
-        CONST_AVAILABLE = 0x8000, // It is a constant value that is already in an acceptable register.
-        THIS_ASSIGNED   = 0x4000, // It is in the interval's preference set and it is already assigned to this interval.
-        COVERS          = 0x2000, // It is in the interval's preference set and it covers the current range.
-        OWN_PREFERENCE  = 0x1000, // It is in the preference set of this interval.
-        COVERS_RELATED  = 0x0800, // It is in the preference set of the related interval and covers its entire lifetime.
-        RELATED_PREFERENCE = 0x0400, // It is in the preference set of the related interval.
-        CALLER_CALLEE      = 0x0200, // It is in the right "set" for the interval (caller or callee-save).
-        UNASSIGNED         = 0x0100, // It is not currently assigned to any (active or inactive) interval
-        COVERS_FULL        = 0x0080, // It covers the full range of the interval from current position to the end.
-        BEST_FIT           = 0x0040, // The available range is the closest match to the full range of the interval.
-        IS_PREV_REG        = 0x0020, // This register was previously assigned to the interval.
-        REG_ORDER          = 0x0010, // Tie-breaker
-
-        // These are the original criteria for comparing registers that are in use.
-        SPILL_COST   = 0x0008, // It has the lowest cost of all the candidates.
-        FAR_NEXT_REF = 0x0004, // It has a farther next reference than the best candidate thus far.
-        PREV_REG_OPT = 0x0002, // The previous RefPosition of its current assigned interval is RegOptional.
-
-        // TODO-CQ: Consider using REG_ORDER as a tie-breaker even for busy registers.
-        REG_NUM = 0x0001, // It has a lower register number.
-    };
-
     // These are used in the post-selection updates, and must be set for any selection.
     regMaskTP freeCandidates    = RBM_NONE;
     regMaskTP matchingConstants = RBM_NONE;
@@ -3081,7 +3051,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     }
     else if (!found)
     {
-        found = selector.applySelection(FREE, freeCandidates);
+        found = selector.applySelection(FREE, freeCandidates DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FREE, refPosition->bbNum));
     }
 
@@ -3092,7 +3062,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
         {
             matchingConstants = getMatchingConstants(selector.candidates, currentInterval, refPosition);
-            found             = selector.applySelection(CONST_AVAILABLE, matchingConstants);
+            found             = selector.applySelection(CONST_AVAILABLE, matchingConstants DEBUG_ARG(registerScore));
             INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CONST_AVAILABLE, refPosition->bbNum));
         }
     }
@@ -3100,7 +3070,8 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     // Apply the THIS_ASSIGNED heuristic. Only applies if we have freeCandidates.
     if (!found && (prevRegRec != nullptr) && (freeCandidates != RBM_NONE))
     {
-        found = selector.applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit);
+        found =
+            selector.applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_THIS_ASSIGNED, refPosition->bbNum));
     }
 
@@ -3178,7 +3149,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     // Apply the COVERS heuristic.
     if (!found)
     {
-        found = selector.applySelection(COVERS, coversSet & preferenceSet);
+        found = selector.applySelection(COVERS, coversSet & preferenceSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS, refPosition->bbNum));
     }
 
@@ -3187,7 +3158,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found)
     {
         assert((preferenceSet & freeCandidates) == preferenceSet);
-        found = selector.applySelection(OWN_PREFERENCE, preferenceSet);
+        found = selector.applySelection(OWN_PREFERENCE, preferenceSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_OWN_PREFERENCE, refPosition->bbNum));
     }
 
@@ -3195,28 +3166,29 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found)
     {
         assert((coversRelatedSet & freeCandidates) == coversRelatedSet);
-        found = selector.applySelection(COVERS_RELATED, coversRelatedSet);
+        found = selector.applySelection(COVERS_RELATED, coversRelatedSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_RELATED, refPosition->bbNum));
     }
 
     // Apply the RELATED_PREFERENCE heuristic.
     if (!found)
     {
-        found = selector.applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates);
+        found =
+            selector.applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_RELATED_PREFERENCE, refPosition->bbNum));
     }
 
     // Apply the CALLER_CALLEE heuristic.
     if (!found)
     {
-        found = selector.applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates);
+        found = selector.applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CALLER_CALLEE, refPosition->bbNum));
     }
 
     // Apply the UNASSIGNED heuristic.
     if (!found)
     {
-        found = selector.applySelection(UNASSIGNED, unassignedSet);
+        found = selector.applySelection(UNASSIGNED, unassignedSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_UNASSIGNED, refPosition->bbNum));
     }
 
@@ -3224,7 +3196,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found)
     {
         assert((coversFullSet & freeCandidates) == coversFullSet);
-        found = selector.applySelection(COVERS_FULL, coversFullSet);
+        found = selector.applySelection(COVERS_FULL, coversFullSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_FULL, refPosition->bbNum));
     }
 
@@ -3290,7 +3262,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             }
         }
         assert(bestFitSet != RBM_NONE);
-        found = selector.applySelection(BEST_FIT, bestFitSet);
+        found = selector.applySelection(BEST_FIT, bestFitSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_BEST_FIT, refPosition->bbNum));
     }
 
@@ -3298,7 +3270,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     // Oddly, the previous heuristics only considered this if it covered the range.
     if ((prevRegRec != nullptr) && ((selector.score & COVERS_FULL) != 0))
     {
-        found = selector.applySingleRegSelection(IS_PREV_REG, prevRegBit);
+        found = selector.applySingleRegSelection(IS_PREV_REG, prevRegBit DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_IS_PREV_REG, refPosition->bbNum));
     }
 
@@ -3323,7 +3295,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             }
         }
         assert(lowestRegOrderBit != RBM_NONE);
-        found = selector.applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
+        found = selector.applySingleRegSelection(REG_ORDER, lowestRegOrderBit DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_ORDER, refPosition->bbNum));
     }
 
@@ -3387,7 +3359,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         // We must have at least one with the lowest spill cost.
         assert(lowestCostSpillSet != RBM_NONE);
-        found = selector.applySelection(SPILL_COST, lowestCostSpillSet);
+        found = selector.applySelection(SPILL_COST, lowestCostSpillSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
     }
 
@@ -3418,7 +3390,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         }
         // We must have at least one with the lowest spill cost.
         assert(farthestSet != RBM_NONE);
-        found = selector.applySelection(FAR_NEXT_REF, farthestSet);
+        found = selector.applySelection(FAR_NEXT_REF, farthestSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
     }
 
@@ -3497,14 +3469,14 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             }
 #endif
         }
-        found = selector.applySelection(PREV_REG_OPT, prevRegOptSet);
+        found = selector.applySelection(PREV_REG_OPT, prevRegOptSet DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_PREV_REG_OPT, refPosition->bbNum));
     }
 
     // Apply the REG_NUM heuristic.
     if (!found)
     {
-        found = selector.applySingleRegSelection(REG_NUM, genFindLowestBit(selector.candidates));
+        found = selector.applySingleRegSelection(REG_NUM, genFindLowestBit(selector.candidates) DEBUG_ARG(registerScore));
         INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_NUM, refPosition->bbNum));
     }
 
@@ -3798,7 +3770,12 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     // refPosition->RegOptional() will return false.
     refPosition->copyReg = true;
 
-    regNumber allocatedReg = allocateReg(currentInterval, refPosition);
+    RegisterScore registerScore = NONE;
+    regNumber     allocatedReg  = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    assert(allocatedReg != REG_NA);
+
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg));
+    JITDUMP("%s ", getScoreName(registerScore));
 
     // Now restore the old info
     currentInterval->relatedInterval = savedRelatedInterval;
@@ -5970,8 +5947,6 @@ void LinearScan::allocateRegisters()
                 if (!RefTypeIsDef(currentRefPosition->refType))
                 {
                     regNumber copyReg = assignCopyReg(currentRefPosition);
-                    assert(copyReg != REG_NA);
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, copyReg));
                     lastAllocatedRefPosition = currentRefPosition;
                     bool unassign            = false;
                     if (currentInterval->isWriteThru)
@@ -6081,6 +6056,7 @@ void LinearScan::allocateRegisters()
 #endif
             }
 
+            RegisterScore registerScore = NONE;
             if (allocate)
             {
                 // Allocate a register, if we must, or if it is profitable to do so.
@@ -6093,7 +6069,7 @@ void LinearScan::allocateRegisters()
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
-                assignedRegister = allocateReg(currentInterval, currentRefPosition);
+                assignedRegister = allocateReg(currentInterval, currentRefPosition DEBUG_ARG(&registerScore));
             }
 
             // If no register was found, this RefPosition must not require a register.
@@ -6120,6 +6096,8 @@ void LinearScan::allocateRegisters()
                     {
                         dumpLsraAllocationEvent(LSRA_EVENT_ALLOC_REG, currentInterval, assignedRegister, currentBlock);
                     }
+
+                    printf("%s ", getScoreName(registerScore));
                 }
             }
 #endif // DEBUG
@@ -9292,20 +9270,27 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
 #if TRACK_LSRA_STATS
 
+
+
+#if TRACK_LSRA_STATS
 const char* LinearScan::getStatName(unsigned stat)
 {
     LsraStat lsraStat = (LsraStat)stat;
-    assert(lsraStat != COUNT);
+    assert(lsraStat != LsraStat::COUNT);
 
     static const char* const lsraStatNames[] = {
 #define LSRA_STAT_DEF(stat, name) name,
-#include "lsrastats.h"
-    };
+#include "lsra_stats.h"
 #undef LSRA_STAT_DEF
+#define REG_SEL_DEF(stat, value, shortname) #stat,
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+    };
 
     assert(stat < ArrLen(lsraStatNames));
     return lsraStatNames[lsraStat];
 }
+#endif // TRACK_LSRA_STATS
 
 // ----------------------------------------------------------
 // updateLsraStat: Increment LSRA stat counter.
@@ -9439,7 +9424,7 @@ void LinearScan::dumpLsraStats(FILE* file)
     }
 
     fprintf(file, "..........\n");
-    for (int regSelectI = 0; regSelectI < COUNT; regSelectI++)
+    for (int regSelectI = 0; regSelectI < LsraStat::COUNT; regSelectI++)
     {
         if (regSelectI == firstRegSelStat)
         {
@@ -9565,6 +9550,23 @@ static const char* getRefTypeShortName(RefType refType)
 #undef DEF_REFTYPE
         default:
             return nullptr;
+    }
+}
+
+
+//------------------------------------------------------------------------
+// getScoreName: Returns the texual name of register score
+const char* LinearScan::getScoreName(RegisterScore score)
+{
+    switch (score)
+    {
+#define REG_SEL_DEF(stat, value, shortname)                                                                            \
+    case stat:                                                                                                         \
+        return shortname;
+#include "lsra_score.h"
+#undef REG_SEL_DEF
+        default:
+            return "  -  ";
     }
 }
 
@@ -10281,6 +10283,8 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         dumpRegRecordTitleIfNeeded();
     }
 
+    bool outputHeuristic = false;
+
     switch (event)
     {
         // Conflicting def/use
@@ -10345,6 +10349,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
                 dumpRefPositionShort(activeRefPosition, currentBlock);
             }
             printf((event == LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL) ? "Restr %-4s " : "SRstr %-4s ", getRegName(reg));
+            printf("      ");
             dumpRegRecords();
             break;
 
@@ -10373,6 +10378,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             {
                 dumpRefPositionShort(activeRefPosition, currentBlock);
             }
+            outputHeuristic = true;
             break;
 
         // Allocation decisions
@@ -10400,6 +10406,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             assert(interval != nullptr && interval->recentRefPosition != nullptr);
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("Copy  %-4s ", getRegName(reg));
+            outputHeuristic = true;
             break;
 
         case LSRA_EVENT_MOVE_REG:
@@ -10412,11 +10419,13 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_ALLOC_REG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("Alloc %-4s ", getRegName(reg));
+            outputHeuristic = true;
             break;
 
         case LSRA_EVENT_REUSE_REG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
             printf("Reuse %-4s ", getRegName(reg));
+            outputHeuristic = true;
             break;
 
         case LSRA_EVENT_NO_ENTRY_REG_ALLOCATED:
@@ -10460,12 +10469,19 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_INCREMENT_RANGE_END:
         case LSRA_EVENT_LAST_USE:
         case LSRA_EVENT_LAST_USE_DELAYED:
+            // We already accounted for heurisitic space. No need to print extra space
+            outputHeuristic = true;
             break;
 
         default:
             printf("????? %-4s ", getRegName(reg));
             dumpRegRecords();
             break;
+    }
+
+    if (!outputHeuristic)
+    {
+        printf("      ");
     }
 }
 
@@ -10543,7 +10559,9 @@ void LinearScan::dumpRegRecordHeader()
     //  - a space
     //  - a 4-character register
     //  - a space
-    int allocationInfoWidth = 5 + 1 + 4 + 1;
+    //  - a 5-character allocation heuristics
+    //  - a space
+    int allocationInfoWidth = 5 + 1 + 4 + 1 + 5 + 1;
 
     // Next, determine the width of the legend for each row.  This includes:
     //  - a short RefPosition dump (shortRefPositionDumpWidth), which includes a space
@@ -10634,7 +10652,7 @@ void LinearScan::dumpRegRecordTitle()
     dumpRegRecordTitleLines();
 
     // Print out the legend for the RefPosition info
-    printf(legendFormat, "Loc ", "RP# ", "Name ", "Type  Action Reg  ");
+    printf(legendFormat, "Loc ", "RP# ", "Name ", "Type  Action Reg  Hrstc ");
 
     // Print out the register name column headers
     char columnFormatArray[MAX_FORMAT_CHARS];
