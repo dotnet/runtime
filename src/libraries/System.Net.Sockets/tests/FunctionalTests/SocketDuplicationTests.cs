@@ -15,7 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    // Test cases for DuplicateAndClose, Socket(socketInformation), Socket.UseOnlyOverlappedIO,
+    // Test cases for DuplicateAndClose, Socket(socketInformation),
     // and asynchronous IO behavior for duplicate sockets.
     // Since the constructor Socket(socketInformation) is strongly coupled
     // with the rest of the duplication logic, it's being tested here instead of CreateSocketTests.
@@ -27,15 +27,6 @@ namespace System.Net.Sockets.Tests
         private static string GetMessageString(ArraySegment<byte> data, int count) =>
             Encoding.ASCII.GetString(data.AsSpan(0, count));
 
-        [Fact]
-        public void UseOnlyOverlappedIO_AlwaysFalse()
-        {
-            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            Assert.False(s.UseOnlyOverlappedIO);
-            s.UseOnlyOverlappedIO = true;
-            Assert.False(s.UseOnlyOverlappedIO);
-        }
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
