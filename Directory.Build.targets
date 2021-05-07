@@ -9,6 +9,7 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
 
   <PropertyGroup>
@@ -24,7 +25,7 @@
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
-  
+
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
        This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and
