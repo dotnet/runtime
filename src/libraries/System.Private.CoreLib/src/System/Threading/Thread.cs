@@ -64,29 +64,27 @@ namespace System.Threading
                 _start = null!;
 
 #if FEATURE_NSAUTORELEASEPOOL
-                Thread.CreateAutoreleasePool();
-                try
-                {
+                if (ThreadOSX.EnableAutoreleasePool)
+                    Thread.CreateAutoreleasePool();
 #endif
-                    if (start is ThreadStart threadStart)
-                    {
-                        threadStart();
-                    }
-                    else
-                    {
-                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
 
-                        object? startArg = _startArg;
-                        _startArg = null;
-
-                        parameterizedThreadStart(startArg);
-                    }
-#if FEATURE_NSAUTORELEASEPOOL
-                }
-                finally
+                if (start is ThreadStart threadStart)
                 {
-                    Thread.DrainAutoreleasePool();
+                    threadStart();
                 }
+                else
+                {
+                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                    object? startArg = _startArg;
+                    _startArg = null;
+
+                    parameterizedThreadStart(startArg);
+                }
+
+#if FEATURE_NSAUTORELEASEPOOL
+                if (ThreadOSX.EnableAutoreleasePool)
+                    Thread.DrainAutoreleasePool();
 #endif
             }
 

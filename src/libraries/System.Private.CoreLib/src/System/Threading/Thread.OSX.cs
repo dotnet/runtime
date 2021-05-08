@@ -37,8 +37,11 @@ namespace System.Threading
 
         internal static void DrainAutoreleasePool()
         {
-            if (s_AutoreleasePoolInstance != IntPtr.Zero)
+            if (ThreadOSX.EnableAutoreleasePool
+                && s_AutoreleasePoolInstance != IntPtr.Zero)
+            {
                 Interop.Sys.DrainAutoreleasePool(s_AutoreleasePoolInstance);
+            }
         }
     }
 }
