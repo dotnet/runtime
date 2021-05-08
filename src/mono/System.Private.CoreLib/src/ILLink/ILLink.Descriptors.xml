@@ -589,11 +589,7 @@
 
 		<!-- domain.c: mono_defaults.thread_class -->
 		<!-- FIXME: -->
-		<type fullname="System.Threading.Thread" preserve="fields">
-			<!-- threads.c -->
-			<method name="CreateAutoreleasePool" />
-			<method name="DrainAutoreleasePool" />
-		</type>
+		<type fullname="System.Threading.Thread" preserve="fields" />
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
 		<!-- exception.c (mono_get_exception_thread_abort) -->
