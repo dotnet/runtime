@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
+#include "ds-process-protocol.h"
 #include "ds-profiler-protocol.h"
 #include "ds-dump-protocol.h"
 
@@ -319,6 +320,35 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	return hr;
 }
 #endif // PROFILING_SUPPORTED
+
+static
+uint32_t
+ds_rt_set_environment_variable (DiagnosticsSetEnvironmentVariablePayload *payload)
+{
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(payload->name), reinterpret_cast<LPCWSTR>(payload->value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
+
+static
+uint32_t
+ds_rt_get_environment_variable (DiagnosticsGetEnvironmentVariablePayload *payload,
+								uint32_t valueBufferLength,
+								uint32_t *valueLengthOut,
+								ep_char16_t *valueBuffer)
+{
+	HRESULT hr = S_OK;
+    uint32_t trueLen = GetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(payload->name), reinterpret_cast<LPWSTR>(valueBuffer), valueBufferLength);
+    if (trueLen == 0)
+    {
+        hr = HRESULT_FROM_WIN32(GetLastError());
+    }
+    else if ((trueLen > valueBufferLength) && (payload->name != nullptr))
+    {
+        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+    }
+
+    *valueLengthOut = trueLen;
+    return hr;
+}
 
 /*
 * DiagnosticServer.

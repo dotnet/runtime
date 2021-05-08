@@ -88,6 +88,59 @@ void
 ds_env_info_payload_fini (DiagnosticsEnvironmentInfoPayload *payload);
 
 /*
+* DiagnosticsSetEnvironmentVariablePayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsSetEnvironmentVariablePayload {
+#else
+struct _DiagnosticsSetEnvironmentVariablePayload_Internal {
+#endif
+	uint8_t * incoming_buffer;
+
+	const ep_char16_t *name;
+	const ep_char16_t *value;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsSetEnvironmentVariablePayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsSetEnvironmentVariablePayload_Internal)];
+};
+#endif
+
+DiagnosticsSetEnvironmentVariablePayload *
+ds_set_environment_variable_payload_alloc ();
+
+void
+ds_set_environment_variable_payload_free (DiagnosticsSetEnvironmentVariablePayload *payload);
+
+/*
+* DiagnosticsGetEnvironmentVariablePayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsGetEnvironmentVariablePayload {
+#else
+struct _DiagnosticsGetEnvironmentVariablePayload_Internal {
+#endif
+	uint8_t * incoming_buffer;
+
+	const ep_char16_t *name;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsGetEnvironmentVariablePayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsGetEnvironmentVariablePayload_Internal)];
+};
+#endif
+
+DiagnosticsGetEnvironmentVariablePayload *
+ds_get_environment_variable_payload_alloc ();
+
+void
+ds_get_environment_variable_payload_free (DiagnosticsGetEnvironmentVariablePayload *payload);
+
+/*
  * DiagnosticsProcessProtocolHelper.
  */
 
@@ -98,3 +151,4 @@ ds_process_protocol_helper_handle_ipc_message (
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_PROCESS_PROTOCOL_H__ */
+
