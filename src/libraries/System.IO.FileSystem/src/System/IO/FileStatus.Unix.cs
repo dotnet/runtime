@@ -73,36 +73,23 @@ namespace System.IO
 #else
                 Interop.Sys.Permissions readBit, writeBit;
 
-                if (_euid == null)
-                {
-                    _euid = Interop.Sys.GetEUid();
-                }
-
-                if (_fileCache.Uid == _euid)
+                if (_fileCache.Uid == (_euid ??= Interop.Sys.GetEUid()))
                 {
                     // User effectively owns the file
                     readBit = Interop.Sys.Permissions.S_IRUSR;
                     writeBit = Interop.Sys.Permissions.S_IWUSR;
                 }
+                else if (_fileCache.Gid == (_egid ??= Interop.Sys.GetEGid()))
+                {
+                    // User belongs to a group that effectively owns the file
+                    readBit = Interop.Sys.Permissions.S_IRGRP;
+                    writeBit = Interop.Sys.Permissions.S_IWGRP;
+                }
                 else
                 {
-                    if (_egid == null)
-                    {
-                        _egid = Interop.Sys.GetEGid();
-                    }
-
-                    if (_fileCache.Gid == _egid)
-                    {
-                        // User belongs to a group that effectively owns the file
-                        readBit = Interop.Sys.Permissions.S_IRGRP;
-                        writeBit = Interop.Sys.Permissions.S_IWGRP;
-                    }
-                    else
-                    {
-                        // Others permissions
-                        readBit = Interop.Sys.Permissions.S_IROTH;
-                        writeBit = Interop.Sys.Permissions.S_IWOTH;
-                    }
+                    // Others permissions
+                    readBit = Interop.Sys.Permissions.S_IROTH;
+                    writeBit = Interop.Sys.Permissions.S_IWOTH;
                 }
 #endif
 
