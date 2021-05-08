@@ -131,7 +131,7 @@ typedef int32_t ds_ipc_result_t;
 #define DS_IPC_E_NOT_YET_AVAILABLE ((ds_ipc_result_t)(0x8013135bL))
 #define DS_IPC_E_RUNTIME_UNINITIALIZED ((ds_ipc_result_t)(0x80131371L))
 #define DS_IPC_E_INVALIDARG ((ds_ipc_result_t)(0x80070057L))
-#define DS_IPC_E_INSUFFICIENT_BUFFER ((ds_ipc_result_t)(0x))
+#define DS_IPC_E_INSUFFICIENT_BUFFER ((ds_ipc_result_t)(0x8007007A))
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_TYPES_H__ */

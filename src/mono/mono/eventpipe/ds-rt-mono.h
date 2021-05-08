@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-mono.h"
+#include "ds-process-protocol.h"
 #include <mono/utils/mono-logger-internals.h>
 
 #undef DS_LOG_ALWAYS_0
@@ -242,6 +243,56 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 {
 	// TODO: Implement.
 	return DS_IPC_E_NOTSUPPORTED;
+}
+
+/*
+* Environment variables
+*/
+
+static
+uint32_t
+ds_rt_set_environment_variable (DiagnosticsSetEnvironmentVariablePayload *payload)
+{
+	gchar *nameNarrow = u16to8 (payload->name);
+	gchar *valueNarrow = u16to8 (payload->value);
+
+	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
+
+	g_free (nameNarrow);
+	g_free (valueNarrow);
+
+	return success ? DS_IPC_S_OK : DS_IPC_E_FAIL;
+}
+
+static
+uint32_t
+ds_rt_get_environment_variable (DiagnosticsGetEnvironmentVariablePayload *payload,
+								uint32_t valueBufferLength,
+								uint32_t *valueLengthOut,
+								ep_char16_t *valueBuffer)
+{
+	gchar *nameNarrow = u16to8 (payload->name);
+	gchar *valueNarrow = g_getenv(nameNarrow);
+
+	uint32_t valueLength = strlen(valueNarrow);
+	if (valueLength > valueBufferLength && valueBuffer != NULL);
+	{
+		g_free (nameNarrow);
+		g_free (valueNarrow);
+
+		return DS_IPC_E_INSUFFICIENT_BUFFER;
+	}
+
+	if (valueBuffer != NULL)
+	{
+		ep_char16_t *valueWide = u8to16 (valueNarrow);
+		memcpy (valueBuffer, valueWide, valueLength * sizeof(ep_char16_t));
+		g_free (valueWide);
+	}
+
+	g_free (nameNarrow);
+	g_free (valueNarrow);
+	return DS_IPC_S_OK;
 }
 
 /*

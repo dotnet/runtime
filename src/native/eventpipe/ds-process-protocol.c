@@ -615,7 +615,7 @@ process_protocol_helper_get_environment_variable (
 	}
 
 	bufferSize = realLength * sizeof(ep_char16_t);
-	valueBuffer = reinterpret_cast<ep_char16_t *>(ep_rt_byte_array_alloc (bufferSize));
+	valueBuffer = (ep_char16_t *)(ep_rt_byte_array_alloc (bufferSize));
 	if (!valueBuffer) {
 		ds_ipc_message_send_error(stream, DS_IPC_E_FAIL);
 		ep_raise_error ();
@@ -630,7 +630,7 @@ process_protocol_helper_get_environment_variable (
 	DiagnosticsIpcMessage responseMessage;
 	ds_ipc_message_init (&responseMessage);
 	responseMessage.header = *(ds_ipc_header_get_generic_success ());
-	responseMessage.data = reinterpret_cast<uint8_t *>(valueBuffer);
+	responseMessage.data = (uint8_t *)(valueBuffer);
 	responseMessage.size = bufferSize;
 
 	ep_raise_error_if_nok (ds_ipc_message_send (&responseMessage, stream));
@@ -639,7 +639,7 @@ process_protocol_helper_get_environment_variable (
 
 ep_on_exit:
 	ds_get_environment_variable_payload_free (payload);
-	ep_rt_byte_array_free (reinterpret_cast<uint8_t *>(valueBuffer));
+	ep_rt_byte_array_free ((uint8_t *)(valueBuffer));
     ds_ipc_stream_free (stream);
 	return result;
 
