@@ -17,7 +17,7 @@ namespace Internal.Runtime.InteropServices
 
         // Use a value defined in https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
         // To indicate the specific error when IsSupported is false
-        private const int HostFeatureDisabled = -2147450713;
+        private const int HostFeatureDisabled = unchecked((int)0x800080a7);
 
         private static bool IsSupported { get; } = InitializeIsSupported();
 
