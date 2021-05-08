@@ -414,7 +414,7 @@ bool GCToOSInterface::Initialize()
 
 #if HAVE_SCHED_GETAFFINITY
 
-    g_currentProcessCpuCount = 0;
+    uint32_t processAffinityCpuCount = 0;
 
     cpu_set_t cpuSet;
     int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
@@ -425,7 +425,7 @@ bool GCToOSInterface::Initialize()
         {
             if (CPU_ISSET(i, &cpuSet))
             {
-                g_currentProcessCpuCount++;
+                processAffinityCpuCount++;
                 g_processAffinitySet.Add(i);
             }
         }
@@ -439,7 +439,7 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    g_currentProcessCpuCount = g_totalCpuCount;
+    uint32_t processAffinityCpuCount = g_totalCpuCount;
 
     for (size_t i = 0; i < g_totalCpuCount; i++)
     {
@@ -448,11 +448,28 @@ bool GCToOSInterface::Initialize()
 
 #endif // HAVE_SCHED_GETAFFINITY
 
-    uint32_t cpuLimit;
-    if (GetCpuLimit(&cpuLimit) && cpuLimit < g_currentProcessCpuCount)
+    // If the configuration value has been set, it takes precedence. Otherwise, take into account
+    // process affinity and CPU quota.
+
+    uint32_t processCpuCount;
+    int64_t configValue = GCConfig::GetProcessorCount();
+
+    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
-        g_currentProcessCpuCount = cpuLimit;
+        processCpuCount = (uint32_t)configValue;
     }
+    else
+    {
+        processCpuCount = processAffinityCpuCount;
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < processCpuCount)
+        {
+            processCpuCount = cpuLimit;
+        }
+    }
+
+    g_currentProcessCpuCount = processCpuCount;
 
     NUMASupportInitialize();
 

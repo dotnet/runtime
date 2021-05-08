@@ -140,6 +140,9 @@ public:
 // GC thread function prototype
 typedef void (*GCThreadFunction)(void* param);
 
+// The maximum processor count value that may be set by the environment
+#define MAX_PROCESSOR_COUNT 0xffff
+
 #ifdef HOST_64BIT
 // Right now we support maximum 1024 procs - meaning that we will create at most
 // that many GC threads and GC heaps.

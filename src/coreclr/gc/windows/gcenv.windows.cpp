@@ -63,10 +63,14 @@ struct CPU_Group_Info
 };
 
 static bool g_fEnableGCCPUGroups;
+static bool g_fUseAllCPUGroups;
 static bool g_fHadSingleProcessorAtStartup;
 static DWORD  g_nGroups;
 static DWORD g_nProcessors;
 static CPU_Group_Info *g_CPUGroupInfoArray;
+
+// The cached number of CPUs available for the current process.
+static DWORD g_nCurrentProcessCpuCount = 0;
 
 void InitNumaNodeInfo()
 {
@@ -239,6 +243,7 @@ bool InitCPUGroupInfoRange()
 void InitCPUGroupInfo()
 {
     g_fEnableGCCPUGroups = false;
+    g_fUseAllCPUGroups = false;
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     if (!GCConfig::GetGCCpuGroup())
@@ -251,7 +256,11 @@ void InitCPUGroupInfo()
         return;
 
     // only enable CPU groups if more than one group exists
-    g_fEnableGCCPUGroups = g_nGroups > 1;
+    if (g_nGroups > 1)
+    {
+        g_fEnableGCCPUGroups = true;
+        g_fUseAllCPUGroups = GCConfig::GetUseAllCpuGroups();
+    }
 #endif // TARGET_AMD64 || TARGET_ARM64
 
     // Determine if the process is affinitized to a single processor (or if the system has a single processor)
@@ -954,49 +963,59 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 //  The number of processors
 uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
-    static int cCPUs = 0;
+    if (g_nCurrentProcessCpuCount > 0)
+        return g_nCurrentProcessCpuCount;
 
-    if (cCPUs != 0)
-        return cCPUs;
+    DWORD count;
 
-    int count;
+    // If the configuration value has been set, it takes precedence. Otherwise, take into account
+    // process affinity.
 
-    if (CanEnableGCCPUGroups())
+    int64_t configValue = GCConfig::GetProcessorCount();
+
+    if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
-        count = GCToOSInterface::GetTotalProcessorCount();
+        count = (unsigned int)configValue;
     }
     else
     {
-        DWORD_PTR pmask, smask;
-
-        if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+        // Are we allowed to use all CPU groups?
+        if (g_fUseAllCPUGroups)
         {
-            count = 1;
+            count = g_nProcessors;
         }
         else
         {
-            count = 0;
-            pmask &= smask;
+            DWORD_PTR pmask, smask;
 
-            while (pmask)
+            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
             {
-                pmask &= (pmask - 1);
-                count++;
+                count = 1;
             }
+            else
+            {
+                pmask &= smask;
+                count = 0;
 
-            // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-            // than 64 processors, which would leave us with a count of 0.  Since the GC
-            // expects there to be at least one processor to run on (and thus at least one
-            // heap), we'll return 64 here if count is 0, since there are likely a ton of
-            // processors available in that case.  The GC also cannot (currently) handle
-            // the case where there are more than 64 processors, so we will return a
-            // maximum of 64 here.
-            if (count == 0 || count > 64)
-                count = 64;
+                while (pmask)
+                {
+                    pmask &= (pmask - 1);
+                    count++;
+                }
+
+                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+                // than 64 processors, which would leave us with a count of 0.  Since the GC
+                // expects there to be at least one processor to run on (and thus at least one
+                // heap), we'll return 64 here if count is 0, since there are likely a ton of
+                // processors available in that case.
+                if (count == 0)
+                    count = 64;
+            }
         }
     }
 
-    cCPUs = count;
+    _ASSERTE(count > 0);
+    g_nCurrentProcessCpuCount = count;
 
     return count;
 }

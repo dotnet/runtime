@@ -40337,7 +40337,7 @@ HRESULT GCHeap::Initialize()
     nhp = ((nhp_from_config == 0) ? g_num_active_processors : nhp_from_config);
 
     nhp = min (nhp, MAX_SUPPORTED_CPUS);
-#ifndef FEATURE_REDHAWK
+
     gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ? 
         !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
 
@@ -40349,12 +40349,7 @@ HRESULT GCHeap::Initialize()
         {
             nhp = min(nhp, num_affinitized_processors);
         }
-#ifndef TARGET_WINDOWS
-        // Limit the GC heaps to the number of processors available in the system.
-        nhp = min (nhp, GCToOSInterface::GetTotalProcessorCount());
-#endif // !TARGET_WINDOWS
     }
-#endif //!FEATURE_REDHAWK
 #endif //MULTIPLE_HEAPS
 
     size_t seg_size = 0;

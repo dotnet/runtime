@@ -750,14 +750,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef TARGET_UNIX
-    // GetCurrentProcessCpuCount only returns up to 64 procs.
-    return CPUGroupInfo::CanEnableGCCPUGroups() ?
-                GCToOSInterface::GetTotalProcessorCount():
-                ::GetCurrentProcessCpuCount();
-#else // !TARGET_UNIX
     return ::GetCurrentProcessCpuCount();
-#endif // !TARGET_UNIX
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.
@@ -1037,18 +1030,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef TARGET_UNIX
-    if (CPUGroupInfo::CanEnableGCCPUGroups())
-    {
-        return CPUGroupInfo::GetNumActiveProcessors();
-    }
-    else
-    {
-        return g_SystemInfo.dwNumberOfProcessors;
-    }
-#else // !TARGET_UNIX
-    return PAL_GetTotalCpuCount();
-#endif // !TARGET_UNIX
+    return ::GetTotalProcessorCount();
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()

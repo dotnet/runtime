@@ -75,8 +75,10 @@ public:
     BOOL_CONFIG  (LogEnabled,             "GCLogEnabled",           NULL,                             false,             "Specifies if you want to turn on logging in GC")                                         \
     BOOL_CONFIG  (ConfigLogEnabled,       "GCConfigLogEnabled",     NULL,                             false,             "Specifies the name of the GC config log file")                                           \
     BOOL_CONFIG  (GCNumaAware,            "GCNumaAware",            NULL,                             true,              "Enables numa allocations in the GC")                                                     \
-    BOOL_CONFIG  (GCCpuGroup,             "GCCpuGroup",             "System.GC.CpuGroup",             false,             "Enables CPU groups in the GC")                                                           \
     BOOL_CONFIG  (GCLargePages,           "GCLargePages",           "System.GC.LargePages",           false,             "Enables using Large Pages in the GC")                                                    \
+    BOOL_CONFIG  (GCCpuGroup,             "GCCpuGroup",             "System.GC.CpuGroup",             false,             "Enables CPU groups in the GC")                                                           \
+    BOOL_CONFIG  (UseAllCpuGroups,        "Thread_UseAllCpuGroups", NULL,                             false,             "Enables using CPU group information for determining the processor count")                \
+    INT_CONFIG   (ProcessorCount,         "PROCESSOR_COUNT",        NULL,                             0,                 "Specifies the number of processors available for the process")                           \
     INT_CONFIG   (HeapVerifyLevel,        "HeapVerify",             NULL,                             HEAPVERIFY_NONE,   "When set verifies the integrity of the managed heap on entry and exit of each GC")       \
     INT_CONFIG   (LOHCompactionMode,      "GCLOHCompact",           NULL,                             0,                 "Specifies the LOH compaction mode")                                                      \
     INT_CONFIG   (LOHThreshold,           "GCLOHThreshold",         NULL,                             LARGE_OBJECT_SIZE, "Specifies the size that will make objects go on LOH")                                    \
