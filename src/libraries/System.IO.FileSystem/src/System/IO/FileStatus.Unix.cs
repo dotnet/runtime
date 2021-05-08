@@ -401,17 +401,14 @@ namespace System.IO
         // If stat or lstat failed, and continueOnError is set to true, this method will throw.
         internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            // The file cache should always be successfully refreshed (0)
-            // The symbolic link cache only gets refreshed when the path is detected
-            // to be a symlink, so -1 (meaning 'uninitialized') is also acceptable
-            if (_initializedFileCache != 0 || _initializedSymlinkCache > 0)
+            if (_initializedFileCache == -1)
             {
                 RefreshCaches(path);
+            }
 
-                if (!continueOnError)
-                {
-                    ThrowOnCacheInitializationError(path);
-                }
+            if (!continueOnError)
+            {
+                ThrowOnCacheInitializationError(path);
             }
         }
 
@@ -464,6 +461,7 @@ namespace System.IO
                 {
                     // Expect a positive integer
                     initialized = errorInfo.RawErrno;
+                    Debug.Assert(initialized > 0);
                 }
                 return false;
             }
