@@ -77,9 +77,10 @@ namespace MonoTests.System.Runtime.Caching
             var events = new ConcurrentQueue<EventWrittenEventArgs>();
             using (var listener = new TestEventListener("System.Runtime.Caching." + cacheName, EventLevel.Verbose, eventCounterInterval: 0.1d))
             {
-                // Yup. This Task.Delay() is ugly. There actually isn't a way to simply 'poll' the
-                // 'polling' counters. This is how System.Net.Http tests their polling counters too.
-                await listener.RunWithCallbackAsync(events.Enqueue, async () => await Task.Delay(200));
+                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                {
+                    await WaitForEventCountersAsync(events);
+                });
             }
 
             Dictionary<string, double[]> eventCounters = events
@@ -132,6 +133,30 @@ namespace MonoTests.System.Runtime.Caching
 #endif
 
             return counters;
+        }
+
+        private static async Task WaitForEventCountersAsync(ConcurrentQueue<EventWrittenEventArgs> events)
+        {
+            DateTime startTime = DateTime.UtcNow;
+            int startCount = events.Count;
+
+            while (events.Skip(startCount).Count(e => IsTurnoverEventCounter(e)) < 2)
+            {
+                if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                    throw new TimeoutException($"Timed out waiting for EventCounters");
+
+                await Task.Delay(100);
+            }
+
+            static bool IsTurnoverEventCounter(EventWrittenEventArgs e)
+            {
+                if (e.EventName != "EventCounters")
+                    return false;
+
+                var dictionary = (IDictionary<string, object>)e.Payload.Single();
+
+                return (string)dictionary["Name"] == "turnover";
+            }
         }
     }
 }
