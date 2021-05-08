@@ -64,15 +64,42 @@ namespace Internal.Cryptography
             Debug.Assert(input.Length > 0);
             Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
-            int numBytesWritten;
+            int numBytesWritten = 0;
 
-            if (_encrypting)
+            // BCryptEncrypt and BCryptDecrypt can do in place encryption, but if the buffers overlap
+            // the offset must be zero. In that case, we need to copy to a temporary location.
+            if (input.Overlaps(output, out int offset) && offset == 0)
             {
-                numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output);
+                if (_encrypting)
+                {
+                    numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output);
+                }
+                else
+                {
+                    numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
+                }
             }
             else
             {
-                numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
+                byte[] rented = CryptoPool.Rent(output.Length);
+
+                try
+                {
+                    if (_encrypting)
+                    {
+                        numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, rented);
+                    }
+                    else
+                    {
+                        numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, rented);
+                    }
+
+                    rented.AsSpan(0, numBytesWritten).CopyTo(output);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: numBytesWritten);
+                }
             }
 
             if (numBytesWritten != input.Length)
