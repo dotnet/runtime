@@ -1261,7 +1261,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     }
 
     //If not "vararg" calling convention, assume "default" calling convention
-    if (!MetaSig::IsVarArg(pFunction->GetModule(), callSignature))
+    if (!MetaSig::IsVarArg(callSignature))
     {
         SigTypeContext typeContext(pFunction);
         PCCOR_SIGNATURE pSig;
@@ -2064,7 +2064,7 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
 #ifdef _DEBUG
     GCRefMapBuilder gcRefMapNew;
     ComputeCallRefMap(pMD, &gcRefMapNew, isDispatchCell);
-    
+
     DWORD dwFinalLength;
     PVOID pBlob = gcRefMapNew.GetBlob(&dwFinalLength);
 

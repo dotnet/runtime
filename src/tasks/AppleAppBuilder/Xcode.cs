@@ -63,7 +63,7 @@ internal class Xcode
             excludes.Add(".pdb");
         }
 
-        string[] resources = Directory.GetFiles(workspace)
+        string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
             .Concat(Directory.GetFiles(binDir, "*.aotdata"))
             .ToArray();
@@ -98,7 +98,7 @@ internal class Xcode
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
-            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + r)))
+            .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + Path.GetRelativePath(binDir, r))))
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");

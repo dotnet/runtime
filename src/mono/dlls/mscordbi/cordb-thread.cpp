@@ -249,11 +249,11 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetActiveFrame(ICorDebugFrame** ppFrame)
             int flags     = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
             if (m_pCurrentFrame)
                 m_pCurrentFrame->InternalRelease();
-            m_pCurrentFrame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, this);
+            m_pCurrentFrame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, this, 0);
             m_pCurrentFrame->InternalAddRef();
             m_pCurrentFrame->QueryInterface(IID_ICorDebugFrame, (void**)ppFrame);
         }
-        SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
+        SetRegisterSet(new CordbRegisterSet(conn, 0));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -280,9 +280,10 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetRegisterSet(ICorDebugRegisterSet** ppR
         MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
         int contextSizeReceived = 0;
-        uint8_t* contextMemoryReceived = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &contextSizeReceived);
-        m_pRegisterSet = new CordbRegisterSet(conn, contextMemoryReceived, contextSizeReceived);
+        int64_t stack_pointer = m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
+        m_pRegisterSet = new CordbRegisterSet(conn, stack_pointer);
         m_pRegisterSet->InternalAddRef();
+        LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetRegisterSet - IMPLEMENTED - %ld\n", stack_pointer)); 
     }
     EX_CATCH_HRESULT(hr);
 

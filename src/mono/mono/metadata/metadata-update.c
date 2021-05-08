@@ -423,6 +423,17 @@ mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gco
 	return dmeta_image;
 }
 
+static gpointer
+open_dil_data (MonoImage *base_image G_GNUC_UNUSED, gconstpointer dil_src, uint32_t dil_length)
+{
+	/* TODO: find a better memory manager.  But this way we at least won't lose the IL data. */
+	MonoMemoryManager *mem_manager = (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
+
+	gpointer dil_copy = mono_mem_manager_alloc (mem_manager, dil_length);
+	memcpy (dil_copy, dil_src, dil_length);
+	return dil_copy;
+}
+
 static const char *
 scope_to_string (uint32_t tok)
 {
@@ -1017,7 +1028,7 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
  * LOCKING: Takes the publish_lock
  */
 void
-mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
+mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, MonoError *error)
 {
 	mono_metadata_update_ee_init (error);
 	if (!is_ok (error))
@@ -1029,16 +1040,12 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	}
 
 	const char *basename = image_base->filename;
-	/* FIXME:
-	 * (1) do we need to memcpy dmeta_bytes ? (maybe)
-	 * (2) do we need to memcpy dil_bytes ? (pretty sure, yes)
-	 */
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
-		g_print ("LOADING basename=%s delta update.\ndelta image=%p & dil=%p\n", basename, dmeta_bytes, dil_bytes);
+		g_print ("LOADING basename=%s delta update.\ndelta image=%p & dil=%p\n", basename, dmeta_bytes, dil_bytes_orig);
 		/* TODO: add a non-async version of mono_dump_mem */
 		mono_dump_mem (dmeta_bytes, dmeta_length);
-		mono_dump_mem (dil_bytes, dil_length);
+		mono_dump_mem (dil_bytes_orig, dil_length);
 	}
 
 	uint32_t generation = mono_metadata_update_prepare ();
@@ -1049,6 +1056,7 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap size: 0x%08x", image_base->heap_blob.size);
 
 	MonoImageOpenStatus status;
+	/* makes a copy of dmeta_bytes */
 	MonoImage *image_dmeta = mono_image_open_dmeta_from_data (image_base, generation, dmeta_bytes, dmeta_length, &status);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image string size: 0x%08x", image_dmeta->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image user string size: 0x%08x", image_dmeta->heap_us.size);
@@ -1056,6 +1064,10 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image blob heap size: 0x%08x", image_dmeta->heap_blob.size);
 	g_assert (image_dmeta);
 	g_assert (status == MONO_IMAGE_OK);
+
+	/* makes a copy of dil_bytes_orig */
+	gpointer dil_bytes = open_dil_data (image_base, dil_bytes_orig, dil_length);
+	/* TODO: make a copy of the dpdb bytes, once we consume them */
 
 	if (image_dmeta->minimal_delta) {
 		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE], 0, MONO_MODULE_NAME);
