@@ -10,7 +10,7 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class DesCipherTests
+    public static partial class DesCipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(

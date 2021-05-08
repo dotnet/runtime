@@ -194,6 +194,8 @@
              Link="CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.OneShot.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.OneShot.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs"
