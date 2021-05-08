@@ -18,8 +18,10 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
+#include "gcenv.ee.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
+#include "gcconfig.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>

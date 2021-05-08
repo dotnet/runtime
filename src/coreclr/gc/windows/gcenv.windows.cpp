@@ -975,7 +975,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
     if (0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
-        count = (unsigned int)configValue;
+        count = (DWORD)configValue;
     }
     else
     {
