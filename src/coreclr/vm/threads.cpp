@@ -2091,7 +2091,7 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
     CONTRACTL
     {
         NOTHROW;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
         GC_TRIGGERS;
         PRECONDITION(pThread != NULL);
     }
@@ -2114,7 +2114,7 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
     CONTRACTL
     {
         NOTHROW;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
         GC_TRIGGERS;
         PRECONDITION(pThread != NULL);
     }
