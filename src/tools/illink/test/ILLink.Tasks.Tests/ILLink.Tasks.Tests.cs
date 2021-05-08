@@ -522,6 +522,19 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
+
+		[Fact]
+		public void TestKeepCustomMetadata ()
+		{
+			var task = new MockTask () {
+				KeepMetadata = new ITaskItem[] { new TaskItem ("parametername") }
+			};
+
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (MetadataTrimming.None, driver.Context.MetadataTrimming);
+			}
+		}
+
 		[Theory]
 		[InlineData ("copy")]
 		[InlineData ("link")]

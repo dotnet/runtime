@@ -171,6 +171,7 @@ namespace Mono.Linker
 			bool new_mvid_used = false;
 			bool deterministic_used = false;
 			bool keepCompilersResources = false;
+			MetadataTrimming metadataTrimming = MetadataTrimming.Any;
 
 			List<BaseStep> inputs = CreateDefaultResolvers ();
 
@@ -334,6 +335,18 @@ namespace Mono.Linker
 							return -1;
 
 						continue;
+
+					case "--keep-metadata": {
+							string mname = null;
+							if (!GetStringParam (token, l => mname = l))
+								return -1;
+
+							if (!TryGetMetadataTrimming (mname, out var type))
+								return -1;
+
+							metadataTrimming &= ~type;
+							continue;
+						}
 
 					case "--disable-serialization-discovery":
 						if (!GetBoolParam (token, l => context.DisableSerializationDiscovery = l))
@@ -650,7 +663,7 @@ namespace Mono.Linker
 				return -1;
 			}
 
-
+			context.MetadataTrimming = metadataTrimming;
 
 			// Default to deterministic output
 			if (!new_mvid_used && !deterministic_used) {
@@ -1088,6 +1101,25 @@ namespace Mono.Linker
 			return false;
 		}
 
+		bool TryGetMetadataTrimming (string text, out MetadataTrimming metadataTrimming)
+		{
+			switch (text.ToLowerInvariant ()) {
+			case "all":
+				metadataTrimming = MetadataTrimming.Any;
+				return true;
+			case "none":
+				metadataTrimming = MetadataTrimming.None;
+				return true;
+			case "parametername":
+				metadataTrimming = MetadataTrimming.ParameterName;
+				return true;
+			}
+
+			context.LogError ($"Invalid metadata value '{text}'", 1046);
+			metadataTrimming = 0;
+			return false;
+		}
+
 		protected static bool GetWarningSuppressionWriterFileOutputKind (string text, out WarningSuppressionWriter.FileOutputKind fileOutputKind)
 		{
 			switch (text.ToLowerInvariant ()) {
@@ -1248,8 +1280,12 @@ namespace Mono.Linker
 			Console.WriteLine ("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
-			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
+			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
+			Console.WriteLine ("  --keep-metadata NAME       Keep metadata which would otherwise be removed if not used");
+			Console.WriteLine ("                               all: Metadata for any member are all kept");
+			Console.WriteLine ("                               parametername: All parameter names are kept");
 			Console.WriteLine ("  --new-mvid                 Generate a new guid for each linked assembly (short -g). Defaults to true");
 			Console.WriteLine ("  --strip-descriptors        Remove XML descriptor resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --strip-security           Remove metadata and code related to Code Access Security. Defaults to true");
@@ -1260,7 +1296,6 @@ namespace Mono.Linker
 			Console.WriteLine ("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
 			Console.WriteLine ("  --ignore-link-attributes   Skips reading embedded attributes. Defaults to false");
 			Console.WriteLine ("  --strip-link-attributes    Remove XML link attributes resources for linked assemblies. Defaults to true");
-			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");

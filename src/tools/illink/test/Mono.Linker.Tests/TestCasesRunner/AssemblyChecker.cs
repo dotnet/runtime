@@ -18,11 +18,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
+		bool checkNames;
 
 		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;
+
+			checkNames = original.MainModule.GetTypeReferences ().Any (attr =>
+				attr.Name == nameof (RemovedNameValueAttribute));
 		}
 
 		public void Verify ()
@@ -107,7 +111,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
+			bool prev = checkNames;
+			checkNames |= original.HasAttribute (nameof (VerifyMetadataNamesAttribute));
+
 			VerifyTypeDefinitionKept (original, linked);
+
+			checkNames = prev;
 
 			if (original.HasAttribute (nameof (CreatedMemberAttribute))) {
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
@@ -163,7 +172,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var m in original.Methods) {
 				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
-				VerifyMethod (m, linked?.Methods.FirstOrDefault (l => m.GetSignature () == l.GetSignature ()));
+				var msign = m.GetSignature ();
+				VerifyMethod (m, linked?.Methods.FirstOrDefault (l => msign == l.GetSignature ()));
 				linkedMembers.Remove (m.FullName);
 			}
 		}
@@ -765,7 +775,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (src.HasGenericParameters) {
 				for (int i = 0; i < src.GenericParameters.Count; ++i) {
 					// TODO: Verify constraints
-					VerifyCustomAttributes (src.GenericParameters[i], linked.GenericParameters[i]);
+					var srcp = src.GenericParameters[i];
+					var lnkp = linked.GenericParameters[i];
+					VerifyCustomAttributes (srcp, lnkp);
+
+					if (checkNames) {
+						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
+							string name = (src.GenericParameterType == GenericParameterType.Method ? "!!" : "!") + srcp.Position;
+							Assert.AreEqual (name, lnkp.Name, "Expected empty generic parameter name");
+						} else {
+							Assert.AreEqual (srcp.Name, lnkp.Name, "Mismatch in generic parameter name");
+						}
+					}
 				}
 			}
 		}
@@ -775,7 +796,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Assert.AreEqual (src.HasParameters, linked.HasParameters);
 			if (src.HasParameters) {
 				for (int i = 0; i < src.Parameters.Count; ++i) {
-					VerifyCustomAttributes (src.Parameters[i], linked.Parameters[i]);
+					var srcp = src.Parameters[i];
+					var lnkp = linked.Parameters[i];
+
+					VerifyCustomAttributes (srcp, lnkp);
+
+					if (checkNames) {
+						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))
+							Assert.IsEmpty (lnkp.Name, "Expected empty parameter name");
+						else
+							Assert.AreEqual (srcp.Name, lnkp.Name, "Mismatch in parameter name");
+					}
 				}
 			}
 		}

@@ -94,6 +94,8 @@ namespace Mono.Linker
 			set { _outputDirectory = value; }
 		}
 
+		public MetadataTrimming MetadataTrimming { get; set; }
+
 		public AssemblyAction TrimAction { get; set; }
 
 		public AssemblyAction DefaultAction { get; set; }
@@ -127,7 +129,7 @@ namespace Mono.Linker
 
 		public bool IgnoreLinkAttributes { get; set; }
 
-		public Dictionary<string, bool> FeatureSettings { get; private set; }
+		public Dictionary<string, bool> FeatureSettings { get; init; }
 
 		public List<string> AttributeDefinitions { get; private set; }
 
@@ -208,6 +210,7 @@ namespace Mono.Linker
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
 			_cachedWarningMessageContainers = new List<MessageContainer> ();
+			FeatureSettings = new Dictionary<string, bool> (StringComparer.Ordinal);
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
@@ -247,12 +250,12 @@ namespace Mono.Linker
 		public void SetFeatureValue (string feature, bool value)
 		{
 			Debug.Assert (!String.IsNullOrEmpty (feature));
-			if (FeatureSettings == null) {
-				FeatureSettings = new Dictionary<string, bool> { { feature, value } };
-				return;
-			}
-
 			FeatureSettings[feature] = value;
+		}
+
+		public bool HasFeatureValue (string feature, bool value)
+		{
+			return FeatureSettings.TryGetValue (feature, out bool fvalue) && value == fvalue;
 		}
 
 		public void AddAttributeDefinitionFile (string file)

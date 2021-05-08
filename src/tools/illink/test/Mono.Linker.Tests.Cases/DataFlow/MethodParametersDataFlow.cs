@@ -14,6 +14,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
 	//   - so the main validation is done by the UnrecognizedReflectionAccessPattern attributes.
 	[SkipKeptItemsValidation]
+	[SetupLinkerArgument ("--keep-metadata", "parametername")]
 	public class MethodParametersDataFlow
 	{
 		public static void Main ()

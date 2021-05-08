@@ -157,6 +157,8 @@ the error code. For example:
 
 - The type name used with attribute type is not one of the supported types.
 
+#### `IL1046`: Invalid metadata '{name}' option
+
 ----
 ## Warning Codes
 
