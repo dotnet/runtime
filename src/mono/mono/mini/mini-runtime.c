@@ -2921,10 +2921,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
 	info->use_interp = use_interp;
-	if (mono_llvm_only && method->string_ctor)
-		info->sig = mono_marshal_get_string_ctor_signature (method);
-	else
-		info->sig = mono_method_signature_internal (method);
+	info->sig = mono_method_signature_internal (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	(void)invoke;
@@ -3016,7 +3013,13 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 	}
 
 	if (!info->dyn_call_info) {
-		if (mono_llvm_only) {
+		/*
+		 * Can't use the normal llvmonly code for string ctors since the gsharedvt out wrapper passes
+		 * an extra arg, which the string ctor methods don't have, which causes signature mismatches
+		 * on wasm. Instead, call string ctors normally using a direct runtime invoke wrapper
+		 * which is AOTed for each ctor.
+		 */
+		if (mono_llvm_only && !method->string_ctor) {
 #ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
 			g_assert_not_reached ();
 #endif
@@ -3331,7 +3334,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	if (info->use_interp) {
 		result = mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
 		return_val_if_nok (error, NULL);
-	} else if (mono_llvm_only) {
+	} else if (mono_llvm_only && !method->string_ctor) {
 		result = mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
 		if (!is_ok (error))
 			return NULL;
