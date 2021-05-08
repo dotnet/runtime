@@ -123,6 +123,7 @@ typedef struct _EventPipeSampleProfileData {
 	uint64_t thread_id;
 	uintptr_t thread_ip;
 	uint32_t payload_data;
+	bool async_frame;
 } EventPipeSampleProfileData;
 
 // Rundown flags.
@@ -1567,10 +1568,11 @@ eventpipe_execute_rundown (
 
 static
 gboolean
-eventpipe_walk_managed_stack_for_thread_func (
+eventpipe_walk_managed_stack_for_thread (
 	MonoStackFrameInfo *frame,
 	MonoContext *ctx,
-	void *data)
+	void *data,
+	bool *async_frame)
 {
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
@@ -1586,14 +1588,28 @@ eventpipe_walk_managed_stack_for_thread_func (
 	case FRAME_TYPE_INTERP:
 		if (!frame->ji)
 			return FALSE;
+		*async_frame |= frame->ji->async;
 		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
 		if (method && !m_method_is_wrapper (method))
 			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
+		else if (!method && frame->ji->async && !frame->ji->is_trampoline)
+			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start), method);
 		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
 	default:
-		EP_UNREACHABLE ("eventpipe_walk_managed_stack_for_thread_func");
+		EP_UNREACHABLE ("eventpipe_walk_managed_stack_for_thread");
 		return FALSE;
 	}
+}
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	void *data)
+{
+	bool async_frame = FALSE;
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, data, &async_frame);
 }
 
 static
@@ -1615,7 +1631,7 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 	}
 
-	return eventpipe_walk_managed_stack_for_thread_func (frame, ctx, &sample_data->stack_contents);
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame);
 }
 
 static
@@ -2088,7 +2104,10 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	uint32_t filtered_thread_count = 0;
 	uint32_t sampled_thread_count = 0;
 
-	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
+
+	gboolean async_context = mono_thread_info_is_async_context ();
+	mono_thread_info_set_is_async_context (TRUE);
 
 	// Record all info needed in sample events while runtime is suspended, must be async safe.
 	FOREACH_THREAD_SAFE_EXCLUDE (thread_info, MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE) {
@@ -2100,6 +2119,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 					data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
 					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
 					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+					data->async_frame = FALSE;
 					ep_stack_contents_reset (&data->stack_contents);
 					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);
 					sampled_thread_count++;
@@ -2109,7 +2129,8 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 		filtered_thread_count++;
 	} FOREACH_THREAD_SAFE_END
 
-	mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	mono_thread_info_set_is_async_context (async_context);
+	mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 
 	// Fire sample event for threads. Must be done after runtime is resumed since it's not async safe.
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
@@ -2118,6 +2139,13 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
 		EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
 		if (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length(&data->stack_contents) > 0) {
+			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
+			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
+			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
+			if (data->async_frame) {
+				for (int i = 0; i < data->stack_contents.next_available_frame; ++i)
+					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [i], TRUE, FALSE);
+			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
 		}

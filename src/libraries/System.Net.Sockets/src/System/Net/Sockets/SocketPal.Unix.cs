@@ -1881,9 +1881,6 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback) =>
-            SendFileAsync(handle, fileStream, 0, fileStream.Length, callback);
-
         private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, Action<long, SocketError> callback)
         {
             long bytesSent;

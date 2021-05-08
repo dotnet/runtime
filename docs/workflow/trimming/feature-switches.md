@@ -22,6 +22,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
 | TBD | System.Threading.ThreadPool.EnableDispatchAutoreleasePool | When set to true, creates an NSAutoreleasePool around each thread pool work item on applicable platforms. |
 | _EnableCallingManagedFunctionFromNativeHosting | Internal.Runtime.InteropServices.ComponentActivator.IsSupported | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
+| BuiltInComInteropSupport | System.Runtime.InteropServices.BuiltInComInterop.IsSupported | Built-in COM support is trimmed when set to false. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

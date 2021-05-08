@@ -10,6 +10,14 @@ internal partial class VectorTest
     private const int Pass = 100;
     private const int Fail = -1;
 
+    private const int DefaultSeed = 20010415;
+    private static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
     // Matrix for test purposes only - no per-dim bounds checking, etc.
     public struct Matrix<T>
         where T : struct, IComparable<T>, IEquatable<T>
@@ -196,7 +204,7 @@ internal partial class VectorTest
     {
         int returnVal = Pass;
 
-        Random random = new Random(100);
+        Random random = new Random(Seed);
 
         // Float
         Matrix<float> AFloat = GetRandomMatrix<float>(3, 4, random);

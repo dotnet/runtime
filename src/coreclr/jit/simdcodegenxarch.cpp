@@ -2353,11 +2353,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 {
     // NYI for unsupported base types
-    if (simdNode->GetSimdBaseType() != TYP_INT && simdNode->GetSimdBaseType() != TYP_LONG &&
-        simdNode->GetSimdBaseType() != TYP_FLOAT && simdNode->GetSimdBaseType() != TYP_DOUBLE &&
-        simdNode->GetSimdBaseType() != TYP_USHORT && simdNode->GetSimdBaseType() != TYP_UBYTE &&
-        simdNode->GetSimdBaseType() != TYP_SHORT && simdNode->GetSimdBaseType() != TYP_BYTE &&
-        simdNode->GetSimdBaseType() != TYP_UINT && simdNode->GetSimdBaseType() != TYP_ULONG)
+    if (!varTypeIsArithmetic(simdNode->GetSimdBaseType()))
     {
         noway_assert(!"SIMD intrinsic with unsupported base type.");
     }

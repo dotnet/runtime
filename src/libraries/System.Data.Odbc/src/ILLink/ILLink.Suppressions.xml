@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Data.Odbc, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2050</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Interop.Odbc.SQLSetConnectAttrW(System.Data.Odbc.OdbcConnectionHandle,System.Data.Odbc.ODBC32.SQL_ATTR,System.Transactions.IDtcTransaction,System.Int32)</property>
+    </attribute>
+  </assembly>
+</linker>

@@ -50,6 +50,9 @@
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Publish`.
 
+      - $(EmccFlags)                        - This sets the initial emcc flags.
+      - $(EmccVerbose)                      - Set to false to disable verbose emcc output.
+
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
                                     (relative path can be set via %(TargetPath) metadata)
@@ -74,7 +77,7 @@
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
-    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != ''">true</WasmUseEMSDK_PATH>
+    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
@@ -86,6 +89,8 @@
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
+    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -205,7 +210,7 @@
 
   <Target Name="_BeforeWasmBuildApp" DependsOnTargets="_SetupEmscripten;_SetWasmBuildNativeDefaults">
     <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$([MSBuild]::NormalizeDirectory($(NuGetPackageRoot), 'microsoft.netcore.app.runtime.mono.browser-wasm', $(BundledNETCoreAppPackageVersion)'))</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$([MSBuild]::NormalizeDirectory($(NuGetPackageRoot), 'microsoft.netcore.app.runtime.mono.browser-wasm', '$(BundledNETCoreAppPackageVersion)'))</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
     </PropertyGroup>
 
@@ -216,12 +221,12 @@
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
-      <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
+      <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
 
+      <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
       <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
-      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'cross', $(PackageRID), 'mono-aot-cross$(_ExeExt)'))</MonoAotCrossCompilerPath>
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
       <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
     </PropertyGroup>
@@ -350,6 +355,8 @@
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+    <Error Condition="'$(MonoAotCrossCompilerPath)' == '' or !Exists('$(MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(MonoAotCrossCompilerPath)=$(MonoAotCrossCompilerPath)" />
 
     <PropertyGroup>
       <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
@@ -363,6 +370,7 @@
 
     <PropertyGroup>
       <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
+      <EmccFlags Condition="'$(EmccVerbose)' != 'false'">$(EmccFlags) -v</EmccFlags>
       <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>

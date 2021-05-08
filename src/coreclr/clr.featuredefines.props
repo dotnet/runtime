@@ -28,7 +28,6 @@
         <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
-        <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
         <FeatureWin32Registry>true</FeatureWin32Registry>
         <FeatureProfAttach>true</FeatureProfAttach>
@@ -45,7 +44,6 @@
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
@@ -54,7 +52,8 @@
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureBasicFreeze)' == 'true'">$(DefineConstants);FEATURE_BASICFREEZE</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableShuffleThunks)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_SHUFFLE_THUNKS</DefineConstants>
-
+        <DefineConstants Condition="'$(FeatureICastable)' == 'true'">$(DefineConstants);FEATURE_ICASTABLE</DefineConstants>
+        
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
     </PropertyGroup>

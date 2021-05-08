@@ -17,7 +17,6 @@
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <EventSourceSupport>false</EventSourceSupport>
-    <InvariantGlobalization>false</InvariantGlobalization>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <StartupHookSupport>false</StartupHookSupport>
@@ -36,6 +35,8 @@
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
+    <!-- Suppress linker warnings as these are tests -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -101,14 +102,14 @@
     </RuntimeConfigParserTask>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"
+        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.c"
         UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)">
+        LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
@@ -172,7 +173,7 @@
     <RemoveDir Directories="$(BundleDir)" />
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"
+        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
@@ -180,7 +181,7 @@
         AotModulesTablePath="$(BundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)">
+        LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
@@ -218,6 +219,13 @@
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
 
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(AppBundlePath)" />
+    <ItemGroup>
+      <_removeFiles Include="$(OutDir)*.*" />
+    </ItemGroup>
+
+    <Delete Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(OutDir)' != ''" Files="@(_removeFiles)" />
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" Directories="$(PublishDir)" />
   </Target>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this

@@ -709,6 +709,11 @@ void EEStartupHelper()
         }
 #endif
 
+#ifdef PROFILING_SUPPORTED
+        // The diagnostics server might register a profiler for delayed startup, indicate here that 
+        // it is not currently set. This will be set to TRUE if a profiler is registered.
+       g_profControlBlock.fIsStoredProfilerRegistered = FALSE;
+#endif // PROFILING_SUPPORTED
 #ifdef FEATURE_PERFTRACING
         DiagnosticServerAdapter::Initialize();
         DiagnosticServerAdapter::PauseForDiagnosticsMonitor();

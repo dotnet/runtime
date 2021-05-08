@@ -15,7 +15,8 @@ namespace Profiler.Tests
     {
         None = 0,
         OptimizationSensitive,
-        NoStartupAttach
+        NoStartupAttach,
+        ReverseDiagnosticsMode
     }
 
     public class ProfilerTestRunner
@@ -24,7 +25,8 @@ namespace Profiler.Tests
                               string testName,
                               Guid profilerClsid,
                               string profileeArguments = "",
-                              ProfileeOptions profileeOptions = ProfileeOptions.None)
+                              ProfileeOptions profileeOptions = ProfileeOptions.None,
+                              string reverseServerName = null)
         {
             string arguments;
             string program;
@@ -47,6 +49,17 @@ namespace Profiler.Tests
                 envVars.Add("COMPlus_TieredCompilation", "0");
                 envVars.Add("COMPlus_JitStress", "0");
                 envVars.Add("COMPlus_JITMinOpts", "0");
+            }
+
+            if (profileeOptions.HasFlag(ProfileeOptions.ReverseDiagnosticsMode))
+            {
+                Console.WriteLine("Launching profilee in reverse diagnostics port mode.");
+                if (String.IsNullOrEmpty(reverseServerName))
+                {
+                    throw new ArgumentException();
+                }
+
+                envVars.Add("DOTNET_DiagnosticPorts", reverseServerName);
             }
 
             envVars.Add("Profiler_Test_Name", testName);
@@ -80,6 +93,7 @@ namespace Profiler.Tests
                 verifier.WriteLine(args.Data);
             };
             process.Start();
+
             process.BeginOutputReadLine();
 
             process.WaitForExit();

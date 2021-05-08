@@ -235,6 +235,15 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	return DS_IPC_E_NOTSUPPORTED;
 }
 
+static
+inline
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
+{
+	// TODO: Implement.
+	return DS_IPC_E_NOTSUPPORTED;
+}
+
 /*
 * DiagnosticServer.
 */

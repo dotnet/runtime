@@ -5546,8 +5546,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                     if (optimizeJump)
                     {
                         JITDUMP("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
-                                " -> " FMT_BB ")\n",
-                                block->bbNum, bDest->bbNum, bNextJumpDest->bbNum);
+                                ", " FMT_BB " -> " FMT_BB ")\n",
+                                block->bbNum, bDest->bbNum, bNext->bbNum, bNextJumpDest->bbNum);
 
                         //  Reverse the jump condition
                         //
@@ -5585,6 +5585,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                         /* Mark the block as removed */
                         bNext->bbFlags |= BBF_REMOVED;
+
+                        // Update the loop table if we removed the bottom of a loop, for example.
+                        fgUpdateLoopsAfterCompacting(block, bNext);
 
                         // If this is the first Cold basic block update fgFirstColdBlock
                         if (bNext == fgFirstColdBlock)

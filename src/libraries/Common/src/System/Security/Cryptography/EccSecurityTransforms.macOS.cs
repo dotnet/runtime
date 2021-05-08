@@ -12,28 +12,11 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class EccSecurityTransforms
     {
-        internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
-        {
-            const string ExportPassword = "DotnetExportPassphrase";
-            byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(handle, exportPrivate: true, password: ExportPassword);
-            EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ECParameters key);
-            CryptographicOperations.ZeroMemory(key.D);
-            CryptographicOperations.ZeroMemory(keyBlob);
-            key.D = null;
-            return key;
-        }
-
-        internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
+        private static ECParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
         {
             // Apple requires all private keys to be exported encrypted, but since we're trying to export
             // as parsed structures we will need to decrypt it for the user.
             const string ExportPassword = "DotnetExportPassphrase";
-            SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
-
-            if (includePrivateParameters && keys.PrivateKey == null)
-            {
-                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
-            }
 
             byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
                 includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
@@ -66,75 +49,20 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal int ImportParameters(ECParameters parameters)
+        private static void ExtractPublicKeyFromPrivateKey(ref ECParameters ecParameters)
         {
-            parameters.Validate();
-            ThrowIfDisposed();
-
-            bool isPrivateKey = parameters.D != null;
-            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
-            SecKeyPair newKeys;
-
-            if (isPrivateKey)
+            using (SafeSecKeyRefHandle secPrivateKey = ImportLegacyPrivateKey(ref ecParameters))
             {
-                // Start with the private key, in case some of the private key fields don't
-                // match the public key fields and the system determines an integrity failure.
-                //
-                // Public import should go off without a hitch.
-                SafeSecKeyRefHandle privateKey = ImportKey(parameters);
-
-                ECParameters publicOnly;
-
-                if (hasPublicParameters)
-                {
-                    publicOnly = parameters;
-                    publicOnly.D = null;
-                }
-                else
-                {
-                    publicOnly = ExportPublicParametersFromPrivateKey(privateKey);
-                }
-
-                SafeSecKeyRefHandle publicKey;
-                try
-                {
-                    publicKey = ImportKey(publicOnly);
-                }
-                catch
-                {
-                    privateKey.Dispose();
-                    throw;
-                }
-
-                newKeys = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
+                const string ExportPassword = "DotnetExportPassphrase";
+                byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(secPrivateKey, exportPrivate: true, password: ExportPassword);
+                EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ecParameters);
+                CryptographicOperations.ZeroMemory(keyBlob);
             }
-            else
-            {
-                SafeSecKeyRefHandle publicKey = ImportKey(parameters);
-                newKeys = SecKeyPair.PublicOnly(publicKey);
-            }
-
-            int size = GetKeySize(newKeys);
-            SetKey(newKeys);
-
-            return size;
         }
 
-        private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
+        private static SafeSecKeyRefHandle ImportLegacyPrivateKey(ref ECParameters parameters)
         {
-            AsnWriter keyWriter;
-            bool hasPrivateKey;
-
-            if (parameters.D != null)
-            {
-                keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
-                hasPrivateKey = true;
-            }
-            else
-            {
-                keyWriter = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
-                hasPrivateKey = false;
-            }
+            AsnWriter keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
 
             byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
 
@@ -149,37 +77,11 @@ namespace System.Security.Cryptography
 
             try
             {
-                return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), true);
             }
             finally
             {
                 CryptoPool.Return(rented, written);
-            }
-        }
-
-        internal unsafe int ImportSubjectPublicKeyInfo(
-            ReadOnlySpan<byte> source,
-            out int bytesRead)
-        {
-            ThrowIfDisposed();
-
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    // Validate the DER value and get the number of bytes.
-                    EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        manager.Memory,
-                        out int localRead);
-
-                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
-                    SecKeyPair newKeys = SecKeyPair.PublicOnly(publicKey);
-                    int size = GetKeySize(newKeys);
-                    SetKey(newKeys);
-
-                    bytesRead = localRead;
-                    return size;
-                }
             }
         }
     }

@@ -13,7 +13,7 @@
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'Browser'">
     <!-- Microsoft.CodeAnalysis.* assemblies missing in the virtual file system for Browser and the bundle for the mobile platforms -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Tests.csproj" />
   </ItemGroup>
@@ -91,17 +91,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter\tests\System.ComponentModel.TypeConverter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.DataSetExtensions\tests\System.Data.DataSetExtensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug\tests\System.Diagnostics.Debug.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\TestWithConfigSwitches\System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process\tests\System.Diagnostics.Process.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli\tests\System.IO.Compression.Brotli.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile\tests\System.IO.Compression.ZipFile.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher\tests\System.IO.FileSystem.Watcher.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
@@ -132,16 +128,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri\tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Context\tests\System.Reflection.Context.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.ResourceManager\tests\System.Resources.ResourceManager.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.RuntimeInformation\tests\System.Runtime.InteropServices.RuntimeInformation.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Algorithms\tests\System.Security.Cryptography.Algorithms.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp\tests\System.Security.Cryptography.Csp.Tests.csproj" />
@@ -163,14 +155,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Timer\tests\System.Threading.Timer.Tests.csproj" />
 
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ValueTuple\tests\System.ValueTuple.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlResolver\System.Xml.XmlResolver.Tests\System.Xml.XmlResolver.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq\tests\axes\System.Xml.Linq.Axes.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq\tests\xNodeReader\System.Xml.Linq.xNodeReader.Tests.csproj" />
   </ItemGroup>
@@ -234,15 +218,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/50965 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Encodings.Web\tests\System.Text.Encodings.Web.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51037 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections/tests/System.Collections.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/50957 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51673 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
-
     <!-- Issue: https://github.com/dotnet/runtime/issues/51680 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
 
@@ -252,11 +227,17 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/51676 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/51960 -->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/52393 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51961 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/52384 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50959 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
