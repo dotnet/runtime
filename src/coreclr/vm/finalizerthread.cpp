@@ -291,13 +291,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
 
         // The Finalizer thread is started very early in EE startup. We deferred
-        // initialization until a point we are sure the EE is up and running. At
+        // some initialization until a point we are sure the EE is up and running. At
         // this point we make a single attempt and if it fails won't try again.
         if (!s_InitializedFinalizerThreadForPlatform)
         {
             s_InitializedFinalizerThreadForPlatform = TRUE;
-            ASSERT(GetFinalizerThread()->DeferredPlatformInit());
-            GetFinalizerThread()->InitPlatformContext();
+            Thread::InitializationForManagedThreadInNative(GetFinalizerThread());
         }
 
         JitHost::Reclaim();
@@ -443,7 +442,7 @@ void FinalizerThread::FinalizerThreadCreate()
     hEventFinalizerToShutDown->CreateAutoEvent(FALSE);
 
     _ASSERTE(g_pFinalizerThread == 0);
-    g_pFinalizerThread = SetupUnstartedThread(SUTF_None);
+    g_pFinalizerThread = SetupUnstartedThread();
 
     // We don't want the thread block disappearing under us -- even if the
     // actual thread terminates.

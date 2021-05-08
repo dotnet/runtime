@@ -856,7 +856,7 @@ static gsize WINAPI
 finalizer_thread (gpointer unused)
 {
 	gboolean wait = TRUE;
-	gboolean init_platform = TRUE;
+	gboolean did_init_from_native = FALSE;
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "Finalizer", MonoSetThreadNameFlag_None);
 
@@ -879,13 +879,12 @@ finalizer_thread (gpointer unused)
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
-		/* The Finalizer thread doesn't initialize for the platform during start up
-			because base managed libraries may not be loaded yet. However, the first time
-			the Finalizer is to run managed finalizer, we can take this opportunity to
-			initialize the platform. */
-		if (init_platform) {
-			init_platform = FALSE;
-			mono_thread_init_platform_state ();
+		/* The Finalizer thread doesn't initialize during creation because base managed
+			libraries may not be loaded yet. However, the first time the Finalizer is
+			to run managed finalizer, we can take this opportunity to initialize. */
+		if (!did_init_from_native) {
+			did_init_from_native = TRUE;
+			mono_thread_init_from_native ();
 		}
 
 		mono_runtime_do_background_work ();
@@ -906,6 +905,11 @@ finalizer_thread (gpointer unused)
 		}
 	}
 
+	/* If the initialization from native was done, do the clean up */
+	if (did_init_from_native) {
+		mono_thread_cleanup_from_native ();
+	}
+
 	mono_finalizer_lock ();
 	finalizer_thread_exited = TRUE;
 	mono_coop_cond_signal (&exited_cond);
@@ -918,7 +922,7 @@ static void
 init_finalizer_thread (void)
 {
 	ERROR_DECL (error);
-	gc_thread = mono_thread_create_internal ((MonoThreadStart)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEFER_PLATFORM_INIT, error);
+	gc_thread = mono_thread_create_internal ((MonoThreadStart)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
 }
 

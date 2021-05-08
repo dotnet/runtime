@@ -73,12 +73,11 @@ void
 mono_thread_callbacks_init (void);
 
 typedef enum {
-	MONO_THREAD_CREATE_FLAGS_NONE					= 0x00,
-	MONO_THREAD_CREATE_FLAGS_THREADPOOL				= 0x01,
-	MONO_THREAD_CREATE_FLAGS_DEBUGGER				= 0x02,
-	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE			= 0x04,
-	MONO_THREAD_CREATE_FLAGS_SMALL_STACK			= 0x08,
-	MONO_THREAD_CREATE_FLAGS_DEFER_PLATFORM_INIT	= 0x10,
+	MONO_THREAD_CREATE_FLAGS_NONE			= 0x00,
+	MONO_THREAD_CREATE_FLAGS_THREADPOOL		= 0x01,
+	MONO_THREAD_CREATE_FLAGS_DEBUGGER		= 0x02,
+	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE	= 0x04,
+	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
 } MonoThreadCreateFlags;
 
 MonoInternalThread*
@@ -214,8 +213,14 @@ gboolean mono_thread_test_state (MonoInternalThread *thread, MonoThreadState tes
 gboolean mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set);
 void mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadState clear, MonoThreadState set);
 
-void mono_thread_init_platform_state (void);
-void mono_thread_cleanup_platform_state (void);
+void mono_thread_init_apartment_state (void);
+void mono_thread_cleanup_apartment_state (void);
+
+/* There are some threads that need initialization that would normally
+	occur in managed code. Some threads occur prior to the runtime being
+	fully initialized so that must be done in native. For example, Main and Finalizer. */
+void mono_thread_init_from_native (void);
+void mono_thread_cleanup_from_native (void);
 
 void mono_threads_set_shutting_down (void);
 

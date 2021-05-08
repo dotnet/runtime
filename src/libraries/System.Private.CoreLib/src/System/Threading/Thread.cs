@@ -63,19 +63,31 @@ namespace System.Threading
                 Delegate start = _start;
                 _start = null!;
 
-                if (start is ThreadStart threadStart)
+#if FEATURE_NSAUTORELEASEPOOL
+                Thread.CreateAutoreleasePool();
+                try
                 {
-                    threadStart();
+#endif
+                    if (start is ThreadStart threadStart)
+                    {
+                        threadStart();
+                    }
+                    else
+                    {
+                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                        object? startArg = _startArg;
+                        _startArg = null;
+
+                        parameterizedThreadStart(startArg);
+                    }
+#if FEATURE_NSAUTORELEASEPOOL
                 }
-                else
+                finally
                 {
-                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                    object? startArg = _startArg;
-                    _startArg = null;
-
-                    parameterizedThreadStart(startArg);
+                    Thread.DrainAutoreleasePool();
                 }
+#endif
             }
 
             private void InitializeCulture()

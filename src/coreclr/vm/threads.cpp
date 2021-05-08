@@ -631,7 +631,7 @@ static void EnsurePreemptive()
 
 typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException;
 
-static Thread* SetupThreadWorker(bool performPlatformInit)
+static Thread* SetupThreadWorker()
 {
     CONTRACTL {
         THROWS;
@@ -799,20 +799,13 @@ static Thread* SetupThreadWorker(bool performPlatformInit)
     }
 
     // Initialize the thread for the platform as the final step.
-    if (performPlatformInit)
-        pThread->InitPlatformContext();
+    pThread->FinishInitialization();
 
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);
 #endif // FEATURE_EVENT_TRACE
 
     return pThread;
-}
-
-Thread* SetupThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThreadWorker(/* performPlatformInit */ true);
 }
 
 Thread* SetupMainThread()
@@ -825,15 +818,15 @@ Thread* SetupMainThread()
     isCalled = true;
 #endif // DEBUG
 
-    // Initializing the platform cannot be done at this point since main thread
-    // initialization occurs prior to loading managed code. Since it is desirable
-    // to use managed code for some platform initialization we need to defer this
-    // initialization and instead require the main thread to call InitPlatformContext()
-    // at an appropriate time.
-    return SetupThreadWorker(/* performPlatformInit */ false);
+    return SetupThreadWorker();
 }
 
-static Thread* SetupThreadNoThrowWorker(HRESULT *pHR, bool performPlatformInit)
+//-------------------------------------------------------------------------
+// Public function: SetupThreadNoThrow()
+// Creates Thread for current thread if not previously created.
+// Returns NULL for failure (usually due to out-of-memory.)
+//-------------------------------------------------------------------------
+Thread* SetupThreadNoThrow(HRESULT *pHR)
 {
     CONTRACTL {
         NOTHROW;
@@ -851,7 +844,7 @@ static Thread* SetupThreadNoThrowWorker(HRESULT *pHR, bool performPlatformInit)
 
     EX_TRY
     {
-        pThread = SetupThreadWorker(performPlatformInit);
+        pThread = SetupThreadWorker();
     }
     EX_CATCH
     {
@@ -876,34 +869,6 @@ static Thread* SetupThreadNoThrowWorker(HRESULT *pHR, bool performPlatformInit)
 }
 
 //-------------------------------------------------------------------------
-// Public function: SetupThreadNoThrow()
-// Creates Thread for current thread if not previously created.
-// Returns NULL for failure (usually due to out-of-memory.)
-//-------------------------------------------------------------------------
-Thread* SetupThreadNoThrow(HRESULT *pHR)
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThreadNoThrowWorker(pHR, /* performPlatformInit */ true);
-}
-
-//-------------------------------------------------------------------------
-// Public function: SetupExternalThreadNoThrow()
-// Creates Thread for current external thread if not previously created.
-// Returns NULL for failure (usually due to out-of-memory.)
-//-------------------------------------------------------------------------
-Thread* SetupExternalThreadNoThrow(HRESULT *pHR)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // When a new thread enters the runtime through a Reverse P/Invoke
-    // skipping platform initialization is the preferred manner. The reasoning
-    // is based on the fact that users may have already initialized this thread
-    // for the platform in question. Attempting to re-initialize this thread is
-    // therefore imposing policy in a manner that may be undesirable.
-    return SetupThreadNoThrowWorker(pHR, /* performPlatformInit */ false);
-}
-
-//-------------------------------------------------------------------------
 // Public function: SetupUnstartedThread()
 // This sets up a Thread object for an exposed System.Thread that
 // has not been started yet.  This allows us to properly enumerate all threads
@@ -921,9 +886,6 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
     CONTRACTL_END;
 
     Thread* pThread = new Thread();
-
-    if (!(flags & SUTF_PerformPlatformInit))
-        pThread->SetDeferPlatformInit();
 
     if (flags & SUTF_ThreadStoreLockAlreadyTaken)
     {
@@ -1570,6 +1532,8 @@ Thread::Thread()
     m_pRCWStack = new RCWStackHeader();
 #endif
 
+    m_managedInitializationPerformed = false;
+
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
@@ -1633,7 +1597,6 @@ Thread::Thread()
 #endif
     contextHolder.SuppressRelease();
 
-    m_platformContextInitialized = false;
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
     m_fInitializeSpyRegistered = false;
@@ -1876,13 +1839,8 @@ BOOL Thread::HasStarted()
         SetThread(this);
         SetAppDomain(m_pDomain);
 
-        // Initialize the thread for the platform as the final step, unless
-        // the Thread creator has indicated the platform init should be deferred.
-        if (!DeferredPlatformInit())
-        {
-            fCanCleanupCOMState = TRUE;
-            InitPlatformContext();
-        }
+        fCanCleanupCOMState = TRUE;
+        FinishInitialization();
 
         ThreadStore::TransferStartedThread(this);
 
@@ -2128,6 +2086,53 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     return bRet;
 }
 
+void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_PREEMPTIVE;
+        GC_TRIGGERS;
+        PRECONDITION(pThread != NULL);
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_NSAUTORELEASEPOOL
+    {
+        GCX_COOP_THREAD_EXISTS(pThread);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__CREATEAUTORELEASEPOOL);
+        DECLARE_ARGHOLDER_ARRAY(args, 0);
+        CALL_MANAGED_METHOD_NORET(args);
+    }
+#endif // FEATURE_NSAUTORELEASEPOOL
+
+    pThread->m_managedInitializationPerformed = true;
+}
+
+void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_PREEMPTIVE;
+        GC_TRIGGERS;
+        PRECONDITION(pThread != NULL);
+    }
+    CONTRACTL_END;
+
+    if (!pThread->m_managedInitializationPerformed)
+        return;
+
+#ifdef FEATURE_NSAUTORELEASEPOOL
+    {
+        GCX_COOP_THREAD_EXISTS(pThread);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__DRAINAUTORELEASEPOOL);
+        DECLARE_ARGHOLDER_ARRAY(args, 0);
+        CALL_MANAGED_METHOD_NORET(args);
+    }
+#endif // FEATURE_NSAUTORELEASEPOOL
+}
+
 HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags, DWORD* pThreadId)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2168,7 +2173,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     return hThread;
 }
-
 
 // Represent the value of DEFAULT_STACK_SIZE as passed in the property bag to the host during construction
 static unsigned long s_defaultStackSizeProperty = 0;
@@ -2935,9 +2939,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-    if (m_platformContextInitialized
-        && !IsAtProcessExit()
-        && this == GetThreadNULLOk())
+    if (!IsAtProcessExit() && this == GetThreadNULLOk())
     {
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         // If the currently running thread is the thread that died and it is an STA thread, then we
@@ -2946,14 +2948,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         CleanupCOMState();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#ifdef FEATURE_NSAUTORELEASEPOOL
-        {
-            GCX_COOP_THREAD_EXISTS(this);
-            PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__DRAINAUTORELEASEPOOL);
-            DECLARE_ARGHOLDER_ARRAY(args, 0);
-            CALL_MANAGED_METHOD_NORET(args);
-        }
-#endif // FEATURE_NSAUTORELEASEPOOL
+        Thread::CleanUpForManagedThreadInNative(this);
     }
 
     if (g_fEEShutDown != 0)
@@ -4736,7 +4731,7 @@ public:
 };
 #endif // FEATURE_COMINTEROP
 
-void Thread::InitPlatformContext()
+void Thread::FinishInitialization()
 {
     CONTRACTL {
         THROWS;
@@ -4791,17 +4786,6 @@ void Thread::InitPlatformContext()
         m_fInitializeSpyRegistered = true;
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_NSAUTORELEASEPOOL
-    {
-        GCX_COOP_THREAD_EXISTS(this);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__CREATEAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
-    }
-#endif // FEATURE_NSAUTORELEASEPOOL
-
-    m_platformContextInitialized = true;
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

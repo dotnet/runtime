@@ -544,12 +544,9 @@ enum ThreadpoolThreadType
 //***************************************************************************
 // Public functions
 //
-//      Thread* GetThread()             - returns current Thread
-//      Thread* SetupThread()           - creates new Thread.
+//      Thread* GetThread()             - returns current Thread.
 //      Thread* SetupMainThread()       - creates the main Thread.
 //      Thread* SetupThreadNoThrow()    - creates a new Thread without throwing.
-//      Thread* SetupExternalThreadNoThrow() - creates a new Thread for an external OS thread without throwing.
-//                                      - The API is used for Reverse P/Invoke scenarios.
 //      Thread* SetupUnstartedThread()  - creates new unstarted Thread which
 //                                        (obviously) isn't in a TLS.
 //      void    DestroyThread()         - the underlying logical thread is going
@@ -582,25 +579,18 @@ enum ThreadpoolThreadType
 //---------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------
-Thread* SetupThread();
 Thread* SetupMainThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
-Thread* SetupExternalThreadNoThrow(HRESULT *phresult);
 
 enum SetupUnstartedThreadFlags
 {
     SUTF_None = 0,
 
-    // The should be called implicitly at the right time for the thread.
-    // If this is not set, the Thread owner may perform this function at
-    // any time by calling Thread::InitPlatformContext().
-    SUTF_PerformPlatformInit = 1,
-
     // The ThreadStoreLock is being held during Thread startup.
-    SUTF_ThreadStoreLockAlreadyTaken = 2,
+    SUTF_ThreadStoreLockAlreadyTaken = 1,
 
     // The default flags for the majority of threads.
-    SUTF_Default = SUTF_PerformPlatformInit,
+    SUTF_Default = SUTF_None,
 };
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
@@ -612,7 +602,7 @@ EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 #define SETUP_EXTERNALTHREAD_IF_NULL_FAILFAST(__thread, __msg)          \
 {                                                                       \
     HRESULT __ctinffhr;                                                 \
-    __thread = SetupExternalThreadNoThrow(&__ctinffhr);                 \
+    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
     if (__thread == NULL)                                               \
     {                                                                   \
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
@@ -1178,7 +1168,6 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         TT_CallCoInitialize       = 0x00000002, // CoInitialize needs to be called.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TT_DeferPlatformInit      = 0x00000004, // Defer any specialized platform initialization.
     };
 
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
@@ -1337,18 +1326,6 @@ public:
         FastInterlockAnd((ULONG *)&m_ThreadTasks, ~TT_CleanupSyncBlock);
     }
 
-    DWORD DeferredPlatformInit()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_DeferPlatformInit);
-    }
-
-    void SetDeferPlatformInit()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockOr((ULONG *)&m_ThreadTasks, TT_DeferPlatformInit);
-    }
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DWORD IsCoInitialized()
     {
@@ -1404,6 +1381,8 @@ public:
     void CleanupCOMState();
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    void FinishInitialization();
 
 #ifdef FEATURE_COMINTEROP
     bool IsDisableComObjectEagerCleanup()
@@ -1788,7 +1767,6 @@ public:
 
 
 public:
-
     //--------------------------------------------------------------
     // Constructor.
     //--------------------------------------------------------------
@@ -1801,12 +1779,6 @@ public:
     //--------------------------------------------------------------
     void InitThread();
     BOOL AllocHandles();
-
-private:
-    bool m_platformContextInitialized;
-public:
-    // When the thread starts running, prepare the thread's platform context.
-    void InitPlatformContext();
 
     //--------------------------------------------------------------
     // If the thread was setup through SetupUnstartedThread, rather
@@ -1821,6 +1793,15 @@ public:
     // thread, or throw.
     BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
 
+private:
+    bool m_managedInitializationPerformed;
+public:
+    // Functions used to perform initialization and cleanup on a managed thread
+    // that would normally occur if the thread was stated when the runtime was
+    // fully initialized and ready to run.
+    // Examples where this applies are the Main and Finalizer threads. 
+    static void InitializationForManagedThreadInNative(_In_ Thread* pThread);
+    static void CleanUpForManagedThreadInNative(_In_ Thread* pThread);
 
     enum StackSizeBucket
     {
