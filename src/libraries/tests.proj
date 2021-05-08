@@ -118,6 +118,7 @@
     <!-- https://github.com/dotnet/runtime/issues/49191 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic\tests\FunctionalTests\System.Net.Quic.Functional.Tests.csproj" />
 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests\tests\System.Net.Requests.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
 
