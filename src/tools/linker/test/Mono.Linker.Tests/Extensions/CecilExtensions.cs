@@ -126,12 +126,7 @@ namespace Mono.Linker.Tests.Extensions
 			var builder = new StringBuilder ();
 			builder.Append (method.Name);
 			if (method.HasGenericParameters) {
-				builder.Append ('<');
-
-				for (int i = 0; i < method.GenericParameters.Count - 1; i++)
-					builder.Append ($"{method.GenericParameters[i]},");
-
-				builder.Append ($"{method.GenericParameters[method.GenericParameters.Count - 1]}>");
+				builder.Append ($"<#{method.GenericParameters.Count}>");
 			}
 
 			builder.Append ("(");

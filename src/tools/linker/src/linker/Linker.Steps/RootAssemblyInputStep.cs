@@ -82,6 +82,9 @@ namespace Mono.Linker.Steps
 					CodeOptimizations.RemoveLinkAttributes |
 					CodeOptimizations.RemoveSubstitutions |
 					CodeOptimizations.RemoveDynamicDependencyAttribute, assembly.Name.Name);
+
+				// No metadata trimming
+				Context.MetadataTrimming = MetadataTrimming.None;
 				break;
 			case AssemblyRootMode.AllMembers:
 				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);

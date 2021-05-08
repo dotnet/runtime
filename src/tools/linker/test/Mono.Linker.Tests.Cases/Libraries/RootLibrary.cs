@@ -8,6 +8,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 {
 	[SetupLinkerArgument ("-a", "test.exe", "library")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
+	[VerifyMetadataNames]
 	public class RootLibrary
 	{
 		private int field;

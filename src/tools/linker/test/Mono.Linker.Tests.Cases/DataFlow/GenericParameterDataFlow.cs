@@ -468,7 +468,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (T).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<T>()::T", messageCode: "IL2091")]
+		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<#1>()::T", messageCode: "IL2091")]
 		static void MethodRequiresPublicFieldsPassThrough<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 		{
@@ -477,8 +477,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodRequiresNothing<T> ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicFields) + "<T>()::T", messageCode: "IL2091")]
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<T>()::T", messageCode: "IL2091")]
+		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicFields) + "<#1>()::T", messageCode: "IL2091")]
+		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<#1>()::T", messageCode: "IL2091")]
 		static void MethodRequiresNothingPassThrough<T> ()
 		{
 			MethodRequiresPublicFields<T> ();
@@ -550,7 +550,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeWithInstantiatedGenericMethodViaGenericParameter<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseTypeWithGenericMethod, IInterfaceWithGenericMethod
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresPublicMethods) + "<T>()::T",
+			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresPublicMethods) + "<#1>()::T",
 				messageCode: "IL2091", message: new string[] {
 					"TInner",
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.StaticRequiresPublicFields<TInner>()",
@@ -562,7 +562,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				StaticRequiresPublicMethods<TInner> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresPublicMethods) + "<T>()::T",
+			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresPublicMethods) + "<#1>()::T",
 				messageCode: "IL2091", message: new string[] {
 					"TOuter",
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
@@ -580,7 +580,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				StaticRequiresMultipleGenericParams<TOuter, TestType> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams) + "<TFields,TMethods>()::TMethods",
+			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams) + "<#2>()::TMethods",
 				messageCode: "IL2091", message: new string[] {
 					"TOuter",
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
@@ -591,7 +591,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				StaticRequiresMultipleGenericParams<TestType, TOuter> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.InstanceRequiresPublicMethods) + "<T>()::T",
+			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.InstanceRequiresPublicMethods) + "<#1>()::T",
 				messageCode: "IL2091", message: new string[] {
 					"TInner",
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.InstanceRequiresPublicFields<TInner>()",
@@ -603,7 +603,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				InstanceRequiresPublicMethods<TInner> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.InstanceRequiresPublicMethods) + "<T>()::T",
+			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.InstanceRequiresPublicMethods) + "<#1>()::T",
 				messageCode: "IL2091", message: new string[] {
 					"TOuter",
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
@@ -639,7 +639,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (T).RequiresPublicMethods ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (IInterfaceWithGenericMethod), nameof (IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods) + "<T>()::T",
+			[UnrecognizedReflectionAccessPattern (typeof (IInterfaceWithGenericMethod), nameof (IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods) + "<#1>()::T",
 				messageCode: "IL2091", message: new string[] {
 					"TOuter",
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",

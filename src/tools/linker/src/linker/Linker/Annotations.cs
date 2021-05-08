@@ -66,6 +66,7 @@ namespace Mono.Linker
 		protected readonly HashSet<TypeDefinition> marked_instantiated = new HashSet<TypeDefinition> ();
 		protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition> ();
 		protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition> ();
+		readonly HashSet<IMemberDefinition> reflection_used = new ();
 
 		public AnnotationStore (LinkContext context)
 		{
@@ -221,6 +222,16 @@ namespace Mono.Linker
 		public bool IsIndirectlyCalled (MethodDefinition method)
 		{
 			return indirectly_called.Contains (method);
+		}
+
+		public void MarkReflectionUsed (IMemberDefinition member)
+		{
+			reflection_used.Add (member);
+		}
+
+		public bool IsReflectionUsed (IMemberDefinition method)
+		{
+			return reflection_used.Contains (method);
 		}
 
 		public void MarkInstantiated (TypeDefinition type)

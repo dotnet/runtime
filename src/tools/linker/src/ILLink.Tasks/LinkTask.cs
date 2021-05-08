@@ -213,6 +213,11 @@ namespace ILLink.Tasks
 		/// </summary>
 		public ITaskItem[] CustomSteps { get; set; }
 
+		/// <summary>
+		///   A list selected metadata which should not be trimmed. It maps to 'keep-metadata' option
+		/// </summary>
+		public ITaskItem[] KeepMetadata { get; set; }
+
 		private const string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
 		private string _dotnetPath;
@@ -423,6 +428,11 @@ namespace ILLink.Tasks
 						throw new ArgumentException ("feature settings require \"Value\" metadata");
 					args.Append ("--feature ").Append (feature).Append (' ').AppendLine (featureValue);
 				}
+			}
+
+			if (KeepMetadata != null) {
+				foreach (var metadata in KeepMetadata)
+					args.Append ("--keep-metadata ").AppendLine (Quote (metadata.ItemSpec));
 			}
 
 			if (_removeSymbols == false)

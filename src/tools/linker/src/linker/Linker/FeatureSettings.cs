@@ -33,7 +33,7 @@ namespace Mono.Linker
 				return false;
 			}
 
-			if (context.FeatureSettings == null || !context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
+			if (!context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
 				return bIsDefault;
 
 			return bValue == featureSetting;

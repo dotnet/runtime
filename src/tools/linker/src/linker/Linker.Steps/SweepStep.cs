@@ -277,6 +277,11 @@ namespace Mono.Linker.Steps
 			return Annotations.IsMarked (assembly.MainModule);
 		}
 
+		bool CanSweepNamesForMember (IMemberDefinition member, MetadataTrimming metadataTrimming)
+		{
+			return (Context.MetadataTrimming & metadataTrimming) != 0 && !Annotations.IsReflectionUsed (member);
+		}
+
 		protected virtual void RemoveAssembly (AssemblyDefinition assembly)
 		{
 			Annotations.SetAction (assembly, AssemblyAction.Delete);
@@ -451,8 +456,14 @@ namespace Mono.Linker.Steps
 				if (!method.HasParameters)
 					continue;
 
-				foreach (var parameter in method.Parameters)
+				bool sweepNames = CanSweepNamesForMember (method, MetadataTrimming.ParameterName);
+
+				foreach (var parameter in method.Parameters) {
+					if (sweepNames)
+						parameter.Name = null;
+
 					SweepCustomAttributes (parameter);
+				}
 			}
 		}
 

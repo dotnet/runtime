@@ -1585,16 +1585,24 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
 
-		protected internal virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference type, TypeDefinition definition, DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		protected internal virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference type, TypeDefinition definition, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			// If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
 			// in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
 			// could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
 			Annotations.MarkRelevantToVariantCasting (definition);
 
+			Annotations.MarkReflectionUsed (definition);
+
 			MarkImplicitlyUsedFields (definition);
 
 			return MarkType (type, reason, sourceLocationMember);
+		}
+
+		internal void MarkMethodVisibleToReflection (MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
+		{
+			MarkIndirectlyCalledMethod (method, reason, origin);
+			Annotations.MarkReflectionUsed (method);
 		}
 
 		/// <summary>
