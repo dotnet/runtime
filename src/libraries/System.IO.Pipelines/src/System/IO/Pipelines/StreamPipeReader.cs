@@ -209,14 +209,14 @@ namespace System.IO.Pipelines
                 return new ValueTask<ReadResult>(completedResult);
             }
 
-            return Core(tokenSource, cancellationToken);
+            return Core(this, tokenSource, cancellationToken);
 
-            async ValueTask<ReadResult> Core(CancellationTokenSource tokenSource, CancellationToken cancellationToken)
+            static async ValueTask<ReadResult> Core(StreamPipeReader reader, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+                    reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), reader);
                 }
 
                 using (reg)
@@ -225,31 +225,31 @@ namespace System.IO.Pipelines
                     try
                     {
                         // This optimization only makes sense if we don't have anything buffered
-                        if (UseZeroByteReads && _bufferedBytes == 0)
+                        if (reader.UseZeroByteReads && reader._bufferedBytes == 0)
                         {
                             // Wait for data by doing 0 byte read before
-                            await InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
+                            await reader.InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
                         }
 
-                        AllocateReadTail();
+                        reader.AllocateReadTail();
 
-                        Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
+                        Memory<byte> buffer = reader._readTail!.AvailableMemory.Slice(reader._readTail.End);
 
-                        int length = await InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
+                        int length = await reader.InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
 
-                        Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
+                        Debug.Assert(length + reader._readTail.End <= reader._readTail.AvailableMemory.Length);
 
-                        _readTail.End += length;
-                        _bufferedBytes += length;
+                        reader._readTail.End += length;
+                        reader._bufferedBytes += length;
 
                         if (length == 0)
                         {
-                            _isStreamCompleted = true;
+                            reader._isStreamCompleted = true;
                         }
                     }
                     catch (OperationCanceledException)
                     {
-                        ClearCancellationToken();
+                        reader.ClearCancellationToken();
 
                         if (tokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                         {
@@ -263,7 +263,7 @@ namespace System.IO.Pipelines
 
                     }
 
-                    return new ReadResult(GetCurrentReadOnlySequence(), isCanceled, _isStreamCompleted);
+                    return new ReadResult(reader.GetCurrentReadOnlySequence(), isCanceled, reader._isStreamCompleted);
                 }
             }
         }
@@ -291,14 +291,14 @@ namespace System.IO.Pipelines
                 return new ValueTask<ReadResult>(completedResult);
             }
 
-            return Core(minimumSize, tokenSource, cancellationToken);
+            return Core(this, minimumSize, tokenSource, cancellationToken);
 
-            async ValueTask<ReadResult> Core(int minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
+            static async ValueTask<ReadResult> Core(StreamPipeReader reader, int minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), this);
+                    reg = cancellationToken.UnsafeRegister(state => ((StreamPipeReader)state!).Cancel(), reader);
                 }
 
                 using (reg)
@@ -307,35 +307,35 @@ namespace System.IO.Pipelines
                     try
                     {
                         // This optimization only makes sense if we don't have anything buffered
-                        if (UseZeroByteReads && _bufferedBytes == 0)
+                        if (reader.UseZeroByteReads && reader._bufferedBytes == 0)
                         {
                             // Wait for data by doing 0 byte read before
-                            await InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
+                            await reader.InnerStream.ReadAsync(Memory<byte>.Empty, tokenSource.Token).ConfigureAwait(false);
                         }
 
                         do
                         {
-                            AllocateReadTail(minimumSize);
+                            reader.AllocateReadTail(minimumSize);
 
-                            Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
+                            Memory<byte> buffer = reader._readTail!.AvailableMemory.Slice(reader._readTail.End);
 
-                            int length = await InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
+                            int length = await reader.InnerStream.ReadAsync(buffer, tokenSource.Token).ConfigureAwait(false);
 
-                            Debug.Assert(length + _readTail.End <= _readTail.AvailableMemory.Length);
+                            Debug.Assert(length + reader._readTail.End <= reader._readTail.AvailableMemory.Length);
 
-                            _readTail.End += length;
-                            _bufferedBytes += length;
+                            reader._readTail.End += length;
+                            reader._bufferedBytes += length;
 
                             if (length == 0)
                             {
-                                _isStreamCompleted = true;
+                                reader._isStreamCompleted = true;
                                 break;
                             }
-                        } while (_bufferedBytes < minimumSize);
+                        } while (reader._bufferedBytes < minimumSize);
                     }
                     catch (OperationCanceledException)
                     {
-                        ClearCancellationToken();
+                        reader.ClearCancellationToken();
 
                         if (tokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                         {
@@ -349,7 +349,7 @@ namespace System.IO.Pipelines
 
                     }
 
-                    return new ReadResult(GetCurrentReadOnlySequence(), isCanceled, _isStreamCompleted);
+                    return new ReadResult(reader.GetCurrentReadOnlySequence(), isCanceled, reader._isStreamCompleted);
                 }
             }
         }
