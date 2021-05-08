@@ -50,19 +50,19 @@
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21256.13</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21256.13</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21256.13</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>6.0.0-beta.21256.13</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>6.0.0-beta.21256.13</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.21256.13</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21256.13</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21256.13</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21256.13</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21256.13</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21256.13</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21256.13</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageValidationVersion>6.0.0-beta.21256.13</MicrosoftDotNetPackageValidationVersion>
+    <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21257.5</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21257.5</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21257.5</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>6.0.0-beta.21257.5</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>6.0.0-beta.21257.5</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.21257.5</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21257.5</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21257.5</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21257.5</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21257.5</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21257.5</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21257.5</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageValidationVersion>6.0.0-beta.21257.5</MicrosoftDotNetPackageValidationVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>5.9.0-preview.2</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
