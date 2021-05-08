@@ -191,9 +191,5 @@ namespace System.ComponentModel
             var e = new RunWorkerCompletedEventArgs(workerResult, error, cancelled);
             _asyncOperation.PostOperationCompleted(_operationCompleted, e);
         }
-
-        protected override void Dispose(bool disposing)
-        {
-        }
     }
 }
