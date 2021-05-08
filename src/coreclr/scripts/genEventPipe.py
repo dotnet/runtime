@@ -30,14 +30,14 @@ stdprolog_cmake = """#
 
 eventpipe_dirname = "eventpipe"
 
-def generateMethodSignatureEnabled(eventName):
-    return "BOOL EventPipeEventEnabled%s()" % (eventName,)
+def generateMethodSignatureEnabled(eventName, runtimeFlavor):
+    return "%s EventPipeEventEnabled%s()" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)
 
-def generateMethodSignatureWrite(eventName, template, extern):
+def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces = []
 
     if extern: sig_pieces.append('extern "C" ')
-    sig_pieces.append("ULONG EventPipeWriteEvent")
+    sig_pieces.append("%s EventPipeWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
     sig_pieces.append(eventName)
     sig_pieces.append("(")
 
@@ -47,9 +47,9 @@ def generateMethodSignatureWrite(eventName, template, extern):
         for paramName in fnSig.paramlist:
             fnparam = fnSig.getParam(paramName)
             wintypeName = fnparam.winType
-            typewName = palDataTypeMapping[wintypeName]
+            typewName = getPalDataTypeMapping(runtimeFlavor)[wintypeName]
             winCount = fnparam.count
-            countw = palDataTypeMapping[winCount]
+            countw = getPalDataTypeMapping(runtimeFlavor)[winCount]
 
             if paramName in template.structs:
                 sig_pieces.append(
@@ -66,14 +66,14 @@ def generateMethodSignatureWrite(eventName, template, extern):
             sig_pieces.append(",\n")
 
     sig_pieces.append(lindent)
-    sig_pieces.append("LPCGUID ActivityId,\n")
+    sig_pieces.append("%s ActivityId,\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
     sig_pieces.append(lindent)
-    sig_pieces.append("LPCGUID RelatedActivityId")
+    sig_pieces.append("%s RelatedActivityId" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
     sig_pieces.append(")")
     return ''.join(sig_pieces)
 
 def generateClrEventPipeWriteEventsImpl(
-        providerName, eventNodes, allTemplates, extern, exclusionList):
+        providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, exclusionList):
     providerPrettyName = providerName.replace("Windows-", '')
     providerPrettyName = providerPrettyName.replace("Microsoft-", '')
     providerPrettyName = providerPrettyName.replace('-', '_')
@@ -85,19 +85,26 @@ def generateClrEventPipeWriteEventsImpl(
         WriteEventImpl.append(
             "EventPipeEvent *EventPipeEvent" +
             eventName +
-            " = nullptr;\n")
+            (" = nullptr;\n" if target_cpp else " = NULL;\n"))
+
+    WriteEventImpl.append("\n")
 
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
+        eventIsEnabledFunc = ""
+        if runtimeFlavor == RuntimeFlavor.coreclr:
+            eventIsEnabledFunc = "EventPipeAdapter::EventIsEnabled"
+        elif runtimeFlavor == RuntimeFlavor.mono:
+            eventIsEnabledFunc = "ep_event_is_enabled"
 
         # generate EventPipeEventEnabled function
-        eventEnabledImpl = generateMethodSignatureEnabled(eventName) + """
+        eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor) + """
 {
-    return EventPipeAdapter::EventIsEnabled(EventPipeEvent%s);
+    return %s(EventPipeEvent%s);
 }
 
-""" % eventName
+""" % (eventIsEnabledFunc, eventName)
         WriteEventImpl.append(eventEnabledImpl)
 
         # generate EventPipeWriteEvent function
@@ -108,7 +115,7 @@ def generateClrEventPipeWriteEventsImpl(
         else:
             template = None
 
-        fnptype.append(generateMethodSignatureWrite(eventName, template, extern))
+        fnptype.append(generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor))
         fnptype.append("\n{\n")
         checking = """    if (!EventPipeEventEnabled%s())
         return ERROR_SUCCESS;
@@ -119,18 +126,41 @@ def generateClrEventPipeWriteEventsImpl(
         WriteEventImpl.extend(fnptype)
 
         if template:
-            body = generateWriteEventBody(template, providerName, eventName)
+            body = generateWriteEventBody(template, providerName, eventName, runtimeFlavor)
             WriteEventImpl.append(body)
+            if runtimeFlavor == RuntimeFlavor.coreclr:
+                WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
+            elif runtimeFlavor == RuntimeFlavor.mono:
+                WriteEventImpl.append("}\n\n")
         else:
-            WriteEventImpl.append(
-                "    EventPipeAdapter::WriteEvent(EventPipeEvent" +
-                eventName +
-                ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
-
-        WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
+            if runtimeFlavor == RuntimeFlavor.coreclr:
+                WriteEventImpl.append(
+                    "    EventPipeAdapter::WriteEvent(EventPipeEvent" +
+                    eventName +
+                    ", (BYTE*) nullptr, 0, ActivityId, RelatedActivityId);\n")
+            elif runtimeFlavor == RuntimeFlavor.mono:
+                WriteEventImpl.append(
+                    "    ep_write_event (EventPipeEvent" +
+                    eventName +
+                    ", (uint8_t *) NULL, 0, (const uint8_t *)ActivityId, (const uint8_t *)RelatedActivityId);\n")
+            WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
     # EventPipeProvider and EventPipeEvent initialization
-    callbackName = 'EventPipeEtwCallback' + providerPrettyName
+    callbackName = ""
+    createProviderFunc = ""
+    if runtimeFlavor == RuntimeFlavor.coreclr:
+        callbackName = 'EventPipeEtwCallback' + providerPrettyName
+        createProviderFunc = "EventPipeAdapter::CreateProvider"
+    elif runtimeFlavor == RuntimeFlavor.mono:
+        callbackName = "NULL"
+        createProviderFunc = "create_provider"
+
+    eventPipeCallbackCastExpr = ""
+    if target_cpp:
+        eventPipeCallbackCastExpr = "reinterpret_cast<EventPipeCallback>"
+    else:
+        eventPipeCallbackCastExpr = "(EventPipeCallback)"
+
     if extern: WriteEventImpl.append('extern "C" ')
     WriteEventImpl.append(
         "void Init" +
@@ -139,9 +169,9 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = EventPipeAdapter::CreateProvider(SL(" +
+        " = " + createProviderFunc + "(SL(" +
         providerPrettyName +
-        "Name), reinterpret_cast<EventPipeCallback>(" + callbackName + "));\n")
+        "Name), " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -159,8 +189,14 @@ def generateClrEventPipeWriteEventsImpl(
             if tokens[2] == eventName:
                 needStack = "false"
 
-        initEvent = """    EventPipeEvent%s = EventPipeAdapter::AddEvent(EventPipeProvider%s,%s,%s,%s,%s,%s);
-""" % (eventName, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack)
+        addEventFunc = ""
+        if runtimeFlavor == RuntimeFlavor.coreclr:
+            addEventFunc = "EventPipeAdapter::AddEvent"
+        elif runtimeFlavor == RuntimeFlavor.mono:
+            addEventFunc = "provider_add_event"
+
+        initEvent = """    EventPipeEvent%s = %s(EventPipeProvider%s,%s,%s,%s,%s,%s);
+""" % (eventName, addEventFunc, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel, needStack)
 
         WriteEventImpl.append(initEvent)
     WriteEventImpl.append("}")
@@ -168,16 +204,17 @@ def generateClrEventPipeWriteEventsImpl(
     return ''.join(WriteEventImpl)
 
 
-def generateWriteEventBody(template, providerName, eventName):
+def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
     header = """
     char stackBuffer[%s];
     char *buffer = stackBuffer;
     size_t offset = 0;
     size_t size = %s;
     bool fixedBuffer = true;
-
     bool success = true;
+
 """ % (template.estimated_size, template.estimated_size)
+
     fnSig = template.signature
     pack_list = []
 
@@ -187,9 +224,14 @@ def generateWriteEventBody(template, providerName, eventName):
         parameter = fnSig.getParam(paramName)
 
         if parameter.winType == "win:UnicodeString":
-            pack_list.append(
-                "    if (!%s) { %s = W(\"NULL\"); }" %
-                (parameter.name, parameter.name))
+            if runtimeFlavor == RuntimeFlavor.coreclr:
+                pack_list.append(
+                    "    if (!%s) { %s = W(\"NULL\"); }" %
+                    (parameter.name, parameter.name))
+            elif runtimeFlavor == RuntimeFlavor.mono:
+                pack_list.append(
+                    "    if (!%s) { %s = \"NULL\"; }" %
+                    (parameter.name, parameter.name))
 
     for paramName in fnSig.paramlist:
         parameter = fnSig.getParam(paramName)
@@ -199,44 +241,123 @@ def generateWriteEventBody(template, providerName, eventName):
                 paramName, parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
-            pack_list.append(
-                "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
-                (paramName, size))
+            if runtimeFlavor == RuntimeFlavor.mono:
+                pack_list.append(
+                    "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (paramName, size))
+            elif runtimeFlavor == RuntimeFlavor.coreclr:
+                pack_list.append(
+                    "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
+                    (paramName, size))
         elif paramName in template.arrays:
             size = "sizeof(%s) * (int)%s" % (
                 lttngDataTypeMapping[parameter.winType],
                 parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
+            if runtimeFlavor == RuntimeFlavor.mono:
+                pack_list.append(
+                    "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (paramName, size))
+            elif runtimeFlavor == RuntimeFlavor.coreclr:
+                pack_list.append(
+                    "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
+                    (paramName, size))
+        elif parameter.winType == "win:GUID" and runtimeFlavor == RuntimeFlavor.mono:
             pack_list.append(
-                "    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" %
-                (paramName, size))
+                "    success &= write_buffer_guid_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                (parameter.name,))
         elif parameter.winType == "win:GUID":
             pack_list.append(
                 "    success &= WriteToBuffer(*%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
-        else:
+        elif parameter.winType == "win:AnsiString" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_string_utf8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:UnicodeString" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_string_utf8_to_utf16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:UInt8" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_uint8_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:UInt16" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_uint16_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:Int32" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_int32_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:UInt32" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_uint32_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:Int64" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_int64_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:UInt64" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_uint64_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:Boolean" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_bool_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif parameter.winType == "win:Double" and runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                    "    success &= write_buffer_double_t(%s, &buffer, &offset, &size, &fixedBuffer);" %
+                    (parameter.name,))
+        elif runtimeFlavor == RuntimeFlavor.mono:
+            pack_list.append(
+                "    success &= write_buffer((const uint8_t *)%s, sizeof(%s), &buffer, &offset, &size, &fixedBuffer);" %
+                (parameter.name,parameter.name,))
+        elif runtimeFlavor == RuntimeFlavor.coreclr:
             pack_list.append(
                 "    success &= WriteToBuffer(%s, buffer, offset, size, fixedBuffer);" %
                 (parameter.name,))
 
     code = "\n".join(pack_list) + "\n\n"
 
-    checking = """    if (!success)
+    checking = ""
+    if runtimeFlavor == RuntimeFlavor.coreclr:
+        checking = """    if (!success)
     {
         if (!fixedBuffer)
             delete[] buffer;
         return ERROR_WRITE_FAULT;
     }\n\n"""
+    elif runtimeFlavor == RuntimeFlavor.mono:
+        checking = """    ep_raise_error_if_nok (success);\n\n"""
 
-    body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
-        eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
+    body = ""
+    if runtimeFlavor == RuntimeFlavor.coreclr:
+        body = "    EventPipeAdapter::WriteEvent(EventPipeEvent" + \
+            eventName + ", (BYTE *)buffer, (unsigned int)offset, ActivityId, RelatedActivityId);\n"
+    elif runtimeFlavor == RuntimeFlavor.mono:
+        body = "    ep_write_event (EventPipeEvent" + \
+            eventName + ", (uint8_t *)buffer, (uint32_t)offset, ActivityId, RelatedActivityId);\n"
 
-    footer = """
+    footer = ""
+    if runtimeFlavor == RuntimeFlavor.coreclr:
+        footer = """
     if (!fixedBuffer)
         delete[] buffer;
 """
+    elif runtimeFlavor == RuntimeFlavor.mono:
+        footer = """
+ep_on_exit:
+    if (!fixedBuffer)
+        ep_rt_byte_array_free (buffer);
+    return success ? ERROR_SUCCESS : ERROR_WRITE_FAULT;
 
+ep_on_error:
+    EP_ASSERT (!success);
+    ep_exit_error_handler ();
+"""
     return header + code + checking + body + footer
 
 
@@ -252,14 +373,8 @@ def generateEventKeywords(eventKeywords):
 
     return mask
 
-def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, extern, dryRun):
-    eventpipehelpersPath = os.path.join(eventpipe_directory, "eventpipehelpers.cpp")
-    if dryRun:
-        print(eventpipehelpersPath)
-    else:
-        with open_for_update(eventpipehelpersPath) as helper:
-            helper.write(stdprolog_cpp)
-            helper.write("""
+def getCoreCLREventPipeHelperFileImplPrefix():
+    return """
 #include "common.h"
 #include <stdlib.h>
 #include <string.h>
@@ -341,7 +456,152 @@ bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size,
     return true;
 }
 
-""")
+"""
+
+def getCoreCLREventPipeHelperFileImplSuffix():
+    return ""
+
+def getMonoEventPipeHelperFileImplPrefix():
+    return """#include <config.h>
+#ifdef ENABLE_PERFTRACING
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-rt.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+
+bool
+resize_buffer (
+    uint8_t **buffer,
+    size_t *size,
+    size_t current_size,
+    size_t new_size,
+    bool *fixed_buffer)
+{
+    EP_ASSERT (buffer != NULL);
+    EP_ASSERT (size != NULL);
+    EP_ASSERT (fixed_buffer != NULL);
+
+    new_size = (size_t)(new_size * 1.5);
+    if (new_size < *size) {
+        EP_ASSERT (!"Overflow");
+        return false;
+    }
+
+    if (new_size < 32)
+        new_size = 32;
+
+    uint8_t *new_buffer;
+    new_buffer = ep_rt_byte_array_alloc (new_size);
+    ep_raise_error_if_nok (new_buffer != NULL);
+
+    memcpy (new_buffer, *buffer, current_size);
+
+    if (!*fixed_buffer)
+        ep_rt_byte_array_free (*buffer);
+
+    *buffer = new_buffer;
+    *size = new_size;
+    *fixed_buffer = false;
+
+    return true;
+
+    ep_on_error:
+    return false;
+}
+
+bool
+write_buffer (
+    const uint8_t *value,
+    size_t value_size,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    EP_ASSERT (value != NULL);
+    EP_ASSERT (buffer != NULL);
+    EP_ASSERT (offset != NULL);
+    EP_ASSERT (size != NULL);
+    EP_ASSERT (fixed_buffer != NULL);
+
+    if ((value_size + *offset) > *size)
+        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_size, fixed_buffer));
+
+    memcpy (*buffer + *offset, value, value_size);
+    *offset += value_size;
+
+    return true;
+
+ep_on_error:
+    return false;
+}
+
+bool
+write_buffer_string_utf8_to_utf16_t (
+    const ep_char8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    if (!value)
+        return true;
+
+    GFixedBufferCustomAllocatorData custom_alloc_data;
+    custom_alloc_data.buffer = *buffer + *offset;
+    custom_alloc_data.buffer_size = *size - *offset;
+    custom_alloc_data.req_buffer_size = 0;
+
+    if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
+        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
+        custom_alloc_data.buffer = *buffer + *offset;
+        custom_alloc_data.buffer_size = *size - *offset;
+        custom_alloc_data.req_buffer_size = 0;
+        ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
+    }
+
+    *offset += custom_alloc_data.req_buffer_size;
+    return true;
+
+ep_on_error:
+    return false;
+}
+
+bool
+write_buffer_string_utf8_t (
+    const ep_char8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    if (!value)
+        return true;
+
+    size_t value_len = 0;
+    while (value [value_len])
+        value_len++;
+
+    return write_buffer ((const uint8_t *)value, (value_len + 1) * sizeof(*value), buffer, offset, size, fixed_buffer);
+}
+
+"""
+
+def getMonoEventPipeHelperFileImplSuffix():
+    return "#endif\n"
+
+def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, dryRun):
+    eventpipehelpersPath = os.path.join(eventpipe_directory, "eventpipehelpers" + (".cpp" if target_cpp else ".c"))
+    if dryRun:
+        print(eventpipehelpersPath)
+    else:
+        with open_for_update(eventpipehelpersPath) as helper:
+            helper.write(stdprolog_cpp)
+            if runtimeFlavor == RuntimeFlavor.coreclr:
+                helper.write(getCoreCLREventPipeHelperFileImplPrefix())
+            elif runtimeFlavor == RuntimeFlavor.mono:
+                helper.write(getMonoEventPipeHelperFileImplPrefix())
 
             tree = DOM.parse(etwmanifest)
 
@@ -368,12 +628,244 @@ bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size,
                 providerPrettyName = providerPrettyName.replace("Microsoft-", '')
                 providerPrettyName = providerPrettyName.replace('-', '_')
                 helper.write("    Init" + providerPrettyName + "();\n")
-            helper.write("}")
+            helper.write("}\n")
+
+            if runtimeFlavor == RuntimeFlavor.coreclr:
+                helper.write(getCoreCLREventPipeHelperFileImplSuffix())
+            elif runtimeFlavor == RuntimeFlavor.mono:
+                helper.write(getMonoEventPipeHelperFileImplSuffix())
 
         helper.close()
 
+def getCoreCLREventPipeImplFilePrefix():
+    return """#include <common.h>
+#include "eventpipeadapter.h"
+
+#if defined(TARGET_UNIX)
+#define wcslen PAL_wcslen
+#endif
+
+bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
+bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
+
+template <typename T>
+bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
+{
+    if (sizeof(T) + offset > size)
+    {
+        if (!ResizeBuffer(buffer, size, offset, size + sizeof(T), fixedBuffer))
+            return false;
+    }
+
+    memcpy(buffer + offset, (char *)&value, sizeof(T));
+    offset += sizeof(T);
+    return true;
+}
+"""
+
+def getCoreCLREventPipeImplFileSuffix():
+    return ""
+
+def getMonoEventPipeImplFilePrefix():
+    return """#include <config.h>
+#ifdef ENABLE_PERFTRACING
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-rt.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+%s
+/*
+ * Forward declares of functions.
+ */
+
+bool
+resize_buffer (
+    uint8_t **buffer,
+    size_t *size,
+    size_t current_size,
+    size_t new_size,
+    bool *fixed_buffer);
+
+bool
+write_buffer (
+    const uint8_t *value,
+    size_t value_size,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer);
+
+bool
+write_buffer_string_utf8_t (
+    const ep_char8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer);
+
+bool
+write_buffer_string_utf8_to_utf16_t (
+    const ep_char8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer);
+
+static
+inline
+bool
+write_buffer_guid_t (
+    const uint8_t *value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer (value, EP_GUID_SIZE, buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_uint8_t (
+    uint8_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (uint8_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_uint16_t (
+    uint16_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (uint16_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_uint32_t (
+    uint32_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (uint32_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_int32_t (
+    int32_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (int32_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_uint64_t (
+    uint64_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (uint64_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_int64_t (
+    int64_t value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (int64_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_double_t (
+    double value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer ((const uint8_t *)&value, sizeof (double_t), buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+bool
+write_buffer_bool_t (
+    bool value,
+    uint8_t **buffer,
+    size_t *offset,
+    size_t *size,
+    bool *fixed_buffer)
+{
+    return write_buffer_int32_t (value, buffer, offset, size, fixed_buffer);
+}
+
+static
+inline
+EventPipeEvent *
+provider_add_event (
+    EventPipeProvider *provider,
+    uint32_t event_id,
+    uint64_t keywords,
+    uint32_t event_version,
+    EventPipeEventLevel level,
+    bool need_stack)
+{
+    return ep_provider_add_event (provider, event_id, keywords, event_version, level, need_stack, NULL, 0);
+}
+
+static
+inline
+EventPipeProvider *
+create_provider (
+    const ep_char16_t *provider_name,
+    EventPipeCallback callback_func)
+{
+    ep_char8_t *provider_name_utf8 = ep_rt_utf16_to_utf8_string (provider_name, -1);
+    ep_return_null_if_nok(provider_name_utf8 != NULL);
+
+    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL, NULL);
+    ep_rt_utf8_string_free (provider_name_utf8);
+    return provider;
+}
+""" % (getCoreCLRMonoTypeAdaptionDefines())
+
+def getMonoEventPipeImplFileSuffix():
+    return "#endif\n"
+
 def generateEventPipeImplFiles(
-        etwmanifest, eventpipe_directory, extern, exclusionList, dryRun):
+        etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, exclusionList, dryRun):
     tree = DOM.parse(etwmanifest)
 
     # Find the src directory starting with the assumption that
@@ -391,56 +883,41 @@ def generateEventPipeImplFiles(
 
         providerPrettyName = providerName.replace("Windows-", '')
         providerPrettyName = providerPrettyName.replace("Microsoft-", '')
+
         providerName_File = providerPrettyName.replace('-', '')
+        if target_cpp:
+            providerName_File = providerName_File + ".cpp"
+        else:
+            providerName_File = providerName_File + ".c"
+
         providerName_File = providerName_File.lower()
+
+        eventpipefile = os.path.join(eventpipe_directory, providerName_File)
+
         providerPrettyName = providerPrettyName.replace('-', '_')
-        eventpipefile = os.path.join(eventpipe_directory, providerName_File + ".cpp")
+
         if dryRun:
             print(eventpipefile)
         else:
             with open_for_update(eventpipefile) as eventpipeImpl:
                 eventpipeImpl.write(stdprolog_cpp)
+                header = ""
+                if runtimeFlavor == RuntimeFlavor.coreclr:
+                    header = getCoreCLREventPipeImplFilePrefix()
+                elif runtimeFlavor == RuntimeFlavor.mono:
+                    header = getMonoEventPipeImplFilePrefix()
 
-                header = """
-#include <common.h>
-#include "eventpipeadapter.h"
-
-#if defined(TARGET_UNIX)
-#define wcslen PAL_wcslen
-#endif
-
-bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
-bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);
-
-template <typename T>
-bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
-{{
-    if (sizeof(T) + offset > size)
-    {{
-        if (!ResizeBuffer(buffer, size, offset, size + sizeof(T), fixedBuffer))
-            return false;
-    }}
-
-    memcpy(buffer + offset, (char *)&value, sizeof(T));
-    offset += sizeof(T);
-    return true;
-}}
-
-""".format(root=src_dirname.replace('\\', '/'))
-
-                eventpipeImpl.write(header)
+                eventpipeImpl.write(header + "\n")
                 eventpipeImpl.write(
-                    "const WCHAR* %sName = W(\"%s\");\n" % (
+                    "const %s* %sName = W(\"%s\");\n" % (
+                        getEventPipeDataTypeMapping(runtimeFlavor)["WCHAR"],
                         providerPrettyName,
                         providerName
                     )
                 )
                 eventpipeImpl.write(
-                    "EventPipeProvider *EventPipeProvider%s = nullptr;\n" % (
-                        providerPrettyName,
-                    )
+                    "EventPipeProvider *EventPipeProvider" + providerPrettyName + 
+                    (" = nullptr;\n" if target_cpp else " = NULL;\n")
                 )
                 templateNodes = providerNode.getElementsByTagName('template')
                 allTemplates = parseTemplateNodes(templateNodes)
@@ -451,10 +928,17 @@ bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, 
                         eventNodes,
                         allTemplates,
                         extern,
+                        target_cpp,
+                        runtimeFlavor,
                         exclusionList) + "\n")
 
+                if runtimeFlavor == RuntimeFlavor.coreclr:
+                    eventpipeImpl.write(getCoreCLREventPipeImplFileSuffix())
+                elif runtimeFlavor == RuntimeFlavor.mono:
+                    eventpipeImpl.write(getMonoEventPipeImplFileSuffix())
+
 def generateEventPipeFiles(
-        etwmanifest, intermediate, extern, exclusionList, dryRun):
+        etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, exclusionList, dryRun):
     eventpipe_directory = os.path.join(intermediate, eventpipe_dirname)
     tree = DOM.parse(etwmanifest)
 
@@ -462,7 +946,7 @@ def generateEventPipeFiles(
         os.makedirs(eventpipe_directory)
 
     # generate helper file
-    generateEventPipeHelperFile(etwmanifest, eventpipe_directory, extern, dryRun)
+    generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, runtimeFlavor, extern, dryRun)
 
     # generate all keywords
     for keywordNode in tree.getElementsByTagName('keyword'):
@@ -470,11 +954,13 @@ def generateEventPipeFiles(
         keywordMask = keywordNode.getAttribute('mask')
         keywordMap[keywordName] = int(keywordMask, 0)
 
-    # generate .cpp file for each provider
+    # generate file for each provider
     generateEventPipeImplFiles(
         etwmanifest,
         eventpipe_directory,
         extern,
+        target_cpp,
+        runtimeFlavor,
         exclusionList,
         dryRun
     )
@@ -495,6 +981,8 @@ def main(argv):
                                     help='full path to exclusion list')
     required.add_argument('--intermediate', type=str, required=True,
                           help='full path to eventprovider  intermediate directory')
+    required.add_argument('--runtimeFlavor', type=str,default="CoreCLR",
+                          help='runtime flavor')
     required.add_argument('--nonextern', action='store_true',
                           help='if specified, will generate files to be compiled into the CLR rather than extern' )
     required.add_argument('--dry-run', action='store_true',
@@ -507,10 +995,15 @@ def main(argv):
     sClrEtwAllMan = args.man
     exclusion_filename = args.exc
     intermediate = args.intermediate
+    runtimeFlavor = RuntimeFlavor[args.runtimeFlavor.lower()]
     extern = not args.nonextern
-    dryRun            = args.dry_run
+    dryRun = args.dry_run
 
-    generateEventPipeFiles(sClrEtwAllMan, intermediate, extern, parseExclusionList(exclusion_filename), dryRun)
+    target_cpp = True
+    if runtimeFlavor == RuntimeFlavor.mono:
+        target_cpp = False
+
+    generateEventPipeFiles(sClrEtwAllMan, intermediate, extern, target_cpp, runtimeFlavor, parseExclusionList(exclusion_filename), dryRun)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])
