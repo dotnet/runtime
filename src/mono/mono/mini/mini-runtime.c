@@ -3062,6 +3062,8 @@ exit:
 	return ret;
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE (nullbyrefreturn_ex, "Mono", "NullByRefReturnException");
+
 static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
@@ -3130,11 +3132,29 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
+	if (sig->ret->byref) {
+		if (*(gpointer*)retval == NULL) {
+			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
+			MonoObject *ex = mono_object_new_checked (klass, error);
+			mono_error_assert_ok (error);
+			mono_error_set_exception_instance (error, (MonoException*)ex);
+			return NULL;
+		}
+	}
+
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (info->ret_box_class)
-			return mono_value_box_checked (info->ret_box_class, retval, error);
-		else
-			return *(MonoObject**)retval;
+		if (info->ret_box_class) {
+			if (sig->ret->byref) {
+				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
+			} else {
+				return mono_value_box_checked (info->ret_box_class, retval, error);
+			}
+		} else {
+			if (sig->ret->byref)
+				return **(MonoObject***)retval;
+			else
+				return *(MonoObject**)retval;
+		}
 	} else {
 		return NULL;
 	}
