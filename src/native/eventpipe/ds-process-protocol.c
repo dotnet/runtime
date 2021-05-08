@@ -513,9 +513,7 @@ process_protocol_helper_set_environment_variable (
 		return false;
 
     bool result = false;
-    DiagnosticsSetEnvironmentVariablePayload *payload = NULL;
-
-	payload = (DiagnosticsSetEnvironmentVariablePayload *)ds_ipc_message_try_parse_payload (message, set_environment_variable_command_try_parse_payload);
+    DiagnosticsSetEnvironmentVariablePayload *payload = (DiagnosticsSetEnvironmentVariablePayload *)ds_ipc_message_try_parse_payload (message, set_environment_variable_command_try_parse_payload);
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ep_raise_error ();
@@ -598,30 +596,33 @@ process_protocol_helper_get_environment_variable (
 		return false;
 
 	ep_char16_t *valueBuffer = NULL;
+	uint8_t *messageBuffer = NULL;
 	uint32_t bufferSize = 0;
+	uint32_t realLength;
     bool result = false;
-    DiagnosticsGetEnvironmentVariablePayload *payload = (DiagnosticsGetEnvironmentVariablePayload *)ds_ipc_message_try_parse_payload (message, set_environment_variable_command_try_parse_payload);
+    DiagnosticsGetEnvironmentVariablePayload *payload = (DiagnosticsGetEnvironmentVariablePayload *)ds_ipc_message_try_parse_payload (message, get_environment_variable_command_try_parse_payload);
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ep_raise_error ();
 	}
 
 	ds_ipc_result_t ipc_result;
-	uint32_t realLength;
 	ipc_result = ds_rt_get_environment_variable (payload, 0, &realLength, NULL);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
 	}
 
-	bufferSize = realLength * sizeof(ep_char16_t);
-	valueBuffer = (ep_char16_t *)(ep_rt_byte_array_alloc (bufferSize));
-	if (!valueBuffer) {
+	// Reserve space for the header and the environment variable
+	bufferSize = sizeof(DiagnosticsIpcHeader) + (realLength * sizeof(ep_char16_t));
+	messageBuffer = ep_rt_byte_array_alloc (bufferSize);
+	if (!messageBuffer) {
 		ds_ipc_message_send_error(stream, DS_IPC_E_FAIL);
 		ep_raise_error ();
 	}
 
-	ipc_result = ds_rt_get_environment_variable (payload, bufferSize, &realLength, valueBuffer);
+	valueBuffer = (ep_char16_t *)(messageBuffer + sizeof(DiagnosticsIpcHeader));
+	ipc_result = ds_rt_get_environment_variable (payload, realLength, &realLength, valueBuffer);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
@@ -630,8 +631,11 @@ process_protocol_helper_get_environment_variable (
 	DiagnosticsIpcMessage responseMessage;
 	ds_ipc_message_init (&responseMessage);
 	responseMessage.header = *(ds_ipc_header_get_generic_success ());
-	responseMessage.data = (uint8_t *)(valueBuffer);
-	responseMessage.size = bufferSize;
+	responseMessage.data = messageBuffer;
+	responseMessage.size = (uint16_t)(realLength * sizeof(ep_char16_t));
+	responseMessage.header.size += bufferSize;
+
+	memcpy(messageBuffer, &(responseMessage.header), sizeof(DiagnosticsIpcHeader));
 
 	ep_raise_error_if_nok (ds_ipc_message_send (&responseMessage, stream));
 
@@ -639,7 +643,7 @@ process_protocol_helper_get_environment_variable (
 
 ep_on_exit:
 	ds_get_environment_variable_payload_free (payload);
-	ep_rt_byte_array_free ((uint8_t *)(valueBuffer));
+	ep_rt_byte_array_free (messageBuffer);
     ds_ipc_stream_free (stream);
 	return result;
 

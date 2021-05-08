@@ -47,6 +47,8 @@ namespace ReverseStartupTests
                 return 100;
             }
 
+            string expected = "Hello, friend!";
+
             string serverName = ReverseServer.MakeServerAddress();
             Task backgroundTask = Task.Run(() =>
             {
@@ -80,9 +82,10 @@ namespace ReverseStartupTests
 
                             string val;
                             if (!client.GetEnvironmentVariable("ReverseServerTest_ReadMe", out val) 
-                                || val != "Hello, friend!")
+                                || !String.Equals(val, expected))
                             {
-                                throw new Exception("Failed getting environment variable");
+                                Console.WriteLine($"{val.Length} {expected.Length}");
+                                throw new Exception($"Failed getting environment variable, value=\"{val}\" expected=\"{expected}\" equals? {String.Equals(val, expected)}");
                             }
 
                             // Resume runtime message
@@ -115,7 +118,7 @@ namespace ReverseStartupTests
             {
                 { "ReverseServerTest_OverwriteMe", "OriginalValue" },
                 { "ReverseServerTest_ClearMe", "OriginalValue" },
-                { "ReverseServerTest_ReadMe", "Hello, friend!" },
+                { "ReverseServerTest_ReadMe", expected },
             };
 
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,

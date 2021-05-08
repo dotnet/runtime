@@ -90,7 +90,7 @@ namespace Profiler.Tests
                 IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(_processId), message);
                 Console.WriteLine($"Received: {response.ToString()}");
 
-                if (response.Header.CommandSet == 255)
+                if (response.Header.CommandSet != 255 || response.Header.CommandId != 0)
                 {
                     Console.WriteLine($"GetEnvironmentVariable failed.");
                     return false;
@@ -125,12 +125,12 @@ namespace Profiler.Tests
                 writer.Flush();
                 byte[] payload = stream.ToArray();
                 
-                var message = new IpcMessage(0x04, 0x03, payload);
+                var message = new IpcMessage(0x04, 0x04, payload);
                 Console.WriteLine($"Sent: {message.ToString()}");
                 IpcMessage response = IpcClient.SendMessage(ConnectionHelper.GetStandardTransport(_processId), message);
                 Console.WriteLine($"Received: {response.ToString()}");
 
-                if (response.Header.CommandSet == 255)
+                if (response.Header.CommandSet != 255 || response.Header.CommandId != 0)
                 {
                     Console.WriteLine($"SetEnvironmentVariable failed.");
                     return false;

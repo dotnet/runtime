@@ -341,7 +341,7 @@ ds_rt_get_environment_variable (DiagnosticsGetEnvironmentVariablePayload *payloa
     {
         hr = HRESULT_FROM_WIN32(GetLastError());
     }
-    else if ((trueLen > valueBufferLength) && (payload->name != nullptr))
+    else if ((trueLen > valueBufferLength) && (valueBuffer != nullptr))
     {
         hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     }
