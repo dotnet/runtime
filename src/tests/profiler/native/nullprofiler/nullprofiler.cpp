@@ -3,6 +3,11 @@
 
 #include "nullprofiler.h"
 
+#include <iostream>
+
+using std::wcout;
+using std::endl;
+
 GUID NullProfiler::GetClsid()
 {
     // {9C1A6E14-2DEC-45CE-9061-F31964D8884D}
@@ -14,8 +19,53 @@ HRESULT NullProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
     Profiler::Initialize(pICorProfilerInfoUnk);
 
-    // This profiler does nothing, and passes if it is loaded at all
-    printf("PROFILER TEST PASSES\n");
+    HRESULT hr = S_OK;
+    constexpr ULONG bufferSize = 1024;
+    ULONG envVarLen = 0;
+    WCHAR envVar[bufferSize];
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Profiler_Test_Name"),
+                                                             bufferSize,
+                                                             &envVarLen,
+                                                             envVar)))
+    {
+        wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
+        _failures++;
+        return hr;
+    }
+
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_OverwriteMe"),
+                                                             bufferSize,
+                                                             &envVarLen,
+                                                             envVar))
+        || wcscmp(envVar, WCHAR("Overwritten")) != 0)
+    {
+        wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
+        _failures++;
+        return hr;
+    }
+
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_ReadMe"),
+                                                             bufferSize,
+                                                             &envVarLen,
+                                                             envVar))
+        || wcscmp(envVar, WCHAR("Hello, friend!")) != 0)
+    {
+        wcout << L"Failed to get test name hr=" << std::hex << hr << endl;
+        _failures++;
+        return hr;
+    }
+
+    hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReverseServerTest_OverwriteMe"),
+                                                        bufferSize,
+                                                        &envVarLen,
+                                                        envVar);
+    // ENVVAR_NOT_FOUND hr
+    if (hr != 0x800000CB)
+    {
+        wcout << L"ReverseServerTest_OverwriteMe was expected to be cleared, but we found it" << std::hex << hr << endl;
+        _failures++;
+        return E_FAIL;
+    }
 
     return S_OK;
 }
@@ -23,6 +73,11 @@ HRESULT NullProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 HRESULT NullProfiler::Shutdown()
 {
     Profiler::Shutdown();
+
+    if (_failures.load() == 0)
+    {
+        printf("PROFILER TEST PASSES\n");
+    }
 
     fflush(stdout);
 
