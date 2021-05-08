@@ -16,6 +16,9 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int Sum(int[] values, int numValues);
 
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+            public static partial int Sum(ref int values, int numValues);
+
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
             public static partial int SumInArray(in int[] values, int numValues);
 
@@ -69,6 +72,13 @@ namespace DllImportGenerator.IntegrationTests
         {
             var array = new[] { 1, 5, 79, 165, 32, 3 };
             Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(array, array.Length));
+        }
+
+        [Fact]
+        public void IntArrayRefToFirstElementMarshalledToNativeAsExpected()
+        {
+            var array = new[] { 1, 5, 79, 165, 32, 3 };
+            Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(ref array[0], array.Length));
         }
 
         [Fact]

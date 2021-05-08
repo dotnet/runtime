@@ -56,8 +56,6 @@ namespace Microsoft.Interop
 
         public BlockSyntax StubCode { get; init; }
 
-        public MethodDeclarationSyntax DllImportDeclaration { get; init; }
-
         public AttributeListSyntax[] AdditionalAttributes { get; init; }
 
         /// <summary>
@@ -210,7 +208,7 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new StubCodeGenerator(method, dllImportData, paramsTypeInfo, retTypeInfo, diagnostics, env.Options);
-            var (code, dllImport) = stubGenerator.GenerateSyntax();
+            var code = stubGenerator.GenerateSyntax();
 
             var additionalAttrs = new List<AttributeListSyntax>();
 
@@ -235,7 +233,6 @@ namespace Microsoft.Interop
                 StubTypeNamespace = stubTypeNamespace,
                 StubContainingTypes = containingTypes,
                 StubCode = code,
-                DllImportDeclaration = dllImport,
                 AdditionalAttributes = additionalAttrs.ToArray(),
             };
         }

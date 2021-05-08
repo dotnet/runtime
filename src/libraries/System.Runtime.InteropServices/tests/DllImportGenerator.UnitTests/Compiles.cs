@@ -279,5 +279,26 @@ namespace DllImportGenerator.UnitTests
                 Assert.StartsWith("'Marshal' does not contain a definition for ", diag.GetMessage());
             });
         }
+
+        public static IEnumerable<object[]> CodeSnippetsToCompileMultipleSources()
+        {
+            yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
+            yield return new object[] { new[] { CodeSnippets.BasicParametersAndModifiersWithCharSet<int>(CharSet.Unicode), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.Bool) } };
+            yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]"), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
+        }
+
+        [Theory]
+        [MemberData(nameof(CodeSnippetsToCompileMultipleSources))]
+        public async Task ValidateSnippetsWithMultipleSources(string[] sources)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(sources);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
     }
 }
