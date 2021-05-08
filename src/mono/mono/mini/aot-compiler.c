@@ -4731,6 +4731,20 @@ add_wrappers (MonoAotCompile *acfg)
 		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall data */
 		for (int i = 0; i < MONO_JIT_ICALL_count; ++i)
 			add_jit_icall_wrapper (acfg, mono_find_jit_icall_info ((MonoJitICallId)i));
+
+		if (acfg->aot_opts.llvm_only) {
+			/* String ctors are called directly on llvmonly */
+			for (int i = 0; i < rows; ++i) {
+				ERROR_DECL (error);
+
+				token = MONO_TOKEN_METHOD_DEF | (i + 1);
+				method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
+				if (method && method->string_ctor) {
+					MonoMethod *w = get_runtime_invoke (acfg, method, FALSE);
+					add_method (acfg, w);
+				}
+			}
+		}
 	}
 
 	/* 
