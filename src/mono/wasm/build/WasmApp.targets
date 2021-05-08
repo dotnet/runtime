@@ -50,6 +50,9 @@
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Publish`.
 
+      - $(EmccFlags)                        - This sets the initial emcc flags.
+      - $(EmccVerbose)                      - Set to false to disable verbose emcc output.
+
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
                                     (relative path can be set via %(TargetPath) metadata)
@@ -367,6 +370,7 @@
 
     <PropertyGroup>
       <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
+      <EmccFlags Condition="'$(EmccVerbose)' != 'false'">$(EmccFlags) -v</EmccFlags>
       <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(WasmNativeStrip)' == 'false'">$(EmccFlags) -g</EmccFlags>
