@@ -83,6 +83,9 @@ namespace System.Threading
                 }
 
 #if FEATURE_NSAUTORELEASEPOOL
+                // There is no need to wrap this "clean up" code in a finally block since
+                // if an exception is thrown above, the process is going to terminate.
+                // Optimize for the most common case - no exceptions escape a thread.
                 if (ThreadOSX.EnableAutoreleasePool)
                     Thread.DrainAutoreleasePool();
 #endif

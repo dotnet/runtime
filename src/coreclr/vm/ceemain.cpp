@@ -1031,12 +1031,6 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-        // Perform additional managed thread initialization.
-        // This would is normally done in the runtime when a managed
-        // thread is started, but is done here instead since the
-        // Main thread wasn't started by the runtime.
-        Thread::InitializationForManagedThreadInNative(mainThread);
-
 #endif // !CROSSGEN_COMPILE
 
         g_fEEStarted = TRUE;

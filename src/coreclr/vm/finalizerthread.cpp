@@ -340,6 +340,9 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // acceptable.
         SignalFinalizationDone(TRUE);
     }
+
+    if (s_InitializedFinalizerThreadForPlatform)
+        Thread::CleanUpForManagedThreadInNative(GetFinalizerThread());
 }
 
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
