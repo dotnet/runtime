@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.Test
@@ -47,6 +50,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             {
                 get { return null; }
             }
+
+            public IEnumerable<string> InstantiatedCovariantIEnumerable { get; set; } = new List<string>();
         }
 
         public class NestedOptions
@@ -202,6 +207,26 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("DerivedSection", childOptions.DerivedSection.Key);
             Assert.Equal("Section:DerivedSection", childOptions.DerivedSection.Path);
             Assert.Null(options.Section.Value);
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCovariantIEnumerable()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCovariantIEnumerable:0", "Yo1"},
+                {"InstantiatedCovariantIEnumerable:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>();
+            
+            Assert.Equal(2, options.InstantiatedCovariantIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedCovariantIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCovariantIEnumerable.ElementAt(1));
         }
 
         [Fact]

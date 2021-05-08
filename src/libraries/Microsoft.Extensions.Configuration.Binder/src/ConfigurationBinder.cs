@@ -318,7 +318,7 @@ namespace Microsoft.Extensions.Configuration
                     instance = CreateInstance(type);
                 }
 
-                // See if its a Dictionary
+                // See if it's a Dictionary
                 Type collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
                 if (collectionInterface != null)
                 {
@@ -330,16 +330,31 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    // See if its an ICollection
+                    // See if it's an ICollection
                     collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
                         BindCollection(instance, collectionInterface, config, options);
                     }
-                    // Something else
                     else
                     {
-                        BindNonScalar(config, instance, options);
+                        // see if it's an IEnumerable that has been set with a broader collection
+                        collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
+
+                        if (collectionInterface != null && instance != null)
+                        {
+                            collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), instance.GetType());
+
+                            if (collectionInterface != null)
+                            {
+                                BindCollection(instance, collectionInterface, config, options);
+                            }
+                        }
+                        // Something else
+                        else
+                        {
+                            BindNonScalar(config, instance, options);
+                        }
                     }
                 }
             }
