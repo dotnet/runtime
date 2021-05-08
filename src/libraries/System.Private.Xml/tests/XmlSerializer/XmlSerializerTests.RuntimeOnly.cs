@@ -2810,13 +2810,14 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void DerivedTypeWithDifferentOverrides2()
     {
-        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6" };
+        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6", Name7 = "Name7" };
         ((DerivedTypeWithDifferentOverrides)value).Name5 = "MidLevelName5";
         ((DerivedTypeWithDifferentOverrides)value).Name4 = "MidLevelName4";
         ((SerializationTypes.BaseType)value).Name4 = "BaseLevelName4";
         ((DerivedTypeWithDifferentOverrides)value).Name6 = "MidLevelName6";
         ((SerializationTypes.BaseType)value).Name6 = "BaseLevelName6";
-        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6></DerivedTypeWithDifferentOverrides2>");
+        ((DerivedTypeWithDifferentOverrides)value).Name7 = "MidLevelName7";
+        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6><Name7>MidLevelName7</Name7></DerivedTypeWithDifferentOverrides2>");
         Assert.Equal(value.Name1, actual.Name1);
         Assert.Equal(value.Name2, actual.Name2);
         Assert.Equal(value.Name3, actual.Name3);
@@ -2829,6 +2830,8 @@ public static partial class XmlSerializerTests
         Assert.Null(actual.Name6);
         Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
         Assert.Equal(((SerializationTypes.BaseType)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+        Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name7, ((SerializationTypes.BaseType)actual).Name7);
+        Assert.Equal(actual.Name7, ((SerializationTypes.BaseType)actual).Name7);
     }
 
     [Fact]
