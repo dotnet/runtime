@@ -630,6 +630,30 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
+        public async Task HostDoesNotStartHostedServiceIfCancellationIsRequested()
+        {
+            var firstHostedService = new Mock<IHostedService>();
+            var secondHostedService = new Mock<IHostedService>();
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            firstHostedService
+                .Setup(s => s.StartAsync(It.IsAny<CancellationToken>()))
+                .Callback(() => cancellationTokenSource.Cancel());
+
+            using var host = CreateBuilder()
+                .ConfigureServices((_, services) =>
+                {
+                    services.AddSingleton(_ => firstHostedService.Object);
+                    services.AddSingleton(_ => secondHostedService.Object);
+                })
+                .Build();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => host.StartAsync(cancellationTokenSource.Token));
+            firstHostedService.Verify(s => s.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
+            secondHostedService.Verify(s => s.StartAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
         public async Task WebHostStopAsyncUsesDefaultTimeoutIfNoTokenProvided()
         {
             var service = new Mock<IHostedService>();

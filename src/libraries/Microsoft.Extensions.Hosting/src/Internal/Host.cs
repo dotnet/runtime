@@ -61,6 +61,8 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedService hostedService in _hostedServices)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // Fire IHostedService.Start
                 await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
 
