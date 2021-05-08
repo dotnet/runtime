@@ -2780,7 +2780,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     mdModuleRef modref = mdModuleRefNil;
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
-        InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
+        InitCallConv(CallConvWinApiSentinel, pMD);
         return;
     }
 
@@ -2798,7 +2798,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     }
 
     // m_callConv
-    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD->IsVarArg());
+    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD);
 
     // m_bestFit
     CorPinvokeMap bestFitMask = (CorPinvokeMap)(mappingFlags & pmBestFitMask);
@@ -2954,6 +2954,39 @@ CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
     return bIsVarArg ? CorInfoCallConvExtension::C : CallConv::GetDefaultUnmanagedCallingConvention();
 }
 
+void PInvokeStaticSigInfo::InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+
+#ifdef CROSSGEN_COMPILE
+    _ASSERTE_MSG(!pMD->HasUnmanagedCallConvAttribute(), "UnmanagedCallConv methods are not supported in crossgen and should be rejected before getting here.");
+#else
+    // If the calling convention has not been determined yet, check the UnmanagedCallConv attribute
+    if (callConv == CallConvWinApiSentinel)
+    {
+        CallConvBuilder builder;
+        UINT errorResID = 0;
+
+        // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+        HRESULT hr = CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &builder, &errorResID);
+        if (FAILED(hr))
+        {
+            // Use a generic error message for P/Invokes or UnmanagedFunction if no specific one was provided
+            ThrowError(errorResID == 0 ? IDS_EE_NDIRECT_BADNATL : errorResID);
+        }
+
+        callConv = builder.GetCurrentCallConv();
+    }
+#endif // CROSSGEN_COMPILE
+
+    InitCallConv(callConv, pMD->IsVarArg());
+}
+
 void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg)
 {
     STANDARD_VM_CONTRACT;
@@ -3045,14 +3078,26 @@ CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodD
             if (callConv != CallConvWinApiSentinel)
                 return callConv;
         }
+
+#ifdef CROSSGEN_COMPILE
+        _ASSERTE_MSG(!pMD->HasUnmanagedCallConvAttribute(), "UnmanagedCallConv methods are not supported in crossgen and should be rejected before getting here.");
+#else
+        // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+        CallConvBuilder unmanagedCallConvBuilder;
+        (void)CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &unmanagedCallConvBuilder, NULL);
+        callConv = unmanagedCallConvBuilder.GetCurrentCallConv();
+        if (callConv != CallConvWinApiSentinel)
+            return callConv;
+#endif // CROSSGEN_COMPILE
     }
 
     const Signature& sig = pMD->GetSignature();
     Module* module = pMD->GetModule();
 
-    // modopts
     CallConvBuilder builder;
     UINT errorResID;
+
+    // modopts
     (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
     callConv = builder.GetCurrentCallConv();
     if (callConv != CallConvWinApiSentinel)

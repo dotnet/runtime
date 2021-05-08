@@ -315,11 +315,12 @@ public:
     PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
 
 private:
-    void ThrowError(WORD errorResourceID);
-    void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
+    void ThrowError(_In_ WORD errorResourceID);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD);
+    void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ BOOL bIsVarArg);
     void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName);
-    void PreInit(Module* pModule, MethodTable *pClass);
-    void PreInit(MethodDesc* pMD);
+    void PreInit(_In_ Module* pModule, _In_ MethodTable *pClass);
+    void PreInit(_In_ MethodDesc* pMD);
 
 private:
     enum

@@ -9997,6 +9997,11 @@ namespace
             _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
             if (pMD->IsNDirect())
             {
+#ifdef CROSSGEN_COMPILE
+                // Return CorInfoCallConvExtension::Managed to indicate that crossgen does not support handling UnmanagedCallConv
+                if (pMD->HasUnmanagedCallConvAttribute())
+                    return CorInfoCallConvExtension::Managed;
+#endif // CROSSGEN_COMPILE
                 if (pSuppressGCTransition)
                 {
                     *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
