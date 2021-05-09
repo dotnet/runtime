@@ -364,11 +364,7 @@ const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305()
     {
         return EVP_chacha20_poly1305();
     }
-    else
-    {
-        return NULL;
-    }
-#else
-    return NULL;
 #endif
+
+    return NULL;
 }
