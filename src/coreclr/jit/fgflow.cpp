@@ -835,10 +835,8 @@ void Compiler::fgComputePreds()
         }
     }
 
-    for (unsigned EHnum = 0; EHnum < compHndBBtabCount; EHnum++)
+    for (EHblkDsc* const ehDsc : EHClauses(this))
     {
-        EHblkDsc* ehDsc = ehGetDsc(EHnum);
-
         if (ehDsc->HasFilter())
         {
             // The first block of a filter has an artifical extra refcount.

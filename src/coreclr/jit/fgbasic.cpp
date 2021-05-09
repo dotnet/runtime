@@ -2937,8 +2937,7 @@ void Compiler::fgFindBasicBlocks()
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
-    EHblkDsc* HBtabEnd;
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (ehMaxHndNestingCount <= HBtab->ebdHandlerNestingLevel)
             ehMaxHndNestingCount = HBtab->ebdHandlerNestingLevel + 1;

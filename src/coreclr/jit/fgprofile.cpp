@@ -563,10 +563,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     //
     if (!compIsForInlining())
     {
-        EHblkDsc* HBtab = compHndBBtab;
-        unsigned  XTnum = 0;
-
-        for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);

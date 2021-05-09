@@ -439,11 +439,7 @@ void CodeGen::genMarkLabelsForCodegen()
         add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
     }
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-         HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
         HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
@@ -2623,9 +2619,7 @@ void CodeGen::genReportEH()
     }
 #endif // DEBUG
 
-    unsigned  XTnum;
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
+    unsigned XTnum;
 
     bool isCoreRTABI = compiler->IsTargetAbi(CORINFO_CORERT_ABI);
 
@@ -2664,8 +2658,7 @@ void CodeGen::genReportEH()
         // clauses. If there aren't, we don't need to look for BBJ_CALLFINALLY.
 
         bool anyFinallys = false;
-        for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-             HBtab < HBtabEnd; HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(compiler))
         {
             if (HBtab->HasFinallyHandler())
             {
@@ -2715,8 +2708,7 @@ void CodeGen::genReportEH()
 
     XTnum = 0; // This is the index we pass to the VM
 
-    for (HBtab = compiler->compHndBBtab, HBtabEnd = compiler->compHndBBtab + compiler->compHndBBtabCount;
-         HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
 
@@ -2908,8 +2900,9 @@ void CodeGen::genReportEH()
 
     if (duplicateClauseCount > 0)
     {
-        unsigned reportedDuplicateClauseCount = 0; // How many duplicated clauses have we reported?
-        unsigned XTnum2;
+        unsigned  reportedDuplicateClauseCount = 0; // How many duplicated clauses have we reported?
+        unsigned  XTnum2;
+        EHblkDsc* HBtab;
         for (XTnum2 = 0, HBtab = compiler->compHndBBtab; XTnum2 < compiler->compHndBBtabCount; XTnum2++, HBtab++)
         {
             unsigned enclosingTryIndex;

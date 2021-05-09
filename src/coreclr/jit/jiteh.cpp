@@ -870,10 +870,7 @@ bool Compiler::ehCanDeleteEmptyBlock(BasicBlock* block)
  */
 void Compiler::ehUpdateLastBlocks(BasicBlock* oldLast, BasicBlock* newLast)
 {
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->ebdTryLast == oldLast)
         {
@@ -1004,11 +1001,9 @@ bool Compiler::ehAnyFunclets()
 
 unsigned Compiler::ehFuncletCount()
 {
-    unsigned  funcletCnt = 0;
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
+    unsigned funcletCnt = 0;
 
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->HasFilter())
         {
@@ -1420,9 +1415,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 
         HBtab = compHndBBtab + XTnum;
 
-        EHblkDsc* xtabEnd;
-        EHblkDsc* xtab;
-        for (xtab = compHndBBtab, xtabEnd = compHndBBtab + compHndBBtabCount; xtab < xtabEnd; xtab++)
+        for (EHblkDsc* const xtab : EHClauses(this))
         {
             if ((xtab != HBtab) && (xtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) &&
                 (xtab->ebdEnclosingTryIndex >= XTnum))
@@ -1518,9 +1511,7 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
     {
         // Update all enclosing links that will get invalidated by inserting an entry at 'XTnum'
 
-        EHblkDsc* xtabEnd;
-        EHblkDsc* xtab;
-        for (xtab = compHndBBtab, xtabEnd = compHndBBtab + compHndBBtabCount; xtab < xtabEnd; xtab++)
+        for (EHblkDsc* const xtab : EHClauses(this))
         {
             if ((xtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) && (xtab->ebdEnclosingTryIndex >= XTnum))
             {
@@ -4388,10 +4379,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
     bPrev->bbCatchTyp = block->bbCatchTyp;
     block->bbCatchTyp = BBCT_NONE;
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         /* Multiple pointers in EHblkDsc can point to same block. We can not early out after the first match. */
         if (HBtab->ebdTryBeg == block)

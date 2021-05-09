@@ -2041,10 +2041,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         // Output a brace for every try region that this block opens
 
-        EHblkDsc* HBtab;
-        EHblkDsc* HBtabEnd;
-
-        for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             if (HBtab->ebdTryBeg == block)
             {
@@ -2055,10 +2052,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->ebdTryLast == block)
         {
@@ -2261,9 +2255,14 @@ void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
-    for (BasicBlock* const block : BasicBlockRangeList(firstBlock, lastBlock))
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         fgDumpBlock(block);
+
+        if (block == lastBlock)
+        {
+            break;
+        }
     }
     printf("\n---------------------------------------------------------------------------------------------------------"
            "----------\n");
@@ -2729,8 +2728,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             {
                 // Check to see if this block is the beginning of a filter or a handler and adjust the ref count
                 // appropriately.
-                for (EHblkDsc *HBtab = compHndBBtab, *HBtabEnd = &compHndBBtab[compHndBBtabCount]; HBtab != HBtabEnd;
-                     HBtab++)
+                for (EHblkDsc* const HBtab : EHClauses(this))
                 {
                     if (HBtab->ebdHndBeg == block)
                     {

@@ -2739,7 +2739,7 @@ void Compiler::fgAddInternal()
 
     // Visit the BBJ_RETURN blocks and merge as necessary.
 
-    for (BasicBlock* const block : BasicBlockRangeList(fgFirstBB, lastBlockBeforeGenReturns))
+    for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->bbNext; block = block->bbNext)
     {
         if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
@@ -3232,11 +3232,9 @@ void Compiler::fgCreateFuncletPrologBlocks()
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
     assert(!fgFuncletsCreated);
 
-    bool      prologBlocksCreated = false;
-    EHblkDsc* HBtabEnd;
-    EHblkDsc* HBtab;
+    bool prologBlocksCreated = false;
 
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         BasicBlock* head = HBtab->ebdHndBeg;
 

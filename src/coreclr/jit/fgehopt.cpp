@@ -1680,10 +1680,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
     // Look for finallys.
     bool hasFinally = false;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-
         // Check if this is a try/finally.
         if (HBtab->HasFinallyHandler())
         {
