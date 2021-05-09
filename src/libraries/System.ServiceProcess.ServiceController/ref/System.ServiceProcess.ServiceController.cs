@@ -88,6 +88,7 @@ namespace System.ServiceProcess
         public void Start() { }
         public void Start(string[] args) { }
         public void Stop() { }
+        public void Stop(bool stopDependentServices) { }
         public void WaitForStatus(System.ServiceProcess.ServiceControllerStatus desiredStatus) { }
         public void WaitForStatus(System.ServiceProcess.ServiceControllerStatus desiredStatus, System.TimeSpan timeout) { }
     }

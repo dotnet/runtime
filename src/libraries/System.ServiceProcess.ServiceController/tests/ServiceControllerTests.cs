@@ -79,6 +79,14 @@ namespace System.ServiceProcess.Tests
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
+        public void Stop_FalseArg_WithDependentServices_ThrowsInvalidOperationException()
+        {
+            var controller = new ServiceController(_testService.TestServiceName);
+            controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
+            Assert.Throws<InvalidOperationException>(() => controller.Stop(stopDependentServices: false));
+        }
+
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void StopAndStart()
         {
             var controller = new ServiceController(_testService.TestServiceName);

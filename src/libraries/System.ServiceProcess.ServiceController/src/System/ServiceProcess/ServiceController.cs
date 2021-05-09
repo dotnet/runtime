@@ -912,19 +912,27 @@ namespace System.ServiceProcess
         /// they will be stopped first. The DependentServices property lists this set
         /// of services.
         /// </summary>
-        public unsafe void Stop()
+        public void Stop()
+        {
+            Stop(true);
+        }
+
+        public unsafe void Stop(bool stopDependentServices)
         {
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_STOP);
-            // Before stopping this service, stop all the dependent services that are running.
-            // (It's OK not to cache the result of getting the DependentServices property because it caches on its own.)
-            for (int i = 0; i < DependentServices.Length; i++)
+            if (stopDependentServices)
             {
-                ServiceController currentDependent = DependentServices[i];
-                currentDependent.Refresh();
-                if (currentDependent.Status != ServiceControllerStatus.Stopped)
+                // Before stopping this service, stop all the dependent services that are running.
+                // (It's OK not to cache the result of getting the DependentServices property because it caches on its own.)
+                for (int i = 0; i < DependentServices.Length; i++)
                 {
-                    currentDependent.Stop();
-                    currentDependent.WaitForStatus(ServiceControllerStatus.Stopped, new TimeSpan(0, 0, 30));
+                    ServiceController currentDependent = DependentServices[i];
+                    currentDependent.Refresh();
+                    if (currentDependent.Status != ServiceControllerStatus.Stopped)
+                    {
+                        currentDependent.Stop();
+                        currentDependent.WaitForStatus(ServiceControllerStatus.Stopped, new TimeSpan(0, 0, 30));
+                    }
                 }
             }
 
