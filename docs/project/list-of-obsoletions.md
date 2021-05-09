@@ -27,4 +27,4 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
 |  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |
 |  __`SYSLIB0015`__ | DisablePrivateReflectionAttribute has no effect in .NET 6.0+. |
-|  __`SYSLIB0016`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |
+|  __`SYSLIB0024`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |

@@ -53,6 +53,6 @@ namespace System
         internal const string DisablePrivateReflectionAttributeDiagId = "SYSLIB0015";
 
         internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
-        internal const string SuppressIldasmAttributeDiagId = "SYSLIB0016";
+        internal const string SuppressIldasmAttributeDiagId = "SYSLIB0024";
     }
 }
