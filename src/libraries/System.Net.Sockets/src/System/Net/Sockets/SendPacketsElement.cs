@@ -102,7 +102,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            Initialize(null, null, buffer, new ReadOnlyMemory<byte>(buffer, offset, count), offset, count, endOfPacket);
+            Initialize(null, null, buffer, buffer.AsMemory(offset, count), offset, count, endOfPacket);
         }
 
         public SendPacketsElement(ReadOnlyMemory<byte> buffer) :

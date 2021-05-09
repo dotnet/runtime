@@ -2216,7 +2216,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::DoBeginSendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
-            return BeginSendFileInternal(fileName, preBuffer, postBuffer, flags, callback, state);
+            return TaskToApm.Begin(SendFileAsync(fileName, preBuffer, postBuffer, flags).AsTask(), callback, state);
         }
 
         public void EndSendFile(IAsyncResult asyncResult)
@@ -2228,7 +2228,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            EndSendFileInternal(asyncResult);
+            TaskToApm.End(asyncResult);
         }
 
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)

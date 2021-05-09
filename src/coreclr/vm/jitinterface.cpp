@@ -24,7 +24,7 @@
 #include "float.h"      // for isnan
 #include "dbginterface.h"
 #include "dllimport.h"
-#include "dllimportcallback.h"
+#include "callconvbuilder.hpp"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
 #include "corprof.h"
@@ -9895,7 +9895,7 @@ namespace
         {
             CallConvBuilder builder;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
+            HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &builder, &errorResID);
 
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
@@ -9903,7 +9903,7 @@ namespace
             CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
             if (callConvLocal == CallConvBuilder::UnsetValue)
             {
-                callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
+                callConvLocal = CallConv::GetDefaultUnmanagedCallingConvention();
             }
 
             *pSuppressGCTransition = builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
@@ -9940,8 +9940,7 @@ namespace
                     *pSuppressGCTransition = pMD->ShouldSuppressGCTransition();
                 }
 
-                PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                return sigInfo.GetCallConv();
+                return NDirect::GetCallingConvention_IgnoreErrors(pMD);
             }
             else
             {
@@ -9950,7 +9949,7 @@ namespace
                 return CorInfoCallConvExtension::Managed;
 #else
                 CorInfoCallConvExtension unmanagedCallConv;
-                if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
+                if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
@@ -9958,7 +9957,7 @@ namespace
                     }
                     return unmanagedCallConv;
                 }
-                return MetaSig::GetDefaultUnmanagedCallingConvention();
+                return CallConv::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }

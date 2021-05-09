@@ -178,11 +178,3 @@ The result files use standard XUnitPerformanceHarness formatting. Typical metric
     MusicStore/First Request											Duration				ms		2			872			24.04163056	855			889
     MusicStore/Median Response											Duration				ms		2			88.8		0			88.8		88.8
     MusicStore/Startup													Duration				ms		2			887			35.35533906	862			912
-
-## Why is this project in a folder marked 'unofficial'?
-
-CoreCLR CI machines don't currently support building netcoreapp2.0 projects authored with the new msbuild SDK authoring style so the repo build uses the JitBench.csproj one directory higher, not the one in this directory. If you try to build the project in this directory in CI you get this error:
-
-    C:\Program Files\dotnet\sdk\1.1.0\Sdks\Microsoft.NET.Sdk\build\Microsoft.NET.TargetFrameworkInference.targets(112,5): error : The current .NET SDK does not support targeting .NET Core 2.0.  Either target .NET Core 1.1 or lower, or use a version of the .NET SDK that supports .NET Core 2.0. [D:\j\workspace\x64_checked_w---eac6a79c\tests\src\performance\Scenario\JitBench\JitBench.csproj]
-
-I assume the CI machines have fairly old SDK tools installed but I didn't have enough time to keep investigating these build issues. From I can tell if you have .NET Core 2.0+ SDK installed on your machine this build works fine from the command line and from VS.

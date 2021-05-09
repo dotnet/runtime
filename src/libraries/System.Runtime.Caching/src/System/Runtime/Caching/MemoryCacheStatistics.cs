@@ -277,14 +277,23 @@ namespace System.Runtime.Caching
 
                 int percent = Math.Max(minPercent, GetPercentToTrim());
                 long beginTotalCount = _memoryCache.GetCount();
-                Stopwatch sw = Stopwatch.StartNew();
-                long trimmedOrExpired = _memoryCache.Trim(percent);
-                sw.Stop();
-                // 1) don't update stats if the trim happend because MAX_COUNT was exceeded
-                // 2) don't update stats unless we removed at least one entry
-                if (percent > 0 && trimmedOrExpired > 0)
+                long trimmedOrExpired = 0;
+                Stopwatch sw = new Stopwatch();
+
+                // There is a small window here where the cache could be empty, but percentToTrim is > 0.
+                // In this case, it makes no sense to trim, and in fact causes a divide-by-zero exception.
+                // See - https://github.com/dotnet/runtime/issues/1423
+                if (percent > 0 && beginTotalCount > 0)
                 {
-                    SetTrimStats(sw.Elapsed.Ticks, beginTotalCount, trimmedOrExpired);
+                    sw.Start();
+                    trimmedOrExpired = _memoryCache.Trim(percent);
+                    sw.Stop();
+                    // 1) don't update stats if the trim happend because MAX_COUNT was exceeded
+                    // 2) don't update stats unless we removed at least one entry
+                    if (percent > 0 && trimmedOrExpired > 0)
+                    {
+                        SetTrimStats(sw.Elapsed.Ticks, beginTotalCount, trimmedOrExpired);
+                    }
                 }
 
                 Dbg.Trace("MemoryCacheStats", "**END** CacheManagerThread: "
