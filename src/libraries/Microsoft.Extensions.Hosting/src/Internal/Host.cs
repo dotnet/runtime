@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly HostOptions _options;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
-        private IEnumerable<IHostedService> _hostedServices;
+        private readonly ICollection<IHostedService> _hostedServices = new List<IHostedService>();
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -57,10 +57,15 @@ namespace Microsoft.Extensions.Hosting.Internal
             await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
 
             combinedCancellationToken.ThrowIfCancellationRequested();
-            _hostedServices = Services.GetService<IEnumerable<IHostedService>>();
+            var hostedServices = Services.GetService<IEnumerable<IHostedService>>();
 
-            foreach (IHostedService hostedService in _hostedServices)
+            foreach (IHostedService hostedService in hostedServices)
             {
+                if (_applicationLifetime.ApplicationStopping.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Fire IHostedService.Start
@@ -70,6 +75,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 {
                     _ = TryExecuteBackgroundServiceAsync(backgroundService);
                 }
+
+                _hostedServices.Add(hostedService);
             }
 
             // Fire IHostApplicationLifetime.Started
@@ -107,7 +114,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 _applicationLifetime.StopApplication();
 
                 IList<Exception> exceptions = new List<Exception>();
-                if (_hostedServices != null) // Started?
+                if (_hostedServices.Count != 0) // Started?
                 {
                     foreach (IHostedService hostedService in _hostedServices.Reverse())
                     {
